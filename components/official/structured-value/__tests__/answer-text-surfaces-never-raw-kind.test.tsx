@@ -44,13 +44,21 @@ afterEach(() => {
 
 describe("AnswerTextPreview", () => {
   it("complete kind → markdown; arriving kind → loader; kindless unchanged", () => {
-    expect(mount(<AnswerTextPreview text={SET_JSON} />).textContent).not.toContain("__kind");
+    expect(mount(<AnswerTextPreview text={SET_JSON} streaming={false} />).textContent).not.toContain("__kind");
     act(() => root?.unmount());
-    const arriving = mount(<AnswerTextPreview text={'Hi {"__kind": "quiz_set", "ti'} />);
+    const arriving = mount(<AnswerTextPreview text={'Hi {"__kind": "quiz_set", "ti'} streaming />);
     expect(arriving.textContent).not.toContain("__kind");
     expect(arriving.querySelector('[data-kind-loader="quiz_set"]')).not.toBeNull();
     act(() => root?.unmount());
-    expect(mount(<AnswerTextPreview text="Plain words" />).textContent).toBe("Plain words");
+    expect(mount(<AnswerTextPreview text="Plain words" streaming={false} />).textContent).toBe("Plain words");
+  });
+
+  it("once the stream is over, an unfinished kind is a one-line broken state, not a loader", () => {
+    const host = mount(<AnswerTextPreview text={'Hi {"__kind": "quiz_set", "ti'} streaming={false} />);
+    expect(host.querySelector("[data-kind-loader]")).toBeNull();
+    const broken = host.querySelector('[data-kind-broken="quiz_set"]');
+    expect(broken?.textContent).toBe("Quiz set did not finish");
+    expect(broken!.textContent!.length).toBeLessThanOrEqual(60);
   });
 });
 
@@ -58,6 +66,11 @@ describe("VoiceTranscriptTurn", () => {
   it("an assistant turn never reads out kind JSON", () => {
     const turn = { id: "t", role: "assistant", status: "complete", text: SET_JSON, text_reveal_index: SET_JSON.length };
     expect(mount(<VoiceTranscriptTurn turn={turn as never} />).textContent).not.toContain("__kind");
+  });
+  it("a finished turn whose kind never completed reads its broken line", () => {
+    const text = 'Here {"__kind": "quiz_set", "ti';
+    const turn = { id: "t", role: "assistant", status: "complete", text, text_reveal_index: text.length };
+    expect(mount(<VoiceTranscriptTurn turn={turn as never} />).textContent).toContain("Quiz set did not finish");
   });
 });
 
@@ -76,6 +89,11 @@ describe("RunRow", () => {
     const host = mount(<RunRow run={run as never} />);
     expect(host.textContent).not.toContain("__kind");
     expect(host.textContent).toContain("Cell biology");
+  });
+  it("a summary whose kind never finished says so, never loads forever", () => {
+    const host = mount(<RunRow run={{ ...run, result_summary: 'Done {"__kind": "quiz_set", "ti' } as never} />);
+    expect(host.textContent).not.toContain("__kind");
+    expect(host.textContent).toContain("Quiz set did not finish");
   });
   it("a kindless summary is unchanged", () => {
     const host = mount(<RunRow run={{ ...run, result_summary: "Sent 3 emails" } as never} />);

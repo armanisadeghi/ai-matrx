@@ -449,6 +449,7 @@ export function AICodeEditor({
                   {extractFlatText(msg) ? (
                     <AnswerTextPreview
                       text={extractFlatText(msg)}
+                      streaming={false}
                       className="whitespace-pre-wrap break-words"
                     />
                   ) : (
@@ -464,6 +465,7 @@ export function AICodeEditor({
                   </div>
                   <AnswerTextPreview
                     text={streamingText}
+                    streaming
                     className="whitespace-pre-wrap break-words"
                   />
                 </div>

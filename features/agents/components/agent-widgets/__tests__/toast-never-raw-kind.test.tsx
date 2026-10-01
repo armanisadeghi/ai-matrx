@@ -10,12 +10,13 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let answer = "";
+let executing = false;
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (sel: () => unknown) => sel(),
 }));
 jest.mock("@/features/agents/redux/execution-system/selectors/aggregate.selectors", () => ({
   selectLatestAccumulatedText: () => () => answer,
-  selectIsExecuting: () => () => false,
+  selectIsExecuting: () => () => executing,
 }));
 jest.mock("@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({
   selectInstanceDisplayTitle: () => () => "Study helper",
@@ -53,9 +54,18 @@ describe("AgentToastOverlay (collapsed)", () => {
   });
   it("an arriving kind shows its loader, not its JSON", () => {
     answer = 'Here:\n```json\n{"__kind": "flashcard_set", "title": "Ce';
+    executing = true;
     const host = mount();
+    executing = false;
     expect(host.textContent).not.toContain("__kind");
     expect(host.querySelector('[data-kind-loader="flashcard_set"]')).not.toBeNull();
+  });
+  it("a kind that never finished shows its broken line once the run is over", () => {
+    answer = 'Here:\n```json\n{"__kind": "flashcard_set", "title": "Ce';
+    const host = mount();
+    expect(host.querySelector('[data-kind-loader]')).toBeNull();
+    expect(host.querySelector('[data-kind-broken="flashcard_set"]')).not.toBeNull();
+    expect(host.textContent).toContain("Flashcard set did not finish");
   });
   it("kindless text is unchanged", () => {
     answer = "All done.";

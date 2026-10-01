@@ -8,7 +8,7 @@
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import type { VoiceTurn } from "../types";
-import { kindTextPreview } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import { answerPreviewText } from "@/components/official/structured-value/AnswerTextPreview";
 
 interface VoiceTranscriptTurnProps {
   turn: VoiceTurn;
@@ -42,7 +42,7 @@ export function VoiceTranscriptTurn({ turn }: VoiceTranscriptTurnProps) {
         )}
       >
         {/* An assistant turn never reads out a kind's JSON (kind-never-raw S13). */}
-        {isUser ? visibleText : kindTextPreview(visibleText).text}
+        {isUser ? visibleText : answerPreviewText(visibleText, turn.status === "pending")}
         {turn.status === "pending" && (
           <span
             className="ml-1 inline-block h-4 w-[2px] -mb-0.5 bg-current align-middle opacity-60 motion-safe:animate-pulse"

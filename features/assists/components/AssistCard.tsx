@@ -295,6 +295,7 @@ export function AssistCard({
               fallback={
                 <AnswerTextPreview
                   text={assist.body}
+                  streaming={false}
                   className="whitespace-pre-wrap text-foreground"
                 />
               }

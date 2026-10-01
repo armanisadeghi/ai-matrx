@@ -18,9 +18,8 @@ import type { AgendaTask, SchRunRow } from "../../types";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
-import { kindTextPreview } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
-import { humanizeKind } from "@/features/content-ir/kinds/kind-markdown-utils";
+import { answerPreviewText } from "@/components/official/structured-value/AnswerTextPreview";
 
 interface Props {
   run: SchRunRow;
@@ -68,8 +67,7 @@ export function RunRow({ run, task = null }: Props) {
             {run.result_summary && (
               <span className="text-xs truncate max-w-[18rem]">
                 {/* A kind is never printed as JSON (kind-never-raw S10). */}
-                {kindTextPreview(run.result_summary).text ||
-                  humanizeKind(kindTextPreview(run.result_summary).pendingKind ?? "result")}
+                {answerPreviewText(run.result_summary, false)}
               </span>
             )}
           </div>

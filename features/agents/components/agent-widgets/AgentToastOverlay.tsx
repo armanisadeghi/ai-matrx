@@ -194,6 +194,7 @@ export function AgentToastOverlay({
           {text ? (
             <AnswerTextPreview
               text={text}
+              streaming={isExecuting}
               className="text-xs text-foreground leading-relaxed line-clamp-3"
             />
           ) : (

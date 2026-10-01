@@ -110,7 +110,8 @@ Every stream item below adds its case there.
 - [x] S2. Transcript cleanup pad edit mode. No change: the preview is `MarkdownStream`; the textarea is reached
       only by the explicit "Edit text" toggle (`CleanupOutput`) and edits the stored source text.
 - [x] S3. Toast overlay answers (raw text, reasoning included). Collapsed line now `AnswerTextPreview`
-      (complete kind → markdown, arriving kind → its loader line); expanded view was already `AgentRunner`.
+      (complete kind → markdown, arriving kind → its loader line while the caller's `streaming` is true, then a
+      one-line broken state "<Kind> did not finish"); expanded view was already `AgentRunner`.
 - [x] S4. AI code editor message list. `AnswerTextPreview` for text + stream, `AnswerValueView` for structured.
 - [ ] S5. Fully custom agent-app shells. PARTIAL — `response` into compiled app code is the app contract (left);
       the result bar's human copy converts with `kindTextToMarkdown`; `DefaultFallback` was already
