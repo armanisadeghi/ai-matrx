@@ -6,10 +6,12 @@ export default {
   items: ["A09"],
   description: "test@test.com's role in Cedar Ridge Physical Therapy is admin instead of member (clone, one run)",
   mode: "committed",
-  apply: `update iam.organization_member set role = 'admin'
-           where organization_id = '0a54df90-eab8-4d07-ab29-81a45fb41e04' and user_id = '4060701e-706a-4c76-b3ca-0bbc69fa5a14' and role = 'member';`,
-  restore: `update iam.organization_member set role = 'member'
-             where organization_id = '0a54df90-eab8-4d07-ab29-81a45fb41e04' and user_id = '4060701e-706a-4c76-b3ca-0bbc69fa5a14';`,
+  apply: `update iam.memberships set role = 'admin'
+           where container_type = 'organization' and organization_id = '0a54df90-eab8-4d07-ab29-81a45fb41e04'
+             and user_id = '4060701e-706a-4c76-b3ca-0bbc69fa5a14' and status = 'active' and deleted_at is null and role = 'member';`,
+  restore: `update iam.memberships set role = 'member'
+             where container_type = 'organization' and organization_id = '0a54df90-eab8-4d07-ab29-81a45fb41e04'
+               and user_id = '4060701e-706a-4c76-b3ca-0bbc69fa5a14' and status = 'active' and deleted_at is null;`,
   readback: `select role = 'member' from iam.organization_member
               where organization_id = '0a54df90-eab8-4d07-ab29-81a45fb41e04' and user_id = '4060701e-706a-4c76-b3ca-0bbc69fa5a14';`,
 };
