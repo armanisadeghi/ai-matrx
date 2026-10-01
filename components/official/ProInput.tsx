@@ -185,8 +185,10 @@ export interface ProInputProps extends React.InputHTMLAttributes<HTMLInputElemen
 // text the user is actively editing.
 function rightPaddingClass(hasSubmit: boolean, showClear: boolean): string {
   const count = (hasSubmit ? 1 : 0) + (showClear ? 1 : 0);
-  if (count === 2) return "pr-24";
-  if (count === 1) return "pr-11";
+  // One tap box each: the pill plus one gap, as `.matrx-tap-target` sizes it.
+  if (count === 2)
+    return "pr-[calc(2*(var(--matrx-tap-pill-size)+var(--matrx-tap-gap)))]";
+  if (count === 1) return "pr-[calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))]";
   return "pr-3";
 }
 
