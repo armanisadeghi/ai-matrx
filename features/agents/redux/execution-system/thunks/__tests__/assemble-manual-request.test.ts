@@ -281,7 +281,7 @@ describe("assembleManualRequest — live read contract", () => {
 
     expect(request?.user_input).toBe("Use the attached guide");
     expect(request?.context).toEqual({
-      "attached_file_file-123": {
+      "resource_file_file-123": {
         __kind: "resource_ref",
         resource_type: "file",
         resource_id: "file-123",

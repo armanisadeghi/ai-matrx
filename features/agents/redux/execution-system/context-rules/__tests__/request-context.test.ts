@@ -250,9 +250,9 @@ describe("an attached file reaches the server as the reference it resolves", () 
       },
     };
     const { rows, context } = build(state);
-    expect(rows[0]).toMatchObject({ key: "attached_file_f1", label: "Reference.pdf", origin: "attached" });
-    expect(context?.attached_file_f1).toMatchObject(ref);
-    expect((context?.attached_file_f1 as Record<string, unknown>).content).toBeUndefined();
+    expect(rows[0]).toMatchObject({ key: "resource_file_f1", label: "Reference.pdf", origin: "attached" });
+    expect(context?.resource_file_f1).toMatchObject(ref);
+    expect((context?.resource_file_f1 as Record<string, unknown>).content).toBeUndefined();
   });
 });
 

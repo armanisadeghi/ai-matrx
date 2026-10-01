@@ -374,7 +374,7 @@ describe("stored-file reference projection", () => {
     expect(
       contextSelector.resultFunc({ [resource.resourceId]: resource }),
     ).toEqual({
-      "attached_file_7f385f0f-86b0-4d46-b927-f24806b217f7": {
+      "resource_file_7f385f0f-86b0-4d46-b927-f24806b217f7": {
         __kind: "resource_ref",
         resource_type: "file",
         resource_id: "7f385f0f-86b0-4d46-b927-f24806b217f7",
@@ -396,7 +396,7 @@ describe("stored-file reference projection", () => {
     expect(
       contextSelector.resultFunc({ [resource.resourceId]: resource }),
     ).toEqual({
-      "attached_file_7f385f0f-86b0-4d46-b927-f24806b217f7": {
+      "resource_file_7f385f0f-86b0-4d46-b927-f24806b217f7": {
         __kind: "resource_ref",
         resource_type: "file",
         resource_id: "7f385f0f-86b0-4d46-b927-f24806b217f7",

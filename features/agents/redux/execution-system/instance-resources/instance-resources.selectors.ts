@@ -764,7 +764,10 @@ export const selectResourceContextPayload = (conversationId: string) =>
           invalidResource(resource, "stored file reference is missing file_id");
         }
         const policy = resource.options.resourcePolicy;
-        payload[`attached_file_${fileId}`] = createResourceReference(
+        // The file's ONE key for the conversation's life — the same key the
+        // server seeds it under from the durable edge on later turns, so the
+        // model never sees the attachment renamed between turns.
+        payload[`resource_file_${fileId}`] = createResourceReference(
           "file",
           fileId,
           {

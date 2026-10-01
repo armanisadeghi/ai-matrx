@@ -245,7 +245,7 @@ export function collectContextRowSources(
   // 2. Attached files (server-resolved resource references).
   const resourceContext = selectResourceContextPayload(conversationId)(state);
   for (const [key, value] of Object.entries(resourceContext ?? {})) {
-    const fileId = key.replace(/^attached_file_/, "");
+    const fileId = key.replace(/^resource_file_/, "");
     const page = surfaceLayer(key);
     byKey.set(key, {
       key,
