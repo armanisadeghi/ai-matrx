@@ -692,18 +692,18 @@ try {
   });
 
   // ── T06 rename a column ────────────────────────────────────────────────────────────────────────
-  await step(["T06"], "rename Patient Notes → Patient Comments; values stay", async () => {
-    await typeInto(R1, "Patient Notes", "Ice 10 minutes after the session");
-    const was = [await cellText(R1, "Patient Notes"), await cellText(R2, "Patient Notes")];
-    const d = await columnSettings("Patient Notes");
-    await d.locator("#col-name").fill("Patient Comments");
+  await step(["T06"], "rename Start Date → Program Start; its values stay", async () => {
+    // A column no earlier step changes the type of, so the rename is judged on its own.
+    const was = [await cellText(R1, "Start Date"), await cellText(R2, "Start Date")];
+    const d = await columnSettings("Start Date");
+    await d.locator("#col-name").fill("Program Start");
     await d.getByRole("button", { name: "Save", exact: true }).click();
     await sleep(4000);
     await open("?view=sheet", { needRows: true });
     await sheet();
     const hs = await headers();
-    const now = (await colIndex("Patient Comments")) >= 0 ? [await cellText(R1, "Patient Comments"), await cellText(R2, "Patient Comments")] : [];
-    return { ok: hs.includes("Patient Comments") && !hs.includes("Patient Notes") && JSON.stringify(now) === JSON.stringify(was) && /Ice 10 minutes/.test(was[0]), detail: `headers ${hs.join(", ").slice(0, 160)}; values before ${JSON.stringify(was)}, after ${JSON.stringify(now)}` };
+    const now = (await colIndex("Program Start")) >= 0 ? [await cellText(R1, "Program Start"), await cellText(R2, "Program Start")] : [];
+    return { ok: hs.includes("Program Start") && !hs.includes("Start Date") && JSON.stringify(now) === JSON.stringify(was) && /2026/.test(was[0]), detail: `headers ${hs.join(", ").slice(0, 160)}; values before ${JSON.stringify(was)}, after ${JSON.stringify(now)}` };
   });
 
   // ── T09 recolor a choice ───────────────────────────────────────────────────────────────────────
