@@ -26,7 +26,6 @@ import {
   type ContextRowSource,
   type ResolvedContextRow,
 } from "@ai-matrx/agents/context";
-import { formatText } from "@ai-matrx/kit/text-case";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   BASELINE_VALUES,
@@ -42,7 +41,6 @@ import {
   buildAmbientContext,
   isFirstTurn,
 } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
-import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
 import { selectSavedContextRuleRows } from "./context-rules.thunks";
 import { toContextReceipt } from "./receipt-check";
 import { resolveClientSurface } from "../utils/build-tool-injection";
@@ -82,6 +80,36 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function validLimit(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+/**
+ * A context key in words, EXACTLY as the server names a value nobody labelled
+ * (aidream `humanize_context_key`: `key.replace("_", " ").title()`), so the
+ * table before a send and the receipt after it never name one value two ways
+ * ("Note ID" here, "Note Id" in the receipt). Python's `str.title()`: a cased
+ * character is upper-cased after an uncased one and lower-cased after a cased
+ * one.
+ */
+export function humanizeContextKey(key: string): string {
+  let out = "";
+  let previousCased = false;
+  for (const ch of key.replace(/_/g, " ")) {
+    const lower = ch.toLowerCase();
+    const upper = ch.toUpperCase();
+    const cased = lower !== upper;
+    out += cased ? (previousCased ? lower : upper) : ch;
+    previousCased = cased;
+  }
+  return out;
+}
+
+/** A label someone wrote wins; a "label" that is the key itself is the key in words. */
+function rowLabel(key: string, ...written: Array<string | null | undefined>): string {
+  for (const label of written) {
+    const text = label?.trim();
+    if (text && text !== key) return text;
+  }
+  return humanizeContextKey(key) || key;
 }
 
 function attachedFileLabel(state: RootState, conversationId: string, fileId: string): string {
@@ -176,7 +204,7 @@ export function collectContextRowSources(
     const policy = policyFor(entry.key);
     byKey.set(entry.key, {
       key: entry.key,
-      label: contextEntryLabel(entry, policy?.label ?? declared?.label ?? null),
+      label: rowLabel(entry.key, policy?.label, declared?.label, entry.label),
       // The server keys a value to the surface whose manifest declares it,
       // and everything else to the person's "_default" row (RULES.md §3).
       surfaceKey: declared && surfaceName ? surfaceName : DEFAULT_SURFACE_KEY,
@@ -226,7 +254,7 @@ export function collectContextRowSources(
       const page = surfaceLayer(key);
       byKey.set(key, {
         key,
-        label: (declaredValue(key)?.label ?? formatText(key)) || key,
+        label: rowLabel(key, declaredValue(key)?.label),
         surfaceKey: page.surfaceKey,
         origin: "system",
         value,

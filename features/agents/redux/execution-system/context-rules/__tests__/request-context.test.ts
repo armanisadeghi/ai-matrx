@@ -405,3 +405,24 @@ describe("system values get the primary surface's page layer, as on the server",
     });
   });
 });
+
+// Break this catches: the composer's table naming a value one way ("Note ID",
+// the kit's acronym-aware reader) and the server's receipt another ("Note Id",
+// aidream `humanize_context_key` = `key.replace("_", " ").title()`).
+// Expected strings are what Python's str.title() returns for each key.
+describe("an unlabelled key reads exactly as the server names it", () => {
+  it.each([
+    ["note_id", "Note Id"],
+    ["route_brief", "Route Brief"],
+    ["url2pdf_source", "Url2Pdf Source"],
+    ["HTML_snapshot", "Html Snapshot"],
+  ])("%s → %s", (key, label) => {
+    const { rows } = build(makeState({ entries: [{ key, value: "v" }] }));
+    expect(rows[0]?.label).toBe(label);
+  });
+
+  it("a label someone wrote still wins", () => {
+    const { rows } = build(makeState({ entries: [{ key: "note_id", value: "v", label: "Meeting notes" }] }));
+    expect(rows[0]?.label).toBe("Meeting notes");
+  });
+});
