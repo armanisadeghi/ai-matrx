@@ -143,11 +143,11 @@ function StudyCell({ row }: { row: FlashcardSetListRow }) {
     // The row itself opens the deck; these two are their own doors, so their
     // clicks never also open the row.
     <span
-      className="flex items-center gap-0.5"
+      className="flex items-center"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Phone card: labelled one-tap buttons; the grid: icons + tooltips. */}
-      <span className="contents sm:hidden [&_a]:min-h-11 [&_a]:items-center">
+      <span className="contents sm:hidden">
         <PlayTapButton
           href={flashcardStudyHref(row)}
           variant="transparent"

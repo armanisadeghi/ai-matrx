@@ -441,11 +441,11 @@ export default function WorkbooksLandingPage() {
           </span>
         }
         right={
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center">
             {/* Desktop: full row of actions. Mobile: collapse Smart import +
                 Import behind one "More" sheet trigger — three icons plus a
                 solid pill overflowed past the avatar at 375px. */}
-            <div className="hidden sm:flex items-center gap-0.5">
+            <div className="hidden sm:flex items-center">
               <TapTargetButton
                 icon={<AGENT_ICON className="h-4 w-4" />}
                 ariaLabel="Smart import"
