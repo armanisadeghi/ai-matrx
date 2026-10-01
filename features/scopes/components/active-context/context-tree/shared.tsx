@@ -12,9 +12,21 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Plus } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import {
+  ensureScopeSkeleton,
+  ensureTypeScopes,
+  scopeSearchKey,
+  searchScopes,
+} from "@/features/scopes/redux/thunks/ensureScopeSkeleton";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  selectSkeletonError,
+  selectSkeletonStatus,
+  selectTypeCounts,
+  selectTypeScopesByType,
+} from "@/features/scopes/redux/selectors/tree";
 import {
   fetchAssignableProjects,
   fetchAssignableTasks,
@@ -22,7 +34,7 @@ import {
   type AssignableProject,
   type AssignableTask,
 } from "@/features/scopes/components/context-assignment/data";
-import type { ContextItemRow, OrgNode } from "@/features/scopes/types";
+import type { ContextItemRow, OrgNode, ScopeNode } from "@/features/scopes/types";
 
 /* ── data hook ────────────────────────────────────────────────────────── */
 
@@ -45,6 +57,24 @@ export interface ContextTreeData {
   itemsByType: Record<string, ContextItemRow[]>;
   itemsLoading: Set<string>;
   loadItems: (typeId: string) => void;
+  /**
+   * THE PAGED TREE (lane SCOPES-TREE-PAGED). Absent on a host that hands the tree in whole (the dense
+   * demo): then every type's `scopes` is complete and nothing is asked.
+   */
+  paged?: {
+    /** The whole tree is in: every type's `scopes` is complete and its count exact. */
+    whole: boolean;
+    /** type id → scopes she sees in it (from the store's count); absent = not counted yet. */
+    counts: Record<string, number>;
+    /** type id → its pages: loading, more to load, or a failure. */
+    pages: Record<string, { status: "loading" | "partial" | "complete" | "error"; error: string | null }>;
+    loadTypeScopes: (typeId: string, more?: boolean) => void;
+    /** Load the whole tree at once (expand-all). */
+    loadAll: () => void;
+    /** Ask the server for every scope whose name holds `q`; the answer arrives in `searchHits(q)`. */
+    search: (q: string) => void;
+    searchHits: (q: string) => { status: "loading" | "ready" | "error"; scopes: ScopeNode[] } | null;
+  };
 }
 
 /** @deprecated Use ContextTreeData — kept for dense-lab demo re-exports. */
@@ -52,7 +82,22 @@ export type DenseData = ContextTreeData;
 
 export function useContextTreeData(): ContextTreeData {
   const dispatch = useAppDispatch();
-  const { organizations, status, error } = useScopeTree();
+  const tree = useScopeTree();
+  const { organizations } = tree;
+  // First paint reads the skeleton (types, no scopes); "ready" means the types are in.
+  const skeletonStatus = useAppSelector(selectSkeletonStatus);
+  const skeletonError = useAppSelector(selectSkeletonError);
+  const whole = tree.status === "ready";
+  // Switch OFF (or before the skeleton is asked) the whole tree's own status is the answer.
+  const status: ReturnType<typeof useScopeTree>["status"] = whole
+    ? "ready"
+    : skeletonStatus === "idle"
+      ? tree.status
+      : skeletonStatus;
+  const error = whole ? null : (tree.error ?? skeletonError);
+  const counts = useAppSelector(selectTypeCounts);
+  const pages = useAppSelector(selectTypeScopesByType);
+  const scopeSearch = useAppSelector((s) => s.scopesTree.scopeSearch);
   const [projects, setProjects] = useState<AssignableProject[]>([]);
   const [projectsStatus, setProjectsStatus] = useState<LazyStatus>("idle");
   const [tasks, setTasks] = useState<AssignableTask[]>([]);
@@ -63,7 +108,7 @@ export function useContextTreeData(): ContextTreeData {
   const [itemsLoading, setItemsLoading] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    dispatch(ensureScopeTree({}));
+    void dispatch(ensureScopeSkeleton());
   }, [dispatch]);
 
   // Auth-hydration recovery: on a first visit right after login the Supabase
@@ -78,7 +123,7 @@ export function useContextTreeData(): ContextTreeData {
         console.warn(
           `[context-tree] scope tree errored ("${error}") — retry ${treeRetries.current}/3`,
         );
-        dispatch(ensureScopeTree({ refresh: true }));
+        void dispatch(ensureScopeSkeleton({ refresh: true }));
       },
       1200 * treeRetries.current + 800,
     );
@@ -140,6 +185,26 @@ export function useContextTreeData(): ContextTreeData {
     [itemsByType, itemsLoading],
   );
 
+  const loadTypeScopes = useCallback(
+    (typeId: string, more?: boolean) => {
+      void dispatch(ensureTypeScopes(typeId, { more }));
+    },
+    [dispatch],
+  );
+  const loadAll = useCallback(() => {
+    void dispatch(ensureScopeTree());
+  }, [dispatch]);
+  const search = useCallback(
+    (q: string) => {
+      void dispatch(searchScopes(q));
+    },
+    [dispatch],
+  );
+  const searchHits = useCallback(
+    (q: string) => scopeSearch[scopeSearchKey(q)] ?? null,
+    [scopeSearch],
+  );
+
   return {
     organizations,
     treeStatus: status,
@@ -153,6 +218,7 @@ export function useContextTreeData(): ContextTreeData {
     itemsByType,
     itemsLoading,
     loadItems,
+    paged: { whole, counts, pages, loadTypeScopes, loadAll, search, searchHits },
   };
 }
 

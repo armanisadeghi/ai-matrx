@@ -86,6 +86,22 @@ jest.mock("@/utils/supabase/client", () => {
               switch (door) {
                 case "context_tree":
                   return Promise.resolve({ data: TREE, error: null });
+                // The paged doors (lane SCOPES-TREE-PAGED) answer the same tree in pieces.
+                case "context_tree_types":
+                  return Promise.resolve({
+                    data: {
+                      types: TREE.types.map((t) =>
+                        args.p_with_counts
+                          ? { ...t, scope_count: TREE.scopes.filter((s) => s.scope_type_id === t.id).length }
+                          : t,
+                      ),
+                    },
+                    error: null,
+                  });
+                case "context_tree_type_scopes": {
+                  const of = TREE.scopes.filter((s) => s.scope_type_id === args.p_scope_type_id);
+                  return Promise.resolve({ data: { scopes: of, total: of.length, offset: 0, next_offset: null }, error: null });
+                }
                 case "context_scopes":
                   return Promise.resolve({
                     data: TREE.scopes

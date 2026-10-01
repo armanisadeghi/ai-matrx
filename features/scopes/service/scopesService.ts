@@ -59,7 +59,9 @@ import {
   readContextItems,
   readContextValues,
   readScopeTree,
+  readScopeTypes,
   readScopesById,
+  readTypeScopesPage,
 } from "@/features/scopes/service/storeScopeReads";
 import { oldTypeSlug, scopeTypeDisplayFromStore } from "@/features/scopes/service/storeScopeAdapter";
 import { whereANewTableIsBorn } from "@/features/data-tables/data-source/where-a-table-is-born";
@@ -279,7 +281,14 @@ export const scopesService = {
    * personal organization. Unscoped project rows are invalid under the current
    * tenancy contract.
    */
-  async getScopeTree(): Promise<ScopesRpcResult<ScopeTreeResponse>> {
+  async getScopeTree(
+    opts: { shape?: "whole" | "skeleton" } = {},
+  ): Promise<ScopesRpcResult<ScopeTreeResponse>> {
+    // SKELETON (lane SCOPES-TREE-PAGED, read switch ON only): the same organizations and projects,
+    // and the scope types WITHOUT their scopes (`scopes: []`) — the first paint. The scopes come per
+    // type (`readTypeScopesPage`) or with the whole tree later. Switch OFF: the old read is one fast
+    // answer, so the skeleton IS the whole tree there.
+    const skeleton = opts.shape === "skeleton" && scopesReadFromStore();
     try {
       requireUserId();
 
@@ -360,7 +369,9 @@ export const scopesService = {
         projectScopesRes = await bulkEntityScopeIds("project", projectIds);
       } else {
         const [treeRes, projectRes] = await Promise.all([
-          readScopeTree(liveOrgIds),
+          skeleton
+            ? readScopeTypes(liveOrgIds, false)
+            : readScopeTree(liveOrgIds),
           bulkEntityScopeIds("project", projectIds),
         ]);
         if (isScopesRpcErr(treeRes)) return treeRes;
@@ -852,7 +863,8 @@ export const scopesService = {
         if (error) return err(...mapPgErrorPair(error));
         return ok({ types: data ?? [] });
       }
-      const res = await readScopeTree([organizationId]);
+      // The types only (lane SCOPES-TREE-PAGED): this list never needed the scopes.
+      const res = await readScopeTypes([organizationId], false);
       if (!res.ok) return res;
       const types = res.data.types
         .map((t) => ({
@@ -892,9 +904,16 @@ export const scopesService = {
         if (error) return err(...mapPgErrorPair(error));
         return ok({ scopes: data ?? [] });
       }
-      const res = await readScopeTree([organizationId]);
-      if (!res.ok) return res;
-      const scopes = (res.data.types.find((t) => t.id === scopeTypeId)?.scopes ?? [])
+      // This one type's scopes, every page (lane SCOPES-TREE-PAGED), never the organization's whole tree.
+      const all = [];
+      let offset: number | null = 0;
+      while (offset !== null) {
+        const page = await readTypeScopesPage(scopeTypeId, offset, 1000);
+        if (!page.ok) return page;
+        all.push(...page.data.scopes.filter((s) => s.organization_id === organizationId));
+        offset = page.data.nextOffset;
+      }
+      const scopes = all
         .map((s) => ({ id: s.id, name: s.name, parent_scope_id: s.parent_scope_id, scope_type_id: s.scope_type_id }))
         .sort((a, b) => a.name.localeCompare(b.name));
       return ok({ scopes });

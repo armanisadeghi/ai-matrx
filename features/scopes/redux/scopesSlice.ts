@@ -76,6 +76,42 @@ export interface ScopesState {
    * `ensureScopeTypeItems`; session-scoped (not persisted).
    */
   contextItemsByTypeId: Record<string, ContextItemsEntry>;
+
+  // ─── THE PAGED TREE (lane SCOPES-TREE-PAGED) ────────────────────
+  //
+  // `treeStatus` keeps its meaning — THE WHOLE TREE is loaded — so every reader that waits on it
+  // (ScopeNotFound, ReadGate, the pickers) still waits for every scope. The first paint reads the
+  // SKELETON instead: the organizations, projects and scope types with no scopes yet
+  // (`skeletonStatus`), then each type's count, then a type's scopes a page at a time when a screen
+  // opens it. Once the whole tree lands it replaces all of it.
+  skeletonStatus: "idle" | "loading" | "ready" | "error";
+  skeletonError: string | null;
+  /** type id → how many scopes the person sees in it (counted by the store, before its scopes load). */
+  typeCounts: Record<string, number>;
+  /** type id → how far that type's scopes are loaded, page by page (absent = none asked yet). */
+  typeScopes: Record<string, TypeScopesEntry>;
+  /** trimmed lower-cased query → the server's search answer over every scope of her organizations. */
+  scopeSearch: Record<string, ScopeSearchEntry>;
+  /** True while `organizations` came from the skeleton (some types' scopes not loaded). Not persisted. */
+  orgsAreSkeleton: boolean;
+  /** PERSISTED MARKER ONLY: false on a cache written from the skeleton, before the whole tree landed. */
+  treeComplete?: boolean;
+}
+
+export interface TypeScopesEntry {
+  status: "loading" | "partial" | "complete" | "error";
+  /** Scopes of the type the person sees, as the store counted them on the last page. */
+  total: number | null;
+  /** Where the next page starts; null when every scope of the type is loaded. */
+  nextOffset: number | null;
+  error: string | null;
+}
+
+export interface ScopeSearchEntry {
+  status: "loading" | "ready" | "error";
+  scopes: ScopeNode[];
+  total: number;
+  error: string | null;
 }
 
 const initialState: ScopesState = {
@@ -90,6 +126,12 @@ const initialState: ScopesState = {
   orphanProjectsByOrg: {},
   entityScopesByKey: {},
   contextItemsByTypeId: {},
+  skeletonStatus: "idle",
+  skeletonError: null,
+  orgsAreSkeleton: false,
+  typeCounts: {},
+  typeScopes: {},
+  scopeSearch: {},
 };
 
 const scopesSlice = createSlice({
@@ -132,6 +174,138 @@ const scopesSlice = createSlice({
       state.treeStatus = "ready";
       state.treeError = null;
       state.treeFetchedAt = new Date(fetched_at).getTime();
+      // The whole tree answers every paged question: every type complete, every count exact.
+      state.skeletonStatus = "ready";
+      state.skeletonError = null;
+      state.typeCounts = {};
+      for (const org of organizations) {
+        for (const t of org.scope_types ?? []) state.typeCounts[t.id] = (t.scopes ?? []).length;
+      }
+      state.typeScopes = {};
+      state.orgsAreSkeleton = false;
+    },
+
+    // ─── The skeleton (lane SCOPES-TREE-PAGED) ────────────────────
+    skeletonFetchPending(state) {
+      if (state.skeletonStatus === "ready") return;
+      state.skeletonStatus = "loading";
+      state.skeletonError = null;
+    },
+    skeletonFetchFulfilled(state, action: PayloadAction<ScopeTreeResponse>) {
+      state.skeletonStatus = "ready";
+      state.skeletonError = null;
+      // The whole tree already landed (or a warm cache restored it): it is the better answer.
+      if (state.treeStatus === "ready") return;
+      const kept = new Map<string, ScopeNode[]>();
+      for (const id of state.organizationIds) {
+        for (const t of state.organizations[id]?.scope_types ?? []) kept.set(t.id, t.scopes);
+      }
+      const adminLane = (state.adminLaneOrganizationIds ?? [])
+        .map((id) => state.organizations[id])
+        .filter((o): o is OrgNode => !!o);
+      state.organizations = {};
+      state.organizationIds = [];
+      state.orgsAreSkeleton = true;
+      const seen = new Set<string>();
+      for (const org of action.payload.organizations) {
+        if (seen.has(org.id)) continue;
+        seen.add(org.id);
+        state.organizations[org.id] = {
+          ...org,
+          // A type page that already loaded keeps its scopes.
+          scope_types: org.scope_types.map((t) => ({ ...t, scopes: kept.get(t.id) ?? t.scopes })),
+        };
+        state.organizationIds.push(org.id);
+      }
+      for (const org of adminLane) {
+        if (seen.has(org.id)) continue;
+        state.organizations[org.id] = org;
+      }
+    },
+    skeletonFetchRejected(state, action: PayloadAction<string>) {
+      if (state.skeletonStatus === "ready") return;
+      state.skeletonStatus = "error";
+      state.skeletonError = action.payload;
+    },
+    typeCountsFulfilled(state, action: PayloadAction<Record<string, number>>) {
+      if (state.treeStatus === "ready") return;
+      Object.assign(state.typeCounts, action.payload);
+    },
+    typeScopesPending(state, action: PayloadAction<{ scopeTypeId: string }>) {
+      const prev = state.typeScopes[action.payload.scopeTypeId];
+      state.typeScopes[action.payload.scopeTypeId] = {
+        status: "loading",
+        total: prev?.total ?? null,
+        nextOffset: prev?.nextOffset ?? 0,
+        error: null,
+      };
+    },
+    typeScopesPageFulfilled(
+      state,
+      action: PayloadAction<{
+        organizationId: string;
+        scopeTypeId: string;
+        offset: number;
+        scopes: ScopeNode[];
+        total: number;
+        nextOffset: number | null;
+      }>,
+    ) {
+      const { organizationId, scopeTypeId, offset, scopes, total, nextOffset } = action.payload;
+      if (state.treeStatus === "ready") {
+        delete state.typeScopes[scopeTypeId];
+        return;
+      }
+      const type = state.organizations[organizationId]?.scope_types.find((t) => t.id === scopeTypeId);
+      if (type) {
+        const base = offset === 0 ? [] : type.scopes;
+        const ids = new Set(base.map((x) => x.id));
+        type.scopes = [...base, ...scopes.filter((x) => !ids.has(x.id))];
+      }
+      state.typeCounts[scopeTypeId] = total;
+      state.typeScopes[scopeTypeId] = {
+        status: nextOffset === null ? "complete" : "partial",
+        total,
+        nextOffset,
+        error: null,
+      };
+    },
+    typeScopesRejected(state, action: PayloadAction<{ scopeTypeId: string; error: string }>) {
+      const prev = state.typeScopes[action.payload.scopeTypeId];
+      state.typeScopes[action.payload.scopeTypeId] = {
+        status: "error",
+        total: prev?.total ?? null,
+        nextOffset: prev?.nextOffset ?? 0,
+        error: action.payload.error,
+      };
+    },
+    scopeSearchPending(state, action: PayloadAction<{ key: string }>) {
+      const prev = state.scopeSearch[action.payload.key];
+      state.scopeSearch[action.payload.key] = {
+        status: "loading",
+        scopes: prev?.scopes ?? [],
+        total: prev?.total ?? 0,
+        error: null,
+      };
+    },
+    scopeSearchFulfilled(
+      state,
+      action: PayloadAction<{ key: string; scopes: ScopeNode[]; total: number }>,
+    ) {
+      state.scopeSearch[action.payload.key] = {
+        status: "ready",
+        scopes: action.payload.scopes,
+        total: action.payload.total,
+        error: null,
+      };
+    },
+    scopeSearchRejected(state, action: PayloadAction<{ key: string; error: string }>) {
+      state.scopeSearch[action.payload.key] = {
+        status: "error",
+        scopes: [],
+        total: 0,
+        error: action.payload.error,
+      };
     },
     treeFetchRejected(state, action: PayloadAction<string>) {
       state.treeStatus = "error";
@@ -435,6 +609,9 @@ const scopesSlice = createSlice({
       const loaded = action.payload.state as Partial<ScopesState> | undefined;
       const orgs = loaded?.organizations;
       if (!orgs) return;
+      // A cache written from the SKELETON (types without their scopes) is not the tree: adopting it
+      // as "ready" would show every type empty. Boot cold instead (lane SCOPES-TREE-PAGED).
+      if (loaded?.treeComplete === false) return;
       const ids = Object.keys(orgs);
       if (ids.length === 0) return;
       if (state.treeStatus === "loading") {
@@ -453,6 +630,7 @@ const scopesSlice = createSlice({
       state.treeStatus = "ready";
       state.treeError = null;
       state.treeFetchedAt = loaded?.treeFetchedAt ?? Date.now();
+      state.skeletonStatus = "ready";
     });
   },
 });
@@ -495,7 +673,8 @@ export const scopesTreePolicy = definePolicy<ScopesState>({
   // console's fields (scope type slug / description / timestamps; scope slug /
   // sort_order / created_by / timestamps — lane SCOPE-ADMIN-CANONICAL). An
   // older cache lacks them, so it is discarded rather than shown slug-less.
-  version: 4,
+  // v5 (lane SCOPES-TREE-PAGED) records whether the cached tree is the WHOLE tree (`treeComplete`).
+  version: 5,
   broadcast: {
     actions: ["scopesTree/treeFetchFulfilled", "scopesTree/scopesReset"],
   },
@@ -520,6 +699,7 @@ export const scopesTreePolicy = definePolicy<ScopesState>({
       organizations: own,
       organizationIds: state.organizationIds,
       treeFetchedAt: state.treeFetchedAt,
+      treeComplete: !state.orgsAreSkeleton,
     };
   },
   deserialize: (raw) => {
@@ -536,6 +716,7 @@ export const scopesTreePolicy = definePolicy<ScopesState>({
         : ids,
       treeFetchedAt:
         typeof r.treeFetchedAt === "number" ? r.treeFetchedAt : null,
+      ...(r.treeComplete === false ? { treeComplete: false } : {}),
     };
   },
 });

@@ -41,6 +41,7 @@ import {
   type ContextTreeData,
 } from "./shared";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { ScopeNode } from "@/features/scopes/types";
 
 export type ContextTreeCreateLevel =
   "scope type" | "scope" | "context item" | "project" | "task";
@@ -70,6 +71,8 @@ interface TreeRow {
   tag?: string;
   isCreate?: boolean;
   onCreate?: () => void;
+  /** A command row (e.g. "Show 200 more"): a click runs it. */
+  onActivate?: () => void;
   add?: { placeholder: string; commit: (v: string) => void };
 }
 
@@ -142,6 +145,32 @@ export function ContextTree({
 
   const q = query.trim().toLowerCase();
 
+  // THE PAGED TREE (lane SCOPES-TREE-PAGED): while the whole tree is not in, a search asks the server
+  // over every scope (debounced), and its hits join the scopes already loaded below.
+  const paged = data.paged;
+  const searchFn = paged?.search;
+  const pagedWhole = paged?.whole ?? true;
+  useEffect(() => {
+    if (!q || pagedWhole || !searchFn) return;
+    const h = setTimeout(() => searchFn(q), 200);
+    return () => clearTimeout(h);
+  }, [q, pagedWhole, searchFn]);
+  const hits = q && paged && !paged.whole ? paged.searchHits(q) : null;
+  /** A type's scopes for this render: the loaded ones, plus the server's search hits for the type. */
+  const scopesOf = (t: { id: string; scopes: ScopeNode[] }): ScopeNode[] => {
+    if (!hits || hits.scopes.length === 0) return t.scopes;
+    const extra = hits.scopes.filter((s) => s.scope_type_id === t.id);
+    if (extra.length === 0) return t.scopes;
+    const ids = new Set(t.scopes.map((s) => s.id));
+    return [...t.scopes, ...extra.filter((s) => !ids.has(s.id))];
+  };
+  /** The number a type row shows: exact when known, an honest dash while the store counts. */
+  const countOf = (t: { id: string; scopes: ScopeNode[] }): string => {
+    if (!paged || paged.whole) return String(t.scopes.length);
+    const n = paged.counts[t.id];
+    return n === undefined ? "—" : String(n);
+  };
+
   const flip = (key: string, open?: boolean) =>
     setExpanded((p) => {
       const n = new Set(p);
@@ -151,7 +180,9 @@ export function ContextTree({
       return n;
     });
 
-  const expandAll = () =>
+  const expandAll = () => {
+    // Every type open needs every type's scopes: ONE whole-tree read, never a page per type.
+    if (data.paged && !data.paged.whole) data.paged.loadAll();
     setExpanded(() => {
       const n = new Set<string>();
       for (const o of data.organizations) {
@@ -162,6 +193,7 @@ export function ContextTree({
       // costs a fetch each, and expand-all must never fire N requests.
       return n;
     });
+  };
   const collapseAll = () => setExpanded(new Set());
 
   /* ── visible rows ──────────────────────────────────────────────────── */
@@ -194,7 +226,7 @@ export function ContextTree({
               tone: cn("font-medium", c.fg),
               tag: o.name,
             });
-          for (const s of t.scopes) {
+          for (const s of scopesOf(t)) {
             if (s.name.toLowerCase().includes(q))
               out.push({
                 key: `scope:${s.id}`,
@@ -300,11 +332,21 @@ export function ContextTree({
           icon: React.createElement(resolveIcon(t.icon), {
             className: cn("h-3 w-3 shrink-0", c.fg),
           }),
-          meta: String(t.scopes.length),
+          meta: countOf(t),
           expandKey: tKey,
           expandable: true,
+          loading: tOpen && paged?.pages[t.id]?.status === "loading",
         });
         if (!tOpen) continue;
+        const page = paged && !paged.whole ? paged.pages[t.id] : undefined;
+        if (page?.status === "error") {
+          out.push({
+            key: `${tKey}:error`,
+            depth: 2,
+            label: `Couldn't load these ${t.label_plural.toLowerCase()}: ${page.error ?? "unknown error"}`,
+            tone: "text-destructive",
+          });
+        }
         for (const s of t.scopes) {
           const sKey = `scope:${s.id}`;
           const sOpen = expanded.has(sKey);
@@ -350,6 +392,20 @@ export function ContextTree({
               },
             });
           }
+        }
+        // A type with more scopes than one page: the next page on demand, never a silent cut.
+        if (page?.status === "partial" && paged) {
+          const total = paged.counts[t.id];
+          out.push({
+            key: `${tKey}:more`,
+            depth: 2,
+            label:
+              total !== undefined
+                ? `Show more (${t.scopes.length} of ${total})`
+                : "Show more",
+            tone: "text-primary",
+            onActivate: () => paged.loadTypeScopes(t.id, true),
+          });
         }
         if (allowCreate && onCreate) {
           out.push({
@@ -503,7 +559,7 @@ export function ContextTree({
         });
     }
     return out;
-  }, [allowCreate, data, expanded, onCreate, q, query, selection]);
+  }, [allowCreate, data, expanded, onCreate, q, query, selection, hits]);
 
   const activeIdx = Math.min(active, Math.max(0, rows.length - 1));
 
@@ -515,6 +571,7 @@ export function ContextTree({
     if (willOpen) {
       if (r.expandKey === "sec:projects") data.loadProjects();
       if (r.expandKey === "sec:tasks") data.loadTasks();
+      if (r.kind === "type" && r.id) data.paged?.loadTypeScopes(r.id);
       if (r.kind === "scope" && r.id) {
         const type = data.organizations
           .flatMap((o) => o.scope_types)
@@ -535,6 +592,7 @@ export function ContextTree({
   /** Row click: drill if expandable, select if leaf. Checkbox always selects. */
   const onRowClick = (r: TreeRow) => {
     if (r.isCreate) return r.onCreate?.();
+    if (r.onActivate) return r.onActivate();
     if (r.expandable) doExpand(r);
     else doSelect(r, true);
   };

@@ -34,6 +34,7 @@ import AdminAttentionDock from "@/features/admin/attention/AdminAttentionDock";
 import { FirstSignInAgeGateMount } from "@/features/education/compliance/FirstSignInAgeGateMount";
 import { DailySpendPopoverMount } from "@/features/admin/spend/DailySpendPopoverMount";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { ensureScopeSkeleton } from "@/features/scopes/redux/thunks/ensureScopeSkeleton";
 import { registerBlobCacheServiceWorker } from "@/features/files/cache/register-service-worker";
 import { resolveBaseUrl } from "@/lib/python-client";
 import { fetchEntitlementSnapshot } from "@/features/entitlements/service";
@@ -58,7 +59,15 @@ export default function DeferredSingletonCore() {
   // boot-time fetch in the scope/context system. `ensureScopeTree` is
   // idempotent — status === "ready" short-circuits and in-flight is
   // deduped inside the thunk.
+  // THE PAGED TREE (lane SCOPES-TREE-PAGED): the skeleton first (organizations, projects, scope
+  // types — what every first paint draws), then the whole tree at idle for the readers that still
+  // read every scope. Read switch OFF: the skeleton IS the whole tree and the second task is a no-op.
   useIdleTask("ensure-scope-tree", 1, async () => {
+    if (!user?.id) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await dispatch(ensureScopeSkeleton() as any);
+  });
+  useIdleTask("ensure-scope-tree-whole", 5, async () => {
     if (!user?.id) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dispatch(ensureScopeTree() as any);

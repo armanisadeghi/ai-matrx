@@ -356,3 +356,65 @@ export const selectAllEntityScopeAssignmentsFlat = createSelector(
     return out;
   },
 );
+
+// ─── The paged tree (lane SCOPES-TREE-PAGED) ──────────────────────
+
+/** The first paint: organizations, projects and scope types are in (their scopes may not be). */
+export const selectSkeletonStatus = createSelector(selectScopesSlice, (s) => s.skeletonStatus);
+
+export const selectSkeletonError = createSelector(selectScopesSlice, (s) => s.skeletonError);
+
+export type TypeScopesState = {
+  status: "idle" | "loading" | "partial" | "complete" | "error";
+  /** Scopes she sees in the type; null while unknown (never a false 0). */
+  total: number | null;
+  /** True when another page can be asked (`ensureTypeScopes(id, { more: true })`). */
+  hasMore: boolean;
+  error: string | null;
+};
+
+const IDLE_TYPE: TypeScopesState = { status: "idle", total: null, hasMore: false, error: null };
+
+/** How far one type's scopes are loaded. The whole tree loaded = complete, with its exact count. */
+export const makeSelectTypeScopesState = () =>
+  createSelector(
+    (state: RootState) => state.scopesTree.treeStatus,
+    (state: RootState) => state.scopesTree.typeScopes,
+    (state: RootState) => state.scopesTree.typeCounts,
+    (_: RootState, scopeTypeId: string | null | undefined) => scopeTypeId,
+    (treeStatus, byType, counts, id): TypeScopesState => {
+      if (!id) return IDLE_TYPE;
+      const total = counts[id] ?? null;
+      if (treeStatus === "ready") return { status: "complete", total, hasMore: false, error: null };
+      const e = byType[id];
+      if (!e) return total === null ? IDLE_TYPE : { ...IDLE_TYPE, total };
+      return {
+        status: e.status,
+        total: e.total ?? total,
+        hasMore: e.status === "partial" && e.nextOffset !== null,
+        error: e.error,
+      };
+    },
+  );
+
+/** One type's count of scopes she sees; null while unknown. */
+export const makeSelectTypeCount = () =>
+  createSelector(
+    (state: RootState) => state.scopesTree.typeCounts,
+    (_: RootState, scopeTypeId: string | null | undefined) => scopeTypeId,
+    (counts, id): number | null => (id ? (counts[id] ?? null) : null),
+  );
+
+/** Every type's known count (type id → count). */
+export const selectTypeCounts = createSelector(selectScopesSlice, (s) => s.typeCounts);
+
+/** Every type's page state (type id → entry), for a list that renders many types at once. */
+export const selectTypeScopesByType = createSelector(selectScopesSlice, (s) => s.typeScopes);
+
+/** The server's search answer for one key (`scopeSearchKey(query)`), or null when never asked. */
+export const makeSelectScopeSearch = () =>
+  createSelector(
+    (state: RootState) => state.scopesTree.scopeSearch,
+    (_: RootState, key: string) => key,
+    (byKey, key) => byKey[key] ?? null,
+  );
