@@ -5,7 +5,10 @@
 //
 //   the empty group   the Dimension's declared `empty_label` ("No embedding (nothing new to embed)"),
 //                     else the host resolver's, else "None"
-//   a choice code     the Dimension's declared `choices` label (describe carries them)
+//   a choice code     the Dimension's declared `choices` label (describe carries them) — before any
+//                     host or door name: the definition is the one place a code gets its words
+//                     (lane DRILL-CLOSE: `sch_run` reads "Scheduled run" even on a Dimension whose
+//                     other codes the names door reads, e.g. a usage feature)
 //   a relation id     the door's own `labels` on the answer (read as the seat through the target's
 //                     row security — organizations, workflows, agents, models), else the host's name
 //                     resolver (a person's name comes from the platform's names door, because the
@@ -92,7 +95,7 @@ export function drillDimensionLabelFor(
   }
   return (value) => {
     if (value === null || value === "") return empty;
-    const said = names?.[value] ?? choices.get(value);
+    const said = choices.get(value) ?? names?.[value];
     if (said) return said;
     // a time-valued code (a ten-minute bucket) is a moment, never a code in plain words (R3)
     const moment = dim.kind === "relation" ? null : momentGroupWords(value);

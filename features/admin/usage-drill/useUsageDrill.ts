@@ -18,6 +18,8 @@ import type { DrillSource } from "@ai-matrx/records";
 import { supabase } from "@/utils/supabase/client";
 import type { DrillExplorerFreshness, DrillNameResolver } from "@/components/official/drill-explorer/types";
 
+import { plainWords } from "@/components/official/drill-explorer/dimensionWords";
+
 import { UNNAMED } from "./usageWords";
 
 export const USAGE_SOURCE: DrillSource = { kind: "entity", token: "ai_usage" };
@@ -30,7 +32,15 @@ export const USAGE_SOURCE: DrillSource = { kind: "entity", token: "ai_usage" };
  * door's `request` part is applied (PROGRESS-DRILL-PRESETS-RETIRE, owner apply); until then every
  * request says it could not be read, never its id.
  */
-export const NAMED_DIMENSIONS = ["organization", "person", "agent", "session", "request"] as const;
+export const NAMED_DIMENSIONS = ["organization", "person", "agent", "session", "request", "feature"] as const;
+/**
+ * A FEATURE is a code, not an id (lane DRILL-CLOSE, VERIFY-DRILL-FINAL "raw feature codes"): the door's
+ * `feature` part reads it in its registry's words — a mandate as the mandate's own declared name, an
+ * agent service as its agent — (migrations/campaign/drillclose_a_feature_code_reads_as_its_registry_words.sql);
+ * a code no registry names, or every code before that part is applied, reads in plain words. A code the
+ * definition declares (`sch_run`) reads as its declared choice first (dimensionWords.ts).
+ */
+const PLAIN_WORDS_DIMENSIONS: ReadonlySet<string> = new Set(["feature"]);
 const STALE_AFTER_MS = 10 * 60_000;
 /** The recount door refuses more than this many days at a time. */
 const RECOUNT_MAX_DAYS = 100;
@@ -50,20 +60,21 @@ function stringMap(value: unknown): Record<string, string> {
 export function usageNameResolver(organizationId: string, dimension: (typeof NAMED_DIMENSIONS)[number]): DrillNameResolver {
   return {
     emptyLabel:
-      dimension === "person" ? "No person" : dimension === "agent" ? "No agent" : dimension === "session" ? "No session" : dimension === "request" ? "No request" : "No organization",
+      dimension === "person" ? "No person" : dimension === "agent" ? "No agent" : dimension === "session" ? "No session" : dimension === "request" ? "No request" : dimension === "feature" ? "No feature recorded" : "No organization",
     missingLabel: "Reading the name…",
     unreadLabel: UNNAMED[dimension],
     resolve: async (ids) => {
       const { data, error } = await supabase
         .schema("platform")
-        .rpc("ai_usage_names", { p_organization_id: organizationId, p_ids: { organization: [], person: [], agent: [], session: [], request: [], [dimension]: ids } });
+        .rpc("ai_usage_names", { p_organization_id: organizationId, p_ids: { organization: [], person: [], agent: [], session: [], request: [], feature: [], [dimension]: ids } });
       // A door that fails (a timeout on many sign-in sessions) names every id "could not be read" — the
       // cell never keeps saying "Reading the name…" after the read is over.
-      if (error) return { ok: true, names: Object.fromEntries(ids.map((id) => [id, UNNAMED[dimension]])) };
+      const unnamed = (id: string) => (PLAIN_WORDS_DIMENSIONS.has(dimension) ? plainWords(id) : UNNAMED[dimension]);
+      if (error) return { ok: true, names: Object.fromEntries(ids.map((id) => [id, unnamed(id)])) };
       // Every id asked comes back with words: its name, or — when the door could not name it — a
       // sentence, never the id (VERIFIER-32 F5).
       const found = stringMap(isRecord(data) ? data[dimension] : null);
-      return { ok: true, names: Object.fromEntries(ids.map((id) => [id, found[id] ?? UNNAMED[dimension]])) };
+      return { ok: true, names: Object.fromEntries(ids.map((id) => [id, found[id] ?? unnamed(id)])) };
     },
   };
 }
