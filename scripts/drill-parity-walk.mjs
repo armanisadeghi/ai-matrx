@@ -5,12 +5,12 @@
 // latest active hour as a date (never a raw number); "Most expensive requests" shows Tool calls; a
 // request's records carry its finish reason and tool calls. Nothing is saved, pressed or written.
 //
-//   ORIGIN=http://drillparity-clone.localhost:3002 node scripts/drill-parity-walk.mjs
+//   ORIGIN=http://drillparity.localhost:3001 node scripts/drill-parity-walk.mjs
 import { chromium } from "playwright";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 
-const ORIGIN = process.env.ORIGIN ?? "http://drillparity-clone.localhost:3002";
+const ORIGIN = process.env.ORIGIN ?? "http://drillparity.localhost:3001";
 const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-parity";
 mkdirSync(SHOTS, { recursive: true });
 const out = { origin: ORIGIN, started: new Date().toISOString(), checks: [], console_errors: [], frictions: [] };
@@ -33,7 +33,7 @@ const check = (name, ok, detail) => {
 };
 
 try {
-  // the clone preview signs in through its own nonce (`pnpm dev-login --clone`, URL in DEV_LOGIN_URL);
+  // the one server (clone mode) signs in through its own nonce (`pnpm dev-login`, URL in DEV_LOGIN_URL);
   // otherwise through the login form
   if (process.env.DEV_LOGIN_URL) {
     await page.goto(process.env.DEV_LOGIN_URL, { waitUntil: "domcontentloaded", timeout: 240000 });

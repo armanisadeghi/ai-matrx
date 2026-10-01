@@ -11,7 +11,7 @@
 //   /workflows/runs/analyze                      the mine lane says "Your runs across all your organizations"
 // Each screen: no id, no code, no "(ms)" / "(0 to 1)" label; 390 px without sideways scroll; dark.
 //
-//   ORIGIN=http://drillgaps-clone.localhost:3002 LABEL=clone node scripts/drill-gaps-walk.mjs
+//   ORIGIN=http://drillgaps.localhost:3001 LABEL=clone node scripts/drill-gaps-walk.mjs
 //     the CLONE preview: the door and the definitions are rehearsed there, so the answers are real
 //   ORIGIN=http://drillgaps.localhost:3001 LABEL=live node scripts/drill-gaps-walk.mjs
 //     the LIVE preview: until the files are on production the mounts say the door's refusal
@@ -19,7 +19,7 @@ import { chromium } from "playwright";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { signIn, until, sleep, setOrganization } from "./lib/seat-browser.mjs";
 
-const ORIGIN = process.env.ORIGIN ?? "http://drillgaps-clone.localhost:3002";
+const ORIGIN = process.env.ORIGIN ?? "http://drillgaps.localhost:3001";
 const LABEL = process.env.LABEL ?? "clone";
 const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-gaps";
 mkdirSync(SHOTS, { recursive: true });

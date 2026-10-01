@@ -7,7 +7,7 @@
 // kept by the app); the organization filter reads "All organizations"; a table from an
 // organization OTHER than the one the seat works in can be chosen and its preview reads rows.
 //
-//   VP_ORIGIN=http://<session>-clone.localhost:3002 VP_EMAIL=… VP_PASSWORD=… VP_AGENT=<agent id>
+//   VP_ORIGIN=http://<session>.localhost:3001 VP_EMAIL=… VP_PASSWORD=… VP_AGENT=<agent id>
 //   VP_EXPECT=<data home non-kept count> VP_OTHER_TABLE="<table name>" VP_SHOTS=<dir> VP_SEAT=admin
 //     node scripts/org-filter/variables-picker-seat-walk.mjs
 //

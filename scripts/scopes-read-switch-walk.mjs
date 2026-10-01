@@ -6,14 +6,14 @@
 // draws in an input, not as text), every button's name, the addresses of every link, the time the
 // screen took to settle, and a screenshot.
 //
-//   READ_PATH=old|store SEAT=admin|member WIDTH=1600|390 ORIGIN=http://<you>-clone.localhost:3002 \
+//   READ_PATH=old|store SEAT=admin|member WIDTH=1600|390 ORIGIN=http://<you>.localhost:3001 \
 //     SEAT_PASSWORD=… node scripts/scopes-read-switch-walk.mjs
 //
 // Read-only: it opens pages and panels and never writes. Output:
 // common-docs/operations/for-arman/2026-09-30/scopes-read-switch/<path>/<seat>-<width>-*.{png,json}
 
 import { chromium } from "playwright";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 
@@ -21,7 +21,14 @@ const ORIGIN = process.env.ORIGIN;
 const PATH = process.env.READ_PATH ?? "old";
 const SEAT = process.env.SEAT ?? "admin";
 const WIDTH = Number(process.env.WIDTH ?? 1600);
-if (!ORIGIN || !/:3002|clone/.test(ORIGIN)) throw new Error("ORIGIN must be the clone preview (never the live one)");
+// The one dev server's database is a mode; its lease names it. Never walk against live.
+const LEASE = join(
+  process.env.MATRX_PREVIEW_STATE_DIR ?? join(process.env.TMPDIR ?? "/tmp", `matrx-frontend-preview-${process.getuid()}`),
+  "shared-next-dev.meta",
+);
+const SERVER_MODE = existsSync(LEASE) ? (/^MODE=(\w+)$/m.exec(readFileSync(LEASE, "utf8"))?.[1] ?? "") : "";
+if (!ORIGIN || !/:3001\b/.test(ORIGIN)) throw new Error("ORIGIN must be the one dev server, http://<you>.localhost:3001");
+if (SERVER_MODE !== "clone") throw new Error(`the dev server is in '${SERVER_MODE || "no"}' mode, not clone — never walk against live (pnpm preview:start --clone)`);
 const SHOTS = join(
   process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/scopes-read-switch",
   PATH,

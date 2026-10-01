@@ -11,7 +11,7 @@
 // Nothing is saved, pressed inside Alchemy, or written.
 //
 //   ORIGIN=http://drilladopt.localhost:3001 LABEL=live node scripts/drill-adopt-walk.mjs
-//   ORIGIN=http://drilladopt-clone.localhost:3002 LABEL=clone node scripts/drill-adopt-walk.mjs
+//   ORIGIN=http://drilladopt.localhost:3001 LABEL=clone  # server in clone mode node scripts/drill-adopt-walk.mjs
 import { chromium } from "playwright";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { signIn, until, sleep } from "./lib/seat-browser.mjs";

@@ -1,8 +1,8 @@
 # Local dev-server and build-cache management
 
-Two named shared previews — **live** (port 3001) and **clone** (port 3002) —
-plus one cleanup system. All are scoped to this repository; the machine-wide
-guard refuses any third Next.js dev tree, from this repo or another.
+ONE shared preview on port 3001 — its database is a **mode** (clone by default,
+live with `--live`) — plus one cleanup system. The machine-wide guard refuses any
+second Next.js dev tree, from this repo or another.
 
 ## Why this exists
 
@@ -20,35 +20,36 @@ The failure classes are:
 3. **Runaway servers.** Turbopack can retain native memory far beyond Node's
    JavaScript heap.
 
-## The two managed previews
+## The one managed preview and its two modes
 
-Arman's one-server rule (2026-09-24) has exactly one exception (2026-09-27): the
-clone preview, which talks only to the nightly copy of production so agents over
-the live-database walk cap (below) have somewhere to work.
+Arman, 2026-09-30: one server, ever. A second "clone" server on another port
+(2026-09-27) ran beside the live one and the two held ~41 GB and ~75 Turbopack
+workers and stalled the Mac. Tests never touch the live database (2026-09-29), so
+clone is the default mode.
 
-| Server | Start | Port / host | Database | Python server |
-|---|---|---|---|---|
-| live | `pnpm preview:start` | `<session>.localhost:3001` | LIVE (`db.matrxserver.com`) | production (`NEXT_PUBLIC_BACKEND_URL_PROD`) |
-| clone | `pnpm preview:start --clone` | `<session>-clone.localhost:3002` | the clone named in `common-docs/operations/clone/CLONE-REF` | the local clone-wired aidream, `http://localhost:8200` |
+| Mode | Start | Host | Database | Python server | Build dir |
+|---|---|---|---|---|---|
+| clone (default) | `pnpm preview:start` | `<session>.localhost:3001` | the clone named in `common-docs/operations/clone/CLONE-REF` | the local clone-wired aidream, `http://localhost:8200` | `.next-preview-clone` |
+| live | `pnpm preview:start --live` | `<session>.localhost:3001` | LIVE (`db.matrxserver.com`) | production | `.next-preview` |
 
 | Command | Effect |
 |---|---|
-| `pnpm preview:start [--clone]` | Reuse that server and its PID when this checkout owns it. Source edits here hot-reload in both. A different checkout cannot claim its own diff was served. The banner's `DATABASE:` line says which database the pages talk to. |
-| `pnpm preview:status [--clone]` | Both servers (or the clone alone): lease owner, pid, port, process-group RSS. |
-| `pnpm preview:stop [--clone]` | Stop that server only from its owning checkout; preserve its build cache (`.next-preview` / `.next-preview-clone`). |
-| `pnpm dev-login [--clone] [/path]` | Mint a single-use nonce for your host on that server and print the sign-in URL. |
+| `pnpm preview:start [--clone\|--live]` | Nothing running: start in the requested mode (clone if none). Running in that mode, or no flag: reuse it. Running in the OTHER mode: idle ≥ 5 min → stopped and restarted in the requested mode; busy → refused in one line. Never a second server. |
+| `pnpm preview:status` | The one server: mode, database, pid, real memory, last use. |
+| `pnpm preview:stop` | Stop it from its owning checkout; both build caches are preserved. |
+| `pnpm dev-login [/path]` | Mint a single-use nonce for your host and print the sign-in URL. `--clone`/`--live` only assert the running mode. |
 
-The clone host is a separate label (`-clone`), so its cookies never mix with the
-live preview's; it stays ONE label under `.localhost` because aidream's CORS
-admits exactly one.
+Each mode keeps its own build dir because `NEXT_PUBLIC_*` values are inlined into
+the bundles: a switch never serves the other database's env, and both caches stay
+hot. Only one process ever runs.
 
-### The clone preview's pairing rule
+### Clone mode's pairing rule
 
 Arman's condition: *"it starts to become a problem for aidream so you have to
 make sure it's properly managed when the changes modify both the client and the
 server."* A clone page reads and writes the clone through supabase-js AND calls a
 Python server; if that server wrote to live, one action would land half on each
-database. So `pnpm preview:start --clone`:
+database. So clone mode:
 
 1. regenerates the gitignored `.env.clone.local` whenever CLONE-REF's `clone_ref`
    changes (the clone rotates nightly; no ref is hardcoded) — the clone's
@@ -62,18 +63,18 @@ database. So `pnpm preview:start --clone`:
    unless both are the clone. The refusal prints the exact command:
    `cd ../aidream && scripts/clone/clone_server.sh start` (boots in 4-8 min;
    `scripts/clone/clone_server.sh status` shows when it is paired);
-3. launches with `MATRX_SHARED_PREVIEW=clone` and `MATRX_CLONE_PAIRED=<ref>`;
+3. launches with `MATRX_PREVIEW_MODE=clone` and `MATRX_CLONE_PAIRED=<ref>`;
    `next.config.js` re-checks that the Supabase URL is that clone before a worker
    spawns;
-4. on every reuse, re-proves the pairing and refuses a preview started for a
-   clone CLONE-REF no longer names (restart it: `pnpm preview:stop --clone &&
-   pnpm preview:start --clone`).
+4. on every reuse, re-proves the pairing and refuses a server started for a
+   clone CLONE-REF no longer names (restart it: `pnpm preview:stop &&
+   pnpm preview:start`).
 
 Logic and tests: `scripts/clone-preview/clone-preview-env.cjs`,
 `scripts/__tests__/clone-preview-env.test.ts`. The server half:
 `aidream/docs/LOCAL_DEV.md` § "Running against the clone". An admin's hand-typed
-*custom* server URL is the one route around the pairing — never set one on the
-clone host.
+*custom* server URL is the one route around the pairing — never set one in clone
+mode.
 
 `scripts/agent-dev-server.sh` owns this lifecycle. Its state and start lock live
 in the user's machine-wide temporary directory, not inside a checkout, so two
@@ -106,7 +107,7 @@ recorded in the machine-wide lease, confirm it exited, then let
 The launcher continuously measures the whole preview process group in **real
 memory** — the sum of each process's macOS `phys_footprint`, which includes the
 compressed memory `ps` RSS leaves out (a next-server showing ~3 GB RSS was
-really 44–50 GB). Its **128 GB hard cap is a runaway guard, not a budget**.
+really 44–50 GB). Its **48 GB hard cap is a runaway guard, not a budget**.
 Next dev keeps every compiled route in memory, so an abandoned preview grows
 forever; the monitor therefore also **recycles** it. "Used" means the server
 logged an HTTP request (` GET /route 200 in 82ms`), stamped in the state dir's
@@ -116,7 +117,7 @@ checkout's) idle ≥ 5 min, or one that stopped answering, instead of refusing;
 a preview that served a request in the last 2 min is never killed, and a busy
 healthy one is reused exactly as before. These stops are worded as normal
 recycles, never as crashes, and `preview:status` shows real memory and "last
-used N min ago" for each server. Knobs: `MATRX_PREVIEW_IDLE_STOP_MIN`,
+used N min ago". Knobs: `MATRX_PREVIEW_IDLE_STOP_MIN`,
 `MATRX_PREVIEW_RECYCLE_GB`, `MATRX_PREVIEW_RECYCLE_IDLE_MIN`,
 `MATRX_PREVIEW_BUSY_GUARD_MIN`; forcing tests: `pnpm test:preview-recycle`.
 The monitor runs in its own detached OS session;
@@ -127,16 +128,15 @@ is written into the dev log and printed prominently by both the next
 `preview:status` and `preview:start`. Advanced local use can override the
 defaults with `MATRX_PREVIEW_MAX_RSS_GB` and `MATRX_PREVIEW_NO_PROGRESS_SEC`.
 
-**Named `preview_start`, raw `pnpm dev`, and any third server are banned.**
-Three guards, each tested to refuse a third server
+**Named `preview_start`, raw `pnpm dev`, and any second server are banned.**
+Three guards, each tested to refuse a second server
 (`scripts/__tests__/shared-dev-servers.test.ts`): `next.config.js`
-(`scripts/agent-harness/shared-dev-servers.cjs` — token, port and dist dir must
-be one of the two named servers, and the clone must be paired), the installed
-PreToolUse hook (`scripts/agent-harness/matrx-preview-ports.sh`, which names both
-launchers as the repair), and the launcher's slot rule
-(`shared_server_slot_occupants` in `scripts/agent-harness/shared-servers.sh`: a
-slot ignores only the OTHER named server on its own port, so any third server
-blocks both). After pulling a change to the hook, re-run `pnpm setup:agent-harness`
+(`scripts/agent-harness/shared-dev-servers.cjs` — token, port 3001, the mode's
+build dir, a paired clone mode, and no other dev server running, even one with a
+valid token), the installed PreToolUse hook
+(`scripts/agent-harness/matrx-preview-ports.sh`), and the launcher's one slot.
+`pnpm check:one-dev-server` (+ `:self-test`, RED on the two-server commit) fails
+on any second port or slot in those files. After pulling a change to the hook, re-run `pnpm setup:agent-harness`
 — the installed copy is a copy. The shared server is
 not tied to one agent session; ending one task must not kill a server another
 task is using.
@@ -162,9 +162,10 @@ against production at once (Arman: "default 4").
   knob screams in the log and the gate fails OPEN.
 - **Scope:** development server only, and only when `NEXT_PUBLIC_SUPABASE_URL`
   is production. A production build drops the code.
-- **Refused?** Wait for a walk to go idle, or move to the clone preview:
-  `pnpm preview:start --clone`, then `pnpm dev-login --clone`. The clone
-  preview is never capped (its Supabase URL is not production).
+- **Refused?** Wait for a walk to go idle, or switch the one server to clone
+  mode once it is idle 5 min: `pnpm preview:start --clone`, then
+  `pnpm dev-login`. Clone mode is never capped (its Supabase URL is not
+  production).
 
 ## Process discovery and cleanup
 
@@ -194,7 +195,7 @@ can share a process group with its agent; killing that group can kill the agent.
 | Untracked orphan | uptime ≥ 90 min | `MATRX_DEV_MAX_UNTRACKED_AGE_MIN` |
 
 `dev:reap` governs unmanaged servers; the shared managed preview has its own
-128 GB real-memory watchdog plus idle recycling, and is never reaped by this 16 GB cleanup threshold. No
+48 GB real-memory watchdog plus idle recycling, and is never reaped by this 16 GB cleanup threshold. No
 `--max-old-space-size` flag solves native allocation; RSS is the correct guard.
 
 ## Machine setup
@@ -207,6 +208,10 @@ Codex skips a new or changed non-managed hook until a human reviews its hash.
 Open `/hooks` once after installation and trust the Matrx dev-server guard.
 
 ## Change Log
+
+- 2026-09-30: ONE server on port 3001; the database is its mode (clone default,
+  `--live`). The port-3002 clone server, its slot and its `-clone` host are gone;
+  hard cap 128 → 48 GB; `pnpm check:one-dev-server` added.
 
 - 2026-09-27: Added the clone preview (port 3002, `--clone` on start/stop/status/
   dev-login) with its pairing rule, and extended the three one-server guards to

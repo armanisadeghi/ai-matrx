@@ -22,7 +22,7 @@ const arg = (name, fallback) =>
   argv.includes(name) ? argv[argv.indexOf(name) + 1] : fallback;
 
 const ORG = arg("--org");
-const PORT = arg("--port", "3002");
+const PORT = arg("--port", "3001");
 const HOST = arg("--host", "orgarchive.localhost");
 const OUT = arg("--out", resolve(ROOT, "tmp/orgarch-shots"));
 const ORG_NAME = arg("--name", "Cascade Grounds Management");

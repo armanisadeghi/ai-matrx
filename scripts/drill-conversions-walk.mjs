@@ -8,7 +8,7 @@
 // Each: the mount draws, the header total, the groups carry words (never ids or codes), one drill
 // (a group clicked → its crumb in the address), 390 px without sideways scroll, dark.
 //
-//   ORIGIN=http://drillconv-clone.localhost:3002 LABEL=clone node scripts/drill-conversions-walk.mjs
+//   ORIGIN=http://drillconv.localhost:3001 LABEL=clone node scripts/drill-conversions-walk.mjs
 //     the CLONE preview (the definitions are rehearsed there, so the answers are real)
 //   ORIGIN=http://drillconv.localhost:3001 LABEL=live node scripts/drill-conversions-walk.mjs
 //     the LIVE preview: until the definitions are on production the mounts say the door's refusal
@@ -16,7 +16,7 @@ import { chromium } from "playwright";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { signIn, until, sleep, setOrganization } from "./lib/seat-browser.mjs";
 
-const ORIGIN = process.env.ORIGIN ?? "http://drillconv-clone.localhost:3002";
+const ORIGIN = process.env.ORIGIN ?? "http://drillconv.localhost:3001";
 const LABEL = process.env.LABEL ?? "clone";
 const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-conversions";
 mkdirSync(SHOTS, { recursive: true });

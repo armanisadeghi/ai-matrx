@@ -70,7 +70,7 @@ export function noAppSentence(): string {
         `This gate drives a REAL sandbox frame, and the sandbox route's CSP only allows\n` +
         `the app's own origin to embed it — so there is no way to run it without the app.\n\n` +
         `Start it with:  pnpm preview:start\n` +
-        `Or name a running one:  MATRX_SANDBOX_BASE_URL=http://localhost:3002 pnpm test:kind-sandbox:browser\n` +
+        `Or name a running one:  MATRX_SANDBOX_BASE_URL=http://localhost:3001 pnpm test:kind-sandbox:browser\n` +
         `Or let the gate boot its own server and run this for you:  pnpm check:kind-sandbox-gate\n`
     );
 }
