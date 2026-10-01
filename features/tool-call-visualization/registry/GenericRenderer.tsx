@@ -12,7 +12,7 @@
  *   running / no result → honest progress (last 1–2 real messages + a subtle
  *                         animated cue). The ONLY place "theater" is allowed,
  *                         and it's unmistakably a loading state.
- *   completed      → <ResultValue density="inline"> with CopyButtons beside it
+ *   completed      → <ToolResultValue density="inline"> with CopyButtons beside it
  *                    (no dedicated header row) + a full-width "View complete
  *                    result" button (overlay).
  *
@@ -23,7 +23,7 @@ import React from "react";
 import { Loader2, Maximize2 } from "lucide-react";
 import type { ToolRendererProps } from "../types";
 import { collectMessages } from "../renderers/_shared";
-import { ResultValue } from "../result-fields/ResultValue";
+import { ToolResultValue } from "../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../result-fields/ToolErrorCard";
 import { UrlChip } from "../result-fields/UrlChips";
 import { detectResultShape } from "../result-fields/shape";
@@ -200,7 +200,7 @@ export const GenericRenderer: React.FC<ToolRendererProps> = ({
   return (
     <div className="space-y-1.5">
       <div className="flex items-start gap-2">
-        <ResultValue
+        <ToolResultValue
           value={entry.result}
           density="inline"
           className="min-w-0 flex-1"

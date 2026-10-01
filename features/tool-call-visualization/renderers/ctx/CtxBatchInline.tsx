@@ -21,7 +21,7 @@
  * carrying the key + error. Inline density caps the stack at ~4 items with a
  * "+N more" toggle; full density shows everything.
  *
- * Non-conforming results fall back to `<ResultValue value={entry.result} />`.
+ * Non-conforming results fall back to `<ToolResultValue value={entry.result} />`.
  */
 
 import React, { useMemo, useState } from "react";
@@ -30,7 +30,8 @@ import { Layers, AlertCircle } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { isTerminal, resultAsObject } from "../_shared";
-import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue";
+import type { ResultDensity } from "../../result-fields/ResultValue";
+import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { CtxItemCard, type CtxItem } from "./CtxItemCard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -153,7 +154,7 @@ export const CtxBatchInline: React.FC<Props> = ({
   }
 
   if (!parsed) {
-    return <ResultValue value={entry.result} density={density} />;
+    return <ToolResultValue value={entry.result} density={density} />;
   }
 
   const cap =

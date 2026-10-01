@@ -8,7 +8,7 @@
  * ToolCallWindowPanel) compose them with their own navigation.
  *
  *   InputView      — dense KeyValueGrid of arguments (no card nesting).
- *   OutputView     — The "Pretty" results tab: <ResultValue density="full">.
+ *   OutputView     — The "Pretty" results tab: <ToolResultValue density="full">.
  *   ErrorView      — Full error story for the Results tab (not the calm
  *                    inline one-liner — that stays on ToolErrorCard).
  *   RawDataView    — Single non-repetitive JSON: { tool, input, result, error? }.
@@ -31,7 +31,7 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 import { getOverlayRenderer, hasCustomRenderer } from "../registry/registry";
 import type { ToolOverlayTabSpec, ToolRendererProps } from "../types";
-import { ResultValue } from "../result-fields/ResultValue";
+import { ToolResultValue } from "../result-fields/ToolResultValue";
 import { EmptyResult } from "../result-fields/EmptyResult";
 import { toolErrorLabel } from "../result-fields/ToolErrorCard";
 import { KeyValueGrid } from "../result-fields/KeyValueGrid";
@@ -189,7 +189,7 @@ export const OutputView: React.FC<{ entry: ToolLifecycleEntry }> = ({
           }
         />
       </div>
-      <ResultValue value={entry.result} density="full" />
+      <ToolResultValue value={entry.result} density="full" />
     </div>
   );
 };

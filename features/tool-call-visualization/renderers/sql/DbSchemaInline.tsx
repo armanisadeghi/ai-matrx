@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { ResultValue } from "../../result-fields/ResultValue";
+import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 
 export const DbSchemaInline: React.FC<ToolRendererProps> = ({
@@ -81,7 +82,7 @@ export const DbSchemaInline: React.FC<ToolRendererProps> = ({
             ) : entry.result != null ? (
                 // Unexpected shape — surface it rather than hide it.
                 <div className="min-w-0 border-t border-border pt-2">
-                    <ResultValue value={entry.result} density="inline" />
+                    <ToolResultValue value={entry.result} density="inline" />
                 </div>
             ) : null}
         </div>

@@ -17,7 +17,7 @@
  * large spinner, because the card lives inline in the chat body.
  *
  * If the result doesn't match the expected object shape, we fall back to
- * `<ResultValue value={entry.result} />` so data is never hidden or lost.
+ * `<ToolResultValue value={entry.result} />` so data is never hidden or lost.
  */
 
 import React, { useMemo } from "react";
@@ -25,7 +25,8 @@ import { Search } from "lucide-react";
 
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
-import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue";
+import type { ResultDensity } from "../../result-fields/ResultValue";
+import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { CtxItemCard, type CtxItem } from "./CtxItemCard";
 
@@ -109,7 +110,7 @@ export const CtxGetInline: React.FC<Props> = ({
   }
 
   if (view.kind === "raw") {
-    return <ResultValue value={entry.result} density={density} />;
+    return <ToolResultValue value={entry.result} density={density} />;
   }
 
   return <CtxItemCard item={view.item} density={density} />;

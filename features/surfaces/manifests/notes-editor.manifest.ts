@@ -577,8 +577,9 @@ You can also WRITE to this surface. On the open note: note_content (replace the 
     // Baseline:
     //   `selection` / `text_before` / `text_after` — the universal text-editor
     //     triad. Notes is the canonical text surface; these always make sense.
-    // `content` remains declared for the one case with no server resource yet:
-    // a brand-new client-only note. Persisted notes emit `current_note` only.
+    // `content` is the body on screen whenever a note is open (a binding on the
+    // universal key never reads empty); `current_note` stays the canonical
+    // server reference. See `buildNotesEditorContextData.ts`.
     pickBaseline("selection", "text_before", "text_after", "content"),
     surfaceSpecific,
   ),

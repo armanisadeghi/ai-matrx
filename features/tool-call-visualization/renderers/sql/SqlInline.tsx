@@ -33,6 +33,7 @@ import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { ResultValue } from "../../result-fields/ResultValue";
+import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { IdListChip } from "../../result-fields/ShortId";
 
@@ -209,7 +210,7 @@ export const SqlInline: React.FC<ToolRendererProps> = ({
 
             {/* Fallback: result exists but matches neither shape — never hide it. */}
             {!resultRows && !writeOutcome && entry.result != null && (
-                <ResultValue value={entry.result} density="inline" />
+                <ToolResultValue value={entry.result} density="inline" />
             )}
 
             {/* Completed with no result body: the shell line is the whole story —

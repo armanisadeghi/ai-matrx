@@ -14,7 +14,7 @@ import { ExternalLink, PanelRight } from "lucide-react";
 
 import type { ToolRendererProps } from "../../types";
 import { isTerminal } from "../_shared";
-import { ResultValue } from "../../result-fields/ResultValue";
+import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
@@ -55,7 +55,7 @@ export const NoteToolOverlay: React.FC<ToolRendererProps> = ({
         <div className="py-4 text-sm text-muted-foreground">Saving note…</div>
       );
     }
-    return <ResultValue value={entry.result} density="full" />;
+    return <ToolResultValue value={entry.result} density="full" />;
   }
 
   const editDisabled = !data.isLoaded;

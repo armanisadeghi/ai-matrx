@@ -19,7 +19,7 @@ import { ExternalLink, Maximize2, PanelRight } from "lucide-react";
 
 import type { ToolRendererProps } from "../../types";
 import { isTerminal } from "../_shared";
-import { ResultValue } from "../../result-fields/ResultValue";
+import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { formatRelativeTime } from "@/utils/datetime";
 import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
@@ -64,7 +64,7 @@ export const NoteToolInline: React.FC<ToolRendererProps> = ({
 
   if (!data.noteId) {
     // Terminal but malformed result — never hide the data.
-    return <ResultValue value={entry.result} density="inline" />;
+    return <ToolResultValue value={entry.result} density="inline" />;
   }
 
   const editDisabled = !data.isLoaded;
