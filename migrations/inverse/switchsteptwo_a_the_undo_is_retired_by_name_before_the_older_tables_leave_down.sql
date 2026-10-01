@@ -1,9 +1,11 @@
 -- INVERSE of migrations/campaign/switchsteptwo_a_the_undo_is_retired_by_name_before_the_older_tables_leave.sql (lane SWITCH-STEP-TWO):
 -- the undo works again. Puts back platform.final_switch_undo / final_switch_readiness / final_switch_state exactly as
--- they were (11a0208e… / 22283253… / 8f7cb2e9…), drops the three new functions (their door row follows the function,
--- event trigger door_follows_its_function) and marks the seam retired. Retirement rows already recorded stay in the
+-- they were (11a0208e… / 22283253… / 8f7cb2e9…), drops the three new functions (the door row of final_switch_retire_undo first) and marks the seam retired. Retirement rows already recorded stay in the
 -- append-only press record as history; a later re-apply counts only retirements recorded after it.
 -- 🚨 Apply ONLY after every older table is back in workbench (the move's inverses): the undo needs them.
+-- based-on: platform.final_switch_undo(text, boolean) 667d99f7ab257b1e8e7f82751d2918f2da93f4e23b4646bdfb28c8e8371beabd
+-- based-on: platform.final_switch_readiness() 62dfe84764c7c48c145cc9de8c1e46effd5d0332fb0e6c06e06c1d6ae7c0a46c
+-- based-on: platform.final_switch_state() dade95150ced7d6c0686872a3b6f301ea5e258a027292b2b751b92532229cfed
 -- lane: SWITCH-STEP-TWO
 
 do $$ begin
@@ -296,6 +298,7 @@ begin
 end;
 $function$;
 
+delete from platform.client_callable_door where schema_name = 'platform' and function_name = 'final_switch_retire_undo';
 drop function if exists platform.final_switch_retire_undo(text);
 drop function if exists platform._final_switch_undo_retired_says(platform.cutover_seam_press);
 drop function if exists platform._final_switch_undo_retired();

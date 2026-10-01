@@ -4,7 +4,7 @@
  * E3 stacked-rows attachment tile — adaptive light/dark chrome, transparent icon.
  * Canonical chip for agent input bar + sent user messages (+ dev gallery).
  * Two variants: "default" (two-line fixed-width tile) and "compact" (tiny
- * icon + one-word pill with floating X + tooltip — the composer uses this so
+ * icon + middle-truncated-title pill with floating X + tooltip — the composer uses this so
  * attachments never crowd the input).
  *
  * When `onRemove` (and/or the editable toggle) is present, the controls live in
@@ -17,6 +17,7 @@
  * propagation so they never trigger the tile's own click/hover-preview.
  */
 
+import { compactChipLabel } from "./compact-chip-label";
 import {
   createElement,
   useRef,
@@ -68,7 +69,7 @@ export interface ResourceAttachmentTileProps {
   className?: string;
   /**
    * "default": two-line fixed-width tile (sent messages, galleries).
-   * "compact": tiny single-row pill — icon + one word, floating X, tooltip
+   * "compact": tiny single-row pill — icon + a middle-truncated title (compactChipLabel), floating X, tooltip
    * with the full info. Use in the composer so chips never crowd the input.
    */
   variant?: "default" | "compact";
@@ -140,7 +141,7 @@ export function ResourceAttachmentTile({
     : "Read Only: Click to allow agent editing";
 
   if (variant === "compact") {
-    const word = title.trim().split(/\s+/)[0] || typeLabel;
+    const word = compactChipLabel(title) || typeLabel;
     return (
       <Popover open={menuOpen} onOpenChange={setMenuOpen}>
         <PopoverAnchor asChild>
@@ -178,7 +179,7 @@ export function ResourceAttachmentTile({
                       className: cn("h-3 w-3 shrink-0", theme.icon),
                     })
                   )}
-                  <span className="max-w-[4.5rem] truncate">{word}</span>
+                  <span className="max-w-[13rem] truncate">{word}</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[16rem]">

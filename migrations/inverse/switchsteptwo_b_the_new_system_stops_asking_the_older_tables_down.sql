@@ -2,6 +2,26 @@
 -- the 18 bodies and the two pick-list views exactly as they were, and the carried choice order taken off again
 -- (only the positions this file wrote: metadata.option_position_carried = 'switch-step-two').
 -- 🚨 Apply only after the older tables are back in workbench (the move inverses): these bodies read them.
+-- based-on: platform.table_lives_in(uuid) 80a10213e6147c9e7399a0e6f6e5913b400f7ea35994280849e5981dc5970321
+-- based-on: platform.list_lives_in(uuid) 502be3cebc591d9e12f0fa2b935eb17002db32ab1614dc658ee9e45c63774fc3
+-- based-on: platform._older_table_moved_by_switch(uuid) a6e93a3ad38eedbde812c5d3d0fac44ebdc7c49123db74e9cf138867bd36b580
+-- based-on: platform._older_list_moved_by_switch(uuid) 68dad00968d171463bc1c610eb0c2e8e6a38c7608068150398d045b01eb297ad
+-- based-on: custom._older_table_copy_refusal(uuid) eb6d9126b3f950e7f2be80d92ceed472afb4b2e66e8419f33ca3836fe8aae7ab
+-- based-on: custom._older_table_copy_verdict(uuid) 50838f10d70eb2eb18ced9d12db89c66728654eb2c5ff9d93ebcaf35e0024ea3
+-- based-on: custom.table_copy_evaluation_state(uuid) 420f2db0557701cffc85b02c42a5f6bd3ccae3fc0d3718cd9afba364de63cf60
+-- based-on: custom.where_lists_live(uuid[]) 1b29972159065a6995b32704d28226dc0ac7a8f4e6fadca4b3f656ef11db2843
+-- based-on: custom.where_tables_live(uuid[]) 58f84a4909cf1bff1d58abb7a2b161fa0ff40b80e169f87260cdae909df8b47d
+-- based-on: custom.table_list_everywhere(uuid) 410ee79bf99015c93a97df6235909916c45e3ce6e782b060d10c580b67bb7f59
+-- based-on: custom.pick_list_index_everywhere() 790517d96f60bf5b8a42aeca0bebf493d2bee8a8e72463c4bcbf89f92ec5d655
+-- based-on: custom._pick_list_index_of(uuid, uuid) ff862aa8c377f592b5c2da1c9a99912930205e712fd22513a6d72c7ba0ed49d6
+-- based-on: platform._store_pick_list_document(uuid, uuid, text) fa842f405016df1ed135efaaa24628ef611c6b2a0ffbd57d9b780a3b29b70a2e
+-- based-on: platform.custom_field_defs(text, uuid, text, uuid, boolean) f93f46bfd510e2247f495454dbbc713084e8b72f8bfd1a2a6bcc28e1fd6ba9b3
+-- based-on: platform._custom_field_definition_guard() f4566cdf830b0b1a93edfe267043e703427f500ea078d95b0aa3b5c136ad1523
+-- based-on: platform.data_tables_born_in_the_new_system_for_me() 2c657cf5451444723421276831b2c427198749ecfaf2c5b7a80ceca1b363bacb
+-- based-on: platform.resolve_id(uuid, text) f8336144730b6c6411828c8837b3298f6e73efca08756314eef098474f7b1f10
+-- based-on: public._trash_kind_rows(uuid, uuid, uuid, text[], integer, integer) 5fa8c9e3b0441f9910065f4d8265996ed3fe53170b46b632fc49cb888a6cb0a8
+-- based-on: platform.cutover_seams(uuid) e8d614b572e372e048eb0adc4c74f3c13ac17ecbc113143f86fe2da792670856
+-- based-on: platform.cutover_seam_press(text, uuid, text, text, boolean) 9f3b76e0fec3c522b453cf93f24b103598df78bd4efd94b5c2199212e293a1c0
 -- lane: SWITCH-STEP-TWO
 
 do $$ begin
@@ -1289,6 +1309,263 @@ begin
              limit v_limit offset v_offset) y
      order by y.deleted_at desc, y.id;
   end loop;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION platform.cutover_seams(p_organization_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_uid uuid := auth.uid();
+  v_claims jsonb := nullif(current_setting('request.jwt.claims', true), '')::jsonb;
+  v_is_admin boolean := false;
+  v_role text;
+  v_may boolean := false;
+  v_may_detail text;
+  v_out jsonb := '[]'::jsonb;
+  s platform.cutover_seam;
+  v_last platform.cutover_seam_press;
+  v_latest platform.cutover_seam_press;
+  v_ready jsonb;
+  v_state text;
+  v_back jsonb;
+begin
+  if p_organization_id is null
+     or not exists (select 1 from iam.organizations o where o.id = p_organization_id) then
+    return jsonb_build_object('ok', false, 'reason', 'not_yours',
+      'says', 'There is no organization with that id that you belong to.');
+  end if;
+
+  if v_uid is null then
+    -- No person: only the server's own key or a direct database connection may read.
+    if v_claims is not null and coalesce(v_claims ->> 'role', '') <> 'service_role' then
+      return jsonb_build_object('ok', false, 'reason', 'not_signed_in', 'says', 'Sign in to see this organization''s switches.');
+    end if;
+    v_may_detail := 'Only an owner of this organization, signed in on its settings page, can press a switch.';
+  else
+    v_is_admin := public.is_admin();
+    select m.role into v_role from iam.organization_member m
+     where m.organization_id = p_organization_id and m.user_id = v_uid;
+    if v_role is null and not v_is_admin then
+      return jsonb_build_object('ok', false, 'reason', 'not_yours',
+        'says', 'There is no organization with that id that you belong to.');
+    end if;
+    v_may := v_role = 'owner' or v_is_admin;
+    v_may_detail := case when v_role = 'owner' then 'You are an owner of this organization.'
+                         when v_is_admin then 'You are a platform admin.'
+                         else 'Only an owner of this organization can press a switch.' end;
+  end if;
+
+  for s in select * from platform.cutover_seam where retired_at is null order by sort_order loop
+    v_last := platform._cutover_seam_last_done(s.seam_key, p_organization_id);
+    select p.* into v_latest from platform.cutover_seam_press p
+     where p.seam_key = s.seam_key and p.organization_id = p_organization_id
+     order by p.pressed_at desc, p.id limit 1;
+    v_state := case when s.press_kind = 'already_switched' then 'new'
+                    -- SCOPES-WRITE-THROUGH: which system writes, never press history.
+                    when s.seam_key = 'scopes_screens'
+                      then case custom.context_writer(p_organization_id) when 'store' then 'new' else 'old' end
+                    when v_last.id is null then 'old'
+                    else v_last.direction end;
+    v_ready := platform._cutover_seam_readiness(s.seam_key, p_organization_id);
+    v_back := case when v_state = 'new' and s.press_kind = 'owner_press'
+                   then platform._cutover_seam_reverse_readiness(s.seam_key, p_organization_id) end;
+
+    v_out := v_out || jsonb_build_object(
+      'key', s.seam_key,
+      'title', s.title,
+      'old_side', s.old_side,
+      'new_side', s.new_side,
+      'per_organization', s.per_organization,
+      'press_kind', s.press_kind,
+      'state', v_state,
+      'flip_does', s.flip_does,
+      'needs_first', s.needs_first,
+      'reverse_does', s.reverse_does,
+      'readiness', v_ready,
+      'reverse_readiness', v_back,
+      -- The scopes switch is pressed for everyone at once by the final switch; one organization is
+      -- switched here only by a platform admin, to test it (Arman, 2026-09-27).
+      'may_flip', v_may and s.press_kind = 'owner_press' and v_state = 'old' and (v_ready ->> 'ready')::boolean
+                  and (s.seam_key <> 'scopes_screens' or v_is_admin),
+      'may_reverse', v_may and s.press_kind = 'owner_press' and v_state = 'new'
+                     and coalesce((v_back ->> 'ready')::boolean, false)
+                     and (s.seam_key <> 'scopes_screens' or v_is_admin),
+      'pressed_for_everyone', s.seam_key = 'scopes_screens',
+      'switched', case when v_last.id is null then null else jsonb_build_object(
+          'direction', v_last.direction, 'at', v_last.pressed_at,
+          'by', (select coalesce(u.raw_user_meta_data ->> 'full_name', u.email) from auth.users u where u.id = v_last.pressed_by),
+          'did', v_last.did) end,
+      'last_press', case when v_latest.id is null then null else jsonb_build_object(
+          'direction', v_latest.direction, 'outcome', v_latest.outcome, 'at', v_latest.pressed_at,
+          'refusal', v_latest.refusal, 'says', v_latest.says) end);
+  end loop;
+
+  return jsonb_build_object('ok', true, 'organization_id', p_organization_id, 'checked_at', now(),
+                            'may_press', v_may, 'may_press_detail', v_may_detail, 'seams', v_out);
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION platform.cutover_seam_press(p_seam_key text, p_organization_id uuid, p_to text, p_note text DEFAULT NULL::text, p_accept_not_carried boolean DEFAULT false)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_uid uuid := auth.uid();
+  v_claims jsonb := nullif(current_setting('request.jwt.claims', true), '')::jsonb;
+  v_headers jsonb := nullif(current_setting('request.headers', true), '')::jsonb;
+  v_role text;
+  v_is_admin boolean;
+  s platform.cutover_seam;
+  v_last platform.cutover_seam_press;
+  v_state text;
+  v_back jsonb;
+  v_ready jsonb;
+  v_press uuid := gen_random_uuid();
+  v_did jsonb;
+  v_carry jsonb;
+  v_refusal text;
+  v_says text;
+  v_done text;
+begin
+  -- Refusals that name no organization of the caller's are answered, never recorded.
+  if p_organization_id is null or not exists (select 1 from iam.organizations o where o.id = p_organization_id) then
+    return jsonb_build_object('ok', false, 'reason', 'not_yours', 'says', 'There is no organization with that id that you belong to.');
+  end if;
+
+  if v_uid is null or v_claims is null then
+    v_refusal := 'not_a_person';
+    v_says := 'A switch is pressed by a person signed in on the organization''s settings page. A server, a script or a database connection cannot press it.';
+  elsif coalesce(v_claims ->> 'role', '') <> 'authenticated' or coalesce(v_claims ->> 'session_id', '') = '' then
+    v_refusal := 'not_a_person';
+    v_says := 'A switch is pressed by a person signed in on the organization''s settings page, not with a service key or a minted token.';
+  elsif v_headers is null or coalesce(v_headers ->> 'origin', '') = '' then
+    v_refusal := 'not_from_the_screen';
+    v_says := 'A switch is pressed from the organization''s settings page in a browser. This request did not come from a page.';
+  end if;
+
+  if v_refusal is null then
+    v_is_admin := public.is_admin();
+    select m.role into v_role from iam.organization_member m
+     where m.organization_id = p_organization_id and m.user_id = v_uid;
+    if v_role is null and not v_is_admin then
+      return jsonb_build_object('ok', false, 'reason', 'not_yours', 'says', 'There is no organization with that id that you belong to.');
+    end if;
+    if v_role is distinct from 'owner' and not v_is_admin then
+      v_refusal := 'not_an_owner';
+      v_says := 'Only an owner of this organization can press this switch.';
+    end if;
+  end if;
+
+  if v_refusal is null then
+    select * into s from platform.cutover_seam where seam_key = p_seam_key and retired_at is null;
+    if s.seam_key is null then
+      return jsonb_build_object('ok', false, 'reason', 'unknown_switch', 'says', format('There is no switch called %s.', p_seam_key));
+    elsif p_to is null or p_to not in ('new', 'old') then
+      v_refusal := 'bad_direction';
+      v_says := 'A switch goes to the new system or back to the old one.';
+    elsif s.press_kind <> 'owner_press' then
+      v_refusal := 'not_pressed_here';
+      v_says := case s.press_kind when 'already_switched' then 'This one is already on the new system.'
+                  else 'This one switches for everyone at once, in its own rehearsed step, not from an organization''s settings.' end;
+    end if;
+  end if;
+
+  if v_refusal is null then
+    -- One press per seam per organization at a time.
+    perform pg_advisory_xact_lock(hashtextextended('cutover_seam:' || p_seam_key || ':' || p_organization_id::text, 0));
+    v_last := platform._cutover_seam_last_done(p_seam_key, p_organization_id);
+    v_state := coalesce(v_last.direction, 'old');
+    if p_seam_key = 'scopes_screens' then
+      -- SCOPES-WRITE-THROUGH: the state is which system writes, never press history — an
+      -- organization born after the switch was installed writes in the store with no press at all.
+      v_state := case custom.context_writer(p_organization_id) when 'store' then 'new' else 'old' end;
+      -- ONE ORGANIZATION IS SWITCHED HERE ONLY TO TEST IT (Arman, 2026-09-27: no organization-by-
+      -- organization pressing; the final switch presses every organization at once).
+      if not v_is_admin then
+        v_refusal := 'not_pressed_here';
+        v_says := 'The scope and context screens switch for every organization at once, in the final switch. A platform admin can switch one organization to test it.';
+      end if;
+    end if;
+    if v_refusal is not null then
+      null;
+    elsif v_state = p_to then
+      v_refusal := 'already_there';
+      v_says := case p_to when 'new' then 'This organization is already on the new system here.'
+                          else 'This organization is already on the old system here.' end;
+    elsif p_to = 'new' then
+      v_ready := platform._cutover_seam_readiness(p_seam_key, p_organization_id);
+      if not (v_ready ->> 'ready')::boolean then
+        v_refusal := 'not_ready';
+        v_says := 'Not ready yet: ' || (
+          select string_agg(c ->> 'says' || ' — ' || rtrim(coalesce(c ->> 'detail', ''), '.'), '; ')
+            from jsonb_array_elements(v_ready -> 'checks') c where not (c ->> 'met')::boolean) || '.';
+      end if;
+    else
+      -- SWITCH BACK CARRIES (SWITCH-BACK-CARRIES): what the new tables gained since the switch goes
+      -- into the older tables inside this press. What cannot go is named, and the press waits for the
+      -- person to confirm leaving it in the new system.
+      v_back := platform._cutover_seam_reverse_readiness(p_seam_key, p_organization_id);
+      v_ready := v_back;
+      if not (v_back ->> 'ready')::boolean then
+        v_refusal := 'not_ready';
+        v_says := 'Not ready to switch back: ' || (
+          select string_agg(c ->> 'says' || ' — ' || rtrim(coalesce(c ->> 'detail', ''), '.'), '; ')
+            from jsonb_array_elements(v_back -> 'checks') c where not (c ->> 'met')::boolean) || '.';
+      elsif coalesce((v_back ->> 'needs_confirm')::boolean, false) and not coalesce(p_accept_not_carried, false) then
+        v_refusal := 'confirm_not_carried';
+        v_says := 'Switching back leaves these in the new system: '
+          || (select string_agg(x, ' ') from jsonb_array_elements_text(v_back -> 'not_carried') x)
+          || ' Confirm that they stay behind, then switch back.';
+      end if;
+    end if;
+  end if;
+
+  if v_refusal is not null then
+    if p_seam_key in (select seam_key from platform.cutover_seam) then
+      insert into platform.cutover_seam_press
+        (id, seam_key, organization_id, direction, outcome, refusal, says, pressed_by, readiness, note)
+      values
+        (v_press, p_seam_key, p_organization_id,
+         case when p_to in ('new', 'old') then p_to else 'new' end,
+         'refused', v_refusal, v_says, v_uid, v_ready, p_note);
+    end if;
+    return jsonb_build_object('ok', false, 'reason', v_refusal, 'says', v_says, 'press_id', v_press, 'readiness', v_ready);
+  end if;
+
+  begin
+    v_did := platform._cutover_seam_apply(p_seam_key, p_organization_id, p_to, v_uid, v_press);
+    if p_to = 'old' and p_seam_key = 'older_tables' then
+      -- The older tables are back (unarchived above); now they take what the new ones gained.
+      v_carry := platform._cutover_carry_back(p_organization_id, v_last, true, v_press, v_uid,
+                                              coalesce(p_accept_not_carried, false));
+      v_did := v_did || jsonb_build_object('carried_back', v_carry);
+    end if;
+  exception when others then
+    v_refusal := 'the_step_failed';
+    v_says := 'Nothing was changed: the switch stopped part way and was rolled back whole. ' || sqlerrm;
+    insert into platform.cutover_seam_press
+      (id, seam_key, organization_id, direction, outcome, refusal, says, pressed_by, readiness, note)
+    values
+      (v_press, p_seam_key, p_organization_id, p_to, 'refused', v_refusal, v_says, v_uid, v_ready, p_note);
+    return jsonb_build_object('ok', false, 'reason', v_refusal, 'says', v_says, 'press_id', v_press);
+  end;
+
+  v_done := case p_to when 'new' then 'Switched to the new system.'
+                 else concat_ws(' ', 'Switched back to the old system.',
+                                (select string_agg(x, ' ') from jsonb_array_elements_text(v_carry -> 'says') x)) end;
+
+  insert into platform.cutover_seam_press
+    (id, seam_key, organization_id, direction, outcome, says, pressed_by, readiness, did, note)
+  values
+    (v_press, p_seam_key, p_organization_id, p_to, 'done', v_done, v_uid, v_ready, v_did, p_note);
+
+  return jsonb_build_object('ok', true, 'press_id', v_press, 'state', p_to, 'did', v_did, 'says', v_done);
 end;
 $function$;
 

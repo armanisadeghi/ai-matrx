@@ -5,7 +5,7 @@
  *
  * Renders attachment chips for all resources on an execution instance — every
  * attachment is a compact ResourceAttachmentTile (variant="compact": icon +
- * one word + floating X + tooltip) so the composer never gets crowded.
+ * a middle-truncated title + floating X + tooltip) so the composer never gets crowded.
  * Reads from instanceResources, dispatches removeResource directly.
  */
 
@@ -264,6 +264,9 @@ function PendingDocumentResourceChip({
     >
       <AttachedDocumentChip
         title={getResourceLabel(resource)}
+        pending={
+          resource.status === "pending" || resource.status === "resolving"
+        }
         fileId={pendingDocumentFileId(resource)}
         representation={resource.options.representation}
         resourcePolicy={resource.options.resourcePolicy}

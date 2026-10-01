@@ -23,7 +23,7 @@ begin
 end
 $pre$;
 
-update platform.entity_types set is_active = false where token = 'structured_list' and is_active;
+update platform.entity_types set is_active = false, type = 'deprecated', custom_fields_enabled = false where token = 'structured_list' and is_active;
 update platform.shareable_resource_registry set is_active = false where resource_type = 'structured_list' and table_name = 'udt_structured_lists' and is_active;
 alter table workbench.udt_structured_lists
   drop constraint udt_structured_lists_created_by_fkey,

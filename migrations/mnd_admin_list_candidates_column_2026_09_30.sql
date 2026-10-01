@@ -1,4 +1,3 @@
--- draft: F4 (mandate-candidates) — the LIVE apply joins the chair's C0 live session (mandate.candidate must exist on live first); clone only until then
 -- based-on: mandate._admin_list_read(text, text, text, uuid, text, jsonb, text, text, integer, integer, jsonb) 1cf6de22c6627e0bdda47dc5566a7598b6d932b16ecf14fc9a42dc1373f2520e
 --
 -- mnd_admin_list_candidates_column_2026_09_30.sql

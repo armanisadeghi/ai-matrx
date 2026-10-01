@@ -23,7 +23,7 @@ begin
 end
 $pre$;
 
-update platform.entity_types set is_active = false where token = 'udt_dataset_template_fields' and is_active;
+update platform.entity_types set is_active = false, type = 'deprecated', custom_fields_enabled = false where token = 'udt_dataset_template_fields' and is_active;
 alter table workbench.udt_dataset_template_fields set schema graveyard;
 revoke all on table graveyard.udt_dataset_template_fields from anon, authenticated;
 update platform.deprecated_relations set archived_as = 'graveyard.udt_dataset_template_fields' where old_ref = 'workbench.udt_dataset_template_fields' and archived_as is null;

@@ -46,6 +46,26 @@ import { useOpenResourcePickerWindow } from "@/features/overlays/openers/resourc
 import { useKnowledgeAttachTarget } from "@/features/knowledge/command-bar/useKnowledgeAttachTarget";
 import type { KnowledgeCommand } from "@/features/knowledge/command-bar/commands";
 import type { LucideIcon } from "lucide-react";
+import { useAttachedFileIds } from "@/features/agents/components/inputs/resources/useAttachedFileIds";
+
+type FilesPickerProps = React.ComponentProps<typeof FilesResourcePicker>;
+
+/** Ticks the files already on the conversation; a host with none passes through. */
+function ConversationFilesPicker({
+  conversationId,
+  ...props
+}: FilesPickerProps & { conversationId?: string }) {
+  if (!conversationId) return <FilesResourcePicker {...props} />;
+  return <AttachedFilesPicker conversationId={conversationId} {...props} />;
+}
+
+function AttachedFilesPicker({
+  conversationId,
+  ...props
+}: FilesPickerProps & { conversationId: string }) {
+  const attached = useAttachedFileIds(conversationId);
+  return <FilesResourcePicker {...props} selectedFileIds={attached} />;
+}
 
 /**
  * The search steps the ⌘K bar replaces: a person looking for one of THEIR
@@ -256,7 +276,7 @@ export function ResourcePickerMenu({
       }),
     );
     toast.success(`${file.name} attached.`);
-    if (selectionMode === "single") onClose();
+    onClose();
   };
 
   const selectResource = async (resource: Resource, listSelection: boolean) => {
@@ -267,6 +287,16 @@ export function ResourcePickerMenu({
     return selected;
   };
 
+  /**
+   * THE ONE CLOSE RULE (real-test friction PB-01…PB-04, 2026-10-01): a
+   * CHECKBOX toggles and stays — the Files list shows each file's ticked state
+   * and unticking detaches, so the menu stays open for the next tick. A ROW
+   * CLICK (a note, a task, a table, a context value's Assign, a chat, a URL
+   * form) COMPLETES an attach and closes the whole menu. Escape closes the
+   * whole menu from any depth (ComposerSubmenu). Picking the same thing again
+   * is a no-op (useAttachResource is idempotent), so a re-click never stacks
+   * duplicate chips.
+   */
   const selectOne = (resource: Resource) => selectResource(resource, false);
   const selectFromList = (resource: Resource) => selectResource(resource, true);
   const deselectFromList = (resource: Resource) =>
@@ -278,7 +308,8 @@ export function ResourcePickerMenu({
       // ONE unified Files surface: upload strip on top, stored-file
       // browse/search below (Arman's 2026-08-08 one-entry ruling).
       return (
-        <FilesResourcePicker
+        <ConversationFilesPicker
+          conversationId={conversationId}
           title="Files"
           headerIcon={
             <FolderOpen className="h-3.5 w-3.5 shrink-0 text-primary" />
@@ -338,7 +369,7 @@ export function ResourcePickerMenu({
               conversationId,
               conversation,
             );
-            if (selectionMode === "single") onClose();
+            onClose();
           }}
         />
       );
@@ -349,7 +380,7 @@ export function ResourcePickerMenu({
         <NotesResourcePicker
           onBack={goBack}
           onSelect={(note) => {
-            void selectFromList({ type: "note", data: note });
+            void selectOne({ type: "note", data: note });
           }}
         />
       );
@@ -360,7 +391,7 @@ export function ResourcePickerMenu({
         <TasksResourcePicker
           onBack={goBack}
           onSelect={(selection) => {
-            void selectFromList(selection);
+            void selectOne(selection);
           }}
         />
       );
@@ -381,7 +412,7 @@ export function ResourcePickerMenu({
         <WorkbooksResourcePicker
           onBack={goBack}
           onSelect={(workbook) => {
-            void selectFromList({
+            void selectOne({
               type: "workbook",
               data: { id: workbook.id, name: workbook.workbook_name },
             });
@@ -395,7 +426,7 @@ export function ResourcePickerMenu({
         <DocumentsResourcePicker
           onBack={goBack}
           onSelect={(document) => {
-            void selectFromList({
+            void selectOne({
               type: "document",
               data: { id: document.id, title: document.document_name },
             });
@@ -409,7 +440,7 @@ export function ResourcePickerMenu({
         <TablesResourcePicker
           onBack={goBack}
           onSelect={(reference) => {
-            void selectFromList({ type: "table", data: reference });
+            void selectOne({ type: "table", data: reference });
           }}
         />
       );
@@ -489,7 +520,7 @@ export function ResourcePickerMenu({
       return (
         <ContextValuesResourcePicker
           onBack={goBack}
-          onSelect={(resource) => void selectFromList(resource)}
+          onSelect={(resource) => void selectOne(resource)}
         />
       );
     }

@@ -23,7 +23,7 @@ begin
 end
 $pre$;
 
-update platform.entity_types set is_active = false where token = 'dataset' and is_active;
+update platform.entity_types set is_active = false, type = 'deprecated', custom_fields_enabled = false where token = 'dataset' and is_active;
 update platform.shareable_resource_registry set is_active = false where resource_type = 'dataset' and table_name = 'udt_datasets' and is_active;
 alter publication supabase_realtime drop table workbench.udt_datasets;
 alter table workbench.udt_datasets

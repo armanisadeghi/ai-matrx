@@ -23,7 +23,7 @@ begin
 end
 $pre$;
 
-update platform.entity_types set is_active = false where token = 'udt_dataset_fields' and is_active;
+update platform.entity_types set is_active = false, type = 'deprecated', custom_fields_enabled = false where token = 'udt_dataset_fields' and is_active;
 alter publication supabase_realtime drop table workbench.udt_dataset_fields;
 alter table workbench.udt_dataset_fields
   drop constraint table_fields_user_id_fkey,

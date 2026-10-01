@@ -17,6 +17,7 @@ import { resolveResourceAttachmentTileTheme } from "@/features/agents/components
 import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
 import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
 import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
+import { compactChipLabel } from "@/features/agents/components/messages-display/user/compact-chip-label";
 import { primaryFormShortLabel } from "@/features/agents/components/inputs/resources/resource-family-words";
 
 export interface AttachedDocumentSettings {
@@ -26,6 +27,8 @@ export interface AttachedDocumentSettings {
 
 interface AttachedDocumentChipProps {
   title: string;
+  /** The attach is still being written — a spinner stands in for the icon. */
+  pending?: boolean;
   fileId: string | null;
   representation?: DocumentRepresentation;
   resourcePolicy?: VariableResourceContextConfig;
@@ -54,6 +57,7 @@ function representationLabel(
 
 export function AttachedDocumentChip({
   title,
+  pending = false,
   fileId,
   representation,
   resourcePolicy,
@@ -130,14 +134,21 @@ export function AttachedDocumentChip({
                 onClick={onOpen}
                 aria-label={`Document: ${title}`}
                 className={cn(
-                  "inline-flex min-w-0 max-w-[7rem] items-center gap-1 px-2",
+                  "inline-flex min-w-0 max-w-[13rem] items-center gap-1 px-2",
                   "transition-colors hover:bg-muted/60 hover:text-foreground",
                 )}
               >
-                {createElement(FileText, {
-                  className: cn("h-3 w-3 shrink-0", theme.icon),
-                })}
-                <span className="truncate">{title}</span>
+                {pending ? (
+                  <Loader2
+                    className={cn("h-3 w-3 shrink-0 animate-spin", theme.icon)}
+                    aria-label="Attaching"
+                  />
+                ) : (
+                  createElement(FileText, {
+                    className: cn("h-3 w-3 shrink-0", theme.icon),
+                  })
+                )}
+                <span className="truncate">{compactChipLabel(title)}</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-[16rem]">

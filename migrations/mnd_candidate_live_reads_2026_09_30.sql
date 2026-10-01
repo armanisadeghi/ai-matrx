@@ -1,4 +1,4 @@
--- draft: FX-F (mandate-candidates) — the LIVE apply joins the chair's C0 live session (mandate.candidate must exist on live first); clone only until then
+-- chair-step: adds two candidate read functions and revokes their default PUBLIC execute before granting authenticated
 --
 -- mnd_candidate_live_reads_2026_09_30.sql
 --

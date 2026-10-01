@@ -5,7 +5,7 @@ do $seed$
 declare
   owner_id uuid := '4cf62e4e-2679-484f-b652-034e697418df';
   crm_org uuid := '5dc930e9-bd65-44a1-8369-af773f6e1a5b';
-  r record; subject_id uuid; contact_id uuid; matched integer;
+  r record; v_subject_id uuid; contact_id uuid; matched integer;
 begin
   if not exists (select 1 from iam.users where id = owner_id) then
     raise exception 'The research owner does not exist. No owner facts were written.';
@@ -21,15 +21,15 @@ begin
     ('jatin.b.rx3@gmail.com','Jatin Banga','former_employee','not_contacted','Arman confirmed this is a former employee. Retain relationship history, but ignore activity before June 2026 for this program.')
   ) as facts(email,label,category,contact_state,notes)
   loop
-    select count(*), (array_agg(u.id))[1] into matched, subject_id
+    select count(*), (array_agg(u.id))[1] into matched, v_subject_id
       from auth.users u where lower(u.email) = r.email;
     if matched <> 1 then raise exception 'Account identity missing or ambiguous for %. No owner facts were written.', r.email; end if;
     select count(*), (array_agg(p.id))[1] into matched, contact_id
-      from crm.party p where p.claimed_by = subject_id and p.organization_id = crm_org
+      from crm.party p where p.claimed_by = v_subject_id and p.organization_id = crm_org
         and p.deleted_at is null and p.canonical_id is null;
     if matched <> 1 then raise exception 'Claimed contact missing or ambiguous for %. No owner facts were written.', r.email; end if;
     insert into crm.party_research(subject_id,party_id,organization_id,created_by,updated_by,label,category,contact_state,notes)
-      values(subject_id,contact_id,crm_org,owner_id,owner_id,r.label,r.category,r.contact_state,r.notes)
+      values(v_subject_id,contact_id,crm_org,owner_id,owner_id,r.label,r.category,r.contact_state,r.notes)
       on conflict (created_by, subject_id) where deleted_at is null do nothing;
   end loop;
 end;

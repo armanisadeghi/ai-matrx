@@ -30,6 +30,9 @@ export function ContextValuesResourcePicker({
           const resource = contextValueResourceFromNode(node);
           if (resource) onSelect(resource);
         }
+        // Assign is a completion, not a toggle: the staged picks are spent, so
+        // a second click can never re-send them (it used to stack duplicates).
+        engine.clear();
       }}
       className="h-[min(420px,68dvh)] w-full rounded-none border-0"
     />

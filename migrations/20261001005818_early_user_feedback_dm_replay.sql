@@ -1,7 +1,6 @@
 -- chair-step: builds the live message replay uniqueness index concurrently after the duplicate preflight passes
 -- Bound interactive outreach retries without changing legacy clients.
-SET lock_timeout = '3s';
-SET statement_timeout = '30s';
+SET lock_timeout = '2s';
 
 -- Fail before starting the concurrent build when existing rows would violate uniqueness.
 DO $preflight$

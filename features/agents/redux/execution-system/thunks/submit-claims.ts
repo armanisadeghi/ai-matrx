@@ -89,3 +89,13 @@ export function releaseExecutionClaim(
 export function isExecutionClaimed(conversationId: string): boolean {
   return executionClaims.has(conversationId);
 }
+
+/**
+ * True while a send on this conversation is between its keypress and
+ * `running` — a composer submit passing its gates (`claimSubmit`) or a
+ * dispatch admitted at the door (`claimExecution`). A second submit in this
+ * window is HELD behind it (smartExecute), never dropped.
+ */
+export function isSendInFlight(conversationId: string): boolean {
+  return claims.has(conversationId) || executionClaims.has(conversationId);
+}

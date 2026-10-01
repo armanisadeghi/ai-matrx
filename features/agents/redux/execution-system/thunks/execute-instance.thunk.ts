@@ -29,7 +29,6 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type {
   AssembledAgentStartRequest,
-  UserInputPart,
   UserOverrides,
 } from "@/features/agents/types/request.types";
 import type { RequestInitiation } from "@/features/agents/types/instance.types";
@@ -52,9 +51,6 @@ import {
   warnRequestContextDrift,
 } from "../utils/warn-request-context-drift";
 import {
-  messagePartToUserInputPart,
-  selectEditorResourceXml,
-  selectResourcePayloads,
   userInputPartToMessagePart,
 } from "../instance-resources/instance-resources.selectors";
 import {
@@ -136,6 +132,11 @@ import {
   isExecutionClaimed,
   releaseExecutionClaim,
 } from "./submit-claims";
+import {
+  agentUserInputFromSubmission,
+  captureSubmission,
+  type FrozenSubmission,
+} from "./frozen-submission";
 import { markResourcesSubmitted } from "../instance-resources/instance-resources.slice";
 import {
   selectIsBlockMode,
@@ -233,6 +234,14 @@ export function refusesEmptyTurn(args: {
   return isEmptyUserInput(args.userInput);
 }
 
+/**
+ * The door refused a send that carried a frozen submission because another
+ * send on the conversation is being admitted or is running. The caller
+ * (smartExecute) returns the message to the person; nothing was sent.
+ */
+export const SUBMISSION_REFUSED_AT_ADMISSION =
+  "Send refused at admission — another send is in flight; the message was returned";
+
 // =============================================================================
 // Assemble Request (pure selector logic, extracted for testability)
 // =============================================================================
@@ -262,6 +271,8 @@ export function assembleRequest(
     initiation?: RequestInitiation;
     /** The Mandate's context kill switch, when this run is a mandate's. */
     mandateKillSwitch?: boolean;
+    /** What the person sent, captured at submit (frozen-submission.ts). */
+    submission?: FrozenSubmission;
   },
 ): AssembledAgentStartRequest | null {
   const instance = state.conversations.byConversationId[conversationId];
@@ -275,54 +286,22 @@ export function assembleRequest(
     return null;
   }
 
-  // User input
+  // User input — THE SEND IS FROZEN AT THE KEYPRESS (frozen-submission.ts).
   // DATA CONTRACT: never modify the user's typed text. Whitespace,
   // trailing newlines, leading spaces — all of it is meaningful
   // (e.g. fenced code blocks, indented markdown, deliberate blank lines).
-  // We send exactly what the user typed.
-  const userInputState =
-    state.instanceUserInput.byConversationId[conversationId];
-  const rawTextInput = userInputState?.text ?? "";
-  const messageParts = userInputState?.messageParts;
+  // We send exactly what the user typed. A caller that captured the
+  // submission at submit time hands it in; otherwise the composer is read
+  // now, through the same capture.
+  const submission =
+    opts?.submission ?? captureSubmission(state, conversationId);
+  const user_input = agentUserInputFromSubmission(submission);
 
-  // Editor pills (errors / code snippets) round-trip via XML in the user
-  // message text. The contract above protects user-typed content; this is
-  // structured resource data the user explicitly attached, serialized for
-  // round-trip persistence (so the message renders identically when reloaded
-  // from the DB). Append after the typed text — never prepend, since the
-  // user's prose should still lead the message.
-  const editorResourceXml = selectEditorResourceXml(conversationId)(state);
-  const textInput = editorResourceXml
-    ? rawTextInput
-      ? `${rawTextInput}\n\n${editorResourceXml}`
-      : editorResourceXml
-    : rawTextInput;
-
-  // Resources → ContentBlock[] (editor pills are filtered out by the selector)
-  const resourcePayloads = selectResourcePayloads(conversationId)(state);
   // Variables for the request — three-tier merge, but untouched scope-bound vars are
   // omitted so the server resolves them from the active scope (see selector).
   const variables = selectVariablesForRequest(conversationId)(state);
   const variableResourceContext =
     selectRuntimeVariableResourcePolicies(conversationId)(state);
-
-  // Build user_input
-  let user_input: AssembledAgentStartRequest["user_input"];
-  if (resourcePayloads.length > 0) {
-    const parts: UserInputPart[] = [];
-    if (textInput) parts.push({ type: "text", text: textInput });
-    if (messageParts)
-      parts.push(...messageParts.map(messagePartToUserInputPart));
-    parts.push(...resourcePayloads);
-    user_input = parts;
-  } else if (messageParts && messageParts.length > 0) {
-    const parts: UserInputPart[] = [];
-    if (textInput) parts.push({ type: "text", text: textInput });
-    parts.push(...messageParts.map(messagePartToUserInputPart));
-    user_input = parts;
-  } else if (textInput) {
-    user_input = textInput;
-  }
 
   // Config overrides (ONLY deltas — uses instance-owned baseSettings snapshot)
   const config_overrides = selectSettingsOverridesForApi(conversationId)(state);
@@ -525,6 +504,13 @@ interface ExecuteInstanceArgs {
    * skipped it).
    */
   surfaceRefreshed?: boolean;
+
+  /**
+   * What the person sent, captured synchronously at submit
+   * (frozen-submission.ts). When present this thunk never reads the live
+   * composer: the person may already be typing the next message in it.
+   */
+  submission?: FrozenSubmission;
 }
 
 interface ExecuteInstanceResult {
@@ -547,6 +533,7 @@ export const executeInstance = createAsyncThunk<
       initiation,
       onRequestId,
       surfaceRefreshed = false,
+      submission,
     },
     { getState, dispatch, rejectWithValue: reject },
   ) => {
@@ -596,6 +583,19 @@ export const executeInstance = createAsyncThunk<
         instance.status === "running" ||
         instance.status === "streaming"
       ) {
+        // A frozen submission (frozen-submission.ts) is its own message and is
+        // never the composer: it is refused back to its sender, which returns
+        // it to the person — never dropped, never confused with the draft.
+        if (submission) {
+          console.warn(
+            `[execute-instance] refused a concurrent turn on conversation ` +
+              `"${conversationId}" — another send is already ` +
+              (claimHeldElsewhere ? "being admitted" : "running") +
+              "; this send carried its own message and was handed back to " +
+              "its caller, which returns it to the person.",
+          );
+          return rejectWithValue(SUBMISSION_REFUSED_AT_ADMISSION);
+        }
         const pendingInput =
           state.instanceUserInput.byConversationId[conversationId];
         const pendingText = pendingInput?.text ?? "";
@@ -683,6 +683,7 @@ export const executeInstance = createAsyncThunk<
       // on the canonical chat. Skipped for retry (no input is sent).
       if (
         !retry &&
+        !submission &&
         userInputEntry?.submissionPhase === "idle" &&
         userInputEntry.text.length > 0
       ) {
@@ -702,7 +703,9 @@ export const executeInstance = createAsyncThunk<
       // the next message. Runs for EVERY send (smartExecute + direct callers);
       // never for retry (no input/attachments are sent). Parallel to
       // markInputSubmitted above; see instance-resources.slice + process-stream.
-      if (!retry) {
+      // A frozen submission was marked at the keypress — re-marking now would
+      // claim an attachment added since for a message that never carried it.
+      if (!retry && !submission) {
         dispatch(markResourcesSubmitted(conversationId));
       }
       // We pull the text from the assembled payload below so the optimistic
@@ -727,6 +730,7 @@ export const executeInstance = createAsyncThunk<
         scopeIdsOverride,
         initiation,
         mandateKillSwitch,
+        submission,
       });
       if (!payload) {
         throw new Error(`Failed to assemble request for ${conversationId}`);

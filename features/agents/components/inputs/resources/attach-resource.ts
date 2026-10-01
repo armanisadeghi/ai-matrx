@@ -28,6 +28,7 @@ import {
   addResource,
   removeResource,
   setResourcePreview,
+  setResourceStatus,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import {
@@ -137,19 +138,64 @@ function extractFileId(resource: Pick<Resource, "type" | "data">): string | null
  * video). `setResourcePreview` flips it to `ready` in the same tick (its reducer
  * sets status="ready"), so the chip is instantly sendable.
  */
+/** Order-independent JSON for identity comparison of resource sources. */
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort()
+      .filter((key) => record[key] !== undefined)
+      .map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "undefined";
+}
+
+/**
+ * Attaching is IDEMPOTENT: picking the same thing twice yields one chip. Until
+ * 2026-10-01 every click on Context values' "Assign" (and every re-pick of a
+ * note) appended another identical resource — "Port of Oakland lane · Gate
+ * code" ×3 in the PB-01 real test — and each copy was sent to the model.
+ */
+export function findIdenticalResourceId(
+  state: RootState,
+  conversationId: string,
+  blockType: ResourceBlockType,
+  source: unknown,
+): string | null {
+  const key = stableJson(source);
+  const match = Object.values(
+    state.instanceResources.byConversationId[conversationId] ?? {},
+  ).find(
+    (resource) =>
+      resource.blockType === blockType && stableJson(resource.source) === key,
+  );
+  return match?.resourceId ?? null;
+}
+
 function attachBinary(
   dispatch: Dispatch,
+  state: RootState,
   conversationId: string,
   blockType: ResourceBlockType,
   data: unknown,
   label: string,
 ): string {
+  const source = resourceDataToSource(blockType, data);
+  const existing = findIdenticalResourceId(
+    state,
+    conversationId,
+    blockType,
+    source,
+  );
+  if (existing) return existing;
   const resourceId = newResourceId();
   dispatch(
     addResource({
       conversationId,
       blockType,
-      source: resourceDataToSource(blockType, data),
+      source,
       resourceId,
       // Default editable-capable resources to EDITABLE. The server defaults
       // to locked, so the FE must explicitly mark `editable: true` (which the
@@ -265,7 +311,33 @@ export function useAttachResource(
     const isDurableConversation =
       !selectIsCacheOnly(conversationId)(getState());
 
+    // LOCAL FEEDBACK PRECEDES NETWORK WORK (the upload law, applied to picks —
+    // PB-02/PB-04 real-test friction 2026-10-01: a picked file's chip appeared
+    // ~5 s later with nothing in between, so people ticked again). The chip is
+    // placed NOW in a `resolving` state — which also holds Send, so nothing
+    // goes out half-attached — and settles when the durable edge answers.
+    const settle = (resourceId: string, ok: boolean) => {
+      if (ok) {
+        dispatch(
+          setResourceStatus({ conversationId, resourceId, status: "ready" }),
+        );
+      } else {
+        dispatch(removeResource({ conversationId, resourceId }));
+      }
+    };
+
     if (attachedFileId && isDurableConversation && blockType !== "document") {
+      const resourceId = attachBinary(
+        dispatch,
+        getState(),
+        conversationId,
+        blockType,
+        resource.data,
+        resourcePreviewLabel,
+      );
+      dispatch(
+        setResourceStatus({ conversationId, resourceId, status: "resolving" }),
+      );
       const result = await attachConversationFileEdge(
         conversationId,
         attachedFileId,
@@ -280,8 +352,11 @@ export function useAttachResource(
           error: result.error,
         });
         toast.error(`Couldn't attach file: ${result.error}`);
+        settle(resourceId, false);
         return false;
       }
+      settle(resourceId, true);
+      return true;
     }
 
     // Documents are reference-first: their association replaces a provider
@@ -295,16 +370,24 @@ export function useAttachResource(
         // canonical FILE identity in request.context; turning it into a binary
         // document here bypasses clean/raw extraction and is the regression
         // that sent large stored PDFs directly to providers.
-        if (!isDurableConversation) {
-          attachPendingFileReference(
-            dispatch,
-            getState(),
+        const provisionalId = attachPendingFileReference(
+          dispatch,
+          getState(),
+          conversationId,
+          fileId,
+          resourcePreviewLabel,
+        );
+        if (!isDurableConversation) return true;
+        // Durable conversation: the provisional chip shows immediately while
+        // the edge is written; AttachedDocumentChips retires it the moment the
+        // durable edge is readable (the same overlap rule as turn one).
+        dispatch(
+          setResourceStatus({
             conversationId,
-            fileId,
-            resourcePreviewLabel,
-          );
-          return true;
-        }
+            resourceId: provisionalId,
+            status: "resolving",
+          }),
+        );
         const assocStore = getAssociationsStore();
         // Always refresh before a duplicate attach. A "ready" cache may be
         // stale after another tab or server-side variable attachment.
@@ -313,6 +396,7 @@ export function useAttachResource(
           assocStore.getEdges("conversation", conversationId).status !== "ready"
         ) {
           toast.error("Couldn't verify existing document attachment metadata");
+          settle(provisionalId, false);
           return false;
         }
         const label = documentAttachLabelFromState(
@@ -331,7 +415,10 @@ export function useAttachResource(
         // Association already exists: reselect is an idempotent no-op. This
         // avoids a read/replace race that could erase a policy written by
         // another tab between refresh and mutation.
-        if (existingEdge) return true;
+        if (existingEdge) {
+          settle(provisionalId, true);
+          return true;
+        }
         const result = await attachConversationFileEdge(
           conversationId,
           fileId,
@@ -346,14 +433,17 @@ export function useAttachResource(
             error: result.error,
           });
           toast.error(`Couldn't attach document: ${result.error}`);
+          settle(provisionalId, false);
           return false;
         }
+        settle(provisionalId, true);
         return true;
       }
     }
 
     attachBinary(
       dispatch,
+      getState(),
       conversationId,
       blockType,
       resource.type === "context_value"

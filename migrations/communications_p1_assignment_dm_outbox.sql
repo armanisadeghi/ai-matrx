@@ -1,4 +1,3 @@
--- draft: frontend-outbox-dd224 rebased against the live trigger body; production apply requires Arman watching
 -- P1: enqueue an actionable DM with the saved assignee transition. The
 -- shared dispatcher delivers it even if the browser closes before its POST.
 -- Apply after communications_p1_task_assignment_outbox_00_in_app_notice.sql.

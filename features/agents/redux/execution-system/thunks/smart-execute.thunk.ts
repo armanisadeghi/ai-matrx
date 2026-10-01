@@ -2,7 +2,10 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { serializeExecutionRejection } from "@/lib/diagnostics/executionRejectionMeta";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectAutoClearConversation } from "../instance-ui-state/instance-ui-state.selectors";
-import { executeInstance } from "./execute-instance.thunk";
+import {
+  executeInstance,
+  SUBMISSION_REFUSED_AT_ADMISSION,
+} from "./execute-instance.thunk";
 import { executeManualInstance } from "./execute-manual-instance.thunk";
 import { splitInputIntoNewConversation } from "./create-instance.thunk";
 import { abortConversation, hasAbortController } from "./abort-registry";
@@ -12,15 +15,14 @@ import {
   markInputSubmitted,
   clearUserInput,
   resetSubmissionPhase,
+  setUserInputText,
   setPreSend,
 } from "../instance-user-input/instance-user-input.slice";
-import { selectUserInputText } from "../instance-user-input/instance-user-input.selectors";
 import { resolvePendingAsksWithInput } from "@/features/agents/ui-first-tools/redux/resolve-asks-with-input.thunk";
 import { ensureSandboxOrDecide } from "./sandbox-gate.thunk";
 import { ensureConversationScopesOrAsk } from "@/features/scopes/redux/thunks/conversationScopeGate";
 import {
   selectAllResourcesResolved,
-  selectResourcePayloads,
 } from "../instance-resources/instance-resources.selectors";
 import { selectIsExecuting } from "../selectors/aggregate.selectors";
 import {
@@ -40,8 +42,19 @@ import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   claimSubmit,
   isDuplicateSubmittedInput,
+  isSendInFlight,
   releaseSubmitClaim,
 } from "./submit-claims";
+import {
+  captureSubmission,
+  isEmptySubmission,
+  type FrozenSubmission,
+} from "./frozen-submission";
+import {
+  addInboxItem,
+  removeInboxItem,
+} from "../inbox/inbox.slice";
+import { markResourcesSubmitted } from "../instance-resources/instance-resources.slice";
 
 interface SmartExecuteArgs {
   conversationId: string;
@@ -58,6 +71,12 @@ interface SmartExecuteArgs {
    * Interrupt is its own thunk (`interruptAndSend`). Ignored while idle.
    */
   whileRunning?: "queue" | "steer";
+  /**
+   * A message already captured at its keypress and detached from the
+   * composer (a submit that was held behind an in-flight send). When present
+   * the composer is never read or cleared — it may hold the next message.
+   */
+  submission?: FrozenSubmission;
 }
 
 export function hasConversationAtExecutionBoundary(
@@ -85,6 +104,137 @@ function announceMissingConversation(conversationId: string): void {
   });
 }
 
+// =============================================================================
+// THE SEND IS FROZEN AT THE KEYPRESS — composer hand-off and the hold queue
+// =============================================================================
+
+/**
+ * Take a captured message out of the composer: mark it submitted (the box
+ * hides it) and clear it, so the person can type the next message. Used for a
+ * submit that is HELD behind an in-flight send.
+ */
+function detachFromComposer(
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  conversationId: string,
+  submission: FrozenSubmission,
+): void {
+  dispatch(
+    markInputSubmitted({ conversationId, userValues: submission.userValues }),
+  );
+  settleComposer(dispatch, getState, conversationId, submission);
+}
+
+/**
+ * The message has gone somewhere (the door, the queue, a pending ask): clear
+ * it from the composer — but only if the composer still holds exactly it. A
+ * next message the person has started is never touched.
+ */
+function settleComposer(
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  conversationId: string,
+  submission: FrozenSubmission,
+): void {
+  const entry = getState().instanceUserInput?.byConversationId[conversationId];
+  if (entry && entry.text === submission.text) {
+    dispatch(clearUserInput(conversationId));
+  }
+}
+
+/**
+ * The message went nowhere (a gate cancelled, preparation failed): put it back
+ * in the composer, visible. If the person has typed something since, both are
+ * kept — the returned message first, then what they typed.
+ */
+function returnToComposer(
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  conversationId: string,
+  submission: FrozenSubmission,
+): void {
+  const state = getState();
+  if (!hasConversationAtExecutionBoundary(state, conversationId)) return;
+  const entry = state.instanceUserInput?.byConversationId[conversationId];
+  const current = entry?.text ?? "";
+  if (current === submission.text) {
+    dispatch(resetSubmissionPhase(conversationId));
+    return;
+  }
+  dispatch(
+    setUserInputText({
+      conversationId,
+      text: current
+        ? `${submission.text}\n\n${current}`
+        : submission.text,
+      userValues: submission.userValues,
+    }),
+  );
+}
+
+/** One FIFO chain per conversation, so held messages keep the order typed. */
+const heldSends = new Map<string, Promise<void>>();
+const HOLD_POLL_MS = 25;
+
+/**
+ * A submit arrived while another send on the conversation is between its
+ * keypress and `running`. The message shows in the queue strip at once and
+ * is re-dispatched — in the order typed — the moment the earlier send is
+ * admitted; it then queues into the live run (or, if the earlier send never
+ * started, goes as the next turn). Never dropped, never silent.
+ */
+function holdBehindInFlightSend(
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  args: {
+    conversationId: string;
+    surfaceKey?: string;
+    whileRunning: "queue" | "steer";
+    submission: FrozenSubmission;
+  },
+): void {
+  const { conversationId, submission } = args;
+  const cardId = `inbox_local_held_${crypto.randomUUID()}`;
+  dispatch(
+    addInboxItem({
+      injectionId: cardId,
+      conversationId,
+      mode: args.whileRunning,
+      kind: "user_message",
+      text: submission.text,
+      status: "sending",
+      isVisibleToUser: true,
+      queuedAt: new Date().toISOString(),
+    }),
+  );
+  const previous = heldSends.get(conversationId) ?? Promise.resolve();
+  const next = previous.then(async () => {
+    while (isSendInFlight(conversationId)) {
+      await new Promise((resolve) => setTimeout(resolve, HOLD_POLL_MS));
+    }
+    dispatch(removeInboxItem({ conversationId, injectionId: cardId }));
+    // Dispatched, not awaited: the re-entered submit claims synchronously, so
+    // the next held message waits for THIS one's admission, not its answer.
+    void dispatch(
+      smartExecute({
+        conversationId,
+        surfaceKey: args.surfaceKey,
+        whileRunning: args.whileRunning,
+        submission,
+      }),
+    );
+  });
+  const settled = next.catch((error: unknown) => {
+    console.error("[smart-execute] a held send failed to re-enter", error);
+  });
+  heldSends.set(conversationId, settled);
+  void settled.then(() => {
+    if (heldSends.get(conversationId) === settled) {
+      heldSends.delete(conversationId);
+    }
+  });
+}
+
 /**
  * The single submit entrypoint. Handles two flavours:
  *
@@ -105,22 +255,98 @@ export const smartExecute = createAsyncThunk<
 >(
   "instances/smartExecute",
   async (
-    { conversationId, surfaceKey, whileRunning = "queue" },
+    { conversationId, surfaceKey, whileRunning = "queue", submission: handed },
     { getState, dispatch },
   ) => {
-    // Take admission synchronously, before the first pre-send await. Redux
-    // cannot expose `running` while surface/sandbox/scope gates are resolving,
-    // so two UI events could otherwise both admit the same draft.
-    if (!claimSubmit(conversationId)) {
-      // This is the guard succeeding, not an execution failure. Keep a
-      // development breadcrumb without feeding the production console-error
-      // capture lane a false incident.
-      console.debug(
-        `[smart-execute] duplicate submit dropped for conversation "${conversationId}" — ` +
-          "the same submission is already passing the pre-send boundary.",
-      );
+    // ── THE SEND IS FROZEN AT THE KEYPRESS (frozen-submission.ts) ──────────
+    // Everything below may await (organization, live page, sandbox, scopes)
+    // and the person may type the next message meanwhile. So what this send
+    // carries is captured NOW, synchronously, and the composer is released
+    // for the next message. No reader after this line reads the composer.
+    const entryState = getState();
+    if (!handed) {
+      const inputEntry =
+        entryState.instanceUserInput?.byConversationId[conversationId];
+      // The same draft submitted twice (a double Enter, a click + Enter):
+      // the first submit already owns it. Expected deduplication — the server
+      // was not contacted, so this is not an operational error.
+      if (isDuplicateSubmittedInput(inputEntry)) {
+        console.debug(
+          `[smart-execute] duplicate submit dropped for conversation "${conversationId}" — ` +
+            "this exact draft is already being sent. A newly typed draft is held or queued.",
+        );
+        return;
+      }
+      if (!hasConversationAtExecutionBoundary(entryState, conversationId)) {
+        announceMissingConversation(conversationId);
+        return;
+      }
+      // A pending resource has only a local preview; it has no durable file_id
+      // and is intentionally excluded from selectResourcePayloads. Sending now
+      // would persist a text-only turn while the upload continued in the
+      // background. Checked at the keypress, before anything is frozen.
+      if (!selectAllResourcesResolved(conversationId)(entryState)) {
+        console.error(
+          `[smart-execute] blocked conversation "${conversationId}" while attachments are still resolving; ` +
+            `sending now would silently omit them.`,
+        );
+        toast.info("Attachment is still uploading", {
+          description:
+            "Your message will be ready to send when the upload finishes.",
+        });
+        return;
+      }
+    }
+    const submission = handed ?? captureSubmission(entryState, conversationId);
+
+    // ── A SEND IS ALREADY IN FLIGHT: hold this one behind it ───────────────
+    // Another submit is between the keypress and `running` (its gates, the
+    // door's admission). This message is never dropped: it leaves the
+    // composer now, shows in the queue strip, and is routed — queued into the
+    // live run, or sent as the next turn — the moment the first is admitted.
+    if (isSendInFlight(conversationId)) {
+      if (!handed) {
+        if (isEmptySubmission(submission)) return;
+        if (submission.resources.length > 0) {
+          // Queued sends are text-only; dropping an attachment would be the
+          // classic lost-file bug. Everything stays in the composer.
+          toast.info("Attachments can't be sent while the agent is running", {
+            description:
+              "Stop the agent first, or remove the attachment to queue this message.",
+          });
+          return;
+        }
+        detachFromComposer(dispatch, getState, conversationId, submission);
+      }
+      holdBehindInFlightSend(dispatch, getState, {
+        conversationId,
+        surfaceKey,
+        whileRunning,
+        submission,
+      });
       return;
     }
+
+    // Take admission synchronously, before the first pre-send await. Redux
+    // cannot expose `running` while surface/sandbox/scope gates are resolving;
+    // `isSendInFlight` above reads this claim, so a second submit is held.
+    claimSubmit(conversationId);
+
+    // The composer is released at the keypress: the box empties now, and the
+    // person can type the next message while this one is prepared.
+    const fromComposer = !handed && !isEmptySubmission(submission);
+    if (fromComposer) {
+      dispatch(
+        markInputSubmitted({
+          conversationId,
+          userValues: submission.userValues,
+        }),
+      );
+      dispatch(markResourcesSubmitted(conversationId));
+    }
+    // True once the message has gone somewhere (the door, the queue, a
+    // pending ask). Any exit before that returns it to the composer.
+    let delivered = false;
 
     // Whether THIS submit put a "preparing" pre-send state up (so the finally
     // can take it down on every early return — a gate cancel, a dropped send).
@@ -135,12 +361,7 @@ export const smartExecute = createAsyncThunk<
     try {
       let state = getState();
 
-      // A queued click/keypress can outlive the conversation it targeted when
-      // navigation or fresh-chat cleanup removes the browser-local instance.
-      // That is not an organization failure and not a product incident: stop
-      // before the organization guard emits its toast or a console error, but
-      // tell the person the send did not go (never a silent no-op). The
-      // finally block still releases the admission claim.
+      // A held send re-enters here; its conversation may have closed since.
       if (!hasConversationAtExecutionBoundary(state, conversationId)) {
         announceMissingConversation(conversationId);
         return;
@@ -160,9 +381,8 @@ export const smartExecute = createAsyncThunk<
       //
       // Now the gate asks inline: one dialog, they choose, the choice becomes
       // their active workspace, and this same submit continues into it with the
-      // draft and attachments untouched. Declining keeps the old behaviour
-      // exactly — draft intact, nothing sent, and no error, because declining
-      // is an answer rather than a fault.
+      // draft and attachments untouched. Declining returns the message to the
+      // composer — nothing sent, and no error, because declining is an answer.
       try {
         await ensureExecutionOrganization(state, conversationId);
         state = getState();
@@ -174,55 +394,25 @@ export const smartExecute = createAsyncThunk<
             ? error.message
             : "Select an organization before sending this message.";
         // Expected, locally recoverable form validation: no request crossed the
-        // transport boundary and the draft remains intact. Keep it visible
-        // without manufacturing console-error + user-toast incidents.
+        // transport boundary and the draft returns to the composer. Keep it
+        // visible without manufacturing console-error + user-toast incidents.
         toast.info("Organization required", { description: message });
-        return;
-      }
-
-      // A pending resource has only a local preview; it has no durable file_id
-      // and is intentionally excluded from selectResourcePayloads. Sending now
-      // would persist a text-only turn while the upload continued in the
-      // background. This thunk-level guard protects every submit surface,
-      // including callers that bypass the disabled composer controls.
-      if (!selectAllResourcesResolved(conversationId)(state)) {
-        console.error(
-          `[smart-execute] blocked conversation "${conversationId}" while attachments are still resolving; ` +
-            `sending now would silently omit them.`,
-        );
-        toast.info("Attachment is still uploading", {
-          description:
-            "Your message will be ready to send when the upload finishes.",
-        });
         return;
       }
 
       // On-deck delegated tool guard. If the agent has delegated one or more
       // client tools that are still awaiting the user (pending asks), a chat
       // submit must NOT start a colliding new turn — the outstanding tool calls
-      // would dangle (see CLIENT_TOOL_SUSPEND_RESUME.md). Deliver the composer
+      // would dangle (see CLIENT_TOOL_SUSPEND_RESUME.md). Deliver the submitted
       // text as the answer to those asks instead; that resolves the tool calls
       // and the normal `continuation_needed → resumeInstance` flow continues the
       // conversation with the user's message embedded. No separate turn is run.
-      const composerText = selectUserInputText(conversationId)(state) ?? "";
       const consumedByPendingAsks = dispatch(
-        resolvePendingAsksWithInput(conversationId, composerText),
+        resolvePendingAsksWithInput(conversationId, submission.text),
       );
       if (consumedByPendingAsks) {
-        // Mirror the normal submit lifecycle so the composer clears cleanly:
-        // markInputSubmitted snapshots the text as lastSubmittedText, which lets
-        // clearUserInput wipe it (draft-protection only blocks clearing text that
-        // diverged from the just-submitted message).
-        const userValuesForClear =
-          state.instanceVariableValues?.byConversationId[conversationId]
-            ?.userValues ?? {};
-        dispatch(
-          markInputSubmitted({
-            conversationId,
-            userValues: userValuesForClear,
-          }),
-        );
-        dispatch(clearUserInput(conversationId));
+        delivered = true;
+        settleComposer(dispatch, getState, conversationId, submission);
         return;
       }
 
@@ -240,18 +430,6 @@ export const smartExecute = createAsyncThunk<
       // the autoclear split (input focus already moved to a fresh, idle
       // conversation) keeps its parallel-iteration behavior untouched.
       if (selectIsExecuting(conversationId)(state)) {
-        const inputEntry =
-          state.instanceUserInput.byConversationId[conversationId];
-        if (isDuplicateSubmittedInput(inputEntry)) {
-          // An unchanged draft submitted twice is expected user-input
-          // deduplication. The server was not contacted, so this must not be
-          // classified as an operational error.
-          console.debug(
-            `[smart-execute] duplicate submit dropped for conversation "${conversationId}" — ` +
-              "this exact draft is already the live turn. A newly typed draft remains eligible for Queue or Steer.",
-          );
-          return;
-        }
         const surfaceName =
           state.conversations.byConversationId[conversationId]?.surfaceName;
         if (
@@ -264,7 +442,7 @@ export const smartExecute = createAsyncThunk<
           });
           return;
         }
-        if (selectResourcePayloads(conversationId)(state).length > 0) {
+        if (submission.resources.length > 0) {
           // Queued/steered sends are text-only; silently dropping attachments
           // would be the classic lost-file bug. Keep everything in the composer
           // and tell the user how to proceed.
@@ -274,18 +452,10 @@ export const smartExecute = createAsyncThunk<
           });
           return;
         }
-        const sendText = composerText.trim();
+        const sendText = submission.text.trim();
         if (!sendText) return; // the running-turn inbox is text-only
-        const userValuesForClear =
-          state.instanceVariableValues?.byConversationId[conversationId]
-            ?.userValues ?? {};
-        dispatch(
-          markInputSubmitted({
-            conversationId,
-            userValues: userValuesForClear,
-          }),
-        );
-        dispatch(clearUserInput(conversationId));
+        delivered = true;
+        settleComposer(dispatch, getState, conversationId, submission);
         await dispatch(
           enqueueInboxMessage({
             conversationId,
@@ -306,8 +476,7 @@ export const smartExecute = createAsyncThunk<
       // `beforeExecute` can take real time (the tutor searches the learner's
       // material for 10–25 s); it used to show nothing, and its failure reached
       // only the console. The outgoing message renders with what is happening
-      // (`PendingSendMessage`), and a failure stays in place with Retry. The
-      // composer text is never touched here.
+      // (`PendingSendMessage`), and a failure stays in place with Retry.
       const prepSurface =
         state.conversations.byConversationId[conversationId]?.surfaceName ??
         undefined;
@@ -316,7 +485,7 @@ export const smartExecute = createAsyncThunk<
           conversationId,
           preSend: {
             status: "preparing",
-            text: composerText,
+            text: submission.text,
             label:
               (prepSurface && getManifest(prepSurface)?.beforeExecuteLabel) ||
               "Preparing your message",
@@ -327,7 +496,7 @@ export const smartExecute = createAsyncThunk<
       preSendShown = true;
       try {
         await dispatch(
-          refreshSurfaceScope({ conversationId, composerText }),
+          refreshSurfaceScope({ conversationId, composerText: submission.text }),
         ).unwrap();
       } catch (error) {
         const message =
@@ -341,7 +510,7 @@ export const smartExecute = createAsyncThunk<
             conversationId,
             preSend: {
               status: "failed",
-              text: composerText,
+              text: submission.text,
               label: "Not sent",
               error: message,
               startedAt: Date.now(),
@@ -357,9 +526,8 @@ export const smartExecute = createAsyncThunk<
       // run this turn on the global backend — that burns tokens on tool calls that
       // fail against the wrong filesystem and poisons the agent's context. If the
       // bound box can't be resolved, block the send and let the user decide
-      // (attach & retry / detach & send without it / cancel). Gating HERE — before
-      // markInputSubmitted and any optimistic user bubble — means a cancel leaves
-      // the composer text exactly as typed, with nothing to restore.
+      // (attach & retry / detach & send without it / cancel). A cancel returns
+      // the message to the composer, with nothing sent.
       const gate = await dispatch(
         ensureSandboxOrDecide({ conversationId }),
       ).unwrap();
@@ -373,8 +541,7 @@ export const smartExecute = createAsyncThunk<
       // Chat↔scope "ask on mismatch" gate. A chat carries its scopes durably;
       // when the sidebar's active selection differs from the chat's tags we
       // ALWAYS ask (switch / combine / keep) — never silently retag, never
-      // silently drop. Same placement contract as the sandbox gate: BEFORE
-      // markInputSubmitted, so a cancel leaves the composer text as typed.
+      // silently drop. A cancel returns the message to the composer.
       // Skipped for ephemeral chats (no persisted rows by design) and manual
       // mode (Agent Builder — sends the active scope_ids for this turn but stamps no tags).
       const isEphemeral =
@@ -393,8 +560,7 @@ export const smartExecute = createAsyncThunk<
       // fresh chat. Re-read at the final admission boundary: dispatching the
       // child against the earlier snapshot would manufacture a paired
       // execute/rejected + smartExecute/rejected incident for expected stale
-      // UI intent, and markInputSubmitted would mutate state for a conversation
-      // that no longer exists.
+      // UI intent.
       state = getState();
       if (!hasConversationAtExecutionBoundary(state, conversationId)) {
         announceMissingConversation(conversationId);
@@ -403,16 +569,9 @@ export const smartExecute = createAsyncThunk<
 
       const autoClear = selectAutoClearConversation(conversationId)(state);
 
-      // Phase 1 — capture the current text + userValues so we can pre-populate
-      // the post-split conversation (and so the "re-apply" snapshot is available
-      // after phase 2 clears the textarea on `conversationId`).
-      const userValues =
-        state.instanceVariableValues?.byConversationId[conversationId]
-          ?.userValues ?? {};
       // Admission: the real optimistic turn takes over from the pre-send one.
       dispatch(setPreSend({ conversationId, preSend: null }));
       preSendShown = false;
-      dispatch(markInputSubmitted({ conversationId, userValues }));
 
       // Fire the execute on the CURRENT conversation — do NOT await yet.
       // We want to split the input focus before the stream lands so the user
@@ -428,6 +587,10 @@ export const smartExecute = createAsyncThunk<
       // person hitting send/submit (chat inputs, builder run, agent apps). This
       // per-send override beats an "auto" launch default: a user typing into an
       // auto-launched conversation is still a user-initiated request.
+      //
+      // The frozen `submission` is what goes — never the composer, which may
+      // already hold the person's next message.
+      delivered = true;
       const executePromise =
         apiEndpointMode === "manual"
           ? dispatch(
@@ -435,6 +598,7 @@ export const smartExecute = createAsyncThunk<
                 conversationId,
                 initiation: "user",
                 surfaceRefreshed: true,
+                submission,
               }),
             )
           : dispatch(
@@ -442,15 +606,15 @@ export const smartExecute = createAsyncThunk<
                 conversationId,
                 scopeIdsOverride,
                 initiation: "user",
-                // The live page was read above, with the composer's text.
+                // The live page was read above, with the submitted text.
                 surfaceRefreshed: true,
+                submission,
               }),
             );
 
-      // Both execution thunks synchronously create their request row and set
-      // status="running" before their first await. Redux is now the admission
-      // record, so release the short pre-send claim; a genuinely new draft may
-      // use the intentional live-run queue.
+      // Both execution thunks synchronously take the door's admission claim
+      // (`claimExecution`) before their first await and hold it until
+      // `running`, so a submit arriving now is still held behind this one.
       releaseClaim();
 
       // The split (auto-clear "iterate") mints a NEW, historyless conversation and
@@ -489,6 +653,20 @@ export const smartExecute = createAsyncThunk<
       // even on rejection, so without this smartExecute would report success
       // over a dead send.
       if (
+        executeInstance.rejected.match(executeResult) &&
+        executeResult.payload === SUBMISSION_REFUSED_AT_ADMISSION
+      ) {
+        // The door saw another send being admitted (a direct caller raced
+        // us). Nothing was sent; hold this message behind that one.
+        holdBehindInFlightSend(dispatch, getState, {
+          conversationId,
+          surfaceKey,
+          whileRunning,
+          submission,
+        });
+        return;
+      }
+      if (
         executeInstance.rejected.match(executeResult) ||
         executeManualInstance.rejected.match(executeResult)
       ) {
@@ -507,6 +685,10 @@ export const smartExecute = createAsyncThunk<
       // A claim can never strand the composer.
       if (preSendShown) dispatch(setPreSend({ conversationId, preSend: null }));
       releaseClaim();
+      // A message that went nowhere goes back to the person — never lost.
+      if (!delivered && !isEmptySubmission(submission)) {
+        returnToComposer(dispatch, getState, conversationId, submission);
+      }
     }
   },
   { serializeError: serializeExecutionRejection },

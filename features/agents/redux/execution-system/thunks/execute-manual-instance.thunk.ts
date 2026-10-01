@@ -122,11 +122,13 @@ import {
 import { ensureContextRulesReady } from "../context-rules/context-rules.thunks";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 import { setExpectedContextRows } from "../instance-context/instance-context.slice";
+import { userInputPartToMessagePart } from "../instance-resources/instance-resources.selectors";
+import { captureSubmission, type FrozenSubmission } from "./frozen-submission";
 import {
-  messagePartToUserInputPart,
-  selectResourcePayloads,
-  userInputPartToMessagePart,
-} from "../instance-resources/instance-resources.selectors";
+  claimExecution,
+  isExecutionClaimed,
+  releaseExecutionClaim,
+} from "./submit-claims";
 import {
   resolveBackendForConversation,
   warmLocalEngineForConversation,
@@ -272,6 +274,8 @@ export async function assembleManualRequest(
      * Builder's test runner + ephemeral chat turns, both user sends).
      */
     initiation?: RequestInitiation;
+    /** What the person sent, captured at submit (frozen-submission.ts). */
+    submission?: FrozenSubmission;
   },
 ): Promise<ManualExecutionRequest | null> {
   const instance = state.conversations.byConversationId[conversationId];
@@ -351,18 +355,18 @@ export async function assembleManualRequest(
 
   // Current user input. Verbatim — whitespace is meaningful (fenced code,
   // indented markdown, deliberate blank lines).
-  const userInputState =
-    state.instanceUserInput.byConversationId[conversationId];
-  const textInput = userInputState?.text ?? "";
-  const userMessageParts = userInputState?.messageParts;
-  const resourcePayloads = selectResourcePayloads(conversationId)(state);
+  // THE SEND IS FROZEN AT THE KEYPRESS (frozen-submission.ts): a handed
+  // submission is what is sent; otherwise the composer is read now.
+  const submission =
+    opts?.submission ?? captureSubmission(state, conversationId);
+  const textInput = submission.text;
+  const userMessageParts = submission.messageParts;
+  const resourcePayloads = submission.resources;
 
-  if (textInput || userMessageParts || resourcePayloads.length > 0) {
+  if (textInput || userMessageParts.length > 0 || resourcePayloads.length > 0) {
     const parts: UserInputPart[] = [];
     if (textInput) parts.push({ type: "text", text: textInput });
-    if (userMessageParts) {
-      parts.push(...userMessageParts.map(messagePartToUserInputPart));
-    }
+    parts.push(...userMessageParts);
     if (resourcePayloads.length > 0) parts.push(...resourcePayloads);
     messages.push({ role: "user", content: parts });
   }
@@ -622,6 +626,8 @@ interface ExecuteManualInstanceArgs {
   initiation?: RequestInitiation;
   /** See ExecuteInstanceArgs.surfaceRefreshed — the live page is re-read here unless true. */
   surfaceRefreshed?: boolean;
+  /** See ExecuteInstanceArgs.submission — never read the live composer when present. */
+  submission?: FrozenSubmission;
 }
 
 interface ExecuteManualInstanceResult {
@@ -640,7 +646,13 @@ export const executeManualInstance = createAsyncThunk<
 >(
   "instances/executeManual",
   async (
-    { conversationId, debug = false, initiation, surfaceRefreshed = false },
+    {
+      conversationId,
+      debug = false,
+      initiation,
+      surfaceRefreshed = false,
+      submission: handedSubmission,
+    },
     { getState, dispatch, rejectWithValue: reject },
   ) => {
     const requestId = generateRequestId();
@@ -658,6 +670,12 @@ export const executeManualInstance = createAsyncThunk<
     let runOutputKind: RunOutputKind = "text";
     let runModelLabel: string | null = null;
     let runWaitSeconds: number | null = null;
+    // Mark "a send is being admitted" (submit-claims.ts) from here until the
+    // run reads `running`, so a second submit in that window is HELD behind
+    // this one by smartExecute instead of starting a concurrent turn.
+    const admission = isExecutionClaimed(conversationId)
+      ? null
+      : claimExecution(conversationId);
     try {
       // Saved context rules loaded and no rule write in flight before the
       // snapshot the request is built from (RULES.md §3).
@@ -677,10 +695,10 @@ export const executeManualInstance = createAsyncThunk<
       // optimistic bubble or request tracking mutates local state.
       requireExecutionOrganizationId(state, conversationId);
 
-      const userInputEntry =
-        state.instanceUserInput.byConversationId[conversationId];
-      const userInputText = userInputEntry?.text ?? "";
-      const userMessageParts = userInputEntry?.messageParts ?? undefined;
+      // Frozen at the keypress when smartExecute sent it; read now otherwise.
+      const submission =
+        handedSubmission ?? captureSubmission(state, conversationId);
+      const userInputText = submission.text;
 
       // First-turn variables strip (`FirstTurnVariables` on the user bubble)
       // must freeze the exact resolved payload the server will apply — including
@@ -739,10 +757,9 @@ export const executeManualInstance = createAsyncThunk<
       // `record_reserved cx_message role=user` promotes this bubble to the
       // real server id (no duplicate).
       // ─────────────────────────────────────────────────────────────────────
-      const resourcePayloads = selectResourcePayloads(conversationId)(state);
       const requestParts: UserInputPart[] = [
-        ...(userMessageParts?.map(messagePartToUserInputPart) ?? []),
-        ...resourcePayloads,
+        ...submission.messageParts,
+        ...submission.resources,
       ];
       const resourceBlocks = requestParts
         .filter((part) => part.type !== "text")
@@ -795,10 +812,12 @@ export const executeManualInstance = createAsyncThunk<
 
       dispatch(createRequest({ requestId, conversationId }));
       dispatch(setInstanceStatus({ conversationId, status: "running" }));
+      releaseExecutionClaim(conversationId, admission);
       dispatch(setRequestStatus({ requestId, status: "connecting" }));
 
       const payload = await assembleManualRequest(state, conversationId, {
         initiation,
+        submission,
       });
       if (!payload) {
         throw new Error(
@@ -1202,6 +1221,9 @@ export const executeManualInstance = createAsyncThunk<
         error instanceof Error ? error.message : "Manual execution failed",
         error instanceof Error ? error.name : undefined,
       );
+    } finally {
+      // Every exit hands the admission back (no-op once running released it).
+      releaseExecutionClaim(conversationId, admission);
     }
   },
 );

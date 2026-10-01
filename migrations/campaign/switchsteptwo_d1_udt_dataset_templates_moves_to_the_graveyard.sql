@@ -23,7 +23,7 @@ begin
 end
 $pre$;
 
-update platform.entity_types set is_active = false where token = 'udt_dataset_template' and is_active;
+update platform.entity_types set is_active = false, type = 'deprecated', custom_fields_enabled = false where token = 'udt_dataset_template' and is_active;
 update platform.shareable_resource_registry set is_active = false where resource_type = 'udt_dataset_template' and table_name = 'udt_dataset_templates' and is_active;
 alter table workbench.udt_dataset_templates
   drop constraint udt_dataset_templates_created_by_fkey,

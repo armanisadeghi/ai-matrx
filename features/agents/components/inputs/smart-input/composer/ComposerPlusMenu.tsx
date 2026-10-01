@@ -94,6 +94,9 @@ import type { ComputeTarget } from "@/hooks/sandbox/use-compute-targets";
 import { useSandboxBindingBlocked } from "../use-compute-target-actions";
 import type { Resource } from "@/features/agents/resources/types";
 import {
+  COMPOSER_MENU_NO_ENTRANCE,
+  ignoreOwnWrapper,
+  ComposerMenuCloseAllContext,
   ComposerMenuDivider,
   ComposerMenuLabel,
   ComposerMenuRow,
@@ -190,8 +193,10 @@ export function ComposerPlusMenu({
         side={side}
         align="start"
         sideOffset={8}
-        className="flex w-[300px] max-h-[var(--radix-popover-content-available-height)] flex-col overflow-y-auto p-1"
+        onPointerDownOutside={ignoreOwnWrapper}
+        className={`flex w-[300px] max-h-[var(--radix-popover-content-available-height)] flex-col overflow-y-auto p-1 ${COMPOSER_MENU_NO_ENTRANCE}`}
       >
+        <ComposerMenuCloseAllContext.Provider value={close}>
         {/* Attach — every mode */}
         <ComposerSubmenu row={{ icon: FolderOpen, label: "Add files or photos" }} panelClassName={PICKER_PANEL}>
           {(closeCascade) => picker("files", closeCascade)}
@@ -408,6 +413,7 @@ export function ComposerPlusMenu({
             openRunControlsWindow({ conversationId });
           }}
         />
+        </ComposerMenuCloseAllContext.Provider>
       </PopoverContent>
     </Popover>
   );

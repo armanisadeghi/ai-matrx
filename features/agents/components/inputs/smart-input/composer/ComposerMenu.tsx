@@ -14,7 +14,13 @@
  * Radix DropdownMenu's typeahead would swallow the keystrokes).
  */
 
-import { useState, type ComponentType, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import { Check, ChevronRight } from "lucide-react";
 import { Popover, PopoverAnchor, PopoverContent } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
@@ -142,6 +148,58 @@ export function ComposerMenuSwitchRow({
 }
 
 /**
+ * Closes the WHOLE composer menu (the root popover) from any cascade depth.
+ * Radix hands Escape only to the topmost layer, so without this a person
+ * pressed Escape once per open level (PB-01…PB-04 real-test friction,
+ * 2026-10-01). The root menu provides it; a cascade outside one closes itself.
+ */
+const TEXT_FIELD_SELECTOR = [
+  'input:not([type]):not([disabled])',
+  'input[type="text"]:not([disabled])',
+  'input[type="search"]:not([disabled])',
+  'input[type="url"]:not([disabled])',
+  "textarea:not([disabled])",
+].join(",");
+
+/** The first text field inside a cascade panel, if it has one. */
+export function firstTextField(root: EventTarget | null): HTMLElement | null {
+  if (!(root instanceof HTMLElement)) return null;
+  return root.querySelector<HTMLElement>(TEXT_FIELD_SELECTOR);
+}
+
+/**
+ * THE COMPOSER MENUS OPEN INSTANTLY AND NEVER DISMISS ON THEIR OWN FRAME.
+ * Measured 2026-10-01 (PB-01…PB-04 "+ opens only every second click"): the
+ * shared popper entrance holds its first keyframe — scale 0.95, 8px off — for
+ * ~400 ms while the menu's first render settles, so the content's top rows
+ * sit 28px below where they are drawn and the pointer lands on Radix's bare
+ * popper wrapper instead. The wrapper is OUTSIDE the dismissable layer, so
+ * that click closed the menu it was aimed at. Two halves, both required:
+ *   1. the composer menus skip the entrance (a menu is a tool, not a reveal —
+ *      macOS and Linear menus appear in the frame they are asked for);
+ *   2. a pointer-down on a panel's own popper wrapper is never "outside".
+ */
+export const COMPOSER_MENU_NO_ENTRANCE =
+  "data-[state=open]:[animation:none]!";
+
+export function ignoreOwnWrapper(event: {
+  target: EventTarget | null;
+  currentTarget: EventTarget | null;
+  preventDefault: () => void;
+}) {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const wrapper = target.closest("[data-radix-popper-content-wrapper]");
+  if (wrapper && wrapper.contains(event.currentTarget as Node | null)) {
+    event.preventDefault();
+  }
+}
+
+export const ComposerMenuCloseAllContext = createContext<(() => void) | null>(
+  null,
+);
+
+/**
  * A row that opens a cascading panel beside the menu. The panel is a nested
  * Popover anchored to the row, so Radix treats it as a child layer: clicking
  * inside it never dismisses the parent menu.
@@ -167,6 +225,7 @@ export function ComposerSubmenu({
     onOpenChange?.(next);
   };
   const close = () => setOpen(false);
+  const closeAll = useContext(ComposerMenuCloseAllContext);
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverAnchor asChild>
@@ -179,8 +238,26 @@ export function ComposerSubmenu({
         side="right"
         align="start"
         sideOffset={6}
+        onEscapeKeyDown={() => {
+          close();
+          closeAll?.();
+        }}
+        onPointerDownOutside={ignoreOwnWrapper}
+        onOpenAutoFocus={(event) => {
+          // A cascade that holds a text field (a picker's search, a URL box)
+          // focuses THAT field on open, in the same tick Radix would focus the
+          // first button. Left to Radix, focus landed on "Back" and the
+          // picker's own deferred focus arrived ~0.8 s later behind the list's
+          // first render, so the first characters a person typed were lost
+          // (PB-04 real-test friction, 2026-10-01).
+          const field = firstTextField(event.currentTarget);
+          if (!field) return;
+          event.preventDefault();
+          field.focus({ preventScroll: true });
+        }}
         className={cn(
           "flex max-h-[var(--radix-popover-content-available-height)] flex-col overflow-hidden p-1",
+          COMPOSER_MENU_NO_ENTRANCE,
           panelClassName ?? "w-72",
         )}
       >

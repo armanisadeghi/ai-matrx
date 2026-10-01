@@ -1,4 +1,3 @@
--- draft: FX-F (mandate-candidates) — the LIVE apply joins the chair's C0 live session (mandate.candidate_run must exist on live first); clone only until then
 -- based-on: public.mnd_run_history(text, text, uuid, uuid, text, integer, integer) 321e3da1b03d9756283cb10403b67d506b1d3e303ceda1a6875d14cbcfb1439e
 --
 -- mnd_run_history_excludes_candidate_legs_2026_09_30.sql
