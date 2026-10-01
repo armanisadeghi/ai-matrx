@@ -73,7 +73,7 @@ export function MandateStatusControl({
       const ok = await confirm({
         title: `Disable ${name}?`,
         description:
-          "Once it is off, asking for this job is refused for everyone, wherever it is used, until it is enabled again. Its settings and bindings are kept.",
+          "Asking for this job is refused for everyone until it is enabled again. Settings and bindings are kept.",
         confirmLabel: "Disable",
         variant: "destructive",
       });
@@ -99,7 +99,7 @@ export function MandateStatusControl({
     const ok = await confirm({
       title: `Archive ${name}?`,
       description:
-        "It disappears from every list and asking for it is refused, together with its bindings, notes and test cases. Nothing is destroyed: it can be restored from Trash.",
+        "It leaves every list and asking for it is refused. Bindings, notes and test cases are kept; restore from Trash.",
       confirmLabel: "Archive",
       variant: "destructive",
     });

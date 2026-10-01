@@ -574,7 +574,7 @@ function CandidateEditor({
 
         {workflowHeld ? (
           <span className="text-[11px] text-muted-foreground">
-            Runs the workflow as bound — its steps carry their own settings.
+            Uses the workflow's own step settings.
           </span>
         ) : (
         <Button

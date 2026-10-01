@@ -72,8 +72,7 @@ export function RunFailureCard({
           no retry line: 409/422 will refuse again until something changes. */}
       {failure.status == null ? (
         <p className="text-[11.5px] text-muted-foreground">
-          Nothing was run and nothing was charged. Check your connection and run
-          it again; if it keeps failing, the server is unreachable from here.
+          Nothing ran or was charged; check your connection and retry.
         </p>
       ) : null}
 

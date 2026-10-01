@@ -152,8 +152,7 @@ export function ProvisionOfferComposer({
     return (
       <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
         <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
-        Provision &quot;{provisionKey}&quot; has no live row yet (declaration
-        not synced) — use the variables JSON below.
+        Provision &quot;{provisionKey}&quot; not synced; use the JSON below.
       </p>
     );
   }
@@ -162,9 +161,7 @@ export function ProvisionOfferComposer({
     return (
       <div className="rounded-md border border-border bg-card p-2">
         <p className="mb-2 text-[11px] text-muted-foreground">
-          Structured input from the offer kind{" "}
-          <code className="font-mono">{state.offerKind}</code> — submitting
-          fills the variables JSON below (which stays editable).
+          Submitting fills the variables JSON below.
         </p>
         <KindInputForm
           kind={state.offerKind}
@@ -197,10 +194,9 @@ export function ProvisionOfferComposer({
       {state.kindLookupError ? (
         <p className="mb-1 flex items-start gap-1.5 text-[11px] text-muted-foreground">
           <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
-          Couldn&apos;t look up the offer kind{" "}
-          <code className="font-mono">{state.offer.offerKindSlug}</code>, so
-          these fields are scaffolded from the provision instead:{" "}
-          {state.kindLookupError}
+          Couldn&apos;t look up kind{" "}
+          <code className="font-mono">{state.offer.offerKindSlug}</code>;
+          using provision fields: {state.kindLookupError}
           <ErrorAlchemyMenu error={state.kindLookupError} />
         </p>
       ) : null}
@@ -240,9 +236,7 @@ function ScaffoldForm({
   return (
     <div className="space-y-2 rounded-md border border-border bg-card p-2">
       <p className="text-[11px] text-muted-foreground">
-        The offer kind isn&apos;t registered yet, so these fields are
-        scaffolded straight from the provision&apos;s offered values. Blank
-        fields are omitted.
+        Fields come from the provision; blank ones are omitted.
       </p>
       {offer.values.map((value) => (
         <div key={value.name} className="space-y-1">

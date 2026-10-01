@@ -72,7 +72,7 @@ export function MandateContextGate({
       <ShortcutFieldRow
         title="Automatic context"
         source="Mandate"
-        hint="A mandate can block automatic context. It cannot reopen context blocked by the Mandate Holder. Required context policies still apply."
+        hint="Can block automatic context, never reopen a holder's block"
         metadata={
           <>
             <span>

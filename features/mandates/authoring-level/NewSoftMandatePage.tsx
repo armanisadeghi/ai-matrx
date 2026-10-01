@@ -411,8 +411,8 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
                 />
                 <span className="text-[11px] text-muted-foreground/70">
                   {keyIsAuto
-                    ? "Made from the name. Type here only if you want a different one."
-                    : "Your own key. Clear it to go back to the one made from the name."}
+                    ? "Made from the name; type to use your own."
+                    : "Your own key; clear it to use the generated one."}
                 </span>
               </div>
             </div>
@@ -473,7 +473,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
                 setGoal(e.target.value);
                 setServerError(null);
               }}
-              placeholder="Exactly what done-well means. Tight, opinionated, no fluff — intelligent agents will turn this into a system prompt and a grading rubric."
+              placeholder="What done-well means — tight, opinionated, no fluff"
               rows={8}
               className="min-h-40 border-none bg-transparent p-0 text-[14.5px] leading-relaxed shadow-none focus-visible:ring-0"
               aria-label="Goal"

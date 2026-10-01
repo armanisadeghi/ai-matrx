@@ -379,8 +379,7 @@ function DriftPanel({
             A newer version of this agent exists.
           </div>
           <div className="mt-0.5 text-muted-foreground">
-            Users are getting the pinned version. Nothing changes until you
-            update the pin.
+            Users get the pinned version until you update the pin.
           </div>
         </div>
       </div>
@@ -711,7 +710,7 @@ function UnresolvedPinPanel({
       {error !== null && (
         <div className="space-y-1">
           <p className="text-rose-600">
-            The server lookup also failed: <TextWithDoors text={error} />
+            Lookup also failed: <TextWithDoors text={error} />
             <ErrorAlchemyMenu />
           </p>
           {row.agentId && (
@@ -732,8 +731,7 @@ function UnresolvedPinPanel({
       {result !== null && agent === null && (
         <p className="text-rose-600">
           {/* // access-errors: ok — verified by the service-role admin lookup, which bypasses RLS: no row with the pinned id exists */}
-          The pinned agent no longer exists — nothing with the pinned id is in
-          the agents table. Choose a replacement in “Change pinned agent” below.
+          The pinned agent no longer exists. Choose a replacement in “Change pinned agent” below.
         </p>
       )}
 
@@ -1472,14 +1470,11 @@ function FactsPanel({
           ) : null}
           {wave1.provisionKey && (
             <Fact label="Provision">
+              {/* The provision is the entire input declaration; the binding's consumption map decides what the Mandate Holder consumes. */}
               <span className="inline-flex flex-wrap items-center gap-1.5">
                 <code className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]">
                   {wave1.provisionKey}
                 </code>
-                <span className="text-muted-foreground">
-                  — the entire input declaration; the binding&apos;s consumption
-                  map decides what the Mandate Holder consumes.
-                </span>
               </span>
             </Fact>
           )}
@@ -1523,8 +1518,7 @@ function FactsPanel({
             />
             {offerFailed && factProvisionKey ? (
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Couldn&apos;t read this provision&apos;s offer, so its key is
-                shown instead of the values it offers.
+                Couldn&apos;t read the offer; showing its key instead.
                 <ErrorAlchemyMenu operation="Read the provision offer" />
               </p>
             ) : null}
@@ -1703,8 +1697,8 @@ function MandateProvisionPanel({ row }: { row: MandateRow }) {
           </>
         ) : (
           <p className="text-xs text-rose-600">
-            This Mandate names Provision <code>{provisionKey}</code>, but no
-            live row exists for it — a data defect, not an empty offer.
+            Provision <code>{provisionKey}</code> is missing — a data defect,
+            not an empty offer.
           </p>
         )}
       </div>

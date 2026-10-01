@@ -104,8 +104,8 @@ describe("the delete is DISCOVERABLE, not only in a row menu", () => {
   });
 
   it("says what is lost and that it can be restored", () => {
-    expect(archive).toContain("disappears from every list");
-    expect(archive).toContain("Nothing is destroyed: it can be restored from Trash.");
+    expect(archive).toContain("It leaves every list");
+    expect(archive).toContain("restore from Trash.");
   });
 
   it("leaves the page rather than describing a job that no longer exists", () => {

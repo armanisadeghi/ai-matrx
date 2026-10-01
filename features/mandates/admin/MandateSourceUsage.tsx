@@ -277,8 +277,7 @@ export function MandateSourceUsage({
                 />
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Found by the older, partial discovery — no code scan has
-                reported a declaration for this job yet.
+                Not confirmed by a code scan yet
               </p>
             </div>
           ) : (

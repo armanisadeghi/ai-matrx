@@ -309,8 +309,8 @@ export function MandateTryPanel({
         ) : null}
         <p className="text-xs text-muted-foreground">
           {mode === "current"
-            ? "Runs whatever fulfils this job for you right now — your own binding first, then your organization's, then the platform's."
-            : "Runs the one you pick instead, just for this try. Nothing is bound or saved."}
+            ? "Runs your binding, else your org's, else the platform's."
+            : "Runs your pick for this try only; nothing is saved."}
         </p>
       </div>
 

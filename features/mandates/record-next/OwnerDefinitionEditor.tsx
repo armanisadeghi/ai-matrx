@@ -167,11 +167,7 @@ export function OwnerDefinitionEditor({
             </Button>
           </div>
         </div>
-      ) : (
-        <p className="text-xs text-muted-foreground">
-          You own this mandate, so you can rename it and change what it hands back.
-        </p>
-      )}
+      ) : null}
     </Section>
   );
 }

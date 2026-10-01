@@ -602,7 +602,7 @@ function OverridesBody({
   if (holder.kind === "workflow") {
     return (
       <p className="text-sm text-muted-foreground">
-        This job is run by a workflow, which has no model settings to override.
+        A workflow runs this job; it has no model settings.
       </p>
     );
   }

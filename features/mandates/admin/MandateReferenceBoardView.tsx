@@ -487,11 +487,6 @@ export function MandateReferenceBoardView() {
     <div className="min-w-0 space-y-4 p-4">
       <header className="flex flex-wrap items-center gap-3">
         <h1 className="text-lg font-semibold">Mandate references</h1>
-        <p className="text-sm text-muted-foreground">
-          What every repository reported about where mandates are declared and
-          called. A repository nobody has finished scanning reads unverified —
-          it never reads clean.
-        </p>
         <Button
           variant="outline"
           size="sm"
@@ -564,9 +559,8 @@ export function MandateReferenceBoardView() {
                 aria-hidden="true"
               />
               <span>
-                This server did not report the scheduled patrol, so its state and
-                cost are unknown here — not zero. Everything below is still the
-                measured reference data.
+                The scheduled patrol did not report; its state and cost are
+                unknown, not zero.
               </span>
             </div>
           )}
@@ -611,10 +605,7 @@ export function MandateReferenceBoardView() {
             <h2 className="text-sm font-semibold">
               Conversion list ({board.conversion_count})
             </h2>
-            <p className="text-sm text-muted-foreground">
-              Work that runs outside a mandate today. This is the ratchet
-              baseline: it may shrink, never grow.
-            </p>
+            {/* The conversion list is the ratchet baseline: it may shrink, never grow. */}
             <div className="divide-y divide-border rounded-md border border-border text-sm">
               {board.conversion_list.length > 0 ? (
                 board.conversion_list.map((row, index) => (
