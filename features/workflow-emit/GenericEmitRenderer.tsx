@@ -7,7 +7,7 @@
  * tool-call `entry`).
  *
  * It leans on the same type-aware result-field library the tool generic
- * renderer uses — `ResultValue` (density="full", HIDE NOTHING) — so a payload
+ * renderer uses — `ToolResultValue` (kind → its component, else `ResultValue`, density="full", HIDE NOTHING) — so a payload
  * of any shape (text/markdown/list/table/object/media/json) renders truthfully
  * and beautifully without per-shape code here.
  *
@@ -21,7 +21,7 @@ import React, { useMemo } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import MarkdownStream from "@/components/MarkdownStream";
-import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
+import { ToolResultValue } from "@/features/tool-call-visualization/result-fields/ToolResultValue";
 import { AssistChip } from "@/features/assists/components/AssistChip";
 import { makeEphemeralAssist, type Assist } from "@/features/assists/types";
 import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants";
@@ -160,7 +160,7 @@ export const GenericEmitRenderer: React.FC<EmitRendererProps> = ({
         </div>
         {residue !== null && (
           <div className="pl-6">
-            <ResultValue value={unwrapValue(residue)} density="full" />
+            <ToolResultValue value={unwrapValue(residue)} density="full" />
           </div>
         )}
       </div>
@@ -175,7 +175,7 @@ export const GenericEmitRenderer: React.FC<EmitRendererProps> = ({
           <MarkdownStream imagePolicy="ai" content={title} />
         </div>
       )}
-      <ResultValue value={value} density="full" />
+      <ToolResultValue value={value} density="full" />
       {assist && (
         <div className="flex justify-end">
           <AssistChip assist={assist} className="max-w-full" />
