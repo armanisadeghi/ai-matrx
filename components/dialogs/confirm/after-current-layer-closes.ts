@@ -63,6 +63,15 @@ export type LayerHandoffOutcome = "clear" | "nested" | "timed-out";
  */
 export const TRANSIENT_LAYER_WAIT_FRAMES = 30;
 
+/**
+ * The same ceiling in wall-clock time. A tab that paints no frames — in the
+ * background, or a hidden preview pane — never runs a requestAnimationFrame
+ * callback, so a bound counted only in frames never arrives there: a closing
+ * popover's exit animation never ends, the layer stays "transient", and the
+ * confirm never opens (2026-09-30, /transcripts Archive). Timers still run.
+ */
+export const TRANSIENT_LAYER_WAIT_MS = 500;
+
 export function afterCurrentLayerCloses(
   schedule: (callback: FrameRequestCallback) => number = requestAnimationFrame,
   isLayerClosed: () => boolean = () =>
@@ -78,11 +87,21 @@ export function afterCurrentLayerCloses(
     transient: () =>
       typeof document !== "undefined" && hasTransientLayer(document),
   },
+  maxMs: number = TRANSIENT_LAYER_WAIT_MS,
 ): Promise<LayerHandoffOutcome> {
-  return new Promise((resolve) => {
+  return new Promise((settle) => {
+    let settled = false;
+    const resolve = (outcome: LayerHandoffOutcome) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(ceiling);
+      settle(outcome);
+    };
+    const ceiling = setTimeout(() => resolve("timed-out"), maxMs);
     let consecutiveClosedPaints = 0;
     let frames = 0;
     const check = () => {
+      if (settled) return;
       // A layer that is on its way out still owns the handoff — wait for it,
       // even if a persistent dialog sits underneath (a Select inside a Dialog
       // is both at once, and the Select is the one we must not race).

@@ -62,7 +62,9 @@ export function useTranscriptRowActions(
       toast.error(err instanceof Error ? err.message : `${name} was not archived.`);
       return;
     }
-    list.removeRow(row.id);
+    // Under "Active + archived" the row stays in the list, now marked archived.
+    if (list.query.archived === "all") list.refresh();
+    else list.removeRow(row.id);
     toast.success(`Archived ${name}.`, {
       action: {
         label: "Undo",

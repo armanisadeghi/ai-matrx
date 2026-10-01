@@ -24,6 +24,7 @@ import { confirm, CONFIRM_HOST_WAIT_MS } from "../ConfirmDialogHost";
 import {
   afterCurrentLayerCloses,
   TRANSIENT_LAYER_WAIT_FRAMES,
+  TRANSIENT_LAYER_WAIT_MS,
 } from "../after-current-layer-closes";
 
 let root: Root;
@@ -168,6 +169,29 @@ describe("the transient-layer wait", () => {
 
     expect(outcome).toBe("timed-out");
     expect(scheduled).toHaveLength(0);
+  });
+
+  // 2026-09-30 (/transcripts, Archive → no confirm): a tab that paints no frames
+  // (backgrounded, or a hidden preview pane) never runs a requestAnimationFrame
+  // callback, so a bound counted ONLY in frames is no bound at all — a closing
+  // Filters popover stayed "transient" forever and the confirm never opened.
+  it("GUARD 5 — is bounded in TIME too: a tab that paints no frames still settles", async () => {
+    jest.useFakeTimers({ doNotFake: ["performance", "requestAnimationFrame"] });
+    try {
+      let outcome: string | null = null;
+      void afterCurrentLayerCloses(
+        () => 0, // the frame never comes
+        () => true,
+        TRANSIENT_LAYER_WAIT_FRAMES,
+        { persistent: () => false, transient: () => true },
+      ).then((result) => {
+        outcome = result;
+      });
+      await jest.advanceTimersByTimeAsync(TRANSIENT_LAYER_WAIT_MS + 50);
+      expect(outcome).toBe("timed-out");
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
 
