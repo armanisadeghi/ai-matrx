@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-01T09:56:09.571Z",
+  "generated_at": "2026-10-01T10:11:31.941Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3805,6 +3805,18 @@
       "filename": "portalbind_the_portal_accept_doors_are_reachable.sql",
       "checksum": "fd7963e8fd91aaf8c7b0597260b24e68f07fa7fb7c3206130d8a7690244f4b36",
       "applied_at": "2026-09-21 22:29:57.273243+00"
+    },
+    "migrations/campaign/pressatsize_a_list_something_chooses_from_goes_where_it_is_chosen.sql": {
+      "source": "matrx-frontend",
+      "filename": "pressatsize_a_list_something_chooses_from_goes_where_it_is_chosen.sql",
+      "checksum": "1e4ebbc715a4d7675aba13b4e73e890d9af8398ef5b2e2659cc87e0ab285425d",
+      "applied_at": "2026-10-01 10:11:20.826474+00"
+    },
+    "migrations/campaign/pressatsize_the_undo_names_a_view_made_in_the_new_system.sql": {
+      "source": "matrx-frontend",
+      "filename": "pressatsize_the_undo_names_a_view_made_in_the_new_system.sql",
+      "checksum": "27024b47df97fadecf38f97c3ed84dc9009064d3f19862ca5b05401d10a9f4e0",
+      "applied_at": "2026-10-01 10:11:29.553578+00"
     },
     "migrations/campaign/proofdefects_a_standard_tables_registry_row_is_read_by_the_door.sql": {
       "source": "matrx-frontend",
