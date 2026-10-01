@@ -120,5 +120,59 @@ describe("MCP connection intent", () => {
     });
     expect(container.textContent).toBe("idle");
     expect(mockDispatch).not.toHaveBeenCalled();
+    mockPopup.mockResolvedValue({
+      ok: false,
+      cancelled: true,
+      error: "Cancelled",
+    });
+    await act(async () => {
+      await controller.connect(notion);
+    });
+    expect(mockPopup).toHaveBeenCalledTimes(2);
+  });
+
+  it("requires Supabase configuration and preserves the configured read-only endpoint", async () => {
+    const supabase = { ...notion, slug: "supabase", name: "Supabase" };
+    await act(async () => {
+      await controller.connect(supabase);
+    });
+    expect(mockPush).toHaveBeenCalledWith(
+      "/user-settings/integrations?provider=supabase",
+    );
+    expect(mockPopup).not.toHaveBeenCalled();
+    const endpoint =
+      "https://mcp.supabase.com/mcp?project_ref=test-project&read_only=true";
+    mockPopup.mockResolvedValue({
+      ok: false,
+      cancelled: true,
+      error: "Cancelled",
+    });
+    await act(async () => {
+      await controller.connect(supabase, endpoint);
+    });
+    expect(mockPopup).toHaveBeenCalledWith(
+      supabase.serverId,
+      undefined,
+      endpoint,
+    );
+    expect(container.textContent).toBe("idle");
+  });
+
+  it("recovers from an authorization error so the next press can retry", async () => {
+    mockPopup.mockRejectedValueOnce(new Error("Network unavailable"));
+    await act(async () => {
+      await controller.connect(notion);
+    });
+    expect(container.textContent).toBe("idle");
+    expect(mockDispatch).not.toHaveBeenCalled();
+    mockPopup.mockResolvedValue({
+      ok: false,
+      cancelled: true,
+      error: "Cancelled",
+    });
+    await act(async () => {
+      await controller.connect(notion);
+    });
+    expect(mockPopup).toHaveBeenCalledTimes(2);
   });
 });
