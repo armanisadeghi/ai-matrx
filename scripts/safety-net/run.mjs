@@ -222,13 +222,20 @@ async function runCheck(c) {
       // or with a `commit` after it, is refused for an in-transaction plant.
       const inject = [c.inTxSql ?? null, plant && plant.mode === "in-transaction" ? plant.apply : null].filter(Boolean);
       let suiteRef = `\\i ${c.file}`;
-      if (inject.length) {
-        const lines = text.split("\n");
+      // `substitute` ([{ from, to }]) changes a suite's RUN PARAMETER in the composed copy only (e.g. its
+      // own `set local statement_timeout` on a busy shared clone) — never an assertion.
+      if (inject.length || c.substitute?.length) {
+        let src = text;
+        for (const sub of c.substitute ?? []) {
+          if (!src.includes(sub.from)) throw new Error(`refused: ${c.file} no longer contains "${sub.from}"`);
+          src = src.split(sub.from).join(sub.to);
+        }
+        const lines = src.split("\n");
         const pre = lines.findIndex((l) => /^\s*\\i\s+\S*_preamble\.sql/.test(l));
         const at = lines.findIndex((l, i) => i > pre && /^\s*begin\b/i.test(l));
-        if (at < 0) throw new Error(`refused: ${c.file} opens no transaction after its preamble, so an in-transaction plant would commit`);
+        if (at < 0 && inject.length) throw new Error(`refused: ${c.file} opens no transaction after its preamble, so an in-transaction plant would commit`);
         if (plant && plant.mode === "in-transaction" && lines.slice(at + 1).some((l) => /^\s*commit\s*;/i.test(l))) throw new Error(`refused: ${c.file} commits after its begin, so an in-transaction plant would commit`);
-        lines.splice(at + 1, 0, "-- ── SAFETY-NET (inside the suite's transaction; rolled back with it) ──", ...inject, "-- ── end ──");
+        if (inject.length) lines.splice(at + 1, 0, "-- ── SAFETY-NET (inside the suite's transaction; rolled back with it) ──", ...inject, "-- ── end ──");
         const composed = join(OUT, "logs", `${c.id}.composed.sql`);
         writeFileSync(composed, lines.join("\n"));
         suiteRef = `\\i ${composed}`;
