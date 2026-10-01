@@ -19,11 +19,15 @@ jest.mock("next/dynamic", () => () =>
     return <textarea readOnly value={props.value} data-testid="monaco" />;
   },
 );
+// Stable values, as the real store and blob cache return them.
+const mockFile = { id: "file-1", fileName: "notes.md" };
+const mockBlob = { blob: { text: () => Promise.resolve("original text") }, loading: false, error: null };
+const mockDispatch = (action: { payload?: unknown }) => ({
+  unwrap: () => Promise.resolve(action.payload),
+});
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppDispatch: () => (action: { payload?: unknown }) => ({
-    unwrap: () => Promise.resolve(action.payload),
-  }),
-  useAppSelector: () => ({ id: "file-1", fileName: "notes.md" }),
+  useAppDispatch: () => mockDispatch,
+  useAppSelector: () => mockFile,
 }));
 jest.mock("@/features/files/redux/thunks", () => ({
   saveFileNewVersion: (args: { fileId: string; content: string }) => {
@@ -33,11 +37,7 @@ jest.mock("@/features/files/redux/thunks", () => ({
 }));
 jest.mock("@/features/files/redux/selectors", () => ({ selectFileById: () => null }));
 jest.mock("@/features/files/hooks/useFileBlob", () => ({
-  useFileBlob: () => ({
-    blob: { text: () => Promise.resolve("original text") },
-    loading: false,
-    error: null,
-  }),
+  useFileBlob: () => mockBlob,
 }));
 jest.mock("@/features/files/components/surfaces/FileViewerControlsContext", () => ({
   useFileViewerControls: () => null,
