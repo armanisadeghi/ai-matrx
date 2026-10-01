@@ -7,6 +7,7 @@ import lists from "./checks/lists.mjs";
 import scopes from "./checks/scopes.mjs";
 import datahome from "./checks/datahome.mjs";
 import agents from "./checks/agents.mjs";
+import agentsA12 from "./checks/agents-a12.mjs";
 import drill from "./checks/drill.mjs";
 import cutover from "./checks/cutover.mjs";
 import platform from "./checks/platform.mjs";
@@ -111,6 +112,7 @@ export const ITEMS = {
   A08: "AI Matrx MCP via OAuth",
   A09: "Member refusals (API / MCP)",
   A10: "Idempotency (API / MCP writes)",
+  A12: "Dataset tool writes one row into a store table, changes it, and reads it back (real agent run)",
   A11: "Same before/after the press — switching org + switched control (SAFETY-NET-B)",
   // Drill-down
   R01: "drill_describe — both kinds",
@@ -146,7 +148,7 @@ export const ITEMS = {
   P09: "Performance — scope tree",
 };
 
-export const CHECKS = [...tables, ...lists, ...scopes, ...datahome, ...agents, ...drill, ...cutover, ...platform];
+export const CHECKS = [...tables, ...lists, ...scopes, ...datahome, ...agents, ...agentsA12, ...drill, ...cutover, ...platform];
 
 for (const c of CHECKS) for (const id of c.items) if (!ITEMS[id]) throw new Error(`check ${c.id} names unknown item ${id}`);
 const ids = new Set();

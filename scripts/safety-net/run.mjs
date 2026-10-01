@@ -170,8 +170,10 @@ if (PLANT) {
     process.exit(2);
   }
   plant = (await import(file)).default;
-  if (TARGET !== "clone" && plant.mode !== "intercept") {
-    console.error("refused: a planted break runs on the clone only (an intercept plant may run on live)");
+  // On live only an intercept plant (the test browser's own boundary) or an `env` plant that declares
+  // `liveSafe` with its reason (it changes only what the probe ASKS, never any server or row) may run.
+  if (TARGET !== "clone" && plant.mode !== "intercept" && !(plant.mode === "env" && plant.liveSafe)) {
+    console.error("refused: a planted break runs on the clone only (an intercept plant, or an env plant marked liveSafe, may run on live)");
     process.exit(2);
   }
 }
