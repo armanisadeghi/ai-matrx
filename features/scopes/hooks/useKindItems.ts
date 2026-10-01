@@ -15,6 +15,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
+import { useShowSystemFiles } from "@/features/files/hooks/useShowSystemFiles";
 import {
   fetchKindItemsPage,
   INVENTORY_PAGE_SIZE_KNOB,
@@ -88,8 +89,10 @@ export function useKindItems(
   }, [query]);
 
   const [attempt, setAttempt] = React.useState(0);
+  // System files and folders are listed only while the person turned them on (default off).
+  const { showSystemFiles } = useShowSystemFiles();
   const listKey = kind && scopeKey && pageSize
-    ? `${kind}|${scopeKey}|${pageSize}|${settledQuery}|${attempt}`
+    ? `${kind}|${scopeKey}|${pageSize}|${settledQuery}|${showSystemFiles ? "sys" : ""}|${attempt}`
     : "";
   const [state, setState] = React.useState<ListState>(EMPTY);
   // Guards a slow page from landing on a list whose key has moved on.
@@ -100,7 +103,7 @@ export function useKindItems(
     const stableScope = kindScopeFromKey(scopeKey);
     if (!listKey || !kind || !stableScope || !pageSize) return undefined;
     let cancelled = false;
-    fetchPage({ token: kind, scope: stableScope, query: settledQuery, offset: 0, limit: pageSize })
+    fetchPage({ token: kind, scope: stableScope, query: settledQuery, offset: 0, limit: pageSize, showSystemFiles })
       .then(
         (page) => {
           if (cancelled) return;
@@ -121,7 +124,7 @@ export function useKindItems(
     return () => {
       cancelled = true;
     };
-  }, [listKey, kind, scopeKey, pageSize, settledQuery, fetchPage]);
+  }, [listKey, kind, scopeKey, pageSize, settledQuery, fetchPage, showSystemFiles]);
 
   const current = state.key !== "" && state.key === listKey;
 
@@ -131,7 +134,7 @@ export function useKindItems(
     const key = listKey;
     const offset = state.items.length;
     setState((s) => ({ ...s, loadingMore: true }));
-    fetchPage({ token: kind, scope: stableScope, query: settledQuery, offset, limit: pageSize })
+    fetchPage({ token: kind, scope: stableScope, query: settledQuery, offset, limit: pageSize, showSystemFiles })
       .then(
         (page) => {
           if (liveKey.current !== key) return;

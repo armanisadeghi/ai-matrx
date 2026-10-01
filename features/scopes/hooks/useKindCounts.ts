@@ -18,6 +18,7 @@ import {
   kindScopeKey,
   type KindScope,
 } from "@/features/scopes/service/kindInventory";
+import { useShowSystemFiles } from "@/features/files/hooks/useShowSystemFiles";
 
 export interface UseKindCountsResult {
   counts: Map<string, number | null>;
@@ -41,7 +42,9 @@ export function useKindCounts(
     error: Error | null;
   }>({ key: "", counts: new Map(), error: null });
   const [attempt, setAttempt] = React.useState(0);
-  const requestKey = `${scopeKey}|${tokensKey}|${attempt}`;
+  // System files and folders count only while the person turned them on (default off).
+  const { showSystemFiles } = useShowSystemFiles();
+  const requestKey = `${scopeKey}|${tokensKey}|${showSystemFiles ? "sys" : ""}|${attempt}`;
 
   // Everything the read needs is carried by these strings, so a caller may pass a fresh scope
   // object every render without re-reading.
@@ -50,7 +53,7 @@ export function useKindCounts(
     if (!stableScope) return undefined;
     let cancelled = false;
     const tokens = tokensKey ? tokensKey.split(",") : undefined;
-    fetchKindCounts(stableScope, tokens).then(
+    fetchKindCounts(stableScope, tokens, showSystemFiles).then(
       (counts) => {
         if (!cancelled) setState({ key: requestKey, counts, error: null });
       },
@@ -68,7 +71,7 @@ export function useKindCounts(
     return () => {
       cancelled = true;
     };
-  }, [requestKey, scopeKey, tokensKey]);
+  }, [requestKey, scopeKey, tokensKey, showSystemFiles]);
 
   const current = state.key === requestKey;
   return {

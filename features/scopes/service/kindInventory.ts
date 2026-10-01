@@ -78,13 +78,25 @@ function failure(what: string, error: { message?: string; code?: string } | null
  */
 const COUNT_CHUNK = 8;
 
+/**
+ * System files and folders (`metadata.system_artifact`: page captures, crawl output, coding
+ * sessions, variants) are listed and counted only when the person's `files.show_system_files`
+ * setting is on (default off; `useShowSystemFiles`). Omitted, the database resolves the setting
+ * itself for the filtered organization.
+ */
+function systemArgs(showSystemFiles: boolean | undefined): { p_show_system_files?: boolean } {
+  return showSystemFiles === undefined ? {} : { p_show_system_files: showSystemFiles };
+}
+
 async function countChunk(
   scope: KindScope,
   tokens: readonly string[] | undefined,
+  showSystemFiles: boolean | undefined,
 ): Promise<Map<string, number | null>> {
   const { data, error } = await supabase.rpc("entity_kind_counts", {
     ...scopeArgs(scope),
     ...(tokens ? { p_tokens: [...tokens] } : {}),
+    ...systemArgs(showSystemFiles),
   });
   if (error) throw failure("Counting your items", error);
   const out = new Map<string, number | null>();
@@ -105,11 +117,12 @@ async function countChunk(
 export async function fetchKindCounts(
   scope: KindScope,
   tokens?: readonly string[],
+  showSystemFiles?: boolean,
 ): Promise<Map<string, number | null>> {
-  if (!tokens || tokens.length <= COUNT_CHUNK) return countChunk(scope, tokens);
+  if (!tokens || tokens.length <= COUNT_CHUNK) return countChunk(scope, tokens, showSystemFiles);
   const chunks: string[][] = [];
   for (let i = 0; i < tokens.length; i += COUNT_CHUNK) chunks.push(tokens.slice(i, i + COUNT_CHUNK));
-  const settled = await Promise.allSettled(chunks.map((c) => countChunk(scope, c)));
+  const settled = await Promise.allSettled(chunks.map((c) => countChunk(scope, c, showSystemFiles)));
   const failed = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
   if (failed.length === settled.length) throw failed[0]!.reason;
   const out = new Map<string, number | null>();
@@ -131,6 +144,8 @@ export async function fetchKindItemsPage(args: {
   query?: string;
   offset: number;
   limit: number;
+  /** The person's `files.show_system_files` (see `systemArgs`); omitted = resolved by the database. */
+  showSystemFiles?: boolean;
 }): Promise<KindItem[]> {
   const search = args.query?.trim();
   const { data, error } = await supabase.rpc("reference_search_candidates", {
@@ -140,6 +155,7 @@ export async function fetchKindItemsPage(args: {
     p_limit: args.limit,
     ...(search ? { p_search: search } : {}),
     ...scopeArgs(args.scope),
+    ...systemArgs(args.showSystemFiles),
   });
   if (error) throw failure(`Listing ${args.token} items`, error);
   return (data ?? []).map((row) => ({

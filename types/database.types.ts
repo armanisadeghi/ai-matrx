@@ -86222,6 +86222,7 @@ export type Database = {
           p_by_ids?: boolean
           p_mine?: boolean
           p_organization_id?: string
+          p_show_system_files?: boolean
           p_token: string
           p_uid: string
         }
@@ -95578,6 +95579,7 @@ export type Database = {
         Args: {
           p_mine?: boolean
           p_organization_id?: string
+          p_show_system_files?: boolean
           p_tokens?: string[]
         }
         Returns: {
@@ -99794,6 +99796,7 @@ export type Database = {
           p_order?: string
           p_organization_id?: string
           p_search?: string
+          p_show_system_files?: boolean
           p_token: string
         }
         Returns: {

@@ -213,10 +213,25 @@ const SYSTEM_CARRIED_ROOT_SEGMENT = new RegExp(
   `^(${SYSTEM_CARRIED_ROOTS.join("|")})-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`,
 );
 
-/** A folder only the system writes into (a system-carried root or anything under it). */
+/**
+ * Mirror of aidream `VARIANT_FOLDER_PATTERN`: `<master dir>/v` and `<master dir>/v/<master file id>`
+ * hold nothing but derived copies (cloud_sync/variants.py). Never a top-level `v`.
+ */
+const VARIANT_FOLDER =
+  /^.+\/v(\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?$/;
+
+/**
+ * A folder only the system writes into: a system-carried root or anything under it, or a variant
+ * folder. Mirror of aidream `system_folder_marker`, which stamps `metadata.system_artifact` on
+ * these folders at the one folder door; `platform._inventory_filter` hides them unless
+ * `files.show_system_files` is on (V5-B, 2026-09-30).
+ */
 export function isSystemFolderPath(path: string | null | undefined): boolean {
   if (path === null || path === undefined) return false;
-  return SYSTEM_CARRIED_ROOT_SEGMENT.test(firstSegment(path));
+  if (SYSTEM_CARRIED_ROOT_SEGMENT.test(firstSegment(path))) return true;
+  let trimmed = stripLeadingSlashes(path);
+  while (trimmed.endsWith("/")) trimmed = trimmed.slice(0, -1);
+  return VARIANT_FOLDER.test(trimmed);
 }
 
 /**
