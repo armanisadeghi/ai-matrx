@@ -25,6 +25,7 @@ import {
 } from "@ai-matrx/design-system/data-table";
 
 import { doorWindow, drillRowOf } from "./useDrillExplorer";
+import type { DrillNameBook } from "./drillNames";
 import type { DrillCarried } from "./questionParts";
 
 export interface DrillChartState {
@@ -53,10 +54,12 @@ export function useDrillChart(args: {
   countMeasure?: string | undefined;
   /** Changes when the data changed (a recount). */
   version?: number | undefined;
+  /** The explorer's one name book (drillNames.ts): the series' ids are named there, as the answer's are. */
+  book?: DrillNameBook | undefined;
   /** Nothing is asked while false (no definition yet, or the settings are still being read). */
   enabled: boolean;
 }): DrillChartState {
-  const { client, source, lane, question, dimensions, measures, measure, stack, time, seriesLimit, carried, windowAlign, countMeasure, version = 0, enabled } = args;
+  const { client, source, lane, question, dimensions, measures, measure, stack, time, seriesLimit, carried, windowAlign, countMeasure, version = 0, book, enabled } = args;
   const plan = enabled ? drillChartQuestions(question, seriesLimit, { dimensions, measures, measure, stack, time }) : null;
   const key = JSON.stringify({ first: plan?.first ?? null, refused: plan?.refused ?? null, carried, lane, source, version });
   const [held, setHeld] = useState<{ key: string; answers: MatrxDrillChartAnswers; error: string | null }>({ key: "", answers: NONE, error: null });
@@ -85,6 +88,8 @@ export function useDrillChart(args: {
         },
       });
       if (!got.ok) return { ok: false, message: got.error.message || "The chart could not be counted." };
+      // a series the answer does not list (a period's own top N) is named by the same book
+      void book?.readRows(got.data!.rows.filter((row) => row.kind === "group"));
       return { ok: true, rows: got.data!.rows.map((row) => drillRowOf(row, countMeasure)) };
     };
     void (async () => {

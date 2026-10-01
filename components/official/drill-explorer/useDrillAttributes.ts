@@ -20,6 +20,7 @@ import { drillRequestKey } from "@ai-matrx/design-system/data-table";
 import { drillDoorLabels } from "./dimensionWords";
 import type { DrillCarried } from "./questionParts";
 import { doorWhere, type DrillNameResolver } from "./types";
+import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";
 import { doorWindow } from "./useDrillExplorer";
 
 /** group value → attribute key → the values it holds */
@@ -36,14 +37,18 @@ export function useDrillAttributes(args: {
   attributes: readonly string[] | undefined;
   carried: DrillCarried | null;
   resolvers: Record<string, DrillNameResolver> | undefined;
+  /** The explorer's one name book (drillNames.ts); absent = one of this hook's own over `resolvers`. */
+  book?: DrillNameBook | undefined;
   windowAlign?: "hour" | undefined;
 }): MatrxDrillAttribute[] | undefined {
   const { client, source, lane, question, dimensions, answers, attributes, carried, resolvers, windowAlign } = args;
+  const book = useDrillNameBookOr(args.book, resolvers);
+  const names = useDrillNames(book);
   const outer = question.by[0];
   const wanted = outer && !question.across ? (attributes ?? []).filter((a) => a !== outer && dimensions.some((d) => d.key === a)) : [];
   const groups = outer ? (answers[drillRequestKey([outer])] ?? []).map((r) => r.groups[outer] ?? null).filter((v): v is string => typeof v === "string") : [];
   const key = JSON.stringify({ outer, wanted, groups, where: question.where, window: question.window ?? null, carried: carried ?? null, lane, source });
-  const [held, setHeld] = useState<{ key: string; values: Held; names: Record<string, Record<string, string>> }>({ key: "", values: {}, names: {} });
+  const [held, setHeld] = useState<{ key: string; values: Held }>({ key: "", values: {} });
 
   useEffect(() => {
     if (!client || !outer || wanted.length === 0 || groups.length === 0) return;
@@ -64,10 +69,9 @@ export function useDrillAttributes(args: {
         });
         return { attr, rows: got.ok ? got.data!.rows : [] };
       }),
-    ).then(async (results) => {
+    ).then((results) => {
       if (cancelled) return;
       const values: Held = {};
-      const names: Record<string, Record<string, string>> = {};
       for (const { attr, rows } of results) {
         for (const row of rows) {
           if (row.kind !== "group" || !row.groups) continue;
@@ -76,18 +80,11 @@ export function useDrillAttributes(args: {
           const v = row.groups[attr];
           (((values[g] ??= {})[attr] ??= new Set()) as Set<string | null>).add(typeof v === "string" ? v : v === null || v === undefined ? null : String(v));
         }
-        for (const [dim, map] of Object.entries(drillDoorLabels(rows))) names[dim] = { ...(names[dim] ?? {}), ...map };
+        book.learn(drillDoorLabels(rows));
       }
-      // a person's name is the host resolver's (the door carries none for people)
-      for (const attr of wanted) {
-        const resolver = resolvers?.[attr];
-        if (!resolver) continue;
-        const ids = [...new Set(Object.values(values).flatMap((v) => [...(v[attr] ?? [])]).filter((x): x is string => Boolean(x)))].filter((id) => !names[attr]?.[id]);
-        if (ids.length === 0) continue;
-        const got = await resolver.resolve(ids);
-        if (got.ok) names[attr] = { ...(names[attr] ?? {}), ...got.names };
-      }
-      if (!cancelled) setHeld({ key, values, names });
+      // a person's name is the host resolver's (the door carries none for people), through the ONE book
+      for (const attr of wanted) void book.want(attr, Object.values(values).flatMap((v) => [...(v[attr] ?? [])]));
+      if (!cancelled) setHeld({ key, values });
     });
     return () => {
       cancelled = true;
@@ -112,7 +109,7 @@ export function useDrillAttributes(args: {
         if (set.size > 1) return "Several";
         const [v] = [...set];
         if (v === null || v === undefined) return dim.labelFor ? dim.labelFor(null) : null;
-        return held.names[attr]?.[v] ?? (dim.labelFor ? dim.labelFor(v) : v);
+        return names[attr]?.[v] ?? (dim.labelFor ? dim.labelFor(v) : v);
       },
     };
   });

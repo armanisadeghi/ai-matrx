@@ -69,6 +69,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 import { DrillExplainButton } from "./DrillExplainButton";
 import { DrillFindings } from "./DrillFindings";
+import { useDrillNameBook, useDrillNames } from "./drillNames";
 import { DrillNumberFilter } from "./DrillNumberFilter";
 import { drillExplorerScope } from "./drillExplorerScope";
 import { useDrillAttributes } from "./useDrillAttributes";
@@ -188,8 +189,12 @@ export function DrillExplorer({
   const seat = { lane, organizationId, userId } as const;
   const knobs = useDrillKnobs(seat);
   // The hook asks exactly what the table draws: the address question with the auto grain applied.
-  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, version: freshness?.version, countMeasure, windowAlign, carried: asking, headlineAlso: headline?.also, headlineMeasure: headline?.measure ?? null, grainLines: knobs.grainLines, ready: knobs.settled });
-  const { def, answers: rawAnswers, whole: rawWhole, names, says, error, asOf, client } = drill;
+  // THE ONE NAME BOOK (lane DRILL-D1): every relation value on this screen — answer, chart, trail,
+  // records, glance columns, findings, a sibling's findings — reads its words here (drillNames.ts).
+  const nameBook = useDrillNameBook(resolvers);
+  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, book: nameBook, version: freshness?.version, countMeasure, windowAlign, carried: asking, headlineAlso: headline?.also, headlineMeasure: headline?.measure ?? null, grainLines: knobs.grainLines, ready: knobs.settled });
+  const { def, answers: rawAnswers, whole: rawWhole, says, error, asOf, client } = drill;
+  const names = useDrillNames(nameBook);
   // THE CALENDAR THE DOOR CUTS PERIODS IN (F8): the definition's own (`calendar.time_zone`, from the
   // organization the door asks in — the platform lane's is UTC), else the host's word, else the reader's.
   const zone = (def as { calendar?: { time_zone?: string } } | null)?.calendar?.time_zone ?? timeZone;
@@ -292,7 +297,7 @@ export function DrillExplorer({
   const openBuiltIn = openView?.ref.startsWith("builtin:") ? builtIn.find((v) => `builtin:${v.key}` === openView.ref) : undefined;
   const viewStack = openBuiltIn?.chart?.stack?.every((k) => question.show.includes(k)) ? openBuiltIn.chart.stack : undefined;
   const viewAttributes = openBuiltIn?.attributes && openBuiltIn.question.by?.[0] === question.by[0] ? openBuiltIn.attributes : undefined;
-  const glance = useDrillAttributes({ client, source, lane, question, dimensions, answers, attributes: viewAttributes, carried: asking, resolvers, windowAlign });
+  const glance = useDrillAttributes({ client, source, lane, question, dimensions, answers, attributes: viewAttributes, carried: asking, resolvers, book: nameBook, windowAlign });
 
   // THE CHART above the answer: split = the first non-time grouping, bars at the auto grain.
   // the Measure stacked: the headline's (the screen's own number), else the first one shown
@@ -312,6 +317,7 @@ export function DrillExplorer({
     windowAlign,
     countMeasure,
     version: freshness?.version,
+    book: nameBook,
     enabled: Boolean(def) && knobs.settled && question.by.length > 0,
   });
 
@@ -501,7 +507,7 @@ export function DrillExplorer({
                   label: s.group,
                   count: findingsOf(s.def).length,
                   render: (open: boolean, close: () => void) => (
-                    <DrillSiblingFindings client={client} lane={lane} window={question.window ?? null} sibling={s} resolvers={resolvers} money={unit} emptyLabel={emptyLabel} open={open} onOpen={(q) => { close(); openDrillSibling(s, { question: q }); }} />
+                    <DrillSiblingFindings client={client} lane={lane} window={question.window ?? null} sibling={s} resolvers={resolvers} book={nameBook} money={unit} emptyLabel={emptyLabel} open={open} onOpen={(q) => { close(); openDrillSibling(s, { question: q }); }} />
                   ),
                 }))}
               client={client}
@@ -513,6 +519,7 @@ export function DrillExplorer({
               measures={measures}
               paths={paths}
               emptyLabel={emptyLabel}
+              book={nameBook}
               onOpen={(q) => openQuestion(q)}
             />
           ) : null}
@@ -522,7 +529,7 @@ export function DrillExplorer({
       <div className="flex min-h-0 flex-1 flex-col overflow-auto">
         {question.by.length === 0 ? (
           def && records ? (
-            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={asking} resolvers={resolvers} openRecord={openRecord} timeZone={zone} />
+            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={asking} resolvers={resolvers} book={nameBook} openRecord={openRecord} timeZone={zone} />
           ) : (
             <p data-drill-explorer-no-grouping className="flex flex-wrap items-center gap-1.5 p-6 text-sm text-muted-foreground">
               <span>No grouping. Pick one in Group by.</span>

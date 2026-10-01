@@ -28,6 +28,7 @@ import { supabase } from "@/utils/supabase/client";
 
 import { withAutoGrain, type DrillGrainLines } from "./grain";
 import { asOfAnswer, doorWhere, type DrillNameResolver } from "./types";
+import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";
 import { carriedAsk, type DrillCarried } from "./questionParts";
 import { drillDoorLabels } from "./dimensionWords";
 
@@ -152,6 +153,8 @@ export function useDrillExplorer(args: {
   userId: string | null;
   question: MatrxDrillQuestion;
   names?: Record<string, DrillNameResolver> | undefined;
+  /** The explorer's one name book (drillNames.ts); absent = this hook keeps its own. */
+  book?: DrillNameBook | undefined;
   /** Changes when the host knows the data changed (a recount); every answer is asked again. */
   version?: number | undefined;
   countMeasure?: string | undefined;
@@ -170,14 +173,15 @@ export function useDrillExplorer(args: {
   /** False while the settings are still being read: nothing is asked until the grain is known. */
   ready?: boolean | undefined;
 }): DrillExplorerData {
-  const { source, lane, organizationId, userId, question, names: resolvers, version = 0, countMeasure, windowAlign, carried, headlineAlso, headlineMeasure = null, grainLines = null, ready = true } = args;
+  const { source, lane, organizationId, userId, question, names: resolvers, book: hostBook, version = 0, countMeasure, windowAlign, carried, headlineAlso, headlineMeasure = null, grainLines = null, ready = true } = args;
   const client = organizationId ? drillClientFor(organizationId, userId) : null;
   const sourceKey = JSON.stringify(source);
   const [def, setDef] = useState<DrillDefinition | null>(null);
   // THE ANSWERS BELONG TO ONE QUESTION: while a new window or trail is being counted the screen
   // draws its loading state, never the previous question's numbers under the new question's words.
   const [answered, setAnswered] = useState<{ key: string; answers: MatrxDrillAnswers; whole: MatrxDrillAnswerRow | null }>({ key: "", answers: {}, whole: null });
-  const [names, setNames] = useState<Record<string, Record<string, string>>>({});
+  const book = useDrillNameBookOr(hostBook, resolvers);
+  const names = useDrillNames(book);
   const [says, setSays] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [asOf, setAsOf] = useState<string | null>(null);
@@ -292,13 +296,7 @@ export function useDrillExplorer(args: {
         for (const row of answer.rows) for (const [dim, value] of Object.entries(row.groups ?? {})) note(dim, value);
       }
       for (const w of asked.where) note(w.dim, w.value);
-      if (Object.keys(doorLabels).length > 0) {
-        setNames((held) => {
-          const next = { ...held };
-          for (const [key, map] of Object.entries(doorLabels)) next[key] = { ...(held[key] ?? {}), ...map };
-          return next;
-        });
-      }
+      book.learn(doorLabels);
       setAnswered({ key: answeredFor, answers: out, whole: wholeRow });
       setSays(sentences);
       setAsOf(counted);
@@ -325,20 +323,14 @@ export function useDrillExplorer(args: {
           .then((got) => {
             if (cancelled || !got.ok) return;
             const map = drillDoorLabels(got.data!.rows)[key];
-            if (map) setNames((held) => ({ ...held, [key]: { ...(held[key] ?? {}), ...map } }));
+            if (map) book.learn({ [key]: map });
           });
       }
+      // the ids on screen go to the ONE book (drillNames.ts): the host's resolver is asked once per id
       for (const [key, set] of Object.entries(ids)) {
-        const resolver = resolvers?.[key];
-        const unnamed = [...set].filter((id) => !doorLabels[key]?.[id]);
-        if (!resolver || unnamed.length === 0) continue;
-        void resolver.resolve(unnamed).then((got) => {
-          if (cancelled) return;
-          if (!got.ok) {
-            setSays((s) => (s.includes(got.message) ? s : [...s, got.message]));
-            return;
-          }
-          setNames((held) => ({ ...held, [key]: { ...(held[key] ?? {}), ...got.names } }));
+        void book.want(key, set).then((message) => {
+          if (cancelled || !message) return;
+          setSays((s) => (s.includes(message) ? s : [...s, message]));
         });
       }
     });

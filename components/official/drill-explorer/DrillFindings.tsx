@@ -14,6 +14,10 @@
 // most `drill.groups_per_level` groups (100) and carries the true count on every row
 // (`distinct_groups`: 120 hours met the spike rule, 2026-09-30). The finding's badge is that true
 // count; "and N more" counts from it; the tooltip says how many the list holds. Never a silent cut.
+//
+// A FINDING ROW IS NAMED BY THE EXPLORER'S ONE NAME BOOK (lane DRILL-D1, VERIFY-DRILL-FINAL D1): the
+// rows shown hand the book their door rows — the door's labels are kept, the host's resolver is asked
+// for exactly the ids still unnamed. Before, a request or person row read "Reading the name…" forever.
 
 import { useEffect, useState, type ReactNode } from "react";
 import { SearchCheck } from "lucide-react";
@@ -22,6 +26,7 @@ import type { RecordsClient } from "@ai-matrx/records/core";
 import {
   drillInto,
   drillValueLabel,
+  parseDimensionRef,
   type MatrxDrillDimension,
   type MatrxDrillMeasure,
   type MatrxDrillQuestion,
@@ -36,6 +41,7 @@ import { formatCount } from "@ai-matrx/kit/format";
 import { InfoHint } from "@/components/official/InfoHint";
 
 import { findingCount } from "./explorerWords";
+import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";
 
 /** Rows a finding shows before "and N more" (the finding's own drill shows the rest). */
 const ROWS_SHOWN = 5;
@@ -67,7 +73,10 @@ export function DrillFindings({
   onOpen,
   label,
   sections,
+  book: hostBook,
 }: {
+  /** The explorer's one name book (drillNames.ts); absent = the door's labels on these rows only. */
+  book?: DrillNameBook | undefined;
   /** The heading over this definition's findings when sibling sections follow ("Usage"). */
   label?: string | undefined;
   /** Sibling definitions' findings in the same panel (DrillSiblingFindings), each under its heading. */
@@ -84,6 +93,8 @@ export function DrillFindings({
   onOpen: (question: MatrxDrillQuestion) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const book = useDrillNameBookOr(hostBook, undefined);
+  const names = useDrillNames(book);
   const [answers, setAnswers] = useState<Record<string, FindingAnswer>>({});
   const windowKey = question.window ?? "";
   const findingsKey = JSON.stringify(findings);
@@ -110,6 +121,8 @@ export function DrillFindings({
           else {
             const raw = got.data!.rows;
             const groups = raw.filter((r) => r.kind === "group").map((row) => drillRowOf(row));
+            // the rows on screen are named: the door's labels, then the host's names for the rest
+            void book.readRows(raw.filter((r) => r.kind === "group").slice(0, ROWS_SHOWN));
             const distinct = raw.find((r) => typeof r.distinct_groups === "number")?.distinct_groups ?? null;
             const { count, capped } = findingCount(groups.length, distinct);
             answer = {
@@ -126,10 +139,15 @@ export function DrillFindings({
     return () => {
       cancelled = true;
     };
-  }, [open, client, findingsKey, sourceKey, lane, windowKey]);
+  }, [open, client, findingsKey, sourceKey, lane, windowKey, book]);
 
   const labelOf = (groups: Record<string, string | null>, by: readonly string[]) =>
-    by.map((ref) => drillValueLabel(dimensions, ref, groups[ref] ?? null, emptyLabel)).join(" › ");
+    by
+      .map((ref) => {
+        const value = groups[ref] ?? null;
+        return (value ? names[parseDimensionRef(ref).key]?.[value] : undefined) ?? drillValueLabel(dimensions, ref, value, emptyLabel);
+      })
+      .join(" › ");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

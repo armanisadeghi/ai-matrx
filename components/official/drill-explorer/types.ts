@@ -145,6 +145,12 @@ export interface DrillNameResolver {
    * whose name could not be read"). Never the id itself: keys never reach a person (VERIFIER-32 F5).
    */
   missingLabel?: string;
+  /**
+   * How an id reads once its read is over and named nothing (the read failed, or the answer left the
+   * id out): the door's plain words ("A request whose details could not be read"). Default
+   * "Name could not be read" (drillNames.ts). Never a perpetual loading state (lane DRILL-D1).
+   */
+  unreadLabel?: string;
 }
 
 /**

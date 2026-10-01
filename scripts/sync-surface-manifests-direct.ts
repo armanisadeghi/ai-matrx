@@ -4,8 +4,9 @@
  *
  * `--check` is read-only and reports every missing or incomplete manifest key.
  * The mutating mode is deliberately bounded to explicitly selected manifests,
- * never creates ui_client rows, and deletes
- * nothing. `--registration-only` is valid only with `--check`; it verifies
+ * never creates ui_client rows, and never hard-deletes: a child row the code no
+ * longer declares is ARCHIVED (deleted_at), and a re-declared archived row is
+ * revived. `--check` reports both directions as drift. `--registration-only` is valid only with `--check`; it verifies
  * admission (every required key plus ownership) without judging metadata.
  */
 import process from "node:process";
@@ -36,7 +37,10 @@ import {
   mirrorKey,
   planKey,
   planRows,
+  lifecycleFailures,
+  mirrorLifecycle,
   rowsByKey,
+  type MirrorLifecycle,
   type Row,
 } from "./lib/surface-sync-check";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
@@ -105,6 +109,39 @@ function expectedMetadata(
   );
 }
 
+/**
+ * Archive (deleted_at = now()) every live row the code no longer declares and
+ * revive every declared row sitting archived. Soft only — this tool never hard
+ * deletes. Returns one line per row for the run's output.
+ */
+async function applyMirrorLifecycle(
+  client: { query: (sql: string, params?: unknown[]) => Promise<unknown> },
+  lifecycle: readonly MirrorLifecycle[],
+  plan: SurfaceSyncPlan,
+): Promise<string[]> {
+  const lines: string[] = [];
+  for (const { table, label, archive, revive } of lifecycle) {
+    const key = planKey(plan, table);
+    if (archive.length) {
+      await client.query(
+        `update ui.${table} set deleted_at = now() where id = any($1::uuid[]) and deleted_at is null`,
+        [archive.map((row) => row.id)],
+      );
+      for (const row of archive)
+        lines.push(`ARCHIVED ${label} ${mirrorKey(row, key)} (no longer declared in code)`);
+    }
+    if (revive.length) {
+      await client.query(
+        `update ui.${table} set deleted_at = null where id = any($1::uuid[]) and deleted_at is not null`,
+        [revive.map((row) => row.id)],
+      );
+      for (const row of revive)
+        lines.push(`REVIVED ${label} ${mirrorKey(row, key)} (declared in code again)`);
+    }
+  }
+  return lines;
+}
+
 async function main() {
   const { check, registrationOnly, selfTest, names } = parseArgs();
   if (selfTest) return runSelfTest();
@@ -157,14 +194,30 @@ async function main() {
       "select name, client_name, execution_mode, description, is_active, label, value_groups, readiness, readiness_note, overlay_id, url_pattern, intro, parent_surface_name, content_hash from ui.ui_surface where name = any($1::text[])",
       [namesSql],
     );
-    const childRows: QueryResult<Row>[] = [];
-    for (const [table] of CHILD_TABLES) {
-      childRows.push(
-        await client.query<Row>(
-          `select * from ui.${table} where surface_name = any($1::text[])`,
-          [namesSql],
-        ),
+    const readChildRows = async () => {
+      const result: QueryResult<Row>[] = [];
+      for (const [table] of CHILD_TABLES) {
+        result.push(
+          await client.query<Row>(
+            `select * from ui.${table} where surface_name = any($1::text[])`,
+            [namesSql],
+          ),
+        );
+      }
+      return result;
+    };
+    let childRows = await readChildRows();
+    if (!check) {
+      // The upsert only adds and updates: archive what the code removed and
+      // revive what it re-declared, in this same transaction (2026-10-01).
+      const lifecycle = mirrorLifecycle(
+        plan,
+        childRows.map((result) => result.rows),
+        namesSql,
       );
+      for (const line of await applyMirrorLifecycle(client, lifecycle, plan))
+        console.log(line);
+      childRows = await readChildRows();
     }
     const failures: string[] = [];
     if (check) {
@@ -241,13 +294,26 @@ async function main() {
           `surface ${manifest.surfaceName}: guide skill ${skillId} body differs from ${manifest.guide}`,
         );
     }
-    if (!registrationOnly)
+    if (!registrationOnly) {
       failures.push(
         ...childMetadataFailures(
           plan,
           childRows.map((result) => result.rows),
         ),
       );
+      // Both directions of value drift: a row the code removed that is still
+      // live, and a row the code declares that sits archived.
+      failures.push(
+        ...lifecycleFailures(
+          mirrorLifecycle(
+            plan,
+            childRows.map((result) => result.rows),
+            namesSql,
+          ),
+          plan,
+        ),
+      );
+    }
     if (failures.length) {
       for (const failure of failures) console.error(`FAIL ${failure}`);
       const affected = manifests
@@ -372,6 +438,47 @@ async function runSelfTest() {
     if (clientsBefore.rows[0]?.count !== clientsAfter.rows[0]?.count)
       throw new Error("SELF-TEST failed: emitter created ui_client rows");
     const selfPlan = syncPlan([manifest], organizationId);
+    // Lifecycle: a value the code removed is archived, a re-declared one revived.
+    const fixturePlan = JSON.parse(
+      JSON.stringify(selfPlan).split(source).join(fixture),
+    ) as SurfaceSyncPlan;
+    await client.query(
+      "insert into ui.ui_surface_value (surface_name, item_type, name, label, description, value_type, organization_id, published_to_web) select surface_name, item_type, 'surface_sync_probe_removed', label, description, value_type, organization_id, published_to_web from ui.ui_surface_value where surface_name = $1 and deleted_at is null order by name limit 1",
+      [fixture],
+    );
+    const redeclared = planRows(fixturePlan, "ui_surface_value")[0];
+    if (!redeclared) throw new Error("Self-test source manifest declares no values");
+    await client.query(
+      "update ui.ui_surface_value set deleted_at = now() where surface_name = $1 and item_type = $2 and name = $3",
+      [fixture, redeclared.item_type ?? "", redeclared.name],
+    );
+    const readFixtureChildren = async () => {
+      const result: Row[][] = [];
+      for (const [table] of CHILD_TABLES)
+        result.push(
+          (await client.query<Row>(`select * from ui.${table} where surface_name = $1`, [fixture])).rows,
+        );
+      return result;
+    };
+    const before = mirrorLifecycle(fixturePlan, await readFixtureChildren(), [fixture]);
+    if (
+      lifecycleFailures(before, fixturePlan).length !== 2
+    )
+      throw new Error(
+        `SELF-TEST RED failed: --check should report exactly the removed and the archived value, got: ${lifecycleFailures(before, fixturePlan).join("; ") || "nothing"}`,
+      );
+    await applyMirrorLifecycle(client, before, fixturePlan);
+    const lifecycleRows = await client.query<{ name: string; deleted_at: Date | null }>(
+      "select name, deleted_at from ui.ui_surface_value where surface_name = $1 and name = any($2::text[])",
+      [fixture, ["surface_sync_probe_removed", String(redeclared.name)]],
+    );
+    const stateOf = (name: string) => lifecycleRows.rows.find((row) => row.name === name);
+    if (!stateOf("surface_sync_probe_removed")?.deleted_at)
+      throw new Error("SELF-TEST failed: a value removed from code was not archived (or was hard-deleted)");
+    if (stateOf(String(redeclared.name))?.deleted_at !== null)
+      throw new Error("SELF-TEST failed: a re-declared archived value was not revived");
+    if (lifecycleFailures(mirrorLifecycle(fixturePlan, await readFixtureChildren(), [fixture]), fixturePlan).length)
+      throw new Error("SELF-TEST failed: --check still reports lifecycle drift after the sync");
     const keysOf = (table: string) =>
       planRows(selfPlan, table).map((row) => mirrorKey(row, planKey(selfPlan, table)));
     const surface = await client.query<Row>(
@@ -405,7 +512,7 @@ async function runSelfTest() {
     }
     await client.query("ROLLBACK");
     console.log(
-      "SELF-TEST PASS: legacy child-only SQL failed; new emitted SQL registered the surface, persisted every mirror key system-owned and published to the web twice idempotently, preserved DB-authored optional metadata, created no ui_client rows, and rolled back.",
+      "SELF-TEST PASS: legacy child-only SQL failed; new emitted SQL registered the surface, persisted every mirror key system-owned and published to the web twice idempotently, preserved DB-authored optional metadata, created no ui_client rows; --check saw a removed and an archived value, the sync archived the removed one (soft) and revived the re-declared one; rolled back.",
     );
   } catch (error) {
     try {

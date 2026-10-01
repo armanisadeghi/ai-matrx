@@ -34,6 +34,7 @@ import { InfoHint } from "@/components/official/InfoHint";
 import { readOf } from "@/components/read-state/ReadGate";
 
 import { doorWindow } from "./useDrillExplorer";
+import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";
 import { asOfPage, doorWhere, type DrillNameResolver, type DrillRecordOpener, type DrillRecordsDeclaration } from "./types";
 import type { DrillCarried } from "./questionParts";
 import { recordsColumnDimension, recordsColumnHeader } from "./recordsColumns";
@@ -56,10 +57,16 @@ interface DrillRowsPageSums {
  * THE RECORDS' NOUN: a definer definition whose records are ANOTHER declared definition's rows (ai_usage
  * → ai_usage_executions) takes that definition's grain; any other takes its own ("one row per ingest
  * run" → "ingest run"). Null until known; the host's `rowNoun` stands in only when no grain says.
+ *
+ * Records over the definition's OWN fact (workflow_runs → workflow_run_facts, kg_cost → rag_ingest_run)
+ * are its own rows: only a declared definition is ever described, never a raw fact token — describing
+ * `workflow_run_facts` was refused 403 on every run-analysis load (lane DRILL-D1, VERIFY-DRILL-FINAL D2).
  */
 export function useRecordsNoun(client: RecordsClient | null, def: DrillDefinition, records: DrillRecordsDeclaration): string | null {
   const own = grainNoun(def.grain);
-  const other = def.mode === "definer" && records.fact !== def.key ? records.fact : null;
+  // describe carries the declaration's `fact` (platform.drill_def__<key>()); the package type omits it
+  const ownFact = (def as DrillDefinition & { fact?: string }).fact ?? def.key;
+  const other = def.mode === "definer" && records.fact !== def.key && records.fact !== ownFact ? records.fact : null;
   const [read, setRead] = useState<{ fact: string; noun: string | null } | null>(null);
   useEffect(() => {
     if (!client || !other) return;
@@ -96,9 +103,12 @@ export function DrillRecords({
   rowNoun,
   carried,
   resolvers,
+  book: hostBook,
   openRecord,
   timeZone,
 }: {
+  /** The explorer's one name book (drillNames.ts); absent = one of this list's own over `resolvers`. */
+  book?: DrillNameBook | undefined;
   client: RecordsClient | null;
   source: DrillSource;
   lane: "mine" | "organization" | "platform";
@@ -128,7 +138,8 @@ export function DrillRecords({
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   // Dimension key → id → words, for the ids on the pages read (a records page carries no labels)
-  const [recordNames, setRecordNames] = useState<Record<string, Record<string, string>>>({});
+  const book = useDrillNameBookOr(hostBook, resolvers);
+  const recordNames = useDrillNames(book);
   const askKey = JSON.stringify({ where: question.where, window: question.window ?? null, sort: question.sort ?? null, carried: carried?.where ?? null });
   const sourceKey = JSON.stringify(source);
   const columnsKey = records.columns.join(",");
@@ -178,10 +189,10 @@ export function DrillRecords({
           if (!dim || dim.kind !== "relation") continue;
           const ids = [...new Set(page.rows.map((r) => r[column]).filter((v): v is string => typeof v === "string" && v.length > 0))].slice(0, 500);
           if (ids.length === 0) continue;
-          const put = (named: Record<string, string>) => !cancelled && setRecordNames((held) => ({ ...held, [dim.key]: { ...(held[dim.key] ?? {}), ...named } }));
-          const resolver = resolvers?.[dim.key];
-          if (resolver) {
-            void resolver.resolve(ids).then((r) => (r.ok ? put(r.names) : undefined));
+          const put = (named: Record<string, string>) => !cancelled && book.learn({ [dim.key]: named });
+          // a host-named id (a person) goes to the ONE book: asked once, unread words when it fails
+          if (book.resolves(dim.key)) {
+            void book.want(dim.key, ids);
             continue;
           }
           void client

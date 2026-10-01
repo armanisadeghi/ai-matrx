@@ -9,13 +9,14 @@
 // findings through the sibling's own door, in the explorer's lane and window, names its groups the
 // way the explorer names its own (the door's labels, then the host's resolvers), and a row opens the
 // sibling at that row — its address carries the sibling and the drilled question.
+// Since lane DRILL-D1 its names are the explorer's ONE name book (drillNames.ts), never its own.
 
 import { useEffect, useState } from "react";
 import type { RecordsClient } from "@ai-matrx/records/core";
-import { drillInto, drillValueLabel, parseDimensionRef, type MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
+import { drillInto, drillValueLabel, type MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
 import { formatCount } from "@ai-matrx/kit/format";
 
-import { drillDoorLabels } from "./dimensionWords";
+import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";
 import { drillSiblingDimensions, drillSiblingMeasures, type DrillSiblingDefinition } from "./drillSiblings";
 import type { DrillMoneyUnit } from "./measureFormat";
 import { findingQuestion, findingsOf, type DrillNameResolver } from "./types";
@@ -32,6 +33,7 @@ export function DrillSiblingFindings({
   window,
   sibling,
   resolvers,
+  book: hostBook,
   money,
   emptyLabel,
   open,
@@ -43,6 +45,8 @@ export function DrillSiblingFindings({
   window: string | null;
   sibling: DrillSiblingDefinition;
   resolvers: Record<string, DrillNameResolver> | undefined;
+  /** The explorer's one name book; absent = one of this section's own over `resolvers`. */
+  book?: DrillNameBook | undefined;
   money: DrillMoneyUnit;
   emptyLabel: string;
   /** The panel is open (answered only then, as the explorer's own findings are). */
@@ -52,9 +56,9 @@ export function DrillSiblingFindings({
 }) {
   const findings = findingsOf(sibling.def);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
-  const [names, setNames] = useState<Record<string, Record<string, string>>>({});
+  const book = useDrillNameBookOr(hostBook, resolvers);
+  const names = useDrillNames(book);
   const key = `${sibling.token}|${window ?? ""}|${lane}`;
-  const resolverKeys = Object.keys(resolvers ?? {}).sort().join(",");
 
   useEffect(() => {
     if (!open || !client) return;
@@ -79,33 +83,15 @@ export function DrillSiblingFindings({
             more: Math.max(0, groups.length - ROWS_SHOWN),
           },
         }));
-        // the door's own words, then the host's names for the ids it could not name
-        const door = drillDoorLabels(rows);
-        setNames((h) => {
-          const next = { ...h };
-          for (const [dim, map] of Object.entries(door)) next[dim] = { ...(h[dim] ?? {}), ...map };
-          return next;
-        });
-        const ids: Record<string, Set<string>> = {};
-        for (const r of groups.slice(0, ROWS_SHOWN)) {
-          for (const [ref, value] of Object.entries(r.groups)) {
-            const dim = parseDimensionRef(ref).key;
-            if (resolvers?.[dim] && typeof value === "string" && value && !door[dim]?.[value]) (ids[dim] ??= new Set()).add(value);
-          }
-        }
-        for (const [dim, set] of Object.entries(ids)) {
-          void resolvers![dim]!.resolve([...set]).then((named) => {
-            if (cancelled || !named.ok) return;
-            setNames((h) => ({ ...h, [dim]: { ...(h[dim] ?? {}), ...named.names } }));
-          });
-        }
+        // the rows shown are named by the one book: the door's own words, then the host's names
+        void book.readRows(rows.filter((r) => r.kind === "group").slice(0, ROWS_SHOWN));
       });
     }
     return () => {
       cancelled = true;
     };
-    // the findings, source, lane and window are all in `key`; resolvers are read through their keys
-  }, [open, client, key, resolverKeys]);
+    // the findings, source, lane and window are all in `key`; the book reads the latest resolvers
+  }, [open, client, key, book]);
 
   const dimensions = drillSiblingDimensions(sibling.def, names, resolvers);
   const measures = drillSiblingMeasures(sibling.def, money);

@@ -52,6 +52,7 @@ export function usageNameResolver(organizationId: string, dimension: (typeof NAM
     emptyLabel:
       dimension === "person" ? "No person" : dimension === "agent" ? "No agent" : dimension === "session" ? "No session" : dimension === "request" ? "No request" : "No organization",
     missingLabel: "Reading the name…",
+    unreadLabel: UNNAMED[dimension],
     resolve: async (ids) => {
       const { data, error } = await supabase
         .schema("platform")

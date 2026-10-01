@@ -69,3 +69,55 @@ export function childMetadataFailures(plan: SurfaceSyncPlan, rows: readonly Row[
   });
   return failures;
 }
+
+/**
+ * WHAT THE CODE REMOVED LEAVES THE MIRROR (2026-10-01). The upsert only ever
+ * adds and updates, so a value renamed or dropped from a manifest stayed live
+ * in `ui.*` forever — the server kept reading `current_note_visibility` after
+ * the notes manifest renamed it. For the surfaces a sync or check covers:
+ *   - `archive`: a LIVE mirror row (deleted_at null) the plan no longer
+ *     declares — the sync archives it (deleted_at = now(); never a hard delete);
+ *   - `revive`: a row the plan declares that sits archived — the sync brings it
+ *     back (deleted_at = null), because the upsert never touches deleted_at.
+ * Rows are addressed by the table's full plan key; writes go by `id`.
+ */
+export interface MirrorLifecycle {
+  table: (typeof CHILD_TABLES)[number][0];
+  label: (typeof CHILD_TABLES)[number][1];
+  archive: Row[];
+  revive: Row[];
+}
+
+const isArchived = (row: Row) => row.deleted_at !== null && row.deleted_at !== undefined;
+
+export function mirrorLifecycle(
+  plan: SurfaceSyncPlan,
+  rows: readonly Row[][],
+  surfaceNames: readonly string[],
+): MirrorLifecycle[] {
+  const covered = new Set(surfaceNames);
+  return CHILD_TABLES.map(([table, label], index) => {
+    const tableKey = planKey(plan, table);
+    const declared = new Set(planRows(plan, table).map((row) => mirrorKey(row, tableKey)));
+    const archive: Row[] = [];
+    const revive: Row[] = [];
+    for (const row of rows[index] ?? []) {
+      if (!covered.has(String(row.surface_name))) continue;
+      const isDeclared = declared.has(mirrorKey(row, tableKey));
+      if (!isDeclared && !isArchived(row)) archive.push(row);
+      else if (isDeclared && isArchived(row)) revive.push(row);
+    }
+    return { table, label, archive, revive };
+  });
+}
+
+/** `--check`'s reading of the lifecycle: every row the sync would archive or revive is drift. */
+export function lifecycleFailures(lifecycle: readonly MirrorLifecycle[], plan: SurfaceSyncPlan): string[] {
+  return lifecycle.flatMap(({ table, label, archive, revive }) => {
+    const tableKey = planKey(plan, table);
+    return [
+      ...archive.map((row) => `${label} ${mirrorKey(row, tableKey)}: live in the mirror but no longer declared in code`),
+      ...revive.map((row) => `${label} ${mirrorKey(row, tableKey)}: declared in code but archived in the mirror`),
+    ];
+  });
+}
