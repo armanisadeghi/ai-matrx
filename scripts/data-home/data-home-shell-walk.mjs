@@ -125,6 +125,17 @@ try {
   pass("harbor ranks a Harbor row first", top.includes("harbor"), top.split("\n").slice(0, 2).join(" · "));
   await shot("after-search-harbor");
 
+  // A Field's label is found by the server search, beneath the instant hits, saying where.
+  await box.fill("phone");
+  const t0 = Date.now();
+  const matched = (await until("matched in field", async () => (await page.locator("[data-data-home-matched]:visible").count()) > 0, 15000)).v;
+  const firstMatched = matched ? (await page.locator("[data-data-home-matched]:visible").first().innerText()) : "";
+  pass("a field label is found, saying Matched in field", Boolean(matched) && /Matched in field/.test(firstMatched), `${firstMatched} after ${Date.now() - t0} ms`);
+  await sleep(1500);
+  const allTab = (await page.getByRole("tab", { name: /^All/ }).first().innerText()).replace(/\s+/g, " ");
+  pass("the lane counts include what the field search found", !/\b0$/.test(allTab.trim()), allTab);
+  await shot("after-search-fieldname");
+
   // A token becomes a chip.
   await box.fill("kind:form ");
   await sleep(1200);

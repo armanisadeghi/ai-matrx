@@ -42,6 +42,9 @@ describe("the merge", () => {
     expect(page.rows.indexOf(extra)).toBeGreaterThan(0);
     expect(matchedLine(extra)).toBe("Matched in field: Furnace model");
     expect(page.total).toBe(page.rows.length);
+    // THE COUNT IS THE LIST: the lane counts include what only the server found.
+    const counts = await s.fetchCounts(q("recall"));
+    expect(counts.byKind.all).toBe(page.total);
     // An unanswered text asks the server; a one-letter text never does.
     await s.fetchPage(q("furnace"), SORT);
     await s.fetchPage(q("f"), SORT);
