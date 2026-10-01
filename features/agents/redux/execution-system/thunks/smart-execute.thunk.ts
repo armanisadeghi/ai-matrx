@@ -427,13 +427,19 @@ export const smartExecute = createAsyncThunk<
       const executePromise =
         apiEndpointMode === "manual"
           ? dispatch(
-              executeManualInstance({ conversationId, initiation: "user" }),
+              executeManualInstance({
+                conversationId,
+                initiation: "user",
+                surfaceRefreshed: true,
+              }),
             )
           : dispatch(
               executeInstance({
                 conversationId,
                 scopeIdsOverride,
                 initiation: "user",
+                // The live page was read above, with the composer's text.
+                surfaceRefreshed: true,
               }),
             );
 

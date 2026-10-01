@@ -1,7 +1,7 @@
 // features/quick-actions/components/QuickChatSheet.tsx
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquarePlus, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,8 +20,6 @@ import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkel
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
 import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
-import { useConversationFollowsPage } from "@/features/surfaces/runtime/useConversationFollowsPage";
-import { selectPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   registerSurface,
   unregisterSurface,
@@ -45,20 +43,6 @@ const SOURCE_FEATURE = "chat";
 const HISTORY_SCOPE = "quick-chat";
 /** Registry key for fork/retry routing — distinct from per-conversation focus keys. */
 const QUICK_CHAT_PANEL_SURFACE = "quick-chat:panel";
-
-/** Per-viewer convenience only — the panel works identically without it. */
-const PAGE_CONTEXT_STORAGE_KEY = "matrx:quick-chat:include-page-context";
-
-/** The stored choice only changes from this panel, so there is nothing to subscribe to. */
-const subscribeToNothing = () => () => {};
-
-function readStoredPageContext(): boolean {
-  try {
-    return window.localStorage.getItem(PAGE_CONTEXT_STORAGE_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
 
 function liveSurfaceKey(agentId: string, session: number): string {
   return `quick-chat:live:${agentId}:${session}`;
@@ -180,9 +164,6 @@ function QuickChatSheetBody({
     string | null
   >(initialConversationId ?? null);
   const [showHistory, setShowHistory] = useState(false);
-  // The person's last choice for sharing the page with a NEW chat. The server
-  // snapshot is "off", so server and first client render agree.
-  const pageStartsOn = useSyncExternalStore(subscribeToNothing, readStoredPageContext, () => false);
 
   const loadAbortRef = useRef<AbortController | null>(null);
   const activeSurfaceKeyRef = useRef<string | null>(null);
@@ -234,25 +215,9 @@ function QuickChatSheetBody({
     ? loadedSurfaceKey(loadedConversationId)
     : currentLiveSurfaceKey;
 
-  // Keep the conversation's surface stamp equal to what the toggle SAYS, for
-  // whichever conversation is in the panel (fresh or reopened) and whichever
-  // page is underneath it right now — the ONE shared implementation.
-  // The page is shared or not from ONE control — the composer's page chip.
-  // Quick Chat opens over any page, so a new chat starts the way the person
-  // last left it (off until they first turn it on).
-  useConversationFollowsPage(conversationId, pageStartsOn);
-  const pageContextOff = useAppSelector(selectPageContextOff(conversationId));
-  const pageShared = useAppSelector((state) =>
-    conversationId ? Boolean(state.conversations.byConversationId[conversationId]?.surfaceName) : false,
-  );
-  useEffect(() => {
-    if (!pageContextOff && !pageShared) return; // nothing decided yet
-    try {
-      window.localStorage.setItem(PAGE_CONTEXT_STORAGE_KEY, pageContextOff ? "0" : "1");
-    } catch {
-      /* storage unavailable — the chip still works for this chat */
-    }
-  }, [pageContextOff, pageShared]);
+  // The page underneath is shared automatically — every composer's context
+  // rail runs the one page-follow rule (useConversationFollowsPage); the
+  // person turns it off per chat from the composer's context chip.
 
   // Track the active surface key for the unmount clearFocus — written in an
   // effect (never during render) so the ref always holds the last committed key.

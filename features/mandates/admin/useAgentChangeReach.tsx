@@ -34,8 +34,8 @@
  * back" door that calls the same revert. Never silent, never a wall.
  */
 
-import { Fragment, useState, type ReactNode } from "react";
-import { Loader2, Radar } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ArrowUpRight, CircleAlert, CircleCheck, Loader2, LockKeyhole, Radar } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -119,22 +119,31 @@ export function reachToneClassName(counts: BatchTierCounts): string {
 }
 
 function ReachFactRows({ facts }: { facts: ReachFacts }): ReactNode {
-  const rows: Array<[string, number]> = [
-    ["Advance", facts.advance],
-    ["Check", facts.check],
-    ["Red", facts.red],
-    ["Mandates", facts.mandates],
+  const rows = [
+    { label: "Ready to advance", value: facts.advance, icon: ArrowUpRight, tone: "text-success", background: "bg-success/10" },
+    { label: "Needs a check", value: facts.check, icon: CircleAlert, tone: "text-warning", background: "bg-warning/10" },
+    { label: "At risk", value: facts.red, icon: CircleAlert, tone: "text-destructive", background: "bg-destructive/10" },
   ];
-  if (facts.blocked > 0) rows.push(["Blocked", facts.blocked]);
-  if (facts.current > 0) rows.push(["Current", facts.current]);
   return (
-    <div className="grid grid-cols-[auto_minmax(2ch,auto)] gap-x-4 gap-y-0.5 font-mono text-[11px] leading-4">
-      {rows.map(([label, value]) => (
-        <Fragment key={label}>
-          <span className="text-muted-foreground">{label}</span>
-          <span className="text-right tabular-nums">{value}</span>
-        </Fragment>
-      ))}
+    <div className="mt-1 space-y-3">
+      <p className="text-xs text-muted-foreground">Affected by this agent’s saved changes</p>
+      <div className="grid grid-cols-3 gap-2">
+        {rows.map(({ label, value, icon: Icon, tone, background }) => (
+          <div key={label} className={`min-w-0 rounded-xl p-3 ${background}`}>
+            <div className={`flex items-center justify-between gap-1 ${tone}`}>
+              <span className="text-2xl font-semibold leading-none tabular-nums">{value}</span>
+              <Icon className="size-4 shrink-0" aria-hidden="true" />
+            </div>
+            <p className="mt-2 text-[11px] font-medium leading-4 text-foreground">{label}</p>
+          </div>
+        ))}
+      </div>
+      {(facts.blocked > 0 || facts.current > 0) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 text-xs text-muted-foreground">
+          {facts.blocked > 0 && <span className="inline-flex items-center gap-1.5"><LockKeyhole className="size-3.5" aria-hidden="true" /><span className="font-semibold text-foreground">{facts.blocked}</span> blocked</span>}
+          {facts.current > 0 && <span className="inline-flex items-center gap-1.5"><CircleCheck className="size-3.5" aria-hidden="true" /><span className="font-semibold text-foreground">{facts.current}</span> current</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -330,6 +339,16 @@ export function useAgentChangeReach(agentId: string) {
       const facts = reachFactsOf(countsNow);
       toast.info(`${facts.mandates} mandate${facts.mandates === 1 ? "" : "s"}`, {
         duration: REACH_TOAST_MS,
+        icon: <Radar className="size-5 text-primary" aria-hidden="true" />,
+        classNames: {
+          toast: "!flex-wrap !items-start !gap-x-3 !gap-y-4 !rounded-2xl !p-5 matrx-touch-targets !border-primary/20 !shadow-glass-lg",
+          icon: "!mt-0.5 !size-5 !m-0",
+          content: "!gap-1",
+          title: "!text-base !font-semibold !leading-6",
+          description: "!w-full",
+          actionButton: "!ml-8 !h-11 !w-[calc(100%-2rem)] !justify-center !rounded-lg !text-sm !font-semibold hover:!opacity-90 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-ring",
+          closeButton: "!left-auto !right-2 !top-2 !translate-x-0 !translate-y-0 !size-6 !border-0 !bg-transparent !text-muted-foreground hover:!text-foreground",
+        },
         description: <ReachFactRows facts={facts} />,
         action: { label: "Review", onClick: () => openPanel(name) },
       });

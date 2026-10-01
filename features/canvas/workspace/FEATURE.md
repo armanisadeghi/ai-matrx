@@ -30,9 +30,7 @@ such layout in the app.
   `canvas`, `title`, `titleMenu?`, `byline?`, `record?` (Share + comments; absent = those controls absent),
   `properties?` (tabs; absent = no panel), `getCanvasContext?`, `contextChip?`, `initialLayout?`
   (`readCanvasWorkspaceLayout(id, { defaultChatOpen })` — nav, chat, properties, the three widths),
-  `defaultChatOpen?` (default true; many pages start with the chat closed), `followPageSurface?` (the chat sees
-  the page on screen and follows the person from page to page — a hosted module; the visible switch is the ONE
-  page chip in the composer's context rail, `ConversationContextChip`), `initialMode?`, `onClose?`. `title` is optional (a hosted module brings its
+  `defaultChatOpen?` (default true; many pages start with the chat closed), `initialMode?`, `onClose?`. `title` is optional (a hosted module brings its
   own header).
 - **`CanvasChatColumn`** — the platform's ONE chat column (`AgentConversationColumn`) with the COMPACT
   composer; `buildCanvasSmartInputProps` is the single place its composer props are built.

@@ -75,6 +75,7 @@ import {
   selectInstanceContextEntries,
   selectSurfaceContextKeys,
 } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
+import { useConversationFollowsPage } from "@/features/surfaces/runtime/useConversationFollowsPage";
 import {
   ConversationContextChip,
   useConversationContextChipShown,
@@ -204,6 +205,10 @@ export function ConversationContextRail({
   // every other entry keeps its own.
   const surfaceKeys = useAppSelector(selectSurfaceContextKeys(conversationId));
   const surfaceKeySet = new Set(surfaceKeys);
+  // THE PAGE-FOLLOW RULE, for every composer (one implementation): this
+  // conversation gets the live values of the page it is shown on, unless it
+  // is that page's own conversation.
+  useConversationFollowsPage(conversationId);
   const contextChipShown = useConversationContextChipShown(conversationId);
 
   // ── Document pills read the EDITOR slice (the SSOT), never instanceContext

@@ -73,6 +73,7 @@ import {
   rememberRequestContextRows,
 } from "../context-rules/request-context";
 import { ensureContextRulesReady } from "../context-rules/context-rules.thunks";
+import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 import { resolveMandateKillSwitch } from "../context-rules/mandate-kill-switch";
 import {
   selectProjectId,
@@ -465,6 +466,15 @@ interface ExecuteInstanceArgs {
    * bind mid-run.
    */
   onRequestId?: (requestId: string) => void;
+
+  /**
+   * True only when the caller already re-read the live page for THIS send
+   * (`smartExecute`, which passes the composer text to the surface's
+   * `beforeExecute`). Every other caller gets the page re-read here, so no
+   * send path can ship stale page values (2026-09-30: thirteen direct callers
+   * skipped it).
+   */
+  surfaceRefreshed?: boolean;
 }
 
 interface ExecuteInstanceResult {
@@ -486,6 +496,7 @@ export const executeInstance = createAsyncThunk<
       scopeIdsOverride,
       initiation,
       onRequestId,
+      surfaceRefreshed = false,
     },
     { getState, dispatch, rejectWithValue: reject },
   ) => {
@@ -633,6 +644,10 @@ export const executeInstance = createAsyncThunk<
       // The person's saved context rules are loaded and no rule write is
       // still in flight — the request below must be built from exactly what
       // the server will read (RULES.md §3).
+      // THE LIVE PAGE, read for this send — unless the caller just did.
+      if (!surfaceRefreshed) {
+        await (dispatch as AppDispatch)(refreshSurfaceScope({ conversationId })).unwrap();
+      }
       await dispatch(ensureContextRulesReady());
       const mandateKillSwitch = await resolveMandateKillSwitch(instance.mandateKey);
       state = getState() as RootState;

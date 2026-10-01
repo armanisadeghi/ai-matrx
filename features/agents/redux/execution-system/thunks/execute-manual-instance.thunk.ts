@@ -119,6 +119,7 @@ import {
   rememberRequestContextRows,
 } from "../context-rules/request-context";
 import { ensureContextRulesReady } from "../context-rules/context-rules.thunks";
+import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 import { setExpectedContextRows } from "../instance-context/instance-context.slice";
 import {
   messagePartToUserInputPart,
@@ -615,6 +616,8 @@ interface ExecuteManualInstanceArgs {
   debug?: boolean;
   /** Per-send provenance attestation — see ExecuteInstanceArgs.initiation. */
   initiation?: RequestInitiation;
+  /** See ExecuteInstanceArgs.surfaceRefreshed — the live page is re-read here unless true. */
+  surfaceRefreshed?: boolean;
 }
 
 interface ExecuteManualInstanceResult {
@@ -633,7 +636,7 @@ export const executeManualInstance = createAsyncThunk<
 >(
   "instances/executeManual",
   async (
-    { conversationId, debug = false, initiation },
+    { conversationId, debug = false, initiation, surfaceRefreshed = false },
     { getState, dispatch, rejectWithValue: reject },
   ) => {
     const requestId = generateRequestId();
@@ -655,6 +658,9 @@ export const executeManualInstance = createAsyncThunk<
       // Saved context rules loaded and no rule write in flight before the
       // snapshot the request is built from (RULES.md §3).
       // This thunk's generics carry no typed dispatch; the store's is the real one.
+      if (!surfaceRefreshed) {
+        await (dispatch as AppDispatch)(refreshSurfaceScope({ conversationId })).unwrap();
+      }
       await (dispatch as AppDispatch)(ensureContextRulesReady());
       const state = getState() as RootState;
       const instance = state.conversations.byConversationId[conversationId];

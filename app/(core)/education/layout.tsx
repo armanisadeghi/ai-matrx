@@ -75,7 +75,6 @@ export default async function EducationLayout({
       id={EDUCATION_WORKSPACE_ID}
       initialLayout={initialLayout}
       defaultChatOpen={false}
-      followPageSurface
       initialMode={initialMode}
       // Canvas chrome stops `.shell-main` scrolling; the education pages scroll here.
       canvas={<div className="h-full min-h-0 overflow-y-auto">{body}</div>}

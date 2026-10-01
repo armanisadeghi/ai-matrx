@@ -1,29 +1,29 @@
 "use client";
 
 /**
- * useConversationFollowsPage — a chat that lives BESIDE the page (Quick Chat,
- * the shell's chat dock) gets that page's live surface values, and keeps
- * getting them as the person moves from page to page.
+ * useConversationFollowsPage — EVERY conversation shown in a composer gets the
+ * live values of the page it is shown on, and keeps getting them as the person
+ * moves from page to page (Arman, 2026-09-30: "when an agent opens up
+ * anywhere, the context needs to be added for that place … we get no opinion
+ * about it").
  *
- * The mechanism is the conversation's surface STAMP (`conversation.surfaceName`):
- * every turn, `refresh-surface-scope` re-reads the live provider the stamp
- * names. A launch adopts a surface only ONCE, so a chat that outlives the page
- * it was opened on would carry a "surface closed" note for the rest of its
- * life. This hook keeps the stamp equal to what the person chose:
+ * ONE rule, one exception:
+ *   - every conversation follows `useActivePageSurface()` — the page (or the
+ *     overlay on top of it) the person is looking at — whether it was just
+ *     launched, loaded from history into a window, or opened beside the page;
+ *   - EXCEPT the page's OWN conversation (`isPageOwnConversation` — the main
+ *     chat, the builder's test run, the runner's run, each battle lane): it IS
+ *     the page and never receives itself as context. Left untouched here.
  *
- *   - on  → the stamp follows `useActivePageSurface()` — the page (or the
- *           overlay on top of it) the person is looking at right now;
- *   - off → the stamp is cleared AND the values the page already handed over
- *           are dropped. Off means off.
+ * Mounted by `ConversationContextRail`, which every composer renders — so no
+ * host can forget it, and no host decides otherwise. The person's own choice
+ * is the composer chip's page switch (`setPageContextEnabled`) for this
+ * conversation, and per-value rules (common-docs context-delivery RULES.md).
  *
- * The choice is the person's, made on the ONE control: the composer's page
- * chip (`ConversationContextChip` → `setPageContextEnabled`). `startsOn` is only the
- * host's default for a new conversation — a chat that opens over ANY page
- * (Quick Chat) starts off, so the chip shows as the eye-off icon naming the
- * page and one click shares it. While off, the remembered page follows the
- * person, so turning it on shares the page they are on now. The contract:
- * common-docs/systems/mandates/STATE.md. One implementation for every
- * beside-the-page chat — never a second copy of this effect.
+ * The page is READ (`refreshSurfaceScope`) when the stamp changes AND when a
+ * composer first shows a conversation that already carries the stamp — a chat
+ * loaded from history used to show "Agent Builder 0" until its next send.
+ * Every send re-reads it again inside the send path itself.
  */
 
 import { useEffect, useRef } from "react";
@@ -34,6 +34,7 @@ import { replaceSurfaceContextEntries } from "@/features/agents/redux/execution-
 import { selectPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { refreshSurfaceScope } from "@/features/agents/redux/execution-system/thunks/refresh-surface-scope.thunk";
+import { isPageOwnConversation } from "./SurfaceRuntimeContext";
 import { useActivePageSurface } from "./useActivePageSurface";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 
@@ -46,7 +47,6 @@ export interface PageFollowState {
 
 export function useConversationFollowsPage(
   conversationId: string | null,
-  startsOn: boolean,
 ): PageFollowState {
   const dispatch = useAppDispatch();
   const { surfaceName: pageSurfaceName } = useActivePageSurface();
@@ -60,22 +60,6 @@ export function useConversationFollowsPage(
   const turnedOff = useAppSelector(selectPageContextOff(conversationId));
   const desiredSurfaceName = !turnedOff && pageSurfaceName ? pageSurfaceName : null;
 
-  // A host that starts OFF: the first time this conversation is ready, mark it
-  // off (remembering the page, so the chip can name it). Once per conversation.
-  const seeded = useRef<string | null>(null);
-  // Set in the same commit the off flag is dispatched, before this render's
-  // `turnedOff` can see it — so the stamping effect below never shares the
-  // page for a moment in between.
-  const seededOff = useRef<string | null>(null);
-  useEffect(() => {
-    if (!conversationId || !conversationReady || seeded.current === conversationId) return;
-    seeded.current = conversationId;
-    if (!startsOn && !stampedSurfaceName) {
-      seededOff.current = conversationId;
-      dispatch(setPageContextOff({ conversationId, previousSurfaceName: pageSurfaceName }));
-    }
-  }, [dispatch, conversationId, conversationReady, startsOn, stampedSurfaceName, pageSurfaceName]);
-
   // While off, the remembered page follows the person.
   const rememberedPage = turnedOff?.previousSurfaceName ?? null;
   useEffect(() => {
@@ -83,12 +67,26 @@ export function useConversationFollowsPage(
     dispatch(setPageContextOff({ conversationId, previousSurfaceName: pageSurfaceName }));
   }, [dispatch, conversationId, turnedOff, rememberedPage, pageSurfaceName]);
 
+  // The page's OWN conversation is the page: it never receives itself.
+  const ownConversation = isPageOwnConversation(conversationId);
+
+  // A composer showing a conversation that ALREADY carries the right stamp
+  // (loaded from history, reopened in a window) reads the page once, now —
+  // so the chip shows what the next turn will carry instead of nothing.
+  const readOnShow = useRef<string | null>(null);
   useEffect(() => {
-    if (!conversationId || !conversationReady) return;
-    if (seededOff.current === conversationId) {
-      if (!turnedOff) return; // the off flag has not reached this render yet
-      seededOff.current = null;
-    }
+    if (!conversationId || !conversationReady || ownConversation) return;
+    if (!desiredSurfaceName || stampedSurfaceName !== desiredSurfaceName) return;
+    if (readOnShow.current === conversationId) return;
+    readOnShow.current = conversationId;
+    void dispatch(refreshSurfaceScope({ conversationId }));
+  }, [dispatch, conversationId, conversationReady, ownConversation, desiredSurfaceName, stampedSurfaceName]);
+
+  useEffect(() => {
+    if (!conversationId || !conversationReady || ownConversation) return;
+    // An unregistered page has nothing to follow: a conversation launched with
+    // its own surface keeps it. Only the person's switch clears a stamp.
+    if (!turnedOff && !pageSurfaceName) return;
     if (stampedSurfaceName === desiredSurfaceName) return;
     dispatch(patchConversation({ conversationId, surfaceName: desiredSurfaceName }));
     // Read the new page NOW, so the composer shows what the chat will get.
@@ -98,7 +96,7 @@ export function useConversationFollowsPage(
       dispatch(replaceSurfaceVariableValues({ conversationId, values: {} }));
       dispatch(replaceSurfaceContextEntries({ conversationId, entries: [] }));
     }
-  }, [dispatch, conversationId, conversationReady, stampedSurfaceName, desiredSurfaceName, turnedOff]);
+  }, [dispatch, conversationId, conversationReady, ownConversation, turnedOff, pageSurfaceName, stampedSurfaceName, desiredSurfaceName]);
 
   return {
     pageSurfaceName,
