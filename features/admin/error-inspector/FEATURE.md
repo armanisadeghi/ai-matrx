@@ -454,6 +454,13 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-10-01 — Captures survive a reload of the tab (PB-01 S14: the inspector
+  came back empty, every error from the run lost). `errorCaptureStore` keeps
+  the newest 100 rows in this tab's sessionStorage (raw over 4k chars becomes a
+  preview, 1M chars total), saved debounced and on `pagehide`. Restored rows
+  carry `restoredFromPreviousPage` and are never filed to `system_error` again.
+  Guard: `errorCaptureStore.survivesReload.test.ts`.
+
 - 2026-10-01 — New source `sandbox-unresolved-import`: a stored component that
   imports something the sandbox cannot supply files a red row naming the import
   path and the tool/app/emit/kind it came from (it used to `console.warn`).
