@@ -890,12 +890,12 @@ const nextConfig = {
             },
             {
               source: "/lists-junk/:path*",
-              destination: "/demos/lists-junk/:path*",
+              destination: "/lists",
               permanent: false,
             },
             {
               source: "/lists-junk",
-              destination: "/demos/lists-junk",
+              destination: "/lists",
               permanent: false,
             },
             {
