@@ -538,6 +538,8 @@ export interface ContextReceiptRow {
   clamped?: boolean;
   client_sent_excluded?: boolean;
   blocked_by?: "model" | "self_check" | null;
+  consumed_as?: "expanded" | "directive" | "renamed" | "unaccounted" | null;
+  consumed_into?: string[];
 }
 
 export interface ContextRule {

@@ -26,10 +26,12 @@ import { toast } from "@/lib/toast";
 import { PLATFORM_CONTEXT_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 
 /**
- * Platform keys the server never echoes by name: `apply_surface_context` pops each and expands
- * it into one row per value (`<surface>::<value>`, `window::<title>`), which the receipt reports
- * as the server's own rows. Expecting them by name made every turn sent with a dialog open a
- * false `window_forms.missing` (verify-7 #4, /education/flashcards Add more cards).
+ * The surroundings envelopes the server expands into one row per part (`<surface>::<value>`,
+ * `window::<title>`). The server now keeps a row for the envelope itself (`consumed_as:
+ * "expanded"`, RULES.md §5), so it is compared like any key. A receipt from a server that
+ * predates that row has none: only then is the envelope left out, instead of reading as a
+ * false `window_forms.missing` (/education/flashcards Add more cards, 2026-10-01).
+ * TEMPORARY (2026-10-01): delete once every live server emits the row.
  */
 const SERVER_EXPANDED_KEYS: ReadonlySet<string> = new Set([
   PLATFORM_CONTEXT_VALUES.surface_chain.name,
@@ -67,6 +69,8 @@ export function toContextReceipt(data: ContextReceiptData): ContextReceipt {
       clamped: row.clamped ?? false,
       client_sent_excluded: row.client_sent_excluded ?? false,
       blocked_by: row.blocked_by ?? null,
+      consumed_as: row.consumed_as ?? null,
+      consumed_into: row.consumed_into ?? [],
     })),
   };
 }
@@ -100,7 +104,10 @@ export function recordContextReceipt(
     });
   }
   if (expected && checked) {
-    const comparable = expected.rows.filter((row) => !SERVER_EXPANDED_KEYS.has(row.key));
+    const accounted = new Set(receipt.rows.map((row) => row.key));
+    const comparable = expected.rows.filter(
+      (row) => !SERVER_EXPANDED_KEYS.has(row.key) || accounted.has(row.key),
+    );
     mismatches = compareReceipt(comparable, receipt).mismatches;
     // A model that reads no context received none of it — that is the truth
     // the chip shows ("This model can't read context"), not a broken promise.

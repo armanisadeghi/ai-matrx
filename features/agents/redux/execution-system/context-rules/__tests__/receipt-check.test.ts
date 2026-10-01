@@ -151,3 +151,43 @@ it("the platform keys the server expands are never expected back by name", () =>
   expect(entry.mismatches).toEqual([]);
   expect(captured).toEqual([]);
 });
+
+// RULES.md §5 `consumed_as`: a server that keeps a row for the envelope it expanded is held to
+// it like any key — the envelope is compared, never skipped, once the receipt accounts for it.
+it("an expanded envelope the receipt accounts for is compared like any key", () => {
+  const windows = {
+    ...resolveContextRow(
+      {
+        key: "window_forms",
+        label: "Open windows",
+        surfaceKey: "matrx-user/notes",
+        origin: "page",
+        value: [{ title: "Add more cards", kind: "dialog", fields: [] }],
+      },
+      {},
+    ),
+    value: undefined,
+  };
+  const base = receipt(12000, "inline");
+  const envelopeRow = (include: boolean) => ({
+    ...base.rows![0],
+    key: "window_forms",
+    label: "Open windows",
+    chars: null,
+    include,
+    max_inline_chars: windows.max_inline_chars,
+    delivery: include ? ("on_request" as const) : ("off" as const),
+    decided_by: { include: "default" as const, max_inline_chars: "default" as const },
+    consumed_as: "expanded" as const,
+    consumed_into: ["window::Add more cards"],
+  });
+  const agreeing = run("r1", { ...base, rows: [...base.rows!, envelopeRow(true)] }, [windows]);
+  expect(agreeing.mismatches).toEqual([]);
+  const stored = (agreeing.receipt as ContextReceiptData).rows!.find((r) => r.key === "window_forms");
+  expect(stored?.consumed_into).toEqual(["window::Add more cards"]);
+  captured.length = 0;
+  const lying = run("r1", { ...base, rows: [...base.rows!, envelopeRow(false)] }, [windows]);
+  expect(lying.mismatches).toEqual([
+    expect.objectContaining({ key: "window_forms", field: "include", expected: true, actual: false }),
+  ]);
+});

@@ -5712,6 +5712,31 @@
             ],
             "default": null,
             "title": "Blocked By"
+          },
+          "consumed_as": {
+            "anyOf": [
+              {
+                "enum": [
+                  "expanded",
+                  "directive",
+                  "renamed",
+                  "unaccounted"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Consumed As"
+          },
+          "consumed_into": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Consumed Into",
+            "type": "array"
           }
         },
         "required": [
