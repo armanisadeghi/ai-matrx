@@ -1585,10 +1585,13 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   useDeepLinkArrival(
     searchParams.get("rename") === "1",
     canEdit,
-    () =>
-      nameHeadingRef.current
-        ?.querySelector<HTMLButtonElement>('button[title="Click to rename"]')
-        ?.click(),
+    () => {
+      const door = nameHeadingRef.current?.querySelector<HTMLButtonElement>(
+        'button[title="Click to rename"]',
+      );
+      door?.click();
+      return Boolean(door);
+    },
     { consume: "rename" },
   );
 

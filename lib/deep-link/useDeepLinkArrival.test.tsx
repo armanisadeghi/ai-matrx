@@ -119,4 +119,19 @@ describe("useDeepLinkArrival", () => {
     expect(window.location.search).toBe("?drip=1");
     await h.unmount();
   });
+
+  it("keeps a one-shot link it could not act on", async () => {
+    window.history.replaceState(null, "", "/masterwork/abc?rename=1");
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    function Probe() {
+      useDeepLinkArrival(true, true, () => false, { consume: "rename" });
+      return null;
+    }
+    await act(async () => root.render(<Probe />));
+    expect(window.location.search).toBe("?rename=1");
+    await act(async () => root.unmount());
+    container.remove();
+  });
 });

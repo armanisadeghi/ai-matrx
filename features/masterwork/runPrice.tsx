@@ -180,6 +180,8 @@ export function useFirstRunEstimate(
           path: RUN_ESTIMATE_PATH,
           method: "GET",
           pathParams: { masterwork_id: masterworkId } as never,
+          // A viewer who cannot open the Masterwork simply gets "—".
+          expectedErrorStatuses: [403],
         }),
       ),
     )

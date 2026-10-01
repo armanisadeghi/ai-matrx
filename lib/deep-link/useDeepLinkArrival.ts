@@ -51,7 +51,7 @@ import { useEffect, useRef } from "react";
 export function useDeepLinkArrival(
   asking: boolean,
   ready: boolean,
-  onArrive: () => void,
+  onArrive: () => void | boolean,
   options?: DeepLinkArrivalOptions,
 ): void {
   const handled = useRef(false);
@@ -69,8 +69,9 @@ export function useDeepLinkArrival(
     }
     if (handled.current || !ready) return;
     handled.current = true;
-    latest.current();
-    if (consume) dropSearchParam(consume);
+    // `false` from onArrive = "could not act": the link is not spent.
+    const acted = latest.current();
+    if (consume && acted !== false) dropSearchParam(consume);
   }, [asking, ready, consume]);
 }
 
