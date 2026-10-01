@@ -41,7 +41,6 @@ import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
 import { AgentAppErrorBoundary } from "@/features/agent-apps/components/AgentAppErrorBoundary";
 import PublicMessageOptionsMenu from "@/features/public-chat/components/PublicMessageOptionsMenu";
 import MarkdownStream from "@/components/MarkdownStream";
-import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import type { UseAgentAppReturn } from "@/features/agent-apps/hooks/useAgentApp";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
@@ -64,6 +63,7 @@ import {
 } from "@/features/agent-apps/components/shells/AgentAppMarkdownStreamBridge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import { useOpenAppResponseInCanvas } from "@/features/agent-apps/hooks/useOpenAppResponseInCanvas";
 
 const HtmlPreviewModal = dynamic(
   () => import("@/features/html-pages/components/HtmlPreviewModal"),
@@ -201,7 +201,6 @@ export function AgentAppFullyCustomShell({
   );
 
   // ── Action bar (copy / canvas / preview) ──────────────────────────────
-  const { open: openCanvas } = useCanvas();
   const [htmlPreviewOpen, setHtmlPreviewOpen] = useState(false);
   const [htmlPreviewContent, setHtmlPreviewContent] = useState("");
   const [htmlPreviewTitle, setHtmlPreviewTitle] = useState("");
@@ -217,16 +216,11 @@ export function AgentAppFullyCustomShell({
     [app.name],
   );
 
-  const handleOpenCanvas = useCallback(() => {
-    openCanvas({
-      type: "html",
-      data: { html: ctx.response },
-      metadata: {
-        title: app.name || "Response",
-        sourceMessageId: ctx.conversationId ?? undefined,
-      },
-    });
-  }, [openCanvas, ctx.response, app.name, ctx.conversationId]);
+  // A kind answer opens as its kind, never as raw JSON (kind-never-raw S5).
+  const openResponseInCanvas = useOpenAppResponseInCanvas();
+  const handleOpenCanvas = () => {
+    void openResponseInCanvas(ctx.response, app.name || "Response", ctx.conversationId);
+  };
 
   // The finished bar is for a FINISHED result only — never while a run is
   // live, held, or being rejoined after a reload (it used to show beside the

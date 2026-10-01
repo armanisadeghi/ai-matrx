@@ -82,8 +82,7 @@ Every stream item below adds its case there.
       `AgentAppSurfaceRuntime` feeds the workspace SCOPE (machine, kept). Run scope (`useAgentRunSurfaceScope`,
       `agent-run-history-scope`) and the model-battle scope are agent context (kept). Comparison
       `battleMarkdown` → people get `battleMarkdownForPeople` (copy + .md export); the agent payload keeps the
-      data. Still open: "Open in canvas" on agent apps sends a kind answer as an `html` canvas; battle CSV/sheet
-      rows carry the raw answer cell; code-editor modal readers of `selectLatestAccumulatedText` not audited.
+      data. Agent-app "Open in canvas": see S5.
 - [ ] R2. `selectAnswerDocumentText` / `selectLatestAnswerDocumentText` stringify kinds on purpose.
       PARTIAL — kept (stored/passed text). Its display reader, the cleanup pad, previews through `MarkdownStream`;
       transcript studio reattach is a data path.
@@ -138,9 +137,12 @@ Every stream item below adds its case there.
       (complete kind → markdown, arriving kind → its loader line while the caller's `streaming` is true, then a
       one-line broken state "<Kind> did not finish"); expanded view was already `AgentRunner`.
 - [x] S4. AI code editor message list. `AnswerTextPreview` for text + stream, `AnswerValueView` for structured.
-- [ ] S5. Fully custom agent-app shells. PARTIAL — `response` into compiled app code is the app contract (left);
-      the result bar's human copy converts with `kindTextToMarkdown`; `DefaultFallback` was already
-      `MarkdownStream`. Open: "Open in canvas" sends `response` as an `html` canvas (a kind shows as text there).
+- [x] S5. Fully custom agent-app shells. `response` into compiled app code is the app contract (left); the result
+      bar's human copy converts with `kindTextToMarkdown`; `DefaultFallback` was already `MarkdownStream`. "Open in
+      canvas" (custom shell + public renderer) goes through ONE door, `useOpenAppResponseInCanvas`: a kind answer
+      opens as its kind (`detectKindInJsonText` → artifact canvas type, bound via `useOpenArtifactInCanvas` when
+      the message is persisted, else the kind's canvas type over its value); a kind with no canvas type opens as
+      its markdown; kindless stays the HTML canvas.
 - [x] S6. "Ask about this meeting". Answer drawn through `AnswerValueView` (no unit test — workspace too heavy).
 - [x] S7. Assignments demo. Output text and input values through `AnswerValueView` (no unit test).
 - [ ] S8. Research review/repair page. Already `BasicMarkdownContent` — left to the bottom-layer lane (C4).

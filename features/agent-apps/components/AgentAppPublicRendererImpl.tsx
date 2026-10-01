@@ -24,7 +24,6 @@ import MarkdownStream from "@/components/MarkdownStream";
 import PublicMessageOptionsMenu from "@/features/public-chat/components/PublicMessageOptionsMenu";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import type { PublicAgentApp } from "../types";
-import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   recordRunOutcome,
@@ -54,6 +53,7 @@ import {
 } from "@/features/agent-apps/components/shells/AgentAppMarkdownStreamBridge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import { useOpenAppResponseInCanvas } from "@/features/agent-apps/hooks/useOpenAppResponseInCanvas";
 
 const HtmlPreviewModal = dynamic(
   () => import("@/features/html-pages/components/HtmlPreviewModal"),
@@ -624,7 +624,6 @@ function CustomComponentRenderer({
   // responseText is already derived from Redux above (selectResultText).
   // The old local-streamEvents → text reduction is gone with the bespoke fetch.
 
-  const { open: openCanvas } = useCanvas();
 
   const [htmlPreviewOpen, setHtmlPreviewOpen] = useState(false);
   const [htmlPreviewContent, setHtmlPreviewContent] = useState("");
@@ -639,16 +638,11 @@ function CustomComponentRenderer({
     [app.name],
   );
 
-  const handleOpenCanvas = useCallback(() => {
-    openCanvas({
-      type: "html",
-      data: { html: responseText },
-      metadata: {
-        title: app.name || "Response",
-        sourceMessageId: conversationId ?? undefined,
-      },
-    });
-  }, [openCanvas, responseText, app.name, conversationId]);
+  // A kind answer opens as its kind, never as raw JSON (kind-never-raw S5).
+  const openResponseInCanvas = useOpenAppResponseInCanvas();
+  const handleOpenCanvas = () => {
+    void openResponseInCanvas(responseText, app.name || "Response", conversationId);
+  };
 
   const [isCopied, setIsCopied] = useState(false);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
