@@ -186,7 +186,8 @@ function Verdict({ verdict }: { verdict: BenchVerdictWire }) {
       ) : null}
       {verdict.not_scored ? (
         <p className="rounded-md border border-border bg-muted/40 p-2 text-xs text-foreground">
-          Not scored: the judging panel wasn&apos;t calibrated.
+          Not scored, so not a pass or a fail: the judging panel wasn&apos;t
+          calibrated.
           {verdict.not_scored_reason ? ` ${verdict.not_scored_reason}` : ""}
         </p>
       ) : null}

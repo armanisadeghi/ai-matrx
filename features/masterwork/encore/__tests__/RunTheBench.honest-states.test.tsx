@@ -512,9 +512,8 @@ describe("the Bench door never lies about what it can do", () => {
       (host.querySelector("button") as HTMLButtonElement).click();
     });
     const text = host.textContent ?? "";
-    expect(text).toContain("Not scored: the judging panel wasn't calibrated.");
-    expect(text).toContain("this trial was not scored");
-    expect(text).toContain("not a fail and not a pass");
+    expect(text).toContain("Not scored, so not a pass or a fail");
+    expect(text).toContain("the judging panel wasn't calibrated.");
     expect(text).toContain("Only 1 of 3 calibration votes went to the expert.");
     expect(text).not.toContain("did not pass");
     expect(text).not.toContain("ceiling win claimed");
