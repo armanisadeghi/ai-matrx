@@ -541,10 +541,10 @@ async function main(): Promise<number> {
     }
     env = live;
   }
-  console.log(`Database connection from ${env.from}${onClone ? " (the dev clone)" : ""}; session READ ONLY.`);
+  console.log(`Database connection from ${env.from}${onClone ? " (the dev clone)" : ""}; transaction READ ONLY.`);
   const cx = await connectDirect(env, "rich-editor-roundtrip-corpus");
-  await cx.query("set session characteristics as transaction read only");
-  await cx.query(`set statement_timeout = '${onClone ? "120s" : "30s"}'`);
+  await cx.query("begin read only");
+  await cx.query(`set local statement_timeout = '${onClone ? "120s" : "30s"}'`);
 
   const report: Record<string, SourceStats> = {};
   const started = Date.now();
@@ -590,6 +590,7 @@ async function main(): Promise<number> {
       );
     }
   } finally {
+    await cx.query("rollback").catch(() => {});
     await cx.end();
   }
 

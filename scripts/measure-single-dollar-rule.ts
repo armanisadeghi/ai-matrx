@@ -181,10 +181,10 @@ async function main(): Promise<number> {
     console.error(`UNMEASURED: no database connection — set ${env.missing.join(", ")}.`);
     return 2;
   }
-  console.log(`Database connection from ${env.from}; session READ ONLY.`);
+  console.log(`Database connection from ${env.from}; transaction READ ONLY.`);
   const cx = await connectDirect(env, "measure-single-dollar-rule");
-  await cx.query("set session characteristics as transaction read only");
-  await cx.query("set statement_timeout = '30s'");
+  await cx.query("begin read only");
+  await cx.query("set local statement_timeout = '30s'");
 
   const sources: Record<string, { sql: string; assistant: boolean }> = {
     assistant_messages: {
@@ -251,6 +251,7 @@ async function main(): Promise<number> {
       }
     }
   } finally {
+    await cx.query("rollback").catch(() => {});
     await cx.end();
   }
 

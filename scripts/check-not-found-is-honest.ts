@@ -64,7 +64,7 @@ async function open(target: Target): Promise<pg.Client> {
       process.exit(2);
     }
     const c = await connectDirect(env, "check-not-found-is-honest");
-    await c.query("set session characteristics as transaction read only");
+    await c.query("begin read only");
     return c;
   }
   const env = target === "clone" ? loadCloneDbEnv(ROOT, loadCloneRef(ROOT)) : loadBranchDbEnv(ROOT, loadBranchRef(ROOT));
@@ -194,6 +194,7 @@ async function main(): Promise<void> {
   try {
     process.exitCode = report(target, await census(c));
   } finally {
+    await c.query("rollback").catch(() => {});
     await c.end();
   }
 }

@@ -226,6 +226,12 @@ jobs:
         # exiting 0 — until records 0.29.0 shipped that subpath; it has been
         # enforcing since. 452 hits across 82 files went to 0 the same day.
         run: pnpm check:no-placeholder-data
+      - name: no session-level read-only SET through the pooler
+        # 2026-10-01: a session `SET default_transaction_read_only` sent via :6543 poisoned a pooled
+        # backend and production writes failed. Read-only checks use `begin read only` + rollback.
+        run: pnpm check:no-session-read-only
+      - name: the session-read-only guard can still fail (self-test)
+        run: pnpm check:no-session-read-only:self-test
       - name: the no-fake-data guard can still fail (self-test)
         # A guard you cannot demonstrate failing is not a guard. This plants a
         # seed file carrying Acme, a sequential name and an example.com mailbox

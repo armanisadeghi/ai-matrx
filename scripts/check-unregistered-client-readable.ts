@@ -158,10 +158,11 @@ async function census(): Promise<Census[]> {
   }), "check:unregistered-client-readable");
   await client.connect();
   try {
-    await client.query("set session characteristics as transaction read only");
+    await client.query("begin read only");
     const r = await client.query(CENSUS_SQL);
     return r.rows as Census[];
   } finally {
+    await client.query("rollback").catch(() => {});
     await client.end();
   }
 }

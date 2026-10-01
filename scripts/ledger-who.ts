@@ -8,7 +8,7 @@
  * host, session, process chain, git HEAD), and the attribution inside every rebase receipt.
  * A row written before the attribution columns existed says so in words — it is never guessed.
  *
- * READ-ONLY on every target: the session is `default_transaction_read_only = on` before the one
+ * READ-ONLY on every target: `begin read only` opens before the one
  * SELECT runs. `--target production` (the default) | `branch` | `clone`.
  *
  * Twin: `uv run python db/ledger_who.py <filename>` in aidream (same fields, same words).
@@ -40,7 +40,8 @@ export async function connectReadOnly(target: Target, why: string): Promise<pg.C
     env = e;
   }
   const client = await connectDirect(env, why);
-  await client.query("set default_transaction_read_only = on");
+  // Transaction-scoped on purpose: a session-level SET would ride this pooled backend into production.
+  await client.query("begin read only");
   return client;
 }
 
@@ -146,6 +147,7 @@ async function main(): Promise<number> {
     }
     return 0;
   } finally {
+    await client.query("rollback").catch(() => {});
     await client.end().catch(() => {});
   }
 }

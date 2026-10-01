@@ -12,7 +12,7 @@
  *     apply, so the commit that carries the entry is usually the applying lane's own commit.
  *     That is a lead, not proof: a peer sweep can carry another lane's snapshot line.
  *
- * READ-ONLY: the session is `default_transaction_read_only = on`. `--since=YYYY-MM-DD` (Pacific
+ * READ-ONLY: every query runs inside `begin read only` (never a session-level SET). `--since=YYYY-MM-DD` (Pacific
  * date, default 2026-09-20), `--target` (default production), `--json` for machine output.
  */
 import { execFileSync } from "node:child_process";
@@ -97,6 +97,7 @@ async function main(): Promise<number> {
     );
     rows = r.rows;
   } finally {
+    await client.query("rollback").catch(() => {});
     await client.end().catch(() => {});
   }
   const snaps = snapshotCommits(since);

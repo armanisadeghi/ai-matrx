@@ -70,7 +70,7 @@ async function main(): Promise<number> {
     return 2;
   }
   const cx = await connectDirect(env, "scan-table-edit-damage");
-  await cx.query("set session characteristics as transaction read only");
+  await cx.query("begin read only");
   const findings: Finding[] = [];
   try {
     const notes = await cx.query<{ row_id: string; version: number; content: string | null; prev: string | null }>(
@@ -121,6 +121,7 @@ async function main(): Promise<number> {
     }
     console.log(`scanned ${notes.rowCount} note versions and ${answers.rowCount} edited answers since ${since}`);
   } finally {
+    await cx.query("rollback").catch(() => {});
     await cx.end();
   }
   if (!findings.length) {
