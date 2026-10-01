@@ -1,5 +1,5 @@
 import type { Voice } from "../voiceCatalog";
-import { buildCast, resolveSpeaker, voicesForProvider } from "../voices";
+import { buildCast, castToSend, resolveSpeaker, voicesForProvider } from "../voices";
 
 function voice(
   provider: Voice["provider"],
@@ -66,5 +66,46 @@ describe("podcast cast helpers", () => {
     expect(() => buildCast(2, {}, voices, "google", [])).toThrow(
       "Server cast preview returned 0 speakers for 2 hosts.",
     );
+  });
+});
+
+// Break named (2026-10-01): a pasted finished script (Maya/Daniel) was sent
+// with the server's PREVIEW cast (Zara/Leo) the person never chose, and GATE 2
+// refused it — "Requested speaker(s) ['Zara', 'Leo'] never speak in the script".
+describe("castToSend", () => {
+  const preview = {
+    provider: "google" as const,
+    speakers: [
+      { name: "Zara", voice: "Kore", gender: "female" as const },
+      { name: "Leo", voice: "Orus", gender: "male" as const },
+    ],
+  };
+
+  it("lets a finished script's own speakers be the cast when no host was edited", () => {
+    expect(
+      castToSend({ hostCount: 2, drafts: {}, voices, preview, sourceIsFinishedScript: true }),
+    ).toBeUndefined();
+  });
+
+  it("sends the person's own edits even for a finished script", () => {
+    const cast = castToSend({
+      hostCount: 2,
+      drafts: { 0: { name: "Maya" }, 1: { name: "Daniel" } },
+      voices,
+      preview,
+      sourceIsFinishedScript: true,
+    });
+    expect(cast?.map((s) => s.name)).toEqual(["Maya", "Daniel"]);
+  });
+
+  it("keeps the previewed cast for a source the script writer will voice", () => {
+    const cast = castToSend({ hostCount: 2, drafts: {}, voices, preview, sourceIsFinishedScript: false });
+    expect(cast?.map((s) => s.name)).toEqual(["Zara", "Leo"]);
+  });
+
+  it("sends nothing when the preview is unavailable", () => {
+    expect(
+      castToSend({ hostCount: 2, drafts: {}, voices, preview: null, sourceIsFinishedScript: false }),
+    ).toBeUndefined();
   });
 });

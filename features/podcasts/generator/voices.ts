@@ -88,3 +88,29 @@ export function buildCast(
     resolveSpeaker(drafts[index], defaultSpeaker, providerVoices),
   );
 }
+
+/**
+ * The cast a generate request carries, or undefined to let the server resolve it.
+ *
+ * A finished script's own speaker labels ARE its cast. Sending the server's
+ * cast PREVIEW for it (names the person never chose) made GATE 2 refuse the
+ * pasted script — "Requested speaker(s) ['Zara', 'Leo'] never speak in the
+ * script" (2026-10-01). So for a finished script the cast rides along only when
+ * the person edited a host; every other source keeps the previewed cast, since
+ * that is what the script writer is told to voice.
+ */
+export function castToSend(args: {
+  hostCount: number;
+  drafts: Record<number, SpeakerDraft>;
+  voices: Voice[];
+  preview: { provider: VoiceProvider; speakers: PodcastSpeaker[] } | null;
+  sourceIsFinishedScript: boolean;
+}): PodcastSpeaker[] | undefined {
+  const { hostCount, drafts, voices, preview, sourceIsFinishedScript } = args;
+  if (!preview) return undefined;
+  const edited = Object.values(drafts).some(
+    (draft) => !!draft && (!!draft.name?.trim() || !!draft.voice || !!draft.gender),
+  );
+  if (sourceIsFinishedScript && !edited) return undefined;
+  return buildCast(hostCount, drafts, voices, preview.provider, preview.speakers);
+}

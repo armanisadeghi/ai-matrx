@@ -15,17 +15,22 @@ const OTHER = "884f72ac-8141-40e9-b4de-62bed55fe987";
 
 describe("liveRunRequestId", () => {
   it.each([
-    ["FastAPI detail", { detail: { code: "run_in_progress", request_id: LIVE } }, LIVE],
-    ["platform envelope", { details: { code: "run_in_progress", request_id: OTHER } }, OTHER],
-    ["top level", { code: "run_in_progress", request_id: LIVE }, LIVE],
+    ["FastAPI detail", { detail: { code: "run_in_progress", live_request_id: LIVE } }, LIVE],
+    ["platform envelope", { details: { code: "run_in_progress", live_request_id: OTHER } }, OTHER],
+    ["top level", { code: "run_in_progress", live_request_id: LIVE }, LIVE],
   ])("reads the live request id from the %s shape", (_label, body, expected) => {
     expect(liveRunRequestId(refusal(body))).toBe(expected);
   });
 
   it.each([
-    ["another 409", refusal({ detail: { code: "conflict", request_id: LIVE } })],
-    ["a 404 with the same body", refusal({ detail: { code: "run_in_progress", request_id: LIVE } }, 404)],
+    ["another 409", refusal({ detail: { code: "conflict", live_request_id: LIVE } })],
+    ["a 404 with the same body", refusal({ detail: { code: "run_in_progress", live_request_id: LIVE } }, 404)],
     ["no request id", refusal({ detail: { code: "run_in_progress" } })],
+    // The real envelope: `request_id` is the API call's own id — never a rejoin target.
+    [
+      "the envelope's own request_id",
+      refusal({ error: "run_in_progress", code: "run_in_progress", request_id: "43bde509f0404a6bb5cbbcd401349d7f" }),
+    ],
     ["no error", null],
   ])("is null for %s", (_label, error) => {
     expect(liveRunRequestId(error)).toBeNull();

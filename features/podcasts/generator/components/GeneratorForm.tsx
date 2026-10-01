@@ -98,14 +98,17 @@ import {
   POST_SCRIPT_PROCESSING_OPTIONS,
 } from "../constants";
 import {
-  buildCast,
+  castToSend,
   voicesForProvider,
   type SpeakerDraft,
 } from "../voices";
 import { useVoices } from "../useVoices";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { usePodcastCastPreview } from "../usePodcastCastPreview";
-import { getPodcastSourceReadiness } from "../sourceReadiness";
+import {
+  getPodcastSourceReadiness,
+  isFinishedPodcastScript,
+} from "../sourceReadiness";
 import { SpeakerCastEditor } from "./SpeakerCastEditor";
 import type {
   PodcastGenerateRequest,
@@ -309,15 +312,18 @@ export function GeneratorForm({
     // The server owns provider routing and the exact default cast. Apply only
     // the user's edits to that preview; if preview is unavailable, send no
     // cast and let the generation server resolve it natively.
-    if (castPreview.preview) {
-      body.speakers = buildCast(
-        hostCount,
-        speakerDrafts,
-        voices,
-        castPreview.preview.provider,
-        castPreview.preview.speakers,
-      );
-    }
+    const cast = castToSend({
+      hostCount,
+      drafts: speakerDrafts,
+      voices,
+      preview: castPreview.preview ?? null,
+      sourceIsFinishedScript:
+        activeSource.control !== "urls" &&
+        isFinishedPodcastScript(
+          activeSource.control === "resolve" ? resolvedText : text,
+        ),
+    });
+    if (cast) body.speakers = cast;
     if (activeSource.control === "urls") {
       body.file_urls = cleanUrls;
     } else if (activeSource.control === "resolve") {

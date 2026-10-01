@@ -17,6 +17,12 @@ interface PodcastSourceRequest {
   input_data?: unknown;
 }
 
+/** True when the source is already a finished script — its own speaker labels
+ *  ARE the cast, so the server never needs a cast chosen for it. */
+export function isFinishedPodcastScript(content: unknown): boolean {
+  return typeof content === "string" && hasNonemptyDialogueBlock(content);
+}
+
 function hasNonemptyDialogueBlock(content: string): boolean {
   const blocks = content.matchAll(/<podcast_dialogue>([\s\S]*?)<\/podcast_dialogue>/g);
   return Array.from(blocks).some(([, block]) => block.trim().length > 0);
