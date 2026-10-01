@@ -59,8 +59,8 @@ Every stream item below adds its case there.
 - [ ] B2. Unregistered block type → `UnknownDataEventBlock` prints JSON.
 - [ ] B3. Nested search/rank/rag/scraper/seo-ruling helpers drop to the JSON card when the route declines.
 - [ ] B4. `AgentResultBlock` turns unparseable / nested output into a ```json fence.
-- [ ] B5. "Show data" toggles on workflow-step, function, fetch, search, categorization result blocks.
-- [ ] B6. Invalid-payload fallbacks on decision-answers, list-change-proposal, map-topic-proposal blocks.
+- [x] B5. "Show data" toggles on workflow-step, function, fetch, search, categorization result blocks. (→ `data-events/ToggledDataBody`: a payload carrying `__kind` at any depth → `AnswerValueView`; kindless stays JSON)
+- [x] B6. Invalid-payload fallbacks on decision-answers, list-change-proposal, map-topic-proposal blocks. (→ alert heading over `StructuredValueView` with the kind + "could not be read"; raw data behind its explicit toggle)
 
 ## C. Saved messages and Redux
 
