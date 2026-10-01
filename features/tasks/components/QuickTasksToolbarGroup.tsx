@@ -17,7 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 import { TASK_SORT_OPTIONS, type TaskSortField } from "../types/sort";
 
 export interface QuickTasksToolbarGroupProps {
@@ -52,13 +51,7 @@ export function QuickTasksToolbarGroup({
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <TapTargetButtonGroup
-      className={cn(
-        "w-full min-w-0",
-        "[&>div:last-child]:w-full [&>div:last-child]:min-w-0",
-        className,
-      )}
-    >
+    <TapTargetButtonGroup className={className}>
       <PanelLeftTapButton
         variant="group"
         onClick={onSidebarToggle}
@@ -67,7 +60,9 @@ export function QuickTasksToolbarGroup({
         className={sidebarOpen ? "text-primary" : undefined}
       />
 
-      <div className="flex-1 min-w-0 flex items-center gap-1 h-8 px-1">
+      {/* A set width: the group sizes to its contents and is never stretched
+          from outside, so the search field carries its own width. */}
+      <div className="w-44 min-w-0 flex items-center gap-1 h-8 px-1">
         <svg
           className="flex-shrink-0 w-3.5 h-3.5 text-muted-foreground opacity-60"
           fill="none"

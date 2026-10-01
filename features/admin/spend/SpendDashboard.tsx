@@ -371,7 +371,7 @@ export function SpendDashboard() {
                     : "Refresh spend data"
                 }
                 disabled={loading}
-                className={loading ? "[&_svg]:animate-spin" : undefined}
+                className={loading ? "animate-spin" : undefined}
                 onClick={() => setReloadTick((t) => t + 1)}
               />
             </div>

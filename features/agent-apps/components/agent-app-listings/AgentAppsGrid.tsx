@@ -438,7 +438,7 @@ export function AgentAppsGrid({
                     variant="transparent"
                     ariaLabel="Clear app search"
                     tooltip="Clear search"
-                    className="-mr-2 text-muted-foreground"
+                    className="text-muted-foreground"
                   />
                 )}
               </div>

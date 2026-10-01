@@ -50,7 +50,7 @@ export function PageJumperTapGroup({
         className,
       )}
     >
-      <TapTargetButtonGroup className={cn("shrink-0", compact && "h-8")}>
+      <TapTargetButtonGroup>
         <ChevronLeftTapButton
           variant="group"
           tooltip={false}

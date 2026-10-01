@@ -519,7 +519,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
                         onClick={handleCancelQuickAdd}
                         ariaLabel="Cancel"
                         tooltip="Cancel"
-                        className="shrink-0 text-muted-foreground"
+                        className="text-muted-foreground"
                       />
                     )}
                   </div>

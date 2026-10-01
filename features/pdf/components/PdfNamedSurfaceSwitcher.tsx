@@ -272,7 +272,7 @@ export function PdfNamedSurfaceSwitcher({
   );
 
   return (
-    <TapTargetButtonGroup className={cn("min-w-0", className)}>
+    <TapTargetButtonGroup className={className}>
       {/* Idle content. While searching it keeps its layout (so the pill
           width cannot change) but is hidden + inert (visibility:hidden
           removes it from pointer events and tab order). */}

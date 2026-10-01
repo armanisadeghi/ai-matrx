@@ -71,7 +71,6 @@ export function TaskSmsReminderButton({ taskId }: { taskId: string }) {
       label={queuing ? "Queuing…" : "Text reminder"}
       disabled={queuing}
       onClick={() => void queueReminder()}
-      className="h-6 min-h-6 text-[10px]"
     />
   );
 }
