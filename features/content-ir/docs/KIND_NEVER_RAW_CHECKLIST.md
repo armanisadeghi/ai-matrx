@@ -211,6 +211,43 @@ Every stream item below adds its case there.
 - [x] U4. Transcript studio module column. (object payload → `AnswerValueView`; the explicit edit box keeps JSON text)
 - [x] U5. Data-table cells and their cell editor. (display: json/array cell with `__kind` → `KindCellPeek` = the records kind chip, opens `structuredValueWindow`; unreadable kind text → "<Kind> · unreadable"; edit box keeps JSON on purpose — `EditableCell` gets its display from the viewer)
 
+## J. Round 2 — verifier-confirmed leaks (2026-09-30)
+
+**Ruling (owner, this round):** a kind inside an inline code span, or inside a fence whose language is not
+json/jsonc/json5/unlabelled (```ts, ```xml, ```markdown …), is the model QUOTING SOURCE and stays as written.
+Everywhere else — blockquote, list item, table cell, prose, 4-space indented block — it is data. ONE definition,
+`quotedSourceRanges` (`json-kind-signal.ts`), read by the splitter, the accumulator and the leaf gate. This flips
+the earlier "every fence is only an arrival container" rule for non-JSON fences (```python / ```text kinds are
+no longer lifted; `embedded-kind-container-recovery.test.ts` updated).
+
+- [x] V1. Kind fenced (or bare) inside a blockquote → drawn raw in chat, reload, public share, tool results.
+      `surfaces/quoted-kind-lift.ts`: ONE chunk-invariant transform, run on every delta by the accumulator and on the
+      whole text by the splitter. A quoted JSON-family fence, or quoted JSON whose first key says kind, loses its
+      quote prefix: the quote before stays a quote, the region renders as its kind, the text after is a new quote.
+      Quoted prose, kindless quoted JSON and quoted non-JSON fences are untouched. Guard `quoted-kind-lift.test.ts`
+      + parity fixture. Known edge: a kind block lifted out of a quote has no verbatim source span, so an in-place
+      code edit of THAT block (`replaceBlockContent`) cannot find it.
+- [x] V2. Markdown leaves let a kind in prose / a table cell / a 4-space block through raw. `markdownCarriesKind` =
+      a kind key outside quoted source; leaf and pipeline agree by construction (`leaf-and-pipeline-agree.test.ts`).
+      A kind in a table cell is lifted out of the table (the table is split around it).
+- [x] V3. Tool result string with prose before a kind → `<p>` raw. `detectResultShape` → markdown when
+      `markdownCarriesKind` (`kind-never-raw-grid.test.tsx`).
+- [x] V5. Frame judge ≠ BlockRenderer. `decideBlockRender` (BlockRenderer.tsx) is the one pure decision BlockRenderer
+      renders from; `draws-raw-kind-json.ts` calls it with the MESSAGE's stream state and follows dispatch (JSON-family
+      code = raw card, other languages = their renderer / quoted source, text = raw when it still holds a kind region).
+      Leak it found: a settled block inside a streaming message got no terminal envelope (valid jsonc/json5/unlabelled
+      kind drawn as the broken floor until the message ended) — `withTerminalEnvelope` honours `isStreamingBlock === false`.
+      Guards `frame-judge-matches-renderer.test.ts`, midstream V5a; run-path/ShapeStreamTab judge every frame.
+- [x] V6. `[{"x":1}, {"__kind` / `{"data":{"__kind` flashed raw before the colon. A trailing object key that has
+      reached `"__k` (key position only) is undecided → loader. `_id`, `__type`, string values never flicker.
+- [x] V7. `"\u005f_kind"` escaped key: `hasKindKey` / `firstKindSlug` / the first-key path read JSON escapes.
+- [x] V8. Public canvas "Debug Info" dump → kind door (`KindValueFrontDoor`), debug only for kindless; kit
+      `TablePreview` record cell → `KindCellPeek`.
+- [x] V9. User cancel mid-kind: verified — an aborted reader is not handed to rejoin and `finalizeAccumulator` runs
+      (midstream A9 describe). Workflow run page: the recorded real run judged frame by frame, never raw
+      (`real-run-partial-kinds.test.ts`). Message edit: `saveAnswerEdit` writes text parts; the re-render is the static
+      splitter (covered by V1/V2 parity) — no dedicated UI test.
+
 ## Out of scope (deliberate raw views — keep)
 
 Admin debug windows and panels, Error Inspector, tool overlay "Raw" tab, directive item "Raw" tab, text-sections
