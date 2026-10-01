@@ -77,14 +77,19 @@ def step1() -> str:
         jwt = json.loads(r.read())["access_token"]
     req = urllib.request.Request(f"{SERVER}/cutover/final-switch/copy-again", data=b"{}", method="POST",
                                  headers={**UA, "content-type": "application/json", "authorization": f"Bearer {jwt}",
-                                          "origin": "http://safety-net-b.localhost:3001"})
+                                          "origin": "http://safety-net-b.localhost:3001",
+                                          # what the Final switch page sends: the organization the admin works in, the admin lane
+                                          "x-organization-id": "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f", "x-matrx-admin-lane": "1"})
     t0 = time.time()
     last = ""
-    with urllib.request.urlopen(req, timeout=3600) as r:  # noqa: S310 — streams until Step 1 finishes
-        for raw in r:
-            line = raw.decode(errors="replace").strip()
-            if line:
-                last = line
+    try:
+        with urllib.request.urlopen(req, timeout=3600) as r:  # noqa: S310 — streams until Step 1 finishes
+            for raw in r:
+                line = raw.decode(errors="replace").strip()
+                if line:
+                    last = line
+    except urllib.error.HTTPError as e:
+        return f"Step 1 on the clone was REFUSED: {e.code} {e.read().decode(errors='replace')[:400]}"
     return f"Step 1 on the clone finished in {round(time.time() - t0)} s; last event: {last[:400]}"
 
 

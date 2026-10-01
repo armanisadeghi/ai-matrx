@@ -139,6 +139,18 @@ def main() -> int:
              "copy edits the press replaces with the older rows: "
              + ("; ".join(f"{e['name']}: {json.dumps(e['evaluation'])}" for e in edited) or "none")
              + (f" — NOT a test seat: {[e['name'] for e in strangers]}" if strangers else ""))
+        # Step 1 adopts an ownerless list whose users are in one organization, but leaves its CHOICES with no
+        # organization, and Copy again then refuses that organization ("custom.record_write_many: organization_id is
+        # required") — found on clone-20261001 tonight (SAFETY-NET-B). Predict it: any list Step 1 would adopt, or
+        # already adopted, whose live choices have no organization.
+        orgless = q("""select coalesce(string_agg(l.list_name || ' (' || coalesce(o.name, 'to be adopted') || ')', '; '), '')
+                         from workbench.udt_structured_lists l left join iam.organizations o on o.id = l.organization_id
+                        where l.deleted_at is null
+                          and (l.id in (select (x ->> 'id')::uuid from jsonb_array_elements(platform._final_switch_orphan_lists()) x where x ->> 'resolution' = 'organization')
+                               or (l.organization_id is not null and l.metadata ? 'final_switch_adopted'))
+                          and exists (select 1 from workbench.udt_structured_list_items i where i.list_id = l.id and i.deleted_at is null and i.organization_id is null);""")
+        step(["C01"], "step1.no_adopted_list_with_orgless_choices", orgless == "",
+             "no list Step 1 adopts has choices without an organization" if not orgless else f"Copy again will refuse these (their choices have no organization): {orgless}")
         doors_open = int(q("select count(*) filter (where has_function_privilege('authenticated', x, 'EXECUTE')) from unnest(platform._final_switch_old_write_doors()) x;"))
         n_doors = int(q("select cardinality(platform._final_switch_old_write_doors());"))
         step(["C04"], "doors.before_open_to_signed_in", doors_open == n_doors, f"{doors_open} of {n_doors} older write doors open to signed-in callers before the press")
