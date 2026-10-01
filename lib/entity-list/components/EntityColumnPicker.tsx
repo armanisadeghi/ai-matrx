@@ -21,6 +21,8 @@ interface Props<TRow> {
   hiddenColumns: string[];
   /** Owner/org/access carry no information inside "Mine" — hide the toggles too. */
   showSharedColumns: boolean;
+  /** Shown columns with no room at this width (../columnPriority.ts): tagged, still checked. */
+  noRoomColumns?: readonly string[];
   onChange: (hidden: string[]) => void;
 }
 
@@ -29,6 +31,7 @@ export function EntityColumnPicker<TRow>({
   defaultHidden,
   hiddenColumns,
   showSharedColumns,
+  noRoomColumns = [],
   onChange,
 }: Props<TRow>) {
   const available = columns.filter(
@@ -101,11 +104,19 @@ export function EntityColumnPicker<TRow>({
                   {visible && <Check className="h-2.5 w-2.5" />}
                 </span>
                 <span className="flex-1 truncate">{spec.label}</span>
-                {spec.locked && (
+                {spec.locked ? (
                   <span className="text-[10px] uppercase text-muted-foreground">
                     Always
                   </span>
-                )}
+                ) : visible && noRoomColumns.includes(spec.id) ? (
+                  <span
+                    className="text-[10px] uppercase text-muted-foreground"
+                    title="Hidden until the window is wider."
+                    data-column-no-room=""
+                  >
+                    No room
+                  </span>
+                ) : null}
               </button>
             );
           })}

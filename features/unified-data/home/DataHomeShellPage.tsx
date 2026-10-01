@@ -201,7 +201,9 @@ function MakeInActiveOrganization({
   if (!activeOrganizationId) {
     return (
       <p className="text-xs text-muted-foreground" data-hub-make-needs-organization="">
-        Choose an organization in the header to make a table.
+        {/* A state, not a pointer (DATA-HOME-3E): the switcher is the sidebar's bottom button, not the
+            header, and the header's absent New table already says the rest. */}
+        No active organization
       </p>
     );
   }

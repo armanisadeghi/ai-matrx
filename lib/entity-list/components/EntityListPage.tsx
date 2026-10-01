@@ -13,6 +13,8 @@
 //   QUERY (scope, search, filters, page) → useEntityList, always starts clean.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { columnsWithoutRoom } from "../columnPriority";
+import { usePhoneWidth } from "../usePhoneWidth";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -408,6 +410,16 @@ export function EntityListPage<TRow>({
   const setHiddenColumns = (next: string[]) =>
     setPrefs(hiddenColumnsPatch(next, hiddenColumns, prefs.shownColumns));
 
+  // THE LEAST IMPORTANT COLUMN LEAVES FIRST (../columnPriority.ts): the list's measured width
+  // decides which ranked columns have no room. Layout only — never written to the preferences;
+  // the table's echo of its hidden set is stripped of them before it can be stored.
+  const phoneWidth = usePhoneWidth();
+  const [listWidth, setListWidth] = useState<number | null>(null);
+  const noRoom = columnsWithoutRoom(config.columns, hiddenColumns, phoneWidth ? null : listWidth);
+  const tableHiddenColumns = noRoom.length > 0 ? [...hiddenColumns, ...noRoom] : hiddenColumns;
+  const setHiddenFromTable = (next: string[]) =>
+    setHiddenColumns(next.filter((id) => !noRoom.includes(id)));
+
   // Inline drafts can outlive the current server page: realtime, a refresh,
   // or a query change may move the edited row before Save is pressed.
   const editRowsRef = useRef<EditRowRegistry<TRow> | null>(null);
@@ -798,6 +810,23 @@ export function EntityListPage<TRow>({
   }, []);
   // WHERE THE SCROLL BODY STARTS, published for the footer-mode table pane's height (below).
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  // The room the table has (the body's content box), for the column priorities. Rounded to 8 px
+  // so a scrollbar appearing or a sub-pixel change never re-renders the list.
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body || typeof ResizeObserver === "undefined") return undefined;
+    const measure = () => {
+      const cs = getComputedStyle(body);
+      const inner =
+        body.clientWidth - (Number.parseFloat(cs.paddingLeft) || 0) - (Number.parseFloat(cs.paddingRight) || 0);
+      const next = Math.floor(inner / 8) * 8;
+      setListWidth((prev) => (prev === next ? prev : next));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(body);
+    return () => ro.disconnect();
+  }, []);
   const hasFooter = Boolean(footer);
   useEffect(() => {
     const pane = paneRef.current;
@@ -1034,6 +1063,70 @@ export function EntityListPage<TRow>({
     selectedIds: selection.ids,
   };
 
+  // The toolbar, drawn in its own row from `sm` up and INSIDE the lane row on a phone (one row).
+  const [phoneSearchOpen, setPhoneSearchOpen] = useState(false);
+  const phoneSearching = phoneWidth && (phoneSearchOpen || list.query.search !== "");
+  const renderToolbar = (phoneRow?: { searchOpen: boolean; onSearchOpenChange: (open: boolean) => void }) =>
+    config.tableToolbar ? null : (
+          <EntityListToolbar
+            phoneRow={phoneRow}
+            query={list.query}
+            facets={list.facets}
+            isFetching={list.isFetching}
+            prefs={{
+              ...prefs,
+              ...effectiveSort,
+              favoritesFirst: effectiveFavoritesFirst,
+              hiddenColumns,
+            }}
+            // The picker offers the one column set of every lane (fix D).
+            showSharedColumns
+            noRoomColumns={noRoom}
+            columns={config.columns}
+            defaultHidden={defaultHidden}
+            facetSections={config.facetSections}
+            // The panel narrows the SCOPE through the same setter and the same
+            // counts the tabs use — one state, two entry points.
+            scopeSections={config.scopeSections}
+            counts={list.counts}
+            countsLoading={list.countsLoading}
+            countsError={list.countsError}
+            onScopeChange={list.setScope}
+            onOrgChange={list.setOrgId}
+            hasFavorites={Boolean(config.favorite)}
+            hasArchived={config.supportsArchived !== false}
+            searchPlaceholder={
+              config.searchPlaceholder ?? `Search ${config.entityLabel.plural}…`
+            }
+            shortSearchPlaceholder={`Search ${config.entityLabel.plural}…`}
+            deepSearchLabel={config.deepSearch?.label}
+            hasCards={Boolean(cardsView)}
+            hasRows={Boolean(rowsView)}
+            onSearch={onSearch}
+            searchToggles={config.searchToggles}
+            tableControlsRef={setTableControlsSlot}
+            onPatchQuery={list.patchQuery}
+            // Sort changes route through commitSort so the panel's sort and the
+            // table header's sort write the same two places (prefs + URL).
+            onPatchPrefs={({ hiddenColumns: nextHidden, ...patch }) => {
+              if (nextHidden) setHiddenColumns(nextHidden);
+              if (Object.keys(patch).length > 0) patchView(patch);
+            }}
+            onResetFilters={list.resetFilters}
+            onResetView={() => {
+              reset();
+              if (urlState)
+                commitUrlParams(
+                  {
+                    [ENTITY_LIST_URL_PARAMS.sort]: null,
+                    [ENTITY_LIST_URL_PARAMS.direction]: null,
+                  },
+                  "push",
+                );
+            }}
+          />
+    );
+
   const page = (
     <div
       ref={paneRef}
@@ -1065,6 +1158,7 @@ export function EntityListPage<TRow>({
         below scrolls behind the glass.
       */}
       <div
+        data-entity-list-header=""
         className={cn(
           // gap, not space-y: a child hidden with display:none (the phone
           // select-all bar on a desktop) still made its sibling "not last"
@@ -1097,11 +1191,11 @@ export function EntityListPage<TRow>({
             {typeof notice === "function" ? notice(list) : notice}
           </div>
         )}
-        <div className="flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
+        <div data-entity-list-control-row="" className="flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
           {/* On a phone the lane select keeps its words and the organization
               filter takes what is left (it truncates); wider, the tabs take the
               room and scroll sideways before the filter or the actions are cut. */}
-          <div className="min-w-0 max-sm:flex-none sm:flex-1">
+          <div className={cn("min-w-0 max-sm:flex-none sm:flex-1", phoneSearching && "hidden")}>
             {scopeTabs && (
             <EntityScopeTabs
               scope={list.query.scope}
@@ -1120,7 +1214,7 @@ export function EntityListPage<TRow>({
             )}
           </div>
           {/* A narrowing the address carries is always visible and clearable, knob or not. */}
-          {(orgFilterOffered || Boolean(list.query.orgId)) && (
+          {(orgFilterOffered || Boolean(list.query.orgId)) && !(phoneSearching && !list.query.orgId) && (
             <div className="flex min-w-0 items-center max-sm:flex-1 sm:ml-auto sm:shrink-0">
               <EntityOrgFilter
                 orgId={list.query.orgId}
@@ -1137,65 +1231,12 @@ export function EntityListPage<TRow>({
                 : headerActions}
             </div>
           )}
+          {phoneWidth
+            ? renderToolbar({ searchOpen: phoneSearchOpen, onSearchOpenChange: setPhoneSearchOpen })
+            : null}
         </div>
 
-        {!config.tableToolbar && (
-        <EntityListToolbar
-          query={list.query}
-          facets={list.facets}
-          isFetching={list.isFetching}
-          prefs={{
-            ...prefs,
-            ...effectiveSort,
-            favoritesFirst: effectiveFavoritesFirst,
-            hiddenColumns,
-          }}
-          // The picker offers the one column set of every lane (fix D).
-          showSharedColumns
-          columns={config.columns}
-          defaultHidden={defaultHidden}
-          facetSections={config.facetSections}
-          // The panel narrows the SCOPE through the same setter and the same
-          // counts the tabs use — one state, two entry points.
-          scopeSections={config.scopeSections}
-          counts={list.counts}
-          countsLoading={list.countsLoading}
-          countsError={list.countsError}
-          onScopeChange={list.setScope}
-          onOrgChange={list.setOrgId}
-          hasFavorites={Boolean(config.favorite)}
-          hasArchived={config.supportsArchived !== false}
-          searchPlaceholder={
-            config.searchPlaceholder ?? `Search ${config.entityLabel.plural}…`
-          }
-          shortSearchPlaceholder={`Search ${config.entityLabel.plural}…`}
-          deepSearchLabel={config.deepSearch?.label}
-          hasCards={Boolean(cardsView)}
-          hasRows={Boolean(rowsView)}
-          onSearch={onSearch}
-          searchToggles={config.searchToggles}
-          tableControlsRef={setTableControlsSlot}
-          onPatchQuery={list.patchQuery}
-          // Sort changes route through commitSort so the panel's sort and the
-          // table header's sort write the same two places (prefs + URL).
-          onPatchPrefs={({ hiddenColumns: nextHidden, ...patch }) => {
-            if (nextHidden) setHiddenColumns(nextHidden);
-            if (Object.keys(patch).length > 0) patchView(patch);
-          }}
-          onResetFilters={list.resetFilters}
-          onResetView={() => {
-            reset();
-            if (urlState)
-              commitUrlParams(
-                {
-                  [ENTITY_LIST_URL_PARAMS.sort]: null,
-                  [ENTITY_LIST_URL_PARAMS.direction]: null,
-                },
-                "push",
-              );
-          }}
-        />
-        )}
+        {phoneWidth ? null : renderToolbar()}
 
         {config.filterChips && (
           <EntityFilterChips
@@ -1336,8 +1377,8 @@ export function EntityListPage<TRow>({
             isFetching={list.isFetching}
             density={prefs.density}
             showSharedColumns
-            hiddenColumns={hiddenColumns}
-            onHiddenColumnsChange={setHiddenColumns}
+            hiddenColumns={tableHiddenColumns}
+            onHiddenColumnsChange={setHiddenFromTable}
             columnOrder={prefs.columnOrder}
             onColumnOrderChange={(columnOrder) => setPrefs({ columnOrder })}
             onSaveEdits={saveEdits}

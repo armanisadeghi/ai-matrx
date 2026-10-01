@@ -74,6 +74,12 @@ export interface EntityColumnSpec<TRow> {
    * the wrong field to the card face.
    */
   phone?: EntityPhoneRole;
+  /**
+   * How long this column stays when the list is too narrow for every shown column (1 = keeps
+   * longest; higher leaves sooner). Absent = never leaves for width. Layout only — the person's
+   * column choice is untouched and the column returns when there is room (./columnPriority.ts).
+   */
+  priority?: number;
   column: MatrxColumnDef<TRow>;
 }
 

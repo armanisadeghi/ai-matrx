@@ -95,6 +95,8 @@ const FAV_OPTIONS = [
 ] as const;
 
 interface Props<TRow> {
+  /** Icon-only trigger (the phone's one control row); the name stays in its aria-label. */
+  compact?: boolean;
   query: EntityListQuery;
   facets: EntityFacets;
   columns: EntityColumnSpec<TRow>[];
@@ -217,6 +219,7 @@ export function EntityFilterPanel<TRow>({
   onSortChange,
   onFavoritesFirstChange,
   onResetFilters,
+  compact = false,
 }: Props<TRow>) {
   const [open, setOpen] = useState(false);
   // Same cue as the row menu: when the chip sections push the panel past its
@@ -284,6 +287,7 @@ export function EntityFilterPanel<TRow>({
           title={canSort ? "Filters and sort" : "Filters"}
           className={cn(
             "relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium transition-colors",
+            compact && "min-w-11 justify-center",
             activeCount > 0
               ? "text-primary"
               : "text-muted-foreground hover:text-foreground",
@@ -291,19 +295,21 @@ export function EntityFilterPanel<TRow>({
         >
           <SlidersHorizontal className="h-3.5 w-3.5" />
           {/* Named on a phone too (page-pass 2026-09-27: three bare icons). */}
-          <span>Filters</span>
+          {compact ? null : <span>Filters</span>}
           {activeCount > 0 && (
             <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
               {activeCount}
             </span>
           )}
-          {canSort && (
+          {canSort && !compact && (
             <>
               <span className="mx-0.5 hidden h-4 w-px bg-border sm:block" />
               <ArrowUpDown className="h-3.5 w-3.5" />
               {/* A FIXED width: the search beside this button no longer jumps
                   as the sort label changes (page-pass 2026-09-27). */}
-              <span className="hidden w-40 truncate text-left lg:inline" title={sortLabel}>
+              {/* From `xl` only: at 1024 px the label pushed the table's own controls off the
+                  row (DATA-HOME-3E); the arrow alone still opens Sort. */}
+              <span className="hidden w-40 truncate text-left xl:inline" title={sortLabel}>
                 {sortLabel}
               </span>
             </>

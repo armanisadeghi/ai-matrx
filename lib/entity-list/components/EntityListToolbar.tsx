@@ -58,6 +58,8 @@ interface Props<TRow> {
   isFetching: boolean;
   prefs: ListViewPrefs;
   showSharedColumns: boolean;
+  /** Shown columns with no room at this width (columnPriority.ts) — the picker says so. */
+  noRoomColumns?: readonly string[];
   columns: EntityColumnSpec<TRow>[];
   defaultHidden: string[];
   facetSections?: EntityFacetSection[];
@@ -99,6 +101,11 @@ interface Props<TRow> {
    * export, the eraser while filtered) — one row for page and table.
    */
   tableControlsRef?: (element: HTMLDivElement | null) => void;
+  /**
+   * Below `sm` the page draws this toolbar INSIDE its lane row (EntityListPage): search becomes an
+   * icon that opens the box in place, Filters and View are icons, and the columns move into View.
+   */
+  phoneRow?: { searchOpen: boolean; onSearchOpenChange: (open: boolean) => void };
 }
 
 function IconToggle({
@@ -141,6 +148,7 @@ export function EntityListToolbar<TRow>({
   isFetching,
   prefs,
   showSharedColumns,
+  noRoomColumns,
   columns,
   defaultHidden,
   facetSections,
@@ -164,18 +172,13 @@ export function EntityListToolbar<TRow>({
   onResetFilters,
   onResetView,
   tableControlsRef,
+  phoneRow,
 }: Props<TRow>) {
   const hasAltViews = hasCards || hasRows;
   const isMobile = useIsMobile();
   const placeholder =
     isMobile && shortSearchPlaceholder ? shortSearchPlaceholder : searchPlaceholder;
-  return (
-    // ONE ROW ON A DESKTOP, TWO ON A PHONE (page-pass 2026-09-27, blind judge on
-    // /research/topics at 375px: the table's controls merged into this row
-    // crushed the search to an empty 22px pill). On a phone the search owns
-    // its line and the controls take the next; from `sm:` up everything sits
-    // on the search row and the view-tab strip scrolls inside its own box.
-    <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2 lg:flex-nowrap">
+  const searchBox = (
       <div className="flex h-12 min-w-0 flex-1 basis-full items-center gap-2 rounded-lg border border-border bg-card px-2.5 sm:basis-auto sm:min-w-48 lg:h-9 lg:min-w-56">
         {isFetching ? (
           <Loader2
@@ -192,6 +195,12 @@ export function EntityListToolbar<TRow>({
           data-entity-list-search=""
           value={query.search}
           onChange={(e) => onSearch(e.target.value)}
+          // The phone row opens the box from its search icon: focus it, and an empty box closes
+          // again when the person leaves it.
+          autoFocus={Boolean(phoneRow)}
+          onBlur={() => {
+            if (phoneRow && !query.search) phoneRow.onSearchOpenChange(false);
+          }}
           placeholder={placeholder}
           aria-label={searchPlaceholder}
           // ProInput intentionally does not fit this integrated compact search:
@@ -241,7 +250,10 @@ export function EntityListToolbar<TRow>({
             <button
               type="button"
               aria-label="Clear search"
-              onClick={() => onSearch("")}
+              onClick={() => {
+                onSearch("");
+                phoneRow?.onSearchOpenChange(false);
+              }}
               className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:text-foreground lg:h-7 lg:w-7"
             >
               <X className="h-4 w-4" />
@@ -249,9 +261,11 @@ export function EntityListToolbar<TRow>({
           </>
         )}
       </div>
-
+  );
+  const filterPanel = (
       <div className="[&_button]:h-11 lg:[&_button]:h-9">
         <EntityFilterPanel
+          compact={Boolean(phoneRow)}
           query={query}
           facets={facets}
           columns={columns}
@@ -276,30 +290,24 @@ export function EntityListToolbar<TRow>({
           onResetFilters={onResetFilters}
         />
       </div>
-
-      {prefs.view === "table" && (
-        <EntityColumnPicker
-          columns={columns}
-          defaultHidden={defaultHidden}
-          hiddenColumns={prefs.hiddenColumns}
-          showSharedColumns={showSharedColumns}
-          onChange={(hiddenColumns) => onPatchPrefs({ hiddenColumns })}
-        />
-      )}
-
+  );
+  const viewMenu = (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
             aria-label="Display options"
             title="Display options"
-            className="inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground sm:hidden"
+            // ONE "View" MENU BELOW `xl` (DATA-HOME-3E, 2026-10-01): at 1024 px the inline view
+            // and density groups pushed the table's controls past the right edge; the phone's
+            // menu already held all of them, so it now serves every width under 1280.
+            className="inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground lg:h-9 xl:hidden"
           >
             <Settings2 className="h-3.5 w-3.5" />
-            <span>View</span>
+            {phoneRow ? null : <span>View</span>}
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52 sm:hidden">
+        <DropdownMenuContent align="end" className="w-52 xl:hidden">
           <DropdownMenuLabel>Display</DropdownMenuLabel>
           {hasAltViews && (
             <DropdownMenuRadioGroup
@@ -327,6 +335,30 @@ export function EntityListToolbar<TRow>({
             </DropdownMenuRadioGroup>
           )}
           {hasAltViews && <DropdownMenuSeparator />}
+          {phoneRow && prefs.view === "table" ? (
+            <>
+              <DropdownMenuLabel>Columns</DropdownMenuLabel>
+              {columns
+                .filter((c) => (showSharedColumns || !c.scopedToShared) && !c.locked)
+                .map((c) => (
+                  <DropdownMenuCheckboxItem
+                    key={c.id}
+                    checked={!prefs.hiddenColumns.includes(c.id)}
+                    onSelect={(e) => e.preventDefault()}
+                    onCheckedChange={(checked) =>
+                      onPatchPrefs({
+                        hiddenColumns: checked
+                          ? prefs.hiddenColumns.filter((id) => id !== c.id)
+                          : [...prefs.hiddenColumns, c.id],
+                      })
+                    }
+                  >
+                    {c.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
           {/* One shape for every row (page-pass 2026-09-27: the menu mixed rows
               with and without icons): the state rides the left gutter, every
               row carries its icon. */}
@@ -345,9 +377,66 @@ export function EntityListToolbar<TRow>({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+  );
+
+  if (phoneRow) {
+    // ONE ROW ON A PHONE (DATA-HOME-3E, 2026-10-01): the lane select and the organization filter
+    // share this row with a search icon, Filters and View; the search opens in place of them and
+    // the table's own row (saved views, copy, group) stays off the phone. Four rows of chrome sat
+    // above the first card before (Linear and Notion phones: one).
+    const searching = phoneRow.searchOpen || query.search !== "";
+    return (
+      <div
+        data-entity-list-phone-controls=""
+        className={cn("flex min-w-0 items-center gap-1.5", searching ? "flex-1" : "shrink-0")}
+      >
+        {searching ? (
+          searchBox
+        ) : (
+          <button
+            type="button"
+            aria-label={searchPlaceholder}
+            title={searchPlaceholder}
+            onClick={() => phoneRow.onSearchOpenChange(true)}
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+        )}
+        {filterPanel}
+        {viewMenu}
+        {tableControlsRef && <div ref={tableControlsRef} data-entity-list-table-controls hidden />}
+      </div>
+    );
+  }
+
+  return (
+    // ONE ROW ON A DESKTOP, TWO ON A PHONE (page-pass 2026-09-27, blind judge on
+    // /research/topics at 375px: the table's controls merged into this row
+    // crushed the search to an empty 22px pill). On a phone the search owns
+    // its line and the controls take the next; from `sm:` up everything sits
+    // on the search row and the view-tab strip scrolls inside its own box.
+    <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2 lg:flex-nowrap">
+      {searchBox}
+
+      {filterPanel}
+
+      {prefs.view === "table" && (
+        <EntityColumnPicker
+          columns={columns}
+          defaultHidden={defaultHidden}
+          hiddenColumns={prefs.hiddenColumns}
+          noRoomColumns={noRoomColumns}
+          showSharedColumns={showSharedColumns}
+          onChange={(hiddenColumns) => onPatchPrefs({ hiddenColumns })}
+        />
+      )}
+
+      {viewMenu}
+
 
       {hasAltViews && (
-        <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 sm:flex">
+        <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 xl:flex">
           <IconToggle
             active={prefs.view === "table"}
             label="Table"
@@ -376,7 +465,7 @@ export function EntityListToolbar<TRow>({
         </div>
       )}
 
-      <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 sm:flex">
+      <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 xl:flex">
         <IconToggle
           active={prefs.density === "compact"}
           label={

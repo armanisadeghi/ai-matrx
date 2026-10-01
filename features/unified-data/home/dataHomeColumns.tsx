@@ -217,6 +217,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
     },
     {
       id: "kind",
+      priority: 4,
       label: "Kind",
       facet: "kind",
       phone: "primary",
@@ -232,6 +233,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
     },
     {
       id: "organization",
+      priority: 2,
       label: "Organization",
       facet: "organization",
       phone: "primary",
@@ -247,6 +249,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
     },
     {
       id: "records",
+      priority: 3,
       label: "Records",
       facet: "records",
       phone: "rest",
@@ -263,6 +266,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
     },
     {
       id: "updated",
+      priority: 2,
       label: "Updated",
       phone: "meta",
       sortWords: { asc: "oldest first", desc: "newest first" },
@@ -278,6 +282,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
     },
     {
       id: "owner",
+      priority: 1,
       label: "Owner",
       facet: "owner",
       phone: "rest",
@@ -292,6 +297,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
     },
     {
       id: "access",
+      priority: 1,
       label: "Access",
       facet: "access",
       phone: "rest",
