@@ -17,8 +17,7 @@ import { resolve } from "node:path";
 
 const ROOT = process.cwd();
 const HERE = resolve(ROOT, "scripts/grid-parity");
-const PORTS = JSON.parse(readFileSync(resolve(ROOT, "scripts/campaign-ports.json"), "utf8"));
-const PORT = PORTS.lanes["GRID-THREE"];
+const PORT = 3001; // the one dev server machine-wide (pnpm preview:start)
 const HOST = "127.0.0.1";
 const ORIGIN = `http://${HOST}:${PORT}`;
 const fixture = JSON.parse(readFileSync(resolve(HERE, ".fixture.json"), "utf8"));

@@ -17,8 +17,8 @@
  *   node scripts/grid-parity/compare.mjs --label before
  *   node scripts/grid-parity/compare.mjs --label after --against before
  *
- * The fixture is `scripts/grid-parity/fixture.ts` (run it first). The lane's
- * dev server port comes from `scripts/campaign-ports.json`.
+ * The fixture is `scripts/grid-parity/fixture.ts` (run it first). It drives
+ * the one dev server on :3001.
  */
 import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
@@ -27,8 +27,7 @@ import { resolve, dirname } from "node:path";
 
 const ROOT = process.cwd();
 const HERE = resolve(ROOT, "scripts/grid-parity");
-const PORTS = JSON.parse(readFileSync(resolve(ROOT, "scripts/campaign-ports.json"), "utf8"));
-const PORT = PORTS.lanes["GRID-THREE"];
+const PORT = 3001; // the one dev server machine-wide (pnpm preview:start)
 const HOST = "127.0.0.1";
 const ORIGIN = `http://${HOST}:${PORT}`;
 

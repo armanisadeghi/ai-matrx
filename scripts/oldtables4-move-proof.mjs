@@ -2,8 +2,7 @@
  * OLD-TABLES-4 — the headless proof that a COPIED older table stands SIDE BY SIDE with its
  * copy, from the admin seat (owner's ruling 2026-09-23: nothing redirects; old and new both open).
  *
- *   node scripts/oldtables4-move-proof.mjs            # starts its own dev server on 3058 if none is up
- *   node scripts/oldtables4-move-proof.mjs --no-server  # a server is already on 3058
+ *   node scripts/oldtables4-move-proof.mjs            # needs the one dev server on :3001 (pnpm preview:start)
  *
  * Run it AFTER admin's Workspace has been moved on the main database. It walks Rincon
  * Plumbing & Drain's Service Calls — a real older table whose `customer` column points at
@@ -20,18 +19,16 @@
  *   relation-words       the customer column reads names (Maria Delgado …), zero bare uuids
  *   quiet                zero console errors, zero responses >= 400
  *
- * Headless only (never the owner's screen), on this lane's own port from
- * scripts/campaign-ports.json. Screenshots land beside the owner's other proof pictures.
+ * Headless only (never the owner's screen), against the one dev server on :3001. Screenshots land beside the owner's other proof pictures.
  * Exit 0 only when every clause passes.
  */
 import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
-import { spawn } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
-const PORT = JSON.parse(readFileSync(resolve(ROOT, "scripts/campaign-ports.json"), "utf8")).lanes["OLD-TABLES-4"];
+const PORT = 3001; // the one dev server machine-wide (pnpm preview:start)
 const HOST = "127.0.0.1";
 const ORIGIN = `http://${HOST}:${PORT}`;
 const CALLS = "dbc7cd48-7b46-4402-ac9d-e459a95f4598"; // Rincon Plumbing — Service Calls, admin's Workspace
@@ -45,16 +42,8 @@ async function up() {
 }
 
 async function ensureServer() {
-  if (process.argv.includes("--no-server") || (await up())) return null;
-  const child = spawn(process.execPath,
-    ["node_modules/next/dist/bin/next", "dev", "-p", String(PORT), "-H", HOST],
-    { cwd: ROOT, env: { ...process.env, NODE_OPTIONS: "--max-old-space-size=3072 --dns-result-order=ipv4first" }, stdio: "ignore" });
-  for (let i = 0; i < 180; i += 1) {
-    if (await up()) return child;
-    await new Promise((r) => setTimeout(r, 2000));
-  }
-  child.kill();
-  throw new Error(`the dev server on ${ORIGIN} never answered`);
+  if (await up()) return null;
+  throw new Error(`no dev server answers on ${ORIGIN}; start the one server with pnpm preview:start`);
 }
 
 const clauses = {};

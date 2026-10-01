@@ -9,7 +9,7 @@
  *
  *   node scripts/screens2-walk.mjs --out <dir> [--seat admin|member]
  *
- * The port comes from `scripts/campaign-ports.json`; the organization and the table ids come
+ * It drives the one dev server on :3001; the organization and the table ids come
  * from `--org` / `--deals` / `--people`, because this walk is over data a SQL fixture made and
  * nothing here may invent one.
  */
@@ -19,8 +19,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = process.cwd();
-const PORTS = JSON.parse(readFileSync(resolve(ROOT, "scripts/campaign-ports.json"), "utf8"));
-const PORT = PORTS.lanes["SCREENS-2"];
+const PORT = 3001; // the one dev server machine-wide (pnpm preview:start)
 const HOST = "127.0.0.1";
 const ORIGIN = `http://${HOST}:${PORT}`;
 

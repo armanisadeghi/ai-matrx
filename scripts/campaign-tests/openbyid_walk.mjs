@@ -1,14 +1,13 @@
 /**
  * LANE ROUTE-RESOLVER — the headless walk of `/o/<id>` from test@test.com's seat.
  *
- *   OPENBYID_ORIGIN=http://routeresolver.localhost:3063 \
+ *   OPENBYID_ORIGIN=http://routeresolver.localhost:3001 \
  *   OPENBYID_EMAIL=… OPENBYID_PASSWORD=… \
  *   OPENBYID_IDS='{"org":…,"appts":…,"r3":…,"kennel":…,"form":…,"er":…,"referrals":…}' \
  *   node scripts/campaign-tests/openbyid_walk.mjs
  *
  * The ids come from scripts/campaign-tests/_openbyid_walk_fixture.sql (dev clone only), and the
- * dev server must be pointed at the database that holds them (scripts/campaign-ports.json,
- * "ROUTE-RESOLVER"). Credentials are read from the environment and never printed.
+ * dev server must be pointed at the database that holds them (the one dev server on :3001). Credentials are read from the environment and never printed.
  *
  * Clauses: a signed-out visitor goes through login and keeps the address; a table, a record, an
  * older dataset, a form, and a table SHARED IN from an organization Marisol is not a member of
@@ -19,7 +18,7 @@
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
 
-const ORIGIN = process.env.OPENBYID_ORIGIN ?? "http://routeresolver.localhost:3063";
+const ORIGIN = process.env.OPENBYID_ORIGIN ?? "http://routeresolver.localhost:3001";
 const EMAIL = process.env.OPENBYID_EMAIL ?? "";
 const PASSWORD = process.env.OPENBYID_PASSWORD ?? "";
 const IDS = JSON.parse(process.env.OPENBYID_IDS ?? "{}");

@@ -2,12 +2,12 @@
  * LANE SC-3' — the headless walk of the agent-context compare mode, from admin@admin.com's seat
  * (Priya Raman, Harborline Software's lead engineer, in the compare fixture).
  *
- *   SC3_ORIGIN=http://sc3.localhost:3068 SC3_EMAIL=… SC3_PASSWORD=… \
+ *   SC3_ORIGIN=http://sc3.localhost:3001 SC3_EMAIL=… SC3_PASSWORD=… \
  *   SC3_AGENT_ID=<an agent the seat may run> SC3_SHOTS=<dir> \
  *   node scripts/campaign-tests/sc3_compare_walk.mjs
  *
  * The data is scripts/campaign-tests/_sc3_compare_fixture.sql (dev clone only); the dev server and
- * its aidream must both point at the clone (scripts/campaign-ports.json "SC-3": 3068). Credentials
+ * its aidream must both point at the clone (the one dev server on :3001). Credentials
  * come from the environment and are never printed.
  *
  * Clauses: the compare card resolves Harborline Dispatch on both systems; the summary says no
@@ -20,7 +20,7 @@ import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { setOrganization, signIn, until } from "../lib/seat-browser.mjs";
 
-const ORIGIN = process.env.SC3_ORIGIN ?? "http://sc3.localhost:3068";
+const ORIGIN = process.env.SC3_ORIGIN ?? "http://sc3.localhost:3001";
 const EMAIL = process.env.SC3_EMAIL ?? "";
 const PASSWORD = process.env.SC3_PASSWORD ?? "";
 const AGENT = process.env.SC3_AGENT_ID ?? "";

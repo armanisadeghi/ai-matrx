@@ -3,7 +3,7 @@
  *
  *   node scripts/grid-port-walk.mjs [--seat admin|test] [--only <clause,clause>]
  *
- * Needs a dev server on this lane's port (scripts/campaign-ports.json, "GRID-PORT")
+ * Needs the one dev server on :3001 (pnpm preview:start)
  * already running and pointed at the database under test, and the seat's email and
  * password in GRID_PORT_EMAIL / GRID_PORT_PASSWORD (never printed). It signs in
  * through the REAL login form, chooses admin's Workspace through the same picker a
@@ -19,7 +19,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
-const PORT = JSON.parse(readFileSync(resolve(ROOT, "scripts/campaign-ports.json"), "utf8")).lanes["GRID-PORT"];
+const PORT = 3001; // the one dev server machine-wide (pnpm preview:start)
 const ORIGIN = `http://127.0.0.1:${PORT}`;
 const OUT = "/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/shots";
 mkdirSync(OUT, { recursive: true });

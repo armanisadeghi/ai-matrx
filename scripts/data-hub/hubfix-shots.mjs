@@ -22,8 +22,7 @@
 //      own "Kept by the app" listing.
 //
 // It runs against the machine-wide preview server on port 3001 (this lane holds
-// no campaign port; a PreToolUse hook on this box refuses a second Next.js dev
-// server — `scripts/campaign-ports.json` records that under `noDevServer`), on
+// no port of its own; there is exactly one dev server machine-wide, on :3001), on
 // its OWN hostname so it cannot evict another agent's session.
 //
 //   node scripts/data-hub/hubfix-shots.mjs --out <dir> [--origin http://hubfix.localhost:3001]

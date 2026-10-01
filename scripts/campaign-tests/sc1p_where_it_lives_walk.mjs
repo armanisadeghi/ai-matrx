@@ -2,13 +2,13 @@
  * LANE SC-1' — the headless walk of "which organization is this table in, and move it", from
  * the owner's seat and an outsider's seat, on the dev clone.
  *
- *   SC1P_ORIGIN=http://sc1.localhost:3070 \
+ *   SC1P_ORIGIN=http://sc1.localhost:3001 \
  *   SC1P_ADMIN_EMAIL=… SC1P_ADMIN_PASSWORD=… SC1P_TEST_EMAIL=… SC1P_TEST_PASSWORD=… \
  *   SC1P_IDS='{"table":…,"tacoma":…,"portland":…}' \
  *   node scripts/campaign-tests/sc1p_where_it_lives_walk.mjs
  *
  * The ids come from scripts/campaign-tests/_sc1p_walk_fixture.sql (dev clone only); the dev
- * server must point at the clone (scripts/campaign-ports.json "SC-1": 3070). Credentials come
+ * server must point at the clone (the one dev server on :3001). Credentials come
  * from the environment and are never printed. Headless only, the real login form.
  *
  * Clauses (exit 0 only when every one passes):
@@ -27,7 +27,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 
 import { signIn, until } from "../lib/seat-browser.mjs";
 
-const ORIGIN = process.env.SC1P_ORIGIN ?? "http://sc1.localhost:3070";
+const ORIGIN = process.env.SC1P_ORIGIN ?? "http://sc1.localhost:3001";
 const IDS = JSON.parse(process.env.SC1P_IDS ?? "{}");
 const OUT = process.env.SC1P_SHOTS ?? "/tmp/sc1p-shots";
 const seats = {

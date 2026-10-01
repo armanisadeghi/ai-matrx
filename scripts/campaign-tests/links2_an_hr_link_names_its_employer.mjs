@@ -33,7 +33,7 @@
 //
 //   node scripts/campaign-tests/links2_an_hr_link_names_its_employer.mjs
 //
-// Port 3047 is lane LINKS-2's own, from scripts/campaign-ports.json. Override with
+// The origin is the one dev server on :3001. Override with
 // LINKS2_ORIGIN when driving a server that is already up.
 
 import { chromium } from "playwright";
@@ -47,7 +47,7 @@ config({ path: new URL("../../.env.local", import.meta.url).pathname });
 // the same place scripts/lib/direct-db-env.ts reads them from. Nothing is printed from here.
 config({ path: new URL("../../../aidream/.env", import.meta.url).pathname });
 
-const PORT = 3047; // scripts/campaign-ports.json → lanes["LINKS-2"]
+const PORT = 3001; // the one dev server machine-wide (pnpm preview:start)
 const ORIGIN = process.env.LINKS2_ORIGIN ?? `http://localhost:${PORT}`;
 const EMAIL = process.env.AI_ADMIN_USERNAME ?? "admin@admin.com";
 const PASSWORD = process.env.AI_ADMIN_PASSWORD;

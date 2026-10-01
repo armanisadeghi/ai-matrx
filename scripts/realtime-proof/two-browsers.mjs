@@ -16,14 +16,14 @@
 //      page actually saw, not against the database.
 //
 // Run: node scripts/realtime-proof/two-browsers.mjs
-// Port 3042 (lane REALTIME in scripts/campaign-ports.json). Headless, always.
+// The one dev server on :3001. Headless, always.
 
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PORT = 3042;
+const PORT = 3001;
 const HOST = "realtime-lane";
 const ORIGIN = `http://${HOST}.localhost:${PORT}`;
 const ORG = "6069a466-1445-42df-a64e-cf37ecdc1b99"; // Rincon Plumbing Co

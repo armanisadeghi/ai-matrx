@@ -10,9 +10,8 @@
 // or a URL, because that tests a state no person can reach.
 //
 // It runs against the machine-wide preview server on port 3001. This lane holds
-// no campaign port of its own: a PreToolUse hook on this box refuses a second
-// Next.js dev server outright (16 GB, and two is a reliable hard crash), which
-// is recorded in `scripts/campaign-ports.json` under `noDevServer`.
+// no port of its own: there is exactly one dev server machine-wide, on :3001
+// (a second Next.js dev server is a reliable hard crash).
 //
 //   node scripts/data-hub/shots.mjs --out <dir> [--origin http://127.0.0.1:3001]
 

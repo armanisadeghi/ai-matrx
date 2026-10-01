@@ -23,8 +23,7 @@ import { resolve } from "node:path";
 import { signIn, setOrganization, until, sleep } from "../lib/seat-browser.mjs";
 
 const ROOT = process.cwd();
-const PORTS = JSON.parse(readFileSync(resolve(ROOT, "scripts/campaign-ports.json"), "utf8"));
-const PORT = PORTS.lanes["DRILL"];
+const PORT = 3001; // the one dev server machine-wide (pnpm preview:start)
 const ORIGIN = `http://127.0.0.1:${PORT}`;
 
 const ORG = "Rincon Plumbing Co";
