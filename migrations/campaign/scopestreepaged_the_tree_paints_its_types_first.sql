@@ -10,8 +10,10 @@
 -- and types and opens a type's scopes when the person expands it, the pickers search. These doors let
 -- the web ask for exactly that:
 --
---   custom.context_tree_types(orgs)                 the scope types of the organizations named, each
---                                                   with scope_count = the scopes the caller sees in it
+--   custom.context_tree_types(orgs, counts)         the scope types of the organizations named; with
+--                                                   counts (default) each carries scope_count = the
+--                                                   scopes the caller sees in it (the ladder per Table,
+--                                                   so the first paint asks without and counts follow)
 --   custom.context_tree_type_scopes(type, off, lim) one type's scopes, `lim` at a time from `off`
 --                                                   (default 200, at most 1000), with the total
 --   custom.context_tree_search(orgs, text, lim)     the scopes whose (readable) name holds `text`,
@@ -53,11 +55,11 @@ begin
   -- Called only by the three definer doors below, after they decided the caller; it has no client
   -- EXECUTE. p_me is the caller they resolved, p_orgs the organizations they decided, p_admin those of
   -- them read whole on the admin lane.
-  if p_mode is null or p_mode not in ('types', 'scopes', 'search') then
-    raise exception 'custom._ctx_tree_part: mode % is not types, scopes or search', p_mode using errcode = '22023';
+  if p_mode is null or p_mode not in ('types', 'type_list', 'scopes', 'search') then
+    raise exception 'custom._ctx_tree_part: mode % is not types, type_list, scopes or search', p_mode using errcode = '22023';
   end if;
   if p_me is null or cardinality(coalesce(p_orgs, '{}'::uuid[])) = 0 then
-    return case p_mode when 'types' then jsonb_build_object('types', v_types)
+    return case when p_mode in ('types', 'type_list') then jsonb_build_object('types', v_types)
                        else jsonb_build_object('scopes', v_scopes, 'total', 0) end;
   end if;
   if p_mode = 'search' then
@@ -65,7 +67,7 @@ begin
   end if;
 
   -- ── the scope types (custom.context_tree's t0 / t, restricted to the types asked) ──
-  if p_mode = 'types' then
+  if p_mode in ('types', 'type_list') then
     with t0 as materialized (
       select t.organization_id as org, t.id, t.data, t.created_at, t.updated_at, t.created_by
         from custom.record t
@@ -82,14 +84,15 @@ begin
                                           where not (t0.org = any (p_admin)) group by t0.org) o
                          cross join lateral custom.tables_listed_among(o.org, o.ids) v(v))
     ),
+    -- 'type_list' (the first paint) asks no Record question at all: no scope_count key is answered.
     vis as materialized (
       select t.org, t.id as tbl, v.v as id
         from t cross join lateral custom.query_visible_ids(t.org, t.id) v(v)
-       where not (t.org = any (p_admin))
+       where p_mode = 'types' and not (t.org = any (p_admin))
       union all
       select t.org, t.id, r.id
         from t join custom.record r on r.organization_id = t.org and r.table_id = t.id and r.deleted_at is null
-       where t.org = any (p_admin)
+       where p_mode = 'types' and t.org = any (p_admin)
     ),
     -- custom.context_tree answers a scope where a visible id is a live Record of its Table: the same join.
     cnt as materialized (
@@ -107,12 +110,28 @@ begin
              'sort_order', t.data -> 'sort_order',
              'max_assignments_per_entity', t.data -> 'max_assignments_per_entity',
              'default_variable_keys', t.data -> 'default_variable_keys',
-             'created_by', t.created_by, 'created_at', t.created_at, 'updated_at', t.updated_at,
-             'scope_count', coalesce(cnt.n, 0))
+             'created_by', t.created_by, 'created_at', t.created_at, 'updated_at', t.updated_at)
+           || case when p_mode = 'types' then jsonb_build_object('scope_count', coalesce(cnt.n, 0)) else '{}'::jsonb end
            order by coalesce((t.data ->> 'sort_order')::numeric, 0), t.data ->> 'label_plural', t.id), '[]'::jsonb)
       into v_types
       from t left join cnt on cnt.tbl = t.id;
     return jsonb_build_object('types', v_types);
+  end if;
+
+  -- Search asks the ladder only of the Tables holding a Record whose stored name matches: the visible
+  -- name is still what decides below (a Table with no stored match can hold no visible match).
+  if p_mode = 'search' then
+    select coalesce(array_agg(distinct r.table_id), '{}'::uuid[]) into p_type_ids
+      from custom.record r
+     where r.organization_id = any (p_orgs)
+       and r.deleted_at is null
+       and r.table_id in (select t.id from custom.record t
+                           where t.organization_id = any (p_orgs) and t.table_id = v_tables
+                             and t.deleted_at is null and t.data ->> 'kept_for' = 'context')
+       and (r.data ->> 'name') ilike v_pat escape '\';
+    if cardinality(p_type_ids) = 0 then
+      return jsonb_build_object('scopes', v_scopes, 'total', 0);
+    end if;
   end if;
 
   -- ── the scopes (custom.context_tree's body from t0 to the scope objects, verbatim, restricted) ──
@@ -199,18 +218,24 @@ begin
       from t join custom.record r on r.organization_id = t.org and r.table_id = t.id and r.deleted_at is null
      where t.org = any (p_admin)
   ),
-  matched as materialized (
+  joined as materialized (
+    -- custom.context_tree's own join of the scopes, first and unfiltered: a filter on the document here
+    -- would let the planner push it into the Records' scan and walk them once per visible id.
     select r.id, r.organization_id, r.table_id, r.data, r.created_by, r.created_at, r.updated_at,
-           c.visible, c.desc_key, c.setting_keys,
-           -- search answers in the tree's own reading order: type by type, then the type's scopes
-           coalesce((tt.data ->> 'sort_order')::numeric, 0) as t_sort, tt.data ->> 'label_plural' as t_label
+           c.visible, c.desc_key, c.setting_keys
       from vis
       join recs r
         on r.organization_id = vis.org and r.table_id = vis.tbl and r.id = vis.id
       join cols c on c.org = vis.org and c.id = vis.tbl
-      join t tt on tt.org = vis.org and tt.id = vis.tbl
+  ),
+  matched as materialized (
+    select j.*,
+           -- search answers in the tree's own reading order: type by type, then the type's scopes
+           coalesce((tt.data ->> 'sort_order')::numeric, 0) as t_sort, tt.data ->> 'label_plural' as t_label
+      from joined j
+      join t tt on tt.org = j.organization_id and tt.id = j.table_id
      where p_mode <> 'search'
-        or (c.visible ? 'name' and (r.data ->> 'name') ilike v_pat escape '\')
+        or (j.visible ? 'name' and (j.data ->> 'name') ilike v_pat escape '\')
   ),
   ordered as (
     select m.*,
@@ -245,11 +270,11 @@ begin
 end;
 $function$;
 
-REVOKE ALL ON FUNCTION custom._ctx_tree_part(uuid, uuid[], uuid[], text, uuid[], text, integer, integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION custom._ctx_tree_part(uuid, uuid[], uuid[], text, uuid[], text, integer, integer) FROM PUBLIC, anon, authenticated;
 
 -- ─── 2. the three doors ─────────────────────────────────────────────────────────────────────────
 
-CREATE FUNCTION custom.context_tree_types(p_organization_ids uuid[])
+CREATE FUNCTION custom.context_tree_types(p_organization_ids uuid[], p_with_counts boolean DEFAULT true)
  RETURNS jsonb
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
@@ -271,7 +296,7 @@ begin
     end if;
     perform custom.assert_client_may_reach(v_org, 'custom.context_tree_types');
   end loop;
-  return custom._ctx_tree_part(v_me, v_orgs, v_admin, 'types');
+  return custom._ctx_tree_part(v_me, v_orgs, v_admin, case when coalesce(p_with_counts, true) then 'types' else 'type_list' end);
 end;
 $function$;
 
@@ -351,8 +376,8 @@ insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
    non_client_lane, signed_in_callers, anonymous_callers)
 values
-  ('custom', 'context_tree_types', 'p_organization_ids uuid[]', array['uuid[]'::regtype::oid],
-   'The scope types of the organizations named, each with the count of its scopes the caller sees — the first paint of the scope tree. Every organization named is decided first through custom.assert_client_may_reach (refused by name, 42501, never an empty tree), except on the admin lane, where public.is_platform_admin() reads a non-member organization whole, exactly as custom.context_tree decides; the types and counts come from custom._ctx_tree_part, custom.context_tree''s own body (the Table list through custom.tables_listed_among, the Records through custom.query_visible_ids). It writes nothing.',
+  ('custom', 'context_tree_types', 'p_organization_ids uuid[], p_with_counts boolean', array['uuid[]'::regtype::oid, 'boolean'::regtype::oid],
+   'The scope types of the organizations named — the first paint of the scope tree — and, with p_with_counts (the default), each type''s count of the scopes the caller sees. Every organization named is decided first through custom.assert_client_may_reach (refused by name, 42501, never an empty tree), except on the admin lane, where public.is_platform_admin() reads a non-member organization whole, exactly as custom.context_tree decides; the types and counts come from custom._ctx_tree_part, custom.context_tree''s own body (the Table list through custom.tables_listed_among, the Records through custom.query_visible_ids). It writes nothing.',
    'scopestreepaged_the_tree_paints_its_types_first.sql', null, true, false),
   ('custom', 'context_tree_type_scopes', 'p_scope_type_id uuid, p_offset integer, p_limit integer',
    array['uuid'::regtype::oid, 'integer'::regtype::oid, 'integer'::regtype::oid],
@@ -363,6 +388,6 @@ values
    'The scopes whose readable name holds a text (case-insensitive), across the organizations named, at most 500, with the total. Every organization named is decided first through custom.assert_client_may_reach (the admin lane as custom.context_tree); only scopes custom.context_tree would answer the caller are searched, and a name column the one field decision hides from her is never searched. It writes nothing.',
    'scopestreepaged_the_tree_paints_its_types_first.sql', null, true, false);
 
-grant execute on function custom.context_tree_types(uuid[]) to authenticated;
+grant execute on function custom.context_tree_types(uuid[], boolean) to authenticated;
 grant execute on function custom.context_tree_type_scopes(uuid, integer, integer) to authenticated;
 grant execute on function custom.context_tree_search(uuid[], text, integer) to authenticated;
