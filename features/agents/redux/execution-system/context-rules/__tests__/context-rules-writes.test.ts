@@ -128,6 +128,14 @@ import {
   selectSavedContextRuleRows,
 } from "../context-rules.thunks";
 import type { RootState } from "@/lib/redux/store";
+import { setStoreSingleton } from "@/lib/redux/store-singleton";
+
+/** The app's own store, as the organization gate reads it: which workspace is selected. */
+function selectWorkspace(organizationId: string | null) {
+  setStoreSingleton(
+    configureStore({ reducer: { appContext: (s = { organization_id: organizationId }) => s } }),
+  );
+}
 
 function openTab() {
   return configureStore({ reducer: { surfaceUserState: surfaceUserStateReducer } });
@@ -157,6 +165,8 @@ beforeEach(() => {
 });
 
 describe("two tabs changing different values", () => {
+  beforeEach(() => selectWorkspace(WORKSPACE_ID));
+
   it("tab B's change never erases tab A's rule", async () => {
     seedRow({ note_title: { max_inline_chars: 400 } });
     const tabA = openTab();
@@ -191,6 +201,8 @@ describe("two tabs changing different values", () => {
 });
 
 describe("a first rule with no organization selected", () => {
+  beforeEach(() => selectWorkspace(null));
+
   it("asks for the organization, then saves — no error, no revert", async () => {
     registerOrganizationPicker(() => settleOrganizationSelection(WORKSPACE_ID));
     const tab = openTab();
