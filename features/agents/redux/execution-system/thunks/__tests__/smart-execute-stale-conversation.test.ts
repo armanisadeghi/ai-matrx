@@ -11,10 +11,24 @@ jest.mock("@/lib/toast", () => ({
 }));
 
 describe("smartExecute stale conversation admission", () => {
-  it("treats a rejected duplicate admission as expected deduplication", async () => {
+  it("drops a resubmit of the draft already being sent as expected deduplication", async () => {
+    // A second submit of a DIFFERENT draft is held, never dropped — pinned in
+    // a-second-message-is-never-lost.test.ts.
     const conversationId = "duplicate-before-send";
     const dispatch = jest.fn() as unknown as AppDispatch;
-    const getState = jest.fn() as unknown as () => RootState;
+    const getState = () =>
+      ({
+        conversations: { byConversationId: { [conversationId]: {} } },
+        instanceUserInput: {
+          byConversationId: {
+            [conversationId]: {
+              text: "same draft",
+              lastSubmittedText: "same draft",
+              submissionPhase: "pending",
+            },
+          },
+        },
+      }) as unknown as RootState;
     const consoleError = jest
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
@@ -29,7 +43,7 @@ describe("smartExecute stale conversation admission", () => {
     expect(consoleDebug).toHaveBeenCalledWith(
       expect.stringContaining("duplicate submit dropped"),
     );
-    expect(getState).not.toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalledTimes(2); // pending + fulfilled only
 
     releaseSubmitClaim(conversationId);
     consoleDebug.mockRestore();
@@ -96,6 +110,8 @@ describe("smartExecute stale conversation admission", () => {
           },
         },
         appContext: { organization_id: null },
+        instanceUserInput: { byConversationId: {} },
+        instanceResources: { byConversationId: {} },
       }) as unknown as RootState;
     const consoleError = jest
       .spyOn(console, "error")
