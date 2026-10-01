@@ -403,7 +403,7 @@ export const resumeInstance = createAsyncThunk<
       }
       if (error instanceof StreamCancelledError) {
         releaseResumeClaim(userRequestId);
-        return rejectWithValue("Cancelled");
+        return rejectWithValue("Cancelled", error.name);
       }
       if (error instanceof StreamPhaseError) {
         releaseResumeClaim(userRequestId);

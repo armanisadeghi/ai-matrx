@@ -1125,7 +1125,8 @@ export const executeManualInstance = createAsyncThunk<
         if (recoveryId) {
           void payloadSafetyStore.deleteEntry(recoveryId).catch(() => {});
         }
-        return rejectWithValue("Cancelled");
+        // A person's Stop — named so capture files nothing (W-49).
+        return rejectWithValue("Cancelled", "StreamCancelledError");
       }
 
       // Synthesise the canonical ErrorPayload shape so every consumer sees

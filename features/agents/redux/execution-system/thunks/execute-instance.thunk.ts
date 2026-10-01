@@ -1214,14 +1214,14 @@ export const executeInstance = createAsyncThunk<
       // settles quietly. No error status, no composer clear, no capture:
       // cancelling returns them exactly where they were.
       if (isOrganizationSelectionCancelled(error)) {
-        return rejectWithValue("Cancelled");
+        return rejectWithValue("Cancelled", error.name);
       }
       // runAiStream owns its own cleanup for stream-phase errors and signals
       // that via two marker classes. Pre-stream errors (assemble, inject,
       // payload-build, optimistic-message dispatch) reach here without prior
       // cleanup — they need their own.
       if (error instanceof StreamCancelledError) {
-        return rejectWithValue("Cancelled");
+        return rejectWithValue("Cancelled", error.name);
       }
       if (error instanceof StreamPhaseError) {
         return rejectWithValue(error.message, error.originalName);

@@ -25,7 +25,10 @@
 import { isCapturedSurfaceRegistrationError } from "@/features/surfaces/services/surface-registration-error";
 import type { Middleware } from "@reduxjs/toolkit";
 import { captureError, getSnapshot } from "@/lib/diagnostics/errorCaptureStore";
-import type { ExecutionRejectionMeta } from "./executionRejectionMeta";
+import {
+  isPersonCancellationErrorName,
+  type ExecutionRejectionMeta,
+} from "./executionRejectionMeta";
 
 interface RejectedAction {
   type: string;
@@ -103,6 +106,13 @@ export const reduxErrorCaptureMiddleware: Middleware =
           return result;
         }
         if (a.error?.name === "SessionUnavailableError") return result;
+        // The person's own Stop / picker dismissal is an answer (W-49).
+        if (
+          isPersonCancellationErrorName(a.meta?.originalErrorName) ||
+          isPersonCancellationErrorName(a.error?.originalErrorName)
+        ) {
+          return result;
+        }
         if (isStreamWrapperDuplicate(a)) return result;
         if (isCapturedSurfaceRegistrationError(a.error)) return result;
         captureError({
