@@ -44,6 +44,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import { tmpdir } from "node:os";
 import { join, relative, resolve, sep } from "node:path";
 
+import { codeOnly, codeOnlySelfTest } from "./lib/code-only";
+
 const FRONTEND = resolve(__dirname, "..");
 const WORKSPACE = resolve(FRONTEND, "..");
 const CAMPAIGN = join(
@@ -144,8 +146,8 @@ const SKIP_DIRS = new Set([
 ]);
 const FILE_RE = /\.(tsx?|mjs|cjs|js|py)$/;
 const SKIP_FILE_RE = /(\.test\.|\.spec\.|database\.types\.ts$|\.generated\.ts$|\/test_[^/]+\.py$|_test\.py$|\/conftest\.py$)/;
-/** This guard is not a caller. */
-const SELF = new Set(["scripts/check-old-system-unreachable.ts"]);
+/** This guard and its lexer (whose self-test names the tables) are not callers. */
+const SELF = new Set(["scripts/check-old-system-unreachable.ts", "scripts/lib/code-only.ts"]);
 
 export function writeDoorsFromCampaign(sql: string): string[] {
   const begin = sql.indexOf("-- OLD-WRITE-DOORS-BEGIN");
@@ -154,42 +156,6 @@ export function writeDoorsFromCampaign(sql: string): string[] {
   const names = [...sql.slice(begin, end).matchAll(/'public\.([a-z_0-9]+)\(/g)].map((m) => m[1]!);
   if (names.length === 0) throw new Error("the campaign file's OLD-WRITE-DOORS list is empty");
   return [...new Set(names)].sort();
-}
-
-/**
- * The CODE of a file, line for line: comments become blank (a block comment keeps its newlines so
- * line numbers stay true), strings are kept (SQL and door names live in strings). Python docstrings
- * — a triple-quoted string opening a line at the top of a module or right after a line ending in
- * `:` — are comments; a triple-quoted string after `(`, `=` or `,` is code (a SQL string).
- */
-export function codeOnly(path: string, text: string): string {
-  if (/\.py$/.test(path)) {
-    const out: string[] = [];
-    let inDoc: string | null = null;
-    let prevCode = "";
-    for (const line of text.split("\n")) {
-      if (inDoc) {
-        if (line.includes(inDoc)) inDoc = null;
-        out.push("");
-        continue;
-      }
-      const m = line.match(/^\s*[rRbBuU]?("""|''')/);
-      if (m && (prevCode === "" || /:\s*$/.test(prevCode))) {
-        const q = m[1]!;
-        const rest = line.slice(line.indexOf(q) + 3);
-        if (!rest.includes(q)) inDoc = q;
-        out.push("");
-        continue;
-      }
-      const stripped = line.replace(/(^|\s)#.*$/, "$1");
-      out.push(stripped);
-      if (stripped.trim()) prevCode = stripped.trim();
-    }
-    return out.join("\n");
-  }
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, (block) => block.replace(/[^\n]/g, ""))
-    .replace(/(^|[^:\\"'`])\/\/.*$/gm, "$1");
 }
 
 export type Hit = { repo: string; file: string; line: number; door: string; kind: "table" | "write" | "read" | "module" | "relation" };
@@ -356,22 +322,28 @@ function selfTest(): number {
       "matrx-frontend:features/table.ts workbench.udt_structured_list_items",
     ];
     if (planted.newPlaces.join() !== want.join()) throw new Error(`RED expected ${want}, got ${planted.newPlaces}`);
-    // 3. Line numbers survive a block comment.
+    // 3. A "/*" inside a string (a glob) never hides the code after it (the registry.ts false green).
+    writeFileSync(join(dir, "features/glob.ts"), 'const g = "src/**/*.ts";\nconst entry = { tableName: "udt_datasets" };\n');
+    if (!judge(run(), {}).newPlaces.includes("matrx-frontend:features/glob.ts workbench.udt_datasets")) throw new Error("a glob string hid the code after it");
+    rmSync(join(dir, "features/glob.ts"));
+    const lexer = codeOnlySelfTest();
+    if (lexer.length) throw new Error(`the code-only lexer: ${lexer.join("; ")}`);
+    // 4. Line numbers survive a block comment.
     writeFileSync(join(dir, "features/lines.ts"), '/*\n a\n b\n*/\nconst x = "udt_datasets";\n');
     const line = run().find((h) => h.file === "features/lines.ts")?.line;
     if (line !== 5) throw new Error(`a block comment must keep line numbers; got ${line}`);
     rmSync(join(dir, "features/lines.ts"));
-    // 4. The baseline with owners makes it GREEN; an entry with no owner is RED.
+    // 5. The baseline with owners makes it GREEN; an entry with no owner is RED.
     const owned = Object.fromEntries(want.map((k) => [k, "FINAL-SWITCH: planted for the self-test"]));
     const allowed = judge(run(), owned);
     if (allowed.newPlaces.length || allowed.stale.length || allowed.ownerless.length) throw new Error("GREEN expected with an owned baseline");
     const unowned = judge(run(), { ...owned, [want[0]!]: "" });
     if (unowned.ownerless.join() !== want[0]) throw new Error("an entry with no owner must be RED");
-    // 5. A removed read is STALE.
+    // 6. A removed read is STALE.
     writeFileSync(join(dir, "features/table.ts"), 'await supabase.schema("custom").rpc("choice_options", {});\n');
     const moved = judge(run(), owned);
     if (moved.stale.join() !== "matrx-frontend:features/table.ts workbench.udt_structured_list_items") throw new Error(`STALE expected, got ${moved.stale}`);
-    // 6. THE OLD SCOPE TABLES (lane SCOPES-READS-WEB): a web read of a leaving context table is RED;
+    // 7. THE OLD SCOPE TABLES (lane SCOPES-READS-WEB): a web read of a leaving context table is RED;
     //    a read of the context schema's reference data, and a verification walk under scripts/, are not.
     writeFileSync(join(dir, "features/scopeRead.ts"), 'await supabase.schema("context").from("scopes").select("id");\n');
     writeFileSync(join(dir, "features/scopeRead2.ts"), "const db = contextDb(supabase);\n");
@@ -380,11 +352,11 @@ function selfTest(): number {
     const ctx = judge(scan(roots, [], [], []), {}).newPlaces.filter((k) => k.endsWith("context.* scope tables")).sort();
     const wantCtx = ["matrx-frontend:features/scopeRead.ts context.* scope tables", "matrx-frontend:features/scopeRead2.ts context.* scope tables"];
     if (ctx.join() !== wantCtx.join()) throw new Error(`context scope tables: expected ${wantCtx}, got ${ctx}`);
-    // 7. The press's write list is read from the campaign file.
+    // 8. The press's write list is read from the campaign file.
     const sql = "x\n    -- OLD-WRITE-DOORS-BEGIN\n    'public.udt_bulk_write(uuid, jsonb)',\n    -- OLD-WRITE-DOORS-END\n";
     if (writeDoorsFromCampaign(sql).join() !== "udt_bulk_write") throw new Error("campaign list not read");
     console.log(
-      "✓ self-test: an older door, module, table read, realtime filter, ORM model and the older list maker are RED; a store door, comments, docstrings, the templates table and campaign proofs are not; line numbers survive block comments; an owned baseline is GREEN, an owner-less entry RED, a removed read STALE; old scope-table web reads RED; the press's list is read from the campaign file",
+      "✓ self-test: an older door, module, table read, realtime filter, ORM model and the older list maker are RED; a store door, comments, docstrings, the templates table and campaign proofs are not; a glob string hides nothing; line numbers survive block comments; an owned baseline is GREEN, an owner-less entry RED, a removed read STALE; old scope-table web reads RED; the press's list is read from the campaign file",
     );
     return 0;
   } catch (e) {
