@@ -9,6 +9,7 @@ import type {
   AdminOrganizationRow,
 } from "@/features/admin/users/types";
 import type { OrgRole } from "@/features/organizations/types";
+import { readAllRows } from "@ai-matrx/data/db";
 import {
   DEFAULT_ARCHIVE_FILTER,
   type ArchiveFilterValue,
@@ -26,36 +27,22 @@ export async function loadAdminOrganizationDirectory(
   archiveFilter: ArchiveFilterValue = DEFAULT_ARCHIVE_FILTER,
 ): Promise<AdminOrganizationDirectory> {
   const admin = createAdminClient();
-  let organizationsQuery = admin
-    .schema("iam")
-    .from("organizations")
-    .select(
-      "id, name, abbreviation, slug, description, website, created_at, created_by, is_system, archived_at",
-    );
-  if (archiveFilter === "active")
-    organizationsQuery = organizationsQuery.is("archived_at", null);
-  else if (archiveFilter === "archived")
-    organizationsQuery = organizationsQuery.not("archived_at", "is", null);
-  const [organizationsResult, membershipsResult] = await Promise.all([
-    organizationsQuery.order("name", { ascending: true }),
-    admin
-      .schema("iam")
-      .from("organization_member")
-      .select(
-        "id, organization_id, user_id, role, joined_at, invited_by",
-      ),
-  ]);
-
-  if (organizationsResult.error) {
+  // PostgREST caps one response at 1,000 rows. `readAllRows` pages each read to its declared total
+  // (and throws rather than return a short list), so the directory is never silently truncated.
+  let organizations_: Awaited<ReturnType<typeof readOrganizations>>;
+  let memberships_: Awaited<ReturnType<typeof readMemberships>>;
+  try {
+    [organizations_, memberships_] = await Promise.all([
+      readOrganizations(admin, archiveFilter),
+      readMemberships(admin),
+    ]);
+  } catch (error) {
     throw new Error(
-      `Failed to load organizations: ${organizationsResult.error.message}`,
+      `Failed to load organization directory: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
-  if (membershipsResult.error) {
-    throw new Error(
-      `Failed to load organization memberships: ${membershipsResult.error.message}`,
-    );
-  }
+  const organizationsResult = { data: organizations_ };
+  const membershipsResult = { data: memberships_ };
 
   const memberships: AdminOrganizationMembershipRow[] = [];
   const countsByOrganization = new Map<
@@ -143,4 +130,44 @@ export async function manageAdminOrganizationMembership(args: {
 
   if (error) throw operationFailed("apply that membership change", error);
   return data;
+}
+
+function readOrganizations(
+  admin: ReturnType<typeof createAdminClient>,
+  archiveFilter: ArchiveFilterValue,
+) {
+  return readAllRows(
+    ({ from, to }) => {
+      let query = admin
+        .schema("iam")
+        .from("organizations")
+        .select(
+          "id, name, abbreviation, slug, description, website, created_at, created_by, is_system, archived_at",
+          { count: "exact" },
+        );
+      if (archiveFilter === "active") query = query.is("archived_at", null);
+      else if (archiveFilter === "archived")
+        query = query.not("archived_at", "is", null);
+      return query
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to);
+    },
+    { label: "iam.organizations (admin directory)" },
+  );
+}
+
+function readMemberships(admin: ReturnType<typeof createAdminClient>) {
+  return readAllRows(
+    ({ from, to }) =>
+      admin
+        .schema("iam")
+        .from("organization_member")
+        .select("id, organization_id, user_id, role, joined_at, invited_by", {
+          count: "exact",
+        })
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "iam.organization_member (admin directory)" },
+  );
 }
