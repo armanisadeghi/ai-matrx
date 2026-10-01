@@ -69,6 +69,8 @@ import {
 } from "@/features/data-tables/components/EditableCell";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
+import { KindCellPeek } from "@/features/data-tables/components/KindCellPeek";
+import { kindCell } from "@/features/data-tables/utils/kind-cell";
 import { formatFieldValue, getFieldFormat, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 import { readCellWord, type CellWord } from "@/features/data-tables/cell-word";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
@@ -4400,6 +4402,10 @@ const UserTableViewer = ({
           fieldFormat.id === "relation" && isRecordStoreTable(S().tableId)
             ? storeFieldForRelationColumn({ id: field.id, field_name: field.field_name, display_name: field.display_name, format: fieldFormat })
             : null;
+        const kindInCell =
+          field.data_type === "json" || field.data_type === "array"
+            ? kindCell(rawValue)
+            : null;
         const display = withheldCell ? (
           <SheetWithheldCell cell={withheldCell} />
         ) : formulaError ? (
@@ -4419,6 +4425,10 @@ const UserTableViewer = ({
               (fieldFormat.options?.choices ?? []).find((c) => c.value === id)?.label ?? null,
             )}
           </span>
+        ) : kindInCell ? (
+          // A kind in a json/array cell reads as its name and opens in its
+          // window — never its JSON (the edit box keeps the JSON text).
+          <KindCellPeek cell={kindInCell} title={field.display_name} />
         ) : hasCustomFormat || S().validationByField.has(field.field_name) ? (
           <FormattedFieldValue
             value={rawValue}

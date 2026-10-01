@@ -143,7 +143,7 @@ Every stream item below adds its case there.
 - [x] U2. Research synthesis truncates JSON at 20,000 chars. (→ `AnswerValueView`; consolidation too)
 - [x] U3. Content-plan step rail and AI runs view. (kindless artifact + run result → `AnswerValueView`; the request/error sections stay raw on purpose)
 - [x] U4. Transcript studio module column. (object payload → `AnswerValueView`; the explicit edit box keeps JSON text)
-- [ ] U5. Data-table cells and their cell editor.
+- [x] U5. Data-table cells and their cell editor. (display: json/array cell with `__kind` → `KindCellPeek` = the records kind chip, opens `structuredValueWindow`; unreadable kind text → "<Kind> · unreadable"; edit box keeps JSON on purpose — `EditableCell` gets its display from the viewer)
 
 ## Out of scope (deliberate raw views — keep)
 
