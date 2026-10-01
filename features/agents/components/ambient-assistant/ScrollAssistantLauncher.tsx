@@ -13,6 +13,23 @@ export interface ScrollAssistantLauncherProps {
   includePathnames?: readonly string[];
 }
 
+/**
+ * A scroll (or a pointer dwell) that belongs to something floating OVER the page — a dialog, a
+ * window panel, a menu or popover — is not the person scrolling the page.
+ * The reveal listens in the capture phase (it must hear the shell's own
+ * scroller), so without this a shortcut's window streaming its reply
+ * (auto-scrolling its transcript), or a pointer resting on its composer near
+ * the bottom edge, revealed the page assistant's chat dock
+ * behind it, and it stayed after the window closed (blind run PB-03, /notes,
+ * 2026-10-01).
+ */
+const FLOATING_SCROLLER =
+  '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-window-panel], [data-radix-popper-content-wrapper], [data-slot="dialog-overlay"], .ambient-assistant-dock';
+
+export function isOnFloatingSurface(target: EventTarget | null): boolean {
+  return target instanceof Element && Boolean(target.closest(FLOATING_SCROLLER));
+}
+
 const ScrollAssistantLauncherImpl = dynamic<ScrollAssistantLauncherImplProps>(
   () => import("./ScrollAssistantLauncherImpl"),
   {
@@ -71,7 +88,7 @@ export function ScrollAssistantLauncher({
 
     const revealOnScroll = (event: Event) => {
       const target = event.target;
-      if (isNavigationInteraction(target)) return;
+      if (isNavigationInteraction(target) || isOnFloatingSurface(target)) return;
       const offset =
         target instanceof Element ? target.scrollTop : window.scrollY;
       if (offset < 72) return;
@@ -86,6 +103,7 @@ export function ScrollAssistantLauncher({
       if (
         event.pointerType !== "mouse" ||
         isNavigationInteraction(event.target) ||
+        isOnFloatingSurface(event.target) ||
         event.clientY < window.innerHeight - 96
       ) {
         clearBottomIntent();
