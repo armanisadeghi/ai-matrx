@@ -1,4 +1,5 @@
 "use client";
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import React, { useMemo, useState } from "react";
 import { CheckSquare, ListPlus, ExternalLink } from "lucide-react";
 import TaskChecklist from "@/components/mardown-display/blocks/tasks/TaskChecklist";
@@ -21,9 +22,11 @@ interface TasksBlockProps {
 
 const TasksBlock: React.FC<TasksBlockProps> = ({
   content,
-  messageId,
+  messageId: rawMessageId,
   blockIndex,
 }) => {
+  // Task links hang off a DURABLE message row (platform.associations, uuid).
+  const messageId = durableRecordId(rawMessageId) ?? undefined;
   const [checkboxState, setCheckboxState] = useState({});
   const [previewOpen, setPreviewOpen] = useState(false);
   const { toast } = useToast();

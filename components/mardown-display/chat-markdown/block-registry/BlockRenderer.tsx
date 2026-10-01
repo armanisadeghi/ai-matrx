@@ -1,4 +1,5 @@
 "use client";
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import React, { useCallback } from "react";
 import { BlockComponents, LoadingComponents } from "./BlockComponentRegistry";
 import { resolveArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
@@ -459,7 +460,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   isStreamActive,
   onContentChange,
   conversationId,
-  messageId,
+  messageId: transcriptMessageId,
   taskId,
   isLastReasoningBlock,
   replaceBlockContent,
@@ -467,6 +468,12 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   suppressLoadingGate = false,
   outputSchema = null,
 }) => {
+  // THE BLOCK-TREE SEAM. Inside a block, `messageId` is a DATABASE identity —
+  // kind-record `produced_by` edges, task chips, canvas provenance, list
+  // proposals, html-page publishing. A client-temp answer (incognito, a
+  // reservation gap) has no row, so every block below sees "no message" until
+  // the durable id renders (lib/ids/durable-record-id.ts).
+  const messageId = durableRecordId(transcriptMessageId) ?? undefined;
   // Reload has only the original text when an interrupted run could not stamp
   // a COMPLETE persistence envelope. Reuse the stream's parser at this terminal
   // boundary, never on a live prefix, and keep its error status intact.
