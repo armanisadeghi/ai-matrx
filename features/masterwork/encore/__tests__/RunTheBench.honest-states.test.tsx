@@ -145,8 +145,13 @@ const NOT_DURABLE_NOTE =
 
 /** The walk's own Masterwork run: "finished in 1m 45s and cost $0.61". */
 const WALK16_RUN_COST = 0.61;
-/** 100× that is the $61 the sixteenth cold walk was never told about. */
-const ESTIMATED = "$61.00";
+/** 100× that is the $61 the sixteenth cold walk was never told about —
+ *  formatted on THIS side, in the viewer's unit: points at the knob's 20,000
+ *  per dollar (review follow-up, 2026-09-30: the server sends numbers). */
+const ESTIMATED = "1,220,000 points";
+const LAST_RUN = "12,200 points";
+/** The server's unit-free rest of the price. */
+const PRICE_NOTE = "Other arms and judging add to it; it stops there.";
 
 const FORM: BenchRunFormWire = {
   budget_multiple: 100,
@@ -162,11 +167,7 @@ const FORM: BenchRunFormWire = {
   cheap_model_name: "Claude Haiku 4.5",
   typical_run_cost_usd: WALK16_RUN_COST,
   estimated_cost_usd: WALK16_RUN_COST * 100,
-  estimated_cost_note:
-    `Expect this to cost up to about ${ESTIMATED}. One run of your Masterwork ` +
-    "last cost 61.0¢, and the most expensive arm may spend up to 100 times " +
-    "that; the other five arms and the judging are on top of it. The trial " +
-    "stops at that ceiling — it does not ask again.",
+  estimated_cost_note: PRICE_NOTE,
   masterwork_id: "mw-1",
   masterwork_name: "Watson on shoes",
   // null is what the READ half actually sends — counting the corpus costs
@@ -267,12 +268,34 @@ describe("the Bench door never lies about what it can do", () => {
     const text = host.textContent ?? "";
 
     expect(text).toContain(ESTIMATED);
+    expect(text).toContain(LAST_RUN);
+    expect(text).toContain(PRICE_NOTE);
+    expect(text).not.toContain("$");
     // "Above" is positional, not a figure of speech.
     const priceIndex = text.indexOf(ESTIMATED);
     const startIndex = text.indexOf("Run the trial");
     expect(priceIndex).toBeGreaterThan(-1);
     expect(startIndex).toBeGreaterThan(-1);
     expect(priceIndex).toBeLessThan(startIndex);
+  });
+
+  it("prices the multiple she typed, formatted on this side from the server's numbers", () => {
+    render(CAN_RUN);
+    act(() => {
+      (host.querySelector("button") as HTMLButtonElement).click();
+    });
+    const budgetBox = Array.from(host.querySelectorAll("input")).find(
+      (i) => i.value === "100",
+    ) as HTMLInputElement;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(
+        budgetBox,
+        "50",
+      );
+      budgetBox.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    const text = host.textContent ?? "";
+    expect(text).toContain("Up to 610,000 points for the costliest arm: 50× your last run (12,200 points).");
   });
 
   it("names the models the way they are sold, not the way they are routed", () => {
@@ -332,9 +355,7 @@ describe("the Bench door never lies about what it can do", () => {
 
   it("an unpriced Masterwork says so — never a screen with no number and no reason", () => {
     const NO_PRICE =
-      "We cannot put a price on this yet: this Masterwork has not finished a " +
-      "run we could price. Run your Masterwork once and this screen will tell " +
-      "you the number before you start.";
+      "No price yet: run your Masterwork once and the ceiling shows here first.";
     render({
       ...CAN_RUN,
       form: {
@@ -348,6 +369,7 @@ describe("the Bench door never lies about what it can do", () => {
       (host.querySelector("button") as HTMLButtonElement).click();
     });
     expect(host.textContent ?? "").toContain(NO_PRICE);
+    expect(host.textContent ?? "").not.toContain("for the costliest arm");
   });
 
   it("cannot run here: says why in the server's own words, and offers no control that claims otherwise", () => {

@@ -98,9 +98,10 @@ export interface BenchRunFormWire {
   /**
    * 🚨 THE PRICE, BEFORE THE CLICK (the destructive-and-expensive-actions law).
    * `typical_run_cost_usd` is what one run of THIS Masterwork actually cost
-   * last time; `estimated_cost_usd` is the ceiling that makes; and
-   * `estimated_cost_note` says both in one plain sentence — including, when
-   * the Masterwork has never been priced, that we cannot say yet and why.
+   * last time; `estimated_cost_usd` is the ceiling that makes. The screen
+   * formats both in the viewer's unit (`benchPriceLine`). `estimated_cost_note`
+   * is the unit-free rest — it carries no amount, ever — or, when the
+   * Masterwork has never been priced, that we cannot say yet and why.
    * The note is ALWAYS present. The numbers are null together.
    */
   typical_run_cost_usd: number | null;

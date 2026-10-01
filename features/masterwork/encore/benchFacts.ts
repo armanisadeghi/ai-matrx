@@ -74,3 +74,27 @@ export function benchFacts(
     v.c_seconds ? `${Math.round(v.c_seconds)}s` : null,
   ].filter((f): f is string => f !== null);
 }
+
+/**
+ * THE TRIAL'S PRICE, FORMATTED FOR THE VIEWER (review follow-up, 2026-09-30).
+ *
+ * The server sends the NUMBER (`typical_run_cost_usd`) and the multiple; the
+ * screen formats it through the canonical cost display — points for everyone,
+ * dollars only behind the system-admin switch, at the organization's knob
+ * rate. It used to arrive as server prose with the amounts baked in, which no
+ * viewer setting could reach. The ceiling follows the multiple she typed, so
+ * the figure is the one that will actually apply. Null when unpriced: the
+ * server's note then says why.
+ */
+export function benchPriceLine(
+  typicalRunUsd: number | null | undefined,
+  multiple: number,
+  format: (usd: number) => string,
+): string | null {
+  if (typicalRunUsd === null || typicalRunUsd === undefined) return null;
+  if (!Number.isFinite(multiple) || multiple <= 0) return null;
+  return (
+    `Up to ${format(typicalRunUsd * multiple)} for the costliest arm: ` +
+    `${multiple}× your last run (${format(typicalRunUsd)}).`
+  );
+}

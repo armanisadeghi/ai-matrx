@@ -58,7 +58,7 @@ import { RunStages } from "../components/RunStages";
 import { createSittingStore, type SittingBase } from "../sitting/sitting";
 import { useDialogSitting } from "../sitting/useDialogSitting";
 import { SittingResumed } from "../sitting/SittingResumed";
-import { benchFacts, duration, money } from "./benchFacts";
+import { benchFacts, benchPriceLine, duration, money } from "./benchFacts";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   BENCH_RUN_PATH,
@@ -252,7 +252,7 @@ export function RunTheBench({
   const form: BenchRunFormWire | null =
     bench.status === "loading" ? null : bench.form;
   const canRun = bench.status !== "loading" && bench.canRunHere && form !== null;
-  const { unit: costUnit, rate: costRate } = useCostDisplay();
+  const { unit: costUnit, rate: costRate, format: formatCost } = useCostDisplay();
 
   const [open, setOpen] = useState(false);
   const [taskPrompt, setTaskPrompt] = useState("");
@@ -382,6 +382,14 @@ export function RunTheBench({
   const budgetValid =
     budgetNumber === null ||
     (Number.isFinite(budgetNumber) && budgetNumber > 0);
+  // The amounts are formatted HERE, in the viewer's unit, from the server's
+  // numbers; the server's note carries only the unit-free rest of the price.
+  const priceLine = benchPriceLine(
+    form.typical_run_cost_usd,
+    budgetValid ? (budgetNumber ?? form.budget_multiple) : form.budget_multiple,
+    (usd) => formatCost(usd),
+  );
+  const priceSentence = priceLine ? `${priceLine} ${costNote}` : costNote;
   const liveCost = arms.reduce((sum, a) => sum + a.cost_usd, 0);
 
   /**
@@ -411,7 +419,7 @@ export function RunTheBench({
       // THE PRICE IS IN THE CONFIRMATION, not only beside the button. An
       // expensive start names what it will spend and asks (the
       // destructive-and-expensive-actions law).
-      description: `${costNote}\n\n${WHAT_IT_DOES}`,
+      description: `${priceSentence}\n\n${WHAT_IT_DOES}`,
       confirmLabel: "Run the trial",
       cancelLabel: "Not now",
       variant: "destructive",
@@ -612,7 +620,7 @@ export function RunTheBench({
 
               {/* 🚨 THE PRICE, IMMEDIATELY ABOVE THE BUTTON THAT SPENDS IT. */}
               <p className="rounded-md border border-border bg-muted/40 p-2 text-xs font-medium text-foreground">
-                {costNote}
+                {priceSentence}
               </p>
               <p className="text-xs text-muted-foreground">{WHAT_IT_DOES}</p>
               <GatedActionButton
