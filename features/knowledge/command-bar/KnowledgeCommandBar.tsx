@@ -52,7 +52,7 @@ import {
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
+import { selectIsCreator, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { writeClipboard } from "@/components/agent-copy/clipboard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -95,6 +95,18 @@ import {
   sectionForDigit,
 } from "./sections";
 import { useKnowledgeSearchStream, type SectionState } from "./useKnowledgeSearchStream";
+import type { DataHomeRow } from "@/features/unified-data/home/dataHomeRows";
+
+/**
+ * The data home's tables source (features/unified-data/home/dataHomeTablesSource.ts), loaded with
+ * the bar's first opening — a dynamic import, so the bar's own chunk carries none of the store.
+ */
+export interface TablesModule {
+  dataHomeTables: (userId: string | null) => { now: DataHomeRow[] | null; next: Promise<DataHomeRow[]> };
+  rankDataHomeTables: (rows: readonly DataHomeRow[], text: string) => DataHomeRow[];
+  dataHomeKindWord: (kind: string) => string;
+  KindIcon: (props: { kind: string; className?: string }) => React.ReactNode;
+}
 
 export interface KnowledgeCommandBarProps {
   isOpen: boolean;
@@ -105,9 +117,11 @@ export interface KnowledgeCommandBarProps {
   primaryAction?: "open" | "attach";
   /** Test seam — production uses the one client's `searchKnowledge`. */
   runner?: KnowledgeSearchRunner;
+  /** Test seam — production loads the data home's cached door. */
+  tablesModule?: TablesModule;
 }
 
-type Filter = KnowledgeSectionKey | "commands" | null;
+type Filter = KnowledgeSectionKey | "commands" | "tables" | null;
 type View = { kind: "results" } | { kind: "actions"; hit: KnowledgeHit };
 
 /** Rows per section before "Show all" (Spotlight shows a few of each). */
@@ -166,6 +180,7 @@ export default function KnowledgeCommandBar({
   initialText,
   primaryAction = "open",
   runner,
+  tablesModule,
 }: KnowledgeCommandBarProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -177,6 +192,38 @@ export default function KnowledgeCommandBar({
   const openShare = useOpenShareModal();
   const online = useOnline();
   const { sections, engine, search, retry, showMore } = useKnowledgeSearchStream(runner);
+
+  // TABLES: the data home's one door, cached for the tab (dataHomeTablesSource.ts). Read when the
+  // bar opens, so the hits are in hand by the first keystroke; never filtered by the active org.
+  const userId = useAppSelector(selectUserId);
+  const [tables, setTables] = useState<{ mod: TablesModule | null; rows: DataHomeRow[] | null; error: string | null }>({
+    mod: null,
+    rows: null,
+    error: null,
+  });
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    let live = true;
+    const load: Promise<TablesModule> = tablesModule
+      ? Promise.resolve(tablesModule)
+      : import("@/features/unified-data/home/dataHomeTablesSource");
+    load
+      .then((mod) => {
+        const answer = mod.dataHomeTables(typeof userId === "string" ? userId : null);
+        if (live) setTables({ mod, rows: answer.now, error: null });
+        return answer.next.then((rows) => {
+          if (live) setTables({ mod, rows, error: null });
+        });
+      })
+      .catch((error: unknown) => {
+        console.error("[command bar] tables did not answer:", error);
+        if (live)
+          setTables((prev) => ({ ...prev, error: error instanceof Error ? error.message : String(error) }));
+      });
+    return () => {
+      live = false;
+    };
+  }, [isOpen, tablesModule, userId]);
 
   // The host's attach target + commands, read once for this opening. With no
   // explicit target, "Attach to this chat" goes to the chat on screen, if any.
@@ -514,6 +561,74 @@ export default function KnowledgeCommandBar({
     );
   };
 
+  const renderTables = () => {
+    // Only for words: a typed operator (`type:pdf`, `@Ava`) asks the knowledge lanes, not tables.
+    if (!searchingText || chips.length) return null;
+    const label = "Tables";
+    const mod = tables.mod;
+    const hits = mod && tables.rows ? mod.rankDataHomeTables(tables.rows, searchingText) : [];
+    const expanded = filter === "tables";
+    const shown = expanded ? hits : hits.slice(0, ROWS_PER_SECTION);
+    const loading = tables.rows === null && !tables.error;
+    return (
+      <CommandGroup
+        key="tables"
+        heading={
+          <span className="flex items-center gap-1.5" data-testid="command-bar-tables">
+            {label}
+            {tables.rows ? <span className="tabular-nums text-muted-foreground/80">{hits.length}</span> : null}
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" aria-label={`Searching ${label}`} /> : null}
+          </span>
+        }
+      >
+        {loading ? (
+          <div className="flex flex-col gap-1.5 px-2 py-1.5" aria-busy>
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        ) : null}
+        {tables.error && !tables.rows ? (
+          <div role="alert" className="flex items-center gap-1 px-2 py-1 text-xs text-destructive">
+            <span className="min-w-0 flex-1">{tables.error}</span>
+            <ErrorAlchemyMenu error={tables.error} operation="Search Tables" calls={["custom.data_home"]} size="xs" />
+          </div>
+        ) : null}
+        {shown.map((row) => (
+          <CommandItem
+            key={row.id}
+            value={`table:${row.id}`}
+            onSelect={() => {
+              close();
+              startTransition(() => router.push(row.href));
+            }}
+            className="flex items-start gap-2"
+          >
+            {mod ? <mod.KindIcon kind={row.kind} className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm text-foreground">{row.name}</div>
+              <div className="truncate text-xs text-muted-foreground">
+                {[row.organizationName, mod?.dataHomeKindWord(row.kind)].filter(Boolean).join(" · ")}
+              </div>
+            </div>
+            <CommandShortcut className="hidden sm:inline">Open ↵</CommandShortcut>
+          </CommandItem>
+        ))}
+        {tables.rows && !hits.length ? (
+          <div className="px-2 py-1 text-xs text-muted-foreground">
+            Nothing in {label} for &apos;{searchingText}&apos;
+          </div>
+        ) : null}
+        {!expanded && hits.length > shown.length ? (
+          <CommandItem value="show-all:tables" onSelect={() => setFilter("tables")}>
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+            <span className="text-sm">
+              Show all {hits.length} in {label}
+            </span>
+          </CommandItem>
+        ) : null}
+      </CommandGroup>
+    );
+  };
+
   const renderCommands = () => {
     const expanded = filter === "commands";
     const list = expanded || searchingText ? matchedCommands : matchedCommands.slice(0, COMMANDS_WHEN_EMPTY);
@@ -720,7 +835,7 @@ export default function KnowledgeCommandBar({
           )}
           {filter ? (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs text-foreground">
-              Only {filter === "commands" ? "Commands" : KNOWLEDGE_SECTION_LABEL[filter]}
+              Only {filter === "commands" ? "Commands" : filter === "tables" ? "Tables" : KNOWLEDGE_SECTION_LABEL[filter]}
               <button
                 type="button"
                 aria-label="Show every section"
@@ -797,8 +912,10 @@ export default function KnowledgeCommandBar({
             renderActions(view.hit)
           ) : (
             <>
-              {online && filter !== "commands"
-                ? orderedKeys.map((k) => renderSection(k, sections[k]))
+              {online && orderedKeys.includes("top_hit") ? renderSection("top_hit", sections.top_hit) : null}
+              {online && (filter === null || filter === "tables") ? renderTables() : null}
+              {online && filter !== "commands" && filter !== "tables"
+                ? orderedKeys.filter((k) => k !== "top_hit").map((k) => renderSection(k, sections[k]))
                 : null}
               {filter === null || filter === "commands" ? (
                 <>

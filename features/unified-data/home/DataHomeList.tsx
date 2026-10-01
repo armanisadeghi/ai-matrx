@@ -46,6 +46,7 @@ import { DataHomeCards, DataHomeRows } from "./DataHomeViews";
 import { nextStarred, useDataHomeMarks } from "./useDataHomeMarks";
 import { DATA_HOME_DEFAULT_VIEW_KNOB, resolveDataHomeView } from "./dataHomeKnobs";
 import { tokensToFilters, updatedBucket } from "./dataHomeQuery";
+import { DataHomeRecent, recentRows } from "./DataHomeRecent";
 
 export const DATA_HOME_SURFACE_KEY = "data-home";
 
@@ -73,6 +74,22 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   // A server answer for the box's current text re-asks the list (its rows join beneath the instant hits).
   const [serverVersion, setServerVersion] = useState(0);
   useEffect(() => corpus.onAnswer(() => setServerVersion((v) => v + 1)), [corpus]);
+  // The rows in hand by id, for Recent (the corpus's one held read; never a second door call).
+  const [rowsById, setRowsById] = useState<ReadonlyMap<string, DataHomeRow>>(() => new Map());
+  useEffect(() => {
+    let live = true;
+    corpus
+      .load()
+      .then((rows) => {
+        if (live) setRowsById(new Map(rows.map((row) => [row.id, row])));
+      })
+      // The list's own load reports a failed read in its one failure slot; Recent just stays absent.
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [corpus]);
+  const recent = recentRows(marks.recent, rowsById);
 
   const service = useMemo(
     () =>
@@ -116,6 +133,8 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       },
       getRowId: (row) => row.id,
       getRowName: (row) => row.name,
+      // `/` search, ↑/↓ move, Enter opens, `s` stars, Esc clears — the shell's one keyboard handler.
+      rowKeys: true,
       door: { column: "name", hrefFor: (row) => row.href },
       useRowActions: (list) => dataHomeRowActions(list, starredSet, marks, router),
       favorite: {
@@ -195,8 +214,10 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       config={config}
       defaultScope={makeScope(defaultScope)}
       clearsShellHeader={false}
-      notice={() =>
-        corpus.meta.refusals.length > 0 || corpus.meta.capped || corpus.meta.searchTrouble ? (
+      notice={(list) => (
+        <>
+          {!list.query.search ? <DataHomeRecent rows={recent} onOpened={(row) => marks.opened(row.id)} /> : null}
+          {corpus.meta.refusals.length > 0 || corpus.meta.capped || corpus.meta.searchTrouble ? (
           <div role="status" className="flex flex-col gap-1 text-xs text-muted-foreground" data-data-home-notice="">
             {corpus.meta.capped ? <span>Showing the newest {DATA_HOME_ROW_CAP.toLocaleString()}.</span> : null}
             {corpus.meta.searchTrouble ? (
@@ -212,8 +233,9 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
               </span>
             ))}
           </div>
-        ) : null
-      }
+          ) : null}
+        </>
+      )}
       footer={footer}
     />
   );
@@ -228,7 +250,7 @@ function dataHomeRowActions(
   const toggle = (row: DataHomeRow) => {
     const { next, refused } = nextStarred([...starred], row.id);
     if (refused) {
-      toast.error("You can star up to 500. Unstar one first.");
+      toast.error("You can keep up to 500 favorites. Remove one first.");
       return;
     }
     // The new set makes a new service (serviceKey), and the shell re-asks: the row moves at once.
@@ -260,7 +282,7 @@ function dataHomeRowActions(
               items: [
                 {
                   id: "star",
-                  label: isStarred ? "Unstar" : "Star",
+                  label: isStarred ? "Remove from favorites" : "Add to favorites",
                   icon: isStarred ? StarOff : Star,
                   onSelect: () => toggle(row),
                 },

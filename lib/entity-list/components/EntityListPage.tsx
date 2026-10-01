@@ -185,6 +185,44 @@ export interface EntityListPageProps<TRow> {
   footer?: ReactNode;
 }
 
+/**
+ * ROW KEYS' ONE MOVE: focus the row `step` away from `from` (the first row when `from` is null)
+ * among the rows the person can see — table rows, phone cards and feature cards all carry
+ * `data-row-id`. A row is made focusable on the spot (tabIndex -1, never a tab stop) and scrolled
+ * into view, so a virtualized list renders its neighbours. Returns the row's id, or null when there is
+ * no row to move to.
+ */
+export function focusListRow(pane: HTMLElement, from: HTMLElement | null, step: 1 | -1): string | null {
+  const rows = listRows(pane);
+  if (rows.length === 0) return null;
+  const at = from ? rows.findIndex((el) => el === from || el.contains(from)) : -1;
+  const next = at < 0 ? (step === 1 ? rows[0] : undefined) : rows[at + step];
+  if (!next) return null;
+  if (!next.hasAttribute("tabindex")) next.tabIndex = -1;
+  next.focus({ preventScroll: true });
+  next.scrollIntoView?.({ block: "nearest" });
+  return next.getAttribute("data-row-id");
+}
+
+/** The rows a person can see, once each, in screen order (the row keys' one notion of "a row"). */
+function listRows(pane: HTMLElement): HTMLElement[] {
+  // The outermost element of each row: a row's own parts may carry its id too.
+  const all = Array.from(pane.querySelectorAll<HTMLElement>("[data-row-id]")).filter(
+    (el) => !el.parentElement?.closest("[data-row-id]"),
+  );
+  // A layout hidden at this width (the phone cards on a desktop) has no box; with no layout
+  // engine at all (jsdom) nothing has one, and every row counts.
+  const shown = all.filter((el) => el.getClientRects().length > 0);
+  const seen = new Set<string>();
+  const rows = (shown.length > 0 ? shown : all).filter((el) => {
+    const id = el.getAttribute("data-row-id") ?? "";
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+  return rows;
+}
+
 export function EntityListPage<TRow>({
   config,
   notice,
@@ -757,6 +795,29 @@ export function EntityListPage<TRow>({
       root.style.removeProperty("--page-bottom-dock-h");
     };
   }, []);
+  // WHERE THE SCROLL BODY STARTS, published for the footer-mode table pane's height (below).
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const hasFooter = Boolean(footer);
+  useEffect(() => {
+    const pane = paneRef.current;
+    const body = bodyRef.current;
+    if (!hasFooter || !pane || !body || typeof ResizeObserver === "undefined") return undefined;
+    const publish = () => {
+      // The body's own box never moves when it scrolls (it is the scroller), so this is stable.
+      const top = Math.max(0, Math.round(body.getBoundingClientRect().top));
+      pane.style.setProperty("--entity-list-body-top", `${top}px`);
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    if (body.previousElementSibling) ro.observe(body.previousElementSibling);
+    ro.observe(pane);
+    window.addEventListener("resize", publish);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", publish);
+      pane.style.removeProperty("--entity-list-body-top");
+    };
+  }, [hasFooter]);
   const pointerInPaneRef = useRef(false);
   const hoveredRowIdRef = useRef<string | null>(null);
   // Every handler on the controller is a fresh function each render (the
@@ -764,9 +825,34 @@ export function EntityListPage<TRow>({
   // reads the latest through a ref instead of re-subscribing on every render.
   const selectionRef = useRef(selection);
   selectionRef.current = selection;
+  const listRef = useRef(list);
+  listRef.current = list;
+
+  // Row keys (config.rowKeys) read the latest row actions and query the same way.
+  const rowKeys = config.rowKeys === true;
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
+  const queryRef = useRef(list.query);
+  queryRef.current = list.query;
+  // THE ROW CURSOR survives a re-render: a star moves the row (favorites first) and a live refresh
+  // redraws the rows, and either drops the focus to the page. When that happens the cursor's row,
+  // if it is still listed, takes the focus back — never from a field or control that has it.
+  const cursorRowIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!rowKeys) return;
+    const pane = paneRef.current;
+    const id = cursorRowIdRef.current;
+    if (!pane || !id) return;
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
+    const row = listRows(pane).find((el) => el.getAttribute("data-row-id") === id);
+    if (!row) return;
+    if (!row.hasAttribute("tabindex")) row.tabIndex = -1;
+    row.focus({ preventScroll: true });
+  });
 
   useEffect(() => {
-    if (!bulkEnabled) return;
+    if (!bulkEnabled && !rowKeys) return;
     const onKeyDown = (event: KeyboardEvent) => {
       const pane = paneRef.current;
       const live = selectionRef.current;
@@ -787,6 +873,32 @@ export function EntityListPage<TRow>({
       );
       if (modalOnTop) return;
       const active = document.activeElement;
+      const plain = !event.metaKey && !event.ctrlKey && !event.shiftKey;
+      // ROW KEYS FROM THE LIST'S OWN SEARCH BOX: ↓ leaves it for the first row, Esc clears the
+      // text, then the filters, then leaves the box. Every other key is typing, never a row key.
+      if (
+        rowKeys &&
+        active instanceof HTMLElement &&
+        active.hasAttribute("data-entity-list-search") &&
+        pane.contains(active)
+      ) {
+        if (event.key === "ArrowDown" && plain) {
+          const moved = focusListRow(pane, null, 1);
+          if (moved) {
+            cursorRowIdRef.current = moved;
+            event.preventDefault();
+          }
+          return;
+        }
+        if (event.key === "Escape" && plain) {
+          event.preventDefault();
+          const q = queryRef.current;
+          if (q.search) listRef.current.setSearch("");
+          else if (Object.keys(q.filters).length > 0) listRef.current.resetFilters();
+          else active.blur();
+        }
+        return;
+      }
       if (
         active instanceof HTMLElement &&
         (active.isContentEditable ||
@@ -797,7 +909,59 @@ export function EntityListPage<TRow>({
         return;
       }
       const focusInPane = active instanceof Node && pane.contains(active);
-      if (!focusInPane && !pointerInPaneRef.current) return;
+      // A list that IS the page answers its row keys with nothing focused (the body) too.
+      const nothingFocused = !active || active === document.body;
+      if (!focusInPane && !pointerInPaneRef.current && !(rowKeys && nothingFocused)) return;
+
+      if (rowKeys && plain) {
+        const focusedRowEl =
+          active instanceof Element ? active.closest<HTMLElement>("[data-row-id]") : null;
+        if (event.key === "/") {
+          const box = pane.querySelector<HTMLInputElement>("[data-entity-list-search]");
+          if (box) {
+            cursorRowIdRef.current = null;
+            event.preventDefault();
+            box.focus();
+            box.select();
+          }
+          return;
+        }
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          const step = event.key === "ArrowDown" ? 1 : -1;
+          const moved = focusListRow(pane, focusedRowEl, step);
+          if (moved) {
+            cursorRowIdRef.current = moved;
+            event.preventDefault();
+          } else if (step === -1 && focusedRowEl) {
+            // ↑ from the first row goes back to the box.
+            cursorRowIdRef.current = null;
+            pane.querySelector<HTMLInputElement>("[data-entity-list-search]")?.focus();
+            event.preventDefault();
+          }
+          return;
+        }
+        // Enter on the ROW itself (a link or button inside it keeps its own Enter).
+        if (event.key === "Enter" && focusedRowEl && active === focusedRowEl) {
+          const row = rowById(focusedRowEl.getAttribute("data-row-id"));
+          if (row) {
+            event.preventDefault();
+            actionsRef.current.onOpenRow(row);
+          }
+          return;
+        }
+        if (event.key.toLowerCase() === "s" && config.favorite) {
+          const rowId = focusedRowEl?.getAttribute("data-row-id") ?? hoveredRowIdRef.current;
+          const row = rowById(rowId);
+          const toggle = actionsRef.current.onToggleFavorite;
+          if (row && toggle && config.favorite.canToggle(row)) {
+            event.preventDefault();
+            if (focusedRowEl) cursorRowIdRef.current = rowId ?? null;
+            toggle(row);
+          }
+          return;
+        }
+      }
+      if (!bulkEnabled) return;
 
       if (event.key === "Escape") {
         if (live.count === 0) return;
@@ -829,12 +993,22 @@ export function EntityListPage<TRow>({
         live.toggleId(rowId);
       }
     };
+    const rowById = (rowId: string | null | undefined) =>
+      rowId ? list.rows.find((candidate) => config.getRowId(candidate) === rowId) : undefined;
+    // A pointer press anywhere ends the keyboard cursor (the mouse leads from there).
+    const onPointerDown = () => {
+      cursorRowIdRef.current = null;
+    };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("pointerdown", onPointerDown);
+    };
     // `list.rows` and the config are read through the closure on purpose: the
     // listener is re-attached whenever the loaded page changes so `x` can never
     // toggle a row that is no longer on screen.
-  }, [bulkEnabled, list.rows, config]);
+  }, [bulkEnabled, rowKeys, list.rows, config]);
 
   const altViewProps = {
     rows: list.rows,
@@ -865,7 +1039,8 @@ export function EntityListPage<TRow>({
       // The platform's ONE touch floor for the whole list (page-pass
       // 2026-09-27, /education/quizzes: the row kebab, Take, rows-per-page and
       // the pager measured 32×32 on a phone). Desktop density is untouched.
-      className="matrx-touch-targets flex h-full flex-col overflow-hidden"
+      // The row the row keys focused shows a ring (config.rowKeys).
+      className="matrx-touch-targets flex h-full flex-col overflow-hidden [&_[data-row-id]:focus-visible]:bg-accent [&_[data-row-id]:focus-visible]:outline-2 [&_[data-row-id]:focus-visible]:-outline-offset-2 [&_[data-row-id]:focus-visible]:outline-primary"
       onMouseEnter={() => {
         pointerInPaneRef.current = true;
       }}
@@ -1134,12 +1309,14 @@ export function EntityListPage<TRow>({
         below a workable slice of table — the second half of the guard above.
         `min-h-0` alone trusts every notice to stay small; this trusts nothing.
       */}
-      <div className="min-h-[16rem] flex-1 overflow-y-auto px-3 pb-4">
+      <div ref={bodyRef} className="min-h-[16rem] flex-1 overflow-y-auto px-3 pb-4">
         {view === "table" ? (
           // A page FOOTER waits below the fold: the table pane is one screen tall (a definite
           // height, so the table keeps its own virtualized scroll), and the body scrolls on to the
           // footer after it. (A percentage height here does not resolve inside the scroll body.)
-          <div data-entity-list-table-pane="" className={footer ? "flex h-[max(16rem,calc(100dvh-9rem))] shrink-0 flex-col" : "contents"}>
+          // Its height is the screen below the body's MEASURED top (--entity-list-body-top): a
+          // notice or a Recent line above the tabs moves the top, and the pager stays on screen.
+          <div data-entity-list-table-pane="" className={footer ? "flex h-[max(16rem,calc(100dvh-var(--entity-list-body-top,9rem)))] shrink-0 flex-col" : "contents"}>
           {/* read-gate-exempt: a failed read swaps resolvedEmptyState for failureEmptyState, and the alert above names the failure once */}
           <EntityListTable
             config={config}

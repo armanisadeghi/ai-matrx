@@ -145,7 +145,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
   return [
     {
       id: "favorite",
-      label: "Star",
+      label: "Favorite",
       locked: true,
       phone: "actions",
       column: {

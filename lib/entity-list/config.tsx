@@ -376,6 +376,16 @@ export interface EntityListConfig<TRow> {
     save: (row: TRow, edit: Partial<TRow>) => Promise<void>;
   };
 
+  /**
+   * ROW KEYS — for a list that IS the page (the data home). Opt-in; absent, the keyboard is
+   * exactly what it was. On: `/` focuses the search box; ↓ from the box (or from nowhere) moves to
+   * the first row, ↑/↓ move between rows, ↑ from the first row returns to the box; Enter opens the
+   * focused row (`onOpenRow`); `s` toggles its favorite (`onToggleFavorite`); Esc in the box clears
+   * the text, then the filters, then leaves the box. Same gates as `x`: never while another text
+   * field or a modal holds the keyboard. Champions: Gmail / Linear list keys.
+   */
+  rowKeys?: boolean;
+
   /** Deep-search toggle beside the search box. Absent → no toggle. */
   deepSearch?: { label: string };
 

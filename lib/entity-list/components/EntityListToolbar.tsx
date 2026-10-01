@@ -188,6 +188,8 @@ export function EntityListToolbar<TRow>({
         )}
         <input
           type="search"
+          // The shell's row keys find the box by this (`/` focuses it; config.rowKeys).
+          data-entity-list-search=""
           value={query.search}
           onChange={(e) => onSearch(e.target.value)}
           placeholder={placeholder}

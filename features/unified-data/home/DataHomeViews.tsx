@@ -36,7 +36,8 @@ function StarButton({
   return (
     <button
       type="button"
-      aria-label={starred ? "Unstar" : "Star"}
+      // The shell's own words for its star (EntityListTable's favorite cell).
+      aria-label={starred ? "Remove from favorites" : "Add to favorites"}
       aria-pressed={starred}
       onClick={(e) => {
         e.preventDefault();
