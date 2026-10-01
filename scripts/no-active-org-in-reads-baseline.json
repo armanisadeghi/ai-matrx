@@ -351,16 +351,6 @@
       "owner": "settings",
       "note": "active org selects which org's knobs/overrides are read; settings pane names the org"
     },
-    "features/structured-lists/StructuredListManagerV1.tsx::StructuredListManagerV1::selectOrganizationId#1": {
-      "class": "write-target",
-      "owner": "structured-lists",
-      "note": "activeOrganizationId → whereANewTableIsBorn / create picklist only"
-    },
-    "features/structured-lists/useStructuredLists.ts::useStructuredLists::useOrganizationRequired()#1": {
-      "class": "write-target",
-      "owner": "structured-lists",
-      "note": "organizationId only for createList p_organization_id; list read on udt_structured_lists has no org filter"
-    },
     "features/tasks/components/QuickTasksWorkspace.tsx::QuickTasksMain::selectOrganizationId#1": {
       "class": "write-target",
       "owner": "tasks",
