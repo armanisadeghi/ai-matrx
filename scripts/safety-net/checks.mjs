@@ -111,6 +111,7 @@ export const ITEMS = {
   A08: "AI Matrx MCP via OAuth",
   A09: "Member refusals (API / MCP)",
   A10: "Idempotency (API / MCP writes)",
+  A11: "Same before/after the press — switching org + switched control (SAFETY-NET-B)",
   // Drill-down
   R01: "drill_describe — both kinds",
   R02: "drill_ask — both kinds",
@@ -127,6 +128,10 @@ export const ITEMS = {
   C07: "Old systems unreachable (guard)",
   C08: "Context follow backlog 0",
   C09: "Delete step reversible (graveyard, never drop)",
+  C10: "Personal-key policy file freezes sign-in under 100 ms (SAFETY-NET-B)",
+  C11: "Rolling release stopped during the hour (SAFETY-NET-B)",
+  C12: "Rollback path per step, with the exact command (SAFETY-NET-B)",
+  C13: "W-rows the chain proves in one transaction: W10 outside FKs, W15 a cut press leaves all-old, W16 a birth after Step 1 refuses by name (SAFETY-NET-B)",
   // Platform
   P01: "Sign-in",
   P02: "Organization switch",
