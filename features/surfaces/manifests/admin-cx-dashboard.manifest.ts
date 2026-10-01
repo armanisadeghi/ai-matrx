@@ -24,7 +24,7 @@
  *   - Conversation detail        → `conversations/[id]/conversation-detail-content.tsx`
  *   - Requests list              → `requests/requests-content.tsx`
  *   - Request detail             → `requests/[id]/request-detail-content.tsx`
- *   - Usage & cost               → `features/cx-dashboard/components/UsageContent.tsx`
+ *   - Usage & cost               → retired: /administration/usage?def=ai_calls (the ai_calls views)
  *   - Errors                     → `errors/errors-content.tsx`
  */
 

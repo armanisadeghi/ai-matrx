@@ -743,13 +743,14 @@ async function fetchErrorsInner(filters: CxFilters): Promise<CxErrorsData> {
 // p_end): SECURITY DEFINER, EXECUTE granted ONLY to service_role. It MUST be
 // called with the admin (service-role) client — the user client is refused by
 // design — so the call is gated here by requireSuperAdmin(), the same pattern
-// as app/api/admin/users/usage/route.ts.
+// as the retired app/api/admin/users/usage/route.ts.
 
 
 /**
  * Super-admin-gated aggregate over chat.request for [start, end] (nulls =
- * all time). Shared by the usage tab (server component, direct call) and the
- * GET /api/admin/chat/cx-usage route. Throws on auth failure or query error.
+ * all time). Read by the overview KPIs; the usage tab's cuts are the built-in Saved views of `ai_calls`
+ * on the usage explorer since lane DRILL-PRESETS-RETIRE (this RPC stays their parity oracle). Throws on
+ * auth failure or query error.
  */
 export async function fetchCxUsageAnalyticsRange(
   start: string | null,
@@ -810,15 +811,4 @@ export async function fetchCxUsageAnalyticsRange(
     })),
     total_requests: num(raw.total_requests),
   };
-}
-
-export async function fetchUsageAnalytics(
-  filters: CxFilters,
-): Promise<CxFetchResult<CxUsageAnalytics>> {
-  try {
-    const { start, end } = timeframeBounds(filters);
-    return { ok: true, data: await fetchCxUsageAnalyticsRange(start, end) };
-  } catch (e) {
-    return fetchError("Usage analytics", e);
-  }
 }

@@ -311,6 +311,14 @@ Registered in `features/admin/constants/admin-categories.ts` +
 
 ## Change Log
 
+- **2026-09-30** — THE FLIP (lane DRILL-PRESETS-RETIRE). The Spend Explorer is retired onto the
+  usage explorer (`/administration/usage`): its eleven cuts and day/hour series are `ai_usage`'s
+  built-in Saved views `spend_by_*`, conversation / sign-in session / most expensive requests are
+  `ai_usage_executions`' views, and its seven "dig here" signals are the seven findings (one on
+  `ai_usage`, six on `ai_usage_executions`). This page keeps the alarm (headline), the cost sources,
+  print orders, and a window's batch savings and estimated cost (`SpendWindowPanels`), with a link
+  that opens the window in AI usage. An old drill link (`?f.<dimension>=…`) forwards to the usage
+  explorer. `public.admin_spend_breakdown` stays in the database as the parity oracle.
 - **2026-09-30 (estimated cost shown, never merged)** — New "Estimated" block
   under Saved by batching: every `runtime.global_execution` row in the window
   whose price is `meters.estimated_usd` (the mandate reference patrol's

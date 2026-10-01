@@ -2,7 +2,7 @@
  * Surface manifest — Billing Spend (`matrx-admin/billing-spend`).
  *
  * The super-admin dashboard at `/administration/billing/spend` reads the
- * platform spend overview, a URL-driven ledger explorer, and the batch-savings
+ * platform spend overview, a URL-selected window, and the batch-savings
  * summary. It is intentionally read-only: it names and explains spend, but
  * does not mutate a ledger, a knob, or a billing configuration.
  */
@@ -307,39 +307,6 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 410,
   },
   {
-    name: "explorer_filters",
-    label: "Explorer filters",
-    description:
-      "Active dimension-to-key drill-down filters from the URL. Present after the explorer initializes; an empty object means no drill-down is active.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 300,
-    group: "explorer",
-    sortOrder: 420,
-  },
-  {
-    name: "explorer_loading",
-    label: "Explorer loading",
-    description:
-      "Whether the current explorer window/filter read is loading. Present after the explorer initializes.",
-    valueType: "boolean",
-    alwaysAvailable: false,
-    typicalCharCount: 5,
-    group: "explorer",
-    sortOrder: 430,
-  },
-  {
-    name: "explorer_error",
-    label: "Explorer error",
-    description:
-      "Explorer read failure message. Present after the explorer initializes; empty string means no explorer read failed.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 180,
-    group: "explorer",
-    sortOrder: 440,
-  },
-  {
     name: "explorer_window_too_wide",
     label: "Explorer window too wide",
     description:
@@ -349,87 +316,6 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 5,
     group: "explorer",
     sortOrder: 450,
-  },
-  {
-    name: "explorer_thresholds",
-    label: "Explorer thresholds",
-    description:
-      "The five resolved configurable thresholds used to identify expensive patterns. Absent while their knobs load or when they fail.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 120,
-    group: "explorer",
-    sortOrder: 460,
-  },
-  {
-    name: "explorer_knobs_error",
-    label: "Explorer knobs error",
-    description:
-      "Failure reading the five explorer thresholds. Present after the explorer initializes; empty string means no knob read failed.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 180,
-    group: "explorer",
-    sortOrder: 470,
-  },
-  {
-    name: "spend_breakdown",
-    label: "Spend breakdown",
-    description:
-      "Complete current-window breakdown: totals, dimensions, series, signals, and top requests. Absent until the breakdown succeeds; bindable-only because it can be large.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 40000,
-    autoContext: false,
-    group: "explorer",
-    sortOrder: 480,
-  },
-  {
-    name: "explorer_totals",
-    label: "Explorer totals",
-    description:
-      "Current filtered-window execution, request, token, and cost totals. Absent until the breakdown succeeds.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 500,
-    group: "explorer",
-    sortOrder: 490,
-  },
-  {
-    name: "dimension_breakdowns",
-    label: "Dimension breakdowns",
-    description:
-      "Current-window cost cuts by organization, user, agent, model, feature, and the other explorer dimensions. Absent until the breakdown succeeds; bindable-only due to size.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 22000,
-    autoContext: false,
-    group: "explorer",
-    sortOrder: 500,
-  },
-  {
-    name: "spend_signals",
-    label: "Spend signals",
-    description:
-      "Current-window failed, context-heavy, iteration-heavy, hog, spike, burst, and unpriced-spend signals. Absent until the breakdown succeeds.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 12000,
-    autoContext: false,
-    group: "explorer",
-    sortOrder: 510,
-  },
-  {
-    name: "top_spend_requests",
-    label: "Top spend requests",
-    description:
-      "Most expensive individual requests in the current explorer window. Absent until the breakdown succeeds; bindable-only due to detail volume.",
-    valueType: "array",
-    alwaysAvailable: false,
-    typicalCharCount: 12000,
-    autoContext: false,
-    group: "explorer",
-    sortOrder: 520,
   },
 
   {
@@ -528,16 +414,16 @@ export const adminBillingSpendManifest: SurfaceManifest = {
   client: "matrx-admin",
   executionMode: "python-stream",
   description:
-    "Super-admin platform spend dashboard with measured cost totals, ledger explorer, dimensions, request signals, and batch savings.",
+    "Super-admin platform spend dashboard: the spend alarm, cost sources, print orders, and a window's batch savings and estimated cost.",
   readiness: "partial",
   readinessNote:
     "Runtime contract and DB mirror are wired; full independent S1-S18 surface certification remains.",
   label: "Billing Spend",
   urlPattern: "/administration/billing/spend",
   intro: `<surface_intro>
-This is an ADMIN surface: the super-admin Billing Spend dashboard. It shows measured platform spend from runtime.global_execution, lets the operator inspect one URL-selected time window through dimensions and costly requests, and places cost-source gaps and batch savings beside that measured ledger.
+This is an ADMIN surface: the super-admin Billing Spend dashboard. It shows measured platform spend from runtime.global_execution (the alarm: today, yesterday, 7 and 30 days, the month), the cost sources and what each measures, print orders, and for one URL-selected window the batch savings and the estimated (never invoiced) cost. Cutting spend by person, model, feature or any other dimension happens in the AI usage explorer, which this page links to for the same window.
 
-Read the dashboard status before interpreting numbers: overview_loading or an error means the relevant figures are unavailable, not zero. headline_totals describes the broad platform view; explorer_window and explorer_filters describe the narrower view currently being analyzed; spend_breakdown is the full underlying explorer result. Cost ledgers and print orders are reference context, not additions to the headline. Batch savings compares completed batch work with the same work at live catalog prices; it is a saving measure, not a second spend ledger.
+Read the dashboard status before interpreting numbers: overview_loading or an error means the relevant figures are unavailable, not zero. headline_totals describes the broad platform view; explorer_window is the window the batch savings are read for. Cost ledgers and print orders are reference context, not additions to the headline. Batch savings compares completed batch work with the same work at live catalog prices; it is a saving measure, not a second spend ledger.
 
 This surface is read-only. It has no agent role, write target, or custom action: summarize, diagnose, and explain the displayed evidence, but do not imply a ledger, knob, provider setting, or billing configuration was changed.
 </surface_intro>`,
@@ -573,17 +459,7 @@ export function createAdminBillingSpendScope(values: {
   print_order_totals?: Record<string, unknown>;
   explorer_window?: Record<string, unknown>;
   explorer_window_preset?: string;
-  explorer_filters?: Record<string, string>;
-  explorer_loading?: boolean;
-  explorer_error?: string;
   explorer_window_too_wide?: boolean;
-  explorer_thresholds?: Record<string, number>;
-  explorer_knobs_error?: string;
-  spend_breakdown?: Record<string, unknown>;
-  explorer_totals?: Record<string, unknown>;
-  dimension_breakdowns?: Record<string, unknown>;
-  spend_signals?: Record<string, unknown>;
-  top_spend_requests?: unknown[];
   batch_savings_loading?: boolean;
   batch_savings_error?: string;
   batch_savings_summary?: Record<string, unknown>;

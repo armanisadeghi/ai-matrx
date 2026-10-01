@@ -13,7 +13,6 @@
 //   spendAddressToUsage(params)    the Spend Explorer's address grammar (win / from / to / f.<dim>,
 //                                  person = `user`) in the explorer's, with what it could not carry
 //
-// The Spend page's hand-off (UsageExplorer's spendHref) is the inverse and goes at the flip.
 
 export const USAGE_PATH = "/administration/usage";
 

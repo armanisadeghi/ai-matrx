@@ -1,19 +1,15 @@
-// Users & Access › Usage & Cost — per user (requests, tokens, stored cost).
-// Thin shell; useSearchParams (?user focus) needs a Suspense boundary.
+// app/(admin)/administration/users/usage/page.tsx — RETIRED (lane DRILL-PRESETS-RETIRE, THE FLIP).
+//
+// Usage by person is the built-in Saved view "Usage by person" of AI usage (/administration/usage);
+// a person's usage (`?user=<id>`) is that view on that person (`f.person=<id>`). Every in-app link
+// already writes the new address (features/admin/usage-drill/usageLinks.ts); this keeps old
+// bookmarks working.
 
-import { Suspense } from "react";
-import { UsageTableClient } from "@/features/admin/users/components/UsageTableClient";
+import { redirect } from "next/navigation";
 
-export default function UsersUsagePage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="p-4">
-          <div className="h-96 animate-pulse rounded-md bg-muted/50" />
-        </div>
-      }
-    >
-      <UsageTableClient />
-    </Suspense>
-  );
+import { usagePersonHref, usageViewHref } from "@/features/admin/usage-drill/usageLinks";
+
+export default async function UsersUsagePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const user = (await searchParams).user;
+  redirect(typeof user === "string" && user ? usagePersonHref(user) : usageViewHref("usage_by_person"));
 }

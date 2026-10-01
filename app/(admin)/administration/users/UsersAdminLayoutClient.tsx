@@ -64,7 +64,7 @@ const NAV_ITEMS: AdminSectionTab[] = [
   },
   {
     label: "Usage & Cost",
-    href: "/administration/users/usage",
+    href: "/administration/usage",
     icon: DollarSign,
   },
   {

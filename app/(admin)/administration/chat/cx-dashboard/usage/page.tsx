@@ -1,46 +1,27 @@
-import { Suspense } from "react";
-import { fetchUsageAnalytics } from "@/features/cx-dashboard/service";
-import { filtersFromSearchParams } from "@/features/cx-dashboard/utils/filters";
-import { UsageContent } from "@/features/cx-dashboard/components/UsageContent";
-import { CxErrorPanel } from "@/features/cx-dashboard/components/CxErrorPanel";
-import { CxUsageSkeleton } from "@/features/cx-dashboard/components/CxTabSkeletons";
-import { AiCallsExplorer } from "@/features/admin/usage-drill/UsageGrainExplorers";
+// app/(admin)/administration/chat/cx-dashboard/usage/page.tsx — RETIRED (lane DRILL-PRESETS-RETIRE,
+// THE FLIP).
+//
+// The CX usage tab's cuts are the built-in Saved views of AI model calls (`ai_calls`), on the usage
+// explorer (`/administration/usage?def=ai_calls`); `chat.cx_usage_analytics` stays their parity
+// oracle. The tab's window and person carry over: timeframe day / week / month / quarter → 24h / 7d /
+// 30d / 90d (all → all time), a custom start/end → that range, user_id → the person.
 
-type Props = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
+import { redirect } from "next/navigation";
 
-// The page itself is sync — the await lives in the Suspense-wrapped child (plus
-// loading.tsx for the route transition), so tab clicks paint instantly.
-export default function UsagePage({ searchParams }: Props) {
-  return (
-    <Suspense fallback={<CxUsageSkeleton />}>
-      <UsageData searchParams={searchParams} />
-    </Suspense>
-  );
-}
+import { usageDefinitionHref } from "@/features/admin/usage-drill/usageLinks";
 
-async function UsageData({ searchParams }: Props) {
-  const params = await searchParams;
-  const urlParams = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (typeof value === "string") urlParams.set(key, value);
-  }
-  const filters = filtersFromSearchParams(urlParams);
-  const result = await fetchUsageAnalytics(filters);
+const TIMEFRAME: Record<string, string> = { day: "24h", week: "7d", month: "30d", quarter: "90d" };
 
-  if (!result.ok) {
-    return <CxErrorPanel what="usage analytics" message={result.error} />;
-  }
-
-  // THE NEW SCREEN BESIDE THE OLD (lane DRILL-PRESETS-RETIRE, COPY mode): the model calls explorer
-  // (`ai_calls`, whose built-in views are this tab's cuts). The old content goes at the flip.
-  return (
-    <>
-      <UsageContent analytics={result.data} />
-      <section className="flex h-[85dvh] min-h-0 flex-col border-t border-border" data-cx-usage-calls-explorer>
-        <AiCallsExplorer />
-      </section>
-    </>
-  );
+export default async function CxUsagePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const p = await searchParams;
+  const one = (k: string) => (typeof p[k] === "string" ? (p[k] as string) : null);
+  const params = new URLSearchParams();
+  const start = one("start_date");
+  const end = one("end_date");
+  const timeframe = one("timeframe") ?? "month";
+  if (timeframe === "custom" && start && end) params.set("w", `${start}..${end}`);
+  else if (TIMEFRAME[timeframe]) params.set("w", TIMEFRAME[timeframe]!);
+  const person = one("user_id");
+  if (person) params.set("f.person", person);
+  redirect(usageDefinitionHref("ai_calls", { view: "cx_by_model", params }));
 }

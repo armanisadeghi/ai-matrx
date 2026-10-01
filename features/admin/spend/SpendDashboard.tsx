@@ -8,13 +8,14 @@
 //
 // The page in reading order:
 //   1. the headline (today / yesterday / 7d / 30d / month) — the alarm;
-//   2. the EXPLORER (SpendExplorer): any window, every dimension, the 80/20
-//      view, the "dig here" signals, drill-down by click;
+//   2. what a window keeps here (SpendWindowPanels): batch savings and estimated cost, and the link
+//      that opens the window in the usage explorer — every cut, the 80/20 line, the "dig here"
+//      findings and the costliest requests live there since lane DRILL-PRESETS-RETIRE;
 //   3. the honesty tail: every cost ledger and its role, the sources that
 //      measure nothing, and print orders (revenue, not spend).
 //
-// THE HONESTY RULE that shapes the whole page: the headline and every number
-// in the explorer are `runtime.global_execution` and NOTHING else. Other
+// THE HONESTY RULE that shapes the whole page: the headline is `runtime.global_execution` and
+// NOTHING else. Other
 // ledgers are shown beside it, each labelled with the role it plays (primary /
 // overlap / additive / gap / unmeasured), and a "not measured" cell is never
 // drawn as $0.00.
@@ -31,7 +32,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { readOf } from "@/components/read-state/ReadGate";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
-import { SpendExplorer } from "./SpendExplorer";
+import { SpendWindowPanels } from "./SpendWindowPanels";
 import { SpendHeadline } from "./SpendHeadline";
 import { buildBillingSpendDashboardScope } from "./spend-surface-scope";
 import { knobNumber } from "@/lib/knobs/featureKnobs";
@@ -378,7 +379,7 @@ export function SpendDashboard() {
         />
       ) : null}
 
-      <SpendExplorer refreshKey={reloadTick} />
+      <SpendWindowPanels refreshKey={reloadTick} />
 
       {data ? (
         <>

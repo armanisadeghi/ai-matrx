@@ -13,12 +13,15 @@
 // The UI gate is a courtesy; the database gate is the authorization.
 
 import { ShieldAlert } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { SpendDashboard } from "@/features/admin/spend/SpendDashboard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { spendAddressAsks, spendAddressNeedsZone, spendAddressToUsage } from "@/features/admin/usage-drill/usageLinks";
+import { SpendLocalRedirect } from "@/features/admin/spend/SpendLocalRedirect";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +31,18 @@ export const metadata = {
     "What the platform spent today, yesterday, this week and this month across every organization — with the cost sources that record nothing named out loud.",
 };
 
-export default async function PlatformSpendPage() {
+export default async function PlatformSpendPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  // THE SPEND EXPLORER'S DRILL LINKS (`f.<dimension>=…`) open the usage explorer on the same cut and
+  // window (lane DRILL-PRESETS-RETIRE, THE FLIP); the page's own window (`win`, `from`, `to`) stays.
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(await searchParams)) if (typeof v === "string") params.set(k, v);
+  // A conversation or a sign-in session opens the per-execution grain; a day or an hour is the VIEWER's
+  // local calendar, which only the browser knows, so that link is mapped there (lane DRILL-FLIP-FIXES R4).
+  if (spendAddressAsks(params)) {
+    if (spendAddressNeedsZone(params)) return <SpendLocalRedirect query={params.toString()} />;
+    redirect(spendAddressToUsage(params).href);
+  }
+
   const supabase = await createClient();
   const { user, authUnavailable } = await getServerAuth();
 

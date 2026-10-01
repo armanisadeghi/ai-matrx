@@ -8,23 +8,14 @@ import { createAdminBillingSpendScope } from "@/features/surfaces/manifests/admi
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { BatchSavingsSummary } from "@/features/batch-savings/types";
 
-import type { SpendExplorerKnobsState } from "./useSpendExplorerKnobs";
 import type { SpendPopoverKnobsState } from "./useSpendPopoverKnobs";
-import type { SpendBreakdown, SpendFilters, SpendOverview } from "./types";
+import type { SpendOverview } from "./types";
 import type { ExplorerUrlState, SpendWindow } from "./windows";
 
 type FixedMonthly = number | null | "missing";
 
 function record(value: object): Record<string, unknown> {
   return value as Record<string, unknown>;
-}
-
-function activeFilters(filters: SpendFilters): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(filters).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string",
-    ),
-  );
 }
 
 export function buildBillingSpendDashboardScope({
@@ -97,24 +88,17 @@ export function buildBillingSpendDashboardScope({
   });
 }
 
-export function buildBillingSpendExplorerScope({
+/** The window the page's batch savings and estimated cost are read for (lane DRILL-PRESETS-RETIRE). */
+export function buildBillingSpendWindowScope({
   urlState,
   window,
   windowLabel,
   windowTooWide,
-  knobs,
-  loading,
-  error,
-  data,
 }: {
   urlState: ExplorerUrlState;
   window: SpendWindow;
   windowLabel: string;
   windowTooWide: boolean;
-  knobs: SpendExplorerKnobsState;
-  loading: boolean;
-  error: Error | null;
-  data: SpendBreakdown | null;
 }): SurfaceScopePayload {
   return {
     explorer_window: {
@@ -126,23 +110,7 @@ export function buildBillingSpendExplorerScope({
       custom_to_day: urlState.toDay?.toISOString() ?? null,
     },
     explorer_window_preset: urlState.preset,
-    explorer_filters: activeFilters(urlState.filters),
-    explorer_loading: loading,
-    explorer_error: error?.message ?? "",
     explorer_window_too_wide: windowTooWide,
-    explorer_knobs_error: knobs.error?.message ?? "",
-    ...(knobs.thresholds
-      ? { explorer_thresholds: record(knobs.thresholds) }
-      : {}),
-    ...(data
-      ? {
-          spend_breakdown: record(data),
-          explorer_totals: record(data.totals),
-          dimension_breakdowns: record(data.dimensions),
-          spend_signals: record(data.signals),
-          top_spend_requests: data.topRequests,
-        }
-      : {}),
   } as SurfaceScopePayload;
 }
 

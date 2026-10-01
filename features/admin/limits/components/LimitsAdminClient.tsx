@@ -26,7 +26,7 @@ import { PlanAllowancesPanel } from "./PlanAllowancesPanel";
 
 const SIBLING_SURFACES = [
   { href: "/administration/knowledge/kg-cost", label: "Knowledge cost" },
-  { href: "/administration/users/usage", label: "Usage by user" },
+  { href: "/administration/usage", label: "AI usage" },
 ] as const;
 
 export function LimitsAdminClient() {

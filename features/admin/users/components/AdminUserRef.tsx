@@ -22,7 +22,7 @@
  *   accounts      ?user=   → AccountsTableClient       (searchParams.get("user"))
  *   organizations ?user=   → OrganizationsAdminClient  (searchParams.get("user"))
  *   preferences   ?user=   → PreferencesTabClient      (useSearchParams().get("user"))
- *   usage         ?user=   → UsageTableClient          (searchParams.get("user"))
+ *   usage         usagePersonHref → /administration/usage, the "Usage by person" view on this person
  *   admins        ?user=   → users/admins/page.tsx     (seeds the table search)
  *   email         ?userId= → users/email/page.tsx      (URLSearchParams .get("userId"))
  *

@@ -10,7 +10,7 @@
 //                                     page's conversation / sign-in session cuts, its most expensive
 //                                     requests and six of its seven "dig here" signals (the findings)
 //
-// The CX usage tab also mounts AiCallsExplorer beside its old content until the flip. Both are counted live (no rollup, so no Recount); ids read through the same names door as
+// Both are counted live (no rollup, so no Recount); ids read through the same names door as
 // /administration/usage, in the platform organization (the admin seat never acts as itself).
 
 import { DrillExplorer } from "@/components/official/drill-explorer/DrillExplorer";
