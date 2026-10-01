@@ -26,6 +26,7 @@ import {
   resolveContextRow,
   type ContextRowSource,
   type ResolvedContextRow,
+  humanizeContextKey,
   systemRowsToResolved,
   withheldKeys,
 } from "@ai-matrx/agents/context";
@@ -95,27 +96,10 @@ function validLimit(value: unknown): number | null {
 }
 
 /**
- * A context key in words, EXACTLY as the server names a value nobody labelled
- * (aidream `humanize_context_key`: `key.replace("_", " ").title()`), so the
- * table before a send and the receipt after it never name one value two ways
- * ("Note ID" here, "Note Id" in the receipt). Python's `str.title()`: a cased
- * character is upper-cased after an uncased one and lower-cased after a cased
- * one.
+ * A label someone wrote wins; a "label" that is the key itself is the key in
+ * words — the package's `humanizeContextKey`, the one rule the server's
+ * receipt uses too (`note_id` → "Note ID"), so one value is never named two ways.
  */
-export function humanizeContextKey(key: string): string {
-  let out = "";
-  let previousCased = false;
-  for (const ch of key.replace(/_/g, " ")) {
-    const lower = ch.toLowerCase();
-    const upper = ch.toUpperCase();
-    const cased = lower !== upper;
-    out += cased ? (previousCased ? lower : upper) : ch;
-    previousCased = cased;
-  }
-  return out;
-}
-
-/** A label someone wrote wins; a "label" that is the key itself is the key in words. */
 function rowLabel(key: string, ...written: Array<string | null | undefined>): string {
   for (const label of written) {
     const text = label?.trim();

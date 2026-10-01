@@ -11,9 +11,9 @@ import { resolveContextRow } from "@ai-matrx/agents/context";
 import type { ContextReceiptData } from "@/types/python-generated/stream-events";
 import type { RootState } from "@/lib/redux/store";
 
-const captured: Array<{ code?: string }> = [];
+const captured: Array<{ code?: string; message?: string; details?: string }> = [];
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  captureError: (input: { code?: string }) => {
+  captureError: (input: { code?: string; message?: string; details?: string }) => {
     captured.push(input);
     return "id";
   },
@@ -105,4 +105,18 @@ it("a receipt for a request with no recorded rows is UNCHECKED, never a pass", (
   expect(entry.checked).toBe(false);
   expect(entry.mismatches).toEqual([]);
   expect(captured.map((c) => c.code)).toEqual(["context_truth_unchecked"]);
+});
+
+// Break this catches: a value the server's post-render safety check stripped
+// (blocked_by "self_check") coerced to null and reported as the screen lying.
+it("a value the server's safety check removed keeps its reason and is worded as such", () => {
+  const data = receipt(12000, "inline");
+  data.rows![0] = { ...data.rows![0], delivery: "off", blocked_by: "self_check" };
+  const entry = run("r1", data);
+  const stored = (entry.receipt as ContextReceiptData).rows![0];
+  expect(stored.blocked_by).toBe("self_check");
+  expect(entry.mismatches).toEqual([expect.objectContaining({ key: "note_bundle", reason: "self_check" })]);
+  const mismatch = captured.find((c) => c.code === "context_truth_mismatch");
+  expect(mismatch?.message).toBe("Removed by the server's safety check (1)");
+  expect(mismatch?.details).toBe("note_bundle: removed by the server's safety check");
 });

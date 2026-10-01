@@ -409,16 +409,17 @@ describe("system values get the primary surface's page layer, as on the server",
   });
 });
 
-// Break this catches: the composer's table naming a value one way ("Note ID",
-// the kit's acronym-aware reader) and the server's receipt another ("Note Id",
-// aidream `humanize_context_key` = `key.replace("_", " ").title()`).
-// Expected strings are what Python's str.title() returns for each key.
+// Break this catches: the composer's table naming an unlabelled value one way
+// and the server's receipt another. Both now use the package's one rule;
+// expected strings are the shared corpus's `humanize_cases`
+// (aidream apps/shared/matrx-agents/context/rules-corpus.json).
 describe("an unlabelled key reads exactly as the server names it", () => {
   it.each([
-    ["note_id", "Note Id"],
-    ["route_brief", "Route Brief"],
-    ["url2pdf_source", "Url2Pdf Source"],
-    ["HTML_snapshot", "Html Snapshot"],
+    ["note_id", "Note ID"],
+    ["current_note_published_to_web", "Current Note Published To Web"],
+    ["source_url_pdf", "Source URL PDF"],
+    ["url2pdf_source", "Url2pdf Source"],
+    ["ai-model-settings", "AI Model Settings"],
   ])("%s → %s", (key, label) => {
     const { rows } = build(makeState({ entries: [{ key, value: "v" }] }));
     expect(rows[0]?.label).toBe(label);

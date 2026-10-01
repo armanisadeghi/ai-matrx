@@ -54,10 +54,7 @@ export function toContextReceipt(data: ContextReceiptData): ContextReceipt {
         : null,
       clamped: row.clamped ?? false,
       client_sent_excluded: row.client_sent_excluded ?? false,
-      // "self_check" (the server stripped the value after rendering) is typed
-      // by @ai-matrx/agents 0.21.20; until it is installed the row still reads
-      // delivery "off", and compareReceipt reports the difference.
-      blocked_by: row.blocked_by === "model" ? "model" : null,
+      blocked_by: row.blocked_by ?? null,
     })),
   };
 }
@@ -122,14 +119,20 @@ export function recordContextReceipt(
 
   if (mismatches.length === 0) return;
 
-  const summary = mismatches
-    .slice(0, 6)
-    .map((m) => `${m.key}.${m.field}: expected ${JSON.stringify(m.expected)}, got ${JSON.stringify(m.actual)}`)
-    .join("; ");
+  // A value the server's post-render safety check stripped is the server
+  // protecting the person's rules, not the screen lying: say so by name.
+  const describe = (m: ContextReceiptMismatch) =>
+    m.reason === "self_check"
+      ? `${m.key}: removed by the server's safety check`
+      : `${m.key}.${m.field}: expected ${JSON.stringify(m.expected)}, got ${JSON.stringify(m.actual)}`;
+  const summary = mismatches.slice(0, 6).map(describe).join("; ");
+  const allSafetyCheck = mismatches.every((m) => m.reason === "self_check");
   captureError({
     source: "context-truth",
     code: "context_truth_mismatch",
-    message: `Context sent differently than shown (${mismatches.length})`,
+    message: allSafetyCheck
+      ? `Removed by the server's safety check (${mismatches.length})`
+      : `Context sent differently than shown (${mismatches.length})`,
     details: summary,
     raw: { mismatches, surface: receipt.surface },
     conversationId,
