@@ -45,7 +45,7 @@ jest.mock("@ai-matrx/design-system", () => ({
   BottomSheet: () => null,
 }));
 
-jest.mock("../RunToolPicker", () => ({ RunToolPicker: () => null }));
+jest.mock("../composer/ComposerConnectorsPanel", () => ({ ComposerConnectorsPanel: () => null }));
 
 jest.mock(
   "@/features/agents/redux/agent-definition/selectors",

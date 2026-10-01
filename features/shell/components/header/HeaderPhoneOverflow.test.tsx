@@ -1,18 +1,19 @@
 /**
  * THE PHONE HEADER KEEPS THE TITLE — the right set folds into ONE control.
  *
- * Page-pass shared defects (2026-09-27): at 375px Search, Agents, Canvas and
- * Inbox (44px each) plus the route's actions left the page title "C.",
- * "Fla…", "O…". Below 768px the four fold into `HeaderPhoneOverflow`, a bottom
- * sheet that holds the same four with the same states and the same gates.
+ * Page-pass shared defects (2026-09-27): at 375px the header controls (44px
+ * each) plus the route's actions left the page title "C.", "Fla…", "O…".
+ * Below 768px the set folds into `HeaderPhoneOverflow`, a bottom sheet that
+ * holds the same controls with the same states and the same gates.
  *
  * WHAT THIS PINS:
- *   1. Header.tsx puts the four inside `.shell-header-secondary` and mounts the
- *      overflow beside them; shell.css hides the one and shows the other below
- *      768px (and not above), the width `useIsMobile` calls a phone.
- *   2. The sheet holds all four; an empty canvas is a DISABLED row that says
- *      why; a guest reaching for Agents or Inbox gets the auth gate, never a
- *      dead row; a signed-in Inbox press opens the inbox in the sheet.
+ *   1. HeaderControlSet puts Search, Intelligence, Canvas, Messages and
+ *      Notifications inside `.shell-header-secondary` and mounts the overflow
+ *      beside them; shell.css hides the one and shows the other below 768px.
+ *   2. The sheet holds all five; an empty canvas is an ENABLED row (it opens
+ *      the canvas home — owner, 2026-09-30: "always available and
+ *      clickable"); a guest reaching for Intelligence, Messages or
+ *      Notifications gets the auth gate, never a dead row.
  *
  * PROVEN FAILING BEFORE PASSING: against the pre-fix header, case 1 is RED
  * (no `.shell-header-secondary`, no overflow, no media rule).
@@ -45,7 +46,6 @@ jest.mock("@/features/surfaces/components/chrome/SurfaceAgentsHeaderButton", () 
   SurfaceAgentsPanelImpl: () => <div data-testid="agents-panel">agents</div>,
 }));
 jest.mock("@/features/canvas/core/CanvasHeaderToggle", () => ({
-  CANVAS_EMPTY_TOOLTIP: "Canvas is empty — open a document and it appears here",
   useCanvasHeaderToggle: () => ({ ...canvasState, reopen, putAway }),
 }));
 jest.mock("@/features/notifications/components/InboxHeaderButton", () => ({
@@ -56,6 +56,12 @@ jest.mock("@/features/notifications/components/InboxPanel", () => ({
 }));
 jest.mock("@/features/notifications/useInbox", () => ({
   useInboxCounts: () => ({ total: 3, partial: false }),
+}));
+const toggleMessages = jest.fn();
+jest.mock("@/features/messaging/components/shell/MessagesHeaderButton", () => ({
+  MESSAGES_AUTH_GATE: { featureName: "Messages", featureDescription: "x" },
+  useToggleMessages: () => toggleMessages,
+  useUnreadConversationCount: () => 2,
 }));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { TooltipProvider } = require("@/components/ui/tooltip") as typeof import("@/components/ui/tooltip");
@@ -86,7 +92,7 @@ function click(el: Element | null | undefined) {
 }
 
 function openSheet() {
-  click(host.querySelector('button[aria-label^="Search, agents"]'));
+  click(host.querySelector('button[aria-label^="Search, intelligence"]'));
 }
 
 function row(label: string): HTMLButtonElement | undefined {
@@ -103,11 +109,17 @@ afterEach(() => {
 });
 
 describe("the header right set on a phone — source", () => {
-  it("wraps the four in .shell-header-secondary and mounts the overflow beside them", () => {
-    const header = read("features/shell/components/header/Header.tsx");
+  it("wraps the five in .shell-header-secondary and mounts the overflow beside them", () => {
+    const header = read("features/shell/components/header/HeaderControlSet.tsx");
     const secondary = header.indexOf('className="shell-header-secondary"');
     expect(secondary).toBeGreaterThan(-1);
-    for (const control of ["<CommandBarHeaderButton", "<SurfaceAgentsHeaderButton", "<CanvasShellHeaderToggle", "<InboxHeaderButton"]) {
+    for (const control of [
+      "<CommandBarHeaderButton",
+      "<SurfaceAgentsHeaderButton",
+      "<CanvasShellHeaderToggle",
+      "<MessagesHeaderButton",
+      "<InboxHeaderButton",
+    ]) {
       expect(header.indexOf(control)).toBeGreaterThan(secondary);
     }
     expect(header.indexOf("<HeaderPhoneOverflow")).toBeGreaterThan(header.indexOf("<InboxHeaderButton"));
@@ -123,15 +135,24 @@ describe("the header right set on a phone — source", () => {
 });
 
 describe("HeaderPhoneOverflow — the same four, the same states", () => {
-  it("holds Search, Agents, Canvas and Inbox; an empty canvas is disabled and says why", () => {
+  it("holds all five; an empty canvas is a live row that opens the canvas home", () => {
     mount(true);
     openSheet();
     expect(row("Search")).toBeDefined();
-    expect(row("Agents for this page")).toBeDefined();
-    expect(row("Inbox")).toBeDefined();
+    expect(row("Intelligence")).toBeDefined();
+    expect(row("Messages")?.textContent).toContain("2");
+    expect(row("Notifications")).toBeDefined();
     const canvas = row("Canvas");
-    expect(canvas?.disabled).toBe(true);
-    expect(canvas?.textContent).toContain("Canvas is empty");
+    expect(canvas?.disabled).toBe(false);
+    click(canvas);
+    expect(reopen).toHaveBeenCalled();
+  });
+
+  it("Messages toggles the docked messages sheet", () => {
+    mount(true);
+    openSheet();
+    click(row("Messages"));
+    expect(toggleMessages).toHaveBeenCalled();
   });
 
   it("leaves the canvas row out where the route has no canvas", () => {
@@ -156,34 +177,38 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
     expect(openBar).toHaveBeenCalled();
   });
 
-  it("signed in, Inbox opens the inbox in the sheet and the count rides the button", () => {
+  it("signed in, Notifications opens in the sheet and the count rides the button", () => {
     mount(true);
     // The number rides the button's name; the visible mark is a dot in the
     // corner, never a "99+" pill over the ⋮ (page-pass, 2026-09-27).
-    const trigger = host.querySelector('button[aria-label^="Search, agents"]');
-    expect(trigger?.getAttribute("aria-label")).toContain("3 new in the inbox");
+    // 3 notifications + 2 unread conversations.
+    const trigger = host.querySelector('button[aria-label^="Search, intelligence"]');
+    expect(trigger?.getAttribute("aria-label")).toContain("5 new");
     const dot = host.querySelector("[data-header-overflow-unread]");
     expect(dot?.className).toContain("h-2 w-2");
     expect(dot?.textContent).toBe("");
     openSheet();
-    click(row("Inbox"));
+    click(row("Notifications"));
     expect(document.querySelector('[data-testid="inbox-panel"]')).not.toBeNull();
   });
 
-  it("signed in, Agents opens the page's agents in the sheet", () => {
+  it("signed in, Intelligence opens the page's agents in the sheet", () => {
     mount(true);
     openSheet();
-    click(row("Agents for this page"));
+    click(row("Intelligence"));
     expect(document.querySelector('[data-testid="agents-panel"]')).not.toBeNull();
   });
 
-  it("a guest reaching for Agents or Inbox gets the auth gate, never a dead row", () => {
+  it("a guest reaching for Intelligence, Messages or Notifications gets the auth gate, never a dead row", () => {
     mount(false);
     openSheet();
-    click(row("Agents for this page"));
+    click(row("Intelligence"));
     expect(openAuthGate).toHaveBeenCalledWith(expect.objectContaining({ featureName: "Agents" }));
     openSheet();
-    click(row("Inbox"));
+    click(row("Messages"));
+    expect(openAuthGate).toHaveBeenCalledWith(expect.objectContaining({ featureName: "Messages" }));
+    openSheet();
+    click(row("Notifications"));
     expect(openAuthGate).toHaveBeenCalledWith(expect.objectContaining({ featureName: "Inbox" }));
   });
 });

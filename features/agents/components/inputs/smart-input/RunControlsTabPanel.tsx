@@ -18,6 +18,7 @@ import { type ComponentType, type ReactNode } from "react";
 import {
   Paperclip,
   Wrench,
+  Plug,
   Lightbulb,
   Box,
   AppWindow,
@@ -38,6 +39,7 @@ import { CHAT_CONTEXT_MENU_PROPS } from "@/features/agents/components/chat/agent
 import { buildRunControlsApplicationScope } from "@/features/agents/components/chat/agent-context/buildChatRunConfiguration";
 
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
+import { ComposerConnectorsPanel } from "./composer/ComposerConnectorsPanel";
 import { RunToolPicker } from "./RunToolPicker";
 import { RunSkillPicker } from "./RunSkillPicker";
 import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
@@ -78,6 +80,7 @@ export type RunControlsTab =
   | "context"
   | "document"
   | "model"
+  | "connections"
   | "tools"
   | "skills"
   | "sandbox"
@@ -123,6 +126,7 @@ const CREATOR_TAB: RunControlsTabDef = {
 };
 const BASE_TABS: RunControlsTabDef[] = [
   { id: "tools", label: "Tools", icon: Wrench },
+  { id: "connections", label: "Connections", icon: Plug },
   { id: "skills", label: "Skills", icon: Lightbulb },
   { id: "sandbox", label: "Sandbox", icon: Box },
   { id: "memory", label: "Memory", icon: Brain },
@@ -379,6 +383,11 @@ export function RunControlsTabPanel({
             <RunInputCapabilities conversationId={conversationId} />
           </div>,
         )}
+      {activeTab === "connections" && (
+        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+          <ComposerConnectorsPanel conversationId={conversationId} onNavigate={onClose} />
+        </div>
+      )}
       {activeTab === "tools" &&
         menuWrap(
           <div className="h-full overflow-hidden">

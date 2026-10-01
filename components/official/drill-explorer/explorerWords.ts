@@ -7,6 +7,8 @@
 // no name was found for as a short id (never a whole UUID leading a row), a finding's true group count
 // when the door capped the list (F5).
 
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+
 /**
  * The noun one row of a definition is, from its grain sentence ("one row per execution of the AI usage
  * ledger (…)" → "execution"; "one row per ingest run (…)" → "ingest run"; "one row per hour for each
@@ -49,11 +51,9 @@ export function clockWords(iso: string, timeZone?: string | undefined): string {
   return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", ...(timeZone ? { timeZone } : {}) });
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /** An id nothing names reads as its first eight characters (the whole id in the cell's tooltip). */
 export function shortId(value: string): string | null {
-  return UUID.test(value) ? value.slice(0, 8) : null;
+  return isUuidShape(value) ? value.slice(0, 8) : null;
 }
 
 /**

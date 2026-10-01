@@ -15,6 +15,7 @@ import {
   StickyNote,
   Table2,
   Wrench,
+  Plug,
 } from "lucide-react";
 import { Google, Youtube } from "@/components/icons/brand-icons";
 
@@ -34,6 +35,7 @@ export type ResourcePickerViewId =
   | "audio"
   | "google"
   | "context_values"
+  | "connections"
   | "tools"
   | "skills"
   | null;
@@ -121,6 +123,14 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         label: "Tools",
         icon: Wrench,
         iconClassName: "text-amber-600 dark:text-amber-400",
+        requiresCapability: null,
+        requiresConversation: true,
+      },
+      {
+        id: "connections",
+        label: "Connections",
+        icon: Plug,
+        iconClassName: "text-primary",
         requiresCapability: null,
         requiresConversation: true,
       },

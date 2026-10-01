@@ -11,7 +11,7 @@
  * every menu open, so those rows carry no count.
  *
  * The numbers mirror exactly what ships with the request:
- *   Tools    — the agent's configured tools (built-in + custom + MCP) plus the
+ *   Tools    — the agent's configured tools (built-in + custom) plus the
  *              per-conversation `addedTools` folded in by `buildToolInjection`.
  *   Skills   — the agent's visible tiers (included + listed; forbidden is NOT
  *              active) plus `addedSkills`, deduped, matching
@@ -28,7 +28,6 @@ import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-sys
 import {
   selectAgentTools,
   selectAgentCustomTools,
-  selectAgentMcpServers,
   selectAgentSkillConfig,
   selectAgentReadyForCustomExecution,
 } from "@/features/agents/redux/agent-definition/selectors";
@@ -57,9 +56,6 @@ export function useRunControlCounts(
   );
   const agentCustomTools = useAppSelector((s) =>
     agentId ? selectAgentCustomTools(s, agentId) : undefined,
-  );
-  const agentMcpServers = useAppSelector((s) =>
-    agentId ? selectAgentMcpServers(s, agentId) : undefined,
   );
   const agentSkillConfig = useAppSelector((s) =>
     agentId ? selectAgentSkillConfig(s, agentId) : undefined,
@@ -91,9 +87,8 @@ export function useRunControlCounts(
   if (!agentId || agentReady) {
     const builtIn = Array.isArray(agentToolIds) ? agentToolIds : [];
     const custom = Array.isArray(agentCustomTools) ? agentCustomTools : [];
-    const mcp = Array.isArray(agentMcpServers) ? agentMcpServers : [];
     counts.tools =
-      builtIn.length + custom.length + mcp.length + addedTools.length;
+      new Set([...builtIn, ...addedTools]).size + custom.length;
 
     const config = agentSkillConfig;
     const activeSkills = new Set<string>(addedSkills);

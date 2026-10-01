@@ -132,7 +132,7 @@ describe("AgentTextarea auto-resize", () => {
     // Before 2026-09-14 the only door was: + → Tools → scroll. Two clicks and
     // a three-row scroll box is not "visible at a glance" (Claude.ai /
     // ChatGPT connectors, Cursor's MCP indicator).
-    expect(connectionsStripSource).toContain('initialTab: "tools"');
+    expect(connectionsStripSource).toContain('initialTab: "connections"');
     expect(connectionsStripSource).toContain("selectChatConnections");
     // A chip never claims more than the run allows.
     expect(connectionsStripSource).toContain("mcpChipPresentation");

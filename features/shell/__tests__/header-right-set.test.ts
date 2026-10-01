@@ -1,27 +1,31 @@
 /**
- * THE HEADER RIGHT SET — the same three controls, always mounted, never hidden.
+ * THE HEADER CONTROL SET — the same five controls, always mounted, never hidden.
  *
- * THE RULING this pins (owner, 2026-09-19):
- *   *"we need to create a consistent set of things for that top-right section
- *   so that desktop has a consistent feel and so does mobile. One critical part
- *   of consistency is never hiding things and only disabling when inactive."*
+ * THE RULINGS this pins:
+ *   owner, 2026-09-19: *"a consistent set of things for that top-right
+ *   section … never hiding things and only disabling when inactive."*
+ *   owner, 2026-09-30, right to left: Notifications (without DMs), Messages
+ *   (their own count), Canvas (always clickable), the Intelligence dropdown,
+ *   Search — tap targets rendered touching, no padding or space between them;
+ *   nothing else built into the header.
  *
  * Source-text half of the law (the rendered halves are
- * `features/canvas/__tests__/canvas-header-slot-reserved.test.tsx` and the
+ * `features/canvas/__tests__/canvas-header-slot-reserved.test.tsx`,
+ * `features/shell/components/header/HeaderPhoneOverflow.test.tsx` and the
  * Playwright gate `features/shell/layout-gate/canvas-one-presentation.spec.ts`):
  *
- *   1. `Header.tsx` mounts exactly Search → Agents → Canvas → Inbox, in that
- *      order, each unconditionally (no `isAuthenticated &&` in front of them).
- *   2. The avatar is not in the header: no `UserMenuTrigger`, no
- *      `.shell-user-menu-wrapper`; it lives in `ShellUserBlock`, which both
- *      shells (`AppShell`, the dev layout) mount.
- *   3. A guest gets the same buttons — Agents and Inbox each carry an auth-gate
- *      branch rather than a hidden one.
- *   4. The canvas control is disabled when empty, never an inert spacer.
+ *   1. `HeaderControlSet.tsx` mounts Search → Intelligence → Canvas →
+ *      Messages → Notifications, each unconditionally, in a wrapper with no
+ *      gap / padding / margin utility; the shell `Header` and the canvas
+ *      workspace header both mount THAT set (one copy).
+ *   2. Nothing else is built into the header: no avatar, no organization
+ *      control (it lives in the sidebar's account rail).
+ *   3. A guest gets the same buttons — Intelligence, Messages and
+ *      Notifications each carry an auth-gate branch rather than a hidden one.
  *
- * PROVEN FAILING BEFORE PASSING: wrap `<SurfaceAgentsHeaderButton …/>` in
- * `{isAuthenticated && …}` again → case 1 goes RED; put `UserMenuTrigger` back
- * in `Header.tsx` → case 2 goes RED; delete `GuestInboxButton` → case 3 RED.
+ * PROVEN FAILING BEFORE PASSING: wrap `<MessagesHeaderButton …/>` in
+ * `{isAuthenticated && …}` → case 1 RED; put `HeaderChooseOrgButton` back in
+ * `Header.tsx` → case 2 RED; add `gap-1` to the set's wrapper → case 1 RED.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -32,29 +36,48 @@ const read = (file: string) => readFileSync(path.join(REPO, file), "utf8");
 
 describe("the header right set", () => {
   const header = read("features/shell/components/header/Header.tsx");
+  const set = read("features/shell/components/header/HeaderControlSet.tsx");
 
-  it("mounts Search, Agents, Canvas and Inbox in that order, unconditionally", () => {
-    const search = header.indexOf("<CommandBarHeaderButton");
-    const agents = header.indexOf("<SurfaceAgentsHeaderButton");
-    expect(search).toBeGreaterThan(-1);
-    expect(agents).toBeGreaterThan(search);
-    const canvas = header.indexOf("<CanvasShellHeaderToggle");
-    const inbox = header.indexOf("<InboxHeaderButton");
-    expect(agents).toBeGreaterThan(-1);
-    expect(canvas).toBeGreaterThan(agents);
-    expect(inbox).toBeGreaterThan(canvas);
-    for (const control of [
+  it("mounts Search, Intelligence, Canvas, Messages and Notifications in that order, unconditionally", () => {
+    const order = [
       "<CommandBarHeaderButton",
       "<SurfaceAgentsHeaderButton",
       "<CanvasShellHeaderToggle",
+      "<MessagesHeaderButton",
       "<InboxHeaderButton",
-    ]) {
-      const line = header
-        .split("\n")
-        .find((candidate) => candidate.includes(control));
+    ];
+    let last = -1;
+    for (const control of order) {
+      const at = set.indexOf(control);
+      expect(at).toBeGreaterThan(last);
+      last = at;
+      const line = set.split("\n").find((candidate) => candidate.includes(control));
       expect(line).toBeDefined();
       expect(line).not.toMatch(/&&\s*</);
     }
+  });
+
+  it("renders the set touching — no gap, padding or margin on its wrapper", () => {
+    const wrapper = set.split("\n").find((line) => line.includes('className="shell-header-secondary"'));
+    expect(wrapper).toBeDefined();
+    expect(wrapper).not.toMatch(/\b(gap|space-x|p[xlr]?|m[xlr]?)-\d/);
+  });
+
+  it("is ONE set: the shell header and the canvas workspace header both mount it", () => {
+    expect(header).toContain("<HeaderControlSet isAuthenticated={isAuthenticated} />");
+    const workspace = read("features/canvas/workspace/ChatCanvasWorkspace.tsx");
+    expect(workspace).toContain("<HeaderControlSet");
+    for (const text of [header, workspace]) {
+      expect(text).not.toContain("<InboxHeaderButton");
+      expect(text).not.toContain("<SurfaceAgentsHeaderButton");
+    }
+  });
+
+  it("builds nothing else into the header — the organization lives in the account rail", () => {
+    expect(header).not.toContain("HeaderChooseOrgButton");
+    expect(header).not.toContain("shell-header-org-slot");
+    expect(read("styles/shell.css")).not.toContain(".shell-header-org-slot");
+    expect(read("features/shell/components/user-block/ShellUserBlock.tsx")).toContain("<ShellOrgSwitcher />");
   });
 
   it("holds no avatar — the profile menu lives bottom-left", () => {
@@ -78,7 +101,10 @@ describe("the header right set", () => {
     const inbox = read(
       "features/notifications/components/InboxHeaderButton.tsx",
     );
-    for (const text of [agents, inbox]) {
+    const messages = read(
+      "features/messaging/components/shell/MessagesHeaderButton.tsx",
+    );
+    for (const text of [agents, inbox, messages]) {
       expect(text).toContain("useOpenAuthGateDialog");
       expect(text).toMatch(/isAuthenticated \? <\w+ \/> : <Guest\w+ \/>/);
     }

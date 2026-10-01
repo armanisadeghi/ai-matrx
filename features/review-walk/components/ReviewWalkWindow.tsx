@@ -39,6 +39,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
+import { walkTitle } from "../walkTitle";
 import { descend, describeWalkError, findingFromWalk } from "../api";
 import {
   loadConversationTurns,
@@ -78,6 +79,7 @@ export interface ReviewWalkWindowProps {
    * used for the receipt's door to `/agents/{id}/hindsight`. */
   agentId?: string | null;
   agentName?: string | null;
+  roleLabel?: string | null;
 }
 
 const UNIT_LABELS: Record<string, string> = {
@@ -113,6 +115,7 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
     unitId,
     agentId = null,
     agentName = null,
+    roleLabel = null,
   } = props;
 
   const [layers, setLayers] = useState<WalkLayer[]>([]);
@@ -409,11 +412,7 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
   return (
     <WindowPanel
       id={instanceId}
-      title={
-        unitKind === "assistant_message"
-          ? "Diagnose"
-          : `Diagnose — ${UNIT_LABELS[unitKind] ?? unitKind}`
-      }
+      title={walkTitle({ unitKind, agentName, roleLabel })}
       initialRect={rect}
       onClose={onClose}
       overlayId="reviewWalkWindow"
@@ -424,6 +423,7 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
         unitId,
         agentId,
         agentName,
+        roleLabel,
         stackIndex,
       })}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"

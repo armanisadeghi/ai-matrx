@@ -145,9 +145,8 @@ describe("the canvas has exactly one presentation", () => {
     // an item did, so the first canvas item both created the box and pulled
     // every button to its left 44px sideways, and folding never gave it back.
     // Measured live on production 2026-09-18 (review row 34bfd1e8): Records
-    // 1043.39 → 999.39. Since 2026-09-19 the slot ALWAYS holds the control —
-    // disabled with a reason when the canvas is empty (owner: "never hiding
-    // things and only disabling when inactive"), never an inert spacer.
+    // 1043.39 → 999.39. Since 2026-09-19 the slot ALWAYS holds the control,
+    // never an inert spacer; since 2026-09-30 an empty canvas opens its home.
     const toggle = read("features/canvas/core/CanvasHeaderToggle.tsx");
     expect(toggle).toContain('data-canvas-header-slot="control"');
     expect(toggle).not.toContain('data-canvas-header-slot="reserved"');
@@ -163,8 +162,10 @@ describe("the canvas has exactly one presentation", () => {
     expect(toggle).toContain(
       'width: "var(--matrx-tap-target-size, 2.75rem)"',
     );
-    // The empty state is a disabled control that says why.
-    expect(toggle).toContain('disabled={state === "empty"}');
+    // The empty state is a LIVE control: it opens the canvas home (owner,
+    // 2026-09-30: "permanently there, always available and clickable").
+    expect(toggle).not.toContain("disabled={");
+    expect(toggle).toContain("openCanvasHome()");
     expect(toggle).toContain("CANVAS_EMPTY_TOOLTIP");
     // The behavioural half of this law (rendered DOM, not source text):
     expect(

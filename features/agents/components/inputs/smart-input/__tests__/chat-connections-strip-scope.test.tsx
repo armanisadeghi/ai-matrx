@@ -49,7 +49,7 @@ jest.mock("@ai-matrx/design-system", () => ({
   BottomSheet: () => null,
 }));
 
-jest.mock("../RunToolPicker", () => ({ RunToolPicker: () => null }));
+jest.mock("../composer/ComposerConnectorsPanel", () => ({ ComposerConnectorsPanel: () => null }));
 
 // The account-wide source, made unmistakable. If the rail ever reaches for it
 // again — by this name or any other — the assertions below fail.

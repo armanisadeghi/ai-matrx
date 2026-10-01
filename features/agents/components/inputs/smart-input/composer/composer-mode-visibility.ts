@@ -87,6 +87,7 @@ const ALL_SHEET_TABS = new Set<RunControlsTab>([
   "document",
   "model",
   "tools",
+  "connections",
   "skills",
   "sandbox",
   "memory",

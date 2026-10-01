@@ -6,12 +6,12 @@
  * 2026-09-18, review row 34bfd1e8-1cc2-441b-a8a9-42d78c1b6111):
  *   *"…causes a shift in the top header buttons…"*
  *
- * and the ruling that shaped the control's states (owner, 2026-09-19, the
- * header right set): *"never hiding things and only disabling when inactive"*.
+ * and the ruling that shaped the control's states (owner, 2026-09-30): the
+ * Canvas control is *"permanently there, always available and clickable"*.
  *
  * THE LAW: when the canvas is AVAILABLE on a route, the slot exists, is the
  * same width in every state, and holds ONE button. With nothing in the canvas
- * the button is `disabled` and its tooltip says why; with items and the
+ * the button opens the canvas HOME (saved items, the Board); with items and the
  * canvas folded away it opens; with the canvas open it is pressed and puts the
  * canvas away. Never an unmounted slot, never an inert spacer pretending to
  * be nothing.
@@ -19,9 +19,9 @@
  * PROVEN FAILING BEFORE PASSING — re-run these mutations to re-prove:
  *   a. `if (!isAvailable || itemCount === 0) return null;` → "reserves the
  *      slot before any canvas item exists" and "same width" go RED.
- *   b. render an aria-hidden spacer for the empty state → "the empty state is
- *      a disabled control that says why" goes RED.
- *   c. drop `disabled` from the empty state → the same case goes RED.
+ *   b. render an aria-hidden spacer for the empty state → "the empty state
+ *      opens the canvas home" goes RED.
+ *   c. put `disabled` back on the empty state → the same case goes RED.
  *
  * Widths are asserted as the CSS the element carries, not as laid-out pixels —
  * jsdom computes no layout. The laid-out proof is the Playwright gate
@@ -148,7 +148,7 @@ describe("canvas shell header slot", () => {
     expect(declaredWidth(slot)).toBe("var(--matrx-tap-target-size, 2.75rem)");
   });
 
-  it("the empty state is a disabled control that says why", () => {
+  it("the empty state opens the canvas home, and the same button closes it", () => {
     act(() => {
       h.store.dispatch(setCanvasAvailable(true));
     });
@@ -157,9 +157,33 @@ describe("canvas shell header slot", () => {
     expect(slot.getAttribute("aria-hidden")).toBeNull();
     const button = slot.querySelector("button");
     expect(button).not.toBeNull();
-    expect(button!.disabled).toBe(true);
-    expect(button!.getAttribute("aria-label")).toBe("Canvas (empty)");
-    expect(CANVAS_EMPTY_TOOLTIP).toMatch(/empty/);
+    expect(button!.disabled).toBe(false);
+    expect(button!.getAttribute("aria-label")).toBe("Open canvas");
+    expect(CANVAS_EMPTY_TOOLTIP).toMatch(/Board/);
+
+    act(() => {
+      button!.click();
+    });
+    expect(h.store.getState().canvas.homeOpen).toBe(true);
+    expect(h.slot()!.querySelector("button")!.getAttribute("aria-label")).toBe("Close canvas");
+
+    act(() => {
+      h.slot()!.querySelector("button")!.click();
+    });
+    expect(h.store.getState().canvas.homeOpen).toBe(false);
+  });
+
+  it("opening an item closes the canvas home", () => {
+    act(() => {
+      h.store.dispatch(setCanvasAvailable(true));
+      h.slot()!.querySelector("button")!.click();
+    });
+    expect(h.store.getState().canvas.homeOpen).toBe(true);
+    act(() => {
+      h.store.dispatch(openCanvas(CONTENT));
+    });
+    expect(h.store.getState().canvas.homeOpen).toBe(false);
+    expect(h.store.getState().canvas.isOpen).toBe(true);
   });
 
   it("opens the canvas once an item exists and the canvas is folded away", () => {

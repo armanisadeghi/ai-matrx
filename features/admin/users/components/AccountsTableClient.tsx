@@ -26,6 +26,9 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import { formatCount } from "@ai-matrx/kit/format";
+import { Cost } from "@/components/cost/Cost";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -96,11 +99,6 @@ function fmtDate(iso: string | null): string {
   });
 }
 
-function fmtCost(usd: number): string {
-  if (usd <= 0) return "—";
-  return usd < 0.01 ? "<$0.01" : `$${usd.toFixed(2)}`;
-}
-
 const KIND_TONE: Record<AdminUserRow["kind"], string> = {
   person: "text-emerald-600 border-emerald-500/40 bg-emerald-500/10",
   team: "text-sky-600 border-sky-500/40 bg-sky-500/10",
@@ -142,6 +140,7 @@ export function AccountsTableClient() {
     useListViewPrefs("admin-user-accounts");
   const [rows, setRows] = useState<AdminUserRow[]>([]);
   const researchOwnerId = useAppSelector(state => state.userAuth.id);
+  const costDisplay = useCostDisplay();
   const [refreshKey, setRefreshKey] = useState(0);
   const [research, setResearch] = useState<UserResearch[]>([]);
   const [researchError, setResearchError] = useState<string | null>(null);
@@ -420,13 +419,13 @@ export function AccountsTableClient() {
         cell: (row) =>
           row.ai_requests > 0 ? (
             <span className="text-xs tabular-nums">
-              {row.ai_requests.toLocaleString()}
+              {formatCount(row.ai_requests)}
               {row.ai_requests_7d > 0 ? (
                 <span
                   className="ml-1 text-muted-foreground"
                   title="In the last 7 days"
                 >
-                  ({row.ai_requests_7d.toLocaleString()} 7d)
+                  ({formatCount(row.ai_requests_7d)} 7d)
                 </span>
               ) : null}
             </span>
@@ -453,11 +452,13 @@ export function AccountsTableClient() {
         filter: "number",
         align: "right",
         cell: (row) => (
-          <span className="text-xs tabular-nums text-muted-foreground">
-            {fmtCost(row.ai_cost)}
-          </span>
+          <Cost
+            usd={row.ai_cost > 0 ? row.ai_cost : null}
+            short
+            className="text-xs text-muted-foreground"
+          />
         ),
-        width: 90,
+        width: 150,
       },
       {
         id: "source",
@@ -863,37 +864,34 @@ export function AccountsTableClient() {
               {
                 id: "accounts",
                 label: "Accounts",
-                value: ({ rows: shown }) => shown.length.toLocaleString(),
+                value: ({ rows: shown }) => formatCount(shown.length),
               },
               {
                 id: "signed_in",
                 label: "Signed in",
                 value: ({ rows: shown }) =>
-                  shown
-                    .filter((row) => !row.is_anonymous && row.last_sign_in_at)
-                    .length.toLocaleString(),
+                  formatCount(shown.filter((row) => !row.is_anonymous && row.last_sign_in_at).length),
               },
               {
                 id: "used_ai",
                 label: "Used AI",
                 value: ({ rows: shown }) =>
-                  shown
-                    .filter((row) => row.ai_requests > 0)
-                    .length.toLocaleString(),
+                  formatCount(shown.filter((row) => row.ai_requests > 0).length),
               },
               {
                 id: "active_7d",
                 label: "Active this week",
                 value: ({ rows: shown }) =>
-                  shown
-                    .filter((row) => row.ai_requests_7d > 0)
-                    .length.toLocaleString(),
+                  formatCount(shown.filter((row) => row.ai_requests_7d > 0).length),
               },
               {
                 id: "ai_cost",
                 label: "AI cost",
                 value: ({ rows: shown }) =>
-                  fmtCost(shown.reduce((sum, row) => sum + row.ai_cost, 0)),
+                  costDisplay.format(
+                    shown.reduce((sum, row) => sum + row.ai_cost, 0) || null,
+                    { short: true },
+                  ),
               },
             ],
           }}
@@ -910,7 +908,7 @@ export function AccountsTableClient() {
                     defaultValue: DEFAULT_ACCOUNT_SEGMENT,
                     options: ACCOUNT_SEGMENTS.map((entry) => ({
                       value: entry.id,
-                      label: `${entry.label} ${segmentCounts[entry.id].toLocaleString()}`,
+                      label: `${entry.label} ${formatCount(segmentCounts[entry.id])}`,
                     })),
                     onChange: selectSegment,
                   },
@@ -939,7 +937,7 @@ export function AccountsTableClient() {
                 `id=${r.id}`,
                 r.admin_level ? `admin=${r.admin_level}` : null,
                 `providers=${r.providers.join("/") || "none"} confirmed=${r.email_confirmed} onboarded=${r.onboarding_completed} mcp_full_access=${Boolean(r.admin_level) || r.mcp_full_access}`,
-                `kind=${r.kind} (${r.kind_reason}) stage=${r.stage} ai_requests=${r.ai_requests} ai_requests_7d=${r.ai_requests_7d} ai_cost=${r.ai_cost.toFixed(4)} source=${r.source ?? "unknown"} client=${r.client ?? "unknown"}`,
+                `kind=${r.kind} (${r.kind_reason}) stage=${r.stage} ai_requests=${r.ai_requests} ai_requests_7d=${r.ai_requests_7d} ai_cost=${costDisplay.format(r.ai_cost)} source=${r.source ?? "unknown"} client=${r.client ?? "unknown"}`,
                 `created=${r.created_at ?? "?"} last_sign_in=${r.last_sign_in_at ?? "never"}`,
                 `organizations=${r.organizations.map((organization) => `${organization.name}:${organization.role}`).join(",") || "none"}`,
               ]

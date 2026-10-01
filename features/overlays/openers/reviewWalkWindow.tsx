@@ -28,6 +28,8 @@ export interface OpenReviewWalkWindowOptions {
    * receipt's door to `/agents/{id}/hindsight`. */
   agentId?: string | null;
   agentName?: string | null;
+  /** Short role label for the window title ("Live" / "Candidate"). */
+  roleLabel?: string | null;
 }
 
 export interface ReviewWalkWindowHandle {

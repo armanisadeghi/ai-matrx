@@ -8,12 +8,9 @@
  * that theme is an admin capability, and buries it behind a group most
  * people have no reason to open.
  *
- * `UserMenuPanel.tsx` is plain JSX with no hooks that need a real DOM, so
- * this is a source-text forcing function (same convention as
- * ShellUserAvatarImage.test.tsx and archivedItemsLaw.test.ts in this
- * codebase, which has no React testing library): it fails the moment
- * `<ThemeToggleMenuItem />` moves back inside the `id="admin"` group, and
- * passes only while it sits in its own person-level group.
+ * Since 2026-09-30 the theme switch lives in the account rail's Settings
+ * slot (`ShellSettingsMenu`). Source-text forcing function: it fails the
+ * moment the switch moves back into the avatar menu or behind an admin gate.
  */
 
 import { readFileSync } from "node:fs";
@@ -35,24 +32,22 @@ function adminGroupBlock(source: string): string {
   return source.slice(openTagStart, end + "</MenuGroup>".length);
 }
 
-describe("UserMenuPanel — theme toggle is not under ADMIN", () => {
-  it("does not render ThemeToggleMenuItem inside the admin group", () => {
-    const source = readSource();
-    const adminBlock = adminGroupBlock(source);
-    expect(adminBlock).not.toContain("ThemeToggleMenuItem");
+describe("Dark mode is a person-level setting — the rail's Settings slot, never ADMIN", () => {
+  // Owner, 2026-09-30: light/dark, Media and Preferences moved out of the
+  // avatar menu into the account rail's Settings slot (ShellSettingsMenu).
+  it("lives in the Settings menu, which no admin gate wraps", () => {
+    const settings = readFileSync(
+      path.join(__dirname, "..", "..", "account-rail", "ShellSettingsMenu.tsx"),
+      "utf8",
+    );
+    expect(settings).toContain("setMode(isDark ? \"light\" : \"dark\")");
+    expect(settings).not.toMatch(/selectIsSuperAdmin|isAdmin/);
   });
 
-  it("files the theme toggle under a person-level, non-admin group", () => {
+  it("is not in the avatar menu at all, admin group included", () => {
     const source = readSource();
-    const anchor = source.indexOf("<ThemeToggleMenuItem");
-    expect(anchor).toBeGreaterThan(-1);
-
-    const enclosingGroupStart = source.lastIndexOf("<MenuGroup", anchor);
-    expect(enclosingGroupStart).toBeGreaterThan(-1);
-
-    const groupHeader = source.slice(enclosingGroupStart, anchor);
-    expect(groupHeader).not.toMatch(/id="admin"/);
-    expect(groupHeader).not.toMatch(/label="Admin"/i);
+    expect(source).not.toContain("ThemeToggleMenuItem");
+    expect(adminGroupBlock(source)).not.toContain("setMode");
   });
 });
 

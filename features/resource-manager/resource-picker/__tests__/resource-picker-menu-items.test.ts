@@ -55,6 +55,7 @@ describe("getVisibleResourcePickerCategories", () => {
       "google",
       "cloud_browser",
       "tools",
+      "connections",
       "skills",
     ]);
     expect(

@@ -17,6 +17,7 @@ import { AudioResourcePicker } from "./AudioResourcePicker";
 import { WorkbooksResourcePicker } from "./WorkbooksResourcePicker";
 import { DocumentsResourcePicker } from "./DocumentsResourcePicker";
 import { ContextValuesResourcePicker } from "./ContextValuesResourcePicker";
+import { ComposerConnectorsPanel } from "@/features/agents/components/inputs/smart-input/composer/ComposerConnectorsPanel";
 import { ToolsResourcePicker } from "./ToolsResourcePicker";
 import { SkillsResourcePicker } from "./SkillsResourcePicker";
 import { ConversationReferencePicker } from "./ConversationReferencePicker";
@@ -71,6 +72,7 @@ const COMMAND_VIEW_IDS: ReadonlySet<Exclude<ResourcePickerViewId, null>> = new S
   "tables",
   "context_values",
   "tools",
+  "connections",
   "skills",
 ]);
 
@@ -489,6 +491,15 @@ export function ResourcePickerMenu({
           onBack={goBack}
           onSelect={(resource) => void selectFromList(resource)}
         />
+      );
+    }
+
+    if (activeView === "connections" && conversationId) {
+      return (
+        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+          <ResourcePickerSubViewHeader title="Connections" onBack={goBack} />
+          <ComposerConnectorsPanel conversationId={conversationId} onNavigate={onClose} />
+        </div>
       );
     }
 

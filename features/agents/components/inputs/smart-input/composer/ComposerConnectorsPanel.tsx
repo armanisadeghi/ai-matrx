@@ -11,19 +11,23 @@
  *                               Microsoft, Notion, … anything new)
  *
  * Nothing new underneath: the catalog and its truth are `useMcpCatalog`, the
- * per-chat on/off is the SAME `addedMcpServers` write the Tools picker makes,
+ * per-chat on/off is the per-conversation `addedMcpServers` setting,
  * reconnect is `useConnectMcpServer`, choosing repositories / files is the ONE
  * attach picker, and the directory is the live integrations window. An agent's
  * own connectors ride every run of that agent — their switch is on and fixed.
  */
 
-import { useState } from "react";
+import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { indexRunMcpAttachments, readRunMcpAttachments, mcpChipPresentation } from "@/features/connectors/run-attachments";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AttachedResourcesSection } from "@/features/connectors/AttachedResourcesSection";
+import { useEffect, useState } from "react";
 import { Loader2, Paperclip, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useMcpCatalog, type McpServerState } from "@/features/agents/hooks/useMcpTools";
-import { selectAgentMcpServers } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentReadyForCustomExecution, selectAgentMcpServers } from "@/features/agents/redux/agent-definition/selectors";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
@@ -32,6 +36,8 @@ import { attachActionLabel } from "@/features/connectors/attachable-resources";
 import { useAttachResourcePicker } from "@/features/connectors/useAttachResourcePicker";
 import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
 import { useOpenLiveIntegrationsWindow } from "@/features/overlays/openers/liveIntegrationsWindow";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchCatalog } from "@/features/agents/redux/mcp/mcp.slice";
 import { ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";
 
 export function ComposerConnectorsPanel({
@@ -44,12 +50,18 @@ export function ComposerConnectorsPanel({
 }) {
   const dispatch = useAppDispatch();
   const [query, setQuery] = useState("");
-  const { serverStates, catalog, status: catalogStatus, refreshAvailability } = useMcpCatalog();
+  const { serverStates, catalog, status: catalogStatus, availabilityStatus, refreshAvailability } = useMcpCatalog();
   const { connect, connectingSlug } = useConnectMcpServer();
   const openAttachPicker = useAttachResourcePicker();
   const openDirectory = useOpenLiveIntegrationsWindow();
+  const primaryRequest = useAppSelector(selectPrimaryRequest(conversationId));
+  const runAttachments = indexRunMcpAttachments(readRunMcpAttachments(primaryRequest?.infoEvents, primaryRequest?.warnings));
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
   const agentServers = useAppSelector((state) => (agentId ? selectAgentMcpServers(state, agentId) : undefined));
+  const agentReady = useAppSelector((state) => agentId ? selectAgentReadyForCustomExecution(state, agentId) : false);
+  useEffect(() => {
+    if (agentId && !agentReady) void dispatch(fetchAgentExecutionFull(agentId));
+  }, [agentId, agentReady, dispatch]);
   const settings = useAppSelector(selectBuilderAdvancedSettings(conversationId));
   const added = settings?.addedMcpServers ?? [];
   const agentSlugs = new Set((agentServers ?? []).filter((slug): slug is string => typeof slug === "string"));
@@ -66,7 +78,7 @@ export function ComposerConnectorsPanel({
   const connectedOff = serverStates.filter(
     (s) =>
       !isActive(s.entry.slug) &&
-      (s.entry.connectionId !== null || s.truth.state === "needs_reauth") &&
+      (s.entry.connectionId !== null || s.truth.state === "needs_reauth" || s.truth.state === "connected" || Boolean(runAttachments[s.entry.slug])) &&
       matches(s),
   );
 
@@ -74,21 +86,24 @@ export function ComposerConnectorsPanel({
     dispatch(
       setBuilderAdvancedSettings({
         conversationId,
-        changes: { addedMcpServers: on ? [...added, slug] : added.filter((s) => s !== slug) },
+        changes: { addedMcpServers: on ? [...new Set([...added, slug])] : added.filter((s) => s !== slug) },
       }),
     );
 
   const row = (s: McpServerState, on: boolean) => {
-    const broken = s.truth.state === "needs_reauth";
+    const presentation = mcpChipPresentation(s.truth.state, s.truth.reason, on, runAttachments[s.entry.slug]);
+    const broken = presentation.kind === "broken";
     const agentOwned = agentSlugs.has(s.entry.slug);
     const chooser = s.attachable.length > 0 ? attachActionLabel(s.attachable) : null;
     const chosen =
       attachments.status === "succeeded" ? attachments.items.filter((i) => i.provider === s.entry.slug).length : 0;
     return (
-      <div key={s.entry.slug} className="flex h-9 min-w-0 items-center gap-2.5 rounded-lg px-2.5 text-sm hover:bg-accent">
+      <div key={s.entry.slug} className="flex min-h-9 min-w-0 items-center gap-2.5 rounded-lg px-2.5 text-sm hover:bg-accent">
         <ConnectorMark name={s.entry.name} iconUrl={s.entry.iconUrl} />
         <span className="min-w-0 flex-1 truncate text-foreground">{s.entry.name}</span>
         {broken ? (
+          <>
+          <span title={presentation.reason ?? undefined} className="shrink-0 text-[11px] text-destructive">{presentation.status}</span>
           <button
             type="button"
             onClick={() => void connect(s.entry)}
@@ -97,6 +112,8 @@ export function ComposerConnectorsPanel({
           >
             {connectingSlug === s.entry.slug ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Reconnect"}
           </button>
+          <ErrorAlchemyMenu error={presentation.reason ?? presentation.status} />
+          </>
         ) : on && chooser ? (
           <button
             type="button"
@@ -115,8 +132,8 @@ export function ComposerConnectorsPanel({
             <Paperclip className="h-3 w-3" aria-hidden="true" />
             {chosen > 0 ? `${chosen} chosen ›` : "Choose ›"}
           </button>
-        ) : on && s.toolCount != null ? (
-          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{s.toolCount} tools</span>
+        ) : on && (presentation.toolCount ?? s.toolCount) != null ? (
+          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{presentation.toolCount ?? s.toolCount} tools</span>
         ) : null}
         <Switch
           checked={on}
@@ -132,7 +149,7 @@ export function ComposerConnectorsPanel({
 
   return (
     <>
-      <div className="flex h-9 items-center gap-2 px-2.5">
+      <div className="flex h-9 shrink-0 items-center gap-2 px-2.5">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <input
           value={query}
@@ -141,15 +158,20 @@ export function ComposerConnectorsPanel({
           className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
         />
       </div>
-      <div className="max-h-[50dvh] overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        {availabilityStatus === "failed" && (
+          <p className="px-2.5 py-1.5 text-xs text-amber-600 dark:text-amber-400">
+            Live connection health unavailable. <button type="button" onClick={() => void refreshAvailability()} className="underline">Retry</button> <ErrorAlchemyMenu />
+          </p>
+        )}
         {active.length > 0 ? <ComposerMenuLabel>Active in this chat</ComposerMenuLabel> : null}
         {active.map((s) => row(s, true))}
-        {connectedOff.length > 0 ? <ComposerMenuLabel>Connected · off in this chat</ComposerMenuLabel> : null}
+        {connectedOff.length > 0 ? <ComposerMenuLabel>Connections · off in this chat</ComposerMenuLabel> : null}
         {connectedOff.map((s) => row(s, false))}
         {catalogStatus === "failed" ? (
           <p className="px-2.5 py-2 text-xs text-muted-foreground">
             Your connectors did not load.{" "}
-            <button type="button" onClick={() => void refreshAvailability()} className="font-medium text-primary hover:underline">
+            <button type="button" onClick={() => { void dispatch(fetchCatalog()); refreshAvailability(); }} className="font-medium text-primary hover:underline">
               Try again
             </button>
           </p>
@@ -160,6 +182,12 @@ export function ComposerConnectorsPanel({
             {query.trim() ? "No connector by that name is connected yet." : "Nothing is connected yet."}
           </p>
         ) : null}
+        <AttachedResourcesSection
+          conversationId={conversationId}
+          connections={serverStates
+            .filter((s) => s.attachable.length > 0 && (s.entry.connectionId !== null || isActive(s.entry.slug)))
+            .map((s) => ({ slug: s.entry.slug, name: s.entry.name, attachable: s.attachable }))}
+        />
       </div>
       <ComposerMenuRow
         label="Browse all connectors"

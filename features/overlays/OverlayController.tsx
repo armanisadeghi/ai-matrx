@@ -6812,6 +6812,9 @@ export default function OverlayController() {
             agentName={
               typeof data.agentName === "string" ? data.agentName : null
             }
+            roleLabel={
+              typeof data.roleLabel === "string" ? data.roleLabel : null
+            }
           />
         );
       })}

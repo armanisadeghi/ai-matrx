@@ -30,6 +30,7 @@ node scripts/interface-text/check-interface-text.mjs <changed files>   # no NOVE
 pnpm check:parse
 ```
 
+Run `node scripts/interface-text/tests-asserting-removed-text.mjs <sha>`; a hit is a REJECT unless you fix the test.
 Do not run `pnpm type-check` per batch — the round owner runs one after all batches land.
 
 ## 3. See it rendered

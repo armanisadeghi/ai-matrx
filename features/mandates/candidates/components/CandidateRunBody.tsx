@@ -553,6 +553,7 @@ function SawButton({
   const [resolving, setResolving] = useState(false);
   const [clickFailure, setClickFailure] = useState<string | null>(null);
   const label = side === "live" ? "What the live agent saw" : "What the candidate saw";
+  const roleLabel = side === "live" ? "Live" : "Candidate";
 
   // V2 N4: the button is never dead. A click opens (or focuses) the walk of
   // THIS pair's conversation — resolved from the conversation id this button
@@ -563,13 +564,13 @@ function SawButton({
     if (!conversationId) return;
     setClickFailure(null);
     if (unit.state === "ready") {
-      openWalk({ ...unit.unit, agentId, agentName });
+      openWalk({ ...unit.unit, agentId, agentName, roleLabel });
       return;
     }
     setResolving(true);
     try {
       const fresh = await findTranscriptUnit(conversationId);
-      if (fresh.state === "ready") openWalk({ ...fresh.unit, agentId, agentName });
+      if (fresh.state === "ready") openWalk({ ...fresh.unit, agentId, agentName, roleLabel });
       else if (fresh.state === "error") setClickFailure(fresh.message);
       else setClickFailure("No transcript you can open.");
     } finally {

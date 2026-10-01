@@ -24,8 +24,8 @@ You were given one batch: files, findings, and the exact replacement for each. Y
   info-icon/tooltip primitive — never a new tooltip component.
 - **Siblings:** after your change, every sibling in that row/list fills the same slots at
   similar length, or none do.
-- **Tests:** `grep -rn "<old text fragment>" <feature dir> **/__tests__` — a test that asserts
-  the old string is updated to assert the new one (or its absence) in the same batch.
+- **Tests:** after committing, run `node scripts/interface-text/tests-asserting-removed-text.mjs <your sha>`;
+  every test it names is updated in the same batch (round 2: a skipped manual grep turned a test red).
 - **Dead code:** a helper, prop, or variable that only fed the deleted text is removed.
 
 ## What the round-1 checkers caught fixers doing (2026-09-30 — don't)

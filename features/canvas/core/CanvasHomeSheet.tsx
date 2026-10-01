@@ -17,16 +17,19 @@
 import { LayoutDashboard, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@ai-matrx/design-system";
 import AppLink from "@/components/navigation/AppLink";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { closeCanvasHome } from "@/features/canvas/redux/canvasSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { closeCanvasHome, selectCanvasWidth } from "@/features/canvas/redux/canvasSlice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SavedCanvasItems } from "./SavedCanvasItems";
 
-const HOME_WIDTH = 560;
+/** The canvas's own width (the person's dragged width), so home and an item open the same size. */
+const MIN_WIDTH = 480;
+const MAX_WIDTH = 1400;
 
 export function CanvasHomeSheet() {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
+  const width = Math.min(Math.max(useAppSelector(selectCanvasWidth) || 768, MIN_WIDTH), MAX_WIDTH);
   const close = () => dispatch(closeCanvasHome());
 
   return (
@@ -37,7 +40,7 @@ export function CanvasHomeSheet() {
         hideOverlay={!isMobile}
         className="gap-0 border-l border-border bg-card p-0"
         style={{
-          width: isMobile ? "100%" : `${HOME_WIDTH}px`,
+          width: isMobile ? "100%" : `${width}px`,
           maxWidth: "100%",
           height: "100dvh",
           zIndex: 10000,

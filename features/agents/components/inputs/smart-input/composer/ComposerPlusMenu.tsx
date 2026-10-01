@@ -281,7 +281,7 @@ export function ComposerPlusMenu({
           </ComposerSubmenu>
         ) : null}
         {shows("plus.connectors") ? (
-          <ComposerSubmenu row={{ icon: Plug, label: "Connectors" }} panelClassName="w-[360px]">
+          <ComposerSubmenu row={{ icon: Plug, label: "Connections" }} panelClassName="w-[360px] h-[min(70dvh,480px)]">
             <ComposerConnectorsPanel conversationId={conversationId} onNavigate={close} />
             <ComposerSubmenu row={{ icon: Globe, label: "Google Workspace files" }} panelClassName={PICKER_PANEL}>
               {(closeCascade) => picker("google", closeCascade)}

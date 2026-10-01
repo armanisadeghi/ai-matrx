@@ -2336,6 +2336,13 @@
    @layer utilities to re-scale utility-set font sizes. */
 
 
+/* The sheet body owns scrolling. A hidden-overflow drawer is still a scroll
+   container: focusing a lower menu row can scroll its fixed header away.
+   Clip the tabbed sheet shell so only the inner list moves. */
+[data-vaul-drawer]:has(> .matrx-mobile-sheet) {
+  overflow: clip;
+}
+
 /* ────────────────────────────────────────────────────────────────────────
    THE iOS ZOOM FLOOR — global, mechanical, coarse-pointer only.
 

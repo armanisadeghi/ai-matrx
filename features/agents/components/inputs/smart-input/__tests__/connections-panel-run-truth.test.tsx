@@ -1,0 +1,78 @@
+import React, { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+
+const mockDispatch = jest.fn();
+let mockWarnings: { code: string; metadata: { slug: string; reason: string } }[] = [];
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
+  useAppDispatch: () => mockDispatch,
+}));
+jest.mock("@/features/agents/hooks/useMcpTools", () => ({
+  useMcpCatalog: () => ({
+    catalog: [], status: "succeeded", availabilityStatus: "succeeded",
+    refreshAvailability: jest.fn(),
+    serverStates: [{
+      entry: { slug: "github", name: "GitHub", connectionId: null, iconUrl: null },
+      truth: { state: "connected", reason: null }, toolCount: 12, attachable: [],
+    }],
+  }),
+}));
+jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+  selectAgentMcpServers: () => [], selectAgentReadyForCustomExecution: () => true,
+}));
+jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({ fetchAgentExecutionFull: jest.fn() }));
+jest.mock("@/features/agents/redux/mcp/mcp.slice", () => ({ fetchCatalog: jest.fn() }));
+jest.mock("@/features/agents/redux/execution-system/conversations/conversations.selectors", () => ({
+  selectAgentIdFromInstance: () => () => "agent",
+}));
+jest.mock("@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({
+  selectBuilderAdvancedSettings: () => () => ({ addedMcpServers: mockWarnings.length ? ["github"] : [] }),
+}));
+jest.mock("@/features/agents/redux/execution-system/active-requests/active-requests.selectors", () => ({
+  selectPrimaryRequest: () => () => ({ warnings: mockWarnings, infoEvents: [] }),
+}));
+jest.mock("@/features/connectors/useConnectMcpServer", () => ({
+  useConnectMcpServer: () => ({ connect: jest.fn(), connectingSlug: null }),
+}));
+jest.mock("@/features/connectors/useAttachResourcePicker", () => ({ useAttachResourcePicker: () => jest.fn() }));
+jest.mock("@/features/connectors/useConversationAttachments", () => ({
+  useConversationAttachments: () => ({ status: "succeeded", items: [] }),
+}));
+jest.mock("@/features/connectors/AttachedResourcesSection", () => ({ AttachedResourcesSection: () => null }));
+jest.mock("@/features/overlays/openers/liveIntegrationsWindow", () => ({ useOpenLiveIntegrationsWindow: () => jest.fn() }));
+jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
+import { ComposerConnectorsPanel } from "../composer/ComposerConnectorsPanel";
+
+describe("Connections preserve per-chat access and run truth", () => {
+  beforeAll(() => { Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { value: true, configurable: true }); });
+  let container: HTMLDivElement;
+  let root: Root;
+  beforeEach(() => {
+    mockWarnings = [];
+    mockDispatch.mockClear();
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+  afterEach(() => { act(() => root.unmount()); container.remove(); });
+  const render = () => act(() => root.render(<ComposerConnectorsPanel conversationId="chat" onNavigate={jest.fn()} />));
+
+  it("offers a usable first-party connection even without an MCP connection row", () => {
+    render();
+    const toggle = container.querySelector<HTMLButtonElement>('[aria-label="GitHub in this chat"]');
+    expect(toggle).not.toBeNull();
+    act(() => toggle?.click());
+    expect(mockDispatch).toHaveBeenCalledWith(expect.objectContaining({ payload: {
+      conversationId: "chat", changes: { addedMcpServers: ["github"] },
+    } }));
+  });
+
+  it("shows an actual failed run over a healthy catalog and keeps its reason", () => {
+    mockWarnings = [{ code: "mcp_server_unavailable", metadata: { slug: "github", reason: "Provider timed out" } }];
+    render();
+    expect(container.textContent).toContain("failed this run");
+    expect(container.querySelector('[title="Provider timed out"]')).not.toBeNull();
+    expect(container.textContent).toContain("Reconnect");
+    expect(container.textContent).not.toContain("12 tools");
+  });
+});

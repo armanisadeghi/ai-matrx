@@ -66,7 +66,7 @@ import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControl
 import { attachActionLabel } from "@/features/connectors/attachable-resources";
 import { useAttachResourcePicker } from "@/features/connectors/useAttachResourcePicker";
 import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
-import { RunToolPicker } from "./RunToolPicker";
+import { ComposerConnectorsPanel } from "./composer/ComposerConnectorsPanel";
 import { COMPOSER_CHIP_CLASS } from "./composer/composer-chip";
 
 export interface ChatConnectionsStripProps {
@@ -157,7 +157,7 @@ export function ChatConnectionsStrip({
       setSheetOpen(true);
       return;
     }
-    openRunControlsWindow({ conversationId, initialTab: "tools" });
+    openRunControlsWindow({ conversationId, initialTab: "connections" });
   };
 
   // The mobile picker rides BOTH states — an empty rail whose only control
@@ -167,11 +167,11 @@ export function ChatConnectionsStrip({
       <BottomSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
-        title="Tools"
+        title="Connections"
         size="full"
         surface="solid"
       >
-        <RunToolPicker conversationId={conversationId} />
+        <ComposerConnectorsPanel conversationId={conversationId} onNavigate={() => setSheetOpen(false)} />
       </BottomSheet>
     ) : null;
 
@@ -218,7 +218,7 @@ export function ChatConnectionsStrip({
                 <button
                   type="button"
                   onClick={openPicker}
-                  aria-label={`${connection.name} — ${presentation.reason ?? (isBroken ? "needs attention" : "connected")}. Open the Tools picker.`}
+                  aria-label={`${connection.name} — ${presentation.reason ?? (isBroken ? "needs attention" : "connected")}. Open Connections.`}
                   title={
                     presentation.reason ??
                     (presentation.toolCount != null
@@ -336,8 +336,8 @@ export function ChatConnectionsStrip({
           <button
             type="button"
             onClick={openPicker}
-            title="Nothing is connected to this chat — open the Tools picker to add a service"
-            aria-label="Nothing is connected to this chat. Open the Tools picker to add a service."
+            title="Nothing is connected to this chat — open Connections to add a service"
+            aria-label="Nothing is connected to this chat. Open Connections to add a service."
             className="group flex shrink-0 items-center gap-1 rounded-full pr-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <Server className="h-3 w-3 text-muted-foreground" aria-hidden />
@@ -363,8 +363,8 @@ export function ChatConnectionsStrip({
         <button
           type="button"
           onClick={openPicker}
-          title="Connections for this chat — open the Tools picker"
-          aria-label={`Connections for this chat: ${connections.length} service${connections.length === 1 ? "" : "s"}${broken > 0 ? `, ${broken} need attention` : ""}. Open the Tools picker.`}
+          title="Connections for this chat — open Connections"
+          aria-label={`Connections for this chat: ${connections.length} service${connections.length === 1 ? "" : "s"}${broken > 0 ? `, ${broken} need attention` : ""}. Open Connections.`}
           className="group flex shrink-0 items-center gap-1 rounded-full pr-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <Server className="h-3 w-3 text-primary" aria-hidden />
@@ -406,7 +406,7 @@ export function ChatConnectionsStrip({
               <button
                 type="button"
                 onClick={openPicker}
-                aria-label={`${connection.name} — ${presentation.reason ?? (isBroken ? "needs attention" : "connected")}. Open the Tools picker.`}
+                aria-label={`${connection.name} — ${presentation.reason ?? (isBroken ? "needs attention" : "connected")}. Open Connections.`}
                 title={
                   presentation.reason ??
                   (presentation.toolCount != null

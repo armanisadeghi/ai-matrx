@@ -20,6 +20,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { act } from "react";
+import { formatCost, formatPoints } from "@ai-matrx/kit/format";
 import { createRoot, type Root } from "react-dom/client";
 import type { DrillDefinition } from "@ai-matrx/records";
 
@@ -50,6 +51,9 @@ import { tipWords } from "../DrillExplorerNotes";
 import { drillReconcileChip } from "../useDrillReconcile";
 import { DrillRecords } from "../DrillRecords";
 import { KG_COST_FIRST_QUESTION } from "@/features/administration/kg-cost/components/KgCostExplorer";
+
+// A fixed rate so the cost fixtures read the same on every run; production reads the billing knob.
+const FIXTURE_POINTS_RATE = 20_000;
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -119,7 +123,7 @@ describe("the small words, from data", () => {
   });
 
   it("interface text: the reconciliation is a label + one-line tooltip; a tooltip never runs past 140", () => {
-    const f = (v: number) => `${v.toLocaleString("en-US")} pts`;
+    const f = (v: number) => formatPoints(v, { short: true });
     const chip = drillReconcileChip(48_053_287, 38_608_227, "AI model calls", f);
     expect(chip.label).toBe("AI model calls 80%");
     expect(chip.tip).toBe("38,608,227 pts of 48,053,287 pts; 9,445,060 pts (20%) with no AI model call");
@@ -190,7 +194,7 @@ describe("F3/F4 — the records read in their own noun, with their sums and the 
           question={{ by: [], show: ["cost", "requests"], where: [], window: "2026-09-12..2026-09-13" }}
           dimensions={[{ key: "person", label: "Person", kind: "relation" }]}
           measures={[
-            { key: "cost", label: "Cost (points)", additive: true, format: (v: number | null) => `${Math.round((v ?? 0) * 20_000).toLocaleString("en-US")} points` },
+            { key: "cost", label: "Cost (points)", additive: true, format: (v: number | null) => formatCost(v, { rate: FIXTURE_POINTS_RATE }) },
             { key: "requests", label: "Requests", additive: true },
           ]}
           rowNoun="request"
@@ -249,7 +253,7 @@ describe("F3/F4 — the records read in their own noun, with their sums and the 
           records={USAGE_DEF.records!}
           question={{ by: [], show: ["cost"], where: [], window: "24h" }}
           dimensions={[]}
-          measures={[{ key: "cost", label: "Cost (points)", additive: true, format: (v: number | null) => `${Math.round((v ?? 0) * 20_000).toLocaleString("en-US")} points` }]}
+          measures={[{ key: "cost", label: "Cost (points)", additive: true, format: (v: number | null) => formatCost(v, { rate: FIXTURE_POINTS_RATE }) }]}
           rowNoun="request"
         />,
       );

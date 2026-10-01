@@ -16,11 +16,11 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
-import type {
-  ContextReceiptMismatch,
-  ContextRowOrigin,
-  ResolvedContextRow,
-  SavedContextRule,
+import {
+  receiptRowToResolved as packageReceiptRowToResolved,
+  type ContextReceiptMismatch,
+  type ResolvedContextRow,
+  type SavedContextRule,
 } from "@ai-matrx/agents/context";
 import type {
   ContextReceiptData,
@@ -33,8 +33,6 @@ import {
   type ModelContext,
   type ModelContextDelivery,
 } from "./messages.slice";
-
-const DEFAULT_SURFACE_KEY = "_default";
 
 export type MessageContextReceiptSource = "persisted" | "live";
 
@@ -111,52 +109,32 @@ function cleanUserRule(rule: ContextReceiptRow["user_rule"]): SavedContextRule |
   if (!rule) return null;
   const out: SavedContextRule = {};
   if (typeof rule.include === "boolean") out.include = rule.include;
-  if (
-    typeof rule.max_inline_chars === "number" &&
-    Number.isInteger(rule.max_inline_chars) &&
-    rule.max_inline_chars >= 0
-  ) {
-    out.max_inline_chars = rule.max_inline_chars;
-  }
-  return Object.keys(out).length === 0 ? null : out;
+  if (typeof rule.max_inline_chars === "number") out.max_inline_chars = rule.max_inline_chars;
+  return out;
 }
 
 /**
- * One receipt row → the row a read-only `ContextRulesTable` renders. Same
- * shape as `receiptRowToResolved` in `@ai-matrx/agents/context` (aidream
- * apps/shared/matrx-agents, not yet in the published build) — swap to the
- * package export once it ships.
- *
- * Two additions: a label that is just the key (the server's `origin: "rule"`
- * rows, 2026-09-30) is named in words the way every other surface names it;
- * and `layers.default_max` is set to the limit the server APPLIED,
- * so the table's muted "inherited" limit shows the server's number instead of
- * re-deriving 200 from no layers (the receipt carries the result, not the
- * layers that produced it).
+ * One receipt row → the row a read-only `ContextRulesTable` renders — the
+ * package's `receiptRowToResolved` (`@ai-matrx/agents/context`), with two
+ * additions this app needs until the package carries them:
+ *   - a label that is just the key (the server's `origin: "rule"` rows,
+ *     2026-09-30) is named in words, the way every other surface names it;
+ *   - `layers.default_max` is the limit the server APPLIED, so the table's
+ *     muted "inherited" limit shows the server's number instead of
+ *     re-deriving 200 from no layers (a receipt carries results, not layers).
  */
 export function receiptRowToResolved(row: ContextReceiptRow): ResolvedContextRow {
-  const origin: ContextRowOrigin =
-    row.surface_key !== DEFAULT_SURFACE_KEY
-      ? "page"
-      : row.origin === "client"
-        ? "attached"
-        : "system";
-  return {
-    key: row.key,
-    label: contextEntryLabel({ key: row.key, label: row.label }),
-    surfaceKey: row.surface_key,
-    origin,
-    value: undefined,
+  const base = packageReceiptRowToResolved({
+    ...row,
     chars: row.chars ?? null,
-    userRule: cleanUserRule(row.user_rule),
-    include: row.include,
-    max_inline_chars: row.max_inline_chars,
-    delivery: row.delivery,
-    decided_by: {
-      include: row.decided_by.include,
-      max_inline_chars: row.decided_by.max_inline_chars,
-    },
+    user_rule: cleanUserRule(row.user_rule),
     clamped: row.clamped ?? false,
+    client_sent_excluded: row.client_sent_excluded ?? false,
+    blocked_by: row.blocked_by ?? null,
+  });
+  return {
+    ...base,
+    label: contextEntryLabel({ key: row.key, label: row.label }),
     layers: { default_max: row.max_inline_chars },
   };
 }
