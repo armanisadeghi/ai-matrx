@@ -17,18 +17,23 @@ export default [
     targets: ["live", "clone"],
     timeoutMs: 20 * 60 * 1000,
   },
-  {
-    // The agents' dataset tool on a moved table reads and writes the store (aidream clone test; `-m red` is its red twin).
-    id: "agents.dataset-tool",
-    area: "agents",
-    kind: "cmd",
-    cmd: "uv",
-    args: ["run", "pytest", "-q", "packages/matrx-records/tests/test_dataset_tool_on_a_moved_table.py", "--records-target", "clone"],
-    cwd: "../aidream",
-    items: ["A02"],
-    targets: ["clone"],
-    passWhen: "passed",
-    failWhen: "\\d+ (failed|errors?|skipped)",
-    timeoutMs: 15 * 60 * 1000,
-  },
+  // NOT REGISTERED by default (it would read FAIL on every clone run before a press):
+  //   {
+  //     // AFTER-THE-PRESS ONLY: it SKIPS (= FAIL here, honestly) until admin's Workspace is moved; run it on a clone that
+  //     // has been pressed (rehearsal / PRESS-AT-SIZE window). Before the press A02 is proven by cutover.switch-chain
+  //     // (custom.where_tables_live: older before, store after — the door the dataset tool asks).
+  //     // The agents' dataset tool on a moved table reads and writes the store (aidream clone test; `-m red` is its red twin).
+  //     id: "agents.dataset-tool",
+  //     area: "agents",
+  //     kind: "cmd",
+  //     cmd: "uv",
+  //     args: ["run", "pytest", "-q", "packages/matrx-records/tests/test_dataset_tool_on_a_moved_table.py", "--records-target", "clone"],
+  //     cwd: "../aidream",
+  //     items: ["A02"],
+  //     targets: ["clone"],
+  //     passWhen: "passed",
+  //     failWhen: "\\d+ (failed|errors?|skipped)",
+  //     timeoutMs: 15 * 60 * 1000,
+  //   },
+
 ];

@@ -105,6 +105,11 @@ begin
    where r.table_id = v_table and r.deleted_at is null
      and exists (select 1 from custom.record c where c.id = r.id and c.deleted_at is null) order by r.created_at limit 1;
   v_report := v_report || format('Ready: %s; plan %s organizations; probe table %s row %s', v_r ->> 'says', cardinality(v_plan), v_table, v_row);
+  -- A02: where the agents' dataset tool (and every integration) is told the table lives — before the press: older.
+  if (select w.lives_in from custom.where_tables_live(array[v_table]) w) is distinct from 'older' then
+    raise exception 'A02 RED: before the press custom.where_tables_live does not send agents to the older table: %',
+      (select row_to_json(w)::text from custom.where_tables_live(array[v_table]) w);
+  end if;
 
   -- ── C01: three planted holds, each in its own subtransaction ────────────────────────────────────────────────
   -- P1 — a row in the older table that its copy does not have.
@@ -170,10 +175,10 @@ begin
    order by t.created_at desc limit 1;
   begin
     if v_store_table is null then raise exception using errcode = 'SNB02', message = 'no store-born Table with fields in admin''s Workspace'; end if;
-    perform set_config('request.jwt.claims', c_claims, true);
-    perform set_config('role', 'authenticated', true);
-    perform custom.table_archive(c_ws, v_store_table);
-    perform set_config('role', 'postgres', true);
+    -- The Table record is archived WITHOUT its door (the door now archives its field definitions too — lane
+    -- FIELD-ARCHIVE-CASCADE); production's 42 such fields were left by paths that archived only the Table record.
+    perform set_config('matrx.actor_system', 'safety-net-b plant (clone, rolled back)', true);
+    update custom.record set deleted_at = clock_timestamp() where id = v_store_table and organization_id = c_ws;
     v_n := (select count(*) from custom.record f where f.table_id = custom.field_kernel_id() and f.deleted_at is null
               and f.data ->> 'entity_definition_id' = v_store_table::text);
     v_x := platform._final_switch_readiness();
@@ -191,6 +196,8 @@ begin
   perform set_config('role', 'postgres', true);
   if v_x ? 'skip' then
     v_report := v_report || format('P3 not planted: %s', v_x ->> 'skip');
+  elsif v_x -> 'p' ->> 'says' like '%could not serialize access%' then
+    raise exception 'INCONCLUSIVE: a peer wrote rows the press touches while this run held its snapshot (%); run again', left(v_x -> 'p' ->> 'says', 300);
   elsif (v_x -> 'r' ->> 'ready')::boolean and not coalesce((v_x -> 'p' ->> 'ok')::boolean, false) then
     raise exception 'C01/P3 RED: readiness said Ready with % live fields under an archived Table, and the press then failed: %',
       v_x ->> 'fields_live', left((v_x -> 'p')::text, 600);
@@ -237,6 +244,9 @@ begin
   v_p := platform.final_switch_press('safety-net-b chain', null);
   perform set_config('role', 'postgres', true);
   if not coalesce((v_p ->> 'ok')::boolean, false) then
+    if v_p ->> 'says' like '%could not serialize access%' then
+      raise exception 'INCONCLUSIVE: a peer wrote rows the press touches while this run held its snapshot (%); run again', left(v_p ->> 'says', 300);
+    end if;
     raise exception 'C02 RED: the press refused on a Ready clone: %', left((v_p - 'readiness')::text, 700);
   end if;
   select array_agg(distinct p.organization_id order by p.organization_id) into v_switched
@@ -254,6 +264,13 @@ begin
   -- W15 below cuts a second press half way through its Data tables step, measured from this one.
   perform set_config('sn.cut_ms', (coalesce((v_p -> 'timings' ->> 'readiness_ms')::int, 3000)
                                     + greatest(coalesce((v_p -> 'timings' ->> 'data_tables_ms')::int, 1000) / 2, 200))::text || 'ms', false);
+
+  -- A02: after the press the same table id lives in the store — the dataset tool, workflows and integrations follow.
+  if (select w.lives_in from custom.where_tables_live(array[v_table]) w) is distinct from 'store' then
+    raise exception 'A02 RED: after the press custom.where_tables_live still sends agents to the older table: %',
+      (select row_to_json(w)::text from custom.where_tables_live(array[v_table]) w);
+  end if;
+  v_report := v_report || 'A02 the dataset tool''s routing door: older before the press, store after it'::text;
 
   -- ── C04: the older doors refuse ──────────────────────────────────────────────────────────────────────────────
   select count(*) into v_n from unnest(platform._final_switch_old_write_doors()) d

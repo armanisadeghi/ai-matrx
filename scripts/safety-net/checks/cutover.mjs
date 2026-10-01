@@ -14,7 +14,9 @@ export default [
     args: ["scripts/safety-net/probes/b_cutover_state.py"],
     stepsJson: "b-cutover-state.json",
     items: ["C01", "C02", "C04", "C05", "C06", "C08", "C09", "C10", "C12", "A11"],
-    targets: ["live", "clone"],
+    // Live only: it judges the state the hour presses. Its red proof is the same script pointed at the clone
+    // (SN_TARGET=clone python3 scripts/safety-net/probes/b_cutover_state.py), which reads the clone's real holds.
+    targets: ["live"],
     timeoutMs: 10 * 60 * 1000,
   },
   {
@@ -26,9 +28,20 @@ export default [
     area: "cutover",
     kind: "sql",
     file: "scripts/safety-net/probes/b_switch_chain.sql",
-    items: ["C01", "C02", "C03", "C04", "C05", "C06", "C13"],
+    items: ["C01", "C02", "C03", "C04", "C05", "C06", "C13", "A02"],
     targets: ["clone"],
     passWhen: "SWITCH CHAIN GREEN",
+    timeoutMs: 25 * 60 * 1000,
+  },
+  {
+    // W4: after the press, no older READ door answers a moved table with the old value and no mark (clone, rolled back).
+    id: "cutover.old-reads-after-press",
+    area: "cutover",
+    kind: "sql",
+    file: "scripts/safety-net/probes/b_old_reads_after_press.sql",
+    items: ["C14"],
+    targets: ["clone"],
+    passWhen: "W4 GREEN",
     timeoutMs: 25 * 60 * 1000,
   },
   {

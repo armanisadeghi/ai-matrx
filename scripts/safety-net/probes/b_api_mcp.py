@@ -128,7 +128,7 @@ def http(method: str, url: str, body=None, headers: dict | None = None) -> tuple
         if bad in url or (body and bad in json.dumps(body)):
             raise SystemExit("refused: a call names Arman's organization or table")
     data = None if body is None else json.dumps(body).encode()
-    for attempt in range(8):
+    for attempt in range(24):
         req = urllib.request.Request(url, data=data, method=method, headers={"content-type": "application/json", **UA, **(headers or {})})
         try:
             with urllib.request.urlopen(req, timeout=120) as r:  # noqa: S310
@@ -138,7 +138,7 @@ def http(method: str, url: str, body=None, headers: dict | None = None) -> tuple
             raw = e.read().decode() or "null"
             status, hdrs = e.code, dict(e.headers)
         # PostgREST reloading its schema cache (PGRST002) answers 503 and says "Retrying": wait and ask again, said in the log.
-        if status == 503 and ("PGRST00" in raw or "schema cache" in raw) and attempt < 7:
+        if status == 503 and ("PGRST00" in raw or "schema cache" in raw) and attempt < 23:
             bodies.append(f"(503 PGRST002 on {method} {url.split('?')[0].replace(DB_URL, '{db}')}; retry {attempt + 1} in 8 s)")
             time.sleep(8)
             continue
