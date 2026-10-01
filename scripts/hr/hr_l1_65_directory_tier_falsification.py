@@ -34,14 +34,14 @@ import asyncio, base64, json, sys
 import asyncpg, httpx
 
 ENV = "/Users/armanisadeghi/code/aidream/.env"
-WTS = "2643e470-b275-47f3-95f3-ae275ad3ca47"   # Write Target Sandbox — 20 people, 3 terminated
+WTS = "2643e470-b275-47f3-95f3-ae275ad3ca47"   # Oak Street Studio — 20 people, 3 terminated
 
 # Who we walk as, and who they must turn out to be.
 PERSONAS = {
     "hr_owner":   ("admin@admin.com",                          "87a6e699-3622-4869-8843-d0867456c0dd"),
-    "hr_admin":   ("admin+g2v.priya@admin.com",                "20149d3f-6572-4263-b43c-7e52f0e42058"),
-    "employee":   ("zzz.l3.punch.employee@example.invalid",    "ab94c16c-b4a5-49f0-a068-e2a11db34a2c"),
-    "contractor": ("zzz.l5.plain.contractor@example.test",     "381213e9-a1d5-459e-809d-956447f47ca5"),
+    "hr_admin":   ("priya.raman@example.test",                "20149d3f-6572-4263-b43c-7e52f0e42058"),
+    "employee":   ("marcus.tillman@example.test",    "ab94c16c-b4a5-49f0-a068-e2a11db34a2c"),
+    "contractor": ("jonas.whitfield@example.test",     "381213e9-a1d5-459e-809d-956447f47ca5"),
 }
 
 # SPEC-ACCESS §3.1 hr.employee + §3.3 DIR structure + route 10's manager column.
@@ -126,7 +126,7 @@ async def main():
                    count(*)                                                                                as total
               from hr.employee e
              where e.organization_id = $1 and e.deleted_at is null""", WTS))
-        print(f"\nWrite Target Sandbox: {counts['total']} people "
+        print(f"\nOak Street Studio: {counts['total']} people "
               f"({counts['prehire']} prehire, {counts['terminated']} terminated)\n")
         if counts["terminated"] == 0 or counts["prehire"] == 0:
             print("REFUSING TO SCORE: this employer no longer has both a prehire and a terminated "

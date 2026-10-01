@@ -118,7 +118,7 @@ export type HrInboxRow = {
  * to the name, so the line says so rather than omitting the clause silently — anywhere the
  * name would appear, its absence must be visible and explained (§1.3).
  *
- * The `digest` clause is what makes the outcome readable — "Timecard · Zzz Punchemployee ·
+ * The `digest` clause is what makes the outcome readable — "Timecard · Marcus Tillman ·
  * Aug 21-27" rather than a kind and a person with no period. It is the flow's own worded
  * summary, already entitlement-gated by `hr._wf_display`.
  */
@@ -127,8 +127,8 @@ export function inboxRowLine(row: HrInboxRow): string {
     const parts = [head];
     /*
         🚨 THE TITLE OFTEN ALREADY CARRIES THE NAME — measured, not assumed. Live rows read
-        "Address change — Tomo Iversen-G32" with `subject_label` = "Tomo Iversen-G32", so
-        appending it unconditionally produced "… — Tomo Iversen-G32 · Tomo Iversen-G32".
+        "Address change — Tomo Iversen" with `subject_label` = "Tomo Iversen", so
+        appending it unconditionally produced "… — Tomo Iversen · Tomo Iversen".
         Say the name once; add it only when the head has not already said it.
     */
     if (row.subject_withheld) parts.push("subject withheld");
@@ -152,7 +152,7 @@ export type HrInboxChange = {
  * A row of `hr.workflow_notice`, the VIEW over `communication.notification`.
  *
  * `body` is the rendered sentence the recipient actually received ("Leave request for Tomo
- * Iversen-G32 was rejected."). It is null whenever there is genuinely no sentence to show: a
+ * Iversen was rejected."). It is null whenever there is genuinely no sentence to show: a
  * `render_pending` notice whose words are still being written, a `skipped` notice that was never
  * sendable, a historical row from before the body was projected — and, on the DETAIL door, a
  * notice addressed to somebody OTHER than the viewer, where withholding it is the entitlement

@@ -345,7 +345,7 @@ export type HrOrgChartNode = {
    * 🚨 DO NOT KEY RENDERING ON `opted_out`. That field is the PERSON'S PREFERENCE,
    * not this viewer's outcome, so it is `true` for HR as well — and HR gets the
    * name. Verified live: the same node arrives as `{display_name: null,
-   * opted_out: true}` for a peer and `{display_name: 'G2V-Priya Raman',
+   * opted_out: true}` for a peer and `{display_name: 'Priya Raman',
    * opted_out: true}` for an hr_admin. Keying on the preference would blank the
    * name for the very people entitled to see it.
    */

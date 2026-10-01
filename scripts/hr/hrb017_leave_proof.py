@@ -33,9 +33,9 @@ import sys
 from datetime import date, timedelta
 
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
-ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Write Target Sandbox
-EMPLOYEE = "11dfa190-8762-4bca-b131-ee13ed397f72"      # EMP-00012, g2t13.tomas@example.test
-APPROVER = "ca9e12da-35bb-402d-8bda-1b76fa4c678d"      # EMP-00004, admin+g2v.priya@admin.com
+ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Oak Street Studio
+EMPLOYEE = "11dfa190-8762-4bca-b131-ee13ed397f72"      # EMP-00012, tomas.iversen@example.test
+APPROVER = "ca9e12da-35bb-402d-8bda-1b76fa4c678d"      # EMP-00004, priya.raman@example.test
 EMPLOYEE_USER = "daeb6d44-a7dd-4085-aba2-5025fb711b79"
 PROOF_PW = "L5-proof-" + os.urandom(6).hex()
 # Fixed so a page open across a run cannot go stale — see the note at the fixture insert.
@@ -194,7 +194,7 @@ async def main() -> None:  # noqa: C901
               (id, name, leave_kind, accrual_method, accrual_rate, accrual_unit, accrual_starts,
                balance_cap, carryover_allowed, increment_minutes, requires_approval,
                worker_class_scope, schedule_class_scope, is_active, organization_id)
-            select $1::uuid, 'ZZZ L5 PROOF — PTO bank', 'pto', 'per_pay_period', 3.08,
+            select $1::uuid, 'Standard PTO', 'pto', 'per_pay_period', 3.08,
                    'pay_period', 'hire', 120, true, 15, true,
                    '{employee}'::text[], '{}'::text[], true, $2::uuid
               from armed
@@ -208,7 +208,7 @@ async def main() -> None:  # noqa: C901
               (name, leave_kind, accrual_method, accrual_rate, accrual_unit, accrual_starts,
                balance_cap, carryover_allowed, increment_minutes, requires_approval,
                worker_class_scope, schedule_class_scope, is_active, organization_id)
-            select 'ZZZ L5 PROOF — PTO bank', 'pto', 'per_pay_period', 3.08, 'pay_period', 'hire',
+            select 'Standard PTO', 'pto', 'per_pay_period', 3.08, 'pay_period', 'hire',
                    120, true, 15, true, '{employee}'::text[], '{}'::text[], true, $1::uuid
               from armed
             returning id
@@ -328,7 +328,7 @@ async def main() -> None:  # noqa: C901
         r = await http.post(
             f"{base}/auth/v1/token?grant_type=password",
             headers={"apikey": anon, "Content-Type": "application/json"},
-            json={"email": "g2t13.tomas@example.test", "password": PROOF_PW},
+            json={"email": "tomas.iversen@example.test", "password": PROOF_PW},
         )
         check("employee signed in", r.status_code < 300, f"{r.status_code} {r.text[:200]}")
         if r.status_code >= 300:
@@ -433,7 +433,7 @@ async def main() -> None:  # noqa: C901
         r = await http.post(
             f"{base}/auth/v1/token?grant_type=password",
             headers={"apikey": anon, "Content-Type": "application/json"},
-            json={"email": "admin+g2v.priya@admin.com", "password": PROOF_PW},
+            json={"email": "priya.raman@example.test", "password": PROOF_PW},
         )
         check("approver signed in", r.status_code < 300, f"{r.status_code} {r.text[:200]}")
         mgr_token = r.json()["access_token"] if r.status_code < 300 else None

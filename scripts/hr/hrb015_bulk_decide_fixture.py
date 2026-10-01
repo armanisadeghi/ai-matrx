@@ -42,14 +42,14 @@ import re
 
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
 
-ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"            # Write Target Sandbox
+ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"            # Oak Street Studio
 HR_ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"  # admin@admin.com
 EMPLOYER_PROFILE = "2ac6a8e9-08da-4a0a-a578-cbfcd0d7f6e1"
 
-EMPLOYMENT = "1a7033e5-1536-4f15-9549-4e5dd85285c5"     # Zzz Punchemployee, EMP-00016
-EMAIL = "zzz.l3.punch.employee@example.invalid"
+EMPLOYMENT = "1a7033e5-1536-4f15-9549-4e5dd85285c5"     # Marcus Tillman, EMP-00016
+EMAIL = "marcus.tillman@example.test"
 
-GROUP_NAME = "R40 T-L10-3 bulk-decide (fixture)"
+GROUP_NAME = "Field Crew — Bi-weekly"
 # 🚨 THE WINDOW IS PINNED BY TWO FACTS, BOTH MEASURED RATHER THAN ASSUMED.
 # His punches are on 2026-08-27, so the period must contain that date; and a period is only
 # submittable once its end date has passed. A Friday start puts 08-27 at the end of a weekly window.
@@ -237,7 +237,7 @@ async def main() -> None:  # noqa: C901
                   "reachable approver.")
             raise SystemExit(1)
         print(f"\n  period            {period}"
-              f"\n  employment        {EMPLOYMENT}  (Zzz Punchemployee, EMP-00016)"
+              f"\n  employment        {EMPLOYMENT}  (Marcus Tillman, EMP-00016)"
               f"\n  manager step      {mgr[0]['id']}   <- the bulk-decide target"
               f"\n  surface           /hr/time/periods/{period}?org={ORG}")
     finally:

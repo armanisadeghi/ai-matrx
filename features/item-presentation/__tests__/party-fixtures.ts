@@ -92,9 +92,9 @@ export const REAL_PERSON_WITH_CONTACT = {
 /** Jordan Reyes' employer, as the dossier's employer read returns it. */
 export const REAL_EMPLOYER = {
   id: "bdbb0224-d0a9-47bb-8fa9-2de424ae0011",
-  display_name: "Acme Robotics",
+  display_name: "Brightwater Robotics",
   party_kind: "organization",
-  primary_domain: "acmerobotics.com",
+  primary_domain: "brightwaterrobotics.com",
 } as const;
 
 /**
@@ -113,8 +113,8 @@ export const REAL_CONTACT_POINTS = [
     medium: {
       id: "158efe85-5bb9-4b4a-a73f-259be8c211d8",
       channel: "email",
-      value_raw: "jordan.reyes@acmerobotics.com",
-      display_value: "jordan.reyes@acmerobotics.com",
+      value_raw: "jordan.reyes@brightwaterrobotics.com",
+      display_value: "jordan.reyes@brightwaterrobotics.com",
       dnc_state: null,
       verification_status: "unverified",
       suppressed_at: null,

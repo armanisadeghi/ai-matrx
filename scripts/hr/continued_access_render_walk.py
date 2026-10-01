@@ -10,7 +10,7 @@ own income, and that when the employer has not opted in they are told so in a se
 🚨 WHY A SYNTHETIC ACCOUNT AND A REAL TOKEN. The house pattern (hrb008_postgrest_door_walk.py):
 set the password of a SYNTHETIC test account through the admin API, then exchange it for a real
 Supabase-issued session. No real person's credential is ever touched, and nothing is typed into a
-login form by hand. The account here — zzz.departed.alumni@example.test — exists only for this
+login form by hand. The account here — rowan.whitaker@example.test — exists only for this
 fixture.
 
 🚨 WHAT THIS MUTATES. It flips the employer org's two continued-access knobs (to walk portal-OFF
@@ -27,11 +27,11 @@ from playwright.async_api import async_playwright
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
 
 ORIGIN   = "http://localhost:3000"
-ORG      = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Write Target Sandbox
-ALUMNI_EMAIL = "zzz.departed.alumni@example.test"
+ORG      = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Oak Street Studio
+ALUMNI_EMAIL = "rowan.whitaker@example.test"
 ALUMNI_UID   = "0c2f61fa-6d3d-4705-bee9-fb8cd1280c4a"
 ADMIN_UID    = "87a6e699-3622-4869-8843-d0867456c0dd"
-EMPLOYMENT   = "0b4eec20-97a0-45fd-9078-8dfc899fec1f"       # Zzzterm Withcomp, terminated 2026-08-20
+EMPLOYMENT   = "0b4eec20-97a0-45fd-9078-8dfc899fec1f"       # Rowan Whitaker, terminated 2026-08-20
 PROOF_PW     = "ContinuedAccessRenderWalk2026!"
 SHOTS        = "/private/tmp/claude-501/-Users-armanisadeghi-code-common-docs/c70d36d3-9188-4d99-aaed-c2f11032e2eb/scratchpad/shots"
 
@@ -152,7 +152,7 @@ async def main():
         # ---------- (a) PORTAL OFF: a sentence, not a blank page ----------
         await set_knob("portal_enabled", False)
         page, ctx, body, errs = await open_portal(alumni, "/portal", "01_portal_off.png")
-        rec("PORTAL OFF — the org is named on screen", "Write Target Sandbox" in body, body[:160])
+        rec("PORTAL OFF — the org is named on screen", "Oak Street Studio" in body, body[:160])
         rec("PORTAL OFF — refusal is a SENTENCE, not an empty page",
             "does not offer a portal to people who have left" in body, body[:240])
         rec("PORTAL OFF — no consent card is rendered",
@@ -164,7 +164,7 @@ async def main():
         await set_knob("verification_consent_enabled", True)
         page, ctx, body, errs = await open_portal(alumni, "/portal", "02_portal_on.png")
         rec("PORTAL ON — the page renders the portal for a departed member",
-            "Your portal" in body and "Write Target Sandbox" in body, body[:200])
+            "Your portal" in body and "Oak Street Studio" in body, body[:200])
         rec("PORTAL ON — access-does-not-expire is stated",
             "does not expire" in body, body[:240])
         rec("PORTAL ON — the enabled aspect renders",
@@ -180,7 +180,7 @@ async def main():
         await ctx.close()
         page, ctx, body, errs = await open_portal(alumni, f"/portal/{ORG}", "04_portal_by_org.png")
         rec("the per-organization route renders that org only",
-            "Write Target Sandbox" in body, body[:200])
+            "Oak Street Studio" in body, body[:200])
         await ctx.close()
 
         await browser.close()

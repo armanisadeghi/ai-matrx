@@ -24,7 +24,7 @@ const CREWS = [
   ["Rincon Plumbing Co", null],
   ["Birchwood Avenue Renovation", "home-renovation"],
   ["Ironclad Mobile Mechanic", "ironclad-mobile-mechanic"],
-  ["Ironline Fitness", "fixture-ironline-fitness-f1wa0s"],
+  ["Ironline Fitness", "ironline-fitness-club"],
   ["Hands & Hope Alliance", "hands-and-hope-alliance"],
 ];
 

@@ -1687,7 +1687,7 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
           rows: [
             { payPeriodEmploymentId: "aaaa0001-0000-4000-8000-000000000001", employmentId: "11111111-1111-4111-8111-111111111111", rowState: "open", health: "awaiting", flowKey: "timecard_attestation", instanceId: "470e7247-0000-4000-8000-000000000001", instanceState: "active", failureClass: null, failureId: null, attestationOutcome: null, attestationNote: null, attestationClosedAt: null, attestedAt: null, managerApprovedAt: null, unableReason: null },
             /*
-             * 🚨 U2 — COPIED FIELD-FOR-FIELD FROM THE REAL ROW: G2V Window Biweekly,
+             * 🚨 U2 — COPIED FIELD-FOR-FIELD FROM THE REAL ROW: Office Staff — Bi-weekly,
              * pay_period_employment 3a71adf6, read live 2026-08-27. An APPROVED row whose subject
              * never confirmed the hours, and who never could — they have no platform login.
              *

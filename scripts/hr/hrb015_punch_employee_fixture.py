@@ -5,8 +5,8 @@ WHY THIS SCRIPT EXISTS
 ----------------------
 Every punch and timecard surface in this lane is built for a person who is NOT an administrator:
 they clock in, they attest their own week, and they see nothing about anybody else. The scenario
-org (Write Target Sandbox) could not stage that person. Of its active employments, only two carry
-BOTH a login and a punch-enabled worker class — Armani Sadeghi and G2V-Priya Raman — and both hold
+org (Oak Street Studio) could not stage that person. Of its active employments, only two carry
+BOTH a login and a punch-enabled worker class — Armani Sadeghi and Priya Raman — and both hold
 `hr_admin`. Every OTHER employment with a login is a `contractor`, and a contractor is refused at
 the clock by design ("Contractors do not clock in"). So every self-service walk in the lane was
 being proved by an administrator, whose reach can hide a missing self-service arm: an admin passes
@@ -49,13 +49,13 @@ import sys
 
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
 
-ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"            # Write Target Sandbox (the G2S scenario org)
+ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"            # Oak Street Studio (the studio scenario org)
 HR_ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"  # admin@admin.com, hr_admin in this org
 
 # 🚨 A RESERVED, NON-DELIVERABLE ADDRESS. `.invalid` is reserved by RFC 2606 and can never be
 # registered, so this fixture can never mail a real person and can never collide with a real signup.
-EMAIL = "zzz.l3.punch.employee@example.invalid"
-LEGAL_FIRST, LEGAL_LAST = "Zzz", "Punchemployee"
+EMAIL = "marcus.tillman@example.test"
+LEGAL_FIRST, LEGAL_LAST = "Marcus", "Tillman"
 
 JOB_TITLE = "6e2275c6-47a4-4b6a-9ff4-f48e8adeedb0"     # Operations Specialist
 LOCATION = "0ebbf294-2c02-4c0f-968f-fe780bf000ac"      # Sandbox HQ (US) — the clock needs a
@@ -63,7 +63,7 @@ DEPARTMENT = "6715f29c-c677-4546-9c9a-5e2b591ab16e"    # Operations      jurisdi
 HIRE_DATE = "2026-08-01"
 
 # The control for the "no admin capabilities" half: someone else in the same org, whose clock this
-# person must NOT be able to read. G2S-CAOT Calla Ortega has no login and is nobody's fixture here.
+# person must NOT be able to read. Calla Ortega has no login and is nobody's fixture here.
 OTHER_EMPLOYMENT = "6b916a40-8006-494b-949e-2baeb263c5ac"
 
 
@@ -309,7 +309,7 @@ async def main() -> None:  # noqa: C901
             f"\n  login user   {user_id}"
             f"\n  employee     {employee_id}  ({row['display_name']}, {row['employee_number']})"
             f"\n  employment   {emp}"
-            f"\n  org          {ORG}  (Write Target Sandbox)"
+            f"\n  org          {ORG}  (Oak Street Studio)"
             "\n  surface      /hr/me/time?org=2643e470-b275-47f3-95f3-ae275ad3ca47"
         )
         if "--session" in sys.argv:

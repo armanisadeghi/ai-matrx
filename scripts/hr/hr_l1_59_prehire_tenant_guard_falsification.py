@@ -39,33 +39,33 @@ def load_env(path):
 
 
 # ---- personas (auth.users.id) --------------------------------------------------------------
-PRIYA = ("priya",  "20149d3f-6572-4263-b43c-7e52f0e42058", "admin+g2v.priya@admin.com")
+PRIYA = ("priya",  "20149d3f-6572-4263-b43c-7e52f0e42058", "priya.raman@example.test")
 ADMIN = ("admin",  "87a6e699-3622-4869-8843-d0867456c0dd", "admin@admin.com")
 DANA  = ("dana",   "f83af954-1fd1-46d5-bfc1-54cb27d98666", "dana.ruiz@example.test")
-TOMO  = ("tomo",   "daeb6d44-a7dd-4085-aba2-5025fb711b79", "g2t13.tomas@example.test")
+TOMO  = ("tomo",   "daeb6d44-a7dd-4085-aba2-5025fb711b79", "tomas.iversen@example.test")
 
 # ---- subjects: (label, employee_id, employment_id, org) -------------------------------------
-WTS  = "2643e470-b275-47f3-95f3-ae275ad3ca47"   # Write Target Sandbox   (priya is hr_admin here)
-G2P1 = "304cd2ed-a65e-4c52-8375-324e605d16bd"   # ZZZ G2 Activation Probe
-G2P2 = "319fad99-427c-4aaf-8e0b-17af53dd0424"   # ZZZ G2 Activation Probe Two
+WTS  = "2643e470-b275-47f3-95f3-ae275ad3ca47"   # Oak Street Studio   (priya is hr_admin here)
+G2P1 = "304cd2ed-a65e-4c52-8375-324e605d16bd"   # Fairview People
+G2P2 = "319fad99-427c-4aaf-8e0b-17af53dd0424"   # Fairview People II
 
-FOREIGN_PREHIRE_A = ("foreign prehire (G2T-Owen Fitzgerald, Probe Two)",
+FOREIGN_PREHIRE_A = ("foreign prehire (Owen Fitzgerald, Probe Two)",
                      "32204298-1cf6-4d99-af67-91eeb9baeebc", "3a522021-6abf-4fca-b405-644d99dbdf5b", G2P2)
-FOREIGN_PREHIRE_B = ("foreign prehire (Zzz Trapprobe, Probe One)",
+FOREIGN_PREHIRE_B = ("foreign prehire (Tomas Iversen, Probe One)",
                      "6957b91a-793e-4d6c-956b-540563d50077", "54f71f97-6b08-4887-86bd-7d608938a440", G2P1)
-# 🚨 Zzz Trapprobe carries tomo's own login_user_id, so tomo reaches it on the SELF lane and it
+# 🚨 Tomas Iversen carries tomo's own login_user_id, so tomo reaches it on the SELF lane and it
 # cannot serve as tomo's foreign subject. Ingrid has no login at all — a pure outsider probe.
-FOREIGN_PREHIRE_C = ("foreign prehire (G2H-Ingrid Halvorsen, Probe One)",
+FOREIGN_PREHIRE_C = ("foreign prehire (Ingrid Halvorsen, Probe One)",
                      "3d7b5d36-0796-4c1b-8885-5f78d48d4eda", "57aaa438-add8-4ee4-bf33-af6927c7269a", G2P1)
-SELF_PREHIRE      = ("their OWN prehire record (Zzz Trapprobe IS tomo)",
+SELF_PREHIRE      = ("their OWN prehire record (Tomas Iversen IS tomo)",
                      "6957b91a-793e-4d6c-956b-540563d50077", "54f71f97-6b08-4887-86bd-7d608938a440", G2P1)
-OWN_PREHIRE       = ("OWN-org prehire (Mari36 Okonkwo, Sandbox)",
+OWN_PREHIRE       = ("OWN-org prehire (Mari Okonkwo, Sandbox)",
                      "b96d96ba-5e17-46ba-ae35-7b1afc444208", "4f0b65e8-3e6d-4f54-81d3-7fbfb279af8b", WTS)
-OWN_ACTIVE        = ("OWN-org active (L5A5 Hana Petrov, Sandbox)",
+OWN_ACTIVE        = ("OWN-org active (Hana Petrov, Sandbox)",
                      "51911606-103d-42f0-8189-da394942f9f1", "463755b8-9ee3-4841-907c-4637e85ffae5", WTS)
 FOREIGN_ACTIVE    = ("foreign active (Armani Sadeghi, Probe Two)",
                      "ad82a0ad-9daa-4230-ad20-ad591b36b631", "ab84f6a2-b99b-4abe-900f-7d0dacc2297d", G2P2)
-OWN_TERMINATED    = ("OWN-org TERMINATED (Zzzterm Withcomp, Sandbox)",
+OWN_TERMINATED    = ("OWN-org TERMINATED (Rowan Whitaker, Sandbox)",
                      "5db5f793-d07a-457f-8b2d-ee0535656e34", "0b4eec20-97a0-45fd-9078-8dfc899fec1f", WTS)
 
 R = []
@@ -147,7 +147,7 @@ async def main():
         rec(f"{tag} · {persona} -> {label} · hr_pending_changes", expect_pending, gc,
             f"positions={len(c.get('positions') or [])} comp={len(c.get('compensation') or [])}")
 
-    print("\n=== 1. THE LEAK: priya (hr_admin in Write Target Sandbox ONLY) -> a FOREIGN prehire ===")
+    print("\n=== 1. THE LEAK: priya (hr_admin in Oak Street Studio ONLY) -> a FOREIGN prehire ===")
     await three_doors("priya", FOREIGN_PREHIRE_A, False, False, False, "case 1")
 
     print("\n=== 2. the same leak in the OTHER affected org ===")

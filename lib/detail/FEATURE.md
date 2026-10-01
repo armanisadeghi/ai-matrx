@@ -61,7 +61,7 @@ land here. **The primitive is `@ai-matrx/detail`** (aidream `apps/shared/detail`
 
 🚨 **A TYPE'S LABEL IS NOT THE ROW'S** (chair, 2026-09-18). One registered type is regularly a family — `crm.party` holds **1,432** rows that are not persons and 460 that are — so `DetailRecordType.label` alone told a person that a company is a Person, in the header chip and in every stand-in title, above a field reading `organization` (N6). A registration that can tell from the row answers `labelForRow(row)`, and the core exposes it as `recordLabel` beside `typeLabel`. **Only the chip and the stand-in titles use it**: `DetailPresentationPane` keeps `typeLabel`, because "Every contact record now opens as a window" is a statement about the TYPE's setting, not about the row on screen. `features/crm/party-detail.ts` (F-47) is the registration that needs it.
 
-🚨 **AND A DOOR IN A FIELD SAYS WHAT IT OPENS.** `DetailField.ref` may carry a `name`; the body passes it (falling back to `field.text` unless that text IS the id) to the host's `doors.RefCell` port, and the host renders `EntityRef` — the platform's ONE named-door primitive — when there is a name, keeping `MatrxUuidCell` and its copy control when there is not. Before this a field whose value was "Acme Robotics" printed a truncated uuid.
+🚨 **AND A DOOR IN A FIELD SAYS WHAT IT OPENS.** `DetailField.ref` may carry a `name`; the body passes it (falling back to `field.text` unless that text IS the id) to the host's `doors.RefCell` port, and the host renders `EntityRef` — the platform's ONE named-door primitive — when there is a name, keeping `MatrxUuidCell` and its copy control when there is not. Before this a field whose value was "Brightwater Robotics" printed a truncated uuid.
 
 ---
 

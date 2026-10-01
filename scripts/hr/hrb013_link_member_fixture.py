@@ -26,9 +26,9 @@ import sys
 
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
 
-ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"  # Write Target Sandbox (G2)
+ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"  # Oak Street Studio (G2)
 # Optional argv[1] picks the address, so several purpose-made members can be staged.
-EMAIL = (sys.argv[1] if len(sys.argv) > 1 else "zzz.link.member@example.invalid")
+EMAIL = (sys.argv[1] if len(sys.argv) > 1 else "theo.lindgren@example.test")
 # admin@admin.com — owner/admin of the G2 org, so mbr_add's has_org_access gate passes.
 ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"
 

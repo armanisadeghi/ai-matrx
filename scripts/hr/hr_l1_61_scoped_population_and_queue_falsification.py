@@ -24,7 +24,7 @@ live has the two-employer shape that would exploit it, so what is falsifiable he
 extra conjunct removes NOTHING from a legitimate queue — asserted item-for-item, by id.
 
 🚨 THIS SCRIPT STAGES ONE FIXTURE AND ALWAYS REMOVES IT: a department-scoped `hr_admin` role for
-tomo in the Write Target Sandbox, inserted and hard-deleted in the same run (`finally`). It sets no
+tomo in the Oak Street Studio, inserted and hard-deleted in the same run (`finally`). It sets no
 password anywhere — tokens come from admin `generate_link` + `verify`.
 """
 import asyncio, os, sys, uuid
@@ -33,35 +33,35 @@ import asyncpg, httpx
 ENV = "/Users/armanisadeghi/code/aidream/.env"
 BASELINE = "--baseline" in sys.argv
 
-WTS = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Write Target Sandbox
-DEPT_FIELD_SERVICES = "d1c21852-5302-430a-8b76-60f97ca99250"   # G2F3 Field Services
-TOMO_EMPLOYMENT = "11dfa190-8762-4bca-b131-ee13ed397f72"       # Tomo Iversen-G32, WTS, active
+WTS = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Oak Street Studio
+DEPT_FIELD_SERVICES = "d1c21852-5302-430a-8b76-60f97ca99250"   # Field Services
+TOMO_EMPLOYMENT = "11dfa190-8762-4bca-b131-ee13ed397f72"       # Tomo Iversen, WTS, active
 
 PERSONAS = {
-    "tomo":  "g2t13.tomas@example.test",           # staged: hr_admin scoped to Field Services
-    "priya": "admin+g2v.priya@admin.com",          # hr_admin, scope_kind 'org' — must not break
+    "tomo":  "tomas.iversen@example.test",           # staged: hr_admin scoped to Field Services
+    "priya": "priya.raman@example.test",          # hr_admin, scope_kind 'org' — must not break
     "admin": "admin@admin.com",                    # hr_owner in 7 orgs — queue no-regression
 }
 
 # (label, employee_id, employment_id, in_field_services)
 SUBJECTS = [
-    ("PREHIRE in Field Services (Zzz Linkprobe)",
+    ("PREHIRE in Field Services (Lena Bergstrom)",
      "a1c0e2ad-af1a-4e21-b235-dbce7e7d9a0a", "35c46f75-3b5d-424d-b302-6ba47b7d3b44", True),
-    ("PREHIRE in Operations (Mari36 Okonkwo)",
+    ("PREHIRE in Operations (Mari Okonkwo)",
      "b96d96ba-5e17-46ba-ae35-7b1afc444208", "4f0b65e8-3e6d-4f54-81d3-7fbfb279af8b", False),
-    ("TERMINATED, last held Field Services (Zzzterm Withcomp)",
+    ("TERMINATED, last held Field Services (Rowan Whitaker)",
      "5db5f793-d07a-457f-8b2d-ee0535656e34", "0b4eec20-97a0-45fd-9078-8dfc899fec1f", True),
-    ("TERMINATED, last held Operations (G2offb Offboardme)",
+    ("TERMINATED, last held Operations (Yusuf Demir)",
      "f92cc1e8-5536-46bb-8233-2910a011f4ba", "858edf3c-834c-49dd-8f66-2dfe3a600329", False),
-    ("ACTIVE in Field Services (L5A5 Hana Petrov)",
+    ("ACTIVE in Field Services (Hana Petrov)",
      "51911606-103d-42f0-8189-da394942f9f1", "463755b8-9ee3-4841-907c-4637e85ffae5", True),
     ("ACTIVE in Operations (Nadia Okafor)",
      "2ec4cbc9-6140-465d-8920-0c74a3937a82", "c26d586a-a18a-4ea8-a249-a6d3f0f0132b", False),
 ]
-FOREIGN_PREHIRE = ("FOREIGN-ORG prehire (G2T-Owen Fitzgerald, Probe Two)",
+FOREIGN_PREHIRE = ("FOREIGN-ORG prehire (Owen Fitzgerald, Probe Two)",
                    "32204298-1cf6-4d99-af67-91eeb9baeebc", "3a522021-6abf-4fca-b405-644d99dbdf5b")
 
-# 🚨 Zzz Linkprobe carries priya's own login, so SHE reaches it on the `self` lane — a lane that
+# 🚨 Lena Bergstrom carries priya's own login, so SHE reaches it on the `self` lane — a lane that
 # never touches hr.capability and therefore cannot move here. Asserting `hr_admin` for her would be
 # asserting the wrong thing about the right row.
 SELF_OF = {"priya": {"a1c0e2ad-af1a-4e21-b235-dbce7e7d9a0a"}}
@@ -144,7 +144,7 @@ async def main():
             c = await rpc("hr_pending_changes", {"p_employment_id": employment_id}, tok[persona])
             return v, bool(h.get("granted")), bool(c.get("granted")), p
 
-        print("\n=== R1 · a DEPARTMENT-scoped hr_admin (tomo, scoped to G2F3 Field Services) ===")
+        print("\n=== R1 · a DEPARTMENT-scoped hr_admin (tomo, scoped to Field Services) ===")
         print("    In his department -> hr_admin. Outside it -> the peer directory tier only.")
         for label, emp_id, empl_id, mine in SUBJECTS:
             v, gh, gc, p = await viewer("tomo", emp_id, empl_id)

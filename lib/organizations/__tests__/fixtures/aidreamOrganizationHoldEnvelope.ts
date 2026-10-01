@@ -15,7 +15,7 @@
 //       set_on="request",
 //       organizations=[{
 //           "id": "11111111-1111-1111-1111-111111111111",
-//           "name": "Acme Robotics",
+//           "name": "Brightwater Robotics",
 //           "abbreviation": "ACME",
 //       }],
 //   )
@@ -33,7 +33,7 @@
 //       "set_on": "request",
 //       "remedy": "Choose the organization you're working in and send it with the request (the X-Organization-Id header), then try again.",
 //       "organizations": [
-//         { "id": "11111111-1111-1111-1111-111111111111", "name": "Acme Robotics", "abbreviation": "ACME" }
+//         { "id": "11111111-1111-1111-1111-111111111111", "name": "Brightwater Robotics", "abbreviation": "ACME" }
 //       ],
 //       "memberships_url": "/auth/organizations"
 //     }
@@ -52,7 +52,7 @@ export const AIDREAM_ORGANIZATION_HOLD_MESSAGE =
 
 export const AIDREAM_ORGANIZATION_HOLD_MEMBER = {
   id: "11111111-1111-1111-1111-111111111111",
-  name: "Acme Robotics",
+  name: "Brightwater Robotics",
   abbreviation: "ACME",
 };
 

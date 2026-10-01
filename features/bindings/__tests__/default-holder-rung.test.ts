@@ -75,13 +75,13 @@ describe("the bottom rung's copy", () => {
   it("refuses an org-homed mandate by naming THAT organization's administrators", () => {
     const offer = rungModule().defaultHolderRungOffer({
       homeOrganizationId: ACME,
-      homeOrganizationName: "Acme Robotics",
+      homeOrganizationName: "Brightwater Robotics",
       homeOrganizationRole: "member",
       isSuperAdmin: false,
     });
     expect(offer.offered).toBe(false);
     const refusal = offer.refusal ?? "";
-    expect(refusal).toContain("Acme Robotics");
+    expect(refusal).toContain("Brightwater Robotics");
     expect(refusal).toMatch(/administrator/i);
     // …and what the reader CAN do instead, which is the half a refusal without
     // a remedy always loses.
@@ -176,7 +176,7 @@ describe("who may set the mandate's own default", () => {
   it.each(CASES)("$name → offered: $offered", ({ home, role, superAdmin, offered }) => {
     const result = rungModule().defaultHolderRungOffer({
       homeOrganizationId: home,
-      homeOrganizationName: home === SYSTEM_ORG ? "Matrx System" : "Acme Robotics",
+      homeOrganizationName: home === SYSTEM_ORG ? "Matrx System" : "Brightwater Robotics",
       homeOrganizationRole: role,
       isSuperAdmin: superAdmin,
     });
@@ -191,11 +191,11 @@ describe("who may set the mandate's own default", () => {
   it("names the HOME organization in the label, never the caller's active one", () => {
     const offer = rungModule().defaultHolderRungOffer({
       homeOrganizationId: ACME,
-      homeOrganizationName: "Acme Robotics",
+      homeOrganizationName: "Brightwater Robotics",
       homeOrganizationRole: "admin",
       isSuperAdmin: false,
     });
-    expect(offer.label).toBe("Default for Acme Robotics");
+    expect(offer.label).toBe("Default for Brightwater Robotics");
     expect(
       rungModule().defaultHolderRungOffer({
         homeOrganizationId: SYSTEM_ORG,
@@ -309,7 +309,7 @@ describe("saving at the bottom rung", () => {
       dispatchWith({
         home_organization_id: ACME,
         use_latest: true,
-        applies_in: "Everyone in Acme Robotics runs this unless something above it is set.",
+        applies_in: "Everyone in Brightwater Robotics runs this unless something above it is set.",
       }),
       "podcast.multihost_script",
       {
@@ -322,7 +322,7 @@ describe("saving at the bottom rung", () => {
       },
     );
     expect(report.appliesIn).toBe(
-      "Everyone in Acme Robotics runs this unless something above it is set.",
+      "Everyone in Brightwater Robotics runs this unless something above it is set.",
     );
 
     const silent = await overridesModule().putMandateDefaultHolder(

@@ -37,9 +37,9 @@ import sys
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
 
 ORG = "7cd12da2-2213-4378-8fba-a9e2dc4ea657"            # Castellano & Reyes, LLP
-EMPLOYEE = "2e7c819d-16b1-4161-9203-fb7549ad7699"       # Zzz Payfixture, EMP-00002
+EMPLOYEE = "2e7c819d-16b1-4161-9203-fb7549ad7699"       # Marguerite Doyle, EMP-00002
 EMPLOYMENT = "22e13bc7-1cb5-427b-aaba-281f68fd3ca2"
-EMAIL = "zzz.payfixture@example.invalid"
+EMAIL = "marguerite.doyle@example.test"
 HR_ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"  # admin@admin.com, hr_admin here
 EXPECTED_AMOUNT = 132500
 
@@ -255,7 +255,7 @@ async def main() -> None:  # noqa: C901
         print(
             "\nidentity for the browser look:"
             f"\n  email        {EMAIL}"
-            f"\n  employee     {EMPLOYEE}  (Zzz Payfixture, EMP-00002)"
+            f"\n  employee     {EMPLOYEE}  (Marguerite Doyle, EMP-00002)"
             f"\n  employment   {EMPLOYMENT}"
             f"\n  org          {ORG}  (castellano-reyes)"
             "\n  surface      /hr/me/pay?org=castellano-reyes"

@@ -93,7 +93,7 @@ export function HrDecisionPanel({
      * 🚨 THE SAME PANEL, HOSTED SOMEWHERE ELSE — NOT A SECOND ONE (hr_c4_55 / D9).
      *
      * `/hr/tasks` has a small window control beside each row, and it opened `DataRowInspector`:
-     * a floating window titled "Leave request — Tomo Iversen-G32" whose entire body was
+     * a floating window titled "Leave request — Tomo Iversen" whose entire body was
      * `STEP_ID … / INSTANCE_ID … / FLOW_KEY leave_request / STEP_KEY manager_approval / DUE_AT …
      * / AUTONOMY_MODE 4 / RESOLUTION_PATH authority`, with no Approve and no Reject. A raw field
      * dump handed to a manager as the item's detail.

@@ -41,7 +41,7 @@ const ASKS = {
   form: {
     org: "11d47e36-4b1e-46b8-bdf6-8ef928b730fb",
     orgName: "Ironline Fitness",
-    slug: "fixture-ironline-fitness-f1wa0s",
+    slug: "ironline-fitness-club",
     tables: [
       { id: "e4a35317-9922-4ef4-be1e-f4b748dbe97c", name: "classes" },
       { id: "a2eacc8b-8d7c-4172-985d-b33888d95470", name: "plans" },

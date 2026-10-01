@@ -261,7 +261,7 @@ export function SaveContactFromSelectionDialog({
               id="crm-save-name"
               value={draft.name}
               onChange={(e) => set("name", e.target.value)}
-              placeholder={isPerson ? "Jane Cole" : "Acme Robotics"}
+              placeholder={isPerson ? "Jane Cole" : "Brightwater Robotics"}
               autoFocus
             />
           </div>

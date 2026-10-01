@@ -5,10 +5,10 @@ Run:  cd /Users/armanisadeghi/code/aidream && uv run --with asyncpg --with pytho
 
 🚨 WHAT WAS MISSING, AND WHY THE WALK COULD NOT RUN. Verifier B could not move a timecard digest
 mid-batch because no fixture put all three facts on ONE row at once:
-  (1) an ACTIVE employee G2V-Priya Raman can punch for,
+  (1) an ACTIVE employee Priya Raman can punch for,
   (2) whose pay period has ENDED (so a punch into it is a genuine mid-batch move, not a live day),
   (3) whose timesheet is SUBMITTED, so a `timecard_approval` step actually exists to batch.
-Every candidate held two of the three. The T-L10-3 pay group's own member (Zzz Punchemployee) has
+Every candidate held two of the three. The T-L10-3 pay group's own member (Marcus Tillman) has
 an ended period, but its timesheet was already APPROVED — no live step. The only ended+submitted
 timesheets left belonged to TERMINATED employments with zero punches, which nobody can punch for.
 
@@ -21,7 +21,7 @@ Nothing here writes an hr table directly.
 🚨 THE PERIOD IS BACKDATED BY CONSTRUCTION, NOT BY EDITING A ROW. The new pay group's
 `first_period_start_on` is 2026-08-01, so pay_period_generate lays down whole weekly periods that
 have already ended. No existing period, group, or employment is touched — this fixture is additive,
-so the R40 T-L10-3 group and Zzz Punchemployee keep the state their own proofs recorded.
+so the R40 T-L10-3 group and Marcus Tillman keep the state their own proofs recorded.
 
 IDEMPOTENT: every step checks for its own prior result first. Re-running prints EXISTS and changes
 nothing.
@@ -32,18 +32,18 @@ from dotenv import load_dotenv
 
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
 
-ORG        = "2643e470-b275-47f3-95f3-ae275ad3ca47"   # Write Target Sandbox
+ORG        = "2643e470-b275-47f3-95f3-ae275ad3ca47"   # Oak Street Studio
 HR_ADMIN   = "87a6e699-3622-4869-8843-d0867456c0dd"   # admin@admin.com, hr_admin in this org
-PRIYA_UID  = "20149d3f-6572-4263-b43c-7e52f0e42058"   # G2V-Priya Raman
+PRIYA_UID  = "20149d3f-6572-4263-b43c-7e52f0e42058"   # Priya Raman
 EMPLOYER   = "2ac6a8e9-08da-4a0a-a578-cbfcd0d7f6e1"
 JOB_TITLE  = "6e2275c6-47a4-4b6a-9ff4-f48e8adeedb0"
 LOCATION   = "0ebbf294-2c02-4c0f-968f-fe780bf000ac"
 DEPARTMENT = "6715f29c-c677-4546-9c9a-5e2b591ab16e"
 
-FIRST, LAST = "Zzzended", "Punchme"
-EMAIL       = "zzz.ended.punchme@example.test"
+FIRST, LAST = "Greta", "Holloway"
+EMAIL       = "greta.holloway@example.test"
 HIRE_DATE   = "2026-08-01"
-PG_NAME     = "T-L10-3 ended-period skip-walk (fixture)"
+PG_NAME     = "Hourly — Studio Crew"
 PG_FIRST    = "2026-08-01"
 THROUGH     = datetime.date(2026, 8, 29)      # lays down whole weeks; the last one ENDS 2026-08-28
 
@@ -110,7 +110,7 @@ async def main():
                                " where pay_group_id=$1::uuid order by period_end_on", pg)
     for p in periods: print("   period", p["period_start_on"], "→", p["period_end_on"], p["state"],
                             "ENDED" if str(p["period_end_on"]) < "2026-08-30" else "NOT ENDED")
-    # 🚨 THE REAL SHAPE OF VERIFIER B'S BLOCKER, MEASURED. G2V-Priya Raman's `hr_admin` role
+    # 🚨 THE REAL SHAPE OF VERIFIER B'S BLOCKER, MEASURED. Priya Raman's `hr_admin` role
     # assignment has `effective_from = 2026-08-27`, and hr.punch_record asks the capability AT THE
     # PUNCH'S OWN WORK DATE — not at today. So her punch reach is False on 2026-08-26 and earlier
     # and True from 2026-08-27. A weekly period she can punch into must therefore END on or after
@@ -169,7 +169,7 @@ async def main():
     # ---- 5b. attestation → approval, through the engine's own sweep -------------------------
     # 🚨 THE ORG REQUIRES ATTESTATION FIRST. `employee_attestation_required` resolves TRUE here, so
     # pay_period_transition launches `timecard_attestation`, not `timecard_approval`. This fixture's
-    # employee has no login, so nobody can attest — exactly the shape of the two Zzzrehire timecards
+    # employee has no login, so nobody can attest — exactly the shape of the two Elias Navarro timecards
     # already in this org, whose attestation FAILED and whose `timecard_approval` was then launched
     # by hr.timecard_wf_apply. hr.timecard_attestation_sweep is the sanctioned instrument for that
     # transition; the knob is NOT flipped, because a walk fixture may not change how the whole
@@ -188,7 +188,7 @@ async def main():
           from hr.workflow_instance wi join hr.workflow_step ws on ws.workflow_instance_id = wi.id
          where wi.target_id = $1::uuid order by ws.step_order""", ppe)
     print("\n=== STAGED ===")
-    print(f"  employee            Zzzended Punchme   employment {emp}")
+    print(f"  employee            Greta Holloway   employment {emp}")
     print(f"  pay group           {PG_NAME}   {pg}")
     print(f"  period              {target['period_start_on']} → {target['period_end_on']}  (ENDED)  {target['id']}")
     print(f"  timesheet (target)  {ppe}")

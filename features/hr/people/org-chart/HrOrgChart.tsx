@@ -614,7 +614,7 @@ function ChartEdges({ layout }: { layout: OrgLayout }) {
  * `display_name` is null exactly when THIS viewer may not have the name. Keying on
  * `opted_out` would blank the name for the people entitled to see it; verified live,
  * where one node arrives `{display_name: null, opted_out: true}` for a peer and
- * `{display_name: 'G2V-Priya Raman', opted_out: true}` for an hr_admin.
+ * `{display_name: 'Priya Raman', opted_out: true}` for an hr_admin.
  */
 function isWithheld(node: {
   display_name: string | null;

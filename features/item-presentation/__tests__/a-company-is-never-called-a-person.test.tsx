@@ -226,10 +226,10 @@ describe("N5 — the reads the dossier needs beyond one table", () => {
     if (!("row" in result)) throw new Error("the real row must load");
     const fields = partyType().fields(result.row);
     const byLabel = new Map(fields.map((f) => [f.label, f]));
-    expect(byLabel.get("Email")?.text).toBe("jordan.reyes@acmerobotics.com");
+    expect(byLabel.get("Email")?.text).toBe("jordan.reyes@brightwaterrobotics.com");
     expect(byLabel.get("Phone")?.text).toBe("+13105550199");
     const employer = fields.find((f) => f.key === "employer");
-    expect(employer?.label).toBe("Company · Acme Robotics");
+    expect(employer?.label).toBe("Company · Brightwater Robotics");
     expect(employer?.ref).toEqual({ token: "party", id: REAL_EMPLOYER.id });
   });
 });

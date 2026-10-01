@@ -10,7 +10,7 @@ wording them the same accuses a person with no login of a silence that was the p
 
 Proving the RENDERING needs a row that actually carries the reason, and at the time this was written
 NO row in the database carried the key at all. The one live candidate — an open
-`unactionable_no_reach` failure on G2S-CAOT Calla Ortega — belongs to another lane's in-flight work,
+`unactionable_no_reach` failure on Calla Ortega — belongs to another lane's in-flight work,
 and closing a workflow failure is a one-way move. So this stages its own, end to end, on a
 purpose-made person nobody else's fixture touches.
 
@@ -49,7 +49,7 @@ import re
 
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
 
-ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"            # Write Target Sandbox
+ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"            # Oak Street Studio
 HR_ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"  # admin@admin.com, hr_admin here
 EMPLOYER_PROFILE = "2ac6a8e9-08da-4a0a-a578-cbfcd0d7f6e1"
 
@@ -57,8 +57,8 @@ EMPLOYER_PROFILE = "2ac6a8e9-08da-4a0a-a578-cbfcd0d7f6e1"
 # `first_period_start_on` when updating an existing group — it returns `{"ok": true}` and changes
 # nothing. A group's cadence is therefore fixed at creation, so a different window needs a
 # different group rather than an edit that reports success and does nothing.
-GROUP_NAME = "R39 no_reach wording Aug21 (fixture)"
-LEGAL_FIRST, LEGAL_LAST = "Zzz", "Noreach"
+GROUP_NAME = "Seasonal Crew — Bi-weekly"
+LEGAL_FIRST, LEGAL_LAST = "Imani", "Brooks"
 JOB_TITLE = "6e2275c6-47a4-4b6a-9ff4-f48e8adeedb0"     # Operations Specialist
 LOCATION = "0ebbf294-2c02-4c0f-968f-fe780bf000ac"      # Sandbox HQ (US)
 DEPARTMENT = "6715f29c-c677-4546-9c9a-5e2b591ab16e"    # Operations

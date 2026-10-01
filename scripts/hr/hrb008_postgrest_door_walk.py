@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 import asyncpg
 
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
-WALKER_EMAIL = "g2t13.tomas@example.test"
+WALKER_EMAIL = "tomas.iversen@example.test"
 WALKER_UID   = "daeb6d44-a7dd-4085-aba2-5025fb711b79"
 WALKER_EMP   = "11dfa190-8762-4bca-b131-ee13ed397f72"
 PROOF_PW     = "Hrb008DoorWalk2026!"

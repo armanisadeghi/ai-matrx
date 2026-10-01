@@ -13,7 +13,7 @@ the HR admin can read; it is the departed person's own token returning NOTHING f
 data. Every access claim below is measured through the subject's session, twice: the doors through
 PostgREST, and the tables through RLS with that user's JWT claims.
 
-Fixture personas only: the subject is zzz.link.member2@example.invalid, a fixture org member with
+Fixture personas only: the subject is anika.joshi@example.test, a fixture org member with
 no employee record. Nothing here touches a real person.
 """
 import asyncio, json, os, sys, time
@@ -22,8 +22,8 @@ from datetime import date
 import asyncpg, httpx
 
 ENV = "/Users/armanisadeghi/code/aidream/.env"
-ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # the G2 fixture employer
-# 🚨 The actor is the org OWNER, not the fixture HR admin (admin+g2v.priya@admin.com, 21
+ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Oak Street Studio
+# 🚨 The actor is the org OWNER, not the fixture HR admin (priya.raman@example.test, 21
 # capabilities including working_record.write), because `hr_employee_create` calls
 # `public.mbr_add` unconditionally for a login-bearing hire and mbr_add raises
 # "membership manager role required" (42501) for any caller who is not an org manager — even when
@@ -34,7 +34,7 @@ HR_ADMIN = "admin@admin.com"                           # 37 capabilities, org ow
 # soft-deleted employee row still occupies that slot, so re-using one subject would make the walk
 # unrepeatable — and would test a reset instead of a hire.
 STAMP = date.today().strftime("%m%d") + f"{int(time.time()) % 100000:05d}"
-SUBJECT = f"zzz.tl15.{STAMP}@example.invalid"
+SUBJECT = f"elias.navarro.{STAMP}@example.test"
 SUBJECT_UID = None   # created below
 PAY_GROUP = "5fd777b5-923f-4253-86ca-369101059159"
 JOB_TITLE = "6e2275c6-47a4-4b6a-9ff4-f48e8adeedb0"
@@ -151,8 +151,8 @@ async def main():
     print("\n=== A. SPELL 1, through hr_employee_create ===")
     st, ack = await rpc(hr_tok, "hr_employee_create", {"p_payload": {
         "organization_id": ORG, "link_user_id": SUBJECT_UID,
-        "legal_first_name": "Zzzrehire", "legal_last_name": "Walkme",
-        "employee_number": f"ZZZ-TL15-{STAMP}",
+        "legal_first_name": "Elias", "legal_last_name": "Navarro",
+        "employee_number": f"EMP-{STAMP}",
         "hire_date": SPELL1_HIRE, "pay_group_id": PAY_GROUP, "job_title_id": JOB_TITLE,
         "department_id": DEPARTMENT, "location_id": LOCATION, "worker_class": "employee"}})
     rec("hr_employee_create accepted spell 1", True, bool(ack.get("ok")), f"{st} {ack}")
@@ -229,7 +229,7 @@ async def main():
         "from hr.employment where id=$1::uuid", spell1["id"])
     st, refuse = await rpc(hr_tok, "hr_employee_create", {"p_payload": {
         "organization_id": ORG, "link_user_id": SUBJECT_UID,
-        "legal_first_name": "Zzzrehire", "legal_last_name": "Walkme",
+        "legal_first_name": "Elias", "legal_last_name": "Navarro",
         "hire_date": SPELL2_HIRE, "pay_group_id": PAY_GROUP, "job_title_id": JOB_TITLE,
         "department_id": DEPARTMENT, "location_id": LOCATION, "worker_class": "employee"}})
     rec("a second record is REFUSED by name", "rehire_required", refuse.get("reason"),
@@ -245,7 +245,7 @@ async def main():
 
     st, ack2 = await rpc(hr_tok, "hr_employee_create", {"p_payload": {
         "organization_id": ORG, "link_user_id": SUBJECT_UID, "is_rehire": True,
-        "legal_first_name": "Zzzrehire", "legal_last_name": "Walkme",
+        "legal_first_name": "Elias", "legal_last_name": "Navarro",
         "hire_date": SPELL2_HIRE, "pay_group_id": PAY_GROUP, "job_title_id": JOB_TITLE,
         "department_id": DEPARTMENT, "location_id": LOCATION, "worker_class": "employee"}})
     rec("the rehire is accepted", True, bool(ack2.get("ok")), f"{st} {json.dumps(ack2)[:250]}")

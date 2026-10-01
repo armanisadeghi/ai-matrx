@@ -32,9 +32,9 @@ MIG = (
 )
 
 ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"
-EMPLOYMENT = "1a7033e5-1536-4f15-9549-4e5dd85285c5"      # Zzz Punchemployee
+EMPLOYMENT = "1a7033e5-1536-4f15-9549-4e5dd85285c5"      # Marcus Tillman
 EMPLOYEE_UID = "ab94c16c-b4a5-49f0-a068-e2a11db34a2c"
-MANAGER_UID = "20149d3f-6572-4263-b43c-7e52f0e42058"     # G2V-Priya Raman, working_record.write
+MANAGER_UID = "20149d3f-6572-4263-b43c-7e52f0e42058"     # Priya Raman, working_record.write
 PUNCH = "737bdaa8-b894-4873-9215-425d105d1955"           # clock_in, 2026-08-27
 REASON = "Clock-in was recorded an hour late after the badge reader outage."
 
@@ -159,7 +159,7 @@ async def main() -> int:
             tpl = templates.get(r["channel"]) or {}
             b = dict(payload)
             b["organization"] = {"id": ORG}
-            b["employer"] = {"name": "Write Target Sandbox", "short_name": "WTS"}
+            b["employer"] = {"name": "Oak Street Studio", "short_name": "WTS"}
             link = {"preferences": absolute(NOTIFICATION_PREFERENCES_PATH)}
             link.update(link_bindings(r["deep_link"], "https://www.aimatrx.com/r/abcdefgh23"))
             b["link"] = link
@@ -285,7 +285,7 @@ async def main() -> int:
             t = json.loads(await conn.fetchval(
                 "select config->'templates' from communication.notification_event_type "
                 " where event_key=$1 and deleted_at is null", ek))
-            b = {"employer": {"short_name": "WTS", "name": "Write Target Sandbox"},
+            b = {"employer": {"short_name": "WTS", "name": "Oak Street Studio"},
                  "organization": {"id": ORG},
                  "request": {"label": "Timecard attestation", "subject": "Alexandra Fernandez",
                              "reference": "abc12345"},

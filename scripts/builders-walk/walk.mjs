@@ -48,7 +48,7 @@ export const CASES = {
     orgName: "Ironline Fitness",
     table: "60df8b1e-d63a-482d-9600-22469c93263c",
     tableName: "members",
-    slug: "fixture-ironline-fitness-f1wa0s",
+    slug: "ironline-fitness-club",
   },
   booking: {
     org: "0a751390-558e-4775-ba0e-3891bdf82d45",

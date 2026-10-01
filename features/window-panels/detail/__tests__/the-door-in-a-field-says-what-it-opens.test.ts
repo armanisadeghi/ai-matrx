@@ -3,7 +3,7 @@
 // `DetailBody` renders a field whose value names another record through the host's
 // `doors.RefCell` port, and that port was bound to `MatrxUuidCell` — which takes
 // no display name and can only show a truncated id. So a field whose text was
-// "Acme Robotics" printed `9e1d77aa…`: an identity the UI names, showing nothing a
+// "Brightwater Robotics" printed `9e1d77aa…`: an identity the UI names, showing nothing a
 // person can read, one click short of a dead end.
 //
 // The primitive now hands the name over (`DetailField.ref.name`, else the field's

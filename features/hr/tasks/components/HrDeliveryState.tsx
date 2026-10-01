@@ -153,7 +153,7 @@ function statusLabel(status: string | null | undefined): string {
  * 🚨 THE SENTENCE THE PERSON ACTUALLY RECEIVED, SHOWN AS TEXT.
  *
  * The chips say whether a notice landed; they never said WHAT it said. `hr.workflow_notice.body`
- * is the rendered sentence itself — "Leave request for Tomo Iversen-G32 was rejected." — and an
+ * is the rendered sentence itself — "Leave request for Tomo Iversen was rejected." — and an
  * approver looking at "Email · delivered" has no way to know which words went out. It is shown
  * here as visible text, never as a `title`: the whole reason this file carries no tooltip is that
  * a hover cannot be touched, announced or screenshotted, and that applies twice over to the one

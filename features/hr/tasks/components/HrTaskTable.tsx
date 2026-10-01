@@ -250,7 +250,7 @@ export function HrTaskTable({
                 🚨 THE WINDOW CONTROL OPENED A RAW FIELD DUMP (hr_c4_55 / D9).
                 `MatrxDataTable`'s panel icon falls back to `DataRowInspector` when a table
                 declares no window body — so the small window beside each HR row opened
-                "Leave request — Tomo Iversen-G32" whose ENTIRE contents were `STEP_ID … /
+                "Leave request — Tomo Iversen" whose ENTIRE contents were `STEP_ID … /
                 INSTANCE_ID … / FLOW_KEY leave_request / STEP_KEY manager_approval / DUE_AT … /
                 PRIORITY normal / URGENT false / RESOLUTION_PATH authority / AUTONOMY_MODE 4`,
                 with no Approve and no Reject. The neighbouring `Open` link was fine the whole

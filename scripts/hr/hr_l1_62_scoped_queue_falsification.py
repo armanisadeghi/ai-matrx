@@ -15,8 +15,8 @@ door against the predicate the door itself calls proves only that the function i
 
 FIXTURES, both staged and hard-deleted in the same run (`finally`):
   1. a department-scoped hr_admin role for tomo — run twice, once scoped to Operations and once to
-     G2F3 Field Services, so the inclusion and exclusion directions are each other's mirror;
-  2. one workflow instance + active step about an EX-EMPLOYEE (G2offb Offboardme, last held
+     Field Services, so the inclusion and exclusion directions are each other's mirror;
+  2. one workflow instance + active step about an EX-EMPLOYEE (Yusuf Demir, last held
      Operations). Nothing else on the system has an active item about someone who has left, and
      direction (c) is not proven by an argument that such an item would resolve.
 No password is set or typed anywhere; tokens come from admin generate_link + verify.
@@ -32,13 +32,13 @@ DEPT_OPERATIONS = "6715f29c-c677-4546-9c9a-5e2b591ab16e"
 DEPT_FIELD_SERVICES = "d1c21852-5302-430a-8b76-60f97ca99250"
 TOMO_EMPLOYMENT = "11dfa190-8762-4bca-b131-ee13ed397f72"
 
-# the ex-employee the staged item is about: G2offb Offboardme, terminated, last held Operations
+# the ex-employee the staged item is about: Yusuf Demir, terminated, last held Operations
 EX_EMPLOYEE_ID = "f92cc1e8-5536-46bb-8233-2910a011f4ba"
 EX_EMPLOYMENT = "858edf3c-834c-49dd-8f66-2dfe3a600329"
 TEMPLATE_INSTANCE = "0fc4b622-c5c4-47eb-b76d-7e6d8b3bbed0"
 
-PERSONAS = {"tomo": "g2t13.tomas@example.test",
-            "priya": "admin+g2v.priya@admin.com",
+PERSONAS = {"tomo": "tomas.iversen@example.test",
+            "priya": "priya.raman@example.test",
             "admin": "admin@admin.com"}
 
 R = []
@@ -183,7 +183,7 @@ async def main():
 
         # ---- (b)/(c) a DEPARTMENT-scoped grant, run as its own mirror ------------------------
         for dept_name, dept_id in (("Operations", DEPT_OPERATIONS),
-                                   ("G2F3 Field Services", DEPT_FIELD_SERVICES)):
+                                   ("Field Services", DEPT_FIELD_SERVICES)):
             role_id = str(uuid.uuid4())
             await conn.execute(f"""
                 do $fx$
@@ -215,7 +215,7 @@ async def main():
 
         # ---- (c) explicitly: the prehire's and the ex-employee's items are the RESOLVED ones --
         print("\n=== (c) the two subjects hr_l1_61's v_pop_at makes resolvable ===")
-        prehire_item = "0fc4b622-c5c4-47eb-b76d-7e6d8b3bbed0"   # Mari36 Okonkwo, prehire, Operations
+        prehire_item = "0fc4b622-c5c4-47eb-b76d-7e6d8b3bbed0"   # Mari Okonkwo, prehire, Operations
         role_id = str(uuid.uuid4())
         await conn.execute(f"""
             do $fx$ begin perform hr.arm_write();

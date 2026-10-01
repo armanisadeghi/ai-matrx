@@ -2,7 +2,7 @@
   "use_case": "Fixture Ironline Fitness",
   "organization": {
     "id": "11d47e36-4b1e-46b8-bdf6-8ef928b730fb",
-    "slug": "fixture-ironline-fitness-f1wa0s",
+    "slug": "ironline-fitness-club",
     "name": "Fixture Ironline Fitness",
     "settings": {
       "test_fixture": true

@@ -66,7 +66,7 @@ function row(over: Partial<LeaveBalanceRow>): LeaveBalanceRow {
     negativeBalanceFloor: null,
     statutoryBasisRuleClass: null,
     employmentId: "e1",
-    employeeName: "Tomo Iversen-G32",
+    employeeName: "Tomo Iversen",
     sentence: null,
     ledgerHref: null,
     ...over,

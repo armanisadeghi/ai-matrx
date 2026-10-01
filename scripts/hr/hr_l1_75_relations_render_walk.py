@@ -18,7 +18,7 @@ the cookie @supabase/ssr actually reads. No real person's credential is touched 
 typed into a login form. The cookie name, the `base64-` prefix and the URL-safe unpadded encoding
 are that file's hard-won findings, reused verbatim.
 
-WHAT THIS MUTATES: it files incident reports in the Write Target Sandbox org, every one of them
+WHAT THIS MUTATES: it files incident reports in the Oak Street Studio org, every one of them
 prefixed `G2 VERIFICATION FIXTURE`, which is the marker hr_l1_78's provenance-checked cleanup
 keys on. It touches no other org and no knob.
 """
@@ -32,12 +32,12 @@ from playwright.async_api import async_playwright
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
 
 ORIGIN = os.environ.get("HR_WALK_ORIGIN", "http://localhost:3001")
-ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"  # Write Target Sandbox
+ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"  # Oak Street Studio
 
 # uid, email, employment_id — read live from hr.employment on 2026-08-30.
-TOMO = ("daeb6d44-a7dd-4085-aba2-5025fb711b79", "g2t13.tomas@example.test",
+TOMO = ("daeb6d44-a7dd-4085-aba2-5025fb711b79", "tomas.iversen@example.test",
         "11dfa190-8762-4bca-b131-ee13ed397f72")   # employee, ZERO capabilities. Priya is his manager.
-PRIYA = ("20149d3f-6572-4263-b43c-7e52f0e42058", "admin+g2v.priya@admin.com",
+PRIYA = ("20149d3f-6572-4263-b43c-7e52f0e42058", "priya.raman@example.test",
          "ca9e12da-35bb-402d-8bda-1b76fa4c678d")  # hr_admin WITHOUT incident.read — the accused
 ARMANI = ("87a6e699-3622-4869-8843-d0867456c0dd", "admin@admin.com",
           "9c0b1d0c-a3d2-4ea1-b66b-0c45e5b0027a")  # incident.read + incident.investigate
@@ -177,7 +177,7 @@ async def main():
             "front of the team.")
         await page.locator("#in-subject").fill("Priya")
         await page.wait_for_timeout(2200)
-        await page.get_by_role("button", name="G2V-Priya Raman").first.click()
+        await page.get_by_role("button", name="Priya Raman").first.click()
         await page.wait_for_timeout(400)
         await page.screenshot(path=f"{SHOTS}/03-intake-filled.png", full_page=True)
         await page.get_by_role("button", name="Record it").click()
@@ -208,12 +208,12 @@ async def main():
         # 🚨 SCOPED TO THE PANEL, BECAUSE THE FIRST VERSION OF THIS ASSERT WAS WRONG AND SAID SO
         # LOUDLY. It split the whole page on the panel heading and took everything after — which
         # on /hr/me is the panel PLUS the person's own profile, whose header legitimately reads
-        # "Reports to G2V-Priya Raman". The accused manager's name was on the page because she is
+        # "Reports to Priya Raman". The accused manager's name was on the page because she is
         # this employee's manager and always has been, not because anything leaked out of the
         # case. Read the panel's own subtree instead of guessing at a text boundary.
         panel = await page.locator("section:has-text('Report something to HR')").first.inner_text()
         rec("D3 · nothing from the case leaks into the reporter's own report list",
-            "G2V-Priya Raman" not in panel and "my accent" not in panel
+            "Priya Raman" not in panel and "my accent" not in panel
             and "Accused" not in panel,
             panel[:200].replace("\n", " | "))
         await ctx.close()
@@ -225,7 +225,7 @@ async def main():
             "Your report" in body and "waiting to be picked up" in body,
             body[:200].replace("\n", " | "))
         rec("hr_l1_75b · and NOT the case: no summary, no accused name, no notes",
-            "G2V-Priya Raman" not in body and "my accent" not in body)
+            "Priya Raman" not in body and "my accent" not in body)
         await ctx.close()
 
         # ── C2 · THE ACCUSED SEES NO CASE AND NO COUNT ────────────────────────────────────────
@@ -247,7 +247,7 @@ async def main():
             "ARMANI", f"/hr/people/relations/{CASE}?org={ORG}&kind=incident",
             "08-investigator-case.png", wait=4500)
         rec("D4 · the case page renders the RECORD, not just a heading",
-            "my accent" in body and "G2V-Priya Raman" in body,
+            "my accent" in body and "Priya Raman" in body,
             body[:240].replace("\n", " | "))
         rec("D4 · the parties panel renders, with the accused named and role-labelled",
             "Parties" in body and "Accused" in body)
@@ -266,7 +266,7 @@ async def main():
         await page.get_by_role("option", name="Accused", exact=True).click()
         await page.locator("#party-employment").fill("Punchemployee")
         await page.wait_for_timeout(2200)
-        await page.get_by_role("button", name="Zzz Punchemployee").first.click()
+        await page.get_by_role("button", name="Marcus Tillman").first.click()
         await page.wait_for_timeout(400)
         await page.screenshot(path=f"{SHOTS}/09-adding-second-accused.png", full_page=True)
         await page.get_by_role("button", name="Add", exact=True).first.click()
@@ -284,12 +284,12 @@ async def main():
         await page.screenshot(path=f"{SHOTS}/10-second-accused-added.png", full_page=True)
         rec("D2 · the party-add SEAM is closed: the UI write reached the door (PGRST202 before)",
             after == before + 1, f"parties {before} -> {after}")
-        rec("D2 · and the new respondent is on the page", "Zzz Punchemployee" in body)
+        rec("D2 · and the new respondent is on the page", "Marcus Tillman" in body)
         await ctx.close()
 
         # ── THE VETO FIRES ON THE NEXT REQUEST ────────────────────────────────────────────────
         punch = await mint("ab94c16c-b4a5-49f0-a068-e2a11db34a2c",
-                           "zzz.l3.punch.employee@example.invalid")
+                           "marcus.tillman@example.test")
         sessions["PUNCH"] = punch
         page, ctx, body, errs, _ = await open_as(
             "PUNCH", f"/hr/people/relations/{CASE}?org={ORG}&kind=incident", "11-new-accused.png")
@@ -317,7 +317,7 @@ async def main():
             "the north aisle; nobody was hurt.")
         await page.locator("#in-subject").fill("Tomo")
         await page.wait_for_timeout(2200)
-        await page.get_by_role("button", name="Tomo Iversen-G32").first.click()
+        await page.get_by_role("button", name="Tomo Iversen").first.click()
         await page.wait_for_timeout(400)
         await page.get_by_role("button", name="Record it").click()
         await page.wait_for_timeout(3500)
@@ -336,7 +336,7 @@ async def main():
                 "TOMO", f"/hr/people/relations/{safety['id']}?org={ORG}&kind=incident",
                 "12-safety-subject-own-record.png", wait=4000)
             rec("D5 · the subject of a NON-excluded safety incident READS THEIR OWN RECORD",
-                "Tomo Iversen-G32" in body and "isn't yours here" not in body,
+                "Tomo Iversen" in body and "isn't yours here" not in body,
                 body[:240].replace("\n", " | "))
             await ctx.close()
 

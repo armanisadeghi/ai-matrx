@@ -268,7 +268,7 @@ function RecordDoors({ token, id, name }: { token: string; id: string; name?: st
 /**
  * 🚨 A DOOR SAYS WHAT IT OPENS (chair, 2026-09-18). `MatrxUuidCell` can only ever
  * show a truncated id — it takes no display name — so a field whose value is
- * "Acme Robotics" printed `9e1d77aa…` and the person had to click to find out
+ * "Brightwater Robotics" printed `9e1d77aa…` and the person had to click to find out
  * what it was: half a dead end. When the primitive hands over a `name`, this is
  * `EntityRef`, the platform's ONE named-door primitive (it resolves the route and
  * the peek from the same registries, so nothing new is wired here). Without a

@@ -24,7 +24,7 @@ from playwright.async_api import async_playwright
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
 
 ORIGIN       = "http://localhost:3001"
-ALUMNI_EMAIL = "zzz.departed.alumni@example.test"
+ALUMNI_EMAIL = "rowan.whitaker@example.test"
 ALUMNI_UID   = "0c2f61fa-6d3d-4705-bee9-fb8cd1280c4a"
 PROOF_PW     = "ContinuedAccessRenderWalk2026!"
 MODAL_TEXT   = "How old are you?"
@@ -103,7 +103,7 @@ async def main():
         # ---------- (a) /portal: no age modal, consent card immediately visible ----------
         page, ctx, body = await open_page("/portal", "age_gate_01_portal.png", 12000)
         rec("PORTAL — the portal itself rendered for the departed member",
-            "Your portal" in body and "Write Target Sandbox" in body, body[:200])
+            "Your portal" in body and "Oak Street Studio" in body, body[:200])
         rec("PORTAL — the 'How old are you?' popup does NOT open",
             MODAL_TEXT not in body, body[:200])
         rec("PORTAL — the consent aspect is immediately visible (nothing covers it)",

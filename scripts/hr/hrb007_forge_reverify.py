@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
 ATTACKER_UID = "2ee422b1-dbca-4cde-ae1e-b44d83384c02"     # member of e0ca14f8 ONLY
-ATTACKER_EMAIL = "zzz.d15.nonmember.hrb006@example.invalid"
+ATTACKER_EMAIL = "quentin.aldridge@example.test"
 ATTACKER_ORG = "e0ca14f8-f5c0-4b82-86a4-a7e9f5379bef"
 
 R = []

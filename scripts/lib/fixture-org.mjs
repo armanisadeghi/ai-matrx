@@ -29,7 +29,7 @@
  */
 export const FIXTURE_SLUGS = Object.freeze({
   "Birchwood Avenue Renovation": "home-renovation",
-  "Ironline Fitness": "fixture-ironline-fitness-f1wa0s",
+  "Ironline Fitness": "ironline-fitness-club",
   "Signal & Scale Podcast": "signal-scale-podcast-muaj1a8i",
 });
 

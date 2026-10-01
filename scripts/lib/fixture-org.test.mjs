@@ -40,7 +40,7 @@ function fakeStore(rows = []) {
 test("slugs are the business's own, never a random suffix", () => {
   assert.equal(slugOf("Hands & Hope Alliance"), "hands-and-hope-alliance");
   assert.equal(fixtureSlug("Rincon Plumbing Co"), "rincon-plumbing-co");
-  assert.equal(fixtureSlug("Ironline Fitness"), "fixture-ironline-fitness-f1wa0s");
+  assert.equal(fixtureSlug("Ironline Fitness"), "ironline-fitness-club");
   assert.equal(fixtureSlug("Ironline Fitness"), fixtureSlug("Ironline Fitness"));
 });
 

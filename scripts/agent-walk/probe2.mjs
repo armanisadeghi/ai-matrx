@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 import { ORIGIN, signIn, useOrganization, settleOnTable, shot } from "../builders-walk/walk.mjs";
-const A = { org:"11d47e36-4b1e-46b8-bdf6-8ef928b730fb", orgName:"Ironline Fitness", slug:"fixture-ironline-fitness-f1wa0s", table:"e4a35317-9922-4ef4-be1e-f4b748dbe97c" };
+const A = { org:"11d47e36-4b1e-46b8-bdf6-8ef928b730fb", orgName:"Ironline Fitness", slug:"ironline-fitness-club", table:"e4a35317-9922-4ef4-be1e-f4b748dbe97c" };
 const b = await chromium.launch({ headless: true });
 const p = await (await b.newContext({ viewport:{width:1680,height:1020} })).newPage();
 p.on("console", m => { if (m.type()==="error") console.log("[console.error]", m.text().slice(0,200)); });

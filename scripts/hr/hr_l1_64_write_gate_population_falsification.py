@@ -41,12 +41,12 @@ TOMO_EMPLOYMENT = "11dfa190-8762-4bca-b131-ee13ed397f72"
 # the three subjects of the re-verifier's table — all three sit in Operations
 SUBJECTS = [
     ("Nadia Okafor (active)",       "2ec4cbc9-6140-465d-8920-0c74a3937a82"),
-    ("Mari36 Okonkwo (prehire)",    "b96d96ba-5e17-46ba-ae35-7b1afc444208"),
-    ("G2offb Offboardme (ex-empl)", "f92cc1e8-5536-46bb-8233-2910a011f4ba"),
+    ("Mari Okonkwo (prehire)",    "b96d96ba-5e17-46ba-ae35-7b1afc444208"),
+    ("Yusuf Demir (ex-empl)", "f92cc1e8-5536-46bb-8233-2910a011f4ba"),
 ]
 
-PERSONAS = {"tomo": "g2t13.tomas@example.test",       # no live grant of his own
-            "priya": "admin+g2v.priya@admin.com",     # hr_admin, ORG-scoped, WTS
+PERSONAS = {"tomo": "tomas.iversen@example.test",       # no live grant of his own
+            "priya": "priya.raman@example.test",     # hr_admin, ORG-scoped, WTS
             "admin": "admin@admin.com"}               # hr_owner, ORG-scoped, WTS
 
 FIXTURE_REASON = "hr_l1_64 falsification fixture - removed by the same script run"
@@ -225,7 +225,7 @@ async def main():
 
         # ================================================================ (1) OUTSIDE the department
         print("\n=== (1) a DEPARTMENT-scoped admin writing OUTSIDE their department ===")
-        print("    tomo, hr_admin scoped to G2F3 Field Services; all three subjects are Operations")
+        print("    tomo, hr_admin scoped to Field Services; all three subjects are Operations")
         await stage(DEPT_FIELD_SERVICES)
         tok["tomo"] = await mint(PERSONAS["tomo"])
         for label, eid in SUBJECTS:

@@ -9,15 +9,15 @@ describe("parseContactSelection", () => {
       [
         "Best,",
         "Jane Cole",
-        "VP of Engineering, Acme Robotics",
-        "jane.cole@acmerobotics.com | (310) 555-0142",
+        "VP of Engineering, Brightwater Robotics",
+        "jane.cole@brightwaterrobotics.com | (310) 555-0142",
       ].join("\n"),
     );
     expect(p.kind).toBe("person");
     expect(p.name).toBe("Jane Cole");
     expect(p.firstName).toBe("Jane");
     expect(p.lastName).toBe("Cole");
-    expect(p.email).toBe("jane.cole@acmerobotics.com");
+    expect(p.email).toBe("jane.cole@brightwaterrobotics.com");
     expect(p.phone).toBe("+13105550142");
     expect(p.headline).toContain("VP of Engineering");
     // A person never carries a company identity key.
@@ -26,29 +26,29 @@ describe("parseContactSelection", () => {
 
   it("treats a company footer with no person as an organization", () => {
     const p = parseContactSelection(
-      "Acme Robotics, Inc.\nwww.acmerobotics.com\nhello@acmerobotics.com",
+      "Brightwater Robotics, Inc.\nwww.brightwaterrobotics.com\nhello@brightwaterrobotics.com",
     );
     expect(p.kind).toBe("organization");
-    expect(p.name).toBe("Acme Robotics, Inc.");
-    expect(p.domain).toBe("acmerobotics.com");
+    expect(p.name).toBe("Brightwater Robotics, Inc.");
+    expect(p.domain).toBe("brightwaterrobotics.com");
   });
 
   it("keeps a person who works at a company as ONE person record", () => {
-    const p = parseContactSelection("Jane Cole\nAcme Robotics, Inc.");
+    const p = parseContactSelection("Jane Cole\nBrightwater Robotics, Inc.");
     expect(p.kind).toBe("person");
     expect(p.name).toBe("Jane Cole");
   });
 
   it("derives a name from a dotted email when the text has none", () => {
-    const p = parseContactSelection("reach me at jane.cole@acmerobotics.com");
+    const p = parseContactSelection("reach me at jane.cole@brightwaterrobotics.com");
     expect(p.name).toBe("Jane Cole");
-    expect(p.email).toBe("jane.cole@acmerobotics.com");
+    expect(p.email).toBe("jane.cole@brightwaterrobotics.com");
   });
 
   it("does not invent a name from an opaque email local part", () => {
-    const p = parseContactSelection("info@acmerobotics.com");
+    const p = parseContactSelection("info@brightwaterrobotics.com");
     expect(p.name).toBe("");
-    expect(p.email).toBe("info@acmerobotics.com");
+    expect(p.email).toBe("info@brightwaterrobotics.com");
   });
 
   it("never takes a free-mail host as a company domain", () => {

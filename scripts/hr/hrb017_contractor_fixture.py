@@ -42,10 +42,10 @@ import sys
 
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
 
-ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Write Target Sandbox
+ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Oak Street Studio
 HR_ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"  # admin@admin.com, hr_admin in this org
-EMAIL = "zzz.l5.plain.contractor@example.test"
-LEGAL_FIRST, LEGAL_LAST = "Zzz", "Plaincontractor"
+EMAIL = "jonas.whitfield@example.test"
+LEGAL_FIRST, LEGAL_LAST = "Jonas", "Whitfield"
 JOB_TITLE = "6e2275c6-47a4-4b6a-9ff4-f48e8adeedb0"     # Operations Specialist
 LOCATION = "0ebbf294-2c02-4c0f-968f-fe780bf000ac"      # Sandbox HQ (US)
 DEPARTMENT = "6715f29c-c677-4546-9c9a-5e2b591ab16e"    # Operations

@@ -44,7 +44,7 @@ export interface ParsedContactSelection {
   phone: string;
   /** Company web domain — only ever set for organization guesses. */
   domain: string;
-  /** Title / role line, e.g. "VP of Engineering, Acme Robotics". */
+  /** Title / role line, e.g. "VP of Engineering, Brightwater Robotics". */
   headline: string;
 }
 
