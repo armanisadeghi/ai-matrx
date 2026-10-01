@@ -475,8 +475,11 @@ async function resyncForIdentityInner(options: ResyncOptions): Promise<void> {
 
 /**
  * Align Redux `theme.mode` with the DOM class SyncBootScript / the server
- * cookie already painted. Slice initialState is `"dark"`, but first paint may
- * be light (cookie, OS fallback, or localStorage read without identity match).
+ * cookie already painted, when an EXPLICIT mode disagrees with the paint.
+ * "system" (the slice's initialState — a browser with no saved choice) is
+ * never converted: until 2026-10-01 initialState was "dark", so this turned a
+ * device-light first paint into a saved "light" that then ignored the device
+ * forever (phone run PB-08 #2).
  */
 function reconcileThemeFromPaintedDom(store: Store): void {
     if (typeof document === "undefined") return;

@@ -65,8 +65,10 @@ function themeCookieWrites(
 }
 
 const unmounts: Array<() => Promise<void>> = [];
+const afterCleanup: Array<() => void> = [];
 
 afterEach(async () => {
+  while (afterCleanup.length) afterCleanup.pop()?.();
   while (unmounts.length) await unmounts.pop()?.();
   globalThis.fetch = originalFetch;
   Object.defineProperty(window, "matchMedia", {
@@ -163,13 +165,25 @@ function rehydrateTheme(mode: ThemeMode): RehydrateAction {
 }
 
 describe("StoreProvider theme-cookie subscription", () => {
-  it("mounts on the real initial dark mode without writing the cookie", async () => {
+  it("mounts on the real initial system preference and mirrors the device colour once", async () => {
     const fetchMock = stubFetch();
 
     const store = await mountStoreProvider();
 
-    expect(store.getState().theme.mode).toBe("dark");
-    expect(themeCookieWrites(fetchMock)).toEqual([]);
+    expect(store.getState().theme.mode).toBe("system");
+    expect(themeCookieWrites(fetchMock)).toEqual([{ theme: "light" }]);
+  });
+
+  it("does not write on mount when the cookie already holds the device colour", async () => {
+    document.cookie = "theme=light; path=/";
+    try {
+      const fetchMock = stubFetch();
+      const store = await mountStoreProvider();
+      expect(store.getState().theme.mode).toBe("system");
+      expect(themeCookieWrites(fetchMock)).toEqual([]);
+    } finally {
+      document.cookie = "theme=; path=/; max-age=0";
+    }
   });
 
   it("writes the cookie once when setMode changes the mode", async () => {
@@ -201,22 +215,26 @@ describe("StoreProvider theme-cookie subscription", () => {
   });
 
   it("does not write when setMode keeps the mode already in effect", async () => {
+    document.cookie = "theme=light; path=/";
+    afterCleanup.push(() => { document.cookie = "theme=; path=/; max-age=0"; });
     const fetchMock = stubFetch();
     const store = await mountStoreProvider();
 
     await act(async () => {
-      store.dispatch(setMode("dark"));
+      store.dispatch(setMode("system"));
     });
 
     expect(themeCookieWrites(fetchMock)).toEqual([]);
   });
 
   it("does not write when REHYDRATE restores the mode already in effect", async () => {
+    document.cookie = "theme=light; path=/";
+    afterCleanup.push(() => { document.cookie = "theme=; path=/; max-age=0"; });
     const fetchMock = stubFetch();
     const store = await mountStoreProvider();
 
     await act(async () => {
-      store.dispatch(rehydrateTheme("dark"));
+      store.dispatch(rehydrateTheme("system"));
     });
 
     expect(themeCookieWrites(fetchMock)).toEqual([]);

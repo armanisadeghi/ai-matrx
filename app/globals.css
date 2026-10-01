@@ -1414,7 +1414,9 @@
        global and unlayered: see THE iOS ZOOM FLOOR at the end of this file. */
     .matrx-touch-targets
       :is(
-        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+            [type="file"]
+          ):not([type="hidden"]),
         textarea
       ):not([data-touch-exempt]) {
       min-height: 2.75rem;

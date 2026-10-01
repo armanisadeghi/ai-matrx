@@ -40,7 +40,9 @@ describe("Dark mode is a person-level setting — the rail's Settings slot, neve
       path.join(__dirname, "..", "..", "account-rail", "ShellSettingsMenu.tsx"),
       "utf8",
     );
-    expect(settings).toContain("setMode(isDark ? \"light\" : \"dark\")");
+    // Light | Dark | Device — "Device" (system) is the default (2026-10-01).
+    expect(settings).toContain("dispatch(setMode(choice))");
+    expect(settings).toMatch(/mode: "system", label: "Device"/);
     expect(settings).not.toMatch(/selectIsSuperAdmin|isAdmin/);
   });
 

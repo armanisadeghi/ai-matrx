@@ -101,7 +101,7 @@ export function SmartAgentInputSingleRow({
       conversationId={conversationId}
       uploadRoot={uploadRoot}
       uploadPath={uploadPath}
-      className="flex w-full flex-col gap-1"
+      className="matrx-touch-targets flex w-full flex-col gap-1"
     >
       {/* Ambient launchers carry context through the instance but defer all
           context UI to the full conversation panel. */}

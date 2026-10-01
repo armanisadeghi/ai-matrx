@@ -82,7 +82,9 @@ function getOrCreateClientStore(
   // mirrored to a cookie: appContextPolicy owns its local cache, while the
   // default-org preference owns durable cross-device restore.
   let lastMode: ThemeMode | undefined = store.getState().theme?.mode;
-  let lastCookieMode: ResolvedThemeMode | undefined;
+  // Seed from the cookie the server already holds, so a "system" person whose
+  // device colour has not changed costs no POST on every page load.
+  let lastCookieMode: ResolvedThemeMode | undefined = readThemeCookie();
   const mirrorResolvedTheme = (mode: ThemeMode) => {
     const resolved = resolveThemeMode(mode);
     if (resolved === lastCookieMode) return;
@@ -116,6 +118,12 @@ function getOrCreateClientStore(
 
   clientStores.set(factory, store);
   return store;
+}
+
+function readThemeCookie(): ResolvedThemeMode | undefined {
+  if (typeof document === "undefined") return undefined;
+  const match = /(?:^|;\s*)theme=(light|dark)(?:;|$)/.exec(document.cookie);
+  return match ? (match[1] as ResolvedThemeMode) : undefined;
 }
 
 export default function StoreProvider({

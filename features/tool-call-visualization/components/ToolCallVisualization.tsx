@@ -665,7 +665,7 @@ const ToolCallVisualizationInner: React.FC<{
             <div
               ref={bodyScrollRef}
               className={cn(
-                "max-h-[26rem] space-y-1 overflow-y-auto overscroll-contain bg-transparent animate-in fade-in duration-300",
+                "max-h-[26rem] space-y-1 overflow-y-auto bg-transparent animate-in fade-in duration-300",
                 // Artifact mode: the body attaches seamlessly to the header
                 // bar (zero gap — the renderer continues the header's sheet).
                 artifact ? "mt-0" : "mt-0.5",

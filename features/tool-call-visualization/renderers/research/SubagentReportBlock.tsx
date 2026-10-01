@@ -142,7 +142,7 @@ export const SubagentReportBlock: React.FC<SubagentReportBlockProps> = ({
                         // STREAMING — locked, auto-scrolling viewport via MarkdownStream.
                         <div
                             ref={scrollRef}
-                            className="overflow-y-auto overscroll-contain p-4"
+                            className="overflow-y-auto p-4"
                             style={{ maxHeight: PARTIAL_MAX_PX }}
                         >
                             {hasReport ? (
@@ -166,7 +166,7 @@ export const SubagentReportBlock: React.FC<SubagentReportBlockProps> = ({
                         <div
                             className={cn(
                                 effectiveView === "partial" &&
-                                    "overflow-y-auto overscroll-contain",
+                                    "overflow-y-auto",
                             )}
                             style={
                                 effectiveView === "partial"

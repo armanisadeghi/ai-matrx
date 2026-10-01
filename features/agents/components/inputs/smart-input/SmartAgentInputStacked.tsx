@@ -132,6 +132,10 @@ export function SmartAgentInputStacked({
     // column height always belongs to the transcript, never the input shell.
     "w-full shrink-0 border",
     "flex flex-col min-h-0 overflow-hidden",
+    // THE 44px FLOOR for every composer control on a touch layout (mic, live
+    // audio, context chip, attachment chips — 14–32px measured on a phone,
+    // run PB-08 #2). Desktop density is untouched (globals.css).
+    "matrx-touch-targets",
     isAmbient
       ? "min-h-[72px] rounded-[20px] border-glass-edge bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,box-shadow] focus-within:border-primary/70 focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/15 focus-within:shadow-glass-lg"
       : "rounded-[20px] border-border bg-card shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] transition-colors focus-within:border-foreground/25 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",

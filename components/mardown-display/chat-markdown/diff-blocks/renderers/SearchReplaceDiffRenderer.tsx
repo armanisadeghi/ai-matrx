@@ -167,7 +167,7 @@ export const SearchReplaceDiffRenderer: React.FC<
         {replace && (
           <div
             ref={streamScrollRef}
-            className="max-h-[140px] overflow-y-auto overscroll-contain"
+            className="max-h-[140px] overflow-y-auto"
           >
             <CodeBlock showSource
               code={replace}

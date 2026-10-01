@@ -18,7 +18,9 @@ export type ResolvedThemeMode = "light" | "dark";
 
 export function resolveThemeMode(mode: ThemeMode): ResolvedThemeMode {
     if (mode !== "system") return mode;
-    return typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
+    return typeof window !== "undefined" &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light";
 }
@@ -27,8 +29,11 @@ export interface ThemeState {
     mode: ThemeMode;
 }
 
+// A browser with no saved choice follows the device (owner contract,
+// 2026-10-01 phone run: an emulated dark phone stayed light). "light"/"dark"
+// are only ever a person's explicit pick from the Theme control.
 const initialState: ThemeState = {
-    mode: "dark",
+    mode: "system",
 };
 
 const themeSlice = createSlice({
@@ -58,6 +63,9 @@ const themeSlice = createSlice({
 });
 
 export const { toggleMode, setMode } = themeSlice.actions;
+
+/** The stored preference ("system" = follow the device). Paint reads useThemeMode. */
+export const selectThemeMode = (state: { theme: ThemeState }): ThemeMode => state.theme.mode;
 export default themeSlice.reducer;
 
 // ---- Sync engine policy --------------------------------------------------
@@ -79,7 +87,12 @@ export const themePolicy = definePolicy<ThemeState>({
     identityScoped: false,
     sliceName: "theme",
     preset: "boot-critical",
-    version: 1, // Bumping destroys persisted theme — see JSDoc on definePolicy.
+    // Bumping destroys persisted theme — see JSDoc on definePolicy. v2
+    // (2026-10-01): v1 values cannot be trusted as choices — boot reconcile
+    // saved the first paint as an explicit "light"/"dark" whenever the old
+    // "dark" initialState disagreed with it, so every browser follows the
+    // device again until the person picks a theme.
+    version: 2,
     broadcast: {
         actions: ["theme/setMode", "theme/toggleMode"],
     },
@@ -88,7 +101,7 @@ export const themePolicy = definePolicy<ThemeState>({
     serialize: (state) => ({ mode: state.mode }),
     deserialize: (raw) => {
         const mode = raw && typeof raw === "object" ? (raw as { mode?: unknown }).mode : undefined;
-        return { mode: mode === "light" || mode === "dark" || mode === "system" ? mode : "dark" };
+        return { mode: mode === "light" || mode === "dark" || mode === "system" ? mode : "system" };
     },
     prePaint: [
         {

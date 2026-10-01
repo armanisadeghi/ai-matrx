@@ -144,13 +144,27 @@ describeIfDom("buildPrePaintScript (jsdom)", () => {
     ])("resolves stored system to %s in the inline pre-paint script", (prefersDark, expected) => {
         window.localStorage.setItem(
             "matrx:theme",
-            JSON.stringify({ version: 1, identityKey: "i", body: { mode: "system" } }),
+            JSON.stringify({ version: themePolicy.config.version, identityKey: "i", body: { mode: "system" } }),
         );
         stubMatchMedia(prefersDark);
         runScript(buildPrePaintScript([themePolicy]));
 
         expect(document.documentElement.classList.contains("dark")).toBe(prefersDark);
         expect(document.documentElement.getAttribute("data-theme")).toBe(expected);
+    });
+
+    it("ignores a stored record from an older policy version (theme v1 → device)", () => {
+        // Mutation: drop the version gate in buildPrePaintScript — the stale
+        // v1 "light" paints light on a dark device and this goes RED.
+        window.localStorage.setItem(
+            "matrx:theme",
+            JSON.stringify({ version: themePolicy.config.version - 1, identityKey: "i", body: { mode: "light" } }),
+        );
+        stubMatchMedia(true);
+        runScript(buildPrePaintScript([themePolicy]));
+
+        expect(document.documentElement.classList.contains("dark")).toBe(true);
+        expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
     });
 
     it("returns empty string when no boot-critical policies declare prePaint", () => {

@@ -174,6 +174,10 @@ export default function MobileNavigationDrawer({
     let openFrame: number | null = null;
 
     const syncOpenState = () => {
+      // The hamburger is a <label> for this aria-hidden checkbox, so a tap
+      // leaves focus ON it; the sheet then aria-hides the page around a
+      // focused element ("Blocked aria-hidden…", phone run PB-08 #2).
+      if (document.activeElement === control) control.blur();
       if (control.checked) {
         // The checkbox changes during the hamburger's pointer sequence. Mount
         // Vaul on the next frame so that same pointer-up cannot dismiss the
@@ -275,15 +279,21 @@ export default function MobileNavigationDrawer({
       )}
 
       <AdminMobileMenuItem />
+    </div>
+  );
 
-      {/* THE ACCOUNT RAIL, phone edition — the same three the desktop rail
-          ends in (ShellUserBlock): Settings, the organization, the person.
-          The person row is the phone's only door to the account menu
-          (guard: MobileNavigationDrawer.account-row.test.ts). */}
-      <div className="shell-mobile-section-divider" />
-      <ShellSettingsMenu variant="drawer" />
-      {isAuthenticated ? <ShellOrgSwitcher variant="drawer" /> : null}
+  /* THE ACCOUNT RAIL, phone edition — the same three the desktop rail keeps
+     always visible (ShellUserBlock): the person, the organization, Settings.
+     On a phone "always visible" means the TOP of the menu: at the end they
+     sat below the route menu and every admin section (phone run PB-08 #2,
+     2026-10-01). The person row is the phone's only door to the account menu
+     (guard: MobileNavigationDrawer.account-row.test.ts). */
+  const renderAccountRail = () => (
+    <div className="shell-mobile-main-nav" data-shell-mobile-account-rail="">
       <MobileDrawerUserRow />
+      {isAuthenticated ? <ShellOrgSwitcher variant="drawer" /> : null}
+      <ShellSettingsMenu variant="drawer" />
+      <div className="shell-mobile-section-divider" />
     </div>
   );
 
@@ -416,6 +426,7 @@ export default function MobileNavigationDrawer({
 
       <BottomSheetBody className="shell-mobile-drawer-body">
         <nav aria-label="Mobile navigation">
+          {!activeGroup && !activeQuery.trim() ? renderAccountRail() : null}
           <MobileRouteMenuSlot />
           <div
             className="shell-mobile-view"

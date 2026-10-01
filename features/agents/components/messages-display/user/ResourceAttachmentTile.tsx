@@ -25,7 +25,7 @@ import {
   type ComponentType,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { AlertCircle, Loader2, Lock, Pencil, X } from "lucide-react";
+import { AlertCircle, ExternalLink, Loader2, Lock, Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -140,6 +140,25 @@ export function ResourceAttachmentTile({
     ? "Editable: Click to avoid agent changes"
     : "Read Only: Click to allow agent editing";
 
+  // On a touch layout the chip's 14–16px corner controls cannot meet the 44px
+  // floor without overlapping each other and the chip (phone run PB-08 #2), so
+  // a tap opens the chip's own menu — Open / editing / Remove, 44px rows — the
+  // iOS attachment pattern. Desktop keeps the inline controls.
+  const TOUCH_LAYOUT = "(pointer: coarse), (max-width: 1023px)";
+  const handleChipClick = () => {
+    if (
+      hasControls &&
+      typeof window !== "undefined" &&
+      window.matchMedia(TOUCH_LAYOUT).matches
+    ) {
+      setMenuOpen(true);
+      return;
+    }
+    onClick?.();
+  };
+  const MENU_ROW_TOUCH = "max-lg:min-h-11 pointer-coarse:min-h-11";
+  const HIDE_ON_TOUCH = "max-lg:hidden pointer-coarse:hidden";
+
   if (variant === "compact") {
     const word = compactChipLabel(title) || typeLabel;
     return (
@@ -158,11 +177,12 @@ export function ResourceAttachmentTile({
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  onClick={onClick}
+                  onClick={handleChipClick}
                   aria-label={`${typeLabel}: ${title}`}
+                  aria-haspopup={hasControls ? "menu" : undefined}
                   className={cn(
                     "inline-flex h-6 min-w-0 items-center gap-1 rounded-full border border-border px-2",
-                    showToggle && "pr-6",
+                    showToggle && "pr-6 max-lg:pr-2 pointer-coarse:pr-2",
                     "text-[11px] font-medium transition-colors",
                     "bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     error && "ring-1 ring-destructive/50",
@@ -205,7 +225,10 @@ export function ResourceAttachmentTile({
                   stop(e);
                   toggleEditable();
                 }}
-                className="absolute right-1 top-1/2 z-10 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full text-foreground/70 hover:bg-accent hover:text-foreground"
+                className={cn(
+                  "absolute right-1 top-1/2 z-10 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full text-foreground/70 hover:bg-accent hover:text-foreground",
+                  HIDE_ON_TOUCH,
+                )}
               >
                 {editable ? (
                   <Pencil className="h-2.5 w-2.5" />
@@ -227,7 +250,7 @@ export function ResourceAttachmentTile({
                   "border border-border bg-background text-muted-foreground shadow-sm",
                   "transition-opacity hover:bg-destructive hover:text-destructive-foreground",
                   "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
-                  "pointer-coarse:opacity-100",
+                  HIDE_ON_TOUCH,
                 )}
               >
                 <X className="h-2.5 w-2.5" />
@@ -245,6 +268,23 @@ export function ResourceAttachmentTile({
                 {typeLabel}
               </p>
             </div>
+            {onClick ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  stop(e);
+                  setMenuOpen(false);
+                  onClick();
+                }}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-foreground hover:bg-accent",
+                  MENU_ROW_TOUCH,
+                )}
+              >
+                <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span>Open</span>
+              </button>
+            ) : null}
             {showToggle ? (
               <button
                 type="button"
@@ -252,7 +292,7 @@ export function ResourceAttachmentTile({
                   stop(e);
                   toggleEditable();
                 }}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-foreground hover:bg-accent"
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-foreground hover:bg-accent max-lg:min-h-11 pointer-coarse:min-h-11"
               >
                 {editable ? (
                   <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -270,7 +310,7 @@ export function ResourceAttachmentTile({
                   setMenuOpen(false);
                   onRemove();
                 }}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-destructive hover:bg-destructive/10"
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-destructive hover:bg-destructive/10 max-lg:min-h-11 pointer-coarse:min-h-11"
               >
                 <X className="h-4 w-4 shrink-0" />
                 <span>Remove</span>
@@ -421,7 +461,7 @@ export function ResourceAttachmentTile({
                 stop(e);
                 toggleEditable();
               }}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-foreground hover:bg-accent"
+              className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-foreground hover:bg-accent max-lg:min-h-11 pointer-coarse:min-h-11"
             >
               {editable ? (
                 <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -439,7 +479,7 @@ export function ResourceAttachmentTile({
                 setMenuOpen(false);
                 onRemove();
               }}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-destructive hover:bg-destructive/10"
+              className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-destructive hover:bg-destructive/10 max-lg:min-h-11 pointer-coarse:min-h-11"
             >
               <X className="h-4 w-4 shrink-0" />
               <span>Remove</span>

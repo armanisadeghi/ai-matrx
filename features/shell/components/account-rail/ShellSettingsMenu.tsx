@@ -17,22 +17,25 @@
 import { useState, type ReactNode } from "react";
 import {
   ChevronRight,
+  Monitor,
   Moon,
   MonitorSpeaker,
   Settings,
   SlidersHorizontal,
   Sun,
+  SunMoon,
   Trash2,
+  type LucideIcon,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import AppLink from "@/components/navigation/AppLink";
+import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
-import { setMode } from "@/styles/themes/themeSlice";
-import { useThemeMode } from "@/styles/themes/useThemeMode";
+import { selectThemeMode, setMode, type ThemeMode } from "@/styles/themes/themeSlice";
 import { SETTINGS_BASE } from "@/features/settings/route-shell/routing";
 import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
 import {
@@ -44,11 +47,47 @@ import { RailMenuHeader, RAIL_MENU_DIVIDER } from "./RailMenuHeader";
 // The account rail's one menu look: the account menu's own row class.
 const ROW = MENU_ITEM_CLASS;
 
+const THEME_CHOICES: ReadonlyArray<{ mode: ThemeMode; label: string; Icon: LucideIcon }> = [
+  { mode: "light", label: "Light", Icon: Sun },
+  { mode: "dark", label: "Dark", Icon: Moon },
+  { mode: "system", label: "Device", Icon: Monitor },
+];
+
+/**
+ * Theme: Light | Dark | Device (the Vercel account-menu pattern). "Device" is
+ * the default — the app follows the phone or computer until the person picks.
+ */
+function ThemeRow() {
+  const dispatch = useAppDispatch();
+  const mode = useAppSelector(selectThemeMode);
+  return (
+    <div className={cn(ROW, "cursor-default hover:bg-transparent")}>
+      <SunMoon />
+      <span className="min-w-0 flex-1 truncate">Theme</span>
+      <div role="radiogroup" aria-label="Theme" className="flex items-center gap-0.5 rounded-full border border-border bg-muted p-0.5">
+        {THEME_CHOICES.map(({ mode: choice, label, Icon }) => (
+          <button
+            key={choice}
+            type="button"
+            role="radio"
+            aria-checked={mode === choice}
+            aria-label={label}
+            title={label}
+            onClick={() => dispatch(setMode(choice))}
+            className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground aria-checked:bg-background aria-checked:text-foreground aria-checked:shadow-sm max-lg:h-11 max-lg:w-11"
+          >
+            <Icon aria-hidden="true" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** The list itself — one copy for the rail popover and the phone sheet. */
 function SettingsMenuList({ onDone }: { onDone: () => void }) {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const isDark = useThemeMode() === "dark";
   const open = (overlayId: "userPreferences" | "audioControlWindow") => {
     onDone();
     dispatch(openOverlay({ overlayId }));
@@ -72,20 +111,12 @@ function SettingsMenuList({ onDone }: { onDone: () => void }) {
       {RAIL_MENU_DIVIDER}
       <button type="button" className={ROW} role="menuitem" onClick={() => open("userPreferences")}>
         <SlidersHorizontal />
-        <span className="min-w-0 flex-1 truncate">Preferences</span>
+        <span className="min-w-0 flex-1 truncate text-left">Preferences</span>
       </button>
-      <button
-        type="button"
-        className={ROW}
-        role="menuitem"
-        onClick={() => dispatch(setMode(isDark ? "light" : "dark"))}
-      >
-        {isDark ? <Sun /> : <Moon />}
-        <span className="min-w-0 flex-1 truncate">{isDark ? "Light mode" : "Dark mode"}</span>
-      </button>
+      <ThemeRow />
       <button type="button" className={ROW} role="menuitem" onClick={() => open("audioControlWindow")}>
         <MonitorSpeaker />
-        <span className="min-w-0 flex-1 truncate">Media</span>
+        <span className="min-w-0 flex-1 truncate text-left">Media</span>
       </button>
       {isAuthenticated ? (
         <AppLink href="/trash" onClick={onDone} className={ROW} role="menuitem">
@@ -137,7 +168,16 @@ export function ShellSettingsMenu({ variant = "rail" }: { variant?: "rail" | "dr
   if (isMobile) {
     return (
       <>
-        <span className="contents" onClick={() => setOpen(true)}>
+        <span
+          className="contents"
+          onClick={(event) => {
+            // The row sits in the navigation sheet, which this nested sheet
+            // aria-hides; a row that keeps focus there trips "Blocked
+            // aria-hidden… descendant retained focus" (phone run PB-08 #2).
+            (event.target as HTMLElement).closest("button")?.blur();
+            setOpen(true);
+          }}
+        >
           {trigger}
         </span>
         <Drawer open={open} onOpenChange={setOpen}>

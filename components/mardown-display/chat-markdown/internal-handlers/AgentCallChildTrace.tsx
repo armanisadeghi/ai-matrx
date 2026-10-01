@@ -43,8 +43,13 @@ export interface AgentCallChildTraceProps {
 }
 
 const NO_LIVE_TRACE = (): LiveAgentCallTrace | null => null;
-const NO_MESSAGES = (): MessageRecord[] => [];
-const NO_RUNS = () => [];
+// One stable empty value per "nothing yet" selector: a fresh `[]` per call
+// fails react-redux's identity check ("Selector NO_MESSAGES returned a
+// different result when called with the same parameters", phone run PB-08 #2).
+const EMPTY_MESSAGES: MessageRecord[] = [];
+const EMPTY_RUNS: ReturnType<ReturnType<typeof selectMessagesInterleavedRuns>> = [];
+const NO_MESSAGES = (): MessageRecord[] => EMPTY_MESSAGES;
+const NO_RUNS = () => EMPTY_RUNS;
 
 export function AgentCallChildTrace({
   entry,

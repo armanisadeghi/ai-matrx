@@ -31,6 +31,16 @@ hydration errors.
 
 ## Change log
 
+- 2026-10-01 (phone run PB-08 #2) — **Theme follows the device unless the
+  person chose.** `theme` initialState and `deserialize` fallback are now
+  `"system"` (were `"dark"`, which made boot's `reconcileThemeFromPaintedDom`
+  save the first paint as an explicit light/dark that ignored the device
+  forever). `themePolicy.version` 2 discards those untrustworthy v1 values;
+  `SyncBootScript` now skips a stored record whose `version` differs from the
+  policy's, so paint and Redux agree. `StoreProvider` seeds the cookie mirror
+  from the existing `theme` cookie (no POST per load for a "system" person).
+  Guards: `themeSlice.followsDevice.test.ts`, `pre-paint.test.ts` (stale v1).
+
 - 2026-09-30 (census) — **`holdUntilHydrated` holds only the DEVICE write, and
   never forever.** A slice with `remote.write` sends its server save on the
   normal debounce; only the IDB + mirror leg waits. If the read has not settled

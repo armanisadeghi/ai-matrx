@@ -61,8 +61,14 @@ import { parsePersistedInputCapabilities } from "../instance-input-capabilities/
 import {
   initInstanceUIState,
   setAutoRun,
+  setBuilderAdvancedSettings,
   type InitInstanceUIStatePayload,
 } from "../instance-ui-state/instance-ui-state.slice";
+import {
+  markRunConfigurationStored,
+  parsePersistedRunConfiguration,
+  selectRunConfiguration,
+} from "../instance-ui-state/run-configuration-persist";
 import {
   initInstanceContext,
   setContextEntries,
@@ -313,6 +319,31 @@ export const loadConversation = createAsyncThunk<
       // Keep whatever display the caller already seeded (resumeConversation's
       // cold path creates the instance with its mode) — only pin auto-run.
       dispatch(setAutoRun({ conversationId, value: false }));
+    }
+
+    // ── 0a. The run configuration the person set survives the reopen ──────
+    // Tools / skills / MCP servers added to THIS conversation live at
+    // `metadata.run_configuration` (run-configuration-persist.ts). Restore a
+    // list only where this tab holds none — a list this tab already holds is
+    // newer than the row (the middleware is about to write it).
+    const storedRun = parsePersistedRunConfiguration(conv.metadata);
+    if (storedRun) {
+      markRunConfigurationStored(conversationId, storedRun);
+      const local = selectRunConfiguration(getState() as RootState, conversationId);
+      const changes: {
+        addedTools?: string[];
+        addedSkills?: string[];
+        addedMcpServers?: string[];
+      } = {};
+      if (!local.addedTools.length && storedRun.addedTools.length)
+        changes.addedTools = storedRun.addedTools;
+      if (!local.addedSkills.length && storedRun.addedSkills.length)
+        changes.addedSkills = storedRun.addedSkills;
+      if (!local.addedMcpServers.length && storedRun.addedMcpServers.length)
+        changes.addedMcpServers = storedRun.addedMcpServers;
+      if (Object.keys(changes).length) {
+        dispatch(setBuilderAdvancedSettings({ conversationId, changes }));
+      }
     }
 
     // ── 0b. Can THIS viewer reply? — the share level reaches the composer ──
