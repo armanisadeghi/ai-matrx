@@ -91,7 +91,14 @@ export async function copyToClipboard(
     if (outcome.status === "cancelled") return false;
     throw new Error(outcome.message);
   } catch (error) {
-    if (capturedText !== undefined) showManualCopy({ text: capturedText });
+    if (capturedText !== undefined) {
+      // The person now has the text in front of them, selected: the copy is
+      // theirs. Any error toast beside that dialog — the raw DOMException
+      // ("Failed to execute 'writeText'…") or a caller's "Failed to copy" —
+      // is noise about a failure already handled (PB-06 W-57).
+      showManualCopy({ text: capturedText });
+      return false;
+    }
     options.onError?.(error);
     if (!options.onError)
       toast.error(
