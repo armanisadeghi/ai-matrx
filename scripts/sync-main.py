@@ -7,7 +7,8 @@ Replay a past sync (for re-testing how conflicts get resolved; commits locally, 
     python3 scripts/sync-main.py --replay <sync merge commit> <path> [<path> ...]
 
 WHAT IT DOES (Arman's sequence, 2026-09-24)
-  1. git add -A  +  git commit -m "local work not committed by agents who made them"
+  1. git add -A  +  git commit -m "local work not committed by agents who made them", the body
+     naming the Claude/Codex sessions that edited each file (scripts/find-file-sessions.py)
   2. git fetch + git merge origin/main          (this is `git pull --no-rebase`)
      clean  -> go to 4
   3. for every file git stops on:
@@ -117,15 +118,108 @@ def record_mtimes():
             MTIMES[path] = os.path.getmtime(path)
 
 
+# ── who made the swept files ────────────────────────────────────────────────────────────────
+# The step-1 commit carries the sessions that edited each file, so a break can be traced to its
+# author (2026-09-29: a broken file picker could not be). Evidence = scripts/find-file-sessions.py
+# (Claude Code + Codex transcripts on this Mac). Best effort only: a failure writes "authors
+# unknown" and the sweep goes on. The subject line never changes (the conflict facts match it).
+AUTHORS_MAX_FILES = 400     # files looked up per sweep; the rest are counted, not searched
+AUTHORS_TIMEOUT = 45        # seconds; the sweep never waits longer than this for the lookup
+AUTHORS_DAYS = 3
+AUTHORS_MAX_SESSIONS = 12
+AUTHORS_MAX_NAMES = 6
+
+
+def find_sessions_tool():
+    here = os.getcwd()
+    for p in (os.path.join(here, "scripts", "find-file-sessions.py"),
+              os.path.join(os.path.dirname(here), "scripts", "find-file-sessions.py"),
+              os.path.join(os.path.dirname(here), "matrx-ship", "scripts", "find-file-sessions.py")):
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def lookup_authors(files):
+    """({path: [session rows]}, None) or (None, why it failed). Never raises, never waits > AUTHORS_TIMEOUT."""
+    try:
+        tool = find_sessions_tool()
+        if not tool:
+            return None, "find-file-sessions.py not found"
+        absmap = {}
+        for f in files[:AUTHORS_MAX_FILES]:
+            ap = os.path.abspath(f)
+            if os.path.isdir(os.path.dirname(ap)):
+                absmap[ap] = f
+        if not absmap:
+            return {}, None
+        r = subprocess.run([sys.executable, tool, "--json", "--days", str(AUTHORS_DAYS), *absmap],
+                           capture_output=True, text=True, timeout=AUTHORS_TIMEOUT)
+        if r.returncode != 0:
+            return None, "lookup exited %d" % r.returncode
+        data = json.loads(r.stdout)
+        return {absmap[ap]: rows for ap, rows in data.items() if ap in absmap}, None
+    except subprocess.TimeoutExpired:
+        return None, "lookup timed out after %ds" % AUTHORS_TIMEOUT
+    except Exception as e:  # noqa: BLE001 — the sweep must never stop on this
+        return None, "lookup failed: %s" % str(e)[:80]
+
+
+def _names(paths, limit):
+    paths = sorted(paths)
+    shown = ", ".join(paths[:limit])
+    return shown + (", +%d more" % (len(paths) - limit) if len(paths) > limit else "")
+
+
+def authors_body(files, found, why=None):
+    """The commit-message body: one line per session with its files and last edit time."""
+    if found is None:
+        return "authors unknown (%s)" % (why or "lookup unavailable")
+    sessions, attributed = {}, set()
+    for f in files:
+        for row in found.get(f) or []:
+            if row.get("kind") != "edited":
+                continue
+            key = (row.get("tool", "?"), row.get("session", "?"))
+            s = sessions.setdefault(key, {"title": "", "last": "", "files": set()})
+            s["title"] = s["title"] or " ".join((row.get("title") or "").split())[:60]
+            s["last"] = max(s["last"], row.get("last") or "")
+            s["files"].add(f)
+            attributed.add(f)
+    lines = ["Sessions that edited the swept files (from local Claude/Codex transcripts, last %d days):"
+             % AUTHORS_DAYS]
+    ordered = sorted(sessions.items(), key=lambda kv: kv[1]["last"], reverse=True)
+    for (tool, sid), s in ordered[:AUTHORS_MAX_SESSIONS]:
+        lines.append('- %s %s "%s" last edit %s: %s' % (
+            tool, sid, s["title"] or "untitled", s["last"] or "?", _names(s["files"], AUTHORS_MAX_NAMES)))
+    if len(ordered) > AUTHORS_MAX_SESSIONS:
+        lines.append("- +%d more sessions" % (len(ordered) - AUTHORS_MAX_SESSIONS))
+    rest = [f for f in files if f not in attributed]
+    if rest:
+        lines.append("- unknown (no session found): %d files: %s" % (len(rest), _names(rest, AUTHORS_MAX_NAMES)))
+    if not sessions:
+        lines[0] = "authors unknown (no Claude/Codex session edited these files in the last %d days)" % AUTHORS_DAYS
+    return "\n".join(lines)
+
+
+def sweep_message_body(files):
+    try:
+        found, why = lookup_authors(files)
+        return authors_body(files, found, why)
+    except Exception as e:  # noqa: BLE001
+        return "authors unknown (%s)" % str(e)[:80]
+
+
 # ── step 1 ──────────────────────────────────────────────────────────────────────────────────
 def commit_all():
     git("add", "-A")
     rc, _, _ = git("diff", "--cached", "--quiet", check=False)
     if rc == 0:
         return 0
-    _, names, _ = git("diff", "--cached", "--name-only")
-    n = len([x for x in names.splitlines() if x])
-    git("commit", "--no-verify", "-q", "-m", LOCAL_MSG)
+    _, names, _ = git("diff", "--cached", "--name-only", "-z")
+    files = [x for x in names.split("\0") if x]
+    n = len(files)
+    git("commit", "--no-verify", "-q", "-m", LOCAL_MSG, "-m", sweep_message_body(files))
     return n
 
 
