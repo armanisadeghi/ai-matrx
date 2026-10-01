@@ -318,15 +318,41 @@ function clearSlot(root: HTMLElement) {
   root.removeAttribute(SLOT_ATTR);
 }
 
-function placeInSlot(root: HTMLElement, kind: DockSlotKind, spot: DockRect) {
+/**
+ * The bar a docked control rests in, so the hook re-measures when the bar moves: a bar shifts with
+ * its pane (rows load, a notice appears) without any resize or child change reaching the page —
+ * measured live on /agents/all, where the pager settled 12 px lower and left the pill on a row.
+ */
+let slotHost: Element | null = null;
+export function currentSlotHost(): Element | null {
+  return slotHost;
+}
+
+/**
+ * How far the visible control sits inside the fixed box the slot variables position (the desktop
+ * pill lives in a wrapper with safe-area padding; measured live: 12 px, which left the pill on the
+ * last row above the pager). The variables place the BOX, so the inset is subtracted.
+ */
+function insetInFixedBox(dock: HTMLElement): { right: number; bottom: number } {
+  for (let el: HTMLElement | null = dock; el; el = el.parentElement) {
+    if (getComputedStyle(el).position !== "fixed") continue;
+    const box = el.getBoundingClientRect();
+    const r = dock.getBoundingClientRect();
+    return { right: Math.max(0, box.right - r.right), bottom: Math.max(0, box.bottom - r.bottom) };
+  }
+  return { right: 0, bottom: 0 };
+}
+
+function placeInSlot(root: HTMLElement, kind: DockSlotKind, spot: DockRect, dock: HTMLElement) {
+  const inset = insetInFixedBox(dock);
   root.setAttribute(SLOT_ATTR, kind);
-  root.style.setProperty("--assist-dock-slot-right", `${Math.round(window.innerWidth - spot.right)}px`);
+  root.style.setProperty("--assist-dock-slot-right", `${Math.round(window.innerWidth - spot.right - inset.right)}px`);
   if (kind === "header") {
     root.style.setProperty("--assist-dock-slot-top", `${Math.round(spot.top)}px`);
     root.style.setProperty("--assist-dock-slot-bottom", "auto");
   } else {
     root.style.removeProperty("--assist-dock-slot-top");
-    root.style.setProperty("--assist-dock-slot-bottom", `${Math.round(window.innerHeight - spot.bottom)}px`);
+    root.style.setProperty("--assist-dock-slot-bottom", `${Math.round(window.innerHeight - spot.bottom - inset.bottom)}px`);
   }
 }
 
@@ -340,6 +366,7 @@ export function applyAssistDockLift(): void {
     });
   // Measure from the dock's own resting place: drop last pass's slot so the rect is the floating one.
   clearSlot(root);
+  slotHost = null;
   const docks = visibleDocks();
   if (docks.length === 0) {
     root.style.removeProperty(LIFT_VAR);
@@ -356,7 +383,8 @@ export function applyAssistDockLift(): void {
     for (const { region, host } of slotRegions()) {
       const spot = slotSpotFor(region, size, (c) => coveredInSlot(c, host));
       if (spot) {
-        placeInSlot(root, region.kind, spot);
+        slotHost = host;
+        placeInSlot(root, region.kind, spot, docks[0]!);
         for (const d of docks) d.removeAttribute(YIELD_ATTR);
         return;
       }
@@ -374,12 +402,23 @@ export function useAssistClearance(active: boolean): void {
   useEffect(() => {
     if (!active || typeof window === "undefined") return undefined;
     let frame = 0;
+    // The bar holding a docked control (and its pane) is watched, so the control follows the bar.
+    let watched: Element | null = null;
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => schedule());
+    const watchSlot = () => {
+      const host = currentSlotHost();
+      if (host === watched || !ro) return;
+      ro.disconnect();
+      watched = host;
+      for (let el: Element | null = host, n = 0; el && n < 4; el = el.parentElement, n += 1) ro.observe(el);
+    };
     const schedule = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
         applyAssistClearance();
         applyAssistDockLift();
+        watchSlot();
       });
     };
     schedule();
@@ -413,6 +452,7 @@ export function useAssistClearance(active: boolean): void {
       window.removeEventListener("resize", schedule);
       document.removeEventListener("scroll", schedule, true);
       mo.disconnect();
+      ro?.disconnect();
       document.documentElement.style.removeProperty(LIFT_VAR);
       clearSlot(document.documentElement);
       for (const el of document.querySelectorAll<HTMLElement>(`[${CLEARED_ATTR}]`)) clear(el);
