@@ -155,5 +155,7 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
   },
   emptyState: {
     title: "No mandates match",
+    // Empty description renders nothing; the title says it all.
+    description: "",
   },
 };
