@@ -44,7 +44,7 @@ describe("a record-store thing with no lane row is the organization default", ()
     expect(v.organizationDefault).toEqual({ level: "viewer", organizationName: "Oak & River" });
   });
 
-  it("and none once the owner chose Only people I share it with", async () => {
+  it("and none once the owner chose Only me", async () => {
     answer = { found: true, lane: "mine", choice: "mine", is_public: false, organization_default: null };
     const v = await getResourceVisibility("record" as never, TABLE);
     expect(v.organizationDefault).toBeNull();

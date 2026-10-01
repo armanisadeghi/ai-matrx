@@ -7,6 +7,7 @@
 // column sorts and filters over the whole in-hand set (dataHomeService.ts reads the same ids).
 
 import Link from "next/link";
+import { useEffect, useSyncExternalStore } from "react";
 import {
   Bell,
   BookOpen,
@@ -29,6 +30,7 @@ import {
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DATE_FILTER_OPTIONS, Muted, TextCell, timeCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
+import type { RecordCountStore } from "./dataHomeRecordCounts";
 import { ACCESS_WHY, ACCESS_WORD, dataHomeKindWord, type DataHomeAccess, type DataHomeRow } from "./dataHomeRows";
 
 const KIND_ICON: Record<string, LucideIcon> = {
@@ -132,14 +134,53 @@ export function OrganizationCell({ row }: { row: DataHomeRow }) {
   return <TextCell value={row.organizationName} muted />;
 }
 
-/** Owner, in the person's words. The door names the maker only as an id, so only "You" is said. */
+/** Owner, in the person's words: "You" for the viewer's own rows, else the maker's name, else none. */
 export function ownerLabel(row: DataHomeRow): string | null {
-  return row.mine ? "You" : null;
+  if (row.mine) return "You";
+  const name = row.createdByName?.trim();
+  return name ? name : null;
 }
 
 export interface DataHomeColumnContext {
   organizationName: (id: string) => string;
+  /** The lazy counter for the Records column; absent = every cell shows `—`. */
+  recordCounts?: RecordCountStore | undefined;
 }
+
+/**
+ * Records: `—` until the count arrives, never 0. A Table's cell on screen asks the lazy counter
+ * (one batched `custom.table_row_counts` call per organization). Only the home's Table rows (any
+ * Table kind: list, scope, form …) are counted; a form, portal or digest row is not a Table.
+ */
+export function RecordsCell({ row, store }: { row: DataHomeRow; store: RecordCountStore | undefined }) {
+  useSyncExternalStore(
+    store?.subscribe ?? NO_SUBSCRIBE,
+    store?.version ?? ZERO,
+    store?.version ?? ZERO,
+  );
+  const asks = Boolean(store) && row.itemId === row.tableId && Boolean(row.organizationId) && Boolean(row.tableId);
+  useEffect(() => {
+    if (asks && store && row.organizationId && row.tableId) store.want(row.organizationId, row.tableId);
+  }, [asks, store, row.organizationId, row.tableId]);
+  const known = row.records ?? (row.tableId ? store?.get(row.tableId) : undefined);
+  if (typeof window !== 'undefined' && (window as any).__rcdbg) console.log('[RC r]', row.tableId?.slice(0,6), String(known), store ? store.version() : 'nostore');
+  if (known === undefined || known === null) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span tabIndex={0} className="text-muted-foreground" aria-label="Not counted yet.">
+            —
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>Not counted yet.</TooltipContent>
+      </Tooltip>
+    );
+  }
+  return <span className="tabular-nums">{known.toLocaleString()}</span>;
+}
+
+const NO_SUBSCRIBE = () => () => undefined;
+const ZERO = () => 0;
 
 export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<DataHomeRow>[] {
   return [
@@ -216,19 +257,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
         filter: "select",
         width: 90,
         align: "right",
-        cell: (row) =>
-          row.records === null ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span tabIndex={0} className="text-muted-foreground" aria-label="Not counted yet.">
-                  —
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Not counted yet.</TooltipContent>
-            </Tooltip>
-          ) : (
-            <span className="tabular-nums">{row.records.toLocaleString()}</span>
-          ),
+        cell: (row) => <RecordsCell row={row} store={ctx.recordCounts} />,
       },
     },
     {
@@ -253,7 +282,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
       phone: "rest",
       column: {
         id: "owner",
-        accessorKey: "createdBy",
+        accessorKey: "createdByName",
         header: "Owner",
         filter: "select",
         width: 100,

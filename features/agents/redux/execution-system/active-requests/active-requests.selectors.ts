@@ -11,6 +11,7 @@
  *   so the shared byRequestId[id] lookup is not duplicated across the call tree.
  */
 
+import { computeChildOwnedRanges } from "../utils/child-owned-ranges";
 import { createSelector } from "@reduxjs/toolkit";
 import { blockMediaFileId } from "@/features/agents/redux/execution-system/utils/block-media-identity";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
@@ -1186,28 +1187,15 @@ export const selectUnifiedSlots = (requestId: string) =>
       // parent transcript and no agent_call, and its output — the only content
       // the window has — vanished the moment the operation completed. Measured
       // live on /marketing/admin/keyword-data-quality, 2026-08-17.
-      const childOwnedBlockIds = new Set<string>();
-      for (const op of [
-        ...Object.values(activeOperations ?? {}),
-        ...Object.values(completedOperations ?? {}),
-      ]) {
-        if (
-          op.operation !== "sub_agent" ||
-          typeof op.blockAnchor !== "number" ||
-          !op.toolCallId
-        ) {
-          continue;
-        }
-        const end = Math.min(
-          "blockEnd" in op && typeof op.blockEnd === "number"
-            ? op.blockEnd
-            : blockOrder.length,
-          blockOrder.length,
-        );
-        for (let i = op.blockAnchor; i < end; i++) {
-          childOwnedBlockIds.add(blockOrder[i]);
-        }
-      }
+      // Blocks, tool calls and thinking — one computation shared with the
+      // commit walker (assembleMessageParts), so the two can never disagree.
+      const childOwned = computeChildOwnedRanges({
+        timeline,
+        renderBlockOrder: blockOrder,
+        activeOperations,
+        completedOperations,
+      });
+      const childOwnedBlockIds = childOwned.blockIds;
 
       if (!timeline || timeline.length === 0) {
         if (blockOrder.length === 0) return [];
@@ -1310,6 +1298,11 @@ export const selectUnifiedSlots = (requestId: string) =>
           pendingStatus = null;
         } else if (entry.kind === "reasoning_end") {
           pendingStatus = null;
+          if (childOwned.isChildReasoning(entry.chunkStartIndex)) {
+            // A child agent's thinking: never persisted to this conversation,
+            // so it is never shown in this transcript either.
+            continue;
+          }
           // The run's thinking tokens, pinned to their chronological spot.
           // Emitted even for EMPTY closed runs (token-less bracketing that
           // produced no chunks): the renderer shows nothing for them, but
@@ -1368,7 +1361,10 @@ export const selectUnifiedSlots = (requestId: string) =>
           // reload shows its card and the live turn must too.
           (entry.data.event === "tool_started" ||
             entry.data.event === "tool_error") &&
-          !seenTools.has(entry.data.call_id)
+          !seenTools.has(entry.data.call_id) &&
+          // A child agent's own tool call belongs to the owning agent_call
+          // card; the parent conversation never persists it.
+          !childOwned.callIds.has(entry.data.call_id)
         ) {
           pendingStatus = null;
           // A tool starting after the error is content → pin the error first.
@@ -1489,7 +1485,10 @@ export const selectUnifiedSlots = (requestId: string) =>
       // "Reasoning…" indicator when the model exposes none), and any
       // render_block events that arrived since the last emission belong to
       // this run (e.g. type: "reasoning", blockId: "client_reasoning_1").
-      if (isReasoningStreaming) {
+      if (
+        isReasoningStreaming &&
+        !childOwned.isChildReasoning(reasoningRunChunkStart ?? 0)
+      ) {
         slots.push({
           kind: "thinking",
           chunkStartIndex: reasoningRunChunkStart ?? 0,

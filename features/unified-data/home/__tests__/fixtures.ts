@@ -24,6 +24,7 @@ export function row(partial: Partial<DataHomeRow> & { name: string }): DataHomeR
     parentName: null,
     updatedAt: "2026-09-30T12:00:00.000Z",
     createdBy: null,
+    createdByName: null,
     mine: false,
     team: false,
     member: true,

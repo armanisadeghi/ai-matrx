@@ -542,6 +542,16 @@ export interface OperationEntry {
    * entry. Lets the tool card find "its" child stream.
    */
   toolCallId?: string | null;
+  /**
+   * `sub_agent` only: `timeline.length` at INIT. A tool call whose FIRST
+   * event lands between this and `timelineEnd` was made by the CHILD (or a
+   * deeper descendant), not by this request's model — it persists in the
+   * child's conversation, never the parent's, so both timeline walkers give
+   * it to the owning agent_call card instead of the transcript.
+   */
+  timelineAnchor?: number;
+  /** `sub_agent` only: `reasoningChunks.length` at INIT — the child's thinking starts here. */
+  reasoningAnchor?: number;
 }
 
 export interface CompletedOperationEntry extends OperationEntry {
@@ -551,6 +561,10 @@ export interface CompletedOperationEntry extends OperationEntry {
   durationMs: number;
   /** `sub_agent` only: `renderBlockOrder.length` at COMPLETION (pairs with `blockAnchor`). */
   blockEnd?: number;
+  /** `sub_agent` only: `timeline.length` at COMPLETION (pairs with `timelineAnchor`). */
+  timelineEnd?: number;
+  /** `sub_agent` only: `reasoningChunks.length` at COMPLETION (pairs with `reasoningAnchor`). */
+  reasoningEnd?: number;
 }
 
 // =============================================================================

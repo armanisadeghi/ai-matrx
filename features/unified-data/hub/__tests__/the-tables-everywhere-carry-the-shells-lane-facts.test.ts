@@ -31,3 +31,11 @@ it("a table a teammate made is in My team and All; a system starter only in Syst
   expect(inLane([teammate, starter], "system")).toEqual([starter]);
   expect(everywhere.laneFactsOf(teammate).createdBy).toBe("5a1e0000-0000-4000-8000-00000000c0de");
 });
+
+// LANE DATA-HOME-3D: the door names each Table's maker; a row may carry the name or null.
+it("a row carries the maker's name from the door, or null when the maker left", () => {
+  const named: DataHomeTableRow = ROW({ team: true, created_by: "5a1e0000-0000-4000-8000-00000000c0de", created_by_name: "Dana Reyes" });
+  const gone: DataHomeTableRow = ROW({ created_by_name: null });
+  expect(named.created_by_name).toBe("Dana Reyes");
+  expect(gone.created_by_name).toBeNull();
+});

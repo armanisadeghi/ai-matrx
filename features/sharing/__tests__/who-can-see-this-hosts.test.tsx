@@ -96,7 +96,7 @@ const expectControlAndDefaultRow = () => {
   const org = control!.querySelector('[data-lane-choice="organization"]');
   expect(org?.getAttribute("aria-checked")).toBe("true");
   expect(org?.textContent).toContain("Everyone in Oak & River");
-  expect(control!.querySelector('[data-lane-choice="mine"]')?.textContent).toContain("Only people I share it with");
+  expect(control!.querySelector('[data-lane-choice="mine"]')?.textContent).toContain("Only me");
   // Current Access agrees with the control: the organization-default row is listed.
   expect(document.querySelector("[data-organization-default]")?.textContent).toContain(
     "Everyone in Oak & River can view this through the organization's default.",

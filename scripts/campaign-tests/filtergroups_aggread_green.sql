@@ -123,7 +123,7 @@ declare
   c_dana_j  constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
   v_org uuid; v_jobs uuid; v_dash uuid;
   v_n numeric; v_rows bigint; v_msg text; v_state text;
-  v_q jsonb; v_b jsonb;
+  v_q jsonb; v_b jsonb; v_mm jsonb;
 begin
   select v into v_org from s3 where k = 'org';
   select v into v_jobs from s3 where k = 'jobs';
@@ -138,7 +138,8 @@ begin
   end if;
   raise notice 'AGR-1 PASS — the owner reads the shop''s cost: $19,305';
 
-  -- ══ A2. Marisol: every question that reads Job cost is refused by the column's name ══
+  -- ══ A2. Marisol: every question that reads Job cost answers a WITHHELD STATE, never a number and
+  --    never an error (lane AGG-WITHHELD, 2026-10-01: a read never errors) ══
   perform set_config('request.jwt.claims', c_dana_j, true);
   foreach v_state in array array[
       '{"m": [{"op": "sum", "key": "job_cost"}]}',
@@ -155,15 +156,30 @@ begin
       select (measures)::text into v_msg
         from custom.record_aggregate(v_org, v_jobs, coalesce(v_q -> 'g', '[]'::jsonb), v_q -> 'm',
                                      null, coalesce(v_q -> 'f', '{}'::jsonb)) limit 1;
-      raise exception 'AGR-2: % was ANSWERED to Marisol (%), not refused', v_state, v_msg;
-    exception when sqlstate '42501' then
+    exception when others then
       get stacked diagnostics v_msg = message_text;
-      if v_msg not like '%Job cost%' then
-        raise exception 'AGR-2: % was refused without the column''s name: %', v_state, v_msg;
-      end if;
+      raise exception 'AGR-2: % ERRORED for Marisol instead of answering withheld: %', v_state, v_msg;
     end;
+    if v_msg is null or v_msg !~ '"withheld"' or v_msg !~ 'Job cost' then
+      raise exception 'AGR-2: % did not answer the withheld state naming Job cost: %', v_state, v_msg;
+    end if;
+    if v_msg ~ '"(sum|avg|max|median|unique|filled)_job_cost": *[0-9-]' then
+      raise exception 'AGR-2: % answered a NUMBER computed from Job cost: %', v_state, v_msg;
+    end if;
   end loop;
-  raise notice 'AGR-2 PASS — sum, avg, max, median, unique, filled, a group and a flat filter on Job cost are each refused to Marisol: "%"', v_msg;
+  raise notice 'AGR-2 PASS — sum, avg, max, median, unique, filled, a group and a flat filter on Job cost each answer the withheld state to Marisol: %', v_msg;
+
+  -- ══ A2b. a measure alone is withheld; the rest of the question still answers ══
+  select measures, row_count into v_mm, v_rows
+    from custom.record_aggregate(v_org, v_jobs, '[]'::jsonb,
+         '[{"op": "count"}, {"op": "sum", "key": "invoice_total"}, {"op": "sum", "key": "job_cost"}]'::jsonb,
+         null, '{"status": "Invoiced"}'::jsonb);
+  if (v_mm ->> 'sum_invoice_total')::numeric is distinct from 15770 or v_rows is distinct from 5
+     or (v_mm -> 'sum_job_cost' -> 'withheld') is null or (v_mm -> 'sum_job_cost' ->> 'says') is null
+     or jsonb_typeof(v_mm -> 'sum_job_cost') <> 'object' then
+    raise exception 'AGR-2b: the mixed question answered % over % rows (want invoiced 15,770 over 5, Job cost withheld with a sentence)', v_mm, v_rows;
+  end if;
+  raise notice 'AGR-2b PASS — her invoiced total and count answer; only the Job cost measure is withheld: %', v_mm -> 'sum_job_cost' ->> 'says';
 
   -- ══ A3. the list door refuses narrowing by it too ══
   begin

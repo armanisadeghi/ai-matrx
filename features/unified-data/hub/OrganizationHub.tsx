@@ -399,8 +399,9 @@ export function OrganizationHub({
     // ALL ORGS: every organization's archive, in one door (`custom.archived_tables_everywhere`),
     // each row naming its organization; restoring a row asks the organization it lives in.
     if (!organizationId) {
-      const PAGE = 200;
-      const MAX_PAGES = 25;
+      // One call returns the whole archive (up to 1000 rows a call); 5 pages keep the 5000 cap.
+      const PAGE = 1000;
+      const MAX_PAGES = 5;
       const all: doors.ArchivedEverywhereRow[] = [];
       let complete = false;
       for (let page = 0; page < MAX_PAGES; page += 1) {

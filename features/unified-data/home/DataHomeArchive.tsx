@@ -17,8 +17,9 @@ import * as doors from "@/features/unified-data/hub/doors";
 import { ArchivedTablesList, type ArchivedTable } from "@/features/unified-data/hub/ArchivedTablesList";
 import { ArchivedPortalsEverywhere } from "@/features/unified-data/hub/ArchivedPortalsEverywhere";
 
-const PAGE = 200;
-const MAX_PAGES = 25;
+// One call returns the whole archive (the door serves up to 1000 rows a call); 5 pages keep the 5000 cap.
+const PAGE = 1000;
+const MAX_PAGES = 5;
 
 export function DataHomeArchive({
   dataSource,

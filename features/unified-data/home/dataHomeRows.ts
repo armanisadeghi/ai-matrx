@@ -43,6 +43,8 @@ export interface DataHomeRow {
   updatedAt: string | null;
   /** The Table's maker, when the door says (`custom.data_home_tables.created_by`). */
   createdBy: string | null;
+  /** The maker's name (`created_by_name`); null when the door has none. */
+  createdByName: string | null;
   mine: boolean;
   team: boolean;
   member: boolean;
@@ -138,6 +140,7 @@ function toRow(item: HubItem & { kind: string }, tables: ReadonlyMap<string, Dat
     parentName: item.kind === "table" ? null : parent,
     updatedAt: item.changedAt ?? null,
     createdBy: table?.created_by ?? null,
+    createdByName: table?.created_by_name ?? null,
     mine: facts.mine,
     team: Boolean(facts.team),
     member: facts.member,

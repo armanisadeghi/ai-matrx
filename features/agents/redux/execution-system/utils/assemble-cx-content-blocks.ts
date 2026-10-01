@@ -57,6 +57,7 @@ import type {
   TimelineToolEvent,
   TimelineRenderBlock,
 } from "@/features/agents/types/request.types";
+import { computeChildOwnedRanges } from "./child-owned-ranges";
 import { toCxMediaPart } from "@/features/files/blocks/image/adapters/to-cx-media-part";
 import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
 import { SPECIAL_CODE_LANGUAGES } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
@@ -273,6 +274,20 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
   // Track tool callIds already emitted (tool_result events reference them)
   const emittedToolCallIds = new Set<string>();
 
+  // What a CHILD agent streamed on this wire (its text, tool calls and
+  // thinking) is persisted in the child's conversation, never this one — the
+  // same computation the live walker uses, so the committed record equals
+  // both the live transcript and the server's row after a reload.
+  const childOwned = computeChildOwnedRanges({
+    timeline: request.timeline,
+    renderBlockOrder: request.renderBlockOrder,
+    activeOperations: request.activeOperations,
+    completedOperations: request.completedOperations,
+  });
+  request.renderBlockOrder.forEach((blockId, index) => {
+    if (childOwned.blockIds.has(blockId)) consumedRenderBlockIndices.add(index);
+  });
+
   // ── Pass 1: Walk the timeline, merging adjacent text runs ───────────────
   //
   // The bug this pass fixes: every `phase`, `info`, `heartbeat`, `warning`,
@@ -365,6 +380,7 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
   for (const entry of request.timeline) {
     // ── Reasoning run ended → flush text, then emit CxThinkingContent ─────
     if (isReasoningEnd(entry)) {
+      if (childOwned.isChildReasoning(entry.chunkStartIndex)) continue;
       flushPendingText();
       const reasoningChunks = request.reasoningChunks.slice(
         entry.chunkStartIndex,
@@ -383,9 +399,15 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
     // emission at flush time. Flushing happens when we reach the next
     // structural event (reasoning/tool) or the end of the timeline.
     if (isTextEnd(entry)) {
+      const rangeIsChild =
+        entry.blockEndIndex > entry.blockStartIndex &&
+        request.renderBlockOrder
+          .slice(entry.blockStartIndex, entry.blockEndIndex)
+          .every((blockId) => childOwned.blockIds.has(blockId));
       for (let i = entry.blockStartIndex; i < entry.blockEndIndex; i++) {
         consumedRenderBlockIndices.add(i);
       }
+      if (rangeIsChild) continue;
 
       const rawText = entry.rawText;
       if (rawText && rawText.length > 0) {
@@ -506,6 +528,7 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
     }
 
     if (isToolEvent(entry)) {
+      if (childOwned.callIds.has(entry.data.call_id)) continue;
       const lifecycle = request.toolLifecycle[entry.data.call_id];
       if (!lifecycle) continue;
 

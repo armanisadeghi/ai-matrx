@@ -28,9 +28,11 @@ export function OrgAvailabilityNote({
 }: {
   permissions: PermissionWithDetails[];
   /**
-   * SHARE-TAILS (chair ruling 2026-09-25): a thing nobody set to "Only people I share it with" is
-   * the organization's default, and every member reaches it without a share. "Not shared with
-   * anyone" above is true of shares; this line says who else really reaches it.
+   * SHARE-TAILS (chair ruling 2026-09-25): a thing nobody set to "Only me" is the organization's
+   * default, and every member reaches it without a share. "Not shared with anyone" above is true
+   * of shares; this line says who else really reaches it. Under "Only me" (access ladder T-36,
+   * chair ruling 2026-10-01) members still open it by link but no longer find it in lists, so the
+   * door sends no default and the lane control's "Only me" hint says the rest.
    */
   organizationDefault?: {
     level: string;

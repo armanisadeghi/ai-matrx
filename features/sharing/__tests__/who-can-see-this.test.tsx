@@ -9,11 +9,12 @@
  *      public state is an agent's CARD (`card_visibility`) gets no control: that column is not who
  *      may open the thing.
  *   2. WRITE — a choice goes through `custom.share_lane_set` with the object's organization.
- *   3. CONFIRM — "Only people I share it with" while members reach it says one sentence and applies
- *      only on confirm; every other change applies at once.
+ *   3. ONLY ME IS A HIDE (access ladder T-36, chair ruling 2026-10-01) — "Only me" carries the
+ *      "Shown to" words and a hint that it still opens for members with the link; it takes nobody's
+ *      access away, so it applies at once like every other choice, with no confirm.
  *   4. OWNER-ONLY — someone who cannot change sharing sees the state as text, never buttons.
  *   5. AGREEMENT — Current Access shows the organization-default row under "Everyone in <org>" and
- *      not under "Only people…", and never lists the organization's own lane row a second time.
+ *      not under "Only me", and never lists the organization's own lane row a second time.
  *
  * RED before this lane (no WhoCanSeeThis, no whoCanSee on the reader); GREEN now.
  */
@@ -30,7 +31,7 @@ const ORG = "4c425bfe-9a08-402f-9496-488580623f42";
 let answer: Record<string, unknown> = {};
 const rpc = jest.fn(async (..._args: unknown[]) => ({ data: answer, error: null }));
 const customRpc = jest.fn(async (..._args: unknown[]) => ({
-  data: { lane: "mine", message: "Only the people it is shared with reach this table now." },
+  data: { lane: "mine", message: "Listed for you alone now. Members with the link can still open this table." },
   error: null,
 }));
 let capsAnswer: Record<string, unknown> = {};
@@ -135,7 +136,7 @@ describe("2. a choice is written through custom.share_lane_set", () => {
     const r = await setStoreLane(ORG, TABLE, "mine");
     expect(schema).toHaveBeenCalledWith("custom");
     expect(customRpc).toHaveBeenCalledWith("share_lane_set", { p_organization_id: ORG, p_subject_id: TABLE, p_choice: "mine" });
-    expect(r).toEqual({ success: true, message: "Only the people it is shared with reach this table now." });
+    expect(r).toEqual({ success: true, message: "Listed for you alone now. Members with the link can still open this table." });
   });
 });
 
@@ -155,8 +156,6 @@ describe("the control and Current Access", () => {
     for (let i = 0; i < 5; i += 1) await act(async () => { await Promise.resolve(); });
   };
   const radio = (lane: string) => host.querySelector<HTMLButtonElement>(`[data-lane-choice="${lane}"]`);
-  const btn = (text: string) =>
-    Array.from(host.querySelectorAll("button")).find((b) => b.textContent === text);
 
   const orgLane: WhoCanSee = {
     source: "store",
@@ -173,28 +172,24 @@ describe("the control and Current Access", () => {
     expect(radio("organization")?.getAttribute("aria-checked")).toBe("true");
     expect(radio("organization")?.textContent).toContain("Everyone in Oak & River");
     expect(radio("organization")?.textContent).toContain("Every member, as Viewer. This is the organization's default.");
-    expect(radio("mine")?.textContent).toContain("Only people I share it with");
+    expect(radio("mine")?.textContent).toContain("Only me");
+    expect(radio("mine")?.textContent).toContain("Listed for you alone.");
+    expect(radio("mine")?.textContent).not.toMatch(/Nobody else|share it with/);
     expect(radio("mine")?.getAttribute("aria-checked")).toBe("false");
+    expect(host.querySelector('[aria-label="About Only me"]')).not.toBeNull();
     expect(radio("world")).toBeNull();
     expect(host.textContent).not.toContain("Anyone with the link");
   });
 
-  it("3. Only people I share it with, while members reach it, asks in one sentence and applies on confirm", async () => {
-    const onChoose = jest.fn(async () => ({ success: true, message: "Only the people it is shared with reach this table now." }));
+  it("3. Only me applies at once with no confirm, and says it still opens by link", async () => {
+    const onChoose = jest.fn(async () => ({ success: true, message: "Listed for you alone now. Members with the link can still open this table." }));
     act(() => root.render(<WhoCanSeeThis whoCanSee={orgLane} canChange onChoose={onChoose} />));
     act(() => radio("mine")!.click());
-    expect(onChoose).not.toHaveBeenCalled();
-    expect(host.querySelector("[data-lane-confirm]")?.textContent).toContain(
-      "Everyone in Oak & River who is not named below loses access, including the organization's owners.",
-    );
-    act(() => btn("Keep it")!.click());
-    expect(host.querySelector("[data-lane-confirm]")).toBeNull();
-    expect(onChoose).not.toHaveBeenCalled();
-    act(() => radio("mine")!.click());
-    act(() => btn("Only people I share it with")!.click());
     await flush();
     expect(onChoose).toHaveBeenCalledWith("mine");
-    expect(host.querySelector("[data-lane-said]")?.textContent).toBe("Only the people it is shared with reach this table now.");
+    expect(host.querySelector("[data-lane-confirm]")).toBeNull();
+    expect(host.textContent).not.toContain("loses access");
+    expect(host.querySelector("[data-lane-said]")?.textContent).toBe("Listed for you alone now. Members with the link can still open this table.");
   });
 
   it("back to Everyone in <org> applies at once, and a refusal is said in words", async () => {
@@ -218,8 +213,10 @@ describe("the control and Current Access", () => {
 
   it("4. a person who cannot change sharing reads the state as text, with no buttons", () => {
     act(() => root.render(<WhoCanSeeThis whoCanSee={{ ...orgLane, choice: "mine", membersReachNow: false }} canChange={false} onChoose={jest.fn()} />));
-    expect(host.querySelectorAll("button")).toHaveLength(0);
-    expect(host.querySelector("[data-who-can-see-text]")?.textContent).toContain("Only people I share it with.");
+    // No choice buttons; the one button left is the "Only me" hint, which opens a definition.
+    expect(host.querySelectorAll('[role="radio"]')).toHaveLength(0);
+    expect(Array.from(host.querySelectorAll("button")).map((b) => b.getAttribute("aria-label"))).toEqual(["About Only me"]);
+    expect(host.querySelector("[data-who-can-see-text]")?.textContent).toContain("Only me.");
   });
 
   it("a kind with no lane door draws nothing", () => {

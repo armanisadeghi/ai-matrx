@@ -286,6 +286,11 @@ export interface DataHomeTableRow {
   system?: boolean;
   /** The Table's own maker (`created_by`) — the fact Mine and My team are decided from. */
   created_by?: string | null;
+  /**
+   * The maker's name from `custom.history_people` in the Table's own organization (the door
+   * "Changed by" uses). Null = the maker is not a member of that organization, or there is none.
+   */
+  created_by_name?: string | null;
 }
 
 /**
@@ -363,7 +368,7 @@ export interface ArchivedEverywhereRow {
 
 /**
  * THE ARCHIVED TABLES OF EVERY ORGANIZATION THE PERSON BELONGS TO, one page at a time, each row
- * naming its organization (org-filter sweep, 2026-09-29). Newest first; `limit` is capped at 200.
+ * naming its organization (org-filter sweep, 2026-09-29). Newest first; `limit` is capped at 1000.
  */
 export async function archivedTablesEverywhere(
   dataSource: RecordsDataSource,
@@ -375,6 +380,30 @@ export async function archivedTablesEverywhere(
     p_offset: page.offset,
   });
   return answered.ok ? { ok: true, data: answered.data.tables ?? [] } : answered;
+}
+
+/** One Table's count from `custom.table_row_counts`: the rows THIS reader may see. */
+export interface TableRowCount {
+  table_id: string;
+  visible_rows: number;
+}
+
+/** The door counts at most this many Tables a call. */
+export const TABLE_ROW_COUNTS_MAX = 500;
+
+/**
+ * EXACT ROW COUNTS FOR THE TABLES A SCREEN SHOWS (`custom.table_row_counts`, GRID-PRIMITIVES G12),
+ * one organization a call, at most 500 Tables. A Table the reader may not know gets no row.
+ */
+export async function tableRowCounts(
+  dataSource: RecordsDataSource,
+  organizationId: string,
+  tableIds: readonly string[],
+): Promise<DoorAnswer<TableRowCount[]>> {
+  return call<TableRowCount[]>(dataSource, "table_row_counts", {
+    p_organization_id: organizationId,
+    p_table_ids: [...tableIds],
+  });
 }
 
 /** An archived portal of any organization the person belongs to (`custom.list_portals_everywhere`). */

@@ -8,26 +8,30 @@
  * its row controls ("Shown to", "Published to the web") in the same place through `row`.
  *
  * The record store has had the door since lane SHARE (`custom.share_lane_set`: mine |
- * organization | world), and SHARE-TAILS made "mine" really mean the owner and the people named.
+ * organization | world). Under the access ladder law (T-36, chair ruling 2026-10-01) "mine" is the
+ * hide it is, "Shown to: Only me": the thing leaves coworkers' lists and still opens for members
+ * who have the link. It is never a lock; real separation is another organization or a
+ * Confidential/Private Table type. The words are `SHOWN_TO_WORDS.only_me`, the ones RowControls uses.
  * Nothing on screen reached it: a door with no control is a dead end. This is that control, ONE
  * primitive every share host renders (ShareModal, ShareModalWindow, AgentSharePanel,
  * SiteAccessWorkspace) from `useSharing().whoCanSee` — it never reads or writes on its own.
  *
- *   · Only people I share it with   — lane mine: the owner and the people named below.
+ *   · Only me                       — lane mine: hidden from coworkers' lists; opens by link.
  *   · Everyone in <organization>    — the organization's default, at the level it grants.
  *   · Anyone with the link          — the world lane, drawn ONLY where it would be accepted
  *                                     (`world_open`) or is already the state. Otherwise absent,
  *                                     never disabled-looking.
  *
  * The current state is always shown. A person who cannot change sharing sees it as one line of
- * text, not as buttons. Moving to "Only people I share it with" while members reach it through
- * the default asks once, in one sentence, before it applies. Named people are never touched.
+ * text, not as buttons. Hiding takes nobody's access away, so it applies without a confirm.
+ * Named people are never touched.
  */
 
 import React, { useState } from "react";
-import { Building2, Check, Globe, Loader2, Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Building2, Check, EyeOff, Globe, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { InfoHint } from "@/components/official/InfoHint";
+import { SHOWN_TO_WORDS } from "@/lib/list-scope/shownToWords";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import type {
   LaneChoice,
@@ -62,8 +66,13 @@ interface Option {
   choice: LaneChoice;
   label: string;
   says: string;
-  icon: typeof Lock;
+  /** A definition the label cannot carry, behind the tooltip slot (≤ 140). */
+  hint?: string;
+  icon: typeof Globe;
 }
+
+/** The truth of "Only me" on an Organization table (access ladder T-36): it hides, never locks. */
+const ONLY_ME_HINT = "Hidden from members' lists. Members with the link can still open it.";
 
 export function WhoCanSeeThis({
   whoCanSee,
@@ -73,7 +82,6 @@ export function WhoCanSeeThis({
 }: WhoCanSeeThisProps) {
   const { orgs } = useNavTree();
   const [pending, setPending] = useState<LaneChoice | null>(null);
-  const [confirming, setConfirming] = useState(false);
   const [said, setSaid] = useState<{ ok: boolean; text: string } | null>(null);
 
   if (!whoCanSee) return row ? <RowControls {...row} canChange={canChange} /> : null;
@@ -91,9 +99,10 @@ export function WhoCanSeeThis({
   const options: Option[] = [
     {
       choice: "mine",
-      label: "Only people I share it with",
-      says: "You and the people named below. Nobody else in the organization.",
-      icon: Lock,
+      label: SHOWN_TO_WORDS.only_me.label,
+      says: SHOWN_TO_WORDS.only_me.says,
+      hint: ONLY_ME_HINT,
+      icon: EyeOff,
     },
     {
       choice: "organization",
@@ -115,7 +124,6 @@ export function WhoCanSeeThis({
   const current = options.find((o) => o.choice === whoCanSee.choice) ?? options[options.length - 1];
 
   const apply = async (choice: LaneChoice) => {
-    setConfirming(false);
     setPending(choice);
     setSaid(null);
     try {
@@ -132,11 +140,6 @@ export function WhoCanSeeThis({
 
   const pick = (choice: LaneChoice) => {
     if (choice === whoCanSee.choice || pending) return;
-    if (choice === "mine" && whoCanSee.membersReachNow) {
-      setConfirming(true);
-      setSaid(null);
-      return;
-    }
     void apply(choice);
   };
 
@@ -158,8 +161,8 @@ export function WhoCanSeeThis({
             const Icon = o.icon;
             const selected = o.choice === whoCanSee.choice;
             return (
+              <div key={o.choice} className="relative min-w-0">
               <button
-                key={o.choice}
                 type="button"
                 role="radio"
                 aria-checked={selected}
@@ -167,6 +170,7 @@ export function WhoCanSeeThis({
                 onClick={() => pick(o.choice)}
                 className={cn(
                   "flex w-full min-w-0 items-start gap-2 rounded-md border p-2 text-left transition-colors",
+                  o.hint && "pr-7",
                   selected
                     ? "border-primary bg-background"
                     : "border-transparent hover:bg-background/60",
@@ -190,6 +194,15 @@ export function WhoCanSeeThis({
                   <span className="block text-xs text-muted-foreground">{o.says}</span>
                 </span>
               </button>
+              {/* Beside the radio, never inside it: a button may not hold a button. */}
+              {o.hint && (
+                <InfoHint
+                  text={o.hint}
+                  label={`About ${o.label}`}
+                  className="absolute right-2 top-2.5"
+                />
+              )}
+              </div>
             );
           })}
         </div>
@@ -197,34 +210,8 @@ export function WhoCanSeeThis({
         <p className="text-sm" data-who-can-see-text>
           <span className="font-medium">{current.label}.</span>{" "}
           <span className="text-xs text-muted-foreground">{current.says}</span>
+          {current.hint && <InfoHint text={current.hint} label={`About ${current.label}`} />}
         </p>
-      )}
-
-      {confirming && (
-        <div
-          className="flex flex-col gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs sm:flex-row sm:items-center"
-          data-lane-confirm
-        >
-          <span className="flex-1">
-            {/* SHARE-LANE-2: exactly true since the kernel stopped letting organization owners and
-                admins open a personal Table; their governance is the audited transfer. */}
-            Everyone in {orgName} who is not named below loses access, including the
-            organization&apos;s owners.
-          </span>
-          <span className="flex gap-1.5">
-            <Button size="sm" className="h-7" onClick={() => void apply("mine")}>
-              Only people I share it with
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7"
-              onClick={() => setConfirming(false)}
-            >
-              Keep it
-            </Button>
-          </span>
-        </div>
       )}
 
       {said && (

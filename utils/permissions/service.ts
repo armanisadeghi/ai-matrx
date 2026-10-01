@@ -173,9 +173,9 @@ export interface ResourceVisibility {
   /**
    * WHEN MEMBERSHIP ALONE REACHES IT (SHARE-TAILS, chair ruling 2026-09-25). A record-store thing
    * with no sharing choice is the organization's default — every member reaches it at the member
-   * default level — and the lane door says so. Absent/null when membership reaches nothing (the
-   * owner chose "Only people I share it with", or the organization shows members nothing by
-   * default), and for every type outside the record store.
+   * default level — and the lane door says so. Absent/null when the owner chose "Only me" (hidden
+   * from members' lists; members still open it by link, access ladder T-36) or the organization
+   * shows members nothing by default, and for every type outside the record store.
    */
   organizationDefault?: {
     level: string;

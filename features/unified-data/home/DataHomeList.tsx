@@ -41,6 +41,8 @@ import {
 import { ACCESS_WORD, dataHomeKindWord, type DataHomeAccess, type DataHomeRow } from "./dataHomeRows";
 import { createDataHomeService, DATA_HOME_ROW_CAP } from "./dataHomeService";
 import { createDataHomeCorpus } from "./dataHomeCorpus";
+import { createRecordCountStore } from "./dataHomeRecordCounts";
+import { tableRowCounts } from "@/features/unified-data/hub/doors";
 import { dataHomeColumns, ownerLabel } from "./dataHomeColumns";
 import { DataHomeCards, DataHomeRows } from "./DataHomeViews";
 import { nextStarred, useDataHomeMarks } from "./useDataHomeMarks";
@@ -71,6 +73,11 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
 
   // THE CORPUS (rows in hand) and the server search beside it — dataHomeCorpus.ts.
   const corpus = useMemo(() => createDataHomeCorpus(client, dataSource), [client, dataSource]);
+  // THE RECORDS COLUMN, lazily: cells on screen ask this; the list never waits on it.
+  const recordCounts = useMemo(
+    () => createRecordCountStore((organizationId, tableIds) => tableRowCounts(dataSource, organizationId, tableIds)),
+    [dataSource],
+  );
   // A server answer for the box's current text re-asks the list (its rows join beneath the instant hits).
   const [serverVersion, setServerVersion] = useState(0);
   useEffect(() => corpus.onAnswer(() => setServerVersion((v) => v + 1)), [corpus]);
@@ -111,7 +118,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   const defaultView = resolveDataHomeView(useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_VIEW_KNOB));
 
   const config = useMemo<EntityListConfig<DataHomeRow>>(() => {
-    const columns = dataHomeColumns({ organizationName: (id) => corpus.meta.names.get(id) ?? id });
+    const columns = dataHomeColumns({ organizationName: (id) => corpus.meta.names.get(id) ?? id, recordCounts });
     return {
       surfaceKey: DATA_HOME_SURFACE_KEY,
       entityLabel: { singular: "table", plural: "tables" },
@@ -207,7 +214,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
           }
         : { title: "No tables yet", description: "New table makes one." },
     };
-  }, [service, starredKey, serverVersion, corpus, order, defaultView, defaultKind, sharedOnlyHere, router, starredSet, marks]);
+  }, [service, starredKey, serverVersion, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, router, starredSet, marks]);
 
   return (
     <EntityListPage

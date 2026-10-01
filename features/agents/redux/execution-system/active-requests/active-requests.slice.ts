@@ -644,6 +644,10 @@ const activeRequestsSlice = createSlice({
         // ordinal here so the walker can hide the child's range and the
         // owning agent_call card can render it (see OperationEntry docs).
         opEntry.blockAnchor = request.renderBlockOrder.length;
+        // The same handoff for the child's tool calls and thinking — see
+        // utils/child-owned-ranges.ts.
+        opEntry.timelineAnchor = request.timeline.length;
+        opEntry.reasoningAnchor = request.reasoningChunks.length;
         let owner: ToolLifecycleEntry | null = null;
         for (const t of Object.values(request.toolLifecycle)) {
           if (t.toolName !== "agent_call") continue;
@@ -689,6 +693,10 @@ const activeRequestsSlice = createSlice({
         completedEntry.blockAnchor = active.blockAnchor;
         completedEntry.toolCallId = active.toolCallId ?? null;
         completedEntry.blockEnd = request.renderBlockOrder.length;
+        completedEntry.timelineAnchor = active.timelineAnchor;
+        completedEntry.reasoningAnchor = active.reasoningAnchor;
+        completedEntry.timelineEnd = request.timeline.length;
+        completedEntry.reasoningEnd = request.reasoningChunks.length;
       }
       request.completedOperations[action.payload.operationId] = completedEntry;
 

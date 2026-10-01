@@ -17,14 +17,14 @@ const ORG_SLUG = "cedar-ridge-physical-therapy";
 const SINGULAR = `Rehab Pathway ${STAMP}`;
 const PLURAL = `Rehab Pathways ${STAMP}`;
 const SCOPE = `Shoulder Rehab ${STAMP}`;
-const NOTE = `Shoulder rehab check-in notes ${STAMP}`;
+const NOTE = `Visit notes ${STAMP}`;
 const PROJECT = `Shoulder rehab outcomes review ${STAMP}`;
 const MESSAGE = `Two stretches for a stiff shoulder after rotator cuff rehab, one line please. ${STAMP}`;
 
 const ctx = await openWalk("scope-tags");
 const text = (page) => bodyText(page, 60000);
 const seen = async (page, needle, ms = 90000) => (await until(String(needle), async () => (await text(page)).includes(needle), ms)).v === true;
-const state = { noteUrl: null, projectUrl: null, chatUrl: null, madeType: false, madeScope: false };
+const state = { noteUrl: null, projectUrl: null, chatUrl: null, chatId: null, madeType: false, madeScope: false };
 
 async function resumeIfPaused(page) {
   for (let i = 0; i < 3; i += 1) {
@@ -70,13 +70,15 @@ async function scopesPage(page) {
   if (!r.v) throw new Error(`the scopes page never finished loading: ${(await text(page)).replace(/\s+/g, " ").slice(-300)}`);
   await sleep(2500);
 }
-/** In an open context picker (the canonical ContextAssignmentField): open the type's section, press the scope. */
+/** In an open context picker (the canonical ContextAssignmentField): open the type's section, press the scope's row. */
 async function pickScope(page, root) {
-  const section = root.locator("button", { hasText: PLURAL }).first();
-  await section.waitFor({ timeout: 60000 });
-  // Opens when closed; a section that is already open stays open.
-  if (!(await root.getByText(SCOPE, { exact: false }).first().isVisible().catch(() => false))) await section.click();
-  const row = root.getByText(SCOPE, { exact: true }).locator("visible=true").first();
+  const rowOf = () => root.locator('[role="button"]').filter({ hasText: SCOPE }).locator("visible=true").first();
+  if (!(await rowOf().count())) {
+    const section = root.locator("button", { hasText: PLURAL }).locator("visible=true").first();
+    await section.waitFor({ timeout: 60000 });
+    await section.click();
+  }
+  const row = rowOf();
   await row.waitFor({ timeout: 30000 });
   await row.click();
   await sleep(3500);
@@ -121,11 +123,16 @@ try {
     void picker;
     await admin.getByPlaceholder(/Search scopes, projects and tasks/).first().waitFor({ timeout: 60000 });
     await pickScope(admin, admin.locator("body"));
-    // The tag chip sits in the note's bottom bar; a reload must bring it back.
+    // A fresh load shows tags only once the note's context picker has read them (the bar is cache-only): open it,
+    // as a person does to see what the note is tagged with. The bottom bar's chip reads "<type>: <scope>".
+    const tagText = `${SINGULAR}: ${SCOPE}`;
     await go(admin, state.noteUrl);
     await admin.locator('textarea[aria-label="Note text"]').first().waitFor({ timeout: 120000 });
-    const shown = await until("note tag", async () => (await text(admin)).includes(SCOPE), 60000);
-    return { ok: Boolean(shown.v), detail: `the reopened note (${new URL(state.noteUrl).search.slice(0, 30)}…) shows the "${SCOPE}" tag ${Boolean(shown.v)}` };
+    await sleep(3000);
+    const before = (await text(admin)).includes(tagText);
+    await admin.locator('[title="Set context for this note"]').first().click();
+    const shown = await until("note tag", async () => (await text(admin)).includes(tagText), 60000);
+    return { ok: Boolean(shown.v), detail: `the reopened note shows the "${tagText}" tag ${Boolean(shown.v)} (before opening its context picker: ${before})` };
   });
 
   // ── 2. S08: a project tagged through its settings page ──────────────────────────────────
@@ -134,32 +141,83 @@ try {
     await go(admin, "/projects/new");
     const nameIn = admin.getByPlaceholder("e.g., Website Redesign").first();
     await nameIn.waitFor({ timeout: 120000 });
-    const owner = admin.locator("button:visible", { hasText: /Select an organization|Cedar Ridge/ }).first();
+    const owner = admin.locator("button:visible", { hasText: /Select an organization/ }).first();
     await owner.click();
     await sleep(1200);
-    await admin.getByRole("menuitem", { name: /^Cedar Ridge Physical Therapy/ }).first().click();
+    await admin.locator('[role="menuitem"]').filter({ hasText: /^Cedar Ridge Physical Therapy(Owner|Admin|Member)/i }).first().click({ timeout: 60000 });
     await sleep(1000);
     await nameIn.fill(PROJECT);
     await sleep(2500);
     await admin.getByRole("button", { name: /^Create Project$/ }).first().click();
-    await until("project settings", async () => /\/projects\/[0-9a-f-]{36}\/settings/.test(admin.url()), 90000);
-    state.projectUrl = admin.url();
-    await until("scopes card", async () => (await text(admin)).includes("Tag this project") || (await text(admin)).includes(PLURAL), 90000);
+    // After Create the app may land on the settings page or the list: either way, find the project in the
+    // list by name and open its settings the way a person does.
+    await sleep(6000);
+    await go(admin, "/projects");
+    const link = admin.locator(`a[title="Open ${PROJECT}"]`).first();
+    await link.waitFor({ timeout: 120000 });
+    state.projectUrl = `${new URL(admin.url()).origin}${await link.getAttribute("href")}/settings`;
+    await go(admin, state.projectUrl);
+    await until("scopes card", async () => (await text(admin)).includes(PLURAL), 120000);
     await sleep(3000);
     await pickScope(admin, admin.locator("body"));
     await go(admin, state.projectUrl);
-    await seen(admin, "Tag this project", 120000);
+    await seen(admin, PLURAL, 120000);
     await sleep(4000);
-    const shown = await until("project tag", async () => {
-      // The scope is shown selected in the card; the section may be collapsed, so open the type's section.
-      const t = await text(admin);
-      if (t.includes(SCOPE)) return true;
-      const sec = admin.locator("button", { hasText: PLURAL }).first();
-      if (await sec.count()) await sec.click().catch(() => {});
+    const rowOn = async () => {
+      const sec = admin.locator("button", { hasText: PLURAL }).locator("visible=true").first();
+      const row = () => admin.locator('[role="button"]').filter({ hasText: SCOPE }).locator("visible=true").first();
+      if (!(await row().count()) && (await sec.count())) await sec.click().catch(() => {});
       await sleep(1500);
-      return (await text(admin)).includes(SCOPE);
-    }, 60000);
+      return (await row().locator('span[class*="bg-primary"]').count()) > 0;
+    };
+    const shown = await until("project tag", rowOn, 60000);
     return { ok: Boolean(shown.v), detail: `the reloaded project settings (${new URL(state.projectUrl).pathname}) list "${SCOPE}" ${Boolean(shown.v)}` };
+  });
+
+  // ── 3. S05: a chat tagged through the composer's context chip ───────────────────────────
+  await ctx.step(["S05"], "tag a chat with the scope", admin, async () => {
+    if (!state.madeScope) return { ok: false, detail: "no scope to tag with" };
+    await go(admin, "/chat/new");
+    const chipSel = 'button[aria-label^="Context: "]:not([aria-label="Context: Context"]), button[aria-label="Set context"]';
+    const chip = admin.locator(chipSel).locator("visible=true").first();
+    await chip.waitFor({ timeout: 180000 });
+    await sleep(3000);
+    await chip.click();
+    const find = admin.locator('input[aria-label="Search context tree"]').first();
+    await find.waitFor({ timeout: 60000 });
+    await find.fill(SCOPE);
+    await sleep(2500);
+    const pick = admin.getByRole("button", { name: `Select ${SCOPE}`, exact: true }).first();
+    const offered = await until("tree offers the scope", async () => (await pick.count()) > 0, 60000);
+    if (!offered.v) return { ok: false, detail: `the context tree never offers "${SCOPE}": ${(await text(admin)).replace(/\s+/g, " ").slice(0, 200)}` };
+    await pick.click();
+    await sleep(2500);
+    const chipBefore = (await chip.getAttribute("aria-label")) ?? "";
+    await admin.keyboard.press("Escape");
+    await sleep(800);
+    const box = admin.locator("textarea:visible").first();
+    await box.click();
+    await box.fill(MESSAGE);
+    await admin.getByRole("button", { name: /^Send message$/ }).first().click();
+    const urlHas = () => (admin.url().match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/) ?? [])[0];
+    const got = await until("chat address", async () => Boolean(urlHas()), 120000);
+    if (!got.v) return { ok: false, detail: `sending gave the chat no address of its own (chip before send: ${chipBefore}); at ${admin.url()}` };
+    state.chatUrl = admin.url();
+    state.chatId = urlHas();
+    // let the answer finish and the post-send tag land
+    await until("answer", async () => (await text(admin)).length > 0 && !/Stop|Generating/i.test(await admin.locator("button[aria-label*='Stop' i]").first().textContent().catch(() => "")), 90000);
+    await sleep(15000);
+    // nothing picked in the sidebar any more: the chat's own tag must carry the chip
+    const c2 = admin.locator(chipSel).locator("visible=true").first();
+    await c2.click().catch(() => {});
+    await admin.getByRole("button", { name: /^Clear/ }).first().click({ timeout: 8000 }).catch(() => {});
+    await sleep(1500);
+    await admin.keyboard.press("Escape");
+    await go(admin, state.chatUrl);
+    await admin.locator(chipSel).locator("visible=true").first().waitFor({ timeout: 180000 });
+    const shown = await until("chat chip", async () => /scope/.test((await admin.locator(chipSel).locator("visible=true").first().getAttribute("aria-label").catch(() => "")) ?? ""), 60000);
+    const chipAfter = await admin.locator(chipSel).locator("visible=true").first().getAttribute("aria-label").catch(() => "");
+    return { ok: Boolean(shown.v), detail: `the chat reopened at ${new URL(state.chatUrl).pathname} reads "${chipAfter}" (picked before send: "${chipBefore}")` };
   });
 } finally {
   ctx.cleanup(async () => {
@@ -223,14 +281,35 @@ try {
     await ctx.step(["S07"], "move the note to Trash", admin, async () => {
       await go(admin, "/notes");
       await sleep(6000);
-      const opt = admin.locator(`button[aria-label^="Options for ${NOTE.slice(0, 40)}"]`).first();
+      const opt = admin.locator(`button[aria-label^="Options for ${NOTE}"]`).first();
       await opt.waitFor({ timeout: 90000 });
       await opt.click({ force: true });
       await admin.getByRole("menuitem", { name: /Move to Trash/ }).first().click();
       await admin.getByRole("button", { name: /^Move to Trash$/ }).last().click();
       await sleep(4000);
-      const left = await admin.locator(`button[aria-label^="Options for ${NOTE.slice(0, 40)}"]`).count();
+      const left = await admin.locator(`button[aria-label^="Options for ${NOTE}"]`).count();
       return { ok: left === 0, detail: `"${NOTE}" rows left in the notes list after Move to Trash: ${left}` };
+    });
+  });
+  ctx.cleanup(async () => {
+    if (!state.chatId) return;
+    const admin = await seat();
+    await ctx.step(["S05"], "archive the chat", admin, async () => {
+      await go(admin, state.chatUrl);
+      await sleep(8000);
+      const row = admin.locator(`a[href*="${state.chatId}"]`).locator("visible=true").first();
+      await row.waitFor({ timeout: 90000 });
+      await row.hover();
+      const opt = row.locator("xpath=ancestor::*[.//button[starts-with(@aria-label,'Options for')]][1]").locator('button[aria-label^="Options for"]').first();
+      await opt.click({ force: true });
+      const items = await admin.evaluate(() => [...document.querySelectorAll("[role=menuitem]")].map((e) => e.textContent.trim()));
+      await admin.getByRole("menuitem", { name: /^Archive/ }).first().click();
+      await sleep(3000);
+      const dlg = admin.locator('[role="alertdialog"] button, [role="dialog"] button').filter({ hasText: /^Archive/ }).last();
+      if (await dlg.count()) await dlg.click();
+      await sleep(4000);
+      const left = await admin.locator(`a[href*="${state.chatId}"]`).locator("visible=true").count();
+      return { ok: left === 0, detail: `menu offered [${items.join(" | ")}]; the chat's row left in the sidebar after Archive: ${left}` };
     });
   });
   await ctx.finish();
