@@ -38,12 +38,9 @@ export function useDataHomeMarks() {
   return {
     starred,
     recent,
-    /** False when the star was refused at the cap. */
-    toggleStar(id: string): boolean {
-      const { next, refused } = nextStarred(starred, id);
-      if (refused) return false;
-      dispatch(setPreference({ module: "lists", preference: "dataHomeStarred", value: next }));
-      return true;
+    /** Replace the starred set (the caller has applied `nextStarred` and its cap). */
+    setStarred(next: readonly string[]) {
+      dispatch(setPreference({ module: "lists", preference: "dataHomeStarred", value: [...next] }));
     },
     opened(id: string) {
       dispatch(setPreference({ module: "lists", preference: "dataHomeRecent", value: nextRecent(recent, id) }));

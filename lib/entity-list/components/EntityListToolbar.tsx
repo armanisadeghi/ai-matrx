@@ -203,7 +203,8 @@ export function EntityListToolbar<TRow>({
         {query.search && (
           <>
             {searchToggles?.map((toggle) => {
-              const on = query.filters[toggle.id]?.kind === "boolean" && query.filters[toggle.id]?.value === true;
+              const entry = query.filters[toggle.id];
+              const on = entry?.kind === "boolean" && entry.value === true;
               return (
                 <button
                   key={toggle.id}

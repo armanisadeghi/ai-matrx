@@ -43,8 +43,15 @@ import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { openPath } from "@/lib/deep-link/openPath";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
+import { DataHomeRoute } from "@/features/unified-data/home/DataHomeRoute";
 
-export default function UnifiedDataPage() {
+// THE ONE SWITCH BETWEEN TWO DATA HOMES (lane DATA-HOME-3A): the knob `custom.data_home_shell`
+// (default off = this page, unchanged) or `?home=new|old` for one visit. Copy mode until Arman's flip.
+export default function DataHomeRoutePage() {
+  return <DataHomeRoute old={<UnifiedDataPage />} />;
+}
+
+function UnifiedDataPage() {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   // org-filter: write-target the active organization is where New table lands (and the settings rung for the home's knobs); no read here narrows by it

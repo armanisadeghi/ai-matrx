@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { InfoHint } from "@/components/official/InfoHint";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DATE_FILTER_OPTIONS, Muted, TextCell, timeCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
 import { ACCESS_WHY, ACCESS_WORD, dataHomeKindWord, type DataHomeAccess, type DataHomeRow } from "./dataHomeRows";
@@ -190,16 +189,23 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
       column: {
         id: "records",
         accessorKey: "records",
-        header: (
-          <span className="inline-flex items-center gap-1">
-            Records <InfoHint text="Not counted yet." label="About Records" />
-          </span>
-        ),
+        header: "Records",
         filter: "select",
         width: 90,
         align: "right",
         cell: (row) =>
-          row.records === null ? <Muted>—</Muted> : <span className="tabular-nums">{row.records.toLocaleString()}</span>,
+          row.records === null ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0} className="text-muted-foreground" aria-label="Not counted yet.">
+                  —
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>Not counted yet.</TooltipContent>
+            </Tooltip>
+          ) : (
+            <span className="tabular-nums">{row.records.toLocaleString()}</span>
+          ),
       },
     },
     {
