@@ -94159,6 +94159,20 @@ export type Database = {
         Args: { retention_days?: number }
         Returns: number
       }
+      cleanup_guest_accounts: {
+        Args: {
+          p_active_days?: number
+          p_apply?: boolean
+          p_census?: boolean
+          p_idle_days?: number
+          p_limit?: number
+        }
+        Returns: {
+          detail: string
+          n: number
+          step: string
+        }[]
+      }
       cleanup_old_guest_records: { Args: never; Returns: number }
       close_feedback_item: {
         Args: { p_admin_notes?: string; p_id: string; p_status: string }
@@ -100076,6 +100090,15 @@ export type Database = {
           rule_count: number
           version: number
         }[]
+      }
+      run_guest_retention: {
+        Args: {
+          p_active_days?: number
+          p_apply?: boolean
+          p_idle_days?: number
+          p_limit?: number
+        }
+        Returns: Json
       }
       saved_view_archive: {
         Args: {
@@ -121843,7 +121866,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      duration_seconds: {
+        Args: { p_metadata: Json; p_segments: Json }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
