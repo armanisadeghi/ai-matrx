@@ -100792,6 +100792,7 @@ export type Database = {
           duration_seconds: number
           folder_name: string
           id: string
+          is_archived: boolean
           is_draft: boolean
           is_owner: boolean
           kind: string

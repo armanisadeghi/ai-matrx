@@ -71,6 +71,7 @@ import { DrillExplainButton } from "./DrillExplainButton";
 import { DrillFindings } from "./DrillFindings";
 import { DrillNumberFilter } from "./DrillNumberFilter";
 import { drillExplorerScope } from "./drillExplorerScope";
+import { useDrillAttributes } from "./useDrillAttributes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { DrillSiblingFindings } from "./DrillSiblingFindings";
 import { drillSiblingDimensions, drillSiblingMeasures, openDrillSibling, useDrillSiblings } from "./drillSiblings";
@@ -286,6 +287,13 @@ export function DrillExplorer({
     ...(carriedSaid.leftOut ? [carriedSaid.leftOut] : []),
   ];
 
+  // WHAT THE OPEN BUILT-IN VIEW DECLARES BEYOND ITS QUESTION (lane DRILL-FLIP-FIXES): its glance columns
+  // (R2, while its grouping is on screen) and its stacked Measures (L3, while it shows them all).
+  const openBuiltIn = openView?.ref.startsWith("builtin:") ? builtIn.find((v) => `builtin:${v.key}` === openView.ref) : undefined;
+  const viewStack = openBuiltIn?.chart?.stack?.every((k) => question.show.includes(k)) ? openBuiltIn.chart.stack : undefined;
+  const viewAttributes = openBuiltIn?.attributes && openBuiltIn.question.by?.[0] === question.by[0] ? openBuiltIn.attributes : undefined;
+  const glance = useDrillAttributes({ client, source, lane, question, dimensions, answers, attributes: viewAttributes, carried: asking, resolvers, windowAlign });
+
   // THE CHART above the answer: split = the first non-time grouping, bars at the auto grain.
   // the Measure stacked: the headline's (the screen's own number), else the first one shown
   const chartMeasure = headlineKey ?? question.show[0] ?? null;
@@ -297,6 +305,7 @@ export function DrillExplorer({
     dimensions,
     measures,
     measure: chartMeasure,
+    stack: viewStack,
     time: autoTimeRef(def, question, knobs.grainLines),
     seriesLimit: knobs.chartTopN ?? undefined,
     carried: asking,
@@ -539,6 +548,7 @@ export function DrillExplorer({
                   answers={chart.answers}
                   seriesLimit={knobs.chartTopN ?? undefined}
                   measure={chartMeasure}
+                  stack={viewStack}
                   time={autoTimeRef(def, question, knobs.grainLines)}
                   paths={paths}
                   error={chart.error}
@@ -563,6 +573,7 @@ export function DrillExplorer({
                 emptyLabel={emptyLabel}
                 exportTitle={title}
                 search
+                {...(glance ? { attributes: glance } : {})}
                 {...(question.where.length > 0 && headlineKey ? { coverage: { whole: whole?.measures[headlineKey] ?? null, measure: headlineKey } } : {})}
                 {...(headlineKey && knobs.paretoSharePct !== null ? { pareto: { measure: headlineKey, sharePct: knobs.paretoSharePct } } : {})}
                 rowActions={{ label: `${title} group`, location: location ?? title, kind: "drill-group", selectable: true }}

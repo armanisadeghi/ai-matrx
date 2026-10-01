@@ -138,6 +138,9 @@ export function ConversationContextChip({
     ? null
     : (stamped ?? off?.previousSurfaceName ?? null);
 
+  // Nothing to show and no page to switch: no chip at all (never "Context 0").
+  if (!surfaceName && rows.length === 0) return null;
+
   const mismatches = receiptEntry?.mismatches ?? [];
   const resetAll = () => {
     for (const row of rows) {

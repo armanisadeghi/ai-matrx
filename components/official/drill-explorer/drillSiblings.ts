@@ -78,6 +78,8 @@ export function drillSiblingDimensions(
   return def.dimensions.map((d) => {
     const dim: MatrxDrillDimension = { key: d.key, label: d.label, kind: d.kind };
     if (d.cardinality) dim.cardinality = d.cardinality;
+    // what it groups by, as the header's tooltip (lane DRILL-FLIP-FIXES L2)
+    if (d.description) dim.description = d.description;
     if (d.grains) dim.grains = d.grains as NonNullable<MatrxDrillDimension["grains"]>;
     // KEYS NEVER REACH A PERSON (VERIFIER-32 F5): an id reads as the door's label or the resolver's
     // name, a code as the definition's choice label — never the id or the code itself.
@@ -102,6 +104,8 @@ export function drillSiblingMeasures(def: DrillDefinition, money: DrillMoneyUnit
     // a ratio, a percentile, a run rate, an average or a moment is recomputed per group, never added up
     additive: m.additive ?? (["count", "sum", "filled", "empty"].includes(m.op) && drillUnitAdds(m.unit)),
     format: drillUnitFormatter(m.unit, money),
+    // what the number counts, as the header's tooltip (lane DRILL-FLIP-FIXES R5, L2)
+    ...(m.description ? { description: m.description } : {}),
     ...(m.unit === "usd" ? { lowerIsBetter: true } : {}),
     ...(m.unit === "time" ? { moment: true, additive: false } : {}),
   }));

@@ -101,8 +101,9 @@ export const transcriptListConfig: EntityListConfig<TranscriptListRow> = {
   // the "…" menu use — one destination, three ways to reach it.
   door: { hrefFor: primaryRowHref },
   useRowActions: useTranscriptRowActions,
-  // No favorite / archived axes on the transcripts tables (yet).
-  supportsArchived: false,
+  // THE ARCHIVED-ITEMS LAW: the shell's Archived filter (Active only / Archived only /
+  // Active + archived) — `trx_list_scoped` reads it from `p_filters.archived`.
+  supportsArchived: true,
   edit: {
     save: (row, edit) => saveTranscriptRowEdit(row, edit as TranscriptRowEdit),
   },

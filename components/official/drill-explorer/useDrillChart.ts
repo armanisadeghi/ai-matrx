@@ -43,6 +43,8 @@ export function useDrillChart(args: {
   dimensions: readonly MatrxDrillDimension[];
   measures: readonly MatrxDrillMeasure[];
   measure: string | null;
+  /** Measures a built-in view stacks instead of splitting one (L3). */
+  stack?: readonly string[] | undefined;
   /** The time reference when the question groups by no time (the auto grain). */
   time: string | null;
   seriesLimit: number | undefined;
@@ -54,8 +56,8 @@ export function useDrillChart(args: {
   /** Nothing is asked while false (no definition yet, or the settings are still being read). */
   enabled: boolean;
 }): DrillChartState {
-  const { client, source, lane, question, dimensions, measures, measure, time, seriesLimit, carried, windowAlign, countMeasure, version = 0, enabled } = args;
-  const plan = enabled ? drillChartQuestions(question, seriesLimit, { dimensions, measures, measure, time }) : null;
+  const { client, source, lane, question, dimensions, measures, measure, stack, time, seriesLimit, carried, windowAlign, countMeasure, version = 0, enabled } = args;
+  const plan = enabled ? drillChartQuestions(question, seriesLimit, { dimensions, measures, measure, stack, time }) : null;
   const key = JSON.stringify({ first: plan?.first ?? null, refused: plan?.refused ?? null, carried, lane, source, version });
   const [held, setHeld] = useState<{ key: string; answers: MatrxDrillChartAnswers; error: string | null }>({ key: "", answers: NONE, error: null });
 

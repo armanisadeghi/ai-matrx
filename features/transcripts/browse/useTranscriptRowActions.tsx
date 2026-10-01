@@ -19,6 +19,7 @@ import {
   Link2,
   ClipboardCopy,
   Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
@@ -76,6 +77,19 @@ export function useTranscriptRowActions(
           ),
       },
     });
+  };
+
+  // An archived transcript (Archived filter) comes back the way Undo brings it back.
+  const restoreTranscript = async (row: TranscriptListRow) => {
+    const name = row.title?.trim() ? `"${row.title.trim()}"` : "this transcript";
+    try {
+      await restoreFromTrash("transcript", row.id);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "It could not be put back.");
+      return;
+    }
+    list.refresh();
+    toast.success(`Put back ${name}.`);
   };
 
   // No manual memoization — the React Compiler owns it (CLAUDE.md).
@@ -158,13 +172,20 @@ export function useTranscriptRowActions(
                 {
                   id: "manage",
                   items: [
-                    {
-                      id: "archive",
-                      label: "Archive",
-                      icon: Archive,
-                      tone: "destructive" as const,
-                      onSelect: () => void archiveTranscript(row),
-                    },
+                    row.is_archived
+                      ? {
+                          id: "restore",
+                          label: "Restore",
+                          icon: ArchiveRestore,
+                          onSelect: () => void restoreTranscript(row),
+                        }
+                      : {
+                          id: "archive",
+                          label: "Archive",
+                          icon: Archive,
+                          tone: "destructive" as const,
+                          onSelect: () => void archiveTranscript(row),
+                        },
                   ],
                 },
               ]

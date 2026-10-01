@@ -1,0 +1,119 @@
+"use client";
+
+// components/official/drill-explorer/useDrillAttributes.ts — A GROUP'S ATTRIBUTES AT A GLANCE (lane
+// DRILL-FLIP-FIXES, VERIFY-DRILL-FINAL R2: the Spend Explorer's 40 costliest requests showed each
+// request's person, agent, feature, model, provider, origin, outcome, organization and app as columns).
+//
+// A built-in view declares `attributes` (records DrillView): Dimensions each outermost group holds ONE
+// value of. While that view's grouping is on screen, the explorer asks the SAME door — same lane,
+// window, view filters and trail — once per attribute, grouped by the outer Dimension and the
+// attribute, narrowed to the groups shown; each value reads as the door's label, the host's name
+// resolver (a person) or the Dimension's own words. A group holding several values says "Several".
+// The package draws the columns (`MatrxDrillAnswerTable` `attributes`).
+
+import { useEffect, useState } from "react";
+import type { DrillSource } from "@ai-matrx/records";
+import type { RecordsClient } from "@ai-matrx/records/core";
+import type { MatrxDrillAnswers, MatrxDrillAttribute, MatrxDrillDimension, MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
+import { drillRequestKey } from "@ai-matrx/design-system/data-table";
+
+import { drillDoorLabels } from "./dimensionWords";
+import type { DrillCarried } from "./questionParts";
+import { doorWhere, type DrillNameResolver } from "./types";
+import { doorWindow } from "./useDrillExplorer";
+
+/** group value → attribute key → the values it holds */
+type Held = Record<string, Record<string, Set<string | null>>>;
+
+export function useDrillAttributes(args: {
+  client: RecordsClient | null;
+  source: DrillSource;
+  lane: "mine" | "organization" | "platform";
+  question: MatrxDrillQuestion;
+  dimensions: readonly MatrxDrillDimension[];
+  answers: MatrxDrillAnswers;
+  /** The open view's declared attributes; none = no columns. */
+  attributes: readonly string[] | undefined;
+  carried: DrillCarried | null;
+  resolvers: Record<string, DrillNameResolver> | undefined;
+  windowAlign?: "hour" | undefined;
+}): MatrxDrillAttribute[] | undefined {
+  const { client, source, lane, question, dimensions, answers, attributes, carried, resolvers, windowAlign } = args;
+  const outer = question.by[0];
+  const wanted = outer && !question.across ? (attributes ?? []).filter((a) => a !== outer && dimensions.some((d) => d.key === a)) : [];
+  const groups = outer ? (answers[drillRequestKey([outer])] ?? []).map((r) => r.groups[outer] ?? null).filter((v): v is string => typeof v === "string") : [];
+  const key = JSON.stringify({ outer, wanted, groups, where: question.where, window: question.window ?? null, carried: carried ?? null, lane, source });
+  const [held, setHeld] = useState<{ key: string; values: Held; names: Record<string, Record<string, string>> }>({ key: "", values: {}, names: {} });
+
+  useEffect(() => {
+    if (!client || !outer || wanted.length === 0 || groups.length === 0) return;
+    let cancelled = false;
+    const windowPart = doorWindow({ by: [], show: [], where: [], window: question.window ?? null }, windowAlign);
+    if (windowPart.window && carried?.windowKey) windowPart.window = { ...windowPart.window, key: carried.windowKey };
+    void Promise.all(
+      wanted.map(async (attr) => {
+        const got = await client.drillAsk({
+          source,
+          question: {
+            by: [outer, attr],
+            where: { ...(carried?.where ?? {}), ...doorWhere(question), [outer]: groups },
+            lane,
+            limit: groups.length,
+            ...windowPart,
+          },
+        });
+        return { attr, rows: got.ok ? got.data!.rows : [] };
+      }),
+    ).then(async (results) => {
+      if (cancelled) return;
+      const values: Held = {};
+      const names: Record<string, Record<string, string>> = {};
+      for (const { attr, rows } of results) {
+        for (const row of rows) {
+          if (row.kind !== "group" || !row.groups) continue;
+          const g = row.groups[outer];
+          if (typeof g !== "string") continue;
+          const v = row.groups[attr];
+          (((values[g] ??= {})[attr] ??= new Set()) as Set<string | null>).add(typeof v === "string" ? v : v === null || v === undefined ? null : String(v));
+        }
+        for (const [dim, map] of Object.entries(drillDoorLabels(rows))) names[dim] = { ...(names[dim] ?? {}), ...map };
+      }
+      // a person's name is the host resolver's (the door carries none for people)
+      for (const attr of wanted) {
+        const resolver = resolvers?.[attr];
+        if (!resolver) continue;
+        const ids = [...new Set(Object.values(values).flatMap((v) => [...(v[attr] ?? [])]).filter((x): x is string => Boolean(x)))].filter((id) => !names[attr]?.[id]);
+        if (ids.length === 0) continue;
+        const got = await resolver.resolve(ids);
+        if (got.ok) names[attr] = { ...(names[attr] ?? {}), ...got.names };
+      }
+      if (!cancelled) setHeld({ key, values, names });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // the asks are keyed by `key`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, key]);
+
+  if (!outer || wanted.length === 0) return undefined;
+  const ready = held.key === key;
+  return wanted.map((attr) => {
+    const dim = dimensions.find((d) => d.key === attr)!;
+    return {
+      key: attr,
+      label: dim.label,
+      ...(dim.description ? { description: dim.description } : {}),
+      read: (g: Record<string, string | null>) => {
+        if (!ready) return undefined;
+        const id = g[outer];
+        const set = id ? held.values[id]?.[attr] : undefined;
+        if (!set || set.size === 0) return null;
+        if (set.size > 1) return "Several";
+        const [v] = [...set];
+        if (v === null || v === undefined) return dim.labelFor ? dim.labelFor(null) : null;
+        return held.names[attr]?.[v] ?? (dim.labelFor ? dim.labelFor(v) : v);
+      },
+    };
+  });
+}

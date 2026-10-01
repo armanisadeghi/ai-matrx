@@ -293,8 +293,22 @@ describe("granular per-kind repaint versions", () => {
     expect(kindRegistry.getKindVersion("gran_kind_snapshot")).toBeGreaterThan(before);
   });
 
-  it("componentRegistry: ingest bumps only the ingested kinds; replaceDbRows (epoch) reaches everyone", () => {
+  it("componentRegistry: the ingest that SETTLES the tier reaches every waiting kind once", () => {
+    // THE COLD-VERDICT RULE held every unanswered kind; the first rows settle
+    // the tier, so each waiting block must hear it (content-ir-react ≥ 0.13.1).
     const registry = new ComponentRegistry(() => []);
+    const seenX = jest.fn();
+    const seenY = jest.fn();
+    registry.subscribeKind("gran_x", seenX);
+    registry.subscribeKind("gran_y", seenY);
+    registry.ingestDbRows([dbRow({ kind: "gran_x", componentKey: "cx" })]);
+    expect(seenX).toHaveBeenCalledTimes(1);
+    expect(seenY).toHaveBeenCalledTimes(1);
+  });
+
+  it("componentRegistry: on a SETTLED tier ingest bumps only the ingested kinds; replaceDbRows (epoch) reaches everyone", () => {
+    const registry = new ComponentRegistry(() => []);
+    registry.replaceDbRows([]); // the tier has settled
     const seenX = jest.fn();
     const seenY = jest.fn();
     registry.subscribeKind("gran_x", seenX);
