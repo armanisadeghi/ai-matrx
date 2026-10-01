@@ -136,7 +136,7 @@ export function mapScopeToInstance(
   }
 
   // ── Pass 3: Unmapped scope keys fall through as ad-hoc context ──────────
-  // An ENGINEERED launch (see `admitsUnmappedKey`) admits only the agent's own
+  // An ENGINEERED launch (`mapScopeToInstanceWithSurface`) admits only the agent's own
   // named slots and the surface's always-on values here — never the page.
   const admits = (key: string) =>
     !options.engineered ||
