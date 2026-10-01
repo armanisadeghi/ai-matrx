@@ -233,7 +233,7 @@ it("says on screen that it put the abandoned goal back", async () => {
   expect(goalField().value).toBe(GOAL);
   // ...and the page SAYS SO, in words a non-technical Expert reads once.
   const text = container.textContent ?? "";
-  expect(text).toContain("Restored");
+  expect(text).toContain("From last time");
   expect(container.querySelector('[role="status"]')?.getAttribute("aria-label")).toBe(
     "We put back what you started writing from last time",
   );
