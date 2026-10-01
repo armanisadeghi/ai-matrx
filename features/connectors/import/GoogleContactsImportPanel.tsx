@@ -67,6 +67,9 @@ import type {
   ContactSearchResultPending,
 } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ContactWriteReview } from "./ContactWriteReview";
+import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 
 export interface GoogleContactsImportPanelProps {
   organizationId: string | null;
@@ -275,6 +278,8 @@ export function GoogleContactsImportPanel({
    * preview and the save can never resolve to two different accounts.
    */
   const [googleAccount, setGoogleAccount] = useState<string | null>(null);
+  const connectionInventory = useGoogleConnectionInventory();
+  const [editingGoogleContact, setEditingGoogleContact] = useState<string | null>(null);
   const [plans, setPlans] = useState<ContactImportOutcomePending[]>([]);
   const [edits, setEdits] = useState<EditMap>({});
   const [busy, setBusy] = useState(false);
@@ -435,6 +440,12 @@ export function GoogleContactsImportPanel({
   );
 
   const contacts = search?.contacts ?? [];
+  const writeConnections = (connectionInventory.data?.connections ?? []).filter(
+    (connection) => connection.owner_type === "user" && connection.status === "connected" &&
+      connection.scopes.includes(GOOGLE_SCOPE.contactsWrite) &&
+      Boolean(search?.google_account && connection.account_email?.toLowerCase() === search.google_account.toLowerCase()),
+  );
+  const writeConnection = writeConnections.length === 1 ? writeConnections[0] : null;
   const selectedSet = useMemo(() => new Set(selection.selected), [selection.selected]);
   const { requestedExternalId, unfilteredSearch, seenIds } = selection;
   const requestedFound = Boolean(requestedExternalId && seenIds.has(requestedExternalId));
@@ -1105,6 +1116,17 @@ export function GoogleContactsImportPanel({
                 >
                   Update from Google
                 </Button>
+              ) : null}
+              {writeConnection && contact.source === "google_contacts" ? (
+                <Button size="sm" variant="outline" className="shrink-0"
+                  onClick={() => setEditingGoogleContact((current) => current === contact.external_id ? null : contact.external_id)}>
+                  {editingGoogleContact === contact.external_id ? "Close edit" : "Edit in Google"}
+                </Button>
+              ) : null}
+              {writeConnection && editingGoogleContact === contact.external_id && effectiveOrganizationId ? (
+                <ContactWriteReview key={`${effectiveOrganizationId}:${writeConnection.id}:${contact.external_id}`}
+                  organizationId={effectiveOrganizationId} connectionId={writeConnection.id}
+                  resourceName={contact.external_id} displayName={contact.display_name} />
               ) : null}
             </li>
           ))}
