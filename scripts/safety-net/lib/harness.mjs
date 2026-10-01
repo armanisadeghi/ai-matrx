@@ -34,15 +34,20 @@ export { sleep, until };
  * the test organizations and click the row. Returns true when the switcher then names `name`.
  */
 export async function setOrganization(page, name) {
-  const opened = await page
-    .evaluate(() => {
-      const b = document.querySelector('[data-shell-org-switcher="rail"]') ?? document.querySelector('[data-shell-org-switcher="drawer"]');
-      if (!(b instanceof HTMLElement)) return false;
-      b.click();
-      return true;
-    })
-    .catch(() => false);
-  if (opened) await sleep(1200);
+  // The trigger is a Radix popover: it opens on a real pointer press, never on element.click().
+  // When nothing is chosen yet the "pick an organization" notice draws its own picker and sits over
+  // the shell, so the press may be intercepted; seat-browser then types into the notice's picker.
+  const visiblePicker = () =>
+    page.evaluate(() => [...document.querySelectorAll('input[data-slot="organization-picker-search"]')].some((e) => e.offsetParent !== null)).catch(() => false);
+  if (!(await visiblePicker())) {
+    for (const sel of ['[data-shell-org-switcher="rail"]', '[data-shell-org-switcher="drawer"]']) {
+      const loc = page.locator(sel).first();
+      if (!(await loc.count().catch(() => 0))) continue;
+      await loc.click({ timeout: 5000 }).catch(() => loc.click({ timeout: 5000, force: true }).catch(() => {}));
+      await sleep(1200);
+      if (await visiblePicker()) break;
+    }
+  }
   await seatSetOrganization(page, name);
   await sleep(1500);
   return page
