@@ -24,6 +24,13 @@ const RESERVED = new Set([
   "table_id", "version", "data", "metadata", "data_class",
 ]);
 
+/** What a person likely means by each kept name, offered instead of it. */
+const INSTEAD: Record<string, string> = {
+  id: "Reference number", created_at: "Date added", updated_at: "Last updated", deleted_at: "Date removed",
+  created_by: "Added by", updated_by: "Changed by", organization_id: "Organization", table_id: "Table",
+  version: "Version number", data: "Details", metadata: "More details", data_class: "Category",
+};
+
 const said = (name: string) => name.trim().replace(/\s+/g, " ");
 
 export function columnNameProblem(
@@ -35,8 +42,10 @@ export function columnNameProblem(
   if (wanted.length > COLUMN_NAME_MAX) {
     return `That name is ${wanted.length} characters long; a column name takes up to ${COLUMN_NAME_MAX}. Say the rest in the column's description.`;
   }
-  if (RESERVED.has(sanitizeFieldName(wanted))) {
-    return `“${wanted}” is a name every table keeps for itself. Try a longer one, like “${wanted} number” or “Patient ${wanted}”.`;
+  const kept = sanitizeFieldName(wanted);
+  if (RESERVED.has(kept)) {
+    // A name a person would choose, never the kept word with a suffix ("created_at number": BREAKER-3 B3-31).
+    return `“${wanted}” is kept by every table. Try “${INSTEAD[kept] ?? "Reference"}”.`;
   }
   const lower = wanted.toLocaleLowerCase();
   const hit = columns.find((c) => said(c.display_name ?? "").toLocaleLowerCase() === lower);

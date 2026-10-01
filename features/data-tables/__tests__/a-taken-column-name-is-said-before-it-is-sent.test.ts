@@ -34,8 +34,12 @@ describe("BREAKER-2: every column name is judged as it is typed", () => {
     expect(columnNameProblem("x".repeat(300), visit)).toMatch(/takes up to 80/);
   });
   it("refuses a name the table keeps for itself", () => {
-    expect(columnNameProblem("id", visit)).toMatch(/keeps for itself/);
-    expect(columnNameProblem("Created At", visit)).toMatch(/keeps for itself/);
+    expect(columnNameProblem("id", visit)).toMatch(/kept by every table/);
+    expect(columnNameProblem("Created At", visit)).toMatch(/kept by every table/);
+    // …and offers a name a person would choose, never the kept word with a suffix (BREAKER-3 B3-31).
+    expect(columnNameProblem("created_at", visit)).toContain("“Date added”");
+    expect(columnNameProblem("created_at", visit)).not.toMatch(/created_at number|Patient created_at/);
+    expect(columnNameProblem("id", visit)).toContain("“Reference number”");
     expect(columnNameProblem("Patient ID", visit)).toBeNull();
   });
 });
