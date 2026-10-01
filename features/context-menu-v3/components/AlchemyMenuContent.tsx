@@ -25,7 +25,7 @@ import { SOURCE_WRITE_TARGET, richDocumentTargetHost } from "@/features/rich-doc
 import { useRichDocumentProvider } from "@/features/rich-document/actions/useRichDocumentProvider";
 import { useContextMenuActions } from "../hooks/useContextMenuActions";
 import { buildMenuModel } from "../model/menu-model";
-import { chatMessageSubject, namedHeader, contextMenuActionsFromModel, menuHeader, modelRevision } from "../alchemy-provider";
+import { chatMessageSubject, namedHeader, contextMenuActionsFromModel, contextMenuProvider, menuHeader, modelRevision } from "../alchemy-provider";
 import { RegroupBoundary } from "../regroup/RegroupContext";
 import type { MenuContentProps } from "../types";
 
@@ -84,11 +84,7 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
   });
   React.useEffect(
     () =>
-      registry.register({
-        id: `context-menu:${instanceId}`,
-        tier: "T1",
-        actions: () => actionsRef.current,
-      }),
+      registry.register(contextMenuProvider(instanceId, () => actionsRef.current)),
     [registry, instanceId],
   );
 

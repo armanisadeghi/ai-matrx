@@ -115,6 +115,26 @@ function yieldsToNativeTextMenu(target: EventTarget | null): boolean {
   return false;
 }
 
+/**
+ * A gesture that reached this shell only through a React PORTAL: its target is
+ * not in the shell's DOM subtree (an open menu, a dialog or popover rendered by
+ * something inside the region). React bubbles portal events to every React
+ * ancestor, so a right-click — or a Mac two-finger tap mid-scroll — on an OPEN
+ * message menu reached the transcript's shell around it, which opened the page
+ * menu over it with both engines mounted: 18 `DuplicateActionError`s and "the
+ * menu swapped" (blind run PB-06, /chat, 2026-10-01). A portal surface that
+ * wants a menu mounts its own.
+ */
+export function reachedThroughPortal(e: { target: EventTarget | null; currentTarget: EventTarget | null }): boolean {
+  const { target, currentTarget } = e;
+  return target instanceof Node && currentTarget instanceof Node && !currentTarget.contains(target);
+}
+
+/** A right-click on an open menu: no native browser menu over ours. */
+function isInsideOpenMenu(target: EventTarget | null): boolean {
+  return target instanceof Element && Boolean(target.closest('[data-alchemy-layout], [role="menu"]'));
+}
+
 // THE single heavy boundary (T1 + T1e). ssr:false keeps it — the engine hook,
 // the agent fetch, the package renderers — off the server render and out of
 // the shell's chunk; it mounts on first open only. One boundary for the
@@ -417,6 +437,7 @@ export function ContextMenuV3({
   // ── Capture handlers ─────────────────────────────────────────────────────
   const handleMouseDown = (e: React.MouseEvent) => {
     if (suppressed) return; // yield to the native menu (e.g. streaming)
+    if (reachedThroughPortal(e)) return;
     if (e.button !== 2) return; // right-click only
     // Must mirror the capture guard exactly. Capturing here would set
     // `selectionLocked` for a menu that is never going to open, and only
@@ -650,6 +671,7 @@ export function ContextMenuV3({
   };
   const handleTouchStart = (e: React.TouchEvent) => {
     if (suppressed) return;
+    if (reachedThroughPortal(e)) return;
     // The touch half of the native-menu rule. Long-press inside a text field IS
     // the OS text callout (Select / Paste / Look Up) — pre-empting it at 480ms
     // leaves a mobile user with no way to paste at all, which is worse than the
@@ -839,6 +861,7 @@ export function ContextMenuV3({
     // Lets a ⋯ beside (not inside) this content open THIS menu.
     "data-content-source": contentSource ? contentSourceKey(contentSource) : undefined,
     onContextMenuCapture: (e: React.MouseEvent<HTMLElement>) => {
+      if (reachedThroughPortal(e)) return;
       // CAPTURE: a read-only menu never steals a live text field's native menu.
       // It MARKS the gesture instead of stopping it: a stopPropagation here
       // also killed the field's OWN editable menu nested inside (every window
@@ -847,6 +870,10 @@ export function ContextMenuV3({
         NATIVE_TEXT_YIELD.set(e.nativeEvent, e.currentTarget);
     },
     onContextMenu: (e: React.MouseEvent<HTMLElement>) => {
+      if (reachedThroughPortal(e)) {
+        if (isInsideOpenMenu(e.target)) e.preventDefault();
+        return;
+      }
       // A read-only shell over a live field yields; so does an editable shell
       // OUTSIDE the innermost read-only shell that asked to yield. An editable
       // menu nested inside that shell owns its own field.

@@ -342,7 +342,7 @@ export function contextMenuProvider(instanceId: string, actions: () => readonly 
   return {
     id: `context-menu:${instanceId}`,
     tier: "T1",
-    actions: () => actions(),
+    actions: (target) => (contextMenuHostOf(target)?.instanceId === instanceId ? actions() : []),
   };
 }
 
