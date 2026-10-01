@@ -295,12 +295,14 @@ export const TRANSCRIPT_COLUMNS: EntityColumnSpec<TranscriptListRow>[] = [
     },
   },
   {
-    id: "visibility",
+    // Filter, facet and sort key `shown_to` (T-13): trx_list_scoped derives the access word
+    // from published_to_web / shown_to; the row field keeps its name.
+    id: "shown_to",
     label: "Visibility",
     defaultHidden: true,
-    facet: "visibility",
+    facet: "shown_to",
     column: {
-      id: "visibility",
+      id: "shown_to",
       accessorKey: "visibility",
       header: "Visibility",
       filter: "select",

@@ -24,7 +24,7 @@ const LIST_TOTALS: Record<string, number> = {
   "kind=cleanup": 22,
   "status=idle": 70,
   "status=draft": 321,
-  "visibility=organization": 600,
+  "shown_to=organization": 600,
   all: 690,
 };
 const FACETS = [
@@ -33,7 +33,7 @@ const FACETS = [
   { kind: "kind", value: "cleanup", total: 22 },
   { kind: "status", value: "idle", total: 70 },
   { kind: "status", value: "draft", total: 321 },
-  { kind: "visibility", value: "organization", total: 600 },
+  { kind: "shown_to", value: "organization", total: 600 },
   { kind: "folder_name", value: "Calls", total: 9 },
 ];
 const rpc = jest.fn(async (fn: string, args: Record<string, unknown>) => {
@@ -78,7 +78,7 @@ it("every count a person can pick equals the total the list returns for it", asy
   expect(count("kind", "cleanup")).toBe(LIST_TOTALS["kind=cleanup"]);
   expect(count("kind", "transcript")).toBe(LIST_TOTALS["kind=transcript"]);
   expect(count("status", "idle")).toBe(LIST_TOTALS["status=idle"]);
-  expect(count("visibility", "organization")).toBe(LIST_TOTALS["visibility=organization"]);
+  expect(count("visibility", "organization")).toBe(LIST_TOTALS["shown_to=organization"]);
   // Transcript-only facets (folders, tags) come from the facets read, which agrees for transcripts.
   expect(count("folder", "Calls")).toBe(9);
   expect(state?.facets?.scope?.map((s) => s.value)).toEqual(["mine", "shared", "public"]);

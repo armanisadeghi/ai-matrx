@@ -27,7 +27,7 @@ describe("the Transcripts view asks the server", () => {
     ).toEqual({
       status: { values: ["draft"] },
       folder_name: { values: ["Calls"] },
-      visibility: { values: ["public"] },
+      shown_to: { values: ["public"] },
       tags: { values: ["q3"] },
       kind: { values: ["session"] },
     });

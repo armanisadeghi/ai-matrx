@@ -45,7 +45,7 @@ const FILTER_KEY: Partial<Record<TranscriptFacet, { filter: string; facet: strin
   kind: { filter: "kind", facet: "kind" },
   status: { filter: "status", facet: "status" },
   folder: { filter: "folder_name", facet: "folder_name" },
-  visibility: { filter: "visibility", facet: "visibility" },
+  visibility: { filter: "shown_to", facet: "shown_to" },
   tag: { filter: "tags", facet: "tag" },
 };
 

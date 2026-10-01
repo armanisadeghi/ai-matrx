@@ -150,10 +150,10 @@ export const transcriptListConfig: EntityListConfig<TranscriptListRow> = {
     },
     { facet: "tag", filterId: "tags", label: "Tags", noneLabel: "Untagged" },
     {
-      // `trx_list_facets` counts this from Shown to / Published to the web (T-13), under
-      // the values the list's `visibility` filter matches.
+      // `trx_list_facets` counts and `trx_list_scoped` filters this from Shown to / Published
+      // to the web (T-13): public | personal | internal.
       facet: "shown_to",
-      filterId: "visibility",
+      filterId: "shown_to",
       label: "Visibility",
       noneLabel: "None",
       minOptions: 2,

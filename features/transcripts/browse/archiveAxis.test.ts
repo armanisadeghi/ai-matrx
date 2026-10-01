@@ -80,7 +80,7 @@ it.each(["active", "archived", "all"] as const)(
 );
 
 it("the Visibility filter reads the database's access facet and keeps its label and filter key", () => {
-  const section = transcriptListConfig.facetSections?.find((s) => s.filterId === "visibility");
+  const section = transcriptListConfig.facetSections?.find((s) => s.filterId === "shown_to");
   expect(section).toMatchObject({ facet: "shown_to", label: "Visibility" });
 });
 
