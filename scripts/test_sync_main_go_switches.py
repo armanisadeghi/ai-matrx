@@ -329,6 +329,80 @@ class EveryPushPathHonoursThePause(Base):
         self.assertFalse(self.r.tracked("notes.md"))
 
 
+class ReleaseWhilePaused(EveryPushPathHonoursThePause):
+    """GO: release.sh --while-paused <SHA> releases exactly that SHA during a pause, so the runbook
+    never lifts the pause (and lets a sweep in) just to release. Any mismatch refuses with exit 3."""
+
+    test_reader_is_silent_and_zero_with_no_pause = None
+    test_reader_says_paused_with_exit_3 = None
+    test_direct_release_refuses_and_changes_nothing = None
+    test_release_with_no_pause_ships_as_before = None
+    test_expired_pause_releases_and_says_so = None
+    test_dry_run_still_previews_while_paused = None
+    test_purge_push_refuses_while_paused = None
+    test_matrx_ship_cli_refuses_while_paused = None
+
+    def assert_refused(self, res, why):
+        out = res.stdout + res.stderr
+        self.assertEqual(res.returncode, 3, out)
+        self.assertIn("--while-paused REFUSED", out)
+        self.assertIn(why, out)
+        self.assertEqual(self.remote_tags(), "")
+        self.assertFalse(os.path.exists(self.uv_calls))                 # no migrations ran
+
+    def test_releases_exactly_head_while_paused(self):
+        self.pause()
+        sha = self.r.head()
+        res = self.release("--while-paused", sha, captured=True)
+        out = res.stdout + res.stderr
+        self.assertEqual(res.returncode, 0, out)
+        self.assertIn("RELEASING WHILE PAUSED — exactly %s" % sha, out)
+        self.assertIn("refs/tags/v0.1.1", self.remote_tags())
+        sh(self.r.work, "git", "fetch", "-q", "origin")
+        released = self.r.head("origin/main")
+        self.assertEqual(sh(self.r.work, "git", "rev-parse", released + "^2").stdout.strip(), sha)
+        diff = sh(self.r.work, "git", "diff", "--name-only", sha, released).stdout.split()
+        self.assertEqual(diff, ["package.json"])                        # SHA + the bump, nothing else
+        self.assertTrue(self.r.exists(PAUSE))                           # the pause stays
+
+    def test_refuses_without_a_pause(self):
+        self.assert_refused(self.release("--while-paused", self.r.head(), captured=True),
+                            "no valid sync pause is in force")
+
+    def test_refuses_when_head_is_not_the_sha(self):
+        self.pause()
+        self.assert_refused(self.release("--while-paused", self.r.head("HEAD~1"), captured=True),
+                            "HEAD is %s" % self.r.head())
+
+    def test_refuses_an_abbreviated_sha(self):
+        self.pause()
+        self.assert_refused(self.release("--while-paused", self.r.head()[:12], captured=True),
+                            "not a full 40-character commit SHA")
+
+    def test_refuses_when_origin_has_commits_the_sha_lacks(self):
+        other = os.path.join(self.r.tmp, "other")
+        sh(self.r.tmp, "git", "clone", "-q", self.r.origin, other)
+        for c in (["config", "user.email", "o@o"], ["config", "user.name", "o"]):
+            sh(other, "git", *c)
+        with open(os.path.join(other, "unreviewed.ts"), "w") as f:
+            f.write("export const sneaky = 1;\n")
+        sh(other, "git", "add", "-A")
+        sh(other, "git", "commit", "-q", "-m", "unreviewed")
+        sh(other, "git", "push", "-q", "origin", "main")
+        self.pause()
+        origin = self.r.origin_head()
+        self.assert_refused(self.release("--while-paused", self.r.head(), captured=True),
+                            "is not an ancestor of")
+        self.assertEqual(self.r.origin_head(), origin)
+
+    def test_refuses_with_named_paths(self):
+        self.pause()
+        self.r.write("notes.md", "x\n")
+        self.assert_refused(self.release("--while-paused", self.r.head(), "--ship", "--", "notes.md",
+                                         captured=True), "would add a commit")
+        self.assertFalse(self.r.tracked("notes.md"))
+
+
 class OldPathRefusal(Base):
     def test_no_list_commits_old_paths_as_before(self):
         self.r.write("features/chat/new.ts", "export const n = 1;\n")

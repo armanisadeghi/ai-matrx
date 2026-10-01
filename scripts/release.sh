@@ -97,11 +97,45 @@ cd "$REPO_ROOT"
 # cap, unreadable-marker rules); a pause in force = its SYNC PAUSED line, exit 3,
 # before anything is written. --dry-run, --help and the after phase push nothing
 # and run as before. A reader that cannot run is announced and does not block.
+#
+# --while-paused <SHA> is the ONE way to release during a pause (the GO step, so
+# the runbook never lifts the pause just to release): only while a valid pause
+# is in force, only when HEAD is exactly <SHA> on main and origin/main is an
+# ancestor of it; the release tree is <SHA>'s tree plus the version bump, and a
+# push race that moves origin/main off <SHA>'s history refuses. Every mismatch,
+# and --ship / named paths beside it, refuses with exit 3 before anything runs.
+WHILE_PAUSED_SHA=""
+_prev=""
+for _a in "$@"; do
+    [[ "$_prev" == "--while-paused" ]] && WHILE_PAUSED_SHA="$_a"
+    _prev="$_a"
+done
+unset _prev _a
+refuse_while_paused() {
+    echo "release.sh: --while-paused REFUSED: $* — nothing was released" >&2
+    exit 3
+}
 if [[ "${RELEASE_PHASE:-ship}" == "ship" ]] \
     && [[ " $* " != *" --dry-run "* && " $* " != *" -h "* && " $* " != *" --help "* ]]; then
     _pause_rc=0
     python3 "$SCRIPT_DIR/sync-main.py" --pause-active || _pause_rc=$?
-    if [[ $_pause_rc -eq 3 ]]; then
+    if [[ " $* " == *" --while-paused "* ]]; then
+        [[ $_pause_rc -eq 3 ]] \
+            || refuse_while_paused "no valid sync pause is in force (reader exit $_pause_rc); use a normal release"
+        [[ "$WHILE_PAUSED_SHA" =~ ^[0-9a-f]{40}$ ]] \
+            || refuse_while_paused "'${WHILE_PAUSED_SHA}' is not a full 40-character commit SHA"
+        [[ " $* " != *" --ship "* && " $* " != *" -- "* ]] \
+            || refuse_while_paused "--ship / named paths would add a commit beyond ${WHILE_PAUSED_SHA:0:12}"
+        [[ "$(git -C "$REPO_ROOT" rev-parse HEAD)" == "$WHILE_PAUSED_SHA" ]] \
+            || refuse_while_paused "HEAD is $(git -C "$REPO_ROOT" rev-parse HEAD), not ${WHILE_PAUSED_SHA}"
+        [[ "$(git -C "$REPO_ROOT" symbolic-ref -q --short HEAD)" == "main" ]] \
+            || refuse_while_paused "this checkout is not on main"
+        git -C "$REPO_ROOT" fetch --quiet origin main 2>/dev/null \
+            || refuse_while_paused "could not fetch origin/main to prove it is an ancestor"
+        git -C "$REPO_ROOT" merge-base --is-ancestor origin/main "$WHILE_PAUSED_SHA" \
+            || refuse_while_paused "origin/main ($(git -C "$REPO_ROOT" rev-parse --short origin/main)) is not an ancestor of ${WHILE_PAUSED_SHA:0:12}: commits not in it would ride along"
+        echo "release.sh: RELEASING WHILE PAUSED — exactly ${WHILE_PAUSED_SHA} (HEAD, on top of origin/main $(git -C "$REPO_ROOT" rev-parse --short origin/main)) and nothing else; the pause stays in force" >&2
+    elif [[ $_pause_rc -eq 3 ]]; then
         echo "release.sh: SYNC PAUSED (reason above) — nothing was released" >&2
         exit 3
     elif [[ $_pause_rc -ne 0 ]]; then
@@ -224,6 +258,7 @@ while [[ $# -gt 0 ]]; do
         --no-watch) NO_WATCH=true; shift ;;
         --with-checks) RUN_CHECKS=true; shift ;;
         --async-gates) shift ;;
+        --while-paused) shift; [[ $# -gt 0 ]] && shift ;;   # value read and checked at the pause gate
         --target)
             case "${2:-}" in
                 main|admin|demos|all) TARGET="$2"; shift 2 ;;
@@ -318,6 +353,12 @@ ship_print_findings() {
 # no worktree, no branch, no stash; the shared checkout's files are never touched.
 ship_base_tree() {   # sets SHIP_BASE, SHIP_BASE_TREE, SHIP_PARENTS
     SHIP_BASE=$(git rev-parse "$REMOTE/$BRANCH")
+    if [[ -n "$WHILE_PAUSED_SHA" ]]; then
+        # Pinned: the release carries <SHA> and nothing else, even if HEAD moves now.
+        SHIP_LOCAL_HEAD="$WHILE_PAUSED_SHA"
+        git merge-base --is-ancestor "$SHIP_BASE" "$WHILE_PAUSED_SHA" \
+            || refuse_while_paused "origin/main moved to ${SHIP_BASE:0:12}, which is not in ${WHILE_PAUSED_SHA:0:12}'s history"
+    fi
     SHIP_PARENTS=(-p "$SHIP_BASE")
     if git merge-base --is-ancestor "$SHIP_LOCAL_HEAD" "$SHIP_BASE"; then
         SHIP_BASE_TREE=$(git rev-parse "$SHIP_BASE^{tree}")
