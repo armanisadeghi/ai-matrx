@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
 #
-# agent-dev-server.sh — provider-neutral lifecycle for the TWO named shared previews.
+# agent-dev-server.sh — provider-neutral lifecycle for THE one shared preview.
 #
 # Claude and Codex both call this through:
-#   pnpm preview:start            live database   port 3001  http://<session>.localhost:3001
-#   pnpm preview:start --clone    the clone only  port 3002  http://<session>-clone.localhost:3002
-#   pnpm preview:stop [--clone]
-#   pnpm preview:status           (both servers; --clone for the clone alone)
+#   pnpm preview:start            port 3001, CLONE mode (default)   http://<session>.localhost:3001
+#   pnpm preview:start --live     port 3001, LIVE mode
+#   pnpm preview:stop | pnpm preview:status
 #
-# The clone preview exists because the live database has a walk cap
-# (utils/supabase/walkCap.ts, knob ops.agent_walks.production_concurrent_cap):
-# agents over it work on the nightly copy of production instead (Arman,
-# 2026-09-27). It REFUSES to start unless the local aidream it bakes in as its
-# Python server (http://localhost:8200) proves it is wired to the same clone —
-# otherwise one page would write half to the clone and half to live. The
+# ONE Next.js dev server on this machine, ever (Arman, 2026-09-24; reaffirmed 2026-09-30, when a
+# second "clone" server on port 3002 beside the live one helped hold ~41 GB and ~75 Turbopack
+# workers and stalled the Mac). The database is the server's MODE. Tests never run against the
+# live database (Arman, 2026-09-29), so clone is the default. Clone mode REFUSES to start unless
+# the local aidream it bakes in as its Python server (http://localhost:8200) proves it is wired
+# to the same clone — otherwise one page would write half to the clone and half to live. The
 # environment and the proof: scripts/clone-preview/clone-preview-env.cjs.
+#
+# Asking for the OTHER mode than the one running: an idle (>= RECYCLE_IDLE_MIN) server is
+# stopped and restarted in the requested mode; a busy one is never touched — the start refuses
+# in one line. No mode flag reuses whatever runs.
 #
 # The server is detached and registered in one machine-wide state directory.
 # Browser tooling is deliberately separate. `preview:start` prints the owning
@@ -39,40 +42,43 @@ source "$REPO_ROOT/scripts/agent-harness/preview-session.sh"
 source "$REPO_ROOT/scripts/agent-harness/shared-servers.sh"
 CLONE_ENV_TOOL="$REPO_ROOT/scripts/clone-preview/clone-preview-env.cjs"
 
-# Which named server this invocation addresses. `--clone` may appear anywhere
-# after the subcommand (warm/monitor receive it from cmd_start as well).
+# The requested DATABASE MODE. `--clone` / `--live` may appear anywhere after the subcommand.
 CMD="${1:-}"
-SERVER=live
-SERVER_ARG_EXPLICIT=0
+REQUESTED_MODE="$SHARED_SERVER_DEFAULT_MODE"
+MODE_EXPLICIT=0
 POSITIONAL=()
 for arg in "${@:2}"; do
   case "$arg" in
-    --clone) SERVER=clone; SERVER_ARG_EXPLICIT=1 ;;
-    --live) SERVER=live; SERVER_ARG_EXPLICIT=1 ;;
+    --clone) REQUESTED_MODE=clone; MODE_EXPLICIT=1 ;;
+    --live) REQUESTED_MODE=live; MODE_EXPLICIT=1 ;;
     *) POSITIONAL+=("$arg") ;;
   esac
 done
 
-select_server() {
-  SERVER="$1"
-  SERVER_FLAG="$(shared_server_flag "$SERVER")"
-  SESSION_HOST="$(shared_server_host "$SERVER" "$SESSION_LABEL")"
-  PORT="$(shared_server_port "$SERVER")"
-  DISTDIR="$(shared_server_distdir "$SERVER")"
-  BASE="$STATE_DIR/$(shared_server_state_stem "$SERVER")"
-  META="$BASE.meta"
-  LOG="$BASE.log"
-  READY="$BASE.ready"
-  JAR="$BASE.jar"
-  LOCK="$BASE.lock"
-  FAILED="$BASE.failed"
-  USED="$BASE.used"
-}
-
 SESSION_LABEL="$(preview_session_label "$REPO_ROOT")"
 SESSION_RAW="$(preview_session_raw "$REPO_ROOT")"
-select_server "$SERVER"
+SESSION_HOST="$(shared_server_host "$SESSION_LABEL")"
+PORT="$SHARED_SERVER_PORT"
+BASE="$STATE_DIR/$SHARED_SERVER_STATE_STEM"
+META="$BASE.meta"
+LOG="$BASE.log"
+READY="$BASE.ready"
+JAR="$BASE.jar"
+LOCK="$BASE.lock"
+FAILED="$BASE.failed"
+USED="$BASE.used"
+
+# The mode this invocation acts in: the requested one, or the running server's once reused.
+use_mode() {
+  MODE="$1"
+  DISTDIR="$(shared_server_distdir "$MODE" 2>/dev/null || echo "")"
+}
+use_mode "$REQUESTED_MODE"
+
 # Runaway watchdog, NOT a budget. Measured in REAL memory since 2026-09-29.
+#
+# 2026-09-30: lowered 128 -> 48 GB (Arman's ruling) when the machine has exactly ONE dev server.
+# The ordinary recycle (>= RECYCLE_GB once idle) still fires first; this cap is the hard stop.
 #
 # 2026-09-29: lowered 192 -> 128 GB and switched from `ps` RSS to the sum of
 # each process's macOS phys_footprint (real_memory_kb below). RSS excludes
@@ -107,7 +113,7 @@ select_server "$SERVER"
 # 2026-08-15 "normal" figures above may themselves have been cache-inflated:
 # with a fresh distdir, cold /notes peaked at 18 GB RSS. Revisit this cap
 # downward only after re-measuring heavy routes with the cache cap in force.
-MAX_RSS_GB="${MATRX_PREVIEW_MAX_RSS_GB:-128}"
+MAX_RSS_GB="${MATRX_PREVIEW_MAX_RSS_GB:-48}"
 NO_PROGRESS_SEC="${MATRX_PREVIEW_NO_PROGRESS_SEC:-300}"
 # OLD NEVER BLOCKS NEW (Arman, 2026-09-29: "sessions will leave them open and
 # running — we need to allow new ones and kill old ones"). "Used" means the
@@ -242,7 +248,7 @@ report_previous_failure() {
   first="$(head -1 "$FAILED")"
   if [[ "$first" == "$RECYCLED_PREFIX"* ]]; then
     # Normal housekeeping, not a crash: say what happened in one line.
-    printf '[preview] the previous %s preview was recycled (normal): %s\n' "$SERVER" "${first#"$RECYCLED_PREFIX"}" >&2
+    printf '[preview] the previous preview was recycled (normal): %s\n' "${first#"$RECYCLED_PREFIX"}" >&2
     return 0
   fi
   printf '\n' >&2
@@ -268,19 +274,21 @@ announce_session_url() {
     log "derived from the checkout path — two sessions in THIS checkout would share it."
     log "Set MATRX_PREVIEW_SESSION=<a name> to claim your own hostname."
   fi
-  log "sign in: pnpm dev-login$SERVER_FLAG   (mints a nonce for THIS host and prints the URL)"
+  log "sign in: pnpm dev-login   (mints a nonce for THIS host and prints the URL)"
   announce_database
 }
 
 # One line, every time: which database a page on this server reads and writes.
 announce_database() {
-  if [[ "$SERVER" == "clone" ]]; then
+  if [[ "$MODE" == "clone" ]]; then
     local ref
     ref="$(meta_value CLONE_REF)"
     [[ -n "$ref" ]] || ref="${CLONE_REF:-unknown}"
-    log "DATABASE: the CLONE $ref (https://$ref.supabase.co) + server http://localhost:8200 (aidream wired to the same clone) — writes never reach live"
+    log "MODE clone — DATABASE: the CLONE $ref (https://$ref.supabase.co) + server http://localhost:8200 (aidream wired to the same clone) — writes never reach live"
+  elif [[ "$MODE" == "live" ]]; then
+    log "MODE live — DATABASE: LIVE production (db.matrxserver.com) — every write is real; tests belong on clone mode (pnpm preview:start --clone once this one is idle)"
   else
-    log "DATABASE: LIVE production (db.matrxserver.com) — every write is real; over the walk cap? use pnpm preview:start --clone"
+    log "MODE unknown — this server's lease names no mode; restart it to know which database it uses: pnpm preview:stop && pnpm preview:start"
   fi
 }
 
@@ -311,10 +319,9 @@ killtree() {
   kill -"$signal" "$pid" 2>/dev/null || true
 }
 
-# The first dev server occupying THIS named server's slot: anything except the
-# other named server on its own port (shared_server_slot_occupants).
+# The first dev server running on this machine, managed or not — there is one slot.
 running_server() {
-  "$GUARD" list-any 2>/dev/null | shared_server_slot_occupants "$SERVER" | head -1
+  "$GUARD" list-any 2>/dev/null | head -1
 }
 
 clear_stale_state() {
@@ -337,8 +344,14 @@ reuse_managed_meta() {
   if [[ "$owner" != "$REPO_ROOT" ]]; then
     fail "preview lease is owned by the session '$(meta_value OWNER_SESSION)' in checkout '$owner' (pid $pid, port $port). A process is running from that checkout, not yours. This repo uses the shared main checkout: put your scoped change there and use its existing preview. A checkout mismatch alone does not prove localhost unavailable; check the route before reporting a server failure. Never start another server."
   fi
-  [[ "$SERVER" != "clone" ]] || reverify_clone_pairing
-  log "reusing the managed $SERVER preview (pid $pid, port $port)"
+  local running_mode
+  running_mode="$(meta_value MODE)"
+  if (( MODE_EXPLICIT )) && [[ "$running_mode" != "$REQUESTED_MODE" ]]; then
+    refuse_busy_other_mode "$running_mode"
+  fi
+  use_mode "${running_mode:-unknown}"
+  [[ "$MODE" != "clone" ]] || reverify_clone_pairing
+  log "reusing the managed preview (pid $pid, port $port, $MODE mode)"
   announce_session_url "$port"
   log "it may still be compiling"
   return 0
@@ -354,10 +367,10 @@ reverify_clone_pairing() {
   status=$?
   current="$(printf '%s\n' "$out" | sed -n 's/^CLONE_REF=//p')"
   if [[ -n "$started" && -n "$current" && "$current" != "$started" ]]; then
-    fail "the running clone preview was started for the clone $started, but CLONE-REF now names $current (the nightly clone rotated). Restart it: pnpm preview:stop --clone && pnpm preview:start --clone"
+    fail "the running clone-mode server was started for the clone $started, but CLONE-REF now names $current (the nightly clone rotated). Restart it: pnpm preview:stop && pnpm preview:start"
   fi
   if (( status != 0 )); then
-    fail "the running clone preview's server is no longer paired with the clone ${started:-$current} (the reason is printed above). Its pages would call a server that is down or wired elsewhere — fix the server first, then use this preview again."
+    fail "the running clone-mode server's Python server is no longer paired with the clone ${started:-$current} (the reason is printed above). Its pages would call a server that is down or wired elsewhere — fix the server first, then use this preview again."
   fi
 }
 
@@ -373,7 +386,7 @@ acquire_start_lock() {
   done
 
   # An empty lock with no live metadata after ten seconds is stale.
-  rmdir "$LOCK" 2>/dev/null || fail "another $SERVER preview start is still in progress"
+  rmdir "$LOCK" 2>/dev/null || fail "another preview start is still in progress"
   mkdir "$LOCK" 2>/dev/null || fail "could not acquire the preview start lock"
   return 0
 }
@@ -392,11 +405,10 @@ slot_occupied() {
   cwd="$(server_cwd "$pid")"
   owner_session="$(meta_value OWNER_SESSION)"
   [[ "$(meta_value PID)" == "$pid" && -n "$owner_session" ]] || owner_session="unmanaged (no lease file — started outside pnpm preview:start)"
-  local expected_label=agent-preview
-  [[ "$SERVER" == "clone" ]] && expected_label=agent-preview-clone
-  if [[ -n "$cwd" && "$cwd" == "$REPO_ROOT" && "$label" == "$expected_label" && "$port" == "$PORT" ]]; then
-    [[ "$SERVER" != "clone" ]] || reverify_clone_pairing
-    log "the $SERVER dev-server slot is held by $label pid $pid on port $port,"
+  if [[ -n "$cwd" && "$cwd" == "$REPO_ROOT" && "$label" == agent-preview && "$port" == "$PORT" ]]; then
+    use_mode "$(meta_value MODE)"
+    [[ "$MODE" != "clone" ]] || reverify_clone_pairing
+    log "the dev-server slot is held by $label pid $pid on port $port,"
     log "started by $owner_session from THIS checkout ($cwd)."
     log "That is your code, so you do not need a second server — you need your own host."
     log "Edits in this checkout hot-reload in the existing server; no restart or private preview is needed."
@@ -404,9 +416,9 @@ slot_occupied() {
     return 0
   fi
   if [[ "$label" == human-or-other || "$port" != "$PORT" ]]; then
-    fail "the $SERVER preview slot is held by $label pid $pid on port $port, owned by $owner_session at '${cwd:-unknown cwd}'. Only the two named shared servers may run (live on 3001, clone on 3002); any other dev server blocks both. Stop it from its owning checkout, then retry. Never start another server."
+    fail "the dev-server slot is held by $label pid $pid on port $port, owned by $owner_session at '${cwd:-unknown cwd}'. Only the one shared server may run (port $PORT); any other dev server blocks it. Stop it from its owning checkout, then retry. Never start another server."
   fi
-  fail "the $SERVER preview slot is held by $label pid $pid on port $port, owned by $owner_session at '${cwd:-unknown cwd}'. That is a DIFFERENT checkout, so its compiled code is not your diff. Put your scoped change in the shared main checkout and use its existing preview. A checkout mismatch alone does not prove localhost unavailable; check the route before reporting a server failure. Never start another server."
+  fail "the preview slot is held by $label pid $pid on port $port, owned by $owner_session at '${cwd:-unknown cwd}'. That is a DIFFERENT checkout, so its compiled code is not your diff. Put your scoped change in the shared main checkout and use its existing preview. A checkout mismatch alone does not prove localhost unavailable; check the route before reporting a server failure. Never start another server."
 }
 
 # A private worktree (`git worktree add`) has no node_modules of its own —
@@ -525,6 +537,8 @@ cmd_start() {
   mkdir -p "$STATE_DIR"
   clear_stale_state
   report_previous_failure
+  # The other mode was asked for: switch an idle server, refuse a busy one.
+  switch_mode_if_idle
   # OLD NEVER BLOCKS NEW: an abandoned or dead-but-alive preview is stopped here
   # (loudly) instead of refusing or being reused; a busy one is reused below.
   retire_stale_preview || true
@@ -552,16 +566,17 @@ cmd_start() {
 
   ensure_worktree_node_modules
 
-  # THE PAIRING GATE (clone only). Regenerates .env.clone.local if CLONE-REF
+  # THE PAIRING GATE (clone mode). Regenerates .env.clone.local if CLONE-REF
   # rotated, then proves the local aidream on :8200 answers as the same clone.
-  # A refusal here starts nothing — never an unpaired clone preview.
+  # A refusal here starts nothing — never an unpaired clone-mode server.
+  use_mode "$REQUESTED_MODE"
   CLONE_REF=""
   local clone_env_file=""
-  if [[ "$SERVER" == "clone" ]]; then
+  if [[ "$MODE" == "clone" ]]; then
     local prep
     prep="$(node "$CLONE_ENV_TOOL" prepare)" || {
       rmdir "$LOCK" 2>/dev/null || true
-      fail "the clone preview was NOT started (reason above). Nothing fails silently: fix the pairing, then re-run pnpm preview:start --clone."
+      fail "the preview was NOT started in clone mode (reason above). Nothing fails silently: fix the pairing, then re-run pnpm preview:start (or pnpm preview:start --live for the live database)."
     }
     CLONE_REF="$(printf '%s\n' "$prep" | sed -n 's/^CLONE_REF=//p')"
     clone_env_file="$(printf '%s\n' "$prep" | sed -n 's/^CLONE_ENV_FILE=//p')"
@@ -603,23 +618,26 @@ cmd_start() {
   # exec_command owns and reaps its shell process group. Python's
   # start_new_session creates a real detached OS session that survives the tool
   # call while still giving us the exact root pid to track and stop.
-  pid="$(/usr/bin/python3 - "$REPO_ROOT" "$LOG" "$DISTDIR" "$PORT" "$next_bin" "$(shared_server_token "$SERVER")" "$clone_env_file" "$CLONE_REF" <<'PY'
+  pid="$(/usr/bin/python3 - "$REPO_ROOT" "$LOG" "$DISTDIR" "$PORT" "$next_bin" "$SHARED_SERVER_TOKEN" "$MODE" "$clone_env_file" "$CLONE_REF" <<'PY'
 import os
 import shutil
 import subprocess
 import sys
 
-root, log_path, distdir, port, next_bin, token, clone_env_file, clone_ref = sys.argv[1:]
+root, log_path, distdir, port, next_bin, token, mode, clone_env_file, clone_ref = sys.argv[1:]
 node_exe = shutil.which("node") or "node"
 env = os.environ.copy()
 env["NODE_OPTIONS"] = "--dns-result-order=ipv4first"
 env["NEXT_DISTDIR"] = distdir
-# The NAMED-SERVER token. next.config.js refuses to boot `next dev` without one
-# of the two (live "1", clone "clone"), so no lane, script or raw shell can
-# start a third dev server (Arman, 2026-09-24, after two memory-starvation
-# reboots of the Mac; the clone preview allowed 2026-09-27).
+# The ONE-SERVER token and the database mode. next.config.js refuses to boot
+# `next dev` without the token, on any port but 3001, beside any other running
+# dev server, or with a mode whose wiring does not match (Arman, 2026-09-24 and
+# 2026-09-30).
 env["MATRX_SHARED_PREVIEW"] = token
+env["MATRX_PREVIEW_MODE"] = mode
 env.pop("MATRX_CLONE_PAIRED", None)
+# Next sets PORT to the port it bound; an inherited one must never disagree with -p.
+env.pop("PORT", None)
 if clone_env_file:
     # Process env beats every .env* file Next loads, so these values — the
     # clone's Supabase URL/keys and every backend URL pointed at the paired
@@ -681,7 +699,7 @@ PY
     echo "NM_FINGERPRINT=$(nm_fingerprint)"
     echo "OWNER_SESSION=$SESSION_RAW"
     echo "OWNER_HOST=$SESSION_HOST"
-    echo "SERVER=$SERVER"
+    echo "MODE=$MODE"
     [[ -z "$CLONE_REF" ]] || echo "CLONE_REF=$CLONE_REF"
   } >"$META"
   rm -f "$READY" "$JAR" "$FAILED"
@@ -690,15 +708,15 @@ PY
   # exec_command reaps ordinary child process groups even under `nohup`.
   # Detach helpers exactly like Next itself or the watchdog silently vanishes
   # as soon as `preview:start` returns.
-  /usr/bin/python3 - "$REPO_ROOT" "$REPO_ROOT/scripts/agent-dev-server.sh" "$pid" "--$SERVER" <<'PY'
+  /usr/bin/python3 - "$REPO_ROOT" "$REPO_ROOT/scripts/agent-dev-server.sh" "$pid" <<'PY'
 import os
 import subprocess
 import sys
 
-root, script, pid, server_flag = sys.argv[1:]
+root, script, pid = sys.argv[1:]
 for mode in ("warm", "monitor"):
     subprocess.Popen(
-        [script, mode, pid, server_flag],
+        [script, mode, pid],
         cwd=root,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
@@ -707,7 +725,7 @@ for mode in ("warm", "monitor"):
     )
 PY
 
-  log "started the shared managed $SERVER preview (pid $pid, port $PORT)"
+  log "started the shared managed preview in $MODE mode (pid $pid, port $PORT)"
   announce_session_url "$PORT"
   log "it is tracked, reused by Claude and Codex, and may take 30–90s to compile"
   log "profile=${MATRX_PREVIEW_PROFILE:-core} (demos routes are PARKED — for /demos/* use: MATRX_PREVIEW_PROFILE=user pnpm preview:start)"
@@ -886,6 +904,31 @@ retire_stale_preview() {
   return 0
 }
 
+# The other mode was asked for while a server is busy: one line, nothing touched.
+refuse_busy_other_mode() {
+  local running_mode="${1:-unknown}"
+  fail "the one dev server is running in ${running_mode} mode and is in use (last request $(( $(idle_seconds) / 60 )) min ago) — use it as is (pnpm preview:start) or retry --${REQUESTED_MODE} once it has been idle ${RECYCLE_IDLE_MIN} min."
+}
+
+# THE MODE SWITCH. Only an explicit --clone / --live that differs from the running server's
+# mode gets here. Idle >= RECYCLE_IDLE_MIN: stop it (worded as a recycle) so cmd_start starts
+# the requested mode. Busy: refuse. Never a second server.
+switch_mode_if_idle() {
+  (( MODE_EXPLICIT )) || return 0
+  [[ -f "$META" ]] || return 0
+  local pid running_mode idle kb source
+  pid="$(meta_value PID)"
+  alive "$pid" || return 0
+  running_mode="$(meta_value MODE)"
+  [[ "$running_mode" != "$REQUESTED_MODE" ]] || return 0
+  idle="$(idle_seconds)"
+  if (( idle < $(min_to_sec "$RECYCLE_IDLE_MIN") )); then
+    refuse_busy_other_mode "$running_mode"
+  fi
+  read -r kb source <<<"$(real_memory_kb "$pid")"
+  stop_for_limit "$pid" "${RECYCLED_PREFIX}switched to ${REQUESTED_MODE} mode by a new pnpm preview:start (session $SESSION_RAW): the ${running_mode:-unknown}-mode server pid $pid was unused for $(( idle / 60 )) min at $(kb_to_gb "$kb") $(memory_label "$source")"
+}
+
 stop_for_limit() {
   local pid="$1" reason="$2"
   printf '%s\n' "$reason" >"$FAILED"
@@ -974,15 +1017,6 @@ cmd_monitor() {
 }
 
 cmd_status() {
-  if (( SERVER_ARG_EXPLICIT == 0 )); then
-    local s
-    for s in live clone; do
-      select_server "$s"
-      log "── $s preview (port $PORT) ──"
-      cmd_status_one
-    done
-    return 0
-  fi
   cmd_status_one
 }
 
@@ -993,7 +1027,9 @@ cmd_status_one() {
     pid="$(meta_value PID)"; port="$(meta_value PORT)"; owner="$(meta_value ROOT)"
     read -r mem_kb mem_source <<<"$(real_memory_kb "$pid")"
     idle="$(idle_seconds)"
-    log "RUNNING pid=$pid port=$port memory=$(kb_to_gb "$mem_kb") $(memory_label "$mem_source") last-used=$(( idle / 60 )) min ago owner=$owner session=$(meta_value OWNER_SESSION)"
+    use_mode "$(meta_value MODE)"
+    [[ -n "$MODE" ]] || use_mode unknown
+    log "RUNNING mode=$MODE pid=$pid port=$port memory=$(kb_to_gb "$mem_kb") $(memory_label "$mem_source") last-used=$(( idle / 60 )) min ago owner=$owner session=$(meta_value OWNER_SESSION)"
     log "housekeeping: stopped after ${IDLE_STOP_MIN} min unused; recycled at >= ${RECYCLE_GB} GB once idle ${RECYCLE_IDLE_MIN} min; hard cap ${MAX_RSS_GB} GB; a new preview:start replaces one idle >= ${RECYCLE_IDLE_MIN} min"
     if [[ "$owner" == "$REPO_ROOT" ]]; then
       announce_session_url "$port"
@@ -1025,12 +1061,12 @@ cmd_status_one() {
   elif [[ -f "$FAILED" ]]; then
     report_previous_failure
     if [[ "$(head -1 "$FAILED")" == "$RECYCLED_PREFIX"* ]]; then
-      log "STOPPED (recycled, normal) — pnpm preview:start$SERVER_FLAG starts a fresh one"
+      log "STOPPED (recycled, normal) — pnpm preview:start starts a fresh one (clone mode; --live for live)"
     else
       log "STOPPED — fix the reported cause, then run pnpm preview:start"
     fi
   else
-    log "no managed $SERVER preview is running (start: pnpm preview:start$SERVER_FLAG)"
+    log "no managed preview is running (start: pnpm preview:start — clone mode; --live for live)"
   fi
 }
 
@@ -1040,10 +1076,10 @@ cmd_stop() {
     local running
     running="$(running_server)"
     if [[ -n "$running" ]]; then
-      log "no tracked $SERVER lease belongs to this checkout; another dev server still occupies the $SERVER slot"
+      log "no tracked lease belongs to this checkout; another dev server still occupies the one slot"
       return 1
     fi
-    log "no managed $SERVER preview is running"
+    log "no managed preview is running"
     return 0
   fi
 
@@ -1051,11 +1087,14 @@ cmd_stop() {
   pid="$(meta_value PID)"
   distdir="$(meta_value DISTDIR)"
   owner="$(meta_value ROOT)"
-  [[ "$distdir" == "$DISTDIR" ]] || fail "refusing to stop unexpected distdir '$distdir'"
+  case "$distdir" in
+    "$(shared_server_distdir clone)" | "$(shared_server_distdir live)") ;;
+    *) fail "refusing to stop unexpected distdir '$distdir'" ;;
+  esac
   [[ "$owner" == "$REPO_ROOT" ]] || fail "preview lease belongs to '$owner'; stop it from its owning checkout"
 
   if alive "$pid"; then
-    log "stopping managed $SERVER preview pid $pid"
+    log "stopping the managed preview pid $pid ($(meta_value MODE) mode)"
     killtree "$pid" TERM
     for _ in 1 2 3 4 5 6; do
       alive "$pid" || break
@@ -1066,7 +1105,7 @@ cmd_stop() {
 
   rm -f "$META" "$LOG" "$READY" "$JAR" "$FAILED" "$USED"
   rmdir "$LOCK" 2>/dev/null || true
-  log "managed $SERVER preview stopped; build cache $DISTDIR was preserved"
+  log "managed preview stopped; build cache $distdir was preserved"
 }
 
 # Only dispatch when executed. Sourcing this file exposes the helpers (the log
@@ -1079,6 +1118,6 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     status) cmd_status ;;
     warm) cmd_warm "${POSITIONAL[0]:-}" ;;
     monitor) cmd_monitor "${POSITIONAL[0]:-}" ;;
-    *) echo "usage: $0 {start|stop|status} [--clone]" >&2; exit 2 ;;
+    *) echo "usage: $0 {start|stop|status} [--clone|--live]" >&2; exit 2 ;;
   esac
 fi

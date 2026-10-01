@@ -1031,22 +1031,21 @@ const nextConfig = {
   },
 };
 
-// ONE DEV SERVER MACHINE-WIDE (Arman, 2026-09-24), plus exactly one named clone
-// preview (2026-09-27). Every lane that booted its own `next dev` (own port, own
-// NEXT_DISTDIR) brought 70-130 Turbopack workers and 15-25 GB with it; with
-// type-checks on top, the 256 GB Mac ran out of memory, WindowServer starved,
-// and the kernel watchdog rebooted it twice. `pnpm preview:start [--clone]`
-// (scripts/agent-dev-server.sh) is the only launcher and sets
-// MATRX_SHARED_PREVIEW to the server's token; every other `next dev` — a third
-// server, a per-agent server, an unpaired clone — is refused here, before a
-// single worker spawns. The table and the rule:
-// scripts/agent-harness/shared-dev-servers.cjs.
+// ONE DEV SERVER MACHINE-WIDE (Arman, 2026-09-24; reaffirmed 2026-09-30). Every
+// extra `next dev` (own port, own NEXT_DISTDIR) brought 70-130 Turbopack workers
+// and 15-25 GB with it; extra servers rebooted the 256 GB Mac twice, and a second
+// "clone" server on another port stalled it again on 2026-09-30. So there is ONE
+// server, on port 3001, and the database is its MODE (clone by default, `--live`
+// for production). `pnpm preview:start` (scripts/agent-dev-server.sh) is the only
+// launcher; every other `next dev` — another port, a second concurrent server even
+// with a valid token, an unpaired clone mode — is refused here, before a single
+// worker spawns. The table and the rule: scripts/agent-harness/shared-dev-servers.cjs.
 const { PHASE_DEVELOPMENT_SERVER } = require("next/constants");
-const { sharedDevServerRefusal } = require("./scripts/agent-harness/shared-dev-servers.cjs");
+const { sharedDevServerRefusal, otherDevServers } = require("./scripts/agent-harness/shared-dev-servers.cjs");
 
 function assertSharedDevServer(phase) {
   if (phase !== PHASE_DEVELOPMENT_SERVER) return;
-  const refusal = sharedDevServerRefusal({ env: process.env, argv: process.argv });
+  const refusal = sharedDevServerRefusal({ env: process.env, argv: process.argv, others: otherDevServers() });
   if (refusal) throw new Error(refusal);
 }
 
