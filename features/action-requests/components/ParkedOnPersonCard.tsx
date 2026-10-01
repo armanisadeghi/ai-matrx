@@ -12,7 +12,11 @@
 // message that carried it; the in-app door needs none.
 //
 // IT UPDATES WHEN THE TURN RESUMES. Answering here re-reads the conversation
-// (the resumed turn is already written when the answer door returns). Answered
+// (the resumed turn is already written when the answer door returns) and then
+// FOLLOWS it like any reopen (`followWhatIsStillInFlight`): the server resumes
+// the turn with the tools it parked with, so a page tool it calls next
+// (`board_add_tile`, an `apply_surface_write` approval) is delegated back to
+// THIS page, surfaced here and answered with its live handlers. Answered
 // somewhere else — the texted link on a phone — the card finds out the next
 // time this tab is looked at: the ask is gone from the pending list, so the
 // conversation is re-read and the ordinary card for the finished call takes
@@ -25,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "@/features/agents/runtime-reconnect/follow-what-is-still-in-flight";
 import { ActionRequestInlineAnswer } from "@/features/action-requests/components/ActionRequestInlineAnswer";
 import { usePendingActionRequest } from "@/features/action-requests/hooks/usePendingActionRequest";
 import { fetchPendingActionRequests } from "@/features/action-requests/self-service";
@@ -52,6 +57,7 @@ export function ParkedOnPersonCard({
     if (!conversationId) return;
     void dispatch(loadConversation({ conversationId }))
       .unwrap()
+      .then(() => followWhatIsStillInFlight(dispatch, conversationId))
       .catch((err: unknown) => {
         console.warn(
           "[parked-call] the ask was answered, but re-reading the conversation failed — the resumed turn shows on the next load.",
@@ -69,6 +75,7 @@ export function ParkedOnPersonCard({
     rereadFor.current = key;
     void dispatch(loadConversation({ conversationId }))
       .unwrap()
+      .then(() => followWhatIsStillInFlight(dispatch, conversationId))
       .catch((err: unknown) => {
         console.warn("[parked-call] re-reading the conversation after the ask closed failed.", err);
       });
@@ -82,7 +89,12 @@ export function ParkedOnPersonCard({
       void fetchPendingActionRequests()
         .then((pending) => {
           if (!pending.some((row) => row.request_id === openId)) {
-            void dispatch(loadConversation({ conversationId }));
+            void dispatch(loadConversation({ conversationId }))
+              .unwrap()
+              .then(() => followWhatIsStillInFlight(dispatch, conversationId))
+              .catch((err: unknown) => {
+                console.warn("[parked-call] re-reading the conversation on return to the tab failed.", err);
+              });
           }
         })
         .catch((err: unknown) => {

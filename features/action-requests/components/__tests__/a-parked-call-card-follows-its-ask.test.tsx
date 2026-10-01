@@ -4,6 +4,10 @@
  * Open → the ask's own form, answerable here. Answered here → the conversation is re-read (the
  * resumed turn is already written). Answered elsewhere (the texted link) → the ask is gone from
  * the pending list, and the conversation is re-read ONCE so the finished call replaces the card.
+ *
+ * AND FOLLOWED (2026-10-01, the /board incident): the server resumes the turn with the tools it
+ * parked with, so a page tool the resumed turn calls next is delegated back to this page. The
+ * card follows the conversation like any reopen, or that call sits unanswered until a reload.
  */
 import React from "react";
 import { act } from "react";
@@ -15,6 +19,10 @@ const dispatch = jest.fn(() => ({ unwrap: () => Promise.resolve() }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => dispatch }));
 jest.mock("@/features/agents/redux/execution-system/thunks/load-conversation.thunk", () => ({
   loadConversation: (arg: { conversationId: string }) => ({ type: "load", ...arg }),
+}));
+const follow = jest.fn();
+jest.mock("@/features/agents/runtime-reconnect/follow-what-is-still-in-flight", () => ({
+  followWhatIsStillInFlight: (...args: unknown[]) => follow(...args),
 }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 
@@ -52,6 +60,7 @@ afterEach(() => {
   act(() => root?.unmount());
   host?.remove();
   dispatch.mockClear();
+  follow.mockClear();
   hookArgs.length = 0;
   answered = undefined;
 });
@@ -101,4 +110,27 @@ it("live and unnamed, it looks for the conversation's newest ask while the row m
     kind: null,
     stillMinting: true,
   });
+});
+
+it("answered here, it follows the resumed turn so a page tool it delegates is answered on this page", async () => {
+  lookup = OPEN;
+  mount(
+    <ParkedOnPersonCard actionRequestId="09322c83-d5ab-403b-b29e-f38ea6149b4d" conversationId="conv-1" />,
+  );
+  await act(async () => {
+    answered?.();
+    await Promise.resolve();
+  });
+  expect(follow).toHaveBeenCalledTimes(1);
+  expect(follow).toHaveBeenCalledWith(dispatch, "conv-1");
+});
+
+it("answered elsewhere, it follows the resumed turn once the chat is re-read", async () => {
+  lookup = { phase: "closed" };
+  await act(async () => {
+    mount(<ParkedOnPersonCard actionRequestId="r-1" conversationId="conv-1" />);
+    await Promise.resolve();
+  });
+  expect(follow).toHaveBeenCalledTimes(1);
+  expect(follow).toHaveBeenCalledWith(dispatch, "conv-1");
 });
