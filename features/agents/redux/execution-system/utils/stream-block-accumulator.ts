@@ -16,6 +16,7 @@
 
 import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence-meta";
 import { indexOutsideInlineCode } from "@/components/mardown-display/markdown-classification/processors/utils/inline-code-span";
+import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
 import {
   findBalancedXmlClose,
   initialXmlBalance,
@@ -69,7 +70,10 @@ import {
   envelopeForCompletedFenceRegion,
   envelopeForCompletedXmlRegion,
 } from "@/features/content-ir/surfaces/xml-finalize";
-import { splitAroundEmbeddedKindJson } from "@/features/content-ir/surfaces/embedded-kind-json";
+import {
+  normalizeRecoveredProsePiece,
+  splitAroundEmbeddedKindJson,
+} from "@/features/content-ir/surfaces/embedded-kind-json";
 import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
 import { sessionEnvelope } from "@/features/content-ir/registry/kind-correctors";
 import { canonicalizeCompletedLegacyQuizEnvelope } from "@/features/content-ir/registry/legacy-quiz-envelope";
@@ -288,6 +292,33 @@ function isParseableJsonObject(text: string): boolean {
  * false positive degrades gracefully to a JSON code block, so this is safe.
  */
 const BARE_JSON_OPEN_RE = /^\{\s*"[^"]*"\s*:/;
+
+/**
+ * Where a kind object starts INSIDE a line of prose (`Here: {"__kind":…}`):
+ * the first `{` past the line start, outside inline code, that opens a JSON
+ * object (`{ "key":`) whose text carries a `__kind` key (the one detector,
+ * json-kind-signal.ts). -1 when there is none. A line that STARTS with `{` is
+ * the bare-JSON opener's, never this.
+ */
+function proseKindObjectStart(line: string): number {
+  if (!line.includes('"__kind"')) return -1;
+  for (
+    let at = indexOutsideInlineCode(line, "{", 1);
+    at > 0;
+    at = indexOutsideInlineCode(line, "{", at + 1)
+  ) {
+    const rest = line.slice(at);
+    if (BARE_JSON_OPEN_RE.test(rest) && hasKindKey(rest)) {
+      return line.slice(0, at).trim() ? at : -1;
+    }
+  }
+  return -1;
+}
+
+/** A line whose first character opens a structure the prose split must leave alone. */
+function startsStructuralLine(line: string): boolean {
+  return /^\s*(?:\{|\[\s*\{|<|\||`|~|:::)/.test(line);
+}
 
 function extractFenceInfo(
   trimmed: string,
@@ -576,6 +607,12 @@ export class StreamBlockAccumulator {
         }
       }
     }
+
+    // A kind object on the SAME LINE as prose (`Here: {"__kind":…`) would
+    // print as prose until the stream ended (A5, the never-raw law). The
+    // moment its `__kind` key is visible, the prose before it becomes a line
+    // of its own and the object is left as the fragment for the opener below.
+    this.maybeSplitProseBeforeKindFragment(dispatch);
 
     // A newline-less minified JSON object never completes a line during the
     // stream, so processLine never opens its region — it would project as raw
@@ -966,6 +1003,31 @@ export class StreamBlockAccumulator {
       return;
     }
 
+    // A kind object inside a line of prose (A5): the prose, the object, and
+    // whatever follows it on the line become three lines, processed in order
+    // right now — the object opens its own region instead of riding inside a
+    // text block as raw JSON until that block happens to close.
+    if (!startsStructuralLine(rawLine)) {
+      const at = proseKindObjectStart(rawLine);
+      if (at > 0) {
+        const rest = rawLine.slice(at);
+        const rootEnd = firstCompleteRootObjectEnd(rest);
+        const parts = [rawLine.slice(0, at)];
+        if (rootEnd === null) parts.push(rest);
+        else {
+          parts.push(rest.slice(0, rootEnd));
+          // Same boundary rule as the fragment drain and the reload
+          // (normalizeRecoveredProsePiece): spaces after the object are not content.
+          const tail = rest.slice(rootEnd).replace(/^[ \t]+/, "");
+          if (tail.trim()) parts.push(tail);
+        }
+        this.lineQueue.unshift(...parts.map((part) => ({ rawLine: part, dispatch })));
+        // The line is re-read as parts; it was counted once already.
+        this.linesRead--;
+        return;
+      }
+    }
+
     const flags = classifyLine(rawLine, trimmed);
 
     // Pipe-less GFM table (verify-RC-B4 R5-3): nothing marks its header line as
@@ -1243,6 +1305,17 @@ export class StreamBlockAccumulator {
 
     // Fallback: treat as text
     this.appendToCurrentBlock(rawLine);
+  }
+
+  /** The fragment twin of the complete-line split in processLineNow (A5). */
+  private maybeSplitProseBeforeKindFragment(dispatch: DispatchFn): void {
+    if (this.subState.kind !== "none") return;
+    const fragment = this.pendingLineFragment;
+    if (startsStructuralLine(fragment)) return;
+    const at = proseKindObjectStart(fragment);
+    if (at <= 0) return;
+    this.pendingLineFragment = fragment.slice(at);
+    this.processLine(fragment.slice(0, at), dispatch);
   }
 
   /**
@@ -1975,17 +2048,23 @@ export class StreamBlockAccumulator {
       ? { language: "xml" }
       : this.buildBlockData();
     let emitted = 0;
+    let followsKind = false;
     for (const piece of pieces) {
-      if (!piece.content) continue;
+      const isKind = piece.type === "kind";
+      const content =
+        !isKind && containerType === "text"
+          ? normalizeRecoveredProsePiece(piece.content, followsKind)
+          : piece.content;
+      followsKind = isKind;
+      if (!content) continue;
       if (emitted > 0) this.currentBlockIndex++;
 
-      const isKind = piece.type === "kind";
       const block: RenderBlockPayload = {
         blockId: this.currentBlockId,
         blockIndex: this.currentBlockIndex,
         type: isKind ? "code" : containerType,
         status: "complete",
-        content: piece.content,
+        content,
         data: isKind ? { language: "json" } : containerData,
         metadata: isKind ? withIrEnvelope(piece.content, undefined) : undefined,
       };

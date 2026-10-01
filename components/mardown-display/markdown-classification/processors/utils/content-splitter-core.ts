@@ -50,7 +50,10 @@ import {
   recognizeOurFileUrl,
   mightBeOurFileUrl,
 } from "@/lib/media/our-file-sources";
-import { splitAroundEmbeddedKindJson } from "@/features/content-ir/surfaces/embedded-kind-json";
+import {
+  normalizeRecoveredProsePiece,
+  splitAroundEmbeddedKindJson,
+} from "@/features/content-ir/surfaces/embedded-kind-json";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { isPageBreakLine } from "@ai-matrx/print/directives";
@@ -236,8 +239,10 @@ export function recoverEmbeddedKindJsonBlocksWith(
       continue;
     }
 
+    let followsKind = false;
     for (const piece of pieces) {
       if (piece.type === "kind") {
+        followsKind = true;
         // ONE PIPELINE: a recovered object whose `__kind` sits in the reserved
         // `directive_v` namespace is a Kind Directive, not an anonymous kind
         // instance. It gets the `matrx` block type so it routes through the
@@ -261,10 +266,15 @@ export function recoverEmbeddedKindJsonBlocksWith(
         continue;
       }
 
-      if (!piece.content) continue;
+      const content =
+        block.type === "text"
+          ? normalizeRecoveredProsePiece(piece.content, followsKind)
+          : piece.content;
+      followsKind = false;
+      if (!content) continue;
       recovered.push({
         ...block,
-        content: piece.content,
+        content,
         metadata: undefined,
       });
     }

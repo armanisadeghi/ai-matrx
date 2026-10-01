@@ -355,3 +355,20 @@ export function splitAroundEmbeddedKindJson(
   }
   return pieces;
 }
+
+/**
+ * A recovered PROSE piece, shaped exactly as the live stream shapes the same
+ * bytes (A5, 2026-09-30): the stream splits `Here: {"__kind":…} after` into
+ * three lines as it arrives, so its prose blocks are trimmed at the end (every
+ * text block is) and, after a kind, start where the next character does — the
+ * spaces after the object and the one line break that ended its line are the
+ * boundary, not content. Both hosts call this on every text piece, so a live
+ * message and its reload draw the same blocks.
+ */
+export function normalizeRecoveredProsePiece(
+  content: string,
+  followsKind: boolean,
+): string {
+  const start = followsKind ? content.replace(/^[ \t]*(?:\r?\n)?/, "") : content;
+  return start.trimEnd();
+}

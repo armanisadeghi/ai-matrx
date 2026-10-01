@@ -24,6 +24,7 @@ import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 import { pendingStructuredEnvelope } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { applyIrKindRoute } from "../react/kind-route";
+import { hasKindKey } from "../surfaces/json-kind-signal";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 
 type Upsert = { requestId: string; block: RenderBlockPayload };
@@ -197,5 +198,56 @@ describe("never raw: ~~~ is a real fence (A4)", () => {
     const reloaded = splitContentIntoBlocksV2(stream).filter((b) => b.content.trim());
     expect(reloaded.map((b) => b.content.trim())).toEqual(["Here you go:", kindBlock?.content, "After."]);
     expect(reloaded[1]?.language?.toLowerCase()).toBe("json");
+  });
+});
+
+/** A prose (text) frame that prints a `__kind` key prints raw kind JSON. */
+function textShowsRawKind(block: RenderBlockPayload): boolean {
+  return block.type === "text" && hasKindKey(block.content ?? "");
+}
+
+function streamingFrames(upserts: Upsert[]): RenderBlockPayload[] {
+  return upserts.map((u) => u.block).filter((b) => b.status === "streaming");
+}
+
+describe("never raw: a kind on the same line as prose (A5)", () => {
+  const SAME_LINE = `Here you go: ${KIND_PAYLOAD_ONE_LINE}\nAfter.`;
+
+  it("char by char: once __kind is visible, no frame prints it as prose or a raw card", () => {
+    const frames = streamingFrames(streamCharByChar(SAME_LINE, "req-same-line"));
+    const afterKind = frames.filter((b) => hasKindKey(b.content ?? ""));
+    expect(afterKind.length).toBeGreaterThan(0);
+    expect(afterKind.filter(textShowsRawKind).map((b) => (b.content ?? "").slice(0, 40))).toEqual([]);
+    expect(afterKind.filter(rendersRawJson).map((b) => (b.content ?? "").slice(0, 40))).toEqual([]);
+  });
+
+  it("a whole line arriving at once (then more prose) is split live, not at stream end", () => {
+    const upserts: Upsert[] = [];
+    const accumulator = new StreamBlockAccumulator("req-same-line-chunk", (payload) => {
+      upserts.push(payload as Upsert);
+      return payload;
+    });
+    const dispatch = (action: unknown) => action;
+    accumulator.ingest(`Here you go: ${KIND_PAYLOAD_ONE_LINE} — enjoy.\n`, dispatch);
+    accumulator.ingest("More prose that keeps the text block open", dispatch);
+    const frames = upserts.map((u) => u.block);
+    expect(frames.filter(textShowsRawKind).map((b) => (b.content ?? "").slice(0, 40))).toEqual([]);
+    const kindFrame = frames.find((b) => (b.content ?? "") === KIND_PAYLOAD_ONE_LINE);
+    expect(kindFrame).toBeDefined();
+  });
+
+  it("final blocks: prose, the kind, the trailing prose — identical on reload", () => {
+    const blocks = finalBlocks(SAME_LINE, "req-same-line-final");
+    expect(blocks.map((b) => (b.content ?? "").trim())).toEqual([
+      "Here you go:",
+      KIND_PAYLOAD_ONE_LINE,
+      "After.",
+    ]);
+    const reloaded = splitContentIntoBlocksV2(SAME_LINE).filter((b) => b.content.trim());
+    expect(reloaded.map((b) => b.content.trim())).toEqual([
+      "Here you go:",
+      KIND_PAYLOAD_ONE_LINE,
+      "After.",
+    ]);
   });
 });
