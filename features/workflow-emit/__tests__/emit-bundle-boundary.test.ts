@@ -54,7 +54,10 @@ describe("workflow-emit bundle boundary", () => {
       }
       // The renderer host must genuinely reach the feature — a regex that
       // silently matched nothing would make this whole guard vacuous.
-      if (relative.endsWith("RunEmissions.tsx")) {
+      // Since 2026-09-30 every run surface (RunEmissions included) renders an
+      // emission through `EmissionRender`, the kind-routing door, so the door
+      // is the one file that must import the renderer.
+      if (relative.endsWith("EmissionRender.tsx")) {
         expect(importedEmitModules(source)).toContain("DbEmitRenderer");
       }
     },
