@@ -46,6 +46,7 @@ import {
   useMarkdownStreaming,
 } from "@/components/markdown-core/streaming-context";
 import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
+import { useKindSourceView } from "@/components/mardown-display/chat-markdown/KindTextGate";
 import {
   firstKindSlug,
   jsonKindSignal,
@@ -187,6 +188,11 @@ export function StandardBlock({
   isStreaming?: boolean;
 }) {
   const { type, content } = block;
+  // Inside a card that SHOWS source (an XML card's prose), a kind-looking
+  // region is code being shown and stays as written (KindTextGate).
+  const sourceView = useKindSourceView();
+  const kindOf = (text: string) =>
+    sourceView ? null : kindRegion(text, isStreaming);
 
   if (type === "text" || type === "table") {
     if (!content.trim()) return null;
@@ -236,7 +242,7 @@ export function StandardBlock({
       );
     }
     if (!language || JSON_LANGUAGES.has(language)) {
-      const kind = kindRegion(content, isStreaming);
+      const kind = kindOf(content);
       if (kind) return kind;
     }
     const fenceMeta = block.metadata?.[FENCE_META_KEY];
@@ -283,7 +289,7 @@ export function StandardBlock({
   // artifacts — is shown as its source at this level; the `full` level is
   // where those render as components. A kind is the exception: never JSON.
   if (!content.trim()) return null;
-  const kind = kindRegion(content, isStreaming);
+  const kind = kindOf(content);
   if (kind) return kind;
   if (looksLikeJson(content)) {
     return <CodeFence code={content} language="json" isStreaming={isStreaming} />;

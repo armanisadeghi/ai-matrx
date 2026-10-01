@@ -40,6 +40,11 @@ export function KindSourceView({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Whether this subtree is a source view (see `KindSourceView`) — kind regions stay as written. */
+export function useKindSourceView(): boolean {
+  return useContext(KindSourceViewContext);
+}
+
 export interface KindTextGateProps {
   /** The leaf's own name, for the report. */
   component: string;

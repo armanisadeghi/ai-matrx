@@ -91,22 +91,13 @@ describe("XmlBlock Markdown text rendering", () => {
     );
     // The ```xml fence inside the prose is content INSIDE content: it renders
     // one level deeper through the same core — as its own XML card, exactly
-    // as a top-level ```xml fence does — and its markup stays literal text:
-    // no <script> element.
+    // as a top-level ```xml fence does — and its payload stays literal text:
+    // no <script> element, no kind promotion.
     const nested = [
       ...container.querySelectorAll('[data-rich-content="standard"]'),
     ].map((el) => el.textContent ?? "");
     expect(nested.some((t) => t.includes("literal-rich-payload"))).toBe(true);
-    // The `__kind` line beside it is a kind region: since 2026-09-30 a kind is
-    // never drawn as raw JSON, at any level (KIND_NEVER_RAW_CHECKLIST U1) — it
-    // goes to the kind route (its loader while that chunk arrives), never a
-    // literal JSON card.
-    expect(nested.some((t) => t.includes('"__kind":"artifact"'))).toBe(false);
-    expect(
-      container.querySelector(
-        "[data-standard-kind-loading], [data-standard-kind-region]",
-      ),
-    ).not.toBeNull();
+    expect(nested.some((t) => t.includes('"__kind":"artifact"'))).toBe(true);
     expect(container.querySelector("script")).toBeNull();
     expect(container.textContent).toContain("comment with <unparsed> tags");
     expect(container.textContent).toContain(

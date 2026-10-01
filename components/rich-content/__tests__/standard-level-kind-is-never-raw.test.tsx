@@ -43,6 +43,7 @@ jest.mock("@/components/mardown-display/chat-markdown/InlineCodeSnippet", () => 
 }));
 
 import { StandardBlock } from "../standard/StandardBlocks";
+import { KindSourceView } from "@/components/mardown-display/chat-markdown/KindTextGate";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -125,6 +126,18 @@ describe("standard level: a kind region is drawn as its kind", () => {
     });
     expect(route("broken")?.textContent).toContain("flashcard_set");
     expect(route("code")).toBeNull();
+  });
+
+  it("inside a source view (an XML card's prose) a kind line stays as written", async () => {
+    await act(async () => {
+      root.render(
+        <KindSourceView>
+          <StandardBlock block={{ type: "code", language: "json", content: flashcards } as never} />
+        </KindSourceView>,
+      );
+    });
+    expect(route("code")?.textContent).toContain("flashcard_set");
+    expect(route("kind")).toBeNull();
   });
 
   it("kindless JSON still shows as JSON", async () => {
