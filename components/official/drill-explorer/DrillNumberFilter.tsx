@@ -61,7 +61,7 @@ export function DrillNumberFilter({
   const pick = measure && choices.some((m) => m.key === measure) ? measure : choices[0]?.key ?? "";
   const value = havingValue(Number(typed.replace(/,/g, "")), units[pick], money);
   const label = (h: DrillHaving) => {
-    const op: Op = h.op;
+    const op = h.op as Op;
     const m = measures.find((x) => x.key === h.measure);
     const said = h.value === undefined ? "" : m?.format ? m.format(h.value) : h.value.toLocaleString();
     return `${m?.label ?? h.measure} ${op === ">" ? ">" : op === "<" ? "<" : op === "<=" ? "≤" : "≥"} ${said}`;
