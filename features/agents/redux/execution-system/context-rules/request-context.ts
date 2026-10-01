@@ -370,6 +370,62 @@ export const selectResolvedContextRows =
     return out;
   };
 
+// ── Durable attachments: what is attached NOW ───────────────────────────────
+
+/** A document attached to the conversation right now (a platform.associations edge). */
+export interface DurableAttachment {
+  key: string;
+  label: string;
+}
+
+const DURABLE_ATTACHMENT_PREFIXES = ["attached_document_", "resource_file_"];
+
+/**
+ * The context key the server seeds an attached resource under (aidream
+ * context_sources `_attached_document_key` / `_seed_file`); null for a token
+ * the server does not seed as a document.
+ */
+export function durableAttachmentKey(token: string, resourceId: string): string | null {
+  if (token === "processed_document") return `attached_document_${resourceId}`;
+  if (token === "file") return `resource_file_${resourceId}`;
+  return null;
+}
+
+/**
+ * Reconcile the display rows' server-added documents with what is attached
+ * NOW: a document detached since the last receipt is dropped, and one attached
+ * since then is added (its size unknown until the next receipt). `attached`
+ * null = not read yet: the rows are returned unchanged.
+ */
+export function reconcileDurableAttachments(
+  state: RootState,
+  conversationId: string,
+  rows: ResolvedContextRow[],
+  attached: readonly DurableAttachment[] | null,
+): ResolvedContextRow[] {
+  if (!attached) return rows;
+  const current = new Set(attached.map((a) => a.key));
+  const isDurable = (key: string) => DURABLE_ATTACHMENT_PREFIXES.some((p) => key.startsWith(p));
+  const kept = rows.filter((row) => !(row.fromReceipt && isDurable(row.key)) || current.has(row.key));
+  const shown = new Set(kept.map((row) => row.key));
+  const saved = selectSavedContextRuleRows(state);
+  const cap = selectContextInlineCap(state, conversationId);
+  const primarySurface = resolveClientSurface(state, conversationId) ?? null;
+  const added = attached
+    .filter((a) => !shown.has(a.key))
+    .map((a): ResolvedContextRow => {
+      const row = resolveContextRow(
+        { key: a.key, label: a.label, surfaceKey: DEFAULT_SURFACE_KEY, origin: "attached", value: undefined, chars: null },
+        saved,
+        cap,
+        primarySurface,
+      );
+      // The server resolves it: its size and delivery are the next receipt's to say.
+      return { ...row, serverResolved: true, delivery: row.include ? "server" : "off" };
+    });
+  return added.length === 0 && kept.length === rows.length ? rows : [...kept, ...added];
+}
+
 // ── The rows a built request came from ──────────────────────────────────────
 
 const rowsByRequest = new WeakMap<object, ResolvedContextRow[]>();
@@ -481,7 +537,17 @@ export const selectDisplayContextRows =
         serverResolved: true,
         fromReceipt: true,
       }));
-    const out = [...applyReceiptToRows(rows, actual), ...serverAdded];
+    // A value the server resolves is NAMED by the server too (a note reference
+    // reads as the note's title), so a row filled from the receipt takes the
+    // receipt's label with its numbers.
+    const receiptLabel = (row: ResolvedContextRow) =>
+      (actual.rows.find((r) => r.key === row.key && r.surface_key === row.surfaceKey) ??
+        actual.rows.find((r) => r.key === row.key))?.label;
+    const filled = applyReceiptToRows(rows, actual).map((row) => {
+      const label = row.fromReceipt ? receiptLabel(row) : undefined;
+      return label && label !== row.label ? { ...row, label } : row;
+    });
+    const out = [...filled, ...serverAdded];
     displayMemo.set(conversationId, { rows, receipt, expected, saved, out });
     return out;
   };

@@ -28,11 +28,11 @@ import { ensureSurfaceFeatureLoaded } from "@/features/surfaces/redux/userStateS
 import { selectPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setPageContextEnabled } from "@/features/agents/redux/execution-system/thunks/page-context.thunk";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { useConversationDisplayRows } from "./useConversationDisplayRows";
 import { useIsPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   agentContextLayerKnown,
   selectContextInlineCap,
-  selectDisplayContextRows,
 } from "@/features/agents/redux/execution-system/context-rules/request-context";
 import {
   ensureAgentContextLayer,
@@ -97,7 +97,7 @@ export function useConversationContextChipShown(conversationId: string): boolean
   const killSwitch = useMandateKillSwitch(mandateKey);
   // DISPLAY rows: what the server added on the last turn counts too, so a chat
   // whose next turn sends nothing of its own still shows (and governs) them.
-  const rows = useAppSelector(selectDisplayContextRows(conversationId, killSwitch));
+  const rows = useConversationDisplayRows(conversationId, killSwitch);
   const stamped = useAppSelector(
     (state) => state.conversations.byConversationId[conversationId]?.surfaceName ?? null,
   );
@@ -133,7 +133,7 @@ export function ConversationContextChip({
     (state) => state.conversations.byConversationId[conversationId]?.mandateKey ?? null,
   );
   const killSwitch = useMandateKillSwitch(mandateKey);
-  const rows = useAppSelector(selectDisplayContextRows(conversationId, killSwitch));
+  const rows = useConversationDisplayRows(conversationId, killSwitch);
   const cap = useAppSelector((state) => selectContextInlineCap(state, conversationId));
   const receiptEntry = useAppSelector(
     (state) => state.instanceContext.receiptByConversationId[conversationId],

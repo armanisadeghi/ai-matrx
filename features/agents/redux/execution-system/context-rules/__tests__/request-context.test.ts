@@ -15,6 +15,8 @@ import {
   ambientIncluded,
   buildRequestContext,
   buildResumeRequestContext,
+  durableAttachmentKey,
+  reconcileDurableAttachments,
   selectDisplayContextRows,
   selectResolvedContextRows,
 } from "../request-context";
@@ -333,7 +335,7 @@ describe("the table displays the server's numbers for server-resolved values", (
           rows: [
             {
               key: "note_id",
-              label: "Note Id",
+              label: "QME Report Markup Guide",
               surface_key: "_default",
               origin: "client",
               chars: null,
@@ -352,6 +354,8 @@ describe("the table displays the server's numbers for server-resolved values", (
     };
     const shown = selectDisplayContextRows("c1")(state);
     expect(shown[0]).toMatchObject({ fromReceipt: true, delivery: "on_request", max_inline_chars: 0 });
+    // ...and its name: the server names a note reference by the note's title.
+    expect(shown[0]?.label).toBe("QME Report Markup Guide");
     // The send path still uses the unfilled rows.
     expect(buildRequestContext(state, "c1", { includeAmbient: false }).rows[0]?.delivery).toBe("server");
   });
@@ -644,5 +648,48 @@ describe("a resume sends exactly what the chip shows", () => {
     const shown = selectResolvedContextRows("c1")(state).map((r) => r.key);
     expect(resumed).toEqual(shown);
     expect(resumed).toEqual(keys);
+  });
+});
+
+// Break this catches (N4): rows on load come from the last persisted receipt,
+// so a document detached since then still showed, and one attached since then
+// did not, until the next send.
+describe("server-added documents follow what is attached NOW", () => {
+  const fromReceipt = (key: string, label: string) => ({
+    key,
+    label,
+    surfaceKey: "_default",
+    origin: "attached" as const,
+    value: undefined,
+    chars: 18_400,
+    userRule: null,
+    include: true,
+    max_inline_chars: 6000,
+    delivery: "on_request" as const,
+    decided_by: { include: "default" as const, max_inline_chars: "default" as const },
+    clamped: false,
+    serverResolved: true,
+    fromReceipt: true,
+  });
+  const base = () => makeState({ entries: [] });
+
+  it("drops a detached document and adds a newly attached one with unknown size", () => {
+    const rows = [
+      fromReceipt("resource_file_a73a", "harbor-street-cost-sheet-q4.pdf"),
+      fromReceipt("resource_file_c7cf", "harbor-street-menu-board.png"),
+    ];
+    const out = reconcileDurableAttachments(base(), "c1", rows, [
+      { key: "resource_file_a73a", label: "harbor-street-cost-sheet-q4.pdf" },
+      { key: durableAttachmentKey("processed_document", "5e1d")!, label: "Lease renewal terms" },
+    ]);
+    expect(out.map((r) => [r.key, r.label, r.chars, r.delivery])).toEqual([
+      ["resource_file_a73a", "harbor-street-cost-sheet-q4.pdf", 18_400, "on_request"],
+      ["attached_document_5e1d", "Lease renewal terms", null, "server"],
+    ]);
+  });
+
+  it("leaves the rows alone until the attachments have been read", () => {
+    const rows = [fromReceipt("resource_file_c7cf", "harbor-street-menu-board.png")];
+    expect(reconcileDurableAttachments(base(), "c1", rows, null)).toBe(rows);
   });
 });
