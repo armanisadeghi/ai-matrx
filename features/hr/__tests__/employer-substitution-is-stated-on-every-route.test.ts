@@ -39,7 +39,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
+import { aliasTarget } from "@/scripts/lib/source-roots.cjs";
 
 const REPO = join(__dirname, "..", "..", "..");
 const HR_ROUTES = join(REPO, "app", "(core)", "hr");

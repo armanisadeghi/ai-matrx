@@ -46,7 +46,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import ts from "typescript";
 import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { aliasTarget } from "./lib/source-roots.mjs";
+import { aliasTarget } from "./lib/source-roots.cjs";
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "features", "components", "lib"] as const;

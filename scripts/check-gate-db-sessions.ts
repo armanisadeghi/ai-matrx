@@ -27,7 +27,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { ALIAS_PREFIX_PATTERN, aliasTarget } from "./lib/source-roots.mjs";
+import { ALIAS_PREFIX_PATTERN, aliasTarget } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");

@@ -45,7 +45,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFile
 import { tmpdir } from "os";
 import { join, relative, resolve } from "path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { featureRoots } from "./lib/source-roots.mjs";
+import { featureRoots } from "./lib/source-roots.cjs";
 
 const ROOT = join(__dirname, "..");
 

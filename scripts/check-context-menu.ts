@@ -113,7 +113,7 @@ import { readFileSync, globSync } from "node:fs";
 import { basename, join } from "node:path";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { aliasTarget } from "./lib/source-roots.mjs";
+import { aliasTarget } from "./lib/source-roots.cjs";
 import { isGfmDelimiterRow, isPipeLedRow, rowCells } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 const ROOT = process.cwd();

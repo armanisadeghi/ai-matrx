@@ -55,7 +55,7 @@ import { fileURLToPath } from "node:url";
 import * as dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { aliasTarget } from "./lib/source-roots.mjs";
+import { aliasTarget } from "./lib/source-roots.cjs";
 import {
   FLATTENING_REMEDY,
   isStructuredOutputKind,

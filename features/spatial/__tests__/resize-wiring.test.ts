@@ -7,7 +7,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import ts from "typescript";
-import { featureRoots } from "@/scripts/lib/source-roots.mjs";
+import { featureRoots } from "@/scripts/lib/source-roots.cjs";
 
 const REPO = join(__dirname, "..", "..", "..");
 

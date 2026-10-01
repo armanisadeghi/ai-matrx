@@ -24,7 +24,7 @@ import {
   type EntityTokenInfo,
 } from "./entity-tokens";
 import type { DeadEndFinding, DeadEndRuleId, DeadEndSeverity } from "./types";
-import { featureRootOf } from "../lib/source-roots.mjs";
+import { featureRootOf } from "../lib/source-roots.cjs";
 
 // ─── Vocabulary ─────────────────────────────────────────────────────────────
 

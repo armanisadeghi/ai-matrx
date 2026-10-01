@@ -21,7 +21,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { isUnderFeature } from "@/scripts/lib/source-roots.mjs";
+import { isUnderFeature } from "@/scripts/lib/source-roots.cjs";
 
 import { AgentActionModal } from "@/features/agents/components/agent-listings/AgentActionModal";
 import { buildAgentDeleteConfirm } from "@/features/agents/deletion/agentDeleteConfirm";

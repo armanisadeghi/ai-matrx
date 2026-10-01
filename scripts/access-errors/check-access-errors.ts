@@ -26,7 +26,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { execSync } from "node:child_process";
 import { emitItem, endItems } from "../checks/items.mjs";
-import { aliasTarget, featureRootOf } from "../lib/source-roots.mjs";
+import { aliasTarget, featureRootOf } from "../lib/source-roots.cjs";
 
 const ROOT = process.cwd();
 const REPORT = join(ROOT, "scripts/access-errors/report.json");

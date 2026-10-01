@@ -55,7 +55,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { featureRootOf } from "./lib/source-roots.mjs";
+import { featureRootOf } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASELINE_FILE = join(ROOT, "scripts", "single-record-writes-baseline.json");

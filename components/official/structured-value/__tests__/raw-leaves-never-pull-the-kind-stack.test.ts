@@ -14,7 +14,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
+import { aliasTarget } from "@/scripts/lib/source-roots.cjs";
 
 const ROOT = resolve(__dirname, "../../../..");
 const EXTS = [".tsx", ".ts", "/index.tsx", "/index.ts"];

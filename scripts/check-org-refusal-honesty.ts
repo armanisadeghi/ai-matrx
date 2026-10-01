@@ -66,7 +66,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { aliasTarget } from "./lib/source-roots.mjs";
+import { aliasTarget } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(__dirname, "..");
 const ALLOWLIST_PATH = join(ROOT, "scripts", "org-refusal-honesty.allowlist.json");

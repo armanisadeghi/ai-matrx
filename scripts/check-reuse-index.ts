@@ -21,7 +21,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { aliasTarget } from "./lib/source-roots.mjs";
+import { aliasTarget } from "./lib/source-roots.cjs";
 
 const INDEX_FILE = "docs/reuse-first.md";
 const SECTION_MARKER = "## Primitives Index";

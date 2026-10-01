@@ -5,7 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
-import { aliasTarget } from './lib/source-roots.mjs';
+import { aliasTarget } from './lib/source-roots.cjs';
 
 const root = process.cwd();
 const SKIP = new Set(['node_modules', '.git', 'dist', '.turbo', 'coverage']);

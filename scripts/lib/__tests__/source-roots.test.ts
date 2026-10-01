@@ -15,7 +15,7 @@ import {
   featureRoots,
   isAliasSpecifier,
   isUnderFeature,
-} from "../source-roots.mjs";
+} from "../source-roots.cjs";
 
 describe("aliasTarget", () => {
   it("resolves @/ and @host/ from the repo root, identically", () => {

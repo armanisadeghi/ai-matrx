@@ -103,7 +103,7 @@ import { join, relative, resolve } from "node:path";
 import process from "node:process";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { aliasTarget } from "./lib/source-roots.mjs";
+import { aliasTarget } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 const DB_TYPES = join(ROOT, "types/database.types.ts");

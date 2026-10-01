@@ -18,7 +18,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { featureRoots } from "./lib/source-roots.mjs";
+import { featureRoots } from "./lib/source-roots.cjs";
 
 const ROOT = process.cwd();
 const APP_DIR = join(ROOT, "app");

@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 import { FINDINGS_CHECKS } from "../findings/registry.mjs";
 import { REMEDIES, remedyForKey } from "./remedies.mjs";
-import { aliasTarget } from "../lib/source-roots.mjs";
+import { aliasTarget } from "../lib/source-roots.cjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const CHECK = join(ROOT, "scripts", "check-visibility-vocab.ts");

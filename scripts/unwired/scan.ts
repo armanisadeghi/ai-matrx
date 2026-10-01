@@ -7,7 +7,7 @@ import type {
   UnwiredFinding,
   UnwiredRepository,
 } from "./types";
-import { aliasTarget, featureRootOf } from "../lib/source-roots.mjs";
+import { aliasTarget, featureRootOf } from "../lib/source-roots.cjs";
 
 const FRONTEND_ROOTS = ["app", "components", "features", "hooks", "lib", "providers", "utils"];
 // Directory names skipped wholesale. Only unambiguous ones belong here: this

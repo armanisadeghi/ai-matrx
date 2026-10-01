@@ -49,7 +49,7 @@ import { spawnSync } from "node:child_process";
 import { posix } from "node:path";
 import { repoFiles, REPO_ROOT } from "./lib/repo-files";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { aliasTarget } from "./lib/source-roots.mjs";
+import { aliasTarget } from "./lib/source-roots.cjs";
 
 // ─── model ──────────────────────────────────────────────────────────────────
 

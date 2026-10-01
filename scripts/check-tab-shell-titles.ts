@@ -57,7 +57,7 @@ import { dirname, join, relative } from "node:path";
 import ts from "typescript";
 import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { aliasTarget } from "./lib/source-roots.mjs";
+import { aliasTarget } from "./lib/source-roots.cjs";
 import { createDynamicRouteMetadata, createRouteMetadata } from "../utils/route-metadata";
 
 const PAGE_FILES = ["page.tsx", "page.dev.tsx"];

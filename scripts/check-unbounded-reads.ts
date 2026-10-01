@@ -105,7 +105,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { emitItem, endItems } from "./checks/items.mjs";
-import { isAliasSpecifier } from "./lib/source-roots.mjs";
+import { isAliasSpecifier } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCAN_DIRS = ["scripts", "lib", "features", "app", "utils"];

@@ -30,7 +30,7 @@
  */
 import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
-import { aliasTarget } from "./lib/source-roots.mjs";
+import { aliasTarget } from "./lib/source-roots.cjs";
 
 const ROOT = process.cwd();
 const BASELINE = path.join(ROOT, "scripts", "bespoke-headers-baseline.json");

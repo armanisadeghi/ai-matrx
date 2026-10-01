@@ -31,7 +31,7 @@ import {
     CAMPAIGN_STORE_TABLES,
     type CampaignEntryPoint,
 } from "../../lib/knobs/unifiedDataCampaign.register";
-import { aliasTarget } from "./source-roots.mjs";
+import { aliasTarget } from "./source-roots.cjs";
 
 /**
  * Files that talk about the campaign in order to POLICE it. Gating a guard on

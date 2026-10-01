@@ -48,7 +48,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { aliasTarget } from "./lib/source-roots.mjs";
+import { aliasTarget } from "./lib/source-roots.cjs";
 
 const ROOT = path.resolve(__dirname, "..");
 const ADMIN_ROOT = path.join(ROOT, "app", "(admin)");

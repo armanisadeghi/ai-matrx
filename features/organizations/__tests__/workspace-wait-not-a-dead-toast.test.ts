@@ -28,7 +28,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { featureRoots } from "@/scripts/lib/source-roots.mjs";
+import { featureRoots } from "@/scripts/lib/source-roots.cjs";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 

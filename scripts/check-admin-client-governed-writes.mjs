@@ -26,7 +26,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { aliasTarget } from "./lib/source-roots.mjs";
+import { aliasTarget } from "./lib/source-roots.cjs";
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "features", "lib", "utils", "components", "hooks"];

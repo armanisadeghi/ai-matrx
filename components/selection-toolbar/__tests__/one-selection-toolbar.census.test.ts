@@ -46,7 +46,7 @@ import { execSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
+import { aliasTarget } from "@/scripts/lib/source-roots.cjs";
 
 const ROOT = join(__dirname, "..", "..", "..");
 

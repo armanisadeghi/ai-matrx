@@ -13,7 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
-import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
+import { aliasTarget } from "@/scripts/lib/source-roots.cjs";
 
 const ROOT = path.resolve(__dirname, "../../..");
 const REGISTRY = path.join(ROOT, "features/settings/registry.ts");

@@ -33,7 +33,7 @@
 import { readFileSync } from "node:fs";
 import { globSync } from "node:fs";
 import path from "node:path";
-import { featureRoots } from "@/scripts/lib/source-roots.mjs";
+import { featureRoots } from "@/scripts/lib/source-roots.cjs";
 
 // `node:fs` only grew `globSync` in newer Node — fall back to a tiny manual
 // walk so this guard runs on whatever Node this repo's CI actually has.

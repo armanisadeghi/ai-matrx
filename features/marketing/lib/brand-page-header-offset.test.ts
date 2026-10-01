@@ -17,7 +17,7 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
+import { aliasTarget } from "@/scripts/lib/source-roots.cjs";
 
 const BRAND_ROUTE_DIR = resolve(
   process.cwd(),

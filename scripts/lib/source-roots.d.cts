@@ -1,4 +1,4 @@
-/** Types for `source-roots.mjs` (plain JS so node, tsx and Jest callers all share it). */
+/** Types for `source-roots.cjs` (plain CommonJS so node, tsx and Jest callers all share it). */
 export declare const CHAT_PACKAGE_SRC: "packages/chat/src";
 export declare const FEATURE_ROOTS: readonly string[];
 export declare const SOURCE_ROOTS: readonly string[];

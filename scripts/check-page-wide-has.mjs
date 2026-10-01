@@ -22,7 +22,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { featureRoots } from "./lib/source-roots.mjs";
+import { featureRoots } from "./lib/source-roots.cjs";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 

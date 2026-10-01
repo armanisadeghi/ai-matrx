@@ -10,20 +10,22 @@
  * while reading nothing of the moved code. Every such guard routes through this file, so a new
  * alias or a new root is one line here.
  *
- * Plain JavaScript on purpose: `node scripts/*.mjs`, `tsx scripts/*.ts` and Jest suites all
- * import it. Types: `source-roots.d.mts`. Paths are repo-relative and POSIX.
+ * Plain CommonJS on purpose: `node scripts/*.mjs` (named ESM imports of CJS), `tsx scripts/*.ts`
+ * and Jest suites (which load it untransformed — Jest cannot require an ESM `.mjs` repo file)
+ * all import it. Types: `source-roots.d.cts`. Paths are repo-relative and POSIX.
  */
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+"use strict";
+const { existsSync } = require("node:fs");
+const { join } = require("node:path");
 
 /** The chat workspace package's source directory (absent until the move lands). */
-export const CHAT_PACKAGE_SRC = "packages/chat/src";
+const CHAT_PACKAGE_SRC = "packages/chat/src";
 
 /** Every directory that holds feature code. A scan of `features/` scans all of these. */
-export const FEATURE_ROOTS = Object.freeze(["features", CHAT_PACKAGE_SRC]);
+const FEATURE_ROOTS = Object.freeze(["features", CHAT_PACKAGE_SRC]);
 
 /** The app's top-level source directories, the feature roots included. */
-export const SOURCE_ROOTS = Object.freeze([
+const SOURCE_ROOTS = Object.freeze([
   "app",
   "features",
   "components",
@@ -41,14 +43,14 @@ export const SOURCE_ROOTS = Object.freeze([
  * Module alias prefix → the repo-relative directory it resolves to (tsconfig `paths`, jest
  * `moduleNameMapper`). Longest prefix first is not needed: no prefix is a prefix of another.
  */
-export const MODULE_ALIASES = Object.freeze([
+const MODULE_ALIASES = Object.freeze([
   Object.freeze(["@/", ""]),
   Object.freeze(["@host/", ""]),
   Object.freeze(["@ai-matrx/chat/", `${CHAT_PACKAGE_SRC}/`]),
 ]);
 
 /** The repo-relative path an aliased specifier names (no extension added), or null. */
-export function aliasTarget(spec) {
+function aliasTarget(spec) {
   if (typeof spec !== "string") return null;
   for (const [prefix, dir] of MODULE_ALIASES) {
     if (spec.startsWith(prefix)) return dir + spec.slice(prefix.length);
@@ -57,22 +59,22 @@ export function aliasTarget(spec) {
 }
 
 /** True when the specifier is one of this repo's own aliases (not a package, not relative). */
-export function isAliasSpecifier(spec) {
+function isAliasSpecifier(spec) {
   return aliasTarget(spec) !== null;
 }
 
 /** A regex source alternation matching any alias prefix, for import-extraction regexes. */
-export const ALIAS_PREFIX_PATTERN = MODULE_ALIASES.map(([prefix]) =>
+const ALIAS_PREFIX_PATTERN = MODULE_ALIASES.map(([prefix]) =>
   prefix.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&"),
 ).join("|");
 
 /** The roots that exist under `repoRoot` (default: every source root), in the given order. */
-export function existingRoots(repoRoot, roots = SOURCE_ROOTS) {
+function existingRoots(repoRoot, roots = SOURCE_ROOTS) {
   return roots.filter((root) => existsSync(join(repoRoot, root)));
 }
 
 /** The feature roots that exist under `repoRoot`: `["features"]` today. */
-export function featureRoots(repoRoot) {
+function featureRoots(repoRoot) {
   return existingRoots(repoRoot, FEATURE_ROOTS);
 }
 
@@ -81,7 +83,7 @@ export function featureRoots(repoRoot) {
  * `features/hr/routes.ts` → `{ root: "features", rest: "hr/routes.ts" }`. Null when it sits
  * under no feature root.
  */
-export function featureRootOf(rel) {
+function featureRootOf(rel) {
   const posix = String(rel).replace(/\\/g, "/").replace(/^\.\//, "");
   for (const root of FEATURE_ROOTS) {
     if (posix.startsWith(`${root}/`)) return { root, rest: posix.slice(root.length + 1) };
@@ -93,10 +95,22 @@ export function featureRootOf(rel) {
  * True when a path (absolute or repo-relative) lies under `<feature root>/<sub>` for ANY
  * feature root — e.g. `isUnderFeature(file, "agents/deletion")`.
  */
-export function isUnderFeature(file, sub) {
+function isUnderFeature(file, sub) {
   const posix = String(file).replace(/\\/g, "/");
   return FEATURE_ROOTS.some((root) => {
     const needle = `${root}/${sub.replace(/^\/+|\/+$/g, "")}`;
     return posix === needle || posix.startsWith(`${needle}/`) || posix.includes(`/${needle}/`) || posix.endsWith(`/${needle}`);
   });
 }
+
+exports.CHAT_PACKAGE_SRC = CHAT_PACKAGE_SRC;
+exports.FEATURE_ROOTS = FEATURE_ROOTS;
+exports.SOURCE_ROOTS = SOURCE_ROOTS;
+exports.MODULE_ALIASES = MODULE_ALIASES;
+exports.ALIAS_PREFIX_PATTERN = ALIAS_PREFIX_PATTERN;
+exports.aliasTarget = aliasTarget;
+exports.isAliasSpecifier = isAliasSpecifier;
+exports.existingRoots = existingRoots;
+exports.featureRoots = featureRoots;
+exports.featureRootOf = featureRootOf;
+exports.isUnderFeature = isUnderFeature;
