@@ -138,6 +138,7 @@ function baseRow(id: string, kind: string, title: string): TranscriptListRow {
     duration_seconds: 0,
     word_count: 0,
     is_draft: false,
+    is_archived: false,
     session_id: "",
     transcript_id: "",
     segment_index: 0,
