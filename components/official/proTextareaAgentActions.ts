@@ -6,6 +6,7 @@
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 /**
  * The JOB "Help with this…" runs when the host names none: the platform's
@@ -185,5 +186,8 @@ export function isProTextareaAgentActionEnabled(
  */
 export function agentRunResult(sourceText: string, workingContent: string, finalAnswer: string): string {
   if (workingContent !== sourceText) return workingContent;
-  return finalAnswer.trim() ? finalAnswer.trim() : workingContent;
+  // The field holds prose a person edits: a `__kind` answer lands as its
+  // kind's markdown, never its JSON (kind-never-raw S1).
+  const answer = kindTextToMarkdown(finalAnswer).trim();
+  return answer ? answer : workingContent;
 }

@@ -2,7 +2,7 @@
  * kindTextToMarkdown — answer text with `__kind` regions becomes readable
  * markdown for display/export destinations; kindless text is untouched.
  */
-import { kindTextToMarkdown } from "../surfaces/kind-text-to-markdown";
+import { kindTextPreview, kindTextToMarkdown } from "../surfaces/kind-text-to-markdown";
 
 const SET = {
   __kind: "flashcard_set",
@@ -66,5 +66,30 @@ describe("kindTextToMarkdown", () => {
   it("leaves a kind that only appears inside a non-json code example alone", () => {
     const text = "Example:\n\n```ts\nconst x = " + SET_JSON + ";\n```";
     expect(kindTextToMarkdown(text)).toBe(text);
+  });
+});
+
+describe("kindTextPreview (compact, possibly streaming)", () => {
+  it("a complete kind previews as markdown", () => {
+    const p = kindTextPreview(SET_JSON);
+    expect(p.text).not.toContain("__kind");
+    expect(p.pendingKind).toBeNull();
+  });
+
+  it("a kind still arriving is cut and named, never shown raw", () => {
+    const partial = 'Here you go:\n\n```json\n{"__kind": "flashcard_set", "title": "Cell bi';
+    const p = kindTextPreview(partial);
+    expect(p.text).toBe("Here you go:");
+    expect(p.pendingKind).toBe("flashcard_set");
+  });
+
+  it("a nested arriving kind cuts at its outermost object", () => {
+    const p = kindTextPreview('Intro {"title": "x", "items": [{"__kind": "flash');
+    expect(p.text).toBe("Intro");
+    expect(p.pendingUnnamed).toBe(true);
+  });
+
+  it("kindless text is unchanged", () => {
+    expect(kindTextPreview("Just text").text).toBe("Just text");
   });
 });

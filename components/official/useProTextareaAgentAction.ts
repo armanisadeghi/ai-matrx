@@ -20,12 +20,19 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectLatestAnswerText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 export interface UseProTextareaAgentActionResult {
   phase: AiProcessPhase;
   isBusy: boolean;
   /** Streaming/final agent output, with any <thinking> blocks stripped. */
   result: string;
+  /**
+   * `result` as text a FIELD can hold: every `__kind` region becomes its
+   * kind's markdown. Apply, compare and copy use this; the popover DRAWS
+   * `result` through the one answer view (kind-never-raw S1).
+   */
+  resultText: string;
   /** True while the model is in a thinking block (before visible output). */
   isThinking: boolean;
   error: string | null;
@@ -90,10 +97,14 @@ export function useProTextareaAgentAction(): UseProTextareaAgentActionResult {
     [ai],
   );
 
+  const result =
+    ai.phase === "complete" && committed.trim() ? committed : visible;
+
   return {
     phase: ai.phase,
     isBusy: ai.isBusy,
-    result: ai.phase === "complete" && committed.trim() ? committed : visible,
+    result,
+    resultText: kindTextToMarkdown(result),
     isThinking,
     error: ai.error,
     run,

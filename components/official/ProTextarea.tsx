@@ -1003,11 +1003,11 @@ export const ProTextarea = React.forwardRef<
     // Preview the AI result against the current text before applying (it
     // otherwise blind-replaces the whole field). Current = baseline, AI = new.
     const compareActiveAgentAction = useCallback(() => {
-      const result = agentAction.result.trim();
+      const result = agentAction.resultText.trim();
       if (!result) return;
       openDiff({
         original: valueAsString,
-        modified: agentAction.result,
+        modified: agentAction.resultText,
         originalLabel: "Current",
         modifiedLabel: "AI result",
         title: "AI edit — compare",
@@ -1015,7 +1015,7 @@ export const ProTextarea = React.forwardRef<
         language: "markdown",
         defaultView: "highlight",
       });
-    }, [agentAction.result, valueAsString, openDiff]);
+    }, [agentAction.resultText, valueAsString, openDiff]);
 
     const applyActiveAgentAction = useCallback(() => {
       if (
@@ -1026,9 +1026,9 @@ export const ProTextarea = React.forwardRef<
       ) {
         return;
       }
-      const result = agentAction.result.trim();
+      const result = agentAction.resultText.trim();
       if (!result) return;
-      if (!pushToTextarea(agentAction.result)) {
+      if (!pushToTextarea(agentAction.resultText)) {
         // Never claim an apply that did not land — keep the result open so
         // nothing is lost, and say what to do.
         toast.error("The result could not be put into this field", {

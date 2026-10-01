@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import type { useProTextareaAgentAction } from "./useProTextareaAgentAction";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 
 export function ProTextAgentActionPopoverBody({
   title,
@@ -60,7 +62,7 @@ export function ProTextAgentActionPopoverBody({
   const hasRun = phase !== "idle";
 
   const handleCopyResult = async () => {
-    await writeClipboard(result);
+    await writeClipboard(kindTextToMarkdown(result));
     setResultCopied(true);
     toast.success(`${title} result copied to clipboard`);
     window.setTimeout(() => setResultCopied(false), 1500);
@@ -128,9 +130,9 @@ export function ProTextAgentActionPopoverBody({
             </p>
           ) : hasResult ? (
             <div className="flex items-start gap-2">
-              <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                {result}
-              </p>
+              <div className="min-w-0 flex-1 text-sm leading-relaxed text-foreground">
+                <AnswerValueView text={result} />
+              </div>
               <div className="sticky top-0 shrink-0">
                 {resultCopied ? (
                   <CheckTapButton

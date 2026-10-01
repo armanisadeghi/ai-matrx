@@ -11,6 +11,7 @@ import { useRetainLatestRequestForViewer } from "@/features/agents/redux/executi
 import { Button } from "@/components/ui/button";
 import { Check, Loader2, Minimize2, X } from "lucide-react";
 import { AgentRunner } from "../smart/AgentRunner";
+import { AnswerTextPreview } from "@/components/official/structured-value/AnswerTextPreview";
 
 interface AgentToastOverlayProps {
   conversationId: string;
@@ -191,9 +192,10 @@ export function AgentToastOverlay({
           onClick={() => setExpanded(true)}
         >
           {text ? (
-            <p className="text-xs text-foreground leading-relaxed line-clamp-3">
-              {text}
-            </p>
+            <AnswerTextPreview
+              text={text}
+              className="text-xs text-foreground leading-relaxed line-clamp-3"
+            />
           ) : (
             <p className="text-xs text-muted-foreground">
               {isExecuting ? (

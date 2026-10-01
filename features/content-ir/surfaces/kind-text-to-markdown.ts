@@ -18,7 +18,7 @@
 
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import { findEmbeddedKindJsonRegions } from "./embedded-kind-json";
-import { hasKindKey } from "./json-kind-signal";
+import { firstKindSlug, hasKindKey } from "./json-kind-signal";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -85,4 +85,52 @@ export function kindTextToMarkdown(text: string | null | undefined): string {
     out = out.slice(0, region.start) + md + out.slice(region.end);
   }
   return out;
+}
+
+export interface KindTextPreview {
+  /** The readable text: complete kinds as markdown, an arriving kind cut off. */
+  text: string;
+  /** The slug of a kind still arriving at the end of the text (its loader), else null. */
+  pendingKind: string | null;
+  /** True when a kind is arriving but its slug has not been read yet. */
+  pendingUnnamed: boolean;
+}
+
+/**
+ * Where the object that OWNS the first `"__kind"` key starts — the outermost
+ * `{` still open at that key — or -1. String contents are skipped.
+ */
+function owningObjectStart(text: string, keyIndex: number): number {
+  const open: number[] = [];
+  let inString = false;
+  for (let i = 0; i < keyIndex; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (ch === "\\") i++;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{") open.push(i);
+    else if (ch === "}") open.pop();
+  }
+  return open.length > 0 ? open[0] : -1;
+}
+
+/**
+ * A COMPACT, possibly still-streaming preview of answer text (a toast, a
+ * hover card, a list row): complete kinds read as their markdown; a kind
+ * still arriving is cut from the text and named in `pendingKind` so the
+ * caller shows that kind's loader — the raw JSON never shows mid-stream.
+ */
+export function kindTextPreview(text: string | null | undefined): KindTextPreview {
+  const md = kindTextToMarkdown(text);
+  const keyIndex = md.search(/(?<!\\)"__kind"\s*:/);
+  if (keyIndex < 0) return { text: md, pendingKind: null, pendingUnnamed: false };
+  const start = owningObjectStart(md, keyIndex);
+  const cutAt = start < 0 ? keyIndex : start;
+  // Drop an opening fence line that only introduces the arriving kind.
+  const head = md.slice(0, cutAt).replace(/(^|\n)[ \t]*(`{3,}|~{3,})[^\n]*\n?[ \t]*$/, "$1");
+  const slug = firstKindSlug(md.slice(keyIndex));
+  return { text: head.trimEnd(), pendingKind: slug, pendingUnnamed: slug === null };
 }

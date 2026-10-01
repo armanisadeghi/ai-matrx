@@ -7,6 +7,7 @@
  * for "attached" chips and inline links.
  */
 
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -92,9 +93,11 @@ export function MessagePreviewContent({
   const conversation = useAppSelector(selectInstance(conversationId));
   const [copied, setCopied] = useState(false);
 
-  // Raw-faithful: structured (non-text) payloads preview as their stored
-  // JSON instead of a blank ("screen lies" class fix).
-  const text = message ? extractInspectableText(message).text : "";
+  // Structured (non-text) payloads preview instead of a blank ("screen lies"
+  // class fix).
+  // A preview is read by a person: a `__kind` answer previews as its kind's
+  // markdown, never its stored JSON (the record itself is untouched).
+  const text = message ? kindTextToMarkdown(extractInspectableText(message).text) : "";
   const toolCalls = countToolCalls(message?.content);
 
   const handleCopy = async () => {

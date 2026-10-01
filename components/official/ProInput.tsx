@@ -421,7 +421,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     }, [cleanupAction, cleanupContextItems, selectedCleanupAgent, value]);
 
     const applyCleanup = useCallback(() => {
-      const cleaned = cleanupAction.result.replace(/\s+/g, " ").trim();
+      const cleaned = cleanupAction.resultText.replace(/\s+/g, " ").trim();
       if (!cleaned) return;
       pushToInput(cleaned);
       setMenuOpen(false);

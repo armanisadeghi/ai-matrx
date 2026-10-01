@@ -65,7 +65,12 @@ Every stream item below adds its case there.
       `selectAnswerText`, `selectLatestAnswerText`, `selectResultText`, `selectLatestAccumulatedText`).
 - [ ] R2. `selectAnswerDocumentText` / `selectLatestAnswerDocumentText` stringify kinds on purpose.
 - [ ] R3. `extractInspectableText` pretty-prints the content array → action bar, dialogs, full-screen editor.
-- [ ] R4. Pencil "edit answer" opens raw JSON.
+      PARTIAL: the action bar and its dialogs send through `contentForDestination` (O1); the message hover
+      preview converts with `kindTextToMarkdown`. The full-screen editor is the explicit edit-of-source view
+      (only "Open in full-screen editor" sets `_editingInPlace: "expanded"`) — left on purpose.
+- [x] R4. Pencil "edit answer" opens raw JSON. Deliberate edit-of-source view, kept: `InPlaceAnswerEditor`
+      mounts only when the edit action's explicit click sets `_editingInPlace` (`handlers/edit.ts`,
+      `handlers/fullscreen-editor.ts` are the only writers); a structured payload opens the read-only raw viewer.
 - [ ] R5. "Started with" strip prints object variables as JSON (`variableValueToInputText`).
 
 ## D. Tool calls
@@ -87,9 +92,13 @@ Every stream item below adds its case there.
 
 ## F. Screens rendering answer text outside the pipeline
 
-- [ ] S1. Pro textarea / pro input AI actions (popover, diff, write-back).
-- [ ] S2. Transcript cleanup pad edit mode.
-- [ ] S3. Toast overlay answers (raw text, reasoning included).
+- [x] S1. Pro textarea / pro input AI actions (popover, diff, write-back). Popover draws `result` through
+      `AnswerValueView`; apply / compare / copy / Help-with-this write-back (`agentRunResult`) use the
+      markdown conversion (`resultText`) — every target is human prose.
+- [x] S2. Transcript cleanup pad edit mode. No change: the preview is `MarkdownStream`; the textarea is reached
+      only by the explicit "Edit text" toggle (`CleanupOutput`) and edits the stored source text.
+- [x] S3. Toast overlay answers (raw text, reasoning included). Collapsed line now `AnswerTextPreview`
+      (complete kind → markdown, arriving kind → its loader line); expanded view was already `AgentRunner`.
 - [ ] S4. AI code editor message list.
 - [ ] S5. Fully custom agent-app shells.
 - [ ] S6. "Ask about this meeting".
