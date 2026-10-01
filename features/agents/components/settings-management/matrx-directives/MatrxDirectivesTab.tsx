@@ -35,6 +35,7 @@ import {
   groupDirectiveOptions,
 } from "./directiveOptions";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { InfoHint } from "@/components/official/InfoHint";
 
 type Policy = "default" | "auto" | "ask" | "off";
 
@@ -150,16 +151,16 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
       {/* Directives: create tasks/projects, write records, run custom actions.
           Their guidance is appended to the system prompt at run time; the
           authored prompt is never modified. */}
-      <p className="text-[11px] text-muted-foreground leading-snug">
-        Things this agent can do from its output
-      </p>
 
       {/* ── Selected actions ───────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-semibold text-foreground">
-          Actions this agent can perform
-          {/* read-gate-exempt: actions in this agent's own settings being edited here, shown only when there are some */}
-          {actions.length ? ` (${actions.length})` : ""}
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+          <span>
+            Actions this agent can perform
+            {/* read-gate-exempt: actions in this agent's own settings being edited here, shown only when there are some */}
+            {actions.length ? ` (${actions.length})` : ""}
+          </span>
+          <InfoHint text="Their guidance is added to the system prompt at run time; your prompt is never edited." />
         </span>
         {actions.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">
