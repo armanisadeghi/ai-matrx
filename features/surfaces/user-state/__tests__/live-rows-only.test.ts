@@ -32,9 +32,10 @@ beforeEach(() => {
   calls.length = 0;
 });
 
-it("loads only live rows", async () => {
-  await surfaceUserStateService.loadFeature("context_rules");
+it("loads only the caller's live rows", async () => {
+  await surfaceUserStateService.loadFeature("4060701e-706a-4c76-b3ca-0bbc69fa5a14", "context_rules");
   expect(calls).toContainEqual(["is", ["deleted_at", null]]);
+  expect(calls).toContainEqual(["eq", ["user_id", "4060701e-706a-4c76-b3ca-0bbc69fa5a14"]]);
 });
 
 it("a save revives an archived row instead of writing into one the server ignores", async () => {
