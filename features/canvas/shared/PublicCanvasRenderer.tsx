@@ -7,6 +7,8 @@ import {
   hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
 import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
+import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
+import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 
 /** Only http(s) embeds are allowed for iframe `src` — blocks javascript:/data: URIs. */
 function safeEmbedUrl(value: unknown): string | null {
@@ -71,6 +73,17 @@ function renderContent(content: CanvasContent | any): React.ReactNode {
           // non-executing sandboxed view (no attacker scripts in a visitor's session).
           isPublic
         />
+      </div>
+    );
+  }
+
+  // A kind payload on a type with no renderer goes through the one kind door
+  // — its component, or the readable floor — never the debug dump or the
+  // HTML sniff below (V8, a kind is never drawn as raw JSON).
+  if (valueCarriesKind(data)) {
+    return (
+      <div className="h-full overflow-auto p-4">
+        <KindValueFrontDoor value={data} />
       </div>
     );
   }

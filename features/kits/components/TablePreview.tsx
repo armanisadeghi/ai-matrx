@@ -10,6 +10,8 @@ import type { KitTable } from "../types";
 import { count } from "../format";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
+import { KindCellPeek } from "@/features/data-tables/components/KindCellPeek";
+import { kindCell } from "@/features/data-tables/utils/kind-cell";
 
 
 const TYPE_WORDS: Record<string, string> = {
@@ -29,10 +31,24 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-function Cell({ value, type, refNames }: { value: unknown; type: string; refNames: Record<string, string> }) {
+function Cell({
+  value,
+  type,
+  label,
+  refNames,
+}: {
+  value: unknown;
+  type: string;
+  /** The column's name — the kind window's subtitle. */
+  label: string;
+  refNames: Record<string, string>;
+}) {
   if (value === null || value === undefined || value === "") {
     return <span className="text-muted-foreground">—</span>;
   }
+  // A kind in a cell is its chip (the records grid's own), never its JSON.
+  const kind = kindCell(value);
+  if (kind) return <KindCellPeek cell={kind} title={label} />;
   if (isRecord(value) && typeof value.token === "string" && typeof value.id === "string") {
     // A platform record is a door (THE DOOR LAW): EntityRef routes, peeks and opens it.
     return (
@@ -98,7 +114,7 @@ export function TablePreview({
                 <tr key={i} className="border-b border-border/60 last:border-0 hover:bg-muted/30">
                   {table.fields.map((f, c) => (
                     <td key={f.key} className={cn("max-w-[260px] px-4 py-2 align-top text-foreground", c === 0 && "min-w-[10rem]")}>
-                      <Cell value={r[f.key]} type={f.type} refNames={refNames} />
+                      <Cell value={r[f.key]} type={f.type} label={f.label} refNames={refNames} />
                     </td>
                   ))}
                 </tr>
