@@ -165,7 +165,10 @@ export function DataHomeShellPage() {
                         }
                       />
                     </MountWhenNear>
-                    <DataHomeArchive dataSource={dataSource} organizationFilter={organizationId} />
+                    {/* Read when the person scrolls to it: the archive door is a second walk the first screen never needs. */}
+                    <MountWhenNear>
+                      <DataHomeArchive dataSource={dataSource} organizationFilter={organizationId} />
+                    </MountWhenNear>
                   </div>
                 }
               />

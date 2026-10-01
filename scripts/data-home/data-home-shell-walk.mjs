@@ -167,6 +167,11 @@ try {
   const href = await page.locator("[data-row-id]:visible a[href^='/data-v2/']").first().getAttribute("href");
   pass("a row's name is its door", Boolean(href), href ?? "");
 
+  // The archive and the inbox wait below the list and are read when the person scrolls to them.
+  await page.evaluate(() => document.querySelectorAll(".overflow-y-auto").forEach((e) => e.scrollTo(0, e.scrollHeight)));
+  const archive = (await until("archive", async () => (await page.locator("[data-data-home-archive]").count()) > 0, 30000)).v;
+  pass("scrolled to the bottom, the archive is there with its way back", Boolean(archive));
+
   // Phone.
   await page.setViewportSize({ width: 1024, height: 800 });
   await goto();

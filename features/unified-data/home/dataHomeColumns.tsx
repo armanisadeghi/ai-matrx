@@ -51,7 +51,30 @@ export function KindIcon({ kind, className }: { kind: string; className?: string
 }
 
 /** The name cell: kind icon, the name (the row's door), `in <table>` when different, the trouble mark. */
+/** "Matched in field: Furnace model" — a row only the server search found says why (≤ 60 chars). */
+export function matchedLine(row: DataHomeRow): string | null {
+  if (!row.matched) return null;
+  if (row.matched.in === "field") return `Matched in field: ${row.matched.field ?? "a field"}`.slice(0, 60);
+  if (row.matched.in === "description") return "Matched in description";
+  return null;
+}
+
 export function DataHomeName({ row }: { row: DataHomeRow }) {
+  const why = matchedLine(row);
+  if (why) {
+    return (
+      <div className="min-w-0">
+        <DataHomeNameLine row={row} />
+        <div className="truncate text-xs text-muted-foreground" data-data-home-matched="">
+          {why}
+        </div>
+      </div>
+    );
+  }
+  return <DataHomeNameLine row={row} />;
+}
+
+function DataHomeNameLine({ row }: { row: DataHomeRow }) {
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       <KindIcon kind={row.kind} />

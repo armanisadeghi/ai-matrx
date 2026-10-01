@@ -12,7 +12,7 @@
 // the ACTIVE organization is only where New table lands (the page header, and the making controls
 // in the footer). Nothing in this file reads the active organization for a read.
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink, Link2, Star, StarOff } from "lucide-react";
 import { useRecordsClient } from "@ai-matrx/records/react";
@@ -28,7 +28,6 @@ import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 
-import * as doors from "@/features/unified-data/hub/doors";
 import {
   DATA_HOME_DEFAULT_KIND_KNOB,
   DATA_HOME_DEFAULT_ORDER_KNOB,
@@ -39,8 +38,9 @@ import {
   resolveDataHomeScope,
   ALL_KINDS,
 } from "@/features/unified-data/hub/dataHomeScope";
-import { ACCESS_WORD, buildDataHomeRows, dataHomeKindWord, type DataHomeAccess, type DataHomeRow } from "./dataHomeRows";
+import { ACCESS_WORD, dataHomeKindWord, type DataHomeAccess, type DataHomeRow } from "./dataHomeRows";
 import { createDataHomeService, DATA_HOME_ROW_CAP } from "./dataHomeService";
+import { createDataHomeCorpus } from "./dataHomeCorpus";
 import { dataHomeColumns, ownerLabel } from "./dataHomeColumns";
 import { DataHomeCards, DataHomeRows } from "./DataHomeViews";
 import { nextStarred, useDataHomeMarks } from "./useDataHomeMarks";
@@ -65,59 +65,24 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
 
   // A person's own marks. The service is cheap and is made again when they change (the corpus is
   // held by the loader below, so a star never re-reads the door); `serviceKey` tells the shell.
-  const starredSet = new Set(marks.starred);
+  const starredSet = useMemo(() => new Set(marks.starred), [marks.starred]);
   const starredKey = marks.starred.join(",");
 
-  // THE CORPUS, read once per data seam: the home's one door, every organization; the organization
-  // filter narrows in hand. `meta` is what the load learned, for the columns' words, the tokens and
-  // the notice (organization names, kinds, refusals, the cap).
-  const corpus = useMemo(() => {
-    const meta = {
-      kinds: [] as string[],
-      organizations: [] as Array<{ id: string; name: string }>,
-      names: new Map<string, string>(),
-      refusals: [] as Array<{ listing: string; message: string }>,
-      capped: false,
-    };
-    let held: Promise<DataHomeRow[]> | null = null;
-    const read = async (): Promise<DataHomeRow[]> => {
-      const answered = await doors.dataHome(dataSource, null);
-      if (!answered.ok) {
-        throw new Error(`Could not read tables. Nothing is hidden by this. ${answered.error.message}`);
-      }
-      const built = await buildDataHomeRows({ client, dataSource, answer: answered.data });
-      meta.refusals = built.refusals.map((r) => ({ listing: r.listing, message: r.error.message }));
-      let rows = built.rows;
-      // THE STATED BOUND: past it the newest rows are kept and the page says so.
-      meta.capped = rows.length > DATA_HOME_ROW_CAP;
-      if (meta.capped) {
-        rows = [...rows].sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "")).slice(0, DATA_HOME_ROW_CAP);
-      }
-      const names = new Map<string, string>();
-      for (const row of rows) if (row.organizationId && row.organizationName) names.set(row.organizationId, row.organizationName);
-      meta.names = names;
-      meta.kinds = [...new Set(rows.map((r) => r.kind))];
-      meta.organizations = [...names.entries()].map(([id, name]) => ({ id, name }));
-      return rows;
-    };
-    return {
-      meta,
-      load: () => {
-        if (!held) {
-          held = read().catch((error: unknown) => {
-            held = null; // a failed read is retried on the next ask, never cached as empty
-            throw error;
-          });
-        }
-        return held;
-      },
-    };
-  }, [client, dataSource]);
+  // THE CORPUS (rows in hand) and the server search beside it — dataHomeCorpus.ts.
+  const corpus = useMemo(() => createDataHomeCorpus(client, dataSource), [client, dataSource]);
+  // A server answer for the box's current text re-asks the list (its rows join beneath the instant hits).
+  const [serverVersion, setServerVersion] = useState(0);
+  useEffect(() => corpus.onAnswer(() => setServerVersion((v) => v + 1)), [corpus]);
 
   const service = useMemo(
-    () => createDataHomeService({ load: corpus.load, isStarred: (row) => starredSet.has(row.id), ownerLabel }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- starredKey is starredSet's identity
-    [corpus, starredKey],
+    () =>
+      createDataHomeService({
+        load: corpus.load,
+        server: corpus.server,
+        isStarred: (row) => starredSet.has(row.id),
+        ownerLabel,
+      }),
+    [corpus, starredSet],
   );
 
   // Defaults stay knobs (person / platform tier; never the active organization).
@@ -139,7 +104,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       // organizations the viewer belongs to or holds a grant in), so System is absent, not empty.
       lanes: { system: false },
       service,
-      serviceKey: starredKey,
+      serviceKey: `${starredKey}|${serverVersion}`,
       columns,
       prefsVersion: 1,
       prefsDefaults: {
@@ -152,7 +117,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       getRowId: (row) => row.id,
       getRowName: (row) => row.name,
       door: { column: "name", hrefFor: (row) => row.href },
-      useRowActions: (list) => useDataHomeRowActions(list, starredSet, marks, router),
+      useRowActions: (list) => dataHomeRowActions(list, starredSet, marks, router),
       favorite: {
         isFavorite: (row) => starredSet.has(row.id),
         canToggle: () => true,
@@ -223,8 +188,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
           }
         : { title: "No tables yet", description: "New table makes one." },
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- starredKey stands for starredSet and marks
-  }, [service, corpus, order, defaultView, defaultKind, sharedOnlyHere, router, starredKey, marks.recent]);
+  }, [service, starredKey, serverVersion, corpus, order, defaultView, defaultKind, sharedOnlyHere, router, starredSet, marks]);
 
   return (
     <EntityListPage
@@ -232,9 +196,15 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       defaultScope={makeScope(defaultScope)}
       clearsShellHeader={false}
       notice={() =>
-        corpus.meta.refusals.length > 0 || corpus.meta.capped ? (
+        corpus.meta.refusals.length > 0 || corpus.meta.capped || corpus.meta.searchTrouble ? (
           <div role="status" className="flex flex-col gap-1 text-xs text-muted-foreground" data-data-home-notice="">
             {corpus.meta.capped ? <span>Showing the newest {DATA_HOME_ROW_CAP.toLocaleString()}.</span> : null}
+            {corpus.meta.searchTrouble ? (
+              <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                Search inside fields did not answer. {corpus.meta.searchTrouble}
+                <ErrorAlchemyMenu error={corpus.meta.searchTrouble} />
+              </span>
+            ) : null}
             {corpus.meta.refusals.map((r) => (
               <span key={r.listing} className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
                 {r.listing} could not be read. {r.message}
@@ -249,7 +219,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   );
 }
 
-function useDataHomeRowActions(
+function dataHomeRowActions(
   _list: EntityListController<DataHomeRow>,
   starred: ReadonlySet<string>,
   marks: ReturnType<typeof useDataHomeMarks>,

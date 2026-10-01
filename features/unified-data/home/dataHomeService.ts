@@ -28,8 +28,21 @@ export const DATA_HOME_ROW_CAP = 5000;
 
 export const LANES: readonly DataHomeScope[] = ["all", "mine", "team", "orgs", "shared", "public", "system"];
 
+/** One server search's answer: row id → where and how well it matched (best first). */
+export type ServerMatches = Map<string, { rank: number; in: "name" | "description" | "field" | "id"; field: string | null }>;
+
 export interface DataHomeServiceOptions {
   load: () => Promise<DataHomeRow[]>;
+  /**
+   * THE SERVER LAYER (DATA-HOME-3B's `custom.data_home(p_search)`): what the row does not carry —
+   * Field labels, descriptions. `lookup` answers from what has already come back (undefined = not
+   * yet); `request` asks for it (debounced, and the page re-asks the list when it lands). The
+   * instant hits never wait for it.
+   */
+  server?: {
+    lookup: (search: string, organizationId: string | null) => ServerMatches | undefined;
+    request: (search: string, organizationId: string | null) => void;
+  };
   isStarred: (row: DataHomeRow) => boolean;
   ownerLabel: (row: DataHomeRow) => string | null;
   now?: () => number;
@@ -118,6 +131,14 @@ function isEmpty(v: unknown): boolean {
   return v === null || v === undefined || v === "";
 }
 
+/** The search with its free text removed and its tokens kept (the server hits obey the tokens). */
+function tokensOnly(search: string): string {
+  return search
+    .split(/\s+/)
+    .filter((w) => /^(kind|org|owner|is|updated|in):/i.test(w))
+    .join(" ");
+}
+
 export function laneOf(query: EntityListQuery): DataHomeScope {
   return isDataHomeScope(query.scope.kind) ? query.scope.kind : "all";
 }
@@ -151,12 +172,15 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
       if (score === null) continue;
       out.push({ row, score });
     }
-    return { out, searching: words.length > 0 };
+    return { out, searching: words.length > 0, words, titleOnly: Boolean(titleOnly) };
   };
 
   return {
     async fetchPage(query: EntityListQuery, sort: EntityListSort) {
-      const { out, searching } = await matching(query, { lane: laneOf(query) });
+      const { out, searching, words, titleOnly } = await matching(query, { lane: laneOf(query) });
+      const serverText = searching && !titleOnly && words.length >= 2 ? words : null;
+      const server = serverText && opts.server ? opts.server.lookup(serverText, query.orgId) : undefined;
+      if (serverText && opts.server && !server) opts.server.request(serverText, query.orgId);
       const sign = sort.direction === "desc" ? -1 : 1;
       const sortId = sort.sort === "favorite" ? "updated" : sort.sort;
       const byColumn = (a: DataHomeRow, b: DataHomeRow) => {
@@ -184,8 +208,23 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
         }
         return byColumn(x.row, y.row);
       });
+      let rows = out.map((m) => m.row);
+      if (server && server.size > 0) {
+        // The instant hits stay put, in their order; what only the server found comes beneath them,
+        // best first — under the same lane, organization, filters and tokens as the instant hits.
+        const shown = new Set(rows.map((r) => r.id));
+        const under = await matching({ ...query, search: tokensOnly(query.search) }, { lane: laneOf(query) });
+        const extra = under.out
+          .filter((m) => server.has(m.row.id) && !shown.has(m.row.id))
+          .sort((a, b) => (server.get(b.row.id)?.rank ?? 0) - (server.get(a.row.id)?.rank ?? 0))
+          .map((m) => {
+            const hit = server.get(m.row.id)!;
+            return { ...m.row, matched: { in: hit.in, field: hit.field } };
+          });
+        rows = [...rows, ...extra];
+      }
       const start = Math.max(0, (query.page - 1) * sort.pageSize);
-      return { rows: out.slice(start, start + sort.pageSize).map((m) => m.row), total: out.length };
+      return { rows: rows.slice(start, start + sort.pageSize), total: rows.length };
     },
 
     async fetchCounts(query: EntityListQuery): Promise<EntityScopeCounts> {

@@ -154,7 +154,7 @@ describe("census items that are wiring", () => {
   });
 
   it("3 · rule 1: nothing in the new data home reads the active organization for a read", () => {
-    for (const file of ["DataHomeList.tsx", "DataHomeArchive.tsx", "DataHomeViews.tsx", "dataHomeService.ts", "dataHomeRows.ts", "DataHomeRoute.tsx"]) {
+    for (const file of ["DataHomeList.tsx", "DataHomeArchive.tsx", "DataHomeViews.tsx", "dataHomeService.ts", "dataHomeRows.ts", "dataHomeCorpus.ts", "DataHomeRoute.tsx"]) {
       expect(read(file)).not.toMatch(/selectActiveOrganizationId|useActiveOrganization|selectOrganizationId\b|useOrganizationRequired/);
     }
     // The active organization appears once, as the write target (the header and the making controls).
@@ -168,7 +168,9 @@ describe("census items that are wiring", () => {
   });
 
   it("11 · one call for the whole home", () => {
-    expect(list.match(/doors\.dataHome\(/g)).toHaveLength(1);
+    const corpus = read("dataHomeCorpus.ts");
+    expect(corpus.match(/\bdataHome\(dataSource, null\)/g)).toHaveLength(1);
+    expect(list).not.toMatch(/doors\.dataHome\(/);
   });
 
   it("12 · 13 · 15 · 16 · the store switch, making in the active organization, the inbox and the mount ports", () => {

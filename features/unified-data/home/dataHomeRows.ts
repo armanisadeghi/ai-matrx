@@ -60,6 +60,11 @@ export interface DataHomeRow {
   publicLabel: string | null;
   /** The store's own sentence when something is wrong with the row. */
   trouble: string | null;
+  /**
+   * Set only on a row the SERVER search found and the instant title search did not (a Field, a
+   * description): where it matched, for the "Matched in" line. Absent on every other row.
+   */
+  matched?: { in: "name" | "description" | "field" | "id"; field: string | null } | undefined;
 }
 
 /** Singular kind words the hub's KIND_ONE does not carry (the item kinds). */

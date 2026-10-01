@@ -1139,7 +1139,7 @@ export function EntityListPage<TRow>({
           // A page FOOTER waits below the fold: the table pane is one screen tall (a definite
           // height, so the table keeps its own virtualized scroll), and the body scrolls on to the
           // footer after it. (A percentage height here does not resolve inside the scroll body.)
-          <div data-entity-list-table-pane="" className={footer ? "flex h-[max(16rem,calc(100dvh-13rem))] shrink-0 flex-col" : "contents"}>
+          <div data-entity-list-table-pane="" className={footer ? "flex h-[max(16rem,calc(100dvh-9rem))] shrink-0 flex-col" : "contents"}>
           {/* read-gate-exempt: a failed read swaps resolvedEmptyState for failureEmptyState, and the alert above names the failure once */}
           <EntityListTable
             config={config}
