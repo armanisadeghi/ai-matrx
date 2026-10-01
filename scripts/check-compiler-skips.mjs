@@ -50,7 +50,7 @@ const DATA_SURFACES = [
   "components/user-generated-table-data/UserTableViewer.tsx",
   "components/user-generated-table-data/TableToolbar.tsx",
   "features/data-tables/components/sheet-body-row.tsx",
-  "app/(core)/data-v2/[tableId]/page.tsx",
+  "features/unified-data/table-page/UnifiedDataTablePage.tsx",
 ];
 
 /**

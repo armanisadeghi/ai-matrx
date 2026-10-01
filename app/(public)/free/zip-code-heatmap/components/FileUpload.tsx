@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { Upload, FileText, X, CheckCircle2, AlertCircle, FileSpreadsheet } from 'lucide-react';
 import Papa from 'papaparse';
 import { cleanGrid, firstRowLooksLikeHeader, tableFromGrid, type Grid } from '@/features/data-tables/grid-import';
-import { ZipCodeData } from '../page';
+import type { ZipCodeData } from '../types';
 import ColumnMapper from './ColumnMapper';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

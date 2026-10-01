@@ -20,7 +20,7 @@ import { getClaimsUser } from '@/utils/supabase/claimsUser';
 import { useLoginHref } from '@/hooks/auth/useLoginHref';
 import { ensureOrgId } from '@/lib/organizations/ensureOrgId';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ZipCodeData } from '../page';
+import type { ZipCodeData } from '../types';
 import type { ColorScaleOptions } from './ColorScaleSelector';
 import type { ViewMode } from './ViewModeSelector';
 import { ProTextarea } from "@/components/official/ProTextarea";

@@ -17,7 +17,7 @@ import {
 import type { LatLngExpression, Map as LeafletMap } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import chroma from "chroma-js";
-import type { ZipCodeData } from "../page";
+import type { ZipCodeData } from "../types";
 import type { ScaledValue } from "../utils/colorScaling";
 import type { ViewMode } from "./ViewModeSelector";
 

@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { LatLngExpression, LatLngTuple, Map as LeafletMap } from "leaflet";
 import { Loader2, MapPin } from "lucide-react";
-import { ZipCodeData } from "../page";
+import type { ZipCodeData } from "../types";
 import { batchGeocodeZipCodes } from "../utils/zipCodeDatabase";
 import { scaleValues } from "../utils/colorScaling";
 import type { ScalingMethod, ColorScheme } from "./ColorScaleSelector";

@@ -13,7 +13,7 @@ jest.mock("next/link", () => ({
   __esModule: true,
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
 }));
-jest.mock("@/app/(core)/data-v2/[tableId]/page", () => ({ __esModule: true, default: () => null }));
+jest.mock("@/features/unified-data/table-page/UnifiedDataTablePage", () => ({ UnifiedDataTablePage: () => null }));
 
 // eslint-disable-next-line import/first
 import { StoreListPage } from "../StoreListPage";

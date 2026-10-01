@@ -4,11 +4,8 @@
 // (records-ui TablePage). Same id, same address. A table this person may not open is answered by
 // the table page's own not-found / access answer.
 
-import { useMemo } from "react";
-
-import UnifiedDataTableRoute from "@/app/(core)/data-v2/[tableId]/page";
+import { UnifiedDataTablePage } from "@/features/unified-data/table-page/UnifiedDataTablePage";
 
 export default function DataTableDetailClient({ tableId }: { tableId: string }) {
-  const params = useMemo(() => Promise.resolve({ tableId }), [tableId]);
-  return <UnifiedDataTableRoute params={params} />;
+  return <UnifiedDataTablePage tableId={tableId} />;
 }

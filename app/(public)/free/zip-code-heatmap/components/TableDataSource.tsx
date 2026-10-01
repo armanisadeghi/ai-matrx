@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ZipCodeData } from "../page";
+import type { ZipCodeData } from "../types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { getTableMetadata, getTablePage, listTablesEverywhere } from "@/features/data-tables/service";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";

@@ -18,13 +18,8 @@ import type { ColorScaleOptions } from "./components/ColorScaleSelector";
 import type { ViewMode } from "./components/ViewModeSelector";
 import { aggregateByZip3 } from "./utils/dataAggregation";
 import { toast } from "@/lib/toast";
+import type { ZipCodeData } from "./types";
 
-export interface ZipCodeData {
-    zipCode: string;
-    count: number;
-    displayLabel?: string; // For aggregated views
-    originalId?: string; // For aggregated views (e.g., ZIP-3 prefix)
-}
 
 export default function ZipCodeHeatmapPage() {
     const [zipData, setZipData] = useState<ZipCodeData[]>([]);

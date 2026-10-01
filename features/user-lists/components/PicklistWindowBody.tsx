@@ -6,10 +6,10 @@
 // with a list named, the window is that list's table page (the screen /lists/<id> is); without one,
 // it is the Picklists index (the screen /lists is), each row opening the list's page.
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
-import UnifiedDataTableRoute from "@/app/(core)/data-v2/[tableId]/page";
+import { UnifiedDataTablePage } from "@/features/unified-data/table-page/UnifiedDataTablePage";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
@@ -21,7 +21,6 @@ export function PicklistWindowBody({ forcedListId }: { forcedListId?: string | n
   const userId = useAppSelector(selectUserId);
   const organizationName = useAppSelector(selectOrganizationName);
   const [dataSource] = useState(() => recordsDataSource(createClient()));
-  const params = useMemo(() => Promise.resolve({ tableId: forcedListId ?? "" }), [forcedListId]);
 
   if (forcedListId) {
     // Inside a window there is no shell header above the page.
@@ -31,7 +30,7 @@ export function PicklistWindowBody({ forcedListId }: { forcedListId?: string | n
           {LIST_PAGE_LINE}
         </p>
         <div className="min-h-0 flex-1">
-          <UnifiedDataTableRoute params={params} />
+          <UnifiedDataTablePage tableId={forcedListId} />
         </div>
       </div>
     );

@@ -14,7 +14,7 @@ import ZipCodeMap from "../components/ZipCodeMap";
 import ColorLegend from "../components/ColorLegend";
 import type { ColorScaleOptions } from '../components/ColorScaleSelector';
 import type { ViewMode } from '../components/ViewModeSelector';
-import type { ZipCodeData } from '../page';
+import type { ZipCodeData } from '../types';
 
 interface SavedHeatmap {
   id: string;

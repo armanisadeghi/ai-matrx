@@ -8,9 +8,9 @@
 // it lives. Same id, same address, no redirect. The /data and /lists routes both mount this; there
 // is no second copy of the table page anywhere.
 
-import { useMemo, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
-import UnifiedDataTableRoute from "./page";
+import { UnifiedDataTablePage } from "@/features/unified-data/table-page/UnifiedDataTablePage";
 
 export function LivesInTheNewSystem({
   tableId,
@@ -22,7 +22,6 @@ export function LivesInTheNewSystem({
   children: ReactNode;
   testId: string;
 }) {
-  const params = useMemo(() => Promise.resolve({ tableId }), [tableId]);
   return (
     <div className="flex h-full flex-col">
       <p
@@ -33,7 +32,7 @@ export function LivesInTheNewSystem({
       </p>
       {/* The table page pads itself below the shell header; the line above already sits there. */}
       <div className="min-h-0 flex-1 [--shell-header-h:0px]">
-        <UnifiedDataTableRoute params={params} />
+        <UnifiedDataTablePage tableId={tableId} />
       </div>
     </div>
   );

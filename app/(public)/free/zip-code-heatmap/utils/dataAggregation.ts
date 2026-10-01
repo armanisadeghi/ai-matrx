@@ -1,4 +1,4 @@
-import { ZipCodeData } from '../page';
+import type { ZipCodeData } from '../types';
 
 export interface AggregatedData {
   id: string;

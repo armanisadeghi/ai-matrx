@@ -6,14 +6,12 @@
 // as the store's table page (records-ui TablePage, the very screen /data/<id> and /data-v2/<id> are)
 // — its choices are the table's rows, edited there — under one line saying what the page is.
 
-import { useMemo } from "react";
 import Link from "next/link";
 
-import UnifiedDataTableRoute from "@/app/(core)/data-v2/[tableId]/page";
+import { UnifiedDataTablePage } from "@/features/unified-data/table-page/UnifiedDataTablePage";
 import { LIST_PAGE_LINE } from "@/features/user-lists/list-page-line";
 
 export function StoreListPage({ listId }: { listId: string }) {
-  const params = useMemo(() => Promise.resolve({ tableId: listId }), [listId]);
   return (
     <div className="flex h-full flex-col">
       <p
@@ -27,7 +25,7 @@ export function StoreListPage({ listId }: { listId: string }) {
       </p>
       {/* The table page pads itself below the shell header; the line above already sits there. */}
       <div className="min-h-0 flex-1 [--shell-header-h:0px]">
-        <UnifiedDataTableRoute params={params} />
+        <UnifiedDataTablePage tableId={listId} />
       </div>
     </div>
   );
