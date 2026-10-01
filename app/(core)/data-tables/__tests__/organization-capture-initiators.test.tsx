@@ -43,6 +43,7 @@ function chooseFile(input: HTMLInputElement, file: File) {
 
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 jest.mock("@/lib/redux/hooks", () => ({
+  useAppDispatch: () => jest.fn(),
   useAppSelector: () => selectedOrganizationId,
 }));
 jest.mock("@/lib/organization/organization-gate", () => ({
