@@ -126,6 +126,10 @@ import {
 } from "../value-resolution";
 import { spliceInputValue } from "../utils/selection-tracking";
 import {
+  buildSelectionWriteBack,
+  registerLaunchWidgetHandle,
+} from "../utils/selection-write-back";
+import {
   buildJsonMenuSection,
   type JsonMenuSection,
 } from "../utils/json-menu-actions";
@@ -336,6 +340,7 @@ export function useContextMenuActions(
     insertAtCaret,
     onContentInserted,
     onTextReplace,
+    onTextInsertAfter,
     onDelete,
     onUndo,
     onRedo,
@@ -859,6 +864,24 @@ export function useContextMenuActions(
   };
 
   // ── Launch (AI actions / bound agents / content blocks) ──────────────────
+  // Per-launch widget handle: the surface's widget_* methods plus a selection
+  // write-back, so the result's action bar offers Replace / Insert below in
+  // place of the text this run was launched on (any display mode).
+  const launchWidgetHandleId = (): string | undefined =>
+    registerLaunchWidgetHandle(
+      widgetHandleId,
+      isEditable
+        ? buildSelectionWriteBack({
+            originalText: actionText.text,
+            textSource: actionText.source,
+            selectionRange,
+            onTextReplace,
+            onTextInsertAfter,
+            insertAtCaret,
+          })
+        : null,
+    );
+
   const handleShortcutExecute = async (
     entry: Extract<AgentMenuEntry, { entryType: "agent_shortcut" }>,
   ) => {
@@ -881,8 +904,9 @@ export function useContextMenuActions(
           originalText: actionText.text,
           surfaceName,
           // Editable surfaces: let the agent stream widget_text_* edits
-          // straight into the surface (undefined on read-only — no tools).
-          widgetHandleId: widgetHandleId ?? undefined,
+          // straight into the surface, and give the person Replace / Insert
+          // below on the result (undefined on read-only — no tools).
+          widgetHandleId: launchWidgetHandleId(),
         },
       });
     } catch (error) {
@@ -908,7 +932,7 @@ export function useContextMenuActions(
           applicationScope: scope,
           originalText: actionText.text,
           surfaceName,
-          widgetHandleId: widgetHandleId ?? undefined,
+          widgetHandleId: launchWidgetHandleId(),
         },
       });
     } catch (error) {

@@ -733,23 +733,11 @@ export function NoteEditor({
             contentSource={menuContentSource}
             entity={menuEntity}
             contextData={contextData}
-            onTextReplace={(newText) => {
-              const textarea = textareaRef.current;
-              if (textarea) {
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const before = localContent.substring(0, start);
-                const after = localContent.substring(end);
-                const updatedContent = before + newText + after;
-                handleContentChange(updatedContent);
-
-                // Restore focus and select replaced text
-                setTimeout(() => {
-                  textarea.focus();
-                  textarea.setSelectionRange(start, start + newText.length);
-                }, 0);
-              }
-            }}
+            // Full-content contract (context-menu-v3 types): the menu engine
+            // (Cut / Paste / JSON / Replace on an AI result) and the agent
+            // widget handle pass the WHOLE new value. Splicing it into the
+            // live selection duplicated the note.
+            onTextReplace={(newValue) => handleContentChange(newValue)}
             onTextInsertBefore={(text) => {
               const textarea = textareaRef.current;
               if (textarea) {

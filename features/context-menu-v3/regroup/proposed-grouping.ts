@@ -151,6 +151,8 @@ export const PROPOSED_MENU_GROUPING: MenuGrouping = {
           "code-block-open-in-editor",
           "code-block-apply-to-file",
           "code-block-run",
+          "replace-selection",
+          "insert-below",
           "conversation-rename",
           "conversation-duplicate",
         ],

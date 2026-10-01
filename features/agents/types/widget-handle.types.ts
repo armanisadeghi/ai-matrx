@@ -153,6 +153,24 @@ export interface WidgetHandle {
   onComplete?: (result: WidgetCompletionResult) => void;
   onCancel?: () => void;
   onError?: (error: WidgetErrorPayload) => void;
+
+  // ── Human write-back (non-tool) ────────────────────────────────────────
+  /**
+   * Set on a launch-scoped handle when the run was launched from an editable
+   * surface: the result's action bar offers Replace / Insert below through it.
+   * Never advertised as a tool. See context-menu-v3/utils/selection-write-back.
+   */
+  selection?: SelectionWriteBack;
+}
+
+/** Writes an AI result back over the text a run was launched on. */
+export interface SelectionWriteBack {
+  /** The text the run was launched on. */
+  originalText: string;
+  /** Replace that text with `text`. False when it can no longer be found. */
+  replace: (text: string) => boolean;
+  /** Insert `text` as a new block below it. False when it can no longer be found. */
+  insertBelow: (text: string) => boolean;
 }
 
 // =============================================================================
