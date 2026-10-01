@@ -513,6 +513,15 @@ describe("values the server added are shown and governable", () => {
     expect(shown.map((r) => r.key)).toEqual(["plain", "attached_document_7d2e", "scope_client_name"]);
   });
 
+  it("a server-added value the person just turned off reads off at once, decided by them", () => {
+    const state = afterTurn(true, true);
+    (state as unknown as { surfaceUserState: { byFeature: Record<string, { rows: unknown }> } }).surfaceUserState.byFeature.context_rules.rows = {
+      _default: { attached_document_7d2e: { include: false } },
+    };
+    const row = selectDisplayContextRows("c1")(state).find((r) => r.key === "attached_document_7d2e");
+    expect(row).toMatchObject({ include: false, delivery: "off", decided_by: { include: "you" } });
+  });
+
   it("shows only the client's rows before any receipt", () => {
     expect(selectDisplayContextRows("c1")(afterTurn(true, false)).map((r) => r.key)).toEqual(["plain"]);
   });

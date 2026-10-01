@@ -371,7 +371,13 @@ export function contextRowsForRequest(request: object): ResolvedContextRow[] {
 
 const displayMemo = new Map<
   string,
-  { rows: ResolvedContextRow[]; receipt: unknown; expected: unknown; out: ResolvedContextRow[] }
+  {
+    rows: ResolvedContextRow[];
+    receipt: unknown;
+    expected: unknown;
+    saved: unknown;
+    out: ResolvedContextRow[];
+  }
 >();
 
 /**
@@ -393,8 +399,17 @@ export const selectDisplayContextRows =
     const receipt = state.instanceContext?.receiptByConversationId?.[conversationId]?.receipt;
     if (!receipt) return rows;
     const expected = state.instanceContext?.expectedByConversationId?.[conversationId];
+    const saved = selectSavedContextRuleRows(state);
     const hit = displayMemo.get(conversationId);
-    if (hit && hit.rows === rows && hit.receipt === receipt && hit.expected === expected) return hit.out;
+    if (
+      hit &&
+      hit.rows === rows &&
+      hit.receipt === receipt &&
+      hit.expected === expected &&
+      hit.saved === saved
+    ) {
+      return hit.out;
+    }
     const actual = toContextReceipt(receipt);
     const shown = new Set(rows.map((row) => row.key));
     // The rows nobody on this screen sent. Normally `compareReceipt` against
@@ -403,8 +418,31 @@ export const selectDisplayContextRows =
     const unsent = expected
       ? compareReceipt(expected.rows, actual).systemRows
       : actual.rows.filter((row) => row.origin !== "client");
-    const serverAdded = systemRowsToResolved(unsent).filter((row) => !shown.has(row.key));
+    // Each row shows the person's CURRENT rule (a switch they just flipped
+    // reads flipped at once), over the layers the server applied last turn.
+    const cap = selectContextInlineCap(state, conversationId);
+    const primarySurface = resolveClientSurface(state, conversationId) ?? null;
+    const serverAdded = systemRowsToResolved(unsent)
+      .filter((row) => !shown.has(row.key))
+      .map((row) => ({
+        ...resolveContextRow(
+          {
+            key: row.key,
+            label: row.label,
+            surfaceKey: row.surfaceKey,
+            origin: row.origin,
+            value: undefined,
+            chars: row.chars,
+            layers: row.layers,
+          },
+          saved,
+          cap,
+          primarySurface,
+        ),
+        serverResolved: true,
+        fromReceipt: true,
+      }));
     const out = [...applyReceiptToRows(rows, actual), ...serverAdded];
-    displayMemo.set(conversationId, { rows, receipt, expected, out });
+    displayMemo.set(conversationId, { rows, receipt, expected, saved, out });
     return out;
   };
