@@ -226,6 +226,11 @@ export function RunControlsMenu({
           open={open}
           onOpenChange={handleOpenChange}
           title="Chat options"
+          // 🚨 44px ON A PHONE (W-72, PB-08 dry run 2026-10-01): every panel
+          // in this sheet (Attach, Context, Tools, Skills…) was built desktop-
+          // dense — 28px rows, 14px tick boxes. The sheet's tab panels sit in
+          // `matrx-touch-targets` (a `contents` box, so no layout moves), which
+          // floors every row / button inside to 44px on touch only.
           tabs={[
             ...(variant === "plus"
               ? [
@@ -234,12 +239,14 @@ export function RunControlsMenu({
                     label: "Templates",
                     icon: FileText,
                     content: (
-                      <SmartInputMessageTemplatePicker
-                        onSelect={(templateText) => {
-                          insertTemplate(templateText);
-                          setOpen(false);
-                        }}
-                      />
+                      <div className="matrx-touch-targets contents">
+                        <SmartInputMessageTemplatePicker
+                          onSelect={(templateText) => {
+                            insertTemplate(templateText);
+                            setOpen(false);
+                          }}
+                        />
+                      </div>
                     ),
                   },
                 ]
@@ -254,7 +261,9 @@ export function RunControlsMenu({
               icon: t.icon,
               trailing: rc.tabTrailing(t.id),
               content: (
-                <RunControlsTabPanel {...panelProps} activeTab={t.id} fill />
+                <div className="matrx-touch-targets contents">
+                  <RunControlsTabPanel {...panelProps} activeTab={t.id} fill />
+                </div>
               ),
             })),
           ]}
