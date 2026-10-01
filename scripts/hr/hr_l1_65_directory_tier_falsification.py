@@ -39,9 +39,9 @@ WTS = "2643e470-b275-47f3-95f3-ae275ad3ca47"   # Oak Street Studio — 20 people
 # Who we walk as, and who they must turn out to be.
 PERSONAS = {
     "hr_owner":   ("admin@admin.com",                          "87a6e699-3622-4869-8843-d0867456c0dd"),
-    "hr_admin":   ("priya.raman@example.test",                "20149d3f-6572-4263-b43c-7e52f0e42058"),
-    "employee":   ("marcus.tillman@example.test",    "ab94c16c-b4a5-49f0-a068-e2a11db34a2c"),
-    "contractor": ("jonas.whitfield@example.test",     "381213e9-a1d5-459e-809d-956447f47ca5"),
+    "hr_admin":   ("priya.raman@fixtures.aimatrx.com",                "20149d3f-6572-4263-b43c-7e52f0e42058"),
+    "employee":   ("marcus.tillman@fixtures.aimatrx.com",    "ab94c16c-b4a5-49f0-a068-e2a11db34a2c"),
+    "contractor": ("jonas.whitfield@fixtures.aimatrx.com",     "381213e9-a1d5-459e-809d-956447f47ca5"),
 }
 
 # SPEC-ACCESS §3.1 hr.employee + §3.3 DIR structure + route 10's manager column.

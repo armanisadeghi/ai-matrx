@@ -17,7 +17,7 @@
 -- trace is gone.
 --
 -- THE IDENTITIES. `admin@admin.com` owns the throwaway organization; `test@test.com` (Dana) is
--- a plain MEMBER of it; `tomas.iversen@example.test` (Tomas) is the third seat the ladder is
+-- a plain MEMBER of it; `tomas.iversen@fixtures.aimatrx.com` (Tomas) is the third seat the ladder is
 -- tested against. Nobody's own records are touched. It signs nobody in and reads no credential.
 --
 -- ITS RED TWIN is `share_red.sql`.
@@ -216,7 +216,7 @@ begin
   end if;
   select * into v_row from custom.share_people('5ba50000-0000-4a00-8a00-000000000a01',
                                                '5ba50000-0000-4a00-8a00-000000000301')
-   where email = 'tomas.iversen@example.test';
+   where email = 'tomas.iversen@fixtures.aimatrx.com';
   if v_row.already_at is distinct from 'viewer'::public.permission_level
      or v_row.already_why is distinct from 'Shared with them directly' then
     raise exception '3b FAILED — the picker does not say Tomas is already in at viewer (got %, %).',

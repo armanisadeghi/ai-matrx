@@ -40,18 +40,18 @@ This person does not sign in to AI Matrx. Inviting them lets them see their own
 record, their pay stubs and their schedule — it does not change anything about
 their employment, and they are not required to accept.
 
-[ dana.ruiz@example.test ]  (Invite to sign in)
+[ dana.ruiz@fixtures.aimatrx.com ]  (Invite to sign in)
 
 Leave the address blank to use their work email. They will only get a login once
 they accept it themselves.
 ```
 
-After clicking **Invite to sign in** — toast `Invitation issued to dana.ruiz@example.test`:
+After clicking **Invite to sign in** — toast `Invitation issued to dana.ruiz@fixtures.aimatrx.com`:
 
 ```
 Platform access
 
-Invitation issued to dana.ruiz@example.test — it stops working after Sep 3, 2026.
+Invitation issued to dana.ruiz@fixtures.aimatrx.com — it stops working after Sep 3, 2026.
 
 The invite email is sent where email is configured. The link below is the same one
 it carries — the person needs an account with this email address to use it.
@@ -79,7 +79,7 @@ directly since mail cannot deliver):
 ```
 Your employee record is waiting
 
-Accepting links this account — dana.ruiz@example.test — to your employee record,
+Accepting links this account — dana.ruiz@fixtures.aimatrx.com — to your employee record,
 so you can see your own details, pay and schedule. It links the account you are
 signed in as right now, so if that is not you, sign out first.
 
@@ -90,7 +90,7 @@ Clicked. The link landed, verified on the wire as the admin:
 
 ```
 login_user_id: f83af954-1fd1-46d5-bfc1-54cb27d98666
-dana.ruiz@example.test auth id: f83af954-1fd1-46d5-bfc1-54cb27d98666
+dana.ruiz@fixtures.aimatrx.com auth id: f83af954-1fd1-46d5-bfc1-54cb27d98666
 MATCH: True
 ```
 

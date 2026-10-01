@@ -38,8 +38,8 @@ DEPT_FIELD_SERVICES = "d1c21852-5302-430a-8b76-60f97ca99250"   # Field Services
 TOMO_EMPLOYMENT = "11dfa190-8762-4bca-b131-ee13ed397f72"       # Tomo Iversen, WTS, active
 
 PERSONAS = {
-    "tomo":  "tomas.iversen@example.test",           # staged: hr_admin scoped to Field Services
-    "priya": "priya.raman@example.test",          # hr_admin, scope_kind 'org' — must not break
+    "tomo":  "tomas.iversen@fixtures.aimatrx.com",           # staged: hr_admin scoped to Field Services
+    "priya": "priya.raman@fixtures.aimatrx.com",          # hr_admin, scope_kind 'org' — must not break
     "admin": "admin@admin.com",                    # hr_owner in 7 orgs — queue no-regression
 }
 

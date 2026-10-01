@@ -45,8 +45,8 @@ SUBJECTS = [
     ("Yusuf Demir (ex-empl)", "f92cc1e8-5536-46bb-8233-2910a011f4ba"),
 ]
 
-PERSONAS = {"tomo": "tomas.iversen@example.test",       # no live grant of his own
-            "priya": "priya.raman@example.test",     # hr_admin, ORG-scoped, WTS
+PERSONAS = {"tomo": "tomas.iversen@fixtures.aimatrx.com",       # no live grant of his own
+            "priya": "priya.raman@fixtures.aimatrx.com",     # hr_admin, ORG-scoped, WTS
             "admin": "admin@admin.com"}               # hr_owner, ORG-scoped, WTS
 
 FIXTURE_REASON = "hr_l1_64 falsification fixture - removed by the same script run"

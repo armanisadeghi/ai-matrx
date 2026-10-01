@@ -37,8 +37,8 @@ EX_EMPLOYEE_ID = "f92cc1e8-5536-46bb-8233-2910a011f4ba"
 EX_EMPLOYMENT = "858edf3c-834c-49dd-8f66-2dfe3a600329"
 TEMPLATE_INSTANCE = "0fc4b622-c5c4-47eb-b76d-7e6d8b3bbed0"
 
-PERSONAS = {"tomo": "tomas.iversen@example.test",
-            "priya": "priya.raman@example.test",
+PERSONAS = {"tomo": "tomas.iversen@fixtures.aimatrx.com",
+            "priya": "priya.raman@fixtures.aimatrx.com",
             "admin": "admin@admin.com"}
 
 R = []

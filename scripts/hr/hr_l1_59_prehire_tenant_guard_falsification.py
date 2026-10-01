@@ -39,10 +39,10 @@ def load_env(path):
 
 
 # ---- personas (auth.users.id) --------------------------------------------------------------
-PRIYA = ("priya",  "20149d3f-6572-4263-b43c-7e52f0e42058", "priya.raman@example.test")
+PRIYA = ("priya",  "20149d3f-6572-4263-b43c-7e52f0e42058", "priya.raman@fixtures.aimatrx.com")
 ADMIN = ("admin",  "87a6e699-3622-4869-8843-d0867456c0dd", "admin@admin.com")
-DANA  = ("dana",   "f83af954-1fd1-46d5-bfc1-54cb27d98666", "dana.ruiz@example.test")
-TOMO  = ("tomo",   "daeb6d44-a7dd-4085-aba2-5025fb711b79", "tomas.iversen@example.test")
+DANA  = ("dana",   "f83af954-1fd1-46d5-bfc1-54cb27d98666", "dana.ruiz@fixtures.aimatrx.com")
+TOMO  = ("tomo",   "daeb6d44-a7dd-4085-aba2-5025fb711b79", "tomas.iversen@fixtures.aimatrx.com")
 
 # ---- subjects: (label, employee_id, employment_id, org) -------------------------------------
 WTS  = "2643e470-b275-47f3-95f3-ae275ad3ca47"   # Oak Street Studio   (priya is hr_admin here)

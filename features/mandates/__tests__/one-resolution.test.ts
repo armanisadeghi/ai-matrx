@@ -24,7 +24,7 @@
  * ── THE LIVE DEFECT THESE PIN (measured on production, 2026-09-07) ──────────
  * The deleted org query filtered on `principal_type='org'` and named NO
  * organization, so RLS decided the rung. A non-admin fixture belonging to
- * neither the system org nor any org with bindings (`dana.ruiz@example.test`)
+ * neither the system org nor any org with bindings (`dana.ruiz@fixtures.aimatrx.com`)
  * read all 27 version-pinned system-org `org` bindings straight out of
  * PostgREST. Nothing changed the answer that day — 0 of the 4 applicable rows
  * name a different holder than the definition default — which is exactly why it

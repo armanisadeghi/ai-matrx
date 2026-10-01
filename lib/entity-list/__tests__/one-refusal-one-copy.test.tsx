@@ -4,7 +4,7 @@
  *
  * 🚨 THE DEFECT (one-resolution R-O1, measured on production
  * `https://www.aimatrx.com/mandates?scope=system`, 2026-09-08, signed in as the
- * real non-admin `dana.ruiz@example.test` through the product's own
+ * real non-admin `dana.ruiz@fixtures.aimatrx.com` through the product's own
  * `/auth/confirm` magic-link door). `mnd_list_scoped` refuses the system home
  * with one honest sentence. The screen printed that sentence THREE TIMES —
  * once in the shell's failure banner and twice in the toaster, because

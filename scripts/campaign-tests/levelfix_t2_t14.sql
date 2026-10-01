@@ -9,7 +9,7 @@
 --
 -- It runs against ONE throwaway organization and deletes it at the end; a census fails the run
 -- unless every trace is gone. `admin@admin.com` is the author, `test@test.com` (Dana) is the
--- plain member, `tomas.iversen@example.test` (Tomas) is the principal shared on nothing.
+-- plain member, `tomas.iversen@fixtures.aimatrx.com` (Tomas) is the principal shared on nothing.
 --
 -- The organization is left at `shared_only`, which is what "Dana is a viewer on A ONLY" means:
 -- a test whose subject is what a SHARE conveys cannot be run in an organization that shows

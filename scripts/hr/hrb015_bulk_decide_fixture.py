@@ -47,7 +47,7 @@ HR_ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"  # admin@admin.com
 EMPLOYER_PROFILE = "2ac6a8e9-08da-4a0a-a578-cbfcd0d7f6e1"
 
 EMPLOYMENT = "1a7033e5-1536-4f15-9549-4e5dd85285c5"     # Marcus Tillman, EMP-00016
-EMAIL = "marcus.tillman@example.test"
+EMAIL = "marcus.tillman@fixtures.aimatrx.com"
 
 GROUP_NAME = "Field Crew — Bi-weekly"
 # 🚨 THE WINDOW IS PINNED BY TWO FACTS, BOTH MEASURED RATHER THAN ASSUMED.
