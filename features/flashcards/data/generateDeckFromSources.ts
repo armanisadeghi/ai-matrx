@@ -233,6 +233,11 @@ export interface DeckFromSourcesInput {
   /** The deck name the person typed, if any. */
   name?: string;
   ctx: ConvertContext;
+  /**
+   * Awaited immediately before the deck is saved — a tab-bound run stamps
+   * "saving" here so a reload after it is never redone blind (useTabBoundRun).
+   */
+  beforeSave?: () => Promise<void>;
 }
 
 export interface DeckFromSourcesOutcome {
@@ -256,7 +261,7 @@ export function defaultDeckName(sources: ResolvedSource[]): string {
 }
 
 export interface CardsFromSourcesInput
-  extends Omit<DeckFromSourcesInput, "name"> {
+  extends Omit<DeckFromSourcesInput, "name" | "beforeSave"> {
   /** What the sections are titled after (the deck's name). */
   title: string;
   /** Cards the deck already has — never made again (the top-up). */
@@ -400,6 +405,7 @@ export async function generateDeckFromSources({
   focus,
   name,
   ctx,
+  beforeSave,
 }: DeckFromSourcesInput): Promise<DeckFromSourcesOutcome> {
   const live = resolved.sources.filter((s) => s.text.trim().length > 0);
   const baseTitle = name?.trim() || defaultDeckName(live);
@@ -427,6 +433,7 @@ export async function generateDeckFromSources({
       ? setTitleOf(covered.firstValue) || baseTitle
       : baseTitle;
 
+  await beforeSave?.();
   // Single-writer contract (D-WP3): a single-pass live run's render block may
   // already have materialized a set — adopt it; a segmented run creates one.
   const created = await fcService.createGeneratedSetForConversation(

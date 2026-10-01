@@ -31,6 +31,21 @@ hydration errors.
 
 ## Change log
 
+- 2026-09-30 — **`holdUntilHydrated` (policy flag, warm-cache only).** The
+  debounced scheduler refuses the slice — at `schedule` and at flush, pagehide
+  included — until `store._sync.hydrationSettled` is true for the current
+  identity, then the middleware saves the slice's LIVE state once (the loaded
+  record merged by its REHYDRATE reducer). For slices whose body is a map of
+  independent entries; a write before the read stored a one-entry map over the
+  saved one. A miss settles too (no load flag needed, unlike `persistWhen`).
+  Opted in: `wizardDraft`. `store.ts` now passes `hydrationSettled` /
+  `onHydrationSettledChange` into `createSyncMiddleware`. Also
+  `SyncEngineApi.flushPersisted(slice)`: write a warm-cache slice now and await
+  it (tab-bound run's "saving" stamp). Guard:
+  `lib/wizard-draft/__tests__/draft-write-before-read-never-wipes.test.ts`.
+  Not yet opted in (same exposure if their body is a map): the other
+  warm-cache slices — census before adopting.
+
 - 2026-09-27 — **A queued-reveal boundary (`$~`) counts as unhydrated.** React 19
   marks a streamed boundary `$~` while its reveal waits for a frame; boot used to
   treat only `$?` as pending, so the warm-cached org could land first and the

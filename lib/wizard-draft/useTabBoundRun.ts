@@ -28,6 +28,15 @@
 //   - a marker with neither a close stamp nor a fresh beat (a crash, a killed
 //     tab) is stopped once RUN_STALE_MS has passed since its last beat.
 //
+// A SAVE IS NEVER REPEATED BLIND (2026-09-30). Once the run starts its save
+// the run is past the point of no return: the save may land on the server even
+// if this page never hears back. So the page calls `saving()` BEFORE it sends
+// the save; that stamps `savingAt` into the marker and waits until it is on
+// disk. A run that stopped after that is reported `whileSaving` — the surface
+// says to check what was saved and offers no one-click redo, so a reload in
+// the instant after the save can never save the same cards twice. A run that
+// RESOLVES clears its marker even while the page is closing.
+//
 // NOT a durability mechanism. A run the SERVER owns (a domain ledger, rejoin
 // by id) uses `lib/durable-run/useDurableRun` and re-attaches; this hook keeps
 // no run state, only the request, for runs that cannot outlive their tab. Move
@@ -37,6 +46,7 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import type { SyncEngineApi } from "@/lib/sync/engine/middleware";
 import {
   clearWizardDraft,
   patchWizardDraft,
@@ -62,6 +72,8 @@ export interface RunMarker {
   startedAt: number;
   beatAt: number;
   closedAt?: number;
+  /** Set (and flushed to disk) just before the run's save was sent. */
+  savingAt?: number;
   request: Record<string, unknown>;
 }
 
@@ -93,6 +105,7 @@ export function readRunMarker(data: unknown): RunMarker | null {
     startedAt: d.startedAt,
     beatAt: d.beatAt,
     ...(typeof d.closedAt === "number" ? { closedAt: d.closedAt } : {}),
+    ...(typeof d.savingAt === "number" ? { savingAt: d.savingAt } : {}),
     request: d.request as Record<string, unknown>,
   };
 }
@@ -116,16 +129,24 @@ function newRunId(): string {
 }
 
 export interface TabBoundRun<R> {
-  /** A run that stopped with its page, with what it asked for. Null otherwise. */
-  stopped: { request: R; startedAt: number } | null;
+  /**
+   * A run that stopped with its page, with what it asked for. Null otherwise.
+   * `whileSaving`: it had already sent its save, which may have landed —
+   * never offer the same request again in one click.
+   */
+  stopped: { request: R; startedAt: number; whileSaving: boolean } | null;
   /** Another open tab is running this right now. */
   runningElsewhere: boolean;
   /**
    * Run `work` as a tab-bound run of `request`: the marker is written before it
    * starts and cleared when it settles (resolve or throw). Use `settle()` to
-   * clear it earlier, once the result is safely stored.
+   * clear it earlier, once the result is safely stored. `await saving()`
+   * immediately before sending the save (see the file header).
    */
-  track: <T>(request: Record<string, unknown>, work: (settle: () => void) => Promise<T>) => Promise<T>;
+  track: <T>(
+    request: Record<string, unknown>,
+    work: (settle: () => void, saving: () => Promise<void>) => Promise<T>,
+  ) => Promise<T>;
   /** "Seen it" — drop the stopped run (the person dismissed or redid it). */
   dismiss: () => void;
 }
@@ -165,7 +186,7 @@ export function useTabBoundRun<R>(
 
   const track = async <T,>(
     request: Record<string, unknown>,
-    work: (settle: () => void) => Promise<T>,
+    work: (settle: () => void, saving: () => Promise<void>) => Promise<T>,
   ): Promise<T> => {
     const runId = newRunId();
     const startedAt = Date.now();
@@ -197,7 +218,9 @@ export function useTabBoundRun<R>(
       }, RUN_CLOSE_GRACE_MS);
     };
     window.addEventListener("beforeunload", onClose);
-    const settle = () => {
+    // `succeeded`: the result is stored, so the marker goes even mid-unload —
+    // kept, it would offer to redo (and re-save) a run that already saved.
+    const finish = (succeeded: boolean) => {
       if (settled) return;
       const mine = currentRunId() === runId;
       settled = true;
@@ -205,7 +228,7 @@ export function useTabBoundRun<R>(
       window.removeEventListener("beforeunload", onClose);
       liveHere.delete(runId);
       if (!mine) return;
-      if (closing) {
+      if (closing && !succeeded) {
         // Kept for the next page; dropped only if this page turns out to stay.
         setTimeout(() => {
           if (currentRunId() === runId) dispatch(clearWizardDraft(draftId));
@@ -214,15 +237,30 @@ export function useTabBoundRun<R>(
       }
       dispatch(clearWizardDraft(draftId));
     };
+    const settle = () => finish(true);
+    const saving = async () => {
+      if (!ours()) return;
+      dispatch(patchWizardDraft({ wizardId: draftId, patch: { savingAt: Date.now() } }));
+      // On disk BEFORE the save is sent, never 150ms after it.
+      const engine = (store as unknown as { _sync?: { engineApi?: () => SyncEngineApi | null } })._sync;
+      await engine?.engineApi?.()?.flushPersisted("wizardDraft");
+    };
+    let result: T;
     try {
-      return await work(settle);
-    } finally {
-      settle();
+      result = await work(settle, saving);
+    } catch (err) {
+      finish(false);
+      throw err;
     }
+    finish(true);
+    return result;
   };
 
   return {
-    stopped: restored && marker ? { request: restored, startedAt: marker.startedAt } : null,
+    stopped:
+      restored && marker
+        ? { request: restored, startedAt: marker.startedAt, whileSaving: marker.savingAt !== undefined }
+        : null,
     runningElsewhere: state === "elsewhere",
     track,
     dismiss: () => {

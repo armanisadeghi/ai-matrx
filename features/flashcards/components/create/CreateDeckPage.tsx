@@ -33,6 +33,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
+  ArrowRight,
   Clock,
   Loader2,
 } from "lucide-react";
@@ -303,7 +304,7 @@ export function CreateDeckPage() {
     startNavigation(() => router.push(`${EDU_BASE}/${setId}`));
   };
 
-  const runFromTopic = async () => {
+  const runFromTopic = async (saving: () => Promise<void>) => {
     setPhase("generating");
     const extracted = await topicRun.generate(FC_MANDATES.generateCards, {
       topic,
@@ -320,6 +321,7 @@ export function CreateDeckPage() {
       : null;
     const result =
       fromEnvelope && fromEnvelope.cards.length > 0 ? fromEnvelope : extracted;
+    await saving();
     // Single-writer contract (D-WP3): adopt the stream's own set or create one.
     const saved = await fcService.createGeneratedSetForConversation(
       extracted.conversationId,
@@ -340,7 +342,7 @@ export function CreateDeckPage() {
     await finish(saved.data.set.id, saved.data.set.name, saved.data.cards.length, null);
   };
 
-  const runFromSources = async () => {
+  const runFromSources = async (saving: () => Promise<void>) => {
     setPhase("reading");
     const orgId = await ensureOrgId(undefined);
     // What the deck is made from, exactly as chosen (parts, form, limit) and as
@@ -378,6 +380,7 @@ export function CreateDeckPage() {
         onRequestId: setLiveRequestId,
         onProgress: setProgress,
       },
+      beforeSave: saving,
     });
     setPhase("saving");
     const notRecorded = await saveDeckSourceSet(outcome.setId, chosen, chosenNames);
@@ -396,9 +399,9 @@ export function CreateDeckPage() {
     try {
       await tabRun.track(
         cardRunRequest(safeCount, set.toSourceSet(), sourceNamesOf(set.sources), topic),
-        async () => {
-          if (hasSources) await runFromSources();
-          else await runFromTopic();
+        async (_settle, saving) => {
+          if (hasSources) await runFromSources(saving);
+          else await runFromTopic(saving);
         },
       );
     } catch (e) {
@@ -725,7 +728,19 @@ export function CreateDeckPage() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {stoppedRun ? (
+                    {stoppedRun?.whileSaving ? (
+                      // The save had been sent and may have landed: never redo it blind.
+                      <RunStoppedNotice
+                        message="The page closed while saving your deck. Check your decks."
+                        redoLabel="Your decks"
+                        redoIcon={ArrowRight}
+                        onRedo={() => {
+                          tabRun.dismiss();
+                          startLeaving(() => router.push(EDU_BASE));
+                        }}
+                        onDismiss={tabRun.dismiss}
+                      />
+                    ) : stoppedRun ? (
                       <RunStoppedNotice
                         message={`Making ${stoppedRun.request.count} cards stopped when the page closed.`}
                         onRedo={redoStopped}

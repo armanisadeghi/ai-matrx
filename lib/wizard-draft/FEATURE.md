@@ -85,8 +85,24 @@ const resolution = resolveWizardStep<1 | 2>({
   and the page must SAY it put it back; "Start fresh" must empty the field and
   the draft; and every file that touches the draft primitive must render the
   notice.
+- `__tests__/draft-write-before-read-never-wipes.test.ts` — a draft patched
+  before the saved drafts are read never wipes the others (real slice, policy,
+  middleware, scheduler, `bootSync` over fake IndexedDB).
+- `__tests__/tab-bound-run.test.tsx` — a reload mid-run is reported with its
+  request; a run stopped after `saving()` is `whileSaving` (no blind redo); a
+  run that resolves while the page closes leaves nothing to redo.
 
 ## Change Log
+
+- `2026-09-30` — Two data-loss/duplication fixes. (1) Nothing reaches storage
+  before the saved drafts are read: `wizardDraftPolicy.holdUntilHydrated` (new
+  sync policy flag) — a `?source=` link on /education/flashcards/new used to
+  wipe the stopped-run record and every other saved answer. (2)
+  `useTabBoundRun`: `work(settle, saving)` — callers `await saving()` right
+  before sending the save (stamps `savingAt`, flushed to disk via
+  `engineApi().flushPersisted`); a run stopped after it is `stopped.whileSaving`
+  and is never offered as a one-click redo; a run that RESOLVES clears its
+  marker even mid-unload. `RunStoppedNotice` takes `redoIcon`.
 
 - `2026-09-30` — Copy law R9 (unified-source-input V4-F): the notice reads
   "Restored" + "Start fresh"; the longer "We put back <what>…"

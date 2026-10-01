@@ -90,6 +90,11 @@ export function addMoreStoppedLine(count: number): string {
   return `Adding ${count} ${count === 1 ? "card" : "cards"} stopped when the page closed.`;
 }
 
+/** The run had sent its save: the cards may be in the deck — never redo blind. */
+export function addMoreStoppedSavingLine(count: number): string {
+  return `The page closed while saving ${count} ${count === 1 ? "card" : "cards"}. Check the deck.`;
+}
+
 /** A lineage origin as a ready Source draft (the deck's own material, preselected). */
 export function originToDraft(origin: ArtifactOrigin): SourceDraft | null {
   const label = origin.title?.trim() || "Material this deck was made from";
@@ -150,15 +155,25 @@ export function AddMoreCardsButton({
   });
   const dismissStopped = useEffectEvent(() => tabRun.dismiss());
   const stoppedCount = stopped?.request.count ?? null;
+  const stoppedWhileSaving = stopped?.whileSaving === true;
   useEffect(() => {
     if (stoppedCount === null || open) return;
+    if (stoppedWhileSaving) {
+      // The save may have landed: say so, offer no one-click redo.
+      toast.info(addMoreStoppedSavingLine(stoppedCount), {
+        id: toastId,
+        duration: Infinity,
+        onDismiss: () => dismissStopped(),
+      });
+      return;
+    }
     toast.info(addMoreStoppedLine(stoppedCount), {
       id: toastId,
       duration: Infinity,
       action: { label: "Try again", onClick: () => openRedo(true) },
       onDismiss: () => dismissStopped(),
     });
-  }, [stoppedCount, open, toastId]);
+  }, [stoppedCount, stoppedWhileSaving, open, toastId]);
   return (
     <>
       <Button
@@ -166,8 +181,14 @@ export function AddMoreCardsButton({
         variant="outline"
         size="sm"
         onClick={() => {
-          if (stopped) openRedo(false);
-          else setOpen(true);
+          if (stopped && !stopped.whileSaving) openRedo(false);
+          else {
+            if (stopped) {
+              toast.dismiss(toastId);
+              tabRun.dismiss();
+            }
+            setOpen(true);
+          }
         }}
         className="gap-1.5"
       >
@@ -286,7 +307,7 @@ function AddMoreCardsDialog({
       const chosenNames = sourceNamesOf(set.sources);
       // The run lives in this tab: its request is kept until the cards are in
       // the deck, so a reload mid-run is reported and can be repeated.
-      await tabRun.track(cardRunRequest(safeCount, chosen, chosenNames), async (settle) => {
+      await tabRun.track(cardRunRequest(safeCount, chosen, chosenNames), async (settle, saving) => {
         const resolved = await backfillFileIds(await set.resolve());
         if (resolved.dropped.length) {
           toast.info(
@@ -318,6 +339,7 @@ function AddMoreCardsDialog({
           );
         }
         setStatus("Adding them to your deck…");
+        await saving();
         const added = await fcService.addCards(setId, made.cards, {
           orgId,
           startPosition: existingCards.length,

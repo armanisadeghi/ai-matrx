@@ -178,3 +178,43 @@ test("another tab's live run is never called stopped; a silent (crashed) one is"
   expect(runMarkerState(marker, now, true)).toBe("none");
   expect(runMarkerState(null, now, false)).toBe("none");
 });
+
+// A SAVE IS NEVER REPEATED BLIND (2026-09-30): a reload in the instant after
+// the deck / cards were saved but before the run was marked finished offered
+// "Try again", which saved them a second time.
+test("a run that stopped after sending its save is reported whileSaving, never as a blind redo", async () => {
+  const store = makeStore();
+  mount(store);
+  await act(async () => {
+    void latest!.track({ count: 3, material: "chapter 4" }, async (_settle, saving) => {
+      await saving();
+      return new Promise<never>(() => {}); // the save is in flight when the page closes
+    });
+    await Promise.resolve();
+  });
+  act(() => {
+    window.dispatchEvent(new Event("beforeunload"));
+  });
+  const bytes = persisted(store);
+  unmount();
+  forgetRunsInThisPageForTest();
+  mount(reloadedStore(bytes));
+  expect(latest!.stopped?.whileSaving).toBe(true);
+});
+
+test("a run whose save resolves while the page is closing leaves nothing to redo", async () => {
+  const store = makeStore();
+  mount(store);
+  await act(async () => {
+    await latest!.track({ count: 3, material: "chapter 4" }, async () => {
+      // The reload starts; the save's answer arrives a moment later.
+      window.dispatchEvent(new Event("beforeunload"));
+      return "saved";
+    });
+  });
+  const bytes = persisted(store);
+  unmount();
+  forgetRunsInThisPageForTest();
+  mount(reloadedStore(bytes));
+  expect(latest!.stopped).toBeNull();
+});
