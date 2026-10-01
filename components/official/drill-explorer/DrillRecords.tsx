@@ -76,6 +76,14 @@ export function useRecordsNoun(client: RecordsClient | null, def: DrillDefinitio
   return read.noun ?? own;
 }
 
+/** The first moment the platform holds any record: "All time" as the window records are listed for. */
+export const DRILL_ALL_TIME_FROM = "2020-01-01T00:00:00Z";
+
+/** "All time" as a window with a start (the door lists records for a window). */
+export function allTimeWindow(now: Date = new Date()): { key: string; from: string; to: string } {
+  return { key: "at", from: DRILL_ALL_TIME_FROM, to: now.toISOString() };
+}
+
 export function DrillRecords({
   client,
   source,
@@ -135,7 +143,10 @@ export function DrillRecords({
   useEffect(() => {
     if (!client) return;
     const asked = JSON.parse(askKey) as Pick<MatrxDrillQuestion, "where" | "window" | "sort"> & { carried: Record<string, unknown> | null };
-    const win = doorWindow({ by: [], show: [], where: [], window: asked.window ?? null }).window;
+    // RECORDS ARE LISTED FOR A WINDOW (the door requires a start): "All time" is every record there is,
+    // so it is asked as the whole span from the platform's first day to now — never a refusal on screen
+    // (lane DRILL-FLIP-FIXES, VERIFY-DRILL-FINAL N2).
+    const win = doorWindow({ by: [], show: [], where: [], window: asked.window ?? null }).window ?? allTimeWindow();
     let cancelled = false;
     setLoading(true);
     setError(null);

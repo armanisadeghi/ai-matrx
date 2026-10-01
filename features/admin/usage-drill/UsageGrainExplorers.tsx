@@ -19,9 +19,9 @@ import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
 import { usageNameResolvers } from "./useUsageDrill";
 
-type GrainProps = { siblings?: readonly DrillSibling[]; groupLabel?: string };
+type GrainProps = { siblings?: readonly DrillSibling[]; groupLabel?: string; surfaceName?: string };
 
-export function AiCallsExplorer({ siblings, groupLabel }: GrainProps = {}) {
+export function AiCallsExplorer({ siblings, groupLabel, surfaceName }: GrainProps = {}) {
   const organizationId = SYSTEM_ORGANIZATION_ID;
   return (
     <DrillExplorer
@@ -38,11 +38,12 @@ export function AiCallsExplorer({ siblings, groupLabel }: GrainProps = {}) {
       dataAttributes={{ "data-usage-calls-explorer": "" }}
       siblings={siblings}
       groupLabel={groupLabel}
+      surfaceName={surfaceName}
     />
   );
 }
 
-export function AiUsageExecutionsExplorer({ siblings, groupLabel }: GrainProps = {}) {
+export function AiUsageExecutionsExplorer({ siblings, groupLabel, surfaceName }: GrainProps = {}) {
   const organizationId = SYSTEM_ORGANIZATION_ID;
   return (
     <DrillExplorer
@@ -59,6 +60,7 @@ export function AiUsageExecutionsExplorer({ siblings, groupLabel }: GrainProps =
       dataAttributes={{ "data-usage-executions-explorer": "" }}
       siblings={siblings}
       groupLabel={groupLabel}
+      surfaceName={surfaceName}
     />
   );
 }

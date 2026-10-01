@@ -41,6 +41,31 @@ export function plainWords(value: string): string {
   return joined.charAt(0).toUpperCase() + joined.slice(1);
 }
 
+/** An ISO moment (a date with a time, any offset): what a ten-minute bucket or any time-valued code carries. */
+const ISO_MOMENT = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}(?::?\d{2})?)$/;
+
+/**
+ * A TIME-VALUED GROUP READS AS A MOMENT (lane DRILL-FLIP-FIXES, VERIFY-DRILL-FINAL R3): a Dimension of
+ * kind text or choice whose value is an instant — `bucket_10m` "2026-09-12T19:20:00+00:00" — reads
+ * "Sep 12, 7:20 PM UTC", never "2026 09 12T19 · 20 · 00+00 · 00". In UTC and said so, because such a
+ * bucket is cut in UTC; null when the value is not a moment.
+ */
+export function momentGroupWords(value: string): string | null {
+  if (!ISO_MOMENT.test(value)) return null;
+  const at = new Date(value.replace(" ", "T"));
+  if (Number.isNaN(at.getTime())) return null;
+  const sameYear = at.getUTCFullYear() === new Date().getUTCFullYear();
+  const words = at.toLocaleString("en-US", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${words} UTC`;
+}
+
 /**
  * How one Dimension's values read, or undefined when the package's own reading is right (a time
  * period, and a boolean or text Dimension that declares nothing).
@@ -62,12 +87,16 @@ export function drillDimensionLabelFor(
     return (value) => (value === null || value === "" ? empty : value === "true" ? "Yes" : value === "false" ? "No" : plainWords(value));
   }
   if (dim.kind === "text" && choices.size === 0 && !resolver && !hostWords) {
-    return dim.empty_label ? (value) => (value === null || value === "" ? empty : value) : undefined;
+    // a text value reads as written — unless it is a moment, which reads as one (R3)
+    return (value) => (value === null || value === "" ? empty : momentGroupWords(value) ?? value);
   }
   return (value) => {
     if (value === null || value === "") return empty;
     const said = names?.[value] ?? choices.get(value);
     if (said) return said;
+    // a time-valued code (a ten-minute bucket) is a moment, never a code in plain words (R3)
+    const moment = dim.kind === "relation" ? null : momentGroupWords(value);
+    if (moment) return moment;
     if (hostWords) return hostWords(value);
     // an id a host resolver names (a sign-in session is a choice of ids): its name is on the way
     if (resolver && dim.kind !== "relation") return resolver.missingLabel ?? "Reading the name…";

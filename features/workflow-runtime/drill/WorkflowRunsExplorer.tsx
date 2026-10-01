@@ -20,7 +20,10 @@ import type { DrillNameResolver } from "@/components/official/drill-explorer/typ
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { usageNameResolver } from "@/features/admin/usage-drill/useUsageDrill";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { useOpenWorkflowRunWindow } from "@/features/overlays/openers/workflowRunWindow";
 
 export const WORKFLOW_RUNS_SOURCE: DrillSource = { kind: "entity", token: "workflow_runs" };
@@ -49,16 +52,33 @@ const yourself: DrillNameResolver = {
 
 export function WorkflowRunsExplorer({ lane }: { lane: "platform" | "mine" }) {
   // The platform lane asks in the platform's own organization (whose calendar cuts the periods; the
-  // admin seat never acts as itself). The mine lane asks in the organization the person works in —
-  // her calendar — and counts every run she started, in every organization.
+  // admin seat never acts as itself). The mine lane counts every run she started, in EVERY organization
+  // (the door narrows the mine lane by the person alone): the organization it is asked in is only the
+  // CALENDAR its periods are cut in — the one she works in when one is chosen, else the first she
+  // belongs to — and the explorer says that calendar's zone as a chip. It never waits on an active
+  // organization (lane DRILL-FLIP-FIXES, VERIFY-DRILL-FINAL N1; the active-org-is-never-a-list-filter law).
   const active = useOrganizationRequired();
+  const memberships = useUserOrganizations();
+  // THE ORGANIZATION FILTER: a visible page control, `?org_filter=`, default All organizations — never
+  // the active organization.
+  const [orgFilter, setOrgFilter] = useOrgFilterParam([]);
   // THE ADMIN DOOR TO ONE RUN (VERIFY-DRILL-WAVE2 W2-2): on the platform lane a run opens in its own
   // floating run window, right here on the admin page — never the admin's personal runs list, which
   // holds only the runs he started. In the mine lane her run opens on its own page.
   const openRunWindow = useOpenWorkflowRunWindow();
-  // org-fallback-deliberate: the platform lane reads the platform's own organization by name; the mine lane carries the selected organization
-  const organizationId = lane === "platform" ? SYSTEM_ORGANIZATION_ID : active.organizationId;
-  if (lane === "mine" && active.organizationState !== "ready") {
+  // org-fallback-deliberate: the platform lane reads the platform's own organization by name; the mine lane's is only its calendar
+  const calendarOrganization =
+    active.organizationState === "ready" && active.organizationId ? active.organizationId : memberships.organizations[0]?.id ?? null;
+  const organizationId = lane === "platform" ? SYSTEM_ORGANIZATION_ID : calendarOrganization;
+  if (lane === "mine" && !organizationId) {
+    if (memberships.loading) {
+      return (
+        <div className="p-4">
+          <div className="h-96 animate-pulse rounded-md bg-muted/50" />
+        </div>
+      );
+    }
+    // she belongs to no organization at all: nothing of hers can be counted
     return (
       <div className="p-4">
         <OrganizationContextNotice state={active.organizationState} what="Run analysis" />
@@ -88,13 +108,17 @@ export function WorkflowRunsExplorer({ lane }: { lane: "platform" | "mine" }) {
           : { column: "run_id", label: "Open run", href: (runId) => `/workflows/runs/${runId}` }
       }
       location={lane === "platform" ? "Administration › Workflow runs" : "Your runs"}
+      {...(lane === "mine" && orgFilter ? { pageWhere: { organization: orgFilter } } : {})}
       dataAttributes={{ "data-workflow-runs-explorer": lane }}
       {...(lane === "mine"
         ? {
             headerExtras: (
-              <AppLink href="/workflows/runs" className="underline-offset-2 hover:underline">
-                Back to your runs
-              </AppLink>
+              <>
+                <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} />
+                <AppLink href="/workflows/runs" className="underline-offset-2 hover:underline">
+                  Back to your runs
+                </AppLink>
+              </>
             ),
           }
         : {})}

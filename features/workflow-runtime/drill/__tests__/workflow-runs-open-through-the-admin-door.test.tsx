@@ -25,6 +25,10 @@ jest.mock("@/components/official/drill-explorer/DrillExplorer", () => ({
 jest.mock("@/features/admin/usage-drill/useUsageDrill", () => ({ usageNameResolver: () => ({ resolve: jest.fn() }) }));
 jest.mock("@/features/organizations/useOrganizationRequired", () => ({ useOrganizationRequired: () => ({ organizationId: "org-1", organizationState: "ready" }) }));
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({ OrganizationContextNotice: () => null }));
+// the mine lane's calendar organization and its organization filter (lane DRILL-FLIP-FIXES N1)
+jest.mock("@/features/organizations/hooks", () => ({ useUserOrganizations: () => ({ organizations: [{ id: "org-1", name: "Greenline Recycling" }], loading: false, error: null, refresh: () => undefined }) }));
+jest.mock("@/lib/entity-list/orgFilterUrl", () => ({ useOrgFilterParam: () => [null, () => undefined] }));
+jest.mock("@/lib/entity-list/components/EntityOrgFilter", () => ({ EntityOrgFilter: () => null }));
 jest.mock("@/components/navigation/AppLink", () => ({ __esModule: true, default: ({ href, children }: { href: string; children: unknown }) => <a href={href}>{children as never}</a> }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => (a: unknown) => dispatched.push(a) }));
 jest.mock("@/lib/redux/slices/overlaySlice", () => ({

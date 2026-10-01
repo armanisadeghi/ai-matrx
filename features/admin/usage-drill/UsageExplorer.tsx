@@ -25,6 +25,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { DrillSibling } from "@/components/official/drill-explorer/drillSiblings";
 import { pushAppHref } from "@/lib/deployment/navigate";
 
+import { ADMIN_AI_USAGE_SURFACE_NAME } from "@/features/surfaces/manifests/admin-ai-usage.manifest";
+
 import { AiCallsExplorer, AiUsageExecutionsExplorer } from "./UsageGrainExplorers";
 import { USAGE_DEFINITIONS, usageDefinitionOf, usageSiblings } from "./usageLinks";
 import { USAGE_SOURCE, usageNameResolvers, useUsageFreshness } from "./useUsageDrill";
@@ -51,9 +53,18 @@ export function UsageExplorer() {
   const router = useRouter();
   const go = (href: string) => pushAppHref(router, href);
   const definition = usageDefinitionOf(new URLSearchParams(params.toString()));
-  if (definition === "ai_calls") return <AiCallsExplorer key="ai_calls" siblings={usageSiblings("ai_calls", go)} groupLabel={USAGE_DEFINITIONS.ai_calls} />;
+  // THE PAGE'S SURFACE (lane DRILL-FLIP-FIXES L4): every grain hands its question and answer to `matrx-admin/ai-usage`
+  if (definition === "ai_calls")
+    return <AiCallsExplorer key="ai_calls" siblings={usageSiblings("ai_calls", go)} groupLabel={USAGE_DEFINITIONS.ai_calls} surfaceName={ADMIN_AI_USAGE_SURFACE_NAME} />;
   if (definition === "ai_usage_executions")
-    return <AiUsageExecutionsExplorer key="ai_usage_executions" siblings={usageSiblings("ai_usage_executions", go)} groupLabel={USAGE_DEFINITIONS.ai_usage_executions} />;
+    return (
+      <AiUsageExecutionsExplorer
+        key="ai_usage_executions"
+        siblings={usageSiblings("ai_usage_executions", go)}
+        groupLabel={USAGE_DEFINITIONS.ai_usage_executions}
+        surfaceName={ADMIN_AI_USAGE_SURFACE_NAME}
+      />
+    );
   return <AiUsageHourlyExplorer key="ai_usage" siblings={usageSiblings("ai_usage", go)} />;
 }
 
@@ -88,6 +99,7 @@ function AiUsageHourlyExplorer({ siblings }: { siblings: readonly DrillSibling[]
       dataAttributes={{ "data-usage-explorer": "" }}
       siblings={siblings}
       groupLabel={USAGE_DEFINITIONS.ai_usage}
+      surfaceName={ADMIN_AI_USAGE_SURFACE_NAME}
       headerExtras={
         <AppLink href="/administration/users/usage" className="underline-offset-2 hover:underline">
           Old usage page

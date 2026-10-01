@@ -260,6 +260,17 @@ export interface DrillExplorerProps {
    * <rowNoun>s across all your organizations" (the usage page: "Your usage across all your organizations").
    */
   mineScope?: string | undefined;
+  /**
+   * THE PAGE'S OWN FILTERS (lane DRILL-FLIP-FIXES N1): Dimension key → value from a visible page control
+   * (the organization filter, `?org_filter=`, default All organizations), narrowing every ask — the
+   * answer, the chart, the records — without becoming a crumb of the trail. Absent = none.
+   */
+  pageWhere?: Record<string, unknown> | undefined;
+  /**
+   * THE PAGE'S SURFACE (lane DRILL-FLIP-FIXES L4): given, the explorer registers it and hands it the
+   * question and its answer at read time (`drillExplorerScope.ts`), as the old Spend Explorer did.
+   */
+  surfaceName?: string | undefined;
   /** More controls for the header row (an "Old usage page" link). */
   headerExtras?: ReactNode;
   /** A data attribute on the root, so a host's walk can find its mount. */

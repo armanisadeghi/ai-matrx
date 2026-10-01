@@ -186,7 +186,8 @@ export function carriedWords(door: DrillCarried | null | undefined, labelOf: (ke
   }
   for (const h of door.having ?? []) {
     const m = labelOf(h.measure);
-    const op = h.op === ">" ? "above" : "at least";
+    const said: string = h.op;
+    const op = said === ">" ? "above" : said === "<" ? "below" : said === "<=" ? "at most" : "at least";
     if (h.share_of_total !== undefined) kept.push(`only groups whose ${m} is ${op} ${h.share_of_total}% of the window's total`);
     else if (h.times_median !== undefined) kept.push(`only groups whose ${m} is ${op} ${h.times_median}× the median group${h.median_nonzero ? " (of groups above zero)" : ""}`);
     else if (h.value !== undefined) kept.push(`only groups whose ${m} is ${op} ${h.value.toLocaleString()}`);

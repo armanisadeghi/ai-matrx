@@ -69,6 +69,9 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 import { DrillExplainButton } from "./DrillExplainButton";
 import { DrillFindings } from "./DrillFindings";
+import { DrillNumberFilter } from "./DrillNumberFilter";
+import { drillExplorerScope } from "./drillExplorerScope";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { DrillSiblingFindings } from "./DrillSiblingFindings";
 import { drillSiblingDimensions, drillSiblingMeasures, openDrillSibling, useDrillSiblings } from "./drillSiblings";
 import { DrillRecords } from "./DrillRecords";
@@ -148,6 +151,8 @@ export function DrillExplorer({
   location,
   siblings,
   groupLabel,
+  pageWhere,
+  surfaceName,
 }: DrillExplorerProps) {
   const userId = useAppSelector(selectUserId);
   const { unit, canToggle, setUnit } = useUnit();
@@ -175,10 +180,14 @@ export function DrillExplorer({
     writeViewParam(null);
   };
 
+  // what every ask carries: the open view's own filters, and the page's (its organization filter, N1)
+  const asking: DrillCarried | null =
+    pageWhere && Object.keys(pageWhere).length > 0 ? { ...(carried ?? {}), where: { ...(carried?.where ?? {}), ...pageWhere } } : carried;
+
   const seat = { lane, organizationId, userId } as const;
   const knobs = useDrillKnobs(seat);
   // The hook asks exactly what the table draws: the address question with the auto grain applied.
-  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, version: freshness?.version, countMeasure, windowAlign, carried, headlineAlso: headline?.also, headlineMeasure: headline?.measure ?? null, grainLines: knobs.grainLines, ready: knobs.settled });
+  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, version: freshness?.version, countMeasure, windowAlign, carried: asking, headlineAlso: headline?.also, headlineMeasure: headline?.measure ?? null, grainLines: knobs.grainLines, ready: knobs.settled });
   const { def, answers: rawAnswers, whole: rawWhole, names, says, error, asOf, client } = drill;
   // THE CALENDAR THE DOOR CUTS PERIODS IN (F8): the definition's own (`calendar.time_zone`, from the
   // organization the door asks in — the platform lane's is UTC), else the host's word, else the reader's.
@@ -290,7 +299,7 @@ export function DrillExplorer({
     measure: chartMeasure,
     time: autoTimeRef(def, question, knobs.grainLines),
     seriesLimit: knobs.chartTopN ?? undefined,
-    carried,
+    carried: asking,
     windowAlign,
     countMeasure,
     version: freshness?.version,
@@ -303,7 +312,7 @@ export function DrillExplorer({
     lane,
     spec: reconcile,
     question,
-    carried,
+    carried: asking,
     windowAlign,
     labelOf: labelOfKey,
     version: freshness?.version,
@@ -347,7 +356,7 @@ export function DrillExplorer({
     ...(freshness?.error ? [{ key: "recount", tone: "error" as const, label: "Recount failed", tip: freshness.error }] : []),
   ];
 
-  return (
+  const screen = (
     <div className="flex h-full min-h-0 flex-col" data-drill-explorer {...dataAttributes}>
       {/* ONE header row: what this is, the total, freshness, the unit, the saved views. */}
       <div data-drill-explorer-header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border px-4 py-2">
@@ -459,6 +468,21 @@ export function DrillExplorer({
           <MatrxDrillWindowMenu question={question} onQuestionChange={setQuestion} dimensionLabel="When" />
           <MatrxDrillMeasurePicker measures={measures} question={question} onQuestionChange={setQuestion} />
           <MatrxDrillGroupByMenu dimensions={dimensions} question={question} onQuestionChange={setQuestion} />
+          {question.by.length > 0 ? (
+            <DrillNumberFilter
+              measures={measures}
+              units={Object.fromEntries((def?.measures ?? []).map((m) => [m.key, m.unit]))}
+              shown={question.show}
+              having={carried?.having ?? []}
+              money={unit}
+              onChange={(next) => {
+                const { having: _drop, ...rest } = carried ?? {};
+                void _drop;
+                const kept: DrillCarried = next.length > 0 ? { ...rest, having: next } : rest;
+                setCarried(Object.keys(kept).length > 0 ? kept : null);
+              }}
+            />
+          ) : null}
           {findings.length > 0 || siblingDefs.some((s) => findingsOf(s.def).length > 0) ? (
             <DrillFindings
               label={groupLabel}
@@ -489,7 +513,7 @@ export function DrillExplorer({
       <div className="flex min-h-0 flex-1 flex-col overflow-auto">
         {question.by.length === 0 ? (
           def && records ? (
-            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={carried} resolvers={resolvers} openRecord={openRecord} timeZone={zone} />
+            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={asking} resolvers={resolvers} openRecord={openRecord} timeZone={zone} />
           ) : (
             <p data-drill-explorer-no-grouping className="flex flex-wrap items-center gap-1.5 p-6 text-sm text-muted-foreground">
               <span>No grouping. Pick one in Group by.</span>
@@ -562,6 +586,30 @@ export function DrillExplorer({
         )}
       </div>
     </div>
+  );
+  if (!surfaceName) return screen;
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={surfaceName}
+      getScope={() =>
+        drillExplorerScope({
+          definitionKey: def?.key ?? (source.kind === "entity" ? source.token : source.id),
+          definitionLabel: def?.label ?? null,
+          openView: openView?.label ?? null,
+          question,
+          dimensions,
+          measures,
+          answers,
+          error,
+          asOf: countedThrough,
+          says,
+          money: unit,
+          emptyLabel,
+        })
+      }
+    >
+      {screen}
+    </SurfaceRuntimeProvider>
   );
 }
 

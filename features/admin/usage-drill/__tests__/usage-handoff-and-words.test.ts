@@ -77,21 +77,22 @@ describe("links into AI usage", () => {
     expect(usagePersonHref(P)).toBe(`/administration/usage?view=builtin%3Ausage_by_person&f.person=${P}`);
   });
   it("the Spend Explorer's address maps: user is person, the first filter picks the cut, custom days are inclusive", () => {
-    const { href, dropped } = spendAddressToUsage(new URLSearchParams(`win=custom&from=2026-09-01&to=2026-09-10&f.agent=A1&f.user=${P}&f.session=S`));
+    const { href, dropped } = spendAddressToUsage(new URLSearchParams(`win=custom&from=2026-09-01&to=2026-09-10&f.agent=A1&f.user=${P}`));
     const u = new URL(href, "http://x");
     expect(u.pathname).toBe("/administration/usage");
     expect(u.searchParams.get("view")).toBe("builtin:spend_by_agent");
     expect(u.searchParams.get("f.person")).toBe(P);
     expect(u.searchParams.get("f.agent")).toBe("A1");
     expect(u.searchParams.get("w")).toBe("2026-09-01..2026-09-11");
-    expect(dropped).toEqual(["sign-in session"]);
+    expect(dropped).toEqual([]);
   });
   it("presets and a day map one for one; the empty group stays the empty group", () => {
     const a = new URL(spendAddressToUsage(new URLSearchParams("win=last7d&f.model=(none)")).href, "http://x");
     expect(a.searchParams.get("w")).toBe("7d");
     expect(a.searchParams.get("f.model")).toBe("(none)");
     const b = new URL(spendAddressToUsage(new URLSearchParams("win=last30d&f.day=2026-09-12")).href, "http://x");
-    expect(b.searchParams.get("w")).toBe("2026-09-12..2026-09-13");
+    // a Spend day is the viewer's local day: in UTC (the default) it is the UTC day, as moments
+    expect(b.searchParams.get("w")).toBe("2026-09-12T00:00Z..2026-09-13T00:00Z");
     expect(b.searchParams.get("view")).toBe("builtin:spend_by_person");
   });
 });

@@ -241,6 +241,7 @@ import { adminUiSurfacesManifest } from "./admin-ui-surfaces.manifest";
 import { adminCxDashboardManifest } from "./admin-cx-dashboard.manifest";
 import { adminServerLogsManifest } from "./admin-server-logs.manifest";
 import { adminBillingSpendManifest } from "./admin-billing-spend.manifest";
+import { adminAiUsageManifest } from "./admin-ai-usage.manifest";
 import { adminSandboxManifest } from "./admin-sandbox.manifest";
 import { adminOfficialComponentsManifest } from "./admin-official-components.manifest";
 import { adminApplicationsManifest } from "./admin-applications.manifest";
@@ -510,6 +511,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminCxDashboardManifest,
   adminServerLogsManifest,
   adminBillingSpendManifest,
+  adminAiUsageManifest,
   adminSandboxManifest,
   adminOfficialComponentsManifest,
   adminApplicationsManifest,
