@@ -4,6 +4,7 @@
 // The html-preview action's "save" path routes through ctx.sourceAdapter.edit
 // so it works on any source that supports editing.
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { Eye, Globe, Mail } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -75,9 +76,10 @@ registerAction({
         instanceId,
         data: {
           content: prepared.content,
+          // Publishing stores `source_message_id` (uuid): only a durable answer has one.
           messageId:
             preparedSource.type === "chat-message"
-              ? preparedSource.messageId
+              ? (durableRecordId(preparedSource.messageId) ?? undefined)
               : undefined,
           conversationId:
             preparedSource.type === "chat-message"
