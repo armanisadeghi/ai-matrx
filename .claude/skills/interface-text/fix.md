@@ -48,6 +48,12 @@ You were given one batch: files, findings, and the exact replacement for each. Y
 | The line left under a heading only repeats the heading | Merge them into one heading |
 | Fixed the empty state in a window but not the identical one on its page | Grep the old text and fix every copy |
 | zsh: a variable holding several paths is passed as ONE argument | Pass `$(git show --name-only --format= <sha>)` or an array |
+| Shortening flipped a consequence ("archived together with it" → "are kept") or dropped its condition ("When on…") | Read the code path the warning describes; the short line must be true in every state |
+| Code names kept in a rewrite because the original had them (`ctx_get`) | Rewrites never carry identifiers; the fact goes to a comment |
+| A definition dropped into whatever slot a component offered (a right-aligned `actions` slot) | Put it beside the label it defines; add a prop to the component if needed |
+| `truncate` added to a slot without checking the longest sibling at 390 | Measure the longest sibling at 390; shorten the text — truncation must never hide content |
+| A definition hint repeated on every row of a `.map` | Once per list, beside the list or column label |
+| A required prop's text deleted, leaving a type error and an empty element | Make the prop optional or remove it, and drop the empty element |
 | A tooltip as a native `title=` on text | Use `components/official/InfoHint` (hover, keyboard **and** touch); `KpiTile`'s `title` renders through it |
 
 ## Recipes
