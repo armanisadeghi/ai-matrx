@@ -24,7 +24,8 @@
  *      hold-and-set gate a send uses: the person is asked, then it saves.
  */
 
-import type { AppThunk, RootState } from "@/lib/redux/store";
+import type { AppDispatch, AppThunk, RootState } from "@/lib/redux/store";
+import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import {
   CONTEXT_RULES_FEATURE,
   type SavedContextRule,
@@ -101,10 +102,31 @@ export function reloadContextRules(): AppThunk<Promise<void>> {
  * on its way, and the rows are what the database holds NOW (another tab or
  * device may have changed them since this screen loaded).
  */
-export function ensureContextRulesReady(): AppThunk<Promise<void>> {
+export function ensureContextRulesReady(conversationId: string): AppThunk<Promise<void>> {
   return async (dispatch) => {
     await awaitContextRuleWrites();
-    await dispatch(reloadContextRules());
+    await Promise.all([
+      dispatch(reloadContextRules()),
+      dispatch(ensureAgentContextLayer(conversationId)),
+    ]);
+  };
+}
+
+/**
+ * The conversation's agent's context layer (Context Policies + kill switch)
+ * is loaded — never resolved from a partial (list-fetched) record. A failed
+ * read is logged and the request goes out with the layer unknown; the
+ * server applies it regardless and the receipt reports any difference.
+ */
+export function ensureAgentContextLayer(conversationId: string): AppThunk<Promise<void>> {
+  return async (dispatch, getState) => {
+    const agentId = getState().conversations?.byConversationId[conversationId]?.agentId;
+    if (!agentId) return;
+    try {
+      await (dispatch as AppDispatch)(fetchAgentExecutionMinimal(agentId)).unwrap();
+    } catch (error) {
+      console.error("[context-rules] could not load the agent's context policies", error);
+    }
   };
 }
 

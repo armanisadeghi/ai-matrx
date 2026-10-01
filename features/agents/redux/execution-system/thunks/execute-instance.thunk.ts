@@ -653,7 +653,7 @@ export const executeInstance = createAsyncThunk<
       if (!surfaceRefreshed) {
         await (dispatch as AppDispatch)(refreshSurfaceScope({ conversationId })).unwrap();
       }
-      await dispatch(ensureContextRulesReady());
+      await dispatch(ensureContextRulesReady(conversationId));
       const mandateKillSwitch = await resolveMandateKillSwitch(instance.mandateKey);
       state = getState() as RootState;
 

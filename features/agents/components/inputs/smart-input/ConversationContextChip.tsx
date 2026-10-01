@@ -30,10 +30,12 @@ import { setPageContextEnabled } from "@/features/agents/redux/execution-system/
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useIsPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
+  agentContextLayerKnown,
   selectContextInlineCap,
   selectDisplayContextRows,
 } from "@/features/agents/redux/execution-system/context-rules/request-context";
 import {
+  ensureAgentContextLayer,
   reloadContextRules,
   saveContextRule,
 } from "@/features/agents/redux/execution-system/context-rules/context-rules.thunks";
@@ -149,8 +151,35 @@ export function ConversationContextChip({
     ? null
     : (stamped ?? off?.previousSurfaceName ?? null);
 
+  // The agent's own layer (Context Policies, kill switch) decides what each
+  // row delivers. Until its definition is read, the chip shows the count and
+  // claims no per-row delivery; it loads it now.
+  const agentLayerKnown = useAppSelector((state) => agentContextLayerKnown(state, conversationId));
+  const agentReadFailed = useAppSelector((state) => {
+    const agentId = state.conversations.byConversationId[conversationId]?.agentId;
+    return Boolean(agentId && state.agentDefinition.agents?.[agentId]?._error);
+  });
+  useEffect(() => {
+    if (!agentLayerKnown) void dispatch(ensureAgentContextLayer(conversationId));
+  }, [dispatch, agentLayerKnown, conversationId]);
+
   // Nothing to show and no page to switch: no chip at all (never "Context 0").
   if (!surfaceName && rows.length === 0) return null;
+
+  if (!agentLayerKnown) {
+    const label = surfaceName ? getSurfaceDisplayLabel(surfaceName) : "Context";
+    return (
+      <span
+        role="status"
+        aria-busy={!agentReadFailed}
+        title={agentReadFailed ? "Couldn't read this agent's context rules" : "Reading this agent's context rules"}
+        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-xs text-muted-foreground"
+      >
+        {label}
+        <span className="tabular-nums">{agentReadFailed ? "—" : rows.length}</span>
+      </span>
+    );
+  }
 
   const mismatches = receiptEntry?.mismatches ?? [];
   const resetAll = () => {

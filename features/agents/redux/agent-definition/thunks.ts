@@ -110,6 +110,7 @@ import {
   selectAgentById,
   selectAgentExecutionPayload,
   selectAgentCustomExecutionPayload,
+  selectAgentReadyForExecution,
 } from "./selectors";
 import {
   dbRowToAgentDefinition,
@@ -509,7 +510,11 @@ export const fetchAgentExecutionMinimal = createAsyncThunk<
 >(
   "agentDefinition/fetchExecutionMinimal",
   async (agentId, { dispatch, getState }) => {
-    if (selectAgentExecutionPayload(getState(), agentId).isReady) return;
+    // Readiness is the FETCH STATUS the thunks set, never field presence: a
+    // record from the list fetch can carry `contextPolicies: []` and
+    // `autoContextDisabled: false` it never read, and skipping here left a
+    // kill-switch agent's context layer unknown on every send.
+    if (selectAgentReadyForExecution(getState(), agentId)) return;
 
     dispatch(setAgentLoading({ id: agentId, loading: true }));
 

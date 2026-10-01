@@ -195,7 +195,7 @@ describe("two tabs changing different values", () => {
     await run(tabB, saveContextRule({ surfaceKey: NOTES, key: "cursor_offset", rule: { max_inline_chars: 0 } }));
     expect(rulesIn(tabA)[NOTES]).toEqual({});
 
-    await run(tabA, ensureContextRulesReady());
+    await run(tabA, ensureContextRulesReady("standup-notes-chat"));
     expect(rulesIn(tabA)[NOTES]).toEqual({ cursor_offset: { max_inline_chars: 0 } });
   });
 });

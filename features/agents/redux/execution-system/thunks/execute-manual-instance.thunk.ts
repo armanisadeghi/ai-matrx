@@ -664,7 +664,7 @@ export const executeManualInstance = createAsyncThunk<
       if (!surfaceRefreshed) {
         await (dispatch as AppDispatch)(refreshSurfaceScope({ conversationId })).unwrap();
       }
-      await (dispatch as AppDispatch)(ensureContextRulesReady());
+      await (dispatch as AppDispatch)(ensureContextRulesReady(conversationId));
       const state = getState() as RootState;
       const instance = state.conversations.byConversationId[conversationId];
       if (!instance) {

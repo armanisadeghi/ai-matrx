@@ -239,7 +239,7 @@ export const resumeInstance = createAsyncThunk<
             error,
           ),
         );
-      await (dispatch as AppDispatch)(ensureContextRulesReady());
+      await (dispatch as AppDispatch)(ensureContextRulesReady(conversationId));
       const freshState = getState() as RootState;
       // THE ONE DOOR, with the system values on every resume and — THE LABEL
       // ON THE RE-READ — the note that the page values were read AFTER the

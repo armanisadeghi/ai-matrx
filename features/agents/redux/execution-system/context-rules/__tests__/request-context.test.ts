@@ -43,6 +43,7 @@ function makeState(opts: {
   saved?: Record<string, Record<string, unknown>>;
   policies?: Array<{ key: string; max_inline_chars?: number; label?: string }>;
   killSwitch?: boolean;
+  agentFetchStatus?: "list" | "execution" | "full";
 }): RootState {
   const byKey: Record<string, unknown> = {};
   for (const e of opts.entries) {
@@ -73,6 +74,7 @@ function makeState(opts: {
           id: "a1",
           contextPolicies: (opts.policies ?? []).map((p) => ({ type: "text", ...p })),
           autoContextDisabled: opts.killSwitch ?? false,
+          _fetchStatus: opts.agentFetchStatus ?? "execution",
         },
       },
     },
@@ -529,5 +531,25 @@ describe("values the server added are shown and governable", () => {
   it("never sends a server-added row", () => {
     const state = afterTurn(true, true);
     expect(Object.keys(buildRequestContext(state, "c1", { includeAmbient: false }).context ?? {})).toEqual(["plain"]);
+  });
+});
+
+// Break this catches (R2-1): the door trusting an agent record from the LIST
+// fetch, whose policies and kill switch were never read (defaults), so the
+// table promised values the agent's real definition withholds.
+describe("the agent's layer counts only from a record that read it", () => {
+  it.each([
+    ["execution", 50, "agent"],
+    ["full", 50, "agent"],
+    ["list", 200, "default"],
+  ] as const)("a %s-fetched record gives limit %d decided by %s", (status, limit, by) => {
+    const { rows } = build(
+      makeState({
+        entries: [{ key: "meeting_notes", value: "Standup: shipping the intake form" }],
+        policies: [{ key: "meeting_notes", max_inline_chars: 50 }],
+        agentFetchStatus: status,
+      }),
+    );
+    expect(rows[0]).toMatchObject({ max_inline_chars: limit, decided_by: { max_inline_chars: by } });
   });
 });

@@ -38,6 +38,7 @@ import {
 import {
   selectAgentAutoContextDisabled,
   selectAgentContextPolicies,
+  selectAgentReadyForExecution,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { selectResourceContextPayload } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import {
@@ -148,6 +149,19 @@ export function ambientIncluded(state: RootState, conversationId: string): boole
   return mode !== "manual" && isFirstTurn(state, conversationId);
 }
 
+function agentContextLayerKnownFor(state: RootState, agentId: string | null): boolean {
+  return Boolean(agentId && selectAgentReadyForExecution(state, agentId));
+}
+
+/**
+ * Whether the rows can name the agent's layer (its Context Policies and kill
+ * switch): true with no agent, or once its execution definition is loaded.
+ */
+export function agentContextLayerKnown(state: RootState, conversationId: string): boolean {
+  const agentId = state.conversations?.byConversationId[conversationId]?.agentId ?? null;
+  return !agentId || agentContextLayerKnownFor(state, agentId);
+}
+
 /** Every value this conversation's next turn would carry, before any rule. */
 export function collectContextRowSources(
   state: RootState,
@@ -178,10 +192,14 @@ export function collectContextRowSources(
       },
     };
   };
-  // The agent record may not be loaded (or, in a narrow harness, not present):
-  // then its layer is simply unknown here and the receipt is the referee.
+  // The agent's context layer counts only from a record that READ it (fetch
+  // status execution or fuller — `agentContextLayerKnown`). A list-fetched
+  // record carries defaults it never read (`autoContextDisabled: false`), and
+  // trusting it showed a kill-switch agent's page values as sent. The send
+  // path loads the definition first (`ensureContextRulesReady`); the chip
+  // waits for it.
   const agentId = conversation?.agentId ?? null;
-  const agentLoaded = Boolean(agentId && state.agentDefinition?.agents?.[agentId]);
+  const agentLoaded = agentContextLayerKnownFor(state, agentId);
   const policies = agentLoaded ? selectAgentContextPolicies(state, agentId!) : undefined;
   const killSwitch =
     (agentLoaded && selectAgentAutoContextDisabled(state, agentId!)) ||
