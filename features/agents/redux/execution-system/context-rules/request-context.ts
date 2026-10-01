@@ -76,12 +76,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
+function isTopLevelResourceRef(value: unknown): boolean {
+  return isRecord(value) && value.__kind === "resource_ref";
+}
+
 function validLimit(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
 }
 
 function attachedFileLabel(state: RootState, conversationId: string, fileId: string): string {
-  const resources = state.instanceResources.byConversationId[conversationId];
+  const resources = state.instanceResources?.byConversationId[conversationId];
   for (const resource of Object.values(resources ?? {})) {
     const source = resource.source;
     if (!isRecord(source)) continue;
@@ -100,13 +104,16 @@ export function collectContextRowSources(
   conversationId: string,
   opts: RequestContextOptions = {},
 ): ContextRowSource[] {
-  const conversation = state.conversations.byConversationId[conversationId];
+  const conversation = state.conversations?.byConversationId[conversationId];
   const surfaceName = conversation?.surfaceName ?? null;
   const manifest = surfaceName ? getManifest(surfaceName) : undefined;
+  // The agent record may not be loaded (or, in a narrow harness, not present):
+  // then its layer is simply unknown here and the receipt is the referee.
   const agentId = conversation?.agentId ?? null;
-  const policies = agentId ? selectAgentContextPolicies(state, agentId) : undefined;
+  const agentLoaded = Boolean(agentId && state.agentDefinition?.agents?.[agentId]);
+  const policies = agentLoaded ? selectAgentContextPolicies(state, agentId!) : undefined;
   const killSwitch =
-    Boolean(agentId && selectAgentAutoContextDisabled(state, agentId)) ||
+    (agentLoaded && selectAgentAutoContextDisabled(state, agentId!)) ||
     opts.mandateKillSwitch === true;
   const policyFor = (key: string) => policies?.find((p) => p.key === key);
   const agentLayer = (key: string) => {
@@ -121,7 +128,7 @@ export function collectContextRowSources(
   const byKey = new Map<string, ContextRowSource>();
 
   // 1. Everything in the conversation's context (page values + attached).
-  const entries = Object.values(state.instanceContext.byConversationId[conversationId] ?? {});
+  const entries = Object.values(state.instanceContext?.byConversationId[conversationId] ?? {});
   for (const entry of entries) {
     const declared = manifest?.values.find((v) => v.name === entry.key);
     const pointer = POINTER_INLINE_CEILINGS[entry.key];
@@ -201,7 +208,7 @@ export function collectContextRowSources(
 /** The inline cap the server last reported (a platform knob), else the default. */
 export function selectContextInlineCap(state: RootState, conversationId: string): number {
   return (
-    state.instanceContext.receiptByConversationId[conversationId]?.receipt.cap ??
+    state.instanceContext?.receiptByConversationId?.[conversationId]?.receipt.cap ??
     DEFAULT_INLINE_CAP
   );
 }
@@ -218,6 +225,14 @@ export function buildRequestContext(
     resolveContextRow(source, saved, cap),
   );
   const wire = buildContextWire(rows);
+  // STOPGAP (2026-09-30) until @ai-matrx/agents ships the resource-reference
+  // pass-through in buildContextWire: the server resolves an attached file
+  // only from a TOP-LEVEL `__kind: "resource_ref"`; wrapped in an envelope it
+  // becomes plain JSON and the document silently stops resolving. Remove this
+  // block when the package's buildContextWire passes references through.
+  for (const row of rows) {
+    if (row.include && isTopLevelResourceRef(row.value)) wire[row.key] = row.value;
+  }
   return { rows, context: Object.keys(wire).length > 0 ? wire : undefined };
 }
 
@@ -226,15 +241,15 @@ export function buildRequestContext(
 const EMPTY_ROWS: ResolvedContextRow[] = [];
 
 function displayInputs(state: RootState, conversationId: string): readonly unknown[] {
-  const conversation = state.conversations.byConversationId[conversationId];
+  const conversation = state.conversations?.byConversationId[conversationId];
   const agentId = conversation?.agentId ?? null;
   return [
-    state.instanceContext.byConversationId[conversationId],
+    state.instanceContext?.byConversationId[conversationId],
     conversation?.surfaceName ?? null,
-    agentId ? state.agentDefinition.agents[agentId] : null,
-    state.instanceResources.byConversationId[conversationId],
+    agentId ? state.agentDefinition?.agents[agentId] : null,
+    state.instanceResources?.byConversationId[conversationId],
     selectSavedContextRuleRows(state),
-    state.instanceContext.receiptByConversationId[conversationId]?.receipt.cap ?? null,
+    state.instanceContext?.receiptByConversationId?.[conversationId]?.receipt.cap ?? null,
     isFirstTurn(state, conversationId),
   ];
 }

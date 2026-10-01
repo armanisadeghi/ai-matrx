@@ -219,6 +219,29 @@ describe("rules decide what reaches the wire", () => {
   });
 });
 
+describe("an attached file reaches the server as the reference it resolves", () => {
+  it("ships a top-level resource reference exactly as-is, never wrapped", () => {
+    const ref = { __kind: "resource_ref", resource_type: "file", resource_id: "f1" };
+    const state = makeState({ entries: [] });
+    (state as unknown as { instanceResources: unknown }).instanceResources = {
+      byConversationId: {
+        c1: {
+          r1: {
+            blockType: "processed_document",
+            status: "ready",
+            source: { file_id: "f1", filename: "Reference.pdf" },
+            options: {},
+          },
+        },
+      },
+    };
+    const { rows, context } = build(state);
+    expect(rows[0]).toMatchObject({ key: "attached_file_f1", label: "Reference.pdf", origin: "attached" });
+    expect(context?.attached_file_f1).toMatchObject(ref);
+    expect((context?.attached_file_f1 as Record<string, unknown>).content).toBeUndefined();
+  });
+});
+
 describe("the table's rows are memoized on their inputs", () => {
   it("returns the same array until an input changes", () => {
     const state = makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "plain", value: "v" }] });

@@ -34,13 +34,13 @@ const EMPTY_ROWS: SavedContextRuleRows = {};
 
 /** The person's saved rows, as loaded (or optimistically written). */
 export const selectSavedContextRuleRows = (state: RootState): SavedContextRuleRows =>
-  (state.surfaceUserState.byFeature[CONTEXT_RULES_FEATURE]?.rows as
+  (state.surfaceUserState?.byFeature[CONTEXT_RULES_FEATURE]?.rows as
     | SavedContextRuleRows
     | undefined) ?? EMPTY_ROWS;
 
 /** True once the rows have been read from the database at least once. */
 export const selectContextRulesLoaded = (state: RootState): boolean => {
-  const f = state.surfaceUserState.byFeature[CONTEXT_RULES_FEATURE];
+  const f = state.surfaceUserState?.byFeature[CONTEXT_RULES_FEATURE];
   return f?.status === "ready" || (f?.fetchedAt ?? null) !== null;
 };
 

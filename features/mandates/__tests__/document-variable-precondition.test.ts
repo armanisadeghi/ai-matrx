@@ -39,7 +39,13 @@ describe("parseMandateContract", () => {
       requiredContextPolicyKeys: ["policy"],
       requiredOutputKeys: ["findings"],
       spillVariables: ["mode"],
+      autoContextDisabled: false,
     });
+  });
+
+  it("reads the Mandate's context kill switch (only a literal true closes it)", () => {
+    expect(parseMandateContract({ auto_context_disabled: true }).autoContextDisabled).toBe(true);
+    expect(parseMandateContract({ auto_context_disabled: "yes" }).autoContextDisabled).toBe(false);
   });
 
   it("is empty for a null/garbage contract rather than throwing", () => {
