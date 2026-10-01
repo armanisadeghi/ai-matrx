@@ -43,7 +43,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { relativeWhen, wordCount } from "./format";
+import { relativeWhen, wordsLabel } from "./format";
 import {
   listRulebookInterviewsWithAccess,
   type RulebookInterview,
@@ -173,7 +173,7 @@ export function ConversationsSection({
                 <div className="truncate text-[11px] text-muted-foreground">
                   {relativeWhen(interview.createdAt)}
                   {interview.expertTurnCount > 0
-                    ? ` · ${wordCount(interview.expertChars)}`
+                    ? ` · ${wordsLabel(interview.expertWords)}`
                     : " · nothing said yet"}
                   {interview.rulesProduced > 0
                     ? ` · ${interview.rulesProduced} rule${

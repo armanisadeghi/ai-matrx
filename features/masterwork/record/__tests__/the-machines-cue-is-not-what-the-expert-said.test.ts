@@ -47,7 +47,8 @@
 
 import {
   summariseExpertTurns,
-  wordCount,
+  countWords,
+  wordsLabel,
 } from "../format";
 import type { StoredUserMessage } from "@/features/agents/utils/human-authored-text";
 
@@ -118,13 +119,18 @@ describe("what the Expert said is only ever what the Expert said", () => {
     );
     // The card's own sentence, end to end — the thing the Expert reads.
     //
-    // 786 characters of her words → 143 words. The card photographed on the
-    // cold walk said "160 words": exactly 786 + 96 characters of the host's
-    // kickoff (95 + the joining newline) → 882 → 160. That arithmetic is the
-    // whole defect, so the old number is asserted absent by name.
-    const line = `${summary.expertTurnCount} things you said · ${wordCount(summary.expertChars)}`;
-    expect(line).toBe("2 things you said · 143 words");
+    // Her words, counted (cold walk 23: no longer chars ÷ 5.5). The card
+    // photographed on the 2026-09-16 walk said "160 words" because the host's
+    // kickoff was in the text; it is asserted absent by name.
+    const herWords =
+      countWords(HER_FIRST_ANSWER) + countWords(HER_SECOND_ANSWER);
+    expect(summary.expertWords).toBe(herWords);
+    const line = `${summary.expertTurnCount} things you said · ${wordsLabel(summary.expertWords)}`;
+    expect(line).toBe(`2 things you said · ${herWords} words`);
     expect(line).not.toBe("2 things you said · 160 words");
+    expect(summary.expertWords).toBeLessThan(
+      herWords + countWords(HOST_WIRED_KICKOFF),
+    );
   });
 
   it("puts the host's text in NO part of the summary, whichever field we add next", () => {
@@ -140,6 +146,7 @@ describe("what the Expert said is only ever what the Expert said", () => {
     expect(summary).toEqual({
       expertTurnCount: 0,
       expertChars: 0,
+      expertWords: 0,
       firstExpertLine: null,
     });
   });

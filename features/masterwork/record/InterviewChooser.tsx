@@ -17,7 +17,7 @@
 import Link from "next/link";
 import { ArrowRight, ExternalLink, MessagesSquare, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { relativeWhen, wordCount } from "./format";
+import { relativeWhen, wordsLabel } from "./format";
 import type { RulebookInterview } from "./service";
 
 export interface InterviewChooserProps {
@@ -60,7 +60,7 @@ export function InterviewChooser({
                     ? "You didn't say anything yet"
                     : `${interview.expertTurnCount} thing${
                         interview.expertTurnCount === 1 ? "" : "s"
-                      } you said · ${wordCount(interview.expertChars)}`}
+                      } you said · ${wordsLabel(interview.expertWords)}`}
                   {interview.rulesProduced > 0
                     ? ` · ${interview.rulesProduced} rule${
                         interview.rulesProduced === 1 ? "" : "s"

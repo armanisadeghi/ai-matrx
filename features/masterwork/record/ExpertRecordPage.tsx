@@ -48,7 +48,7 @@ import {
   serverRefusal,
   type ServerRefusal,
 } from "@/lib/progress/failureSentence";
-import { tallyContributions, wordCount } from "./format";
+import { tallyContributions, wordsLabel } from "./format";
 import { getRulebook } from "../service";
 import type { Rulebook } from "../types";
 import {
@@ -377,7 +377,7 @@ export function ExpertRecordPage({
   // with one interview it read "1,550 words" while the Expert had typed 595
   // and the interview summary three lines away said "570 words", because the
   // interviewer's own eight turns were in the number. `expertChars` excludes
-  // them and `wordCount` is the same helper `N things you said · M words`
+  // them and `wordsLabel` is the same helper `N things you said · M words`
   // uses, so the two lines can no longer disagree.
   // 🚨 AND WHAT THOSE THINGS WERE (seventeenth cold walk, defect A). The line
   // read "11 things you contributed · 1 interview · 3.4k words" for four
@@ -388,10 +388,10 @@ export function ExpertRecordPage({
     () =>
       corpus
         ? tallyContributions(corpus.contributions)
-        : { total: 0, byKind: "", expertChars: 0 },
+        : { total: 0, byKind: "", expertChars: 0, expertWords: 0 },
     [corpus],
   );
-  const words = useMemo(() => wordCount(tally.expertChars), [tally]);
+  const words = useMemo(() => wordsLabel(tally.expertWords), [tally]);
 
   if (refusal) {
     return (

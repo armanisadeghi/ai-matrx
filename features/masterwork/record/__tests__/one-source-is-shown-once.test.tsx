@@ -34,7 +34,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { tallyContributions, wordCount } from "../format";
+import { countWords, tallyContributions, wordsLabel } from "../format";
 
 const RULEBOOK = "0a324d29-098c-453d-857f-22d173d4682a";
 const CONVERSATION = "f7f5036f-24dc-4ad7-861c-21b4f357d479";
@@ -85,6 +85,7 @@ const contributions = [
     title: null,
     text,
     expertChars: text.length,
+    expertWords: countWords(text),
     turns: [],
     when: `2026-09-21T09:1${i + 1}:00.000Z`,
     conversationId: CONVERSATION,
@@ -99,6 +100,7 @@ const contributions = [
     title: name,
     text: documentText(name),
     expertChars: documentText(name).length,
+    expertWords: countWords(documentText(name)),
     turns: [],
     when: "2026-09-21T09:25:55.000Z",
     fileId,
@@ -111,6 +113,7 @@ const corpus = {
   contributions,
   totalChars: contributions.reduce((n, c) => n + c.text.length, 0),
   expertChars: contributions.reduce((n, c) => n + c.expertChars, 0),
+  expertWords: contributions.reduce((n, c) => n + c.expertWords, 0),
   laneCounts: { interview: 4, file: 3 },
   limits: [],
   hiddenInterviewCount: 0,
@@ -213,8 +216,8 @@ describe("Your words — one source, one card", () => {
     expect(onScreen).toContain("7 things you contributed");
     expect(onScreen).toContain("4 interview turns");
     expect(onScreen).toContain("3 documents");
-    // The header's number is the interview screen's own helper on her chars.
-    expect(onScreen).toContain(wordCount(corpus.expertChars));
+    // The header's number is the interview screen's own helper on her words.
+    expect(onScreen).toContain(wordsLabel(corpus.expertWords));
     // And it is nowhere near the 3.4k the duplicated panel reported: the four
     // turns and three documents together, once each.
     expect(tallyContributions(corpus.contributions)).toEqual({
@@ -223,6 +226,7 @@ describe("Your words — one source, one card", () => {
       expertChars:
         HER_TURN_CHARS +
         FILES.reduce((n, [, name]) => n + documentText(name).length, 0),
+      expertWords: corpus.expertWords,
     });
     // The eleven-card header is gone in both its halves.
     expect(onScreen).not.toContain("11 things");

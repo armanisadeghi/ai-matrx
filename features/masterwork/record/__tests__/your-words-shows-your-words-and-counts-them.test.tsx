@@ -35,7 +35,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { wordCount } from "../format";
+import { countWords, wordsLabel } from "../format";
 
 // The walk's own HVAC interview, in the turns the capture lane stores.
 const EXPERT_TURN_1 =
@@ -53,6 +53,7 @@ const SCOUT_TURN_2 =
   "you gave me the duct side of this in detail.";
 
 const HER_CHARS = EXPERT_TURN_1.length + EXPERT_TURN_2.length;
+const HER_WORDS = countWords(EXPERT_TURN_1) + countWords(EXPERT_TURN_2);
 
 const corpus = {
   rulebookId: "4eeba280-c33b-4731-a0e5-9e19cabdb129",
@@ -76,6 +77,7 @@ const corpus = {
         `assistant: ${SCOUT_TURN_2}`,
       ].join("\n"),
       expertChars: HER_CHARS,
+      expertWords: HER_WORDS,
       turns: [
         { voice: "person" as const, text: EXPERT_TURN_1, speaker: null },
         { voice: "machine" as const, text: SCOUT_TURN_1, speaker: null },
@@ -91,6 +93,7 @@ const corpus = {
     SCOUT_TURN_2.length +
     "assistant: ".length * 4,
   expertChars: HER_CHARS,
+  expertWords: HER_WORDS,
   laneCounts: { interview: 1 },
   limits: [],
   hiddenInterviewCount: 0,
@@ -181,9 +184,10 @@ describe("Your words", () => {
   it("counts her words only, through the one shared counter", async () => {
     const onScreen = await openTheRecord();
 
-    expect(onScreen).toContain(wordCount(HER_CHARS));
+    expect(onScreen).toContain(wordsLabel(HER_WORDS));
     // And it is NOT the corpus size — the 1,550-against-595 gap the walk saw.
-    expect(wordCount(HER_CHARS)).not.toBe(wordCount(corpus.totalChars));
-    expect(onScreen).not.toContain(wordCount(corpus.totalChars));
+    const allWords = countWords(corpus.contributions[0].text);
+    expect(wordsLabel(HER_WORDS)).not.toBe(wordsLabel(allWords));
+    expect(onScreen).not.toContain(wordsLabel(allWords));
   });
 });

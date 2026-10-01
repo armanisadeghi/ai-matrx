@@ -28,9 +28,25 @@ export function relativeWhen(iso: string): string {
   return formatRelativeTime(iso, { style: "long" });
 }
 
-/** Characters mean nothing to an Expert; roughly-spoken words do. */
-export function wordCount(chars: number): string {
-  const words = Math.round(chars / 5.5);
+/**
+ * Words she actually wrote: whitespace-separated runs carrying a letter or a
+ * digit (a lone "—" is not a word).
+ *
+ * 🚨 A COUNT IS COUNTED (cold walk 23). This used to be `chars / 5.5`, shown
+ * as an exact number: "420 words" for 447. Count from the text, where the text
+ * is in hand, and carry the number — never re-derive it from characters.
+ */
+export function countWords(text: string): number {
+  let n = 0;
+  for (const token of text.split(/\s+/)) {
+    if (/[\p{L}\p{N}]/u.test(token)) n += 1;
+  }
+  return n;
+}
+
+/** "447 words" / "1 word" / "3.4k words" — the one format for a counted number. */
+export function wordsLabel(words: number): string {
+  if (words === 1) return "1 word";
   if (words < 1000) return `${words} words`;
   return `${(words / 1000).toFixed(1)}k words`;
 }
@@ -48,6 +64,8 @@ export interface TallyableContribution {
   kind: string;
   lane: string;
   expertChars: number;
+  /** Counted words of HER text — see `countWords`. */
+  expertWords: number;
 }
 
 /**
@@ -97,6 +115,8 @@ export interface ContributionTally {
   byKind: string;
   /** Characters of HER words across those things. Never ours. */
   expertChars: number;
+  /** Counted words of HER words across those things. */
+  expertWords: number;
 }
 
 /**
@@ -112,7 +132,7 @@ export interface ContributionTally {
  * here is the honest count of things — and this says WHAT they were, because
  * "11 things" told an Expert nothing about what she had actually given.
  *
- * The words number is `expertChars` through the same `wordCount` helper the
+ * The words number is `expertWords` through the same `wordsLabel` the
  * interview summary uses, so the two lines can never disagree again.
  */
 export function tallyContributions(
@@ -120,8 +140,10 @@ export function tallyContributions(
 ): ContributionTally {
   const counts = new Map<string, { nouns: [string, string]; n: number }>();
   let expertChars = 0;
+  let expertWords = 0;
   for (const c of contributions) {
     expertChars += c.expertChars;
+    expertWords += c.expertWords;
     const nouns = nounFor(c.kind, c.lane);
     const entry = counts.get(nouns[0]);
     if (entry) entry.n += 1;
@@ -134,7 +156,7 @@ export function tallyContributions(
     parts.length <= 1
       ? (parts[0] ?? "")
       : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
-  return { total: contributions.length, byKind, expertChars };
+  return { total: contributions.length, byKind, expertChars, expertWords };
 }
 
 // =============================================================================
@@ -173,6 +195,8 @@ export interface ExpertTurnSummary {
   expertTurnCount: number;
   /** Characters of HER text only — host-wired text contributes nothing. */
   expertChars: number;
+  /** Counted words of HER text only. */
+  expertWords: number;
   /** The opening line of the first thing SHE said, or null when she said nothing. */
   firstExpertLine: string | null;
 }
@@ -191,6 +215,7 @@ export function summariseExpertTurns(
   return {
     expertTurnCount: texts.length,
     expertChars: texts.reduce((sum, t) => sum + t.length, 0),
+    expertWords: texts.reduce((sum, t) => sum + countWords(t), 0),
     firstExpertLine: texts.length > 0 ? firstLine(texts[0]) : null,
   };
 }

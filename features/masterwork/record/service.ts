@@ -60,7 +60,7 @@ import {
   HUMAN_AUTHORED_MESSAGE_COLUMNS,
   messageContentToText,
 } from "@/features/agents/utils/human-authored-text";
-import { summariseExpertTurns } from "./format";
+import { countWords, summariseExpertTurns } from "./format";
 import { callApi } from "@/lib/api/call-api";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import type { paths } from "@/types/python-generated/api-types";
@@ -91,6 +91,8 @@ export interface RulebookInterview {
   expertTurnCount: number;
   /** How many characters the Expert contributed. The honest "how much is in here". */
   expertChars: number;
+  /** Counted words of what the Expert said — every "N words" line reads this. */
+  expertWords: number;
   /** First line of the first thing the Expert said — how they recognize it. */
   firstExpertLine: string | null;
   /** Rules in the Rulebook whose provenance points at this conversation. */
@@ -191,6 +193,8 @@ export interface ExpertContribution {
    * defect B: 1,550 words shown against the 595 she typed).
    */
   expertChars: number;
+  /** Counted words of the same text `expertChars` measures (`countWords`). */
+  expertWords: number;
   /**
    * Present only when this piece IS a conversation. A surface that has these
    * renders each turn for what it is — her words as her words, ours visibly as
@@ -260,6 +264,8 @@ export interface ExpertCorpus {
    * "4 things you said · 475 words" (cold walk 16, defect B).
    */
   expertChars: number;
+  /** Counted words of the same — what "N words" prints (cold walk 23). */
+  expertWords: number;
   /** How many contributions came from each Approach. */
   laneCounts: Record<string, number>;
   /** What could not be read — see `ExpertCorpusLimit`. Never hide these. */
@@ -953,6 +959,7 @@ function attachDictations(
         // Spoken by her, into a microphone, with nobody else on the recording:
         // all of it is hers.
         expertChars: text.length,
+        expertWords: countWords(text),
         when: row.created_at,
         conversationId: origin?.conversationId,
         fileId: row.audio_file_path,
@@ -1065,6 +1072,14 @@ function contributionFrom(segment: CorpusSegmentWire): ExpertContribution {
       typeof segment.expert_chars === "number"
         ? segment.expert_chars
         : segment.text.length,
+    // Counted from the same words the server measured: her turns when the
+    // piece is a conversation (ours are `machine`), else the whole text.
+    expertWords: segment.turns?.length
+      ? segment.turns.reduce(
+          (sum, t) => (t.voice === "machine" ? sum : sum + countWords(t.text)),
+          0,
+        )
+      : countWords(segment.text),
     turns: (segment.turns ?? []).map(turnFrom),
     when: segment.when ?? NO_TIMESTAMP,
     truncated: segment.truncated,
@@ -1121,6 +1136,18 @@ export async function getExpertCorpus(
   const wire = (result as { data?: ExpertCorpusWire }).data;
   if (!wire) throw new Error("The corpus request returned no result.");
 
+  let contributions = wire.segments.map(contributionFrom);
+
+  // An interview's words are its segments' words — the same segments the
+  // server summed `expert_chars` over (`record.py`, `mine`).
+  const wordsByConversation = new Map<string, number>();
+  for (const c of contributions) {
+    if (!c.conversationId) continue;
+    wordsByConversation.set(
+      c.conversationId,
+      (wordsByConversation.get(c.conversationId) ?? 0) + c.expertWords,
+    );
+  }
   const interviews: RulebookInterview[] = wire.interviews.map((i) => ({
     conversationId: i.conversation_id,
     title: i.title,
@@ -1129,11 +1156,10 @@ export async function getExpertCorpus(
     messageCount: i.message_count,
     expertTurnCount: i.expert_turn_count,
     expertChars: i.expert_chars,
+    expertWords: wordsByConversation.get(i.conversation_id) ?? 0,
     firstExpertLine: i.first_expert_line,
     rulesProduced: i.rules_produced,
   }));
-
-  let contributions = wire.segments.map(contributionFrom);
 
   // THE AUDIO behind the words. Attached to the message that contains the
   // spoken words verbatim; anything that matches no message is kept as its own
@@ -1160,6 +1186,7 @@ export async function getExpertCorpus(
     // being shown — including the dictation-attached ones the client adds —
     // so the header can never disagree with the body under it.
     expertChars: contributions.reduce((sum, c) => sum + c.expertChars, 0),
+    expertWords: contributions.reduce((sum, c) => sum + c.expertWords, 0),
     laneCounts: wire.lane_counts,
     limits: wire.limits,
     hiddenInterviewCount: wire.hidden_conversation_count,
