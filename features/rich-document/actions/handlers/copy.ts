@@ -10,6 +10,7 @@ import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils"
 import { registerAction } from "../provider";
 import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { getErrorMessage, contentForDestination } from "../utils";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 registerAction({
   id: "copy",
@@ -78,7 +79,7 @@ registerAction({
             ?.byId?.[ctx.source.messageId]
         : undefined;
     const fullContent = record
-      ? extractFlatText(record, { includeThinking: true })
+      ? kindTextToMarkdown(extractFlatText(record, { includeThinking: true }))
       : contentForDestination(ctx);
     await copyToClipboard(fullContent, {
       isMarkdown: true,

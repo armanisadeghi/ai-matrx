@@ -100,3 +100,17 @@ describe("loadFullConversationHistory", () => {
     expect(result).toEqual({ complete: false, loaded: 1 });
   });
 });
+
+describe("documentMarkdown — a __kind answer prints as its kind, never JSON", () => {
+  it("converts a fenced kind to the kind's markdown; kindless text unchanged", () => {
+    const set = {
+      __kind: "flashcard_set",
+      title: "Kiln safety",
+      cards: [{ __kind: "flashcard", front: "Cone 6?", back: "About 1222 C" }],
+    };
+    const out = documentMarkdown("Cards:\n\n```json\n" + JSON.stringify(set) + "\n```");
+    expect(out).not.toContain("__kind");
+    expect(out).toContain("About 1222 C");
+    expect(documentMarkdown("Just prose.")).toBe("Just prose.");
+  });
+});

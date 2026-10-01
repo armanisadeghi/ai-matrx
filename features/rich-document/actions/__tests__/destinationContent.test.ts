@@ -8,6 +8,7 @@ import * as fs from "fs";
 import * as path from "path";
 import "../handlers";
 import { getAction } from "../provider";
+import { contentForDestination } from "../utils";
 import { chatContext } from "../../test-utils/chatContext";
 
 const ENVELOPED =
@@ -53,5 +54,42 @@ describe("Save to Notes receives the readable text", () => {
       .find((p) => p?.overlayId === "quickNoteSaveWindow");
     expect(payload.data.initialContent).not.toContain("<artifact");
     expect(payload.data.initialContent).toContain("| Payroll | Dana |");
+  });
+});
+
+describe("a __kind answer reaches every destination as readable markdown", () => {
+  const SET = {
+    __kind: "flashcard_set",
+    title: "Cell biology",
+    cards: [{ __kind: "flashcard", front: "Powerhouse?", back: "Mitochondria" }],
+  };
+
+  it("contentForDestination converts a whole-answer kind and a fenced kind", () => {
+    const whole = contentForDestination({ ...chatContext("assistant"), content: JSON.stringify(SET) });
+    expect(whole).not.toContain("__kind");
+    expect(whole).toContain("Mitochondria");
+
+    const fenced = contentForDestination({
+      ...chatContext("assistant"),
+      content: "Your cards:\n\n```json\n" + JSON.stringify(SET) + "\n```\n",
+    });
+    expect(fenced).not.toContain("__kind");
+    expect(fenced).toContain("Your cards:");
+  });
+
+  it("Save to Notes opens with the kind's markdown, never its JSON", () => {
+    const dispatch = jest.fn();
+    const ctx = { ...chatContext("assistant"), content: JSON.stringify(SET), dispatch, isAuthenticated: true };
+    getAction("save-to-notes")!.run(ctx as never);
+    const payload = dispatch.mock.calls
+      .map(([a]) => a?.payload)
+      .find((p) => p?.overlayId === "quickNoteSaveWindow");
+    expect(payload.data.initialContent).not.toContain("__kind");
+    expect(payload.data.initialContent).toContain("Powerhouse?");
+  });
+
+  it("kindless content is unchanged", () => {
+    const text = "Plain **answer** with ```json\n{\"a\":1}\n```";
+    expect(contentForDestination({ ...chatContext("assistant"), content: text })).toBe(text);
   });
 });

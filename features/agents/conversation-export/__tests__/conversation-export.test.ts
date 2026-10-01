@@ -232,3 +232,27 @@ describe("one catalogue, one engine", () => {
     ]);
   });
 });
+
+describe("a __kind answer is exported as its kind's markdown, never JSON", () => {
+  it("the transcript and the message rows carry readable markdown", () => {
+    const set = {
+      __kind: "flashcard_set",
+      title: "Chlorine checks",
+      cards: [{ __kind: "flashcard", front: "Target ppm?", back: "1 to 3 ppm" }],
+    };
+    const kindState = {
+      messages: {
+        byConversationId: {
+          k1: {
+            orderedIds: ["a"],
+            byId: { a: { id: "a", role: "assistant", text: JSON.stringify(set), createdAt: null } },
+          },
+        },
+      },
+    } as never;
+    const conv = conversationFromState(kindState, "k1");
+    expect(conv.markdown).not.toContain("__kind");
+    expect(conv.markdown).toContain("1 to 3 ppm");
+    expect(conv.messages[0].text).not.toContain("__kind");
+  });
+});

@@ -14,7 +14,8 @@ import { toast } from "@/lib/toast";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectInstanceContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { registerAction } from "../provider";
-import { chatIds, deriveContentTitle, contentForDestination } from "../utils";
+import { chatIds, deriveContentTitle } from "../utils";
+import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import type { RichDocumentActionContext } from "../../types";
 
 /** The context key every quote lands under — one list per conversation. */
@@ -22,7 +23,10 @@ export const QUOTED_PASSAGES_CONTEXT_KEY = "quoted_passages";
 
 function quote(ctx: RichDocumentActionContext): boolean {
   const { conversationId, messageId } = chatIds(ctx);
-  const text = contentForDestination(ctx).trim();
+  // The quote is context the MODEL reads, not a page a person reads: a kind
+  // stays its data (`__kind` is part of the data), so this is the one
+  // outbound path that skips `contentForDestination`'s kind → markdown step.
+  const text = unwrapKindEnvelopes(ctx.content).trim();
   if (!conversationId || !text) return false;
   const existing = selectInstanceContextEntry(
     conversationId,

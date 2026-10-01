@@ -21,6 +21,7 @@
 import "../handlers";
 import { getAction, resolveActions } from "../provider";
 import { chatContext, RICH_MESSAGE } from "../../test-utils/chatContext";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { toAdvancedMenuItems } from "../../variants/RegistryActionMenu";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 
@@ -152,7 +153,8 @@ describe("RC-B6: every former chat action lives in the ONE registry", () => {
         payload: expect.objectContaining({
           overlayId: "addToRulebookDialog",
           data: expect.objectContaining({
-            initialContent: RICH_MESSAGE,
+            // The rule text a person edits: a kind arrives as its markdown.
+            initialContent: kindTextToMarkdown(RICH_MESSAGE),
             initialConversationId: "conv-1",
             initialMessageId: "msg-2",
           }),

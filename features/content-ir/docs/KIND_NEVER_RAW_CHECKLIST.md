@@ -105,9 +105,13 @@ Every stream item below adds its case there.
 
 ## H. Answers sent elsewhere
 
-- [ ] O1. Every save/send action (`contentForDestination`) passes raw kind JSON into notes, tasks, flashcards,
+- [x] O1. Every save/send action (`contentForDestination`) passes raw kind JSON into notes, tasks, flashcards,
       files, PDF, Word, Google Doc, print, email, speech, conversation export — convert with
-      `genericKindMarkdown` instead.
+      `genericKindMarkdown` instead. Done through ONE helper, `kindTextToMarkdown`
+      (`features/content-ir/surfaces/kind-text-to-markdown.ts`: whole-text, fenced and bare kind regions →
+      `kindValueToMarkdown`), applied in `contentForDestination`, "Copy with thinking", conversation transfer
+      and `documentMarkdown`. A kind with no `toMarkdown` facet still exports `genericKindMarkdown`'s fenced
+      JSON (the converter's zero-loss floor) — a facet per kind is the fix there.
 - [ ] O2. Context values and context items show it raw.
 
 ## I. Public pages and other features

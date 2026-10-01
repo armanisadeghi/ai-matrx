@@ -6,6 +6,7 @@
 
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { extractErrorMessage } from "@/utils/errors";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -237,10 +238,12 @@ export function chatWriteBackBlocked(ctx: RichDocumentActionContext): boolean {
  * this content somewhere else — a note, a task, a file, a clipboard, a
  * webpage, an email, the composer, the speaker — takes it from here, so the
  * store's internal `<artifact …>` envelopes never leak into what a person
- * reads. Actions that WRITE BACK to the source (edit, apply, compare) keep
+ * reads, and a `__kind` answer arrives as its kind's readable markdown, never
+ * its JSON (Arman, 2026-09-30 — the data keeps its marker; only the
+ * destination copy is converted). Actions that WRITE BACK to the source (edit, apply, compare) keep
  * `ctx.content`: the envelopes are part of the stored bytes.
  * Guarded by `actions/__tests__/destinationContent.test.ts`.
  */
 export function contentForDestination(ctx: RichDocumentActionContext): string {
-  return unwrapKindEnvelopes(ctx.content);
+  return kindTextToMarkdown(unwrapKindEnvelopes(ctx.content));
 }

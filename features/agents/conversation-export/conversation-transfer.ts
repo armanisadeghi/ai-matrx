@@ -22,6 +22,7 @@ import type { FormatAdapter } from "@ai-matrx/kit/content-transfer";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { isMessagePinned } from "@/features/agents/message-pins/pinned-messages-store";
@@ -81,8 +82,9 @@ export function conversationFromState(
     .map((r) => ({
       role: String(r.role),
       // Envelopes and the tutor's trust comment are storage plumbing — a
-      // reader gets the table, not the tag (the chat renderer drops both).
-      text: stripTurnTrust(unwrapKindEnvelopes(extractFlatText(r))),
+      // reader gets the table, not the tag (the chat renderer drops both). A
+      // `__kind` answer leaves as its kind's markdown, never its JSON.
+      text: stripTurnTrust(kindTextToMarkdown(unwrapKindEnvelopes(extractFlatText(r)))),
       createdAt: r.createdAt ?? null,
       pinned: isMessagePinned(r.id),
     }));
