@@ -79,6 +79,7 @@ import {
   PERSON_KIND_LABEL,
   PERSON_STAGE_LABEL,
   PERSON_STAGE_RANK,
+  withOwnerCategory,
 } from "../lib/personSegments";
 import {
   ACCOUNT_SEGMENTS,
@@ -101,6 +102,7 @@ function fmtDate(iso: string | null): string {
 
 const KIND_TONE: Record<AdminUserRow["kind"], string> = {
   person: "text-emerald-600 border-emerald-500/40 bg-emerald-500/10",
+  circle: "text-violet-600 border-violet-500/40 bg-violet-500/10",
   team: "text-sky-600 border-sky-500/40 bg-sky-500/10",
   test: "text-muted-foreground border-border bg-muted",
   bot: "text-amber-600 border-amber-500/40 bg-amber-500/10",
@@ -435,6 +437,25 @@ export function AccountsTableClient() {
         width: 120,
       },
       {
+        id: "ai_active_days",
+        accessorKey: "ai_active_days",
+        header: "Active days",
+        filter: "number",
+        align: "right",
+        cell: (row) =>
+          row.ai_active_days > 0 ? (
+            <span
+              className="text-xs tabular-nums"
+              title={`First AI use ${fmtDate(row.first_ai_activity)}`}
+            >
+              {row.ai_active_days.toLocaleString()}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        width: 100,
+      },
+      {
         id: "last_ai_activity",
         accessorKey: "last_ai_activity",
         header: "Last AI use",
@@ -676,15 +697,24 @@ export function AccountsTableClient() {
     : null;
   // A focused account always shows, whatever segment it falls in — the admin
   // asked for that one record by id.
+  // Your own category (friend, employee, test…) outranks the automatic guess.
+  const classifiedRows = rows.map((row) => {
+    const category = researchByUser.get(row.id)?.category;
+    return withOwnerCategory(
+      row,
+      category,
+      category ? RELATIONSHIP_LABELS[category] : undefined,
+    );
+  });
   const segmentCounts = Object.fromEntries(
     ACCOUNT_SEGMENTS.map((entry) => [
       entry.id,
-      rows.filter((row) => rowInSegment(row, entry.id)).length,
+      classifiedRows.filter((row) => rowInSegment(row, entry.id)).length,
     ]),
   ) as Record<AccountSegment, number>;
   const visibleRows = focusedUserId
-    ? rows.filter((row) => row.id === focusedUserId)
-    : rows.filter((row) => rowInSegment(row, segment));
+    ? classifiedRows.filter((row) => row.id === focusedUserId)
+    : classifiedRows.filter((row) => rowInSegment(row, segment));
 
   function selectSegment(next: string) {
     const params = new URLSearchParams(searchParams.toString());

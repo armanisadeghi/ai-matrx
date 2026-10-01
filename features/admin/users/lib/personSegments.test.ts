@@ -1,4 +1,8 @@
-import { classifyPerson, type PersonSignals } from "./personSegments";
+import {
+  classifyPerson,
+  withOwnerCategory,
+  type PersonSignals,
+} from "./personSegments";
 import { rowInSegment } from "./accountSegments";
 
 const CHROME_MAC =
@@ -80,5 +84,22 @@ describe("rowInSegment", () => {
     expect(
       rowInSegment({ ...person, is_anonymous: true, ai_requests: 1 }, "using_ai"),
     ).toBe(true);
+  });
+});
+
+describe("withOwnerCategory", () => {
+  const row = { kind: "person", kind_reason: "Ordinary browser" } as const;
+  it("lets the owner's category win over the automatic kind", () => {
+    expect(withOwnerCategory(row, "friend", "Friend")).toEqual({
+      kind: "circle",
+      kind_reason: "Your category: Friend",
+    });
+    expect(withOwnerCategory({ ...row, kind: "bot" }, "employee").kind).toBe("team");
+    expect(withOwnerCategory(row, "test").kind).toBe("test");
+  });
+  it("keeps the automatic kind for categories that say nothing about who it is", () => {
+    expect(withOwnerCategory(row, "unknown")).toBe(row);
+    expect(withOwnerCategory({ ...row, kind: "bot" }, "real_user").kind).toBe("bot");
+    expect(withOwnerCategory(row, undefined)).toBe(row);
   });
 });

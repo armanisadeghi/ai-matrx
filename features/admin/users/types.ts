@@ -41,8 +41,11 @@ export interface AdminUserRow {
   ai_requests: number;
   /** AI requests in the last 7 days. */
   ai_requests_7d: number;
+  /** Distinct UTC days with AI activity — 2+ is sustained use. */
+  ai_active_days: number;
   /** All-time stored AI cost, USD. */
   ai_cost: number;
+  first_ai_activity: string | null;
   last_ai_activity: string | null;
   /** First observed browser, e.g. "Chrome 153 · macOS"; null when never seen. */
   client: string | null;

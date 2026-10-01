@@ -13,6 +13,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { ONBOARDING_METADATA_KEY } from "@/utils/onboarding";
 import type { AdminUserRow } from "@/features/admin/users/types";
+import type { Database } from "@/types/database.types";
 import { loadAdminOrganizationDirectory } from "@/features/admin/users/server/organizationMembershipAdmin";
 import { isJsonObject } from "@/types/json";
 import {
@@ -56,22 +57,8 @@ interface ProfileRow {
   avatar_url: string | null;
 }
 
-interface GuestSignalRow {
-  id: string;
-  auth_user_id: string | null;
-  converted_to_user_id: string | null;
-  user_agent: string | null;
-  created_at: string | null;
-  acquisition: Record<string, unknown> | null;
-  acquisition_user_id: string | null;
-}
-
-interface UsageRollupRow {
-  user_id: string;
-  total_requests: number;
-  total_cost: number;
-  last_activity: string | null;
-}
+type AccountFactsRow =
+  Database["users"]["Functions"]["admin_account_facts"]["Returns"][number];
 
 interface GuestSignal {
   userAgent: string | null;
@@ -83,118 +70,44 @@ interface GuestSignal {
 }
 
 /**
- * Every guest row that names an account. Script clients write a first-touch
- * row per request (one test account held thousands on 2026-09-30), so this is
- * ~8k rows; read one page at a time it took 5 s. The id space is cut into
- * eight disjoint slices, each read to completion in parallel — same rows,
- * same completeness proof, an eighth of the wall time.
+ * Everything that says who an account is and how far it got, one row per
+ * account, computed by the database in one pass (users.admin_account_facts):
+ * AI requests from the runtime spine (all-time, 7d, active days), settled AI
+ * cost, and the first browser + first touch from users.guest_executions.
+ * Replaced three reads (8 guest-row slices + the usage rollup twice, ~5 s)
+ * with one ~0.5 s call on 2026-09-30.
  */
-// Widened to `string` so supabase-js does not parse the json-path select into a
-// row type (TS2589); the shape is declared once, by GuestSignalRow.
-const GUEST_SIGNAL_SELECT: string =
-  "id, auth_user_id, converted_to_user_id, user_agent, created_at, acquisition:metadata->acquisition, acquisition_user_id:metadata->>acquisition_user_id";
-
-const UUID_SLICE_BOUNDS = ["0", "2", "4", "6", "8", "a", "c", "e"].map(
-  (digit) => `${digit}0000000-0000-0000-0000-000000000000`,
-);
-
-async function readGuestSignalRows(
-  admin: AdminClient,
-): Promise<GuestSignalRow[]> {
-  const slices = await Promise.all(
-    UUID_SLICE_BOUNDS.map((lower, index) => {
-      const upper = UUID_SLICE_BOUNDS[index + 1];
-      return readAllRows<GuestSignalRow>(
-        ({ from, to }) => {
-          let query = admin
-            .schema("users")
-            .from("guest_executions")
-            .select(GUEST_SIGNAL_SELECT, { count: "exact" })
-            .or(
-              "auth_user_id.not.is.null,converted_to_user_id.not.is.null,metadata->>acquisition_user_id.not.is.null",
-            )
-            .gte("id", lower);
-          if (upper) query = query.lt("id", upper);
-          return query
-            .order("id")
-            .range(from, to)
-            .overrideTypes<GuestSignalRow[], { merge: false }>();
-        },
-        { label: `users.guest_executions (admin roster signals, slice ${index})` },
-      );
-    }),
-  );
-  return slices.flat();
-}
-
-function readUsageRollup(
-  admin: AdminClient,
-  from: string | null,
-): Promise<UsageRollupRow[]> {
-  return readAllRows<UsageRollupRow>(
-    ({ from: start, to }) =>
+function readAccountFacts(admin: AdminClient): Promise<AccountFactsRow[]> {
+  return readAllRows<AccountFactsRow>(
+    ({ from, to }) =>
       admin
-        .schema("chat")
-        .rpc(
-          "admin_user_usage_rollup",
-          { p_from: from ?? undefined, p_to: undefined },
-          { count: "exact" },
-        )
-        .select("user_id, total_requests, total_cost, last_activity")
+        .schema("users")
+        .rpc("admin_account_facts", undefined, { count: "exact" })
         .order("user_id")
-        .range(start, to),
-    { label: `chat.admin_user_usage_rollup (${from ?? "all-time"})` },
+        .range(from, to),
+    { label: "users.admin_account_facts" },
   );
 }
 
 function acquisitionText(
-  row: GuestSignalRow,
+  acquisition: AccountFactsRow["acquisition"],
   key: string,
 ): string | null {
-  const value = row.acquisition?.[key];
+  if (!isJsonObject(acquisition)) return null;
+  const value = acquisition[key];
   return typeof value === "string" && value.trim() ? value : null;
 }
 
-/**
- * One signal per account: the EARLIEST row that captured a first touch wins
- * (it is where the person arrived from); otherwise the earliest linked guest
- * row still supplies the browser. Later rows never overwrite the first touch.
- */
-function indexGuestSignals(rows: GuestSignalRow[]): Map<string, GuestSignal> {
-  const sorted = [...rows].sort((a, b) =>
-    (a.created_at ?? "").localeCompare(b.created_at ?? ""),
-  );
-  const byUser = new Map<string, { signal: GuestSignal; hasTouch: boolean }>();
-  for (const row of sorted) {
-    const hasTouch = Boolean(acquisitionText(row, "captured_at"));
-    const signal: GuestSignal = {
-      userAgent: row.user_agent,
-      landingHost: acquisitionText(row, "landing_host"),
-      landingPath: acquisitionText(row, "landing_path"),
-      referrer: acquisitionText(row, "referrer"),
-      referrerState: acquisitionText(row, "referrer_state"),
-      utmSource: acquisitionText(row, "utm_source"),
-    };
-    const ids = new Set(
-      [row.auth_user_id, row.converted_to_user_id, row.acquisition_user_id]
-        .filter((id): id is string => Boolean(id)),
-    );
-    for (const id of ids) {
-      const current = byUser.get(id);
-      if (!current || (hasTouch && !current.hasTouch)) {
-        byUser.set(id, {
-          signal: {
-            ...signal,
-            userAgent: signal.userAgent ?? current?.signal.userAgent ?? null,
-          },
-          hasTouch,
-        });
-      } else if (!current.signal.userAgent && signal.userAgent) {
-        current.signal.userAgent = signal.userAgent;
-      }
-    }
-  }
-  return new Map([...byUser].map(([id, entry]) => [id, entry.signal]));
+function signalOf(facts: AccountFactsRow | undefined): GuestSignal | null {
+  if (!facts || (!facts.user_agent && !facts.acquisition)) return null;
+  return {
+    userAgent: facts.user_agent,
+    landingHost: acquisitionText(facts.acquisition, "landing_host"),
+    landingPath: acquisitionText(facts.acquisition, "landing_path"),
+    referrer: acquisitionText(facts.acquisition, "referrer"),
+    referrerState: acquisitionText(facts.acquisition, "referrer_state"),
+    utmSource: acquisitionText(facts.acquisition, "utm_source"),
+  };
 }
 
 /** Where the account first came from, as one short label. */
@@ -245,17 +158,12 @@ export async function GET() {
   // 2. profiles (display name / avatar) — users.profiles is one row per user.
   // Paged to completion: a bare select stops at 1000 rows, and every account
   // past that printed as its UUID even when it had a name.
-  // 2b. The facts that say who an account is and how far it got: the first
-  // browser we saw for it (users.guest_executions) and its AI usage, all-time
-  // and for the last 7 days (chat.admin_user_usage_rollup).
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  // 2b. The facts that say who an account is and how far it got.
   let profiles: ProfileRow[];
-  let guestRows: GuestSignalRow[];
-  let usageAll: UsageRollupRow[];
-  let usageWeek: UsageRollupRow[];
+  let facts: AccountFactsRow[];
   let parties: { id: string; claimed_by: string | null }[];
   try {
-    [profiles, guestRows, usageAll, usageWeek, parties] = await Promise.all([
+    [profiles, facts, parties] = await Promise.all([
       readAllRows<ProfileRow>(
         ({ from, to }) =>
           admin
@@ -266,9 +174,7 @@ export async function GET() {
             .range(from, to),
         { label: "users.profiles (admin roster)" },
       ),
-      readGuestSignalRows(admin),
-      readUsageRollup(admin, null),
-      readUsageRollup(admin, weekAgo),
+      readAccountFacts(admin),
       readAllRows<{ id: string; claimed_by: string | null }>(
         ({ from, to }) => admin.schema("crm").from("party")
           .select("id, claimed_by", { count: "exact" })
@@ -285,9 +191,7 @@ export async function GET() {
     );
   }
   const profileById = new Map(profiles.map((p) => [p.id, p]));
-  const usageAllById = new Map(usageAll.map((u) => [u.user_id, u]));
-  const usageWeekById = new Map(usageWeek.map((u) => [u.user_id, u]));
-  const signalsByUserId = indexGuestSignals(guestRows);
+  const factsById = new Map(facts.map((f) => [f.user_id, f]));
   const partiesByUser = new Map<string, string[]>();
   for (const party of parties) if (party.claimed_by) {
     partiesByUser.set(party.claimed_by, [...(partiesByUser.get(party.claimed_by) ?? []), party.id]);
@@ -348,10 +252,10 @@ export async function GET() {
         ? [appMeta.provider]
         : [];
     const adminLevel = levelByUser.get(u.id) ?? null;
-    const signal = signalsByUserId.get(u.id);
-    const usage = usageAllById.get(u.id);
-    const aiRequests = Number(usage?.total_requests ?? 0);
-    const aiRequests7d = Number(usageWeekById.get(u.id)?.total_requests ?? 0);
+    const fact = factsById.get(u.id);
+    const signal = signalOf(fact);
+    const aiRequests = Number(fact?.ai_requests ?? 0);
+    const aiRequests7d = Number(fact?.ai_requests_7d ?? 0);
     const segment = classifyPerson({
       email: u.email ?? null,
       isAnonymous: Boolean(u.is_anonymous),
@@ -394,8 +298,10 @@ export async function GET() {
       stage: segment.stage,
       ai_requests: aiRequests,
       ai_requests_7d: aiRequests7d,
-      ai_cost: Number(usage?.total_cost ?? 0),
-      last_ai_activity: usage?.last_activity ?? null,
+      ai_active_days: Number(fact?.ai_active_days ?? 0),
+      ai_cost: Number(fact?.ai_cost ?? 0),
+      first_ai_activity: fact?.first_ai_at ?? null,
+      last_ai_activity: fact?.last_ai_at ?? null,
       client: signal?.userAgent
         ? describeAcquisitionClient(signal.userAgent)
         : null,

@@ -15,6 +15,7 @@ export const ACCOUNT_SEGMENTS = [
   { id: "using_ai", label: "Using AI" },
   { id: "unverified", label: "Unverified" },
   { id: "guests", label: "Guests" },
+  { id: "circle", label: "Friends & family" },
   { id: "bots_tests", label: "Bots & tests" },
   { id: "team", label: "Team" },
   { id: "all", label: "All" },
@@ -50,6 +51,8 @@ export function rowInSegment(row: SegmentRow, segment: AccountSegment): boolean 
       return row.kind === "person" && row.is_anonymous;
     case "bots_tests":
       return row.kind === "bot" || row.kind === "test";
+    case "circle":
+      return row.kind === "circle";
     case "team":
       return row.kind === "team";
     case "all":

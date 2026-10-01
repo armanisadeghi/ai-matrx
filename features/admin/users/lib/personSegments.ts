@@ -3,7 +3,7 @@
 // THE answer to "who is this account, and how far did they get?" for every
 // admin roster. Two independent axes, each a single ordered value:
 //
-//   kind  — person | team | test | bot     (is this a human we acquired?)
+//   kind  — person | circle | team | test | bot  (is this a human we acquired?)
 //   stage — guest → guest_used_ai → signed_up → signed_in → used_ai → active
 //
 // Measured on the main database 2026-09-30: of 979 anonymous accounts created
@@ -19,11 +19,12 @@
 
 import { classifyAcquisitionTraffic } from "@/lib/product-analytics/user-acquisition";
 
-export const PERSON_KINDS = ["person", "team", "test", "bot"] as const;
+export const PERSON_KINDS = ["person", "circle", "team", "test", "bot"] as const;
 export type PersonKind = (typeof PERSON_KINDS)[number];
 
 export const PERSON_KIND_LABEL: Record<PersonKind, string> = {
   person: "Person",
+  circle: "Friends & family",
   team: "Team",
   test: "Test",
   bot: "Bot",
@@ -161,4 +162,31 @@ function classifyStage(signals: PersonSignals): PersonStage {
   if (signals.aiRequests > 0) return "used_ai";
   if (signals.lastSignInAt) return "signed_in";
   return "signed_up";
+}
+
+/**
+ * The owner's own category (crm.party_research, set by hand on this page)
+ * outranks every automatic signal. Categories that say nothing about who the
+ * account is ("unknown", "real_user") leave the automatic answer standing.
+ */
+const OWNER_CATEGORY_KIND: Partial<Record<string, PersonKind>> = {
+  friend: "circle",
+  family: "circle",
+  employee: "team",
+  former_employee: "team",
+  owner: "team",
+  test: "test",
+  bot: "bot",
+};
+
+export function withOwnerCategory<
+  T extends { kind: PersonKind; kind_reason: string },
+>(row: T, category: string | null | undefined, categoryLabel?: string): T {
+  const kind = category ? OWNER_CATEGORY_KIND[category] : undefined;
+  if (!kind) return row;
+  return {
+    ...row,
+    kind,
+    kind_reason: `Your category: ${categoryLabel ?? category}`,
+  };
 }

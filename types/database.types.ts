@@ -46631,6 +46631,51 @@ export type Database = {
         }
         Relationships: []
       }
+      row_versions_2028_03: {
+        Row: {
+          actor_id: string | null
+          actor_tier: string | null
+          entity_type: string
+          id: number
+          migration_id: string | null
+          occurred_at: string
+          operation: string
+          operation_name: string | null
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_tier?: string | null
+          entity_type: string
+          id?: never
+          migration_id?: string | null
+          occurred_at?: string
+          operation: string
+          operation_name?: string | null
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          actor_tier?: string | null
+          entity_type?: string
+          id?: never
+          migration_id?: string | null
+          occurred_at?: string
+          operation?: string
+          operation_name?: string | null
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       row_versions_default: {
         Row: {
           actor_id: string | null
@@ -85306,6 +85351,7 @@ export type Database = {
           email: string | null
           email_confirmed_at: string | null
           id: string | null
+          is_anonymous: boolean | null
           last_sign_in_at: string | null
           raw_app_meta_data: Json | null
           raw_user_meta_data: Json | null
@@ -85317,6 +85363,7 @@ export type Database = {
           email?: string | null
           email_confirmed_at?: string | null
           id?: string | null
+          is_anonymous?: never
           last_sign_in_at?: string | null
           raw_app_meta_data?: Json | null
           raw_user_meta_data?: Json | null
@@ -85328,6 +85375,7 @@ export type Database = {
           email?: string | null
           email_confirmed_at?: string | null
           id?: string | null
+          is_anonymous?: never
           last_sign_in_at?: string | null
           raw_app_meta_data?: Json | null
           raw_user_meta_data?: Json | null
@@ -86062,6 +86110,14 @@ export type Database = {
         Args: { p_ref: string; p_type: string }
         Returns: string
       }
+      _drill_measure_filter: {
+        Args: { p_base: number; p_cols: Json; p_def: Json; p_where: Json }
+        Returns: Json
+      }
+      _drill_measure_plan: {
+        Args: { p_def: Json; p_depth?: number; p_key: string }
+        Returns: Json
+      }
       _drill_moment_sql: {
         Args: { p_ref: string; p_type: string }
         Returns: string
@@ -86082,6 +86138,14 @@ export type Database = {
           p_source: Json
         }
         Returns: Json
+      }
+      _drill_question_problems: {
+        Args: { p_def: Json; p_question: Json; p_where: string }
+        Returns: string[]
+      }
+      _drill_ratio_sql: {
+        Args: { p_filter?: string; p_measure: Json; p_prefix: string }
+        Returns: string
       }
       _drill_resolve: {
         Args: { p_organization_id: string; p_token: string }
@@ -87317,6 +87381,7 @@ export type Database = {
       drill_ask: {
         Args: { p_organization_id: string; p_question?: Json; p_source: Json }
         Returns: {
+          as_of: string
           compare: Json
           delta: Json
           distinct_groups: number
@@ -87331,14 +87396,23 @@ export type Database = {
           says: string
         }[]
       }
+      drill_calendar: { Args: { p_organization_id: string }; Returns: Json }
       drill_declared: { Args: { p_key: string }; Returns: Json }
       drill_declared_all: { Args: never; Returns: Json }
       drill_def__agents_by_model: { Args: never; Returns: Json }
+      drill_def__ai_calls: { Args: never; Returns: Json }
       drill_def__ai_usage: { Args: never; Returns: Json }
+      drill_def__ai_usage_executions: { Args: never; Returns: Json }
+      drill_def__kg_cost: { Args: never; Returns: Json }
+      drill_def__workflow_runs: { Args: never; Returns: Json }
       drill_definition_problems: { Args: { p_def: Json }; Returns: string[] }
       drill_describe: {
         Args: { p_organization_id: string; p_source: Json }
         Returns: Json
+      }
+      drill_knob: {
+        Args: { p_name: string; p_organization_id: string }
+        Returns: number
       }
       drill_rows: {
         Args: { p_organization_id: string; p_question?: Json; p_source: Json }
@@ -105993,6 +106067,27 @@ export type Database = {
         }
         Relationships: []
       }
+      _ai_usage_hourly_watermark: {
+        Row: {
+          covered_from: string
+          covered_to: string
+          refreshed_at: string
+          singleton: boolean
+        }
+        Insert: {
+          covered_from: string
+          covered_to: string
+          refreshed_at?: string
+          singleton?: boolean
+        }
+        Update: {
+          covered_from?: string
+          covered_to?: string
+          refreshed_at?: string
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       execution_event_cursor: {
         Row: {
           last_seq: number
@@ -106007,6 +106102,13 @@ export type Database = {
           root_execution_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "execution_event_cursor_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: true
+            referencedRelation: "_ai_usage_calls"
+            referencedColumns: ["execution_id"]
+          },
           {
             foreignKeyName: "execution_event_cursor_root_execution_id_fkey"
             columns: ["root_execution_id"]
@@ -106097,6 +106199,13 @@ export type Database = {
             foreignKeyName: "global_execution_parent_execution_id_fkey"
             columns: ["parent_execution_id"]
             isOneToOne: false
+            referencedRelation: "_ai_usage_calls"
+            referencedColumns: ["execution_id"]
+          },
+          {
+            foreignKeyName: "global_execution_parent_execution_id_fkey"
+            columns: ["parent_execution_id"]
+            isOneToOne: false
             referencedRelation: "global_execution"
             referencedColumns: ["id"]
           },
@@ -106106,6 +106215,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "global_request"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "global_execution_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: false
+            referencedRelation: "_ai_usage_calls"
+            referencedColumns: ["execution_id"]
           },
           {
             foreignKeyName: "global_execution_root_execution_id_fkey"
@@ -106145,6 +106261,13 @@ export type Database = {
           state?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "global_execution_checkpoint_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "_ai_usage_calls"
+            referencedColumns: ["execution_id"]
+          },
           {
             foreignKeyName: "global_execution_checkpoint_execution_id_fkey"
             columns: ["execution_id"]
@@ -106189,6 +106312,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "global_execution_control_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: true
+            referencedRelation: "_ai_usage_calls"
+            referencedColumns: ["execution_id"]
+          },
           {
             foreignKeyName: "global_execution_control_root_execution_id_fkey"
             columns: ["root_execution_id"]
@@ -106240,8 +106370,22 @@ export type Database = {
             foreignKeyName: "global_execution_event_execution_id_fkey"
             columns: ["execution_id"]
             isOneToOne: false
+            referencedRelation: "_ai_usage_calls"
+            referencedColumns: ["execution_id"]
+          },
+          {
+            foreignKeyName: "global_execution_event_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
             referencedRelation: "global_execution"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "global_execution_event_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: false
+            referencedRelation: "_ai_usage_calls"
+            referencedColumns: ["execution_id"]
           },
           {
             foreignKeyName: "global_execution_event_root_execution_id_fkey"
@@ -106290,6 +106434,13 @@ export type Database = {
           quantities?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "global_meter_entry_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "_ai_usage_calls"
+            referencedColumns: ["execution_id"]
+          },
           {
             foreignKeyName: "global_meter_entry_execution_id_fkey"
             columns: ["execution_id"]
@@ -106642,6 +106793,13 @@ export type Database = {
             foreignKeyName: "work_item_execution_id_fkey"
             columns: ["execution_id"]
             isOneToOne: false
+            referencedRelation: "_ai_usage_calls"
+            referencedColumns: ["execution_id"]
+          },
+          {
+            foreignKeyName: "work_item_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
             referencedRelation: "global_execution"
             referencedColumns: ["id"]
           },
@@ -106649,7 +106807,80 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      _ai_calls: {
+        Row: {
+          agent_id: string | null
+          bucket: string | null
+          bucket_10m: string | null
+          call_id: string | null
+          calls: number | null
+          conversation_id: string | null
+          cost: number | null
+          created_at: string | null
+          finish_reason: string | null
+          iteration: number | null
+          latency_ms: number | null
+          model: string | null
+          organization_id: string | null
+          origin: string | null
+          person_id: string | null
+          provider: string | null
+          request_id: string | null
+          request_in_ledger: boolean | null
+          session_id: string | null
+          status: string | null
+          tokens_cached: number | null
+          tokens_in: number | null
+          tokens_out: number | null
+          tokens_total: number | null
+          unpriced_calls: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_request_user_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "_ai_usage_calls"
+            referencedColumns: ["request_id"]
+          },
+        ]
+      }
+      _ai_usage_calls: {
+        Row: {
+          agent_id: string | null
+          app: string | null
+          bucket: string | null
+          bucket_10m: string | null
+          call_model: string | null
+          calls: number | null
+          conversation_id: string | null
+          cost: number | null
+          created_at: string | null
+          execution_id: string | null
+          feature: string | null
+          finish_reason: string | null
+          got_nothing_back: boolean | null
+          has_request: boolean | null
+          iterations: number | null
+          model: string | null
+          organization_id: string | null
+          origin: string | null
+          paid_calls: number | null
+          person_id: string | null
+          provider: string | null
+          request_id: string | null
+          requests: number | null
+          session_id: string | null
+          source: string | null
+          tokens_cached: number | null
+          tokens_in: number | null
+          tokens_out: number | null
+          tool_calls: number | null
+          trigger: string | null
+          unpriced_calls: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       agent_usage_totals: {
@@ -124634,6 +124865,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_account_facts: {
+        Args: never
+        Returns: {
+          acquisition: Json
+          ai_active_days: number
+          ai_cost: number
+          ai_requests: number
+          ai_requests_7d: number
+          first_ai_at: string
+          last_ai_at: string
+          user_agent: string
+          user_id: string
+        }[]
+      }
       credential_item_holdings: {
         Args: { p_item_ids: string[] }
         Returns: {
@@ -130733,6 +130978,13 @@ export type Database = {
             foreignKeyName: "wf_checkpoint_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
+            referencedRelation: "_run_facts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "wf_checkpoint_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
             referencedRelation: "run"
             referencedColumns: ["id"]
           },
@@ -131220,6 +131472,13 @@ export type Database = {
             foreignKeyName: "wf_idempotency_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
+            referencedRelation: "_run_facts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "wf_idempotency_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
             referencedRelation: "run"
             referencedColumns: ["id"]
           },
@@ -131315,6 +131574,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "checkpoint"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_job_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "_run_facts"
+            referencedColumns: ["run_id"]
           },
           {
             foreignKeyName: "wf_job_run_id_fkey"
@@ -131508,6 +131774,13 @@ export type Database = {
             foreignKeyName: "wf_node_events_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
+            referencedRelation: "_run_facts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "wf_node_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
             referencedRelation: "run"
             referencedColumns: ["id"]
           },
@@ -131621,6 +131894,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "wf_node_outcome_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "_run_facts"
+            referencedColumns: ["run_id"]
+          },
           {
             foreignKeyName: "wf_node_outcome_run_id_fkey"
             columns: ["run_id"]
@@ -131986,6 +132266,13 @@ export type Database = {
             foreignKeyName: "wf_recovery_audit_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
+            referencedRelation: "_run_facts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "wf_recovery_audit_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
             referencedRelation: "run"
             referencedColumns: ["id"]
           },
@@ -132173,6 +132460,13 @@ export type Database = {
             foreignKeyName: "wf_run_parent_run_id_fkey"
             columns: ["parent_run_id"]
             isOneToOne: false
+            referencedRelation: "_run_facts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "wf_run_parent_run_id_fkey"
+            columns: ["parent_run_id"]
+            isOneToOne: false
             referencedRelation: "run"
             referencedColumns: ["id"]
           },
@@ -132270,6 +132564,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_definition_catalog"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "run_log_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "_run_facts"
+            referencedColumns: ["run_id"]
           },
           {
             foreignKeyName: "run_log_run_id_fkey"
@@ -132733,6 +133034,13 @@ export type Database = {
             foreignKeyName: "wf_trigger_fire_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
+            referencedRelation: "_run_facts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "wf_trigger_fire_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
             referencedRelation: "run"
             referencedColumns: ["id"]
           },
@@ -132818,6 +133126,13 @@ export type Database = {
             foreignKeyName: "work_item_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
+            referencedRelation: "_run_facts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "work_item_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
             referencedRelation: "run"
             referencedColumns: ["id"]
           },
@@ -132862,6 +133177,79 @@ export type Database = {
       }
     }
     Views: {
+      _run_cost: {
+        Row: {
+          cost: number | null
+          requests: number | null
+          run_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_request_workflow_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "_run_facts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "user_request_workflow_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_request_workflow_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_engram_confirmed_run"
+            referencedColumns: ["run_id"]
+          },
+        ]
+      }
+      _run_facts: {
+        Row: {
+          completed_at: string | null
+          cost: number | null
+          created_at: string | null
+          duration_ms: number | null
+          failed: number | null
+          finished: number | null
+          has_request: number | null
+          how_started: string | null
+          organization_id: string | null
+          person_id: string | null
+          requests: number | null
+          run_id: string | null
+          started_at: string | null
+          status: string | null
+          steps_executed: number | null
+          workflow_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wf_run_definition_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_run_definition_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_run_definition_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "v_definition_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card: {
         Row: {
           card_visibility: Database["platform"]["Enums"]["visibility"] | null

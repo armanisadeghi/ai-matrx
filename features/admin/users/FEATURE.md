@@ -72,9 +72,14 @@ re-derive either in a component:
 - **stage** — `guest → guest_used_ai → signed_up → signed_in → used_ai →
   active` (AI in the last 7 days).
 
-Inputs are read, never stored: the earliest linked `users.guest_executions`
-row (browser + first touch) and `chat.admin_user_usage_rollup` all-time and
-7-day. The preset slices (People default, Using AI, Unverified, Guests,
+Inputs come from ONE database function, `users.admin_account_facts()`
+(service-role only, SECURITY DEFINER, ~0.5 s): AI requests from the runtime
+spine (all-time, 7-day, active days, first/last), settled AI cost, and the
+earliest linked `users.guest_executions` row (browser + first touch). Computed
+on read, never stale; a stored table becomes worth it only when this outgrows
+a second. The owner's own category in `crm.party_research` (friend, employee,
+test, bot…) outranks the automatic kind via `withOwnerCategory`; friends and
+family get their own `circle` kind and slice. The preset slices (People default, Using AI, Unverified, Guests,
 Bots & tests, Team, All) live in `lib/accountSegments.ts`, URL `?segment=`,
 each button carrying its count; custom slices are the table's "+" view tabs,
 persisted through `useListViewPrefs("admin-user-accounts")`.
@@ -205,6 +210,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 - Known sibling path (not closed here): the pre-existing `platform_admin_all` RLS policy still lets any platform admin UPDATE the table directly; the RPC is the only sanctioned writer.
 
 ## Change log
+- `2026-09-30` — Accounts facts now come from `users.admin_account_facts()` (one ~0.5 s database pass replacing 8 guest-row slices and two usage-rollup calls, ~5 s). Added Active days and first AI use; the owner's `crm.party_research` category overrides the automatic kind; new Friends & family slice.
 - `2026-09-30` — Accounts roster triage. Measured live: 979 of 1,071 accounts created in 30 days were guests, 670 of them HeadlessChrome; 91 dotted-Gmail signups never confirmed; ~20 people actually used AI. Added the `kind`/`stage` decision tree, preset segments defaulting to People, AI requests (all-time + 7d), last AI use, AI cost, source, client and landing columns, and a KPI strip. Fixed `users.profiles` being read without paging (names past row 1,000 dropped) and widened the shared classifier to `*.localhost` previews and `python-httpx`/`aiohttp`.
 
 - `2026-09-17` — **The organizations admin no longer pre-picks the first organization in the list.** `effectiveSelectedOrganizationId` ended in `?? visibleOrganizations[0]?.id`, so opening the panel put an admin in front of a tenant nobody chose — and every action in that panel (add member, change role, remove) acts on it. It now honours only what the admin picked: `?org=` in the URL, or the row they opened. With nothing picked the panel shows its existing "Select an organization" state. Guard: `pnpm check:organization-context`.
