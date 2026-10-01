@@ -27,6 +27,9 @@ jest.mock("@/features/surfaces/manifests/registry", () => ({
             { name: "plain", label: "Plain value", description: "No ceiling" },
             { name: "hidden", label: "Hidden value", description: "Bindable only", autoContext: false },
             { name: "selection", label: "Current selection", description: "x" },
+            // A first-turn SYSTEM value the page also declares — the live shape
+            // of `conversation` on `matrx-user/chat` (inline up to 1000).
+            { name: "conversation", label: "This conversation", description: "The chat", inlineUpTo: 1000 },
           ],
         }
       : undefined,
@@ -362,5 +365,43 @@ describe("the person's rule holds whichever side files the value differently", (
     );
     expect(rows[0]).toMatchObject({ surfaceKey: "_default", include: false, decided_by: { include: "you" } });
     expect(context).toBeUndefined();
+  });
+});
+
+// Break this catches: the client giving first-turn system values no page layer
+// while the server applies the PRIMARY surface's (receipt seen live on the
+// clone: `conversation` filed under `matrx-user/chat`, limit from the page) —
+// every new chat went amber on its first turn.
+describe("system values get the primary surface's page layer, as on the server", () => {
+  function firstTurnOn(surfaceName: string | null): RootState {
+    const state = makeState({ entries: [], surfaceName }) as unknown as Record<string, unknown>;
+    state.messages = { byConversationId: { c1: { orderedIds: [], apiEndpointMode: "agent" } } };
+    state.userAuth = { id: "u1", email: "admin@admin.com" };
+    state.userProfile = {};
+    state.appContext = { scope_selections: {} };
+    return state as unknown as RootState;
+  }
+
+  it.each([
+    ["conversation", "matrx-user/demo", 1000, "page", "This conversation"],
+    ["user", "_default", 200, "default", "User"],
+  ])("%s is filed under %s with limit %d decided by %s", (key, surfaceKey, limit, by, label) => {
+    const { rows } = buildRequestContext(firstTurnOn("matrx-user/demo"), "c1");
+    const row = rows.find((r) => r.key === key);
+    expect(row).toMatchObject({
+      surfaceKey,
+      max_inline_chars: limit,
+      decided_by: { max_inline_chars: by },
+      label,
+    });
+  });
+
+  it("with no page in play the same system value keeps the default layer", () => {
+    const { rows } = buildRequestContext(firstTurnOn(null), "c1");
+    expect(rows.find((r) => r.key === "conversation")).toMatchObject({
+      surfaceKey: "_default",
+      max_inline_chars: 200,
+      decided_by: { max_inline_chars: "default" },
+    });
   });
 });

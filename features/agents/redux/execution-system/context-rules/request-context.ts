@@ -117,8 +117,29 @@ export function collectContextRowSources(
   opts: RequestContextOptions = {},
 ): ContextRowSource[] {
   const conversation = state.conversations?.byConversationId[conversationId];
-  const surfaceName = conversation?.surfaceName ?? null;
+  // THE PAGE LAYER IS THE PRIMARY SURFACE'S, for every source. The server
+  // applies the page layer of the request's primary surface (`client.surface`)
+  // to every value it receives — a page value, an attached file, a first-turn
+  // system value alike — so the client reads the same manifest for all of
+  // them. A system value the page also declares (`conversation` on
+  // `matrx-user/chat`, limit 1000) went amber on every new chat's first turn
+  // while the client gave system rows no page layer at all.
+  const surfaceName = resolveClientSurface(state, conversationId) ?? null;
   const manifest = surfaceName ? getManifest(surfaceName) : undefined;
+  const declaredValue = (key: string) => manifest?.values.find((v) => v.name === key);
+  /** The page layer for a value the primary surface declares; null otherwise. */
+  const surfaceLayer = (key: string, pageLimit: number | null = null) => {
+    const declared = declaredValue(key);
+    if (!declared) return { surfaceKey: DEFAULT_SURFACE_KEY, surface: null };
+    return {
+      surfaceKey: surfaceName ?? DEFAULT_SURFACE_KEY,
+      surface: {
+        declared: true,
+        auto_context: declared.autoContext ?? true,
+        max_inline_chars: pageLimit ?? validLimit(declared.inlineUpTo),
+      },
+    };
+  };
   // The agent record may not be loaded (or, in a narrow harness, not present):
   // then its layer is simply unknown here and the receipt is the referee.
   const agentId = conversation?.agentId ?? null;
@@ -142,7 +163,7 @@ export function collectContextRowSources(
   // 1. Everything in the conversation's context (page values + attached).
   const entries = Object.values(state.instanceContext?.byConversationId[conversationId] ?? {});
   for (const entry of entries) {
-    const declared = manifest?.values.find((v) => v.name === entry.key);
+    const declared = declaredValue(entry.key);
     const pointer = POINTER_INLINE_CEILINGS[entry.key];
     const ownLimit = isRecord(entry.value) && "content" in entry.value
       ? validLimit(entry.value.max_inline_chars)
@@ -184,15 +205,16 @@ export function collectContextRowSources(
   const resourceContext = selectResourceContextPayload(conversationId)(state);
   for (const [key, value] of Object.entries(resourceContext ?? {})) {
     const fileId = key.replace(/^attached_file_/, "");
+    const page = surfaceLayer(key);
     byKey.set(key, {
       key,
       label: attachedFileLabel(state, conversationId, fileId),
-      surfaceKey: DEFAULT_SURFACE_KEY,
+      surfaceKey: page.surfaceKey,
       origin: "attached",
       value,
       // The server measures a reference after resolving it.
       chars: null,
-      layers: { agent: agentLayer(key), surface: null },
+      layers: { agent: agentLayer(key), surface: page.surface },
     });
   }
 
@@ -201,13 +223,14 @@ export function collectContextRowSources(
   if (includeAmbient) {
     const ambient = buildAmbientContext(state, conversationId);
     for (const [key, value] of Object.entries(ambient ?? {})) {
+      const page = surfaceLayer(key);
       byKey.set(key, {
         key,
-        label: formatText(key) || key,
-        surfaceKey: DEFAULT_SURFACE_KEY,
+        label: (declaredValue(key)?.label ?? formatText(key)) || key,
+        surfaceKey: page.surfaceKey,
         origin: "system",
         value,
-        layers: { agent: agentLayer(key), surface: null },
+        layers: { agent: agentLayer(key), surface: page.surface },
       });
     }
   }
