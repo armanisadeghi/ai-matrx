@@ -95,6 +95,19 @@ export function SourceInput({
   const [scopeChoice, setScopeChoice] = useState<"all" | "mine">("all");
   const [orgFilter, setOrgFilter] = useState<string | null>(null);
   const set = useSourceSet(surfaceKey, { defaultForm, deliveries, max });
+  // A saved Source picked from Use existing (Websites) names its real kind on its card ("Web page",
+  // not "Source"): the pick records the kind, and the card that appears takes it once.
+  const pickedSourceKinds = useRef(new Map<string, string>());
+  useEffect(() => {
+    if (pickedSourceKinds.current.size === 0) return;
+    for (const card of set.sources) {
+      const id = card.draft.ref?.resource_id;
+      const kind = id ? pickedSourceKinds.current.get(id) : undefined;
+      if (!id || !kind) continue;
+      pickedSourceKinds.current.delete(id);
+      if (!card.draft.sourceKind) set.updateDraft(card.id, { sourceKind: kind });
+    }
+  }, [set]);
   const runner = useProcessingRunner();
   const intake = useSourceIntake(set, { attachTo });
   const [threshold, setThreshold] = useState<number | null>(null);
@@ -380,7 +393,7 @@ export function SourceInput({
           scope={scope}
           query={query}
           isPicked={(token, id) => set.hasRef(token, id)}
-          onToggle={(token, item) => {
+          onToggle={(token, item, sourceKind) => {
             const picked = set.sources.find(
               (s) => s.draft.ref?.resource_type === token && s.draft.ref.resource_id === item.id,
             );
@@ -389,7 +402,9 @@ export function SourceInput({
               return;
             }
             if (refuseOverMax()) return;
-            intake.addExisting({ token, id: item.id, title: item.title });
+            if (intake.addExisting({ token, id: item.id, title: item.title }) && sourceKind) {
+              pickedSourceKinds.current.set(item.id, sourceKind);
+            }
           }}
         />
       ) : null}

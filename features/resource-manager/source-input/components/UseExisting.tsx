@@ -32,6 +32,7 @@ import { useKindCounts } from "@/features/scopes/hooks/useKindCounts";
 import { useKindItems } from "@/features/scopes/hooks/useKindItems";
 import type { KindItem, KindScope } from "@/features/scopes/service/kindInventory";
 import { sourceRoleEntries } from "@/features/organizations/resource-catalogue";
+import { SOURCE_KIND_GROUP_KINDS } from "@/features/sources/sourceRows";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -52,7 +53,8 @@ export interface UseExistingProps {
   /** The input's one search box. Empty = the kind tiles. */
   query: string;
   isPicked: (token: string, id: string) => boolean;
-  onToggle: (token: string, item: KindItem) => void;
+  /** `sourceKind`: the stored Source kind a saved-Source row is (Websites → "web_page"), so its card names it. */
+  onToggle: (token: string, item: KindItem, sourceKind?: string) => void;
 }
 
 /** One kind offered: a Resources-grid Sources / Sources & Outputs entry. */
@@ -66,6 +68,8 @@ export interface OfferedKind {
   Icon: ComponentType<{ className?: string }>;
   /** Set when the kind is listed from the person's saved Sources (Websites). */
   savedSourceGroup?: SavedSourceGroup;
+  /** The stored Source kind a picked row is (its card's noun), for saved-Source kinds. */
+  sourceKind?: string;
 }
 
 /**
@@ -77,7 +81,16 @@ export interface OfferedKind {
 export function offeredKinds(): OfferedKind[] {
   return sourceRoleEntries().flatMap((e): OfferedKind[] => {
     const base = { key: e.key, plural: e.labelPlural, Icon: e.icon };
-    if (e.savedSourceGroup) return [{ ...base, token: SAVED_SOURCE_TOKEN, savedSourceGroup: e.savedSourceGroup }];
+    if (e.savedSourceGroup) {
+      return [
+        {
+          ...base,
+          token: SAVED_SOURCE_TOKEN,
+          savedSourceGroup: e.savedSourceGroup,
+          sourceKind: SOURCE_KIND_GROUP_KINDS[e.savedSourceGroup][0],
+        },
+      ];
+    }
     if (e.token) return [{ ...base, token: e.token }];
     console.error(`[UseExisting] grid kind "${e.key}" has no way to be listed`);
     return [];
@@ -308,6 +321,7 @@ function KindMatches({
       <h4 className="text-xs font-medium text-muted-foreground">{plural}</h4>
       <Rows
         token={token}
+        sourceKind={kind.sourceKind}
         list={list}
         limit={all ? undefined : SEARCH_ROWS_PER_KIND}
         onMore={() => setAll(true)}
@@ -333,11 +347,12 @@ function KindList({
   onToggle: UseExistingProps["onToggle"];
 }) {
   const list = useOfferedKindItems(kind, scope, query);
-  return <Rows token={kind.token} list={list} isPicked={isPicked} onToggle={onToggle} />;
+  return <Rows token={kind.token} sourceKind={kind.sourceKind} list={list} isPicked={isPicked} onToggle={onToggle} />;
 }
 
 function Rows({
   token,
+  sourceKind,
   list,
   limit,
   onMore,
@@ -345,6 +360,7 @@ function Rows({
   onToggle,
 }: {
   token: string;
+  sourceKind?: string;
   list: ReturnType<typeof useKindItems>;
   /** Show only this many (with Show more revealing the rest). */
   limit?: number;
@@ -383,7 +399,7 @@ function Rows({
           <li key={item.id}>
             <button
               type="button"
-              onClick={() => onToggle(token, item)}
+              onClick={() => onToggle(token, item, sourceKind)}
               aria-pressed={picked}
               className={cn(
                 "flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left transition-colors",
