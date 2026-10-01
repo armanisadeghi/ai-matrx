@@ -35,7 +35,7 @@ set local lock_timeout = '20s';
 select set_config('app.actor_system', 'kerneltails_reassign_green_suite', true);
 
 -- ── fixtures
-insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at)
+insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at) -- matrx-fixture:rollback-only the suite ends in rollback
 values ('5ba5aa1e-0000-4a00-8a00-00000000a0d1', '00000000-0000-0000-0000-000000000000', 'authenticated',
         'authenticated', 'jordan.pike.kerneltails-suite@aimatrx.com',
         '{"display_name": "Jordan Pike"}'::jsonb, now(), now());

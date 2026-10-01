@@ -87,7 +87,7 @@ async function userIdByEmail(env: Env, email: string): Promise<string> {
   // Fall back to the GoTrue admin list — admin_find_user_by_email is
   // super-admin-gated and the service key is not an admin *user*.
   const res = await fetch(
-    `${env.url}/auth/v1/admin/users?page=1&per_page=200&filter=${encodeURIComponent(email)}`,
+    `${env.url}/auth/v1/admin/users?page=1&per_page=200&filter=${encodeURIComponent(email)}`, // matrx-fixture:read-only a lookup by email, never creates
     { headers: { apikey: env.secretKey, Authorization: `Bearer ${env.secretKey}` } },
   );
   if (!res.ok) throw new Error(`admin list users -> ${res.status}`);

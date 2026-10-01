@@ -140,9 +140,9 @@ insert into corpus.corpus_principal (id, name, story) values
  ('a0000000-0000-4000-8000-00000000000d','container_grantee','granted on containers, reaches items through them (arm 13)'),
  ('a0000000-0000-4000-8000-00000000000e','nobody',        'shared on none of it — every answer must be false');
 
-insert into auth.users (instance_id, id, aud, role, email, created_at, updated_at, is_sso_user, is_anonymous)
+insert into auth.users (instance_id, id, aud, role, email, created_at, updated_at, is_sso_user, is_anonymous) -- matrx-fixture:rollback-only rehearsal copy only; section 0 refuses production
 select '00000000-0000-0000-0000-000000000000', p.id, 'authenticated', 'authenticated',
-       p.name || '@corpus.invalid', now(), now(), false, false
+       p.name || '@corpus.invalid', now(), now(), false, false -- matrx-fixture:rollback-only rehearsal copy only
 from corpus.corpus_principal p;
 
 -- ---------------------------------------------------------------------------

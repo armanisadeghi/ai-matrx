@@ -225,7 +225,7 @@ async function rlsDeleteRows(
  * organization, add it to COHORT_ORGS; never create one inline.
  */
 const FIXTURE_PREFIX = "dd048-";
-const FIXTURE_EMAIL_DOMAIN = "@matrx-test.invalid";
+const FIXTURE_EMAIL_DOMAIN = "@matrx-test.invalid"; // matrx-fixture:named-permanent the five DD048 cohort accounts, tagged below with expires_at null
 
 const COHORT_USERS = ["owner", "admina", "adminb", "joiner", "solo"] as const;
 type CohortUserTag = (typeof COHORT_USERS)[number];
@@ -280,7 +280,7 @@ async function ensureUser(env: Env, tag: CohortUserTag): Promise<TestUser> {
   let id = found?.[0]?.id ?? found?.[0]?.user_id;
 
   if (!id) {
-    const res = await fetch(`${env.url}/auth/v1/admin/users`, {
+    const res = await fetch(`${env.url}/auth/v1/admin/users`, { // matrx-fixture:named-permanent the DD048 cohort is five named permanent accounts, tagged in the body
       method: "POST",
       headers: {
         apikey: env.secretKey,
@@ -291,6 +291,15 @@ async function ensureUser(env: Env, tag: CohortUserTag): Promise<TestUser> {
         email,
         password: `Dd048!${randomUUID().slice(0, 12)}`,
         email_confirm: true,
+        // The tag the sweeper and the auth.users door look for: a NAMED permanent fixture (no expiry).
+        app_metadata: {
+          test_fixture: {
+            suite: "dd048-org-ownership",
+            purpose: `DD048 cohort ${tag}`,
+            created_at: new Date().toISOString(),
+            expires_at: null,
+          },
+        },
         user_metadata: { display_name: `DD048 ${tag}` },
       }),
     });
