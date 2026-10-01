@@ -50,6 +50,8 @@ export interface ContextReceiptEntry {
   receivedAt: number;
   /** Expected-vs-actual differences for this turn (empty = the screen told the truth). */
   mismatches?: ContextReceiptMismatch[];
+  /** False when this receipt could not be compared (no recorded rows for its request). */
+  checked?: boolean;
 }
 
 export interface ExpectedContextEntry {

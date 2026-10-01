@@ -70,7 +70,24 @@ export function recordContextReceipt(
   const expected = getState().instanceContext.expectedByConversationId?.[conversationId];
 
   let mismatches: ContextReceiptMismatch[] = [];
-  if (expected && expected.requestId === requestId) {
+  // Whether this receipt was compared with what the screen showed. A turn this
+  // client sent always records its rows first; a receipt with no rows of its own
+  // (a run the server started, or a send path that skipped the record) is NOT
+  // silently treated as a pass — it is stored as unchecked and, when this client
+  // has sent before in the conversation, reported.
+  const checked = Boolean(expected && expected.requestId === requestId);
+  if (expected && !checked) {
+    captureError({
+      source: "context-truth",
+      code: "context_truth_unchecked",
+      message: "Context receipt arrived for a request with no recorded rows",
+      details: `receipt request ${requestId}; last recorded ${expected.requestId}`,
+      conversationId,
+      requestId,
+      level: "low",
+    });
+  }
+  if (expected && checked) {
     mismatches = compareReceipt(expected.rows, receipt).mismatches;
     // A model that reads no context received none of it — that is the truth
     // the chip shows ("This model can't read context"), not a broken promise.
@@ -96,6 +113,7 @@ export function recordContextReceipt(
       receipt: data,
       receivedAt: Date.now(),
       mismatches,
+      checked,
     }),
   );
 
