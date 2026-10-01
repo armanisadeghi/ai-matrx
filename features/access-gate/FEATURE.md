@@ -99,7 +99,7 @@ toggle, or a Save that cannot save. Where they would plausibly want it, render
 
 | Owner | Lands in | Mechanism |
 | --- | --- | --- |
-| `{ organizationId }` | that org's owners/admins: DM + `/settings/access-requests` | `setting_access_request_create`, action `request_access.manual` (admin opens the setting, then **Mark as done**) |
+| `{ organizationId }` | that org's owners/admins: DM + `/user-settings/access-requests` | `setting_access_request_create`, action `request_access.manual` (admin opens the setting, then **Mark as done**) |
 | `"system"` or the system org id | the platform team's feedback queue | `submitFeedback`, `feedback_type: "request"` (+ `metadata.kind = "access_request"` with the structured target) |
 
 `manageHref` is where an admin makes the change and must sit under
@@ -117,8 +117,8 @@ mandates (definition sections, org Binding tab).
 | `../../app/forbidden.tsx` · `../../app/(core)/forbidden.tsx` | The boundaries. Root is bare; `(core)`'s renders inside the AppShell.                                                                                                                                                                                                                                |
 | `../../utils/permissions/requireAccess.ts`                   | Server-side `requireAccess(type, id, level, { forbid: true })` → real 403 + the boundary.                                                                                                                                                                                                            |
 | `components/AccessDenied.tsx`                                | The screen (+ `AccessDeniedView` for variants).                                                                                                                                                                                                                                                      |
-| `components/AccessRequestsSurface.tsx`                       | The INBOX — both directions, at `/settings/access-requests`. Answers with the same service calls the DM chip uses; never its own copy.                                                                                                                                                               |
-| `../../app/(core)/settings/access-requests/page.tsx`         | The route. Signed-out → `ModuleSignInGate`. Reached from the settings nav (`Access requests`).                                                                                                                                                                                                       |
+| `components/AccessRequestsSurface.tsx`                       | The INBOX — both directions, at `/user-settings/access-requests` (settings tab `accessRequests`; route, window and phone drawer). Embedded: inline box bar, local box state seeded from `?box=`. Answers with the same service calls the DM chip uses; never its own copy.                                                                                                                                                               |
+| `../../features/settings/tabs/AccessRequestsTab.tsx` | The settings tab that renders the inbox. The old `/settings/access-requests` route (and the DM rows that still carry it) is a 307 config redirect here (`utils/next-config/legacySettingsRedirects.js`, 2026-10-01). |
 | `components/RequestAccessPanel.tsx`                          | Ask → pending → answered, in place.                                                                                                                                                                                                                                                                  |
 | `components/RequestAccess.tsx` · `hooks/useRequestAccess.ts` · `service/requestAccess.ts` | The generic "ask someone who can" affordance for a control the viewer cannot use (section above). |
 | `components/SettingAccessGate.tsx`                           | Org-admin setting composition: admins get the control; members get a contextual request.                                                                                                                                                                                                             |
@@ -188,7 +188,7 @@ mandates (definition sections, org Binding tab).
   delete makes the target undiscoverable; it does not authorize the delete.
 - **Delivery never fails the ask, and delivery is never the only surface.** The
   row is the durable fact; the DM is how it gets NOTICED. A request whose DM
-  lands nowhere is still answerable at `/settings/access-requests`, which reads
+  lands nowhere is still answerable at `/user-settings/access-requests`, which reads
   the ledger itself — that is the whole reason the page exists. Zero-delivery is
   still surfaced to the requester rather than hidden: "we couldn't message them"
   is true and useful, it just no longer means the ask is lost.
@@ -204,7 +204,7 @@ request answered where the owner already is beats a queue they have to remember.
 Granting writes `iam.permissions` and sends the canonical `resource_shared` card
 back, so the loop closes in the surface the requester already reads.
 
-`/settings/access-requests` is the **durable** one — the ledger itself, in both
+`/user-settings/access-requests` is the **durable** one — the ledger itself, in both
 directions: _To me_ (`listAccessRequests("inbox")`, pending asks I am entitled to
 answer) and _I sent_ (every ask I made, with its status, the decider's note, and
 Withdraw while pending). It exists because the DM can fail to land.

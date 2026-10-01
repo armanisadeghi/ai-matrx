@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** 2026-09-20
+**Last updated:** 2026-10-01
 
 > Active campaign — Unified Settings & Configuration Platform: /Users/armanisadeghi/code/common-docs/projects/unified-settings-platform/PLAN.md — read it before adding, moving, or migrating ANY setting in ANY repo (register: REGISTER.md, ruling ledger: DECISIONS.md).
 
@@ -22,11 +22,15 @@ Registry rows compose one primary control with a labelled options popover for so
 
 **Routes**
 
-- `app/(transitional)/settings/preferences/page.tsx` — legacy URL kept alive as a redirect. Opens `userPreferencesWindow` with `{ initialTabId, initialControlId }` and forwards to `/dashboard`. Legacy `?tab=` values are aliased to new registry ids; `?control=` identifies the exact setting.
+- `/user-settings/[[...path]]` — THE settings route; the window (`userPreferencesWindow`) and the phone drawer render the same core (registry + `SettingsTabHost`).
+- **Retired `/settings/*` pages (2026-10-01)** — `app/(transitional)/settings/**` and `app/(core)/settings/access-requests` are deleted; every old URL is a 307 config redirect in `utils/next-config/legacySettingsRedirects.js` (wired in `next.config.js`): each page → its tab, `/settings/preferences?tab=…` and `/settings?tab=…` → the tab (old aliases kept; `?control=`/`?box=`/`?show=` survive because Next keeps the query), `/settings/secrets` → `/vault`, `/settings/projects` → `/projects`. Never 308: `/user-settings` may be renamed back to `/settings`. Guard: `route-shell/__tests__/legacy-settings-redirects.test.ts` (table = registry ids, hrefs = `tabIdToHref`, no retired page file exists). The shell's "Account" route menu that served those pages is deleted.
 - `app/(authenticated)/settings-shell-demo/page.tsx` — dev demo page with Open Settings button + admin-view toggle.
 - `app/(authenticated)/settings-primitives/page.tsx` — primitive gallery (every control, every state).
 - `app/(authenticated)/settings-tree-demo/page.tsx` — tree + drawer-nav demo with a fake 20-node tree.
 - `app/(authenticated)/settings-hooks-demo/page.tsx` — `useSetting` across 3 slices.
+- `/user-settings/sandbox-defaults` (`sandboxDefaults`) — knob-backed sandbox defaults (`infrastructure.sandbox.defaults.*`, org + user rungs), rendered with `UniversalSettingsRows` exactly like `appearance.density`; read by `SandboxPanel` (`lib/sandbox/sandbox-defaults.ts`) and aidream `ensure_default_sandbox`. No env vars: sandbox env comes only from the Vault.
+- `/user-settings/access-requests` (`accessRequests`) — the `iam.access_requests` inbox (`AccessRequestsSurface`, embedded: inline box bar, local box state seeded from `?box=`). Not a setting.
+- `/user-settings/account/writing-voice` (`account.writingVoice`) — the person's writing voice (`VoicePage` scope person, `embedded`).
 - `/user-settings/communication/messaging` — production SMS enrollment, notification-family preferences, opt-out, and personal text-assistant binding.
 - `app/(core)/settings/data/page.tsx` → **redirect to `/trash`**. "Your data" is NOT a settings surface: `/trash` already lists everything a person soft-deleted, and the lifecycle clock is a column on that list, not a second page. The route survives only because the weekly digest email takes its link as a value and old mail keeps its URL forever. **General → Privacy** and `/education/data` now link straight to `/trash`.
 
@@ -43,7 +47,7 @@ Registry rows compose one primary control with a labelled options popover for so
 - `usePreferencesModal()` — Phase 8 shim, same API as the deleted legacy hook but dispatches into overlaySlice.
 - `useSettingsPresentation()` — returns `{ presentation: "route" | "window" | "drawer", closeShell?, setActiveTabId? }`. Defaults to `"route"` outside a provider, so route pages "just work."
 - `useSettingsNavigate()` — returns `(href, event?, options?)`. Smart navigation that closes the shell first when called from inside the window/drawer; in route mode it's a plain `router.push`. Cmd/Ctrl/Shift/middle-click always opens a new tab and leaves the shell open.
-- `useSettingsTabNavigate()` — switches the active settings tab in-place inside the shell; falls back to `/settings/preferences?tab=…` (or a custom href) on a route.
+- `useSettingsTabNavigate()` — switches the active settings tab in-place inside the shell; on a route it navigates to the tab's own `/user-settings/...` URL (or a custom href).
 
 **Public API** — `@/features/settings`
 
@@ -269,6 +273,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 ---
 
 ## Change log
+
+- **2026-10-01 — The old `/settings/*` pages are retired; the gaps they held moved in first.** New tabs: Sandbox defaults (knob-backed; seed `migrations/sandbox_defaults_01_new_sandbox_knobs.sql`, owner-applied value move `sandbox_defaults_02_move_existing_values.sql`, rehearsed on the clone: 92 user-rung rows = 22 people × their organizations for `template=bare` + 1 `tier=hosted`, blobs untouched), Access requests, Writing voice. Every old URL redirects (table + guard above); every in-app link repointed (OAuth `return_url` is a same-origin path checked by `safeReturnUrl`; GitHub only sees the unchanged callback). The first screen's "Default organization" row and its `default_organization` value/target are removed (nothing reads a default organization since 2026-09-19; favorites replace it; the stored value is kept for the favorites carry-over). Prompt preferences (`userPreferences.prompts.*`) have NO reader and got no screen — recorded in the unified-settings REGISTER. Out of scope and untouched: Playground prefs (feature killed), Agent Context prefs (planned rebuild).
 
 - **2026-09-29 — Personal API keys.** New leaf `integrations.apiKeys` (route `/user-settings/integrations/api-keys`, search: api key, token, developer, personal key): list, create (name + organization, sole organization preselected), one-time reveal with copy, base URL and header, revoke through `ConfirmDialog` stating the consequence.
 

@@ -31,7 +31,7 @@ Org-scoped project management. Projects group work within an organization; tasks
   re-import rewrites a field ONLY where Google changed it and the Matrx value
   still equals that snapshot — a task edited here is never overwritten. Nothing
   is ever written back to Google.
-- **Legacy redirects:** `app/(core)/organizations/[orgId]/projects/**` → `/projects?org=` and `/projects/[id]`; `(transitional)/settings/projects` → `/projects`. `(transitional)/projects/**` removed.
+- **Legacy redirects:** `app/(core)/organizations/[orgId]/projects/**` → `/projects?org=` and `/projects/[id]`; `/settings/projects` → `/projects` (config redirect since 2026-10-01). `(transitional)/projects/**` removed.
 
 **Feature code — `features/projects/`**
 

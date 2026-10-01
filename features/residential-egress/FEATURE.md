@@ -121,10 +121,10 @@ derive from yet.
 ## 🚨 The tray's link does not reach this page — and it is matrx-local's to change
 
 The contract has the helper's tray open `/settings?tab=devices&computer=<id>`.
-That URL hits `app/(transitional)/settings/page.tsx`, which redirects to
-`/settings/profile` and **drops the whole query string on the way** — so
-neither the tab nor the computer id ever arrives (walked live, 2026-09-18: it
-lands on Profile, no error, nothing to see). `tab=devices` is ambiguous on top
+Until 2026-10-01 that URL landed on Profile and dropped the query. It is now a
+307 config redirect to `/user-settings/files/devices` with the query kept
+(`utils/next-config/legacySettingsRedirects.js`, a `/settings`-only override), so
+`?computer=` arrives. The tray should still move to the durable URL. `tab=devices` is ambiguous on top
 of that: the settings registry's `devices` id is the camera-and-microphone tab;
 this list is `files.devices`.
 

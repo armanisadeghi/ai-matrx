@@ -10,8 +10,9 @@
 
 Lets a signed-in user view and edit every field that identifies them across the
 app: display name, avatar, legal name, pronouns, addresses, phones, emails,
-social handles, work info, and emergency contacts. Powers both the standalone
-`/settings/profile` route and the "Profile" tab in the settings drawer. The
+social handles, work info, and emergency contacts. Powers the "Profile" tab of the
+one settings surface (`/user-settings/account`, the window and the phone drawer);
+the old `/settings/profile` route redirects there (2026-10-01). The
 rich form-profile data is what agents acting on behalf of the user read when
 they need to fill out forms, ship something, or address a message.
 
@@ -21,8 +22,10 @@ they need to fill out forms, ship something, or address a message.
 
 **Routes**
 
-- `app/(transitional)/settings/profile/page.tsx` — standalone route. Thin
-  wrapper that renders `<UserProfilePage />`.
+- `/user-settings/account` — the settings tab `account` (`ProfileTab`) renders
+  `<UserProfilePage embedded />`. The standalone `app/(transitional)/settings/profile`
+  route was retired 2026-10-01 (config redirect). Writing voice is its own tab,
+  `/user-settings/account/writing-voice`.
 
 **Settings registry tabs** (`features/settings/registry.ts`)
 
