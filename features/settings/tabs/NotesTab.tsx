@@ -34,7 +34,7 @@ const DESKTOP_OPTIONS: SettingsOption<DesktopMode>[] = [
   {
     value: "split",
     label: "Split",
-    description: "Plain text on the left, the formatted note live on the right.",
+    description: "Plain text left, formatted note right.",
   },
   {
     value: "plain",

@@ -61,7 +61,8 @@ export default function PrivacyTab() {
       <SettingsSection title="Notifications">
         <SettingsLink
           label="Desktop notifications"
-          description="Whether new-message banners show on your desktop. Set on the Messaging tab, where turning it on also asks your browser for permission."
+          description="New-message banners on your desktop."
+          helpText="Set on the Messaging tab, where turning it on asks your browser for permission."
           href={settingDoorHref({
             scope: "user",
             tabId: "communication.messaging",
@@ -75,7 +76,7 @@ export default function PrivacyTab() {
       <SettingsSection title="Your data" icon={DatabaseZap}>
         <SettingsLink
           label="Trash"
-          description="Everything you've deleted, when anything with a deletion date goes for good, and a one-click way to keep it."
+          description="Deleted items and when they go for good."
           href="/trash"
           actionLabel="Open"
           last
@@ -85,7 +86,7 @@ export default function PrivacyTab() {
       <SettingsSection title="Knowledge Graph" icon={Lightbulb}>
         <SettingsSwitch
           label="Auto knowledge-graph"
-          description="Let Matrx analyze your notes, tasks, and files in the background to suggest useful connections. Suggestions are never applied automatically — you accept each one."
+          description="Finds links in notes, tasks and files; you accept each one."
           checked={autoRag.enabled}
           onCheckedChange={handleAutoRagChange}
           disabled={autoRag.loading || autoRag.saving}

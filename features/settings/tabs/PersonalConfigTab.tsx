@@ -64,10 +64,9 @@ export default function PersonalConfigTab() {
 
   return (
     <div className="space-y-6">
-      <SettingsSection
-        title="Personal configuration"
-        description="Settings your organization has opened to per-person override. Your value beats the organization's; clearing it inherits theirs."
-      >
+      {/* Settings the organization opened to per-person override. The person's
+          value beats the organization's; clearing it inherits theirs. */}
+      <SettingsSection title="Personal configuration">
         {memberships.length > 1 && organizationId && (
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Organization</span>

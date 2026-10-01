@@ -128,7 +128,7 @@ export default function MessagingTab() {
           {permission === "default" && (
             <SettingsButton
               label="Desktop notifications"
-              description="Browser permission is required. You'll be prompted once."
+              description="Needs browser permission; asked once."
               actionLabel="Enable"
               actionIcon={Bell}
               kind="default"

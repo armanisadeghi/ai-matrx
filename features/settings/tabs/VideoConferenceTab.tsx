@@ -37,7 +37,7 @@ export default function VideoConferenceTab() {
       <SettingsSection title="Devices">
         <SettingsLink
           label="Camera, microphone & speakers"
-          description="Meetings use your saved devices from the unified device settings."
+          description="Uses your saved device settings."
           icon={Camera}
           href={settingDoorHref({
             scope: "user",

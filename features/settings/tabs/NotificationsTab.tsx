@@ -406,7 +406,7 @@ export default function NotificationsTab() {
                       <span className="flex-1">{notificationAreaLabel(area)}</span>
                       <span className="text-xs font-normal text-muted-foreground">
                         {events.length}
-                        {ROLE_BOUND_AREAS.has(area) ? " · only if you work in HR or are an employee, candidate or manager" : ""}
+                        {ROLE_BOUND_AREAS.has(area) ? " · only for HR, employees, candidates, managers" : ""}
                       </span>
                     </CollapsibleTrigger>
                     <CollapsibleContent>

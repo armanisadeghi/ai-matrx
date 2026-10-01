@@ -30,19 +30,19 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "general.privacy",
     "label": "Desktop notifications",
-    "description": "Whether new-message banners show on your desktop. Set on the Messaging tab, where turning it on also asks your browser for permission.",
+    "description": "New-message banners on your desktop.",
     "controlId": "settings-control-notifications-desktop-notifications"
   },
   {
     "tabId": "general.privacy",
     "label": "Trash",
-    "description": "Everything you've deleted, when anything with a deletion date goes for good, and a one-click way to keep it.",
+    "description": "Deleted items and when they go for good.",
     "controlId": "settings-control-your-data-trash"
   },
   {
     "tabId": "general.privacy",
     "label": "Auto knowledge-graph",
-    "description": "Let Matrx analyze your notes, tasks, and files in the background to suggest useful connections. Suggestions are never applied automatically — you accept each one.",
+    "description": "Finds links in notes, tasks and files; you accept each one.",
     "controlId": "settings-control-knowledge-graph-auto-knowledge-graph"
   },
   {
@@ -139,7 +139,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "ai.textGeneration",
     "label": "Default AI model",
-    "description": "Chat, quick questions and everyday drafting answer with this model unless you pick another. Your organization can set one for everyone; yours wins for you.",
+    "description": "Answers chat and drafting unless you pick another",
     "controlId": "settings-control-model-style-default-ai-model"
   },
   {
@@ -294,7 +294,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "voice.input",
     "label": "Voices you hear",
-    "description": "Your read-aloud voice (with its speed, language and emotion), your live conversation voice, and every other voice AI Matrx speaks with — each with a sample.",
+    "description": "Read-aloud, live conversation and every other voice.",
     "controlId": "settings-control-voice-voices-you-hear"
   },
   {
@@ -363,7 +363,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "communication.video",
     "label": "Camera, microphone & speakers",
-    "description": "Meetings use your saved devices from the unified device settings.",
+    "description": "Uses your saved device settings.",
     "controlId": "settings-control-devices-camera-microphone-speakers"
   },
   {
@@ -399,7 +399,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "communication.messaging",
     "label": "Desktop notifications",
-    "description": "Browser permission is required. You'll be prompted once.",
+    "description": "Needs browser permission; asked once.",
     "controlId": "settings-control-desktop-desktop-notifications"
   },
   {

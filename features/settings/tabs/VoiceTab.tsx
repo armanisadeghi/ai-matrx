@@ -23,7 +23,7 @@ export default function VoiceTab() {
       <SettingsSection title="Voice">
         <SettingsLink
           label="Voices you hear"
-          description="Your read-aloud voice (with its speed, language and emotion), your live conversation voice, and every other voice AI Matrx speaks with — each with a sample."
+          description="Read-aloud, live conversation and every other voice."
           href={settingDoorHref(VOICE_SETTING_DOORS.readAloud)}
           actionLabel="Voices"
           last
