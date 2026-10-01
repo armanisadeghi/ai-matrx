@@ -127,6 +127,8 @@ const INTERACTIVE =
 const LIFT_VAR = "--assist-dock-lift";
 const YIELD_ATTR = "data-assist-dock-yield";
 const LIFT_STEP_PX = 8;
+/** Quiet time after the last scroll / DOM change before the dock re-checks what lies under it. */
+export const SETTLE_MS = 120;
 const LIFT_MAX_PX = 320;
 /** The highest a lifted dock may rest: below the shell header. */
 const LIFT_TOP_FLOOR_PX = 64;
@@ -149,12 +151,17 @@ function overlaps(a: DockRect, b: DockRect): boolean {
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
 
+// The avoidance boxes are read ONCE per pass (a pass probes up to 40 lifts; reading them per probe
+// was a querySelectorAll + layout read 40 times a pass, DATA-HOME-3E 2026-10-01).
+let avoidanceRects: DOMRect[] | null = null;
+
 function overlapsGeometryAvoidance(r: DockRect): boolean {
-  for (const el of document.querySelectorAll<HTMLElement>(GEOMETRY_AVOIDANCE_SELECTOR)) {
-    const target = el.getBoundingClientRect();
-    if (target.width > 0 && target.height > 0 && overlaps(r, target)) return true;
+  if (!avoidanceRects) {
+    avoidanceRects = [...document.querySelectorAll<HTMLElement>(GEOMETRY_AVOIDANCE_SELECTOR)]
+      .map((el) => el.getBoundingClientRect())
+      .filter((target) => target.width > 0 && target.height > 0);
   }
-  return false;
+  return avoidanceRects.some((target) => overlaps(r, target));
 }
 
 /**
@@ -376,7 +383,9 @@ export function applyAssistDockLift(): void {
   const r = docks[0]!.getBoundingClientRect();
   // Where the dock rests with no lift — the lift is measured from there, never from itself.
   const base = { top: r.top + current, bottom: r.bottom + current, left: r.left, right: r.right };
+  avoidanceRects = null;
   const lift = liftFor(base, coveredInDocument);
+  avoidanceRects = null;
   if (lift === null) {
     root.style.removeProperty(LIFT_VAR);
     const size = { width: r.width, height: r.height };
@@ -421,24 +430,41 @@ export function useAssistClearance(active: boolean): void {
         watchSlot();
       });
     };
+    // 🚨 NEVER A PASS PER SCROLL FRAME (DATA-HOME-3E, 2026-10-01). A pass hit-tests up to 40
+    // lifts × 9 points (elementsFromPoint) after re-laying the page out; run on every scroll frame
+    // — and on every row a virtualized table swaps in while it scrolls — it was most of a 100 ms
+    // long task per wheel step on /data-v2 (dev build, 200 rows). What lies under the dock only
+    // matters where the scroll comes to rest, so scrolling and DOM churn ask for ONE pass once
+    // they have been quiet for SETTLE_MS; a resize or the dock appearing still answers next frame.
+    let settle: ReturnType<typeof setTimeout> | null = null;
+    const scheduleSettled = () => {
+      if (settle) clearTimeout(settle);
+      settle = setTimeout(() => {
+        settle = null;
+        schedule();
+      }, SETTLE_MS);
+    };
     schedule();
     window.addEventListener("resize", schedule);
     // Any scroller moving changes what lies under the dock (capture: scroll does not bubble).
-    document.addEventListener("scroll", schedule, true);
+    document.addEventListener("scroll", scheduleSettled, true);
     const mo = new MutationObserver((mutations) => {
       // A dragged attention dock changes only its inline position. Watch that
       // style specifically, while ignoring clearance's own padding writes so
       // the next pass cannot schedule itself forever.
+      // The drag answers on the next frame (it follows the hand); added and removed nodes — a
+      // virtualized table swapping rows while it scrolls — wait until the page is quiet.
       if (
         mutations.some(
           (mutation) =>
-            mutation.type === "childList" ||
-            (mutation.type === "attributes" &&
-              mutation.target instanceof Element &&
-              mutation.target.matches(ATTENTION_DOCK_SELECTOR)),
+            mutation.type === "attributes" &&
+            mutation.target instanceof Element &&
+            mutation.target.matches(ATTENTION_DOCK_SELECTOR),
         )
       ) {
         schedule();
+      } else if (mutations.some((mutation) => mutation.type === "childList")) {
+        scheduleSettled();
       }
     });
     mo.observe(document.body, {
@@ -449,8 +475,9 @@ export function useAssistClearance(active: boolean): void {
     });
     return () => {
       if (frame) cancelAnimationFrame(frame);
+      if (settle) clearTimeout(settle);
       window.removeEventListener("resize", schedule);
-      document.removeEventListener("scroll", schedule, true);
+      document.removeEventListener("scroll", scheduleSettled, true);
       mo.disconnect();
       ro?.disconnect();
       document.documentElement.style.removeProperty(LIFT_VAR);
