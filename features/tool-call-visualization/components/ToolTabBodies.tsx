@@ -20,7 +20,7 @@
  */
 
 import React, { useState } from "react";
-import { Check, CircleAlert, Copy, FileCode2, Settings2 } from "lucide-react";
+import { Check, CircleAlert, Copy, FileCode2, Route, Settings2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ import type { ToolOverlayTabSpec, ToolRendererProps } from "../types";
 import { ToolResultValue } from "../result-fields/ToolResultValue";
 import { EmptyResult } from "../result-fields/EmptyResult";
 import { toolErrorLabel } from "../result-fields/ToolErrorCard";
+import { guardRoutingOf } from "../result-fields/guard-routing";
 import { KeyValueGrid } from "../result-fields/KeyValueGrid";
 import {
   buildToolEntryBundle,
@@ -200,6 +201,9 @@ export const ErrorView: React.FC<{ entry: ToolLifecycleEntry }> = ({
   entry,
 }) => {
   const label = toolErrorLabel(entry);
+  // A guard routing is the intended path, not an error; its message (the
+  // model's instruction) stays below as the full detail.
+  const routed = guardRoutingOf(entry);
   const message = entry.errorMessage?.trim() || null;
   const args = entry.arguments ?? {};
   const hasArgs = Object.keys(args).length > 0;
@@ -209,8 +213,12 @@ export const ErrorView: React.FC<{ entry: ToolLifecycleEntry }> = ({
     <div className="flex h-full flex-col">
       <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-muted/30 px-3 py-1.5">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <CircleAlert className="h-3.5 w-3.5 text-destructive" />
-          <span>Error</span>
+          {routed ? (
+            <Route className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <CircleAlert className="h-3.5 w-3.5 text-destructive" />
+          )}
+          <span>{routed ? "Routed" : "Error"}</span>
           {entry.errorType && (
             <Badge variant="outline" className="px-1.5 py-0 font-mono text-[10px]">
               {entry.errorType}

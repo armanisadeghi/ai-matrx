@@ -56,6 +56,7 @@ import {
   isHeldForApprovalError,
   toolErrorFirstLine,
 } from "../result-fields/ToolErrorCard";
+import { guardRoutingOf } from "../result-fields/guard-routing";
 import { resultAsObject } from "../renderers/_shared";
 import { RecordChangeApprovalCard } from "@/features/record-change-approvals/RecordChangeApprovalCard";
 import { ParkedOnPersonCard } from "@/features/action-requests/components/ParkedOnPersonCard";
@@ -267,6 +268,12 @@ const ToolCallVisualizationInner: React.FC<{
   // decides it is open — a decision nobody can see is the dead end this closes.
   const heldWait = settled.length === 1 ? heldWriteOf(headerTool) : null;
   const heldTableName = useHeldWriteTableName(heldWait);
+  // The on-screen write guard routed this write to the open record: a quiet
+  // state line with a tooltip, never "<tool> failed · <model instruction>".
+  const guardRouting =
+    settled.length === 1 && headerTool?.status === "error"
+      ? guardRoutingOf(headerTool)
+      : null;
   const legacyHeld =
     settled.length === 1 &&
     headerTool?.status === "error" &&
@@ -427,6 +434,8 @@ const ToolCallVisualizationInner: React.FC<{
     ? `${toolDisplayName} · Waiting for you`
     : heldWait
     ? heldWriteHeadline(heldWait, heldTableName)
+    : guardRouting
+    ? guardRouting.label
     : legacyHeld
       ? [
           "Held for your approval",
@@ -560,7 +569,10 @@ const ToolCallVisualizationInner: React.FC<{
               className="truncate font-sans text-sm leading-relaxed tracking-wide"
             />
           ) : (
-            <span className="truncate font-sans text-sm leading-relaxed tracking-wide text-muted-foreground">
+            <span
+              className="truncate font-sans text-sm leading-relaxed tracking-wide text-muted-foreground"
+              title={guardRouting?.tooltip}
+            >
               {phaseLabel}
             </span>
           )}

@@ -12,10 +12,11 @@
  */
 
 import React from "react";
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, Route } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { humanizeKey } from "./shape";
+import { guardRoutingOf } from "./guard-routing";
 
 export interface ToolErrorCardProps {
     entry: ToolLifecycleEntry;
@@ -40,6 +41,10 @@ export function toolErrorLabel(entry: ToolLifecycleEntry): string {
     // invalid arguments", which was false. Asked first, so it can never be
     // mistaken for one again.
     if (isHeldForApprovalError(entry)) return "Held for your approval";
+    // The on-screen write guard routed the change to the open record — the
+    // intended path, not a failure (see guard-routing.ts).
+    const routed = guardRoutingOf(entry);
+    if (routed) return routed.label;
     const hay = `${entry.errorType ?? ""} ${entry.errorMessage ?? ""}`.toLowerCase();
     if (
         /valid|argument|param|schema|required|missing|expected|must be|unrecognized|not allowed|format|type error/.test(
@@ -80,8 +85,13 @@ export const ToolErrorCard: React.FC<ToolErrorCardProps> = ({
     className,
 }) => {
     const groupId = toolGroupId ?? entry.callId;
+    const routed = guardRoutingOf(entry);
     const label = toolErrorLabel(entry);
-    const detail = toolErrorFirstLine(entry.errorMessage);
+    // A guard routing's message is the MODEL's instruction (ids, tool names);
+    // the person gets the state line and its tooltip, the message stays in
+    // Details.
+    const detail = routed ? null : toolErrorFirstLine(entry.errorMessage);
+    const Icon = routed ? Route : CircleAlert;
 
     return (
         <div
@@ -92,9 +102,14 @@ export const ToolErrorCard: React.FC<ToolErrorCardProps> = ({
                 className,
             )}
         >
-            <CircleAlert className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+            <Icon className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
             <div className="flex min-w-0 flex-1 items-baseline gap-2">
-                <span className="flex-shrink-0 text-xs font-medium text-foreground">{label}</span>
+                <span
+                    className="flex-shrink-0 text-xs font-medium text-foreground"
+                    title={routed?.tooltip}
+                >
+                    {label}
+                </span>
                 {detail && (
                     <span className="min-w-0 truncate text-xs text-muted-foreground">{detail}</span>
                 )}
