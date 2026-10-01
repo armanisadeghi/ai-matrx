@@ -185,9 +185,9 @@ function AgentAccessForm({
           </p>
           <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
             {existing
-              ? "Overrides apply to this binding and merge over the surface defaults at launch."
+              ? "Overrides merge over surface defaults at launch."
               : declaresTargets
-                ? "No binding exists yet — saving an override creates a personal binding carrying only these policies."
+                ? "No binding yet; saving creates a personal one"
                 : null}
           </p>
         </div>

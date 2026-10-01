@@ -47,6 +47,7 @@ import type {
   UnknownNamespace,
 } from "@/features/surfaces/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { InfoHint } from "@/components/official/InfoHint";
 
 interface Props {
   onClose: () => void;
@@ -54,14 +55,14 @@ interface Props {
 }
 
 /**
- * Appended to every stale (`db_only`) section, so the recency guard is
+ * The hint on every stale (`db_only`) section, so the recency guard is
  * announced BEFORE an admin clicks rather than discovered as a refusal. The
  * window is imported, never retyped: the sentence and the server guard read the
  * same constant, so the dialog cannot describe a rule the server stopped
  * enforcing. Each stale row now also carries its OWN age (see `RowAge`), which
  * is what actually separates a dead row from a sibling branch's live one.
  */
-const GLOBAL_SWEEP_NOTE = `Rows written in the last ${RECENT_ROW_WINDOW_HOURS}h are treated as probably in-flight and need a second, explicit confirm.`;
+const RECENT_ROW_HINT = `Rows written in the last ${RECENT_ROW_WINDOW_HOURS}h count as in flight and need a second confirm.`;
 
 /**
  * The age of ONE stale mirror row: relative in the line (what an operator
@@ -165,7 +166,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest values missing from DB"
                 count={report.manifestsMissingInDb.length}
                 tone="amber"
-                description="Declared in code but not in the database yet. Sync to apply."
+                description="In code, not in the DB — sync to apply"
               >
                 {report.manifestsMissingInDb.map((d) => (
                   <DriftRow
@@ -180,7 +181,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="DB values without a code manifest"
                 count={report.dbValuesNotInManifest.length}
                 tone="rose"
-                description={`Stale rows. Use "Archive this row" to move ONE you have read and judged to Trash. ${GLOBAL_SWEEP_NOTE}`}
+                description="Stale — archive one row at a time after reading it"
+                hint={RECENT_ROW_HINT}
               >
                 {report.dbValuesNotInManifest.map((d) => (
                   <DriftRow
@@ -204,7 +206,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Field-level diffs"
                 count={report.diffs.length}
                 tone="orange"
-                description="Same name on both sides but fields differ. Sync to make DB match code."
+                description="Fields differ — sync to make the DB match code"
               >
                 {report.diffs.map((d) => (
                   <DriftRow
@@ -221,7 +223,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest roles missing from DB"
                 count={report.roleManifestsMissingInDb.length}
                 tone="amber"
-                description="Agent roles declared in code but not in the database yet. Sync to apply."
+                description="In code, not in the DB — sync to apply"
               >
                 {report.roleManifestsMissingInDb.map((d) => (
                   <DriftRow
@@ -236,7 +238,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="DB roles without a code manifest"
                 count={report.dbRolesNotInManifest.length}
                 tone="rose"
-                description={`Stale agent roles. Archiving one — here or by sweep — takes its user/org agent prefs to Trash with it. ${GLOBAL_SWEEP_NOTE}`}
+                description="Stale — archiving a role also trashes its agent choices"
+                hint={RECENT_ROW_HINT}
               >
                 {report.dbRolesNotInManifest.map((d) => (
                   <DriftRow
@@ -260,7 +263,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Role field-level diffs"
                 count={report.roleDiffs.length}
                 tone="orange"
-                description="Same role on both sides but fields differ. Sync to make DB match code."
+                description="Fields differ — sync to make the DB match code"
               >
                 {report.roleDiffs.map((d) => (
                   <DriftRow
@@ -277,7 +280,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest write targets missing from DB"
                 count={report.writeTargetManifestsMissingInDb.length}
                 tone="amber"
-                description="Write targets declared in code but not in the database yet. Server-side agents can't see them until they are. Sync to apply."
+                description="Server agents can't see these until you sync"
               >
                 {report.writeTargetManifestsMissingInDb.map((d) => (
                   <DriftRow
@@ -292,7 +295,9 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="DB write targets without a code manifest"
                 count={report.dbWriteTargetsNotInManifest.length}
                 tone="rose"
-                description={`Stale write-target rows — a removed target, or a sync from a branch whose manifest never merged. READ THIS LIST BEFORE ACTING: "Archive stale rows" is a GLOBAL sweep and will archive rows belonging to work that is still in flight (a later sync of that work restores them). ${GLOBAL_SWEEP_NOTE}`}
+                // Stale = a removed target, or a sync from a branch whose manifest never merged.
+                description="Stale — read before any global sweep; it hits in-flight work"
+                hint={`"Archive stale rows" hits work still in flight; a later sync restores it. Rows from the last ${RECENT_ROW_WINDOW_HOURS}h need a second confirm.`}
               >
                 {report.dbWriteTargetsNotInManifest.map((d) => (
                   <DriftRow
@@ -316,7 +321,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Write target field-level diffs"
                 count={report.writeTargetDiffs.length}
                 tone="orange"
-                description="Same target on both sides but fields differ — including apply_policy, the field that decides whether an agent may write without a human. Sync to make DB match code."
+                description="Fields differ — sync to make the DB match code"
+                hint="Includes apply policy, which decides whether an agent may write without a person."
               >
                 {report.writeTargetDiffs.map((d) => (
                   <DriftRow
@@ -333,7 +339,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest client tools missing from DB"
                 count={report.clientToolManifestsMissingInDb.length}
                 tone="amber"
-                description="Client tools declared in code but not in the database yet."
+                description="In code, not in the DB — sync to apply"
               >
                 {report.clientToolManifestsMissingInDb.map((d) => (
                   <DriftRow
@@ -348,7 +354,9 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="DB client tools without a code manifest"
                 count={report.dbClientToolsNotInManifest.length}
                 tone="rose"
-                description={`Stale client-tool rows — a removed tool, or a sync from a branch whose manifest never merged. Same warning as write targets: read the list before any global sweep. ${GLOBAL_SWEEP_NOTE}`}
+                // Stale = a removed tool, or a sync from a branch whose manifest never merged.
+                description="Stale — read before any global sweep; it hits in-flight work"
+                hint={RECENT_ROW_HINT}
               >
                 {report.dbClientToolsNotInManifest.map((d) => (
                   <DriftRow
@@ -372,7 +380,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Client tool field-level diffs"
                 count={report.clientToolDiffs.length}
                 tone="orange"
-                description="Same tool on both sides but fields differ. input_schema is compared as canonical JSON, so jsonb key order is never the cause."
+                // input_schema is compared as canonical JSON, so jsonb key order is never the cause.
+                description="Fields differ — sync to make the DB match code"
               >
                 {report.clientToolDiffs.map((d) => (
                   <DriftRow
@@ -389,7 +398,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Unknown config namespaces"
                 count={report.unknownNamespaces.length}
                 tone="rose"
-                description="Named by a manifest or a saved surface setting, but no code handles it yet. Register a handler for it in code."
+                // Named by a manifest or a saved surface setting.
+                description="No code handles these yet — register a handler in code"
               >
                 {report.unknownNamespaces.map((ns) => (
                   <NamespaceRow
@@ -403,7 +413,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="URL pattern drift"
                 count={report.urlPatternDrifts.length}
                 tone="amber"
-                description="ui_surface.url_pattern missing or differs from code defaults. Sync to apply."
+                // ui_surface.url_pattern vs code defaults.
+                description="URL pattern missing or differs from code — sync to apply"
               >
                 {report.urlPatternDrifts.map((d) => (
                   <div
@@ -432,7 +443,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Surface label drift"
                 count={report.surfaceLabelDrifts.length}
                 tone="amber"
-                description="ui_surface.label missing or differs from the code manifest (THE NAMING LAW). Sync to apply."
+                // ui_surface.label vs the code manifest (THE NAMING LAW).
+                description="Label missing or differs from code — sync to apply"
               >
                 {report.surfaceLabelDrifts.map((d) => (
                   <div
@@ -461,7 +473,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Value group drift"
                 count={report.valueGroupsDrifts.length}
                 tone="amber"
-                description="ui_surface.value_groups missing or differs from the code manifest. Compared on a normalized projection, so jsonb key order is never the cause. Sync to apply."
+                // ui_surface.value_groups, compared on a normalized projection, so jsonb key order is never the cause.
+                description="Value groups missing or differ from code — sync to apply"
               >
                 {report.valueGroupsDrifts.map((d) => (
                   <div
@@ -499,7 +512,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Broken agent mappings"
                 count={report.brokenAgentMappings.length}
                 tone="rose"
-                description="Agent bindings reference SurfaceValues that no longer exist. Remap to a valid value, remove, or keep & notify."
+                // Agent bindings reference SurfaceValues that no longer exist.
+                description="Mapped values no longer exist — remap, remove, or keep"
               >
                 {report.brokenAgentMappings.map((b) => (
                   <BrokenRow
@@ -569,12 +583,16 @@ function Section({
   count,
   tone,
   description,
+  hint,
   children,
 }: {
   title: string;
   count: number;
   tone: "amber" | "rose" | "orange";
+  /** One line: the state and its remedy. */
   description: string;
+  /** Optional detail, shown behind an InfoHint at the end of the line. */
+  hint?: string;
   children: React.ReactNode;
 }) {
   if (count === 0) return null;
@@ -592,7 +610,10 @@ function Section({
           {count}
         </Badge>
       </div>
-      <p className="text-[11px] text-muted-foreground">{description}</p>
+      <div className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
+        <p>{description}</p>
+        {hint && <InfoHint text={hint} />}
+      </div>
       <div className="rounded-md border border-border divide-y divide-border">
         {children}
       </div>
@@ -763,9 +784,7 @@ function DeleteMirrorRowButton({
           from <code className="font-mono">ui.{table}</code>?
         </p>
         <p className="text-muted-foreground">
-          This archives <strong>this one row and nothing else</strong> — no other
-          surface, no other row, and no global sweep. The row moves to Trash;
-          a sync of a manifest that declares it again restores it.
+          Only this row goes to Trash; a re-sync restores it.
         </p>
         {cascades && (
           <p className="text-destructive flex items-start gap-1">

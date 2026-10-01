@@ -294,8 +294,7 @@ export function SurfaceConversationsSection({
           )}
         </div>
         <p className="px-2 text-[10px] leading-relaxed text-muted-foreground">
-          The conversation opens here and receives this page&apos;s context on
-          your next message.
+          Opens here with this page&apos;s context
         </p>
       </div>
     );

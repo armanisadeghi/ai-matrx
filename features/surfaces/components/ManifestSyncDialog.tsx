@@ -128,9 +128,7 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
         {!result && (
           <div className="space-y-3 text-xs">
             <p className="text-muted-foreground">
-              Makes the database match the code manifests: surface values,
-              agent roles, write targets, client tools, labels, value groups
-              and URL patterns.
+              Makes the database match the code manifests.
             </p>
             <div className="rounded-md border border-border px-2 py-1.5">
               {previewError ? (
@@ -167,12 +165,8 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
                   {previewStale !== null && ` (${previewStale})`}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Move saved values, agent roles, write targets and client
-                  tools that no code manifest declares any more to Trash. An
-                  archived role takes every person&apos;s agent choice for it
-                  along; the count is shown after the sync. Nothing is
-                  destroyed, and a later sync that finds a row declared again
-                  restores it.
+                  Moves rows no manifest declares to Trash, with their agent
+                  choices. A later sync that declares them restores them.
                 </p>
               </div>
             </label>

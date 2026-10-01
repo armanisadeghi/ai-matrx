@@ -203,8 +203,7 @@ export function BindingSuggestionsTab({
       if (!parsed) {
         setRunFailure({
           message: "The mapping helper answered, but its answer could not be read.",
-          detail:
-            "It replied with something this panel could not turn into mappings — no valid input names came back.",
+          detail: "No valid input names came back.",
         });
         return;
       }
@@ -238,11 +237,11 @@ export function BindingSuggestionsTab({
 
   if (unavailable) {
     return (
-      // read-gate-exempt: this IS the mandate read's failure view (unavailable = mandateError !== null); 'nothing here is blocked' says manual mapping still works
+      // read-gate-exempt: this IS the mandate read's failure view (unavailable = mandateError !== null); 'map values manually' says manual mapping still works
       <p className="rounded-md border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">
-        The AI mapping helper is not available right now
-        {asClause(mandateError ? ` (${mandateError})` : "")}. Map values manually
-        instead — nothing here is blocked by it.
+        AI mapping is unavailable right now
+        {asClause(mandateError ? ` (${mandateError})` : "")} — map values
+        manually
       </p>
     );
   }
@@ -321,8 +320,7 @@ export function BindingSuggestionsTab({
               Try again
             </Button>
             <span className="text-[10px] text-muted-foreground">
-              or map the values yourself on the manual tab — it is always
-              available, and nothing here is blocked by this.
+              or map the values on the manual tab
             </span>
           </div>
           <ErrorAlchemyMenu error={runFailure.message} />
@@ -441,10 +439,6 @@ export function BindingSuggestionsTab({
               Try again
             </Button>
           </div>
-          <p className="text-[10px] text-muted-foreground">
-            Accepting opens the mapping editor with everything filled in — you
-            can still change any line before binding.
-          </p>
         </div>
       )}
     </div>

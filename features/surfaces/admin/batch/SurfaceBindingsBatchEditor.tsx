@@ -388,12 +388,6 @@ export function SurfaceBindingsBatchEditor({
                 Batch surface bindings
               </h1>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Copy an existing binding (or start blank), then stamp the same
-              value-mappings onto many surfaces at once. Each surface is written
-              independently — existing bindings are updated, unbound surfaces are
-              created.
-            </p>
           </div>
 
           {/* Copy template */}
@@ -473,9 +467,7 @@ export function SurfaceBindingsBatchEditor({
             <section className="space-y-1.5">
               <Label className="text-xs">Agent write access</Label>
               <p className="text-[11px] text-muted-foreground">
-                Per-target apply-policy overrides, edited per surface (each
-                surface declares its own write targets). Untouched surfaces
-                keep their stored overrides.
+                Untouched surfaces keep their stored overrides.
               </p>
               <div className="space-y-3">
                 {policyEditableSurfaces.map((surfaceName) => (

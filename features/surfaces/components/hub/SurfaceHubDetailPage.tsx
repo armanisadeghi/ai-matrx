@@ -166,10 +166,9 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
               ))}
               <span className="ml-1 text-[11px] text-muted-foreground">
                 {scope.kind === "me"
-                  ? "Changes apply to you everywhere."
-                  : `Changes apply to everyone in ${scope.label}.`}
-                {memberOnlyOrgCount > 0 &&
-                  " Org-wide settings require an org admin role."}
+                  ? "Applies to you everywhere"
+                  : `Applies to everyone in ${scope.label}`}
+                {memberOnlyOrgCount > 0 && " · org settings need an org admin"}
               </span>
             </div>
 
@@ -186,10 +185,10 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
               (manifest?.agentRoles?.length ?? 0) > 0 &&
               Object.keys(roles).length === 0 && (
                 <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  This surface declares{" "}
-                  {manifest?.agentRoles?.length ?? 0} agent role(s) in code but
-                  none exist in the database — the manifest has not been
-                  synced. Selections cannot be made until it is.
+                  This surface&apos;s {manifest?.agentRoles?.length ?? 0} agent
+                  role{(manifest?.agentRoles?.length ?? 0) === 1 ? "" : "s"}{" "}
+                  {(manifest?.agentRoles?.length ?? 0) === 1 ? "isn't" : "aren't"}{" "}
+                  synced yet, so none can be picked. An admin sync fixes it.
                 </p>
               )}
 
@@ -197,7 +196,7 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
             {Object.keys(roles).length > 0 && (
               <SettingsSection
                 title="Agent roles"
-                description="Which agent fills each position this surface plugs agents into. The strongest tier wins: platform default → org → you."
+                description="Which agent fills each role; yours beats org and default"
                 icon={AGENT_ICON}
               >
                 <div className="flex flex-col gap-3">
@@ -416,8 +415,7 @@ function RoleRow({
       </div>
       {resolved.role.kind === "multi" && (
         <p className="mt-1.5 text-[11px] text-muted-foreground">
-          Multi-slot role — this sets the first slot ({scope.kind === "me" ? "for you" : "for the org"}); additional slots are
-          managed on the surface itself.
+          Sets the first slot only; manage others on the surface.
         </p>
       )}
     </div>
@@ -437,7 +435,7 @@ function DictionaryPanel({
   return (
     <SettingsSection
       title="Dictionary"
-      description="Term corrections and pronunciations applied on this surface (org + user layers merged)."
+      description="Term fixes and pronunciations for this surface"
       icon={BookText}
     >
       <div className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-background px-3 py-2.5">

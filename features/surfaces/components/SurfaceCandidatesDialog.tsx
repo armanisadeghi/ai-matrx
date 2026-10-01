@@ -131,11 +131,11 @@ export function SurfaceCandidatesDialog({
             Add surfaces from candidate inventory
           </DialogTitle>
           <p className="text-[11px] text-muted-foreground mt-1">
-            {available.length} candidate{available.length === 1 ? "" : "s"}{" "}
-            available out of {SURFACE_CANDIDATES.length} known. Already-seeded
-            names are hidden. Sort_order and description come from the catalog;
-            the active state defaults to the catalog's recommendation unless
-            overridden below.
+            {/* Sort order and description come from the catalog; active state
+                defaults to the catalog's recommendation unless overridden below. */}
+            {available.length} of {SURFACE_CANDIDATES.length} candidate
+            {SURFACE_CANDIDATES.length === 1 ? "" : "s"} available; seeded ones
+            are hidden
           </p>
         </DialogHeader>
 
@@ -195,7 +195,8 @@ export function SurfaceCandidatesDialog({
           {visible.length === 0 ? (
             <div className="rounded-md border border-dashed border-border px-4 py-8 text-center text-xs text-muted-foreground">
               {available.length === 0
-                ? "All known candidates are already seeded. Add new candidates by editing surface-candidates.ts."
+                ? // New candidates are added by editing surface-candidates.ts.
+                  "Every known candidate is already seeded."
                 : "No candidates match these filters."}
             </div>
           ) : (

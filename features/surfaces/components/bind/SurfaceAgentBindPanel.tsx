@@ -414,10 +414,6 @@ export function SurfaceAgentBindPanel({
           <p className="text-sm font-medium text-foreground">
             Add an agent to {displaySurface}
           </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Pick an agent, then map this surface&apos;s values to its variables
-            and context policies.
-          </p>
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">
           <AgentListInlinePicker
@@ -564,9 +560,7 @@ export function SurfaceAgentBindPanel({
           ) : (
             <>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                For each agent variable or context policy, choose what this
-                surface should supply — or leave the agent&apos;s default /
-                prompt the user.
+                Choose what this surface supplies for each input.
               </p>
               <SurfaceVariableBindingList
                 targets={targets}

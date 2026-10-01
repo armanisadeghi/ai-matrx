@@ -567,7 +567,8 @@ export function SurfacesTable({
                         icon: active ? PowerOff : Power,
                         disabled: true,
                         description:
-                          "Set by its code manifest — change it there; Sync manifests would undo a change made here.",
+                          // Sync manifests would undo a change made here.
+                          "Set by its code manifest; change it there",
                         onSelect: () => undefined,
                       }
                     : {

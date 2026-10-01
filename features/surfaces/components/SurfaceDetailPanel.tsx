@@ -355,11 +355,8 @@ export function SurfaceDetailPanel({
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              Readiness is set in code — change the manifest&apos;s{" "}
-              <code className="bg-muted px-1 py-0.5 rounded font-mono">
-                readiness
-              </code>{" "}
-              field and re-sync.
+              {/* The manifest's `readiness` field. */}
+              Set in the code manifest; re-sync to change
             </p>
           </div>
 
@@ -500,11 +497,8 @@ export function SurfaceDetailPanel({
           className="flex-1 min-h-0 overflow-auto px-3 py-2"
         >
           <div className="text-xs text-muted-foreground mb-2 leading-relaxed">
-            Tools force-included on this surface via{" "}
-            <code className="font-mono bg-muted px-1 py-0.5 rounded">
-              tool.surface_defaults.always_include_tools
-            </code>
-            . Edit the underlying surface defaults to change inclusions.
+            {/* Source: tool.surface_defaults.always_include_tools. */}
+            Tools always included on this surface
           </div>
           {loadingTab && (
             <div className="text-xs text-muted-foreground">Loading…</div>
@@ -514,7 +508,7 @@ export function SurfaceDetailPanel({
           )}
           {!loadingTab && !tabError && toolBindings.length === 0 && (
             <div className="text-xs text-muted-foreground">
-              No tools force-included on this surface.
+              No tools are always included on this surface.
             </div>
           )}
           {!loadingTab && toolBindings.length > 0 && (

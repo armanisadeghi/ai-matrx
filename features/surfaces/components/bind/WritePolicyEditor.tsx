@@ -36,6 +36,7 @@ import {
 } from "@/components/official/ConfigurationFields";
 import { Lock, PenLine } from "lucide-react";
 import { SegmentedControl } from "@ai-matrx/design-system";
+import { InfoHint } from "@/components/official/InfoHint";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import type {
   SurfaceWritePolicy,
@@ -220,25 +221,22 @@ export function WritePolicyEditor({
                   },
                 ]}
               />
+              {!compact && (
+                <InfoHint
+                  label="Policy options"
+                  text="Default follows the surface, Manual refuses agent writes, Ask confirms each write, Auto applies at once."
+                />
+              )}
               {!structured && !compact && floored && (
                 <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
                   <Lock className="h-3 w-3" />
-                  The surface declared this target manual — overrides cannot
-                  open it to agents.
+                  The surface set this manual; overrides can&apos;t open it
                 </span>
               )}
             </div>
           </div>
         );
       })}
-      {!structured && !compact && (
-        <p className="text-[10px] text-muted-foreground leading-snug">
-          Default follows the surface&rsquo;s own policy. Manual refuses
-          agent-originated writes; Ask confirms each write in place; Auto
-          applies immediately. Overrides can tighten any target but can never
-          open one the surface declared manual.
-        </p>
-      )}
     </div>
   );
 }

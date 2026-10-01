@@ -183,8 +183,8 @@ export default function SurfaceAgentsPanelImpl({
             No surface registered for this page
           </p>
           <p className="mt-1 text-xs leading-relaxed">
-            The context window is still available, but it will remain empty
-            until this route registers a manifest or live surface runtime.
+            {/* Empty until this route registers a manifest or live surface runtime. */}
+            The context window stays empty on this page
           </p>
         </div>
       </div>
@@ -294,8 +294,7 @@ export default function SurfaceAgentsPanelImpl({
       {activeName && !surfaceAcceptsAgentBindings(activeName) && (
         <div className="min-w-0 space-y-1">
           <p className="text-[11px] text-muted-foreground">
-            Run any agent on this page. It opens in a window, sees everything
-            here and can work on it.
+            Run any agent here; it sees and can edit this page
           </p>
           <AgentListDropdown
             onSelect={(agentId: string) => handleRun(activeName, agentId)}

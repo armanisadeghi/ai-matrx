@@ -172,7 +172,7 @@ export function SurfaceMandatesSection({
       )}
       {rows.length > 0 && namesError != null && (
         <p className="mb-1 flex items-center gap-1 text-[10px] text-muted-foreground">
-          Names and on/off state couldn&apos;t be read — showing each job&apos;s key.
+          Names and on/off couldn&apos;t load — showing job keys
           <ErrorAlchemyMenu error={namesError} size="xs" operation="Read these jobs' names" />
         </p>
       )}
@@ -322,9 +322,8 @@ export function SurfaceMandatesSection({
                   read as "covered"; this sentence reads as what it is. */}
               {discovered.withoutMandateIdentity > 0 && (
                 <p className="mt-1 text-[9px] leading-snug text-amber-600 dark:text-amber-400">
-                  {discovered.withoutMandateIdentity} of these carry no mandate
-                  identity on the active storage, so coverage state cannot be
-                  shown for them yet (shortcut storage cutover is OFF).
+                  {discovered.withoutMandateIdentity} of these can&apos;t show
+                  coverage yet
                 </p>
               )}
             </>
