@@ -33,11 +33,10 @@ jest.mock("../service/kgCostService", () => ({
   listOrgCosts: jest.fn(() => new Promise(() => {})),
   getOrgCostDetail: jest.fn(() => new Promise(() => {})),
   listPendingBatches: jest.fn(() => new Promise(() => {})),
-  fetchUnitEconomics: jest.fn(() => new Promise(() => {})),
 }));
 
-// The explorer mount stays in the tree but is not rendered until the production apply (flip in
-// KgCostDashboard.tsx); the stand-in proves it is NOT mounted today.
+// The explorer is a stand-in here: its own behaviour is the drill explorer's; this suite proves the
+// dashboard mounts it as the unit-economics section.
 jest.mock("./KgCostExplorer", () => ({
   KgCostExplorer: () => <div data-kg-cost-explorer-stand-in="" />,
 }));
@@ -64,12 +63,10 @@ describe("KgCostDashboard canonical tables", () => {
     host.remove();
   });
 
-  it("keeps all four bounded dashboard grids canonical and honestly scoped", () => {
+  it("keeps the two remaining dashboard grids canonical and honestly scoped", () => {
     act(() => root.render(<KgCostDashboard />));
 
     for (const [id, title, answeredBy] of [
-      ["administration/kg-cost/by-source-kind", "By source kind", "source"],
-      ["administration/kg-cost/recent-runs", "Recent runs", "client"],
       ["administration/kg-cost/organizations", "Organizations", "source"],
       ["administration/kg-cost/pending-batches", "In-flight batches", "source"],
     ]) {
@@ -86,71 +83,28 @@ describe("KgCostDashboard canonical tables", () => {
     }
   });
 
-  it("keeps separately filterable run totals, chunks, cost stages, and exactness", () => {
+  it("keeps each remaining grid's read cap honest", () => {
     act(() => root.render(<KgCostDashboard />));
 
-    const sourceKindColumns = table(
-      "administration/kg-cost/by-source-kind",
-    ).columns;
-    expect(sourceKindColumns.map((column) => column.id ?? column.accessorKey)).toEqual(
-      expect.arrayContaining([
-        "runs",
-        "successes",
-        "errors",
-        "skips",
-        "embedding_cost_usd",
-        "extraction_cost_usd",
-        "cleanup_cost_usd",
-        "enrichment_cost_usd",
-      ]),
-    );
-    expect(
-      sourceKindColumns
-        .filter((column) =>
-          ["runs", "successes", "errors", "skips"].includes(
-            column.accessorKey ?? "",
-          ),
-        )
-        .every((column) => column.filter === "number"),
-    ).toBe(true);
-
-    const runColumns = table("administration/kg-cost/recent-runs").columns;
-    expect(table("administration/kg-cost/recent-runs").coverage).toMatchObject({
-      cap: 50,
-    });
     expect(
       table("administration/kg-cost/organizations").coverage,
     ).toMatchObject({ cap: 200 });
     expect(
       table("administration/kg-cost/pending-batches").coverage,
     ).toMatchObject({ cap: 100 });
-    expect(runColumns.map((column) => column.id ?? column.accessorKey)).toEqual(
-      expect.arrayContaining([
-        "source_kind",
-        "chunks_written",
-        "chunks_reused",
-        "cost_is_exact",
-        "embedding_cost_usd",
-        "extraction_cost_usd",
-        "cleanup_cost_usd",
-        "enrichment_cost_usd",
-      ]),
-    );
-    expect(
-      runColumns.find((column) => column.accessorKey === "cost_is_exact")
-        ?.filter,
-    ).toBe("boolean");
-    expect(runColumns.find((column) => column.id === "source_id")?.filter).toBe(
-      "text",
-    );
   });
 
-  it("keeps the old unit-economics section on screen until kg_cost is on production", () => {
+  it("renders unit economics only as the kg_cost explorer mount, never the old section", () => {
     act(() => root.render(<KgCostDashboard />));
 
-    expect(host.querySelector("[data-kg-cost-explorer-stand-in]")).toBeNull();
-    expect(tables.has("administration/kg-cost/by-source-kind")).toBe(true);
-    expect(tables.has("administration/kg-cost/recent-runs")).toBe(true);
+    const section = host.querySelector("[data-kg-cost-unit-economics]");
+    expect(section).not.toBeNull();
+    expect(
+      section?.querySelectorAll("[data-kg-cost-explorer-stand-in]"),
+    ).toHaveLength(1);
+    // the old section's two grids must not come back beside the explorer
+    expect(tables.has("administration/kg-cost/by-source-kind")).toBe(false);
+    expect(tables.has("administration/kg-cost/recent-runs")).toBe(false);
   });
 
   it("preserves the organization and batch inspectors as row-open actions", () => {

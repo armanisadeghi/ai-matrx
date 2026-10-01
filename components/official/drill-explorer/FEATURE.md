@@ -99,9 +99,8 @@ Mounts: `features/admin/usage-drill/UsageExplorer.tsx` (`/administration/usage`)
 `features/administration/kg-cost/components/KgCostExplorer.tsx` (`/administration/knowledge/kg-cost/explore`,
 definition `kg_cost`, platform lane), `features/workflow-runtime/drill/WorkflowRunsExplorer.tsx`
 (`/administration/automation/workflow-runs` platform lane; `/workflows/runs/analyze` mine lane; definition
-`workflow_runs`). The KG cost dashboard's unit-economics section becomes the kg_cost mount
-with the one-line flip `KG_UNIT_ECONOMICS_ON_THE_EXPLORER` (`KgCostDashboard.tsx`), set in the same step as
-the production apply of the drillgaps files; until then the old section (`fn_kg_cost_unit_economics`) shows. A mount passes no words of its own for a definition that
+`workflow_runs`). The KG cost dashboard's unit-economics section is the kg_cost mount, unconditionally (the old
+`fn_kg_cost_unit_economics` section and its flag are deleted). A mount passes no words of its own for a definition that
 declares its choices (lane DRILL-GAPS); the mine lane's header says "Your <rowNoun>s across all your
 organizations" (`mineScope`), because the door counts the person's rows in every organization.
 
