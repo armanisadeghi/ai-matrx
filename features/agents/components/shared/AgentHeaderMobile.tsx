@@ -189,7 +189,7 @@ export function AgentHeaderMobile({
 
   return (
     <>
-      <div className="flex items-center w-full gap-0.5 min-w-0">
+      <div className="flex items-center w-full min-w-0">
         {/* Left: Agent selector */}
         <AgentListDropdown
           onSelect={handleAgentSelect}

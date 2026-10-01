@@ -311,8 +311,11 @@ export function RoomHeader({
   return (
     <>
       <PageHeader>
-        <div className="@container flex w-full min-w-0 items-center gap-1.5">
+        {/* No gap on this row: tap buttons space themselves, and the
+            non-tap items carry their own spacing in the inner groups. */}
+        <div className="@container flex w-full min-w-0 items-center">
           <ChevronLeftTapButton href="/war-room/all" ariaLabel="Back" />
+          <div className="flex min-w-0 items-center gap-1.5">
           {/* Decorative identity mark — hidden on a phone-width header so the
               TITLE (which actually names the room) keeps the space. */}
           <span
@@ -342,8 +345,9 @@ export function RoomHeader({
           )}
 
           {session && ready ? <LiveMeter sessionId={sessionId} /> : null}
+          </div>
 
-          <div className="flex-1 min-w-1" />
+          <div className="flex-1 min-w-1.5" />
 
           {session ? (
             <div className="hidden sm:block shrink-0">
@@ -351,7 +355,7 @@ export function RoomHeader({
             </div>
           ) : null}
 
-          <div className="flex-1 min-w-1" />
+          <div className="flex-1 min-w-1.5" />
 
           {session ? (
             <>
@@ -362,7 +366,7 @@ export function RoomHeader({
                   its own ContextSheet on mobile, so nesting it in our sheet
                   would stack sheet-on-sheet). Copy-for-AI only renders when
                   the room has a project. */}
-              <div className="flex min-w-0 items-center gap-1.5">
+              <div className="mr-1.5 flex min-w-0 items-center gap-1.5">
                 {ready ? <ThreadSearchBox /> : null}
                 {/* Same working-context control as /chat — writes
                     appContextSlice (Surface A). Global by design. */}
@@ -373,7 +377,7 @@ export function RoomHeader({
                   on a phone these fold into the shell's one ⋮ ("This page"),
                   so the room's title keeps the row and there is no second
                   overflow button beside the shell's. Desktop is unchanged. */}
-              <HeaderActionsSlot className="flex shrink-0 items-center gap-1.5">
+              <HeaderActionsSlot className="flex shrink-0 items-center">
                 {/* Whole-room copy + Groomer. The anchored-project export
                     below is unchanged and still renders when the room has a
                     project — this pair works for every room, project or not. */}
@@ -381,7 +385,7 @@ export function RoomHeader({
                 <RoomProjectCopyForAiButton sessionId={sessionId} />
 
               {/* Desktop-only: everything else lives in the "⋯" menu. */}
-              <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+              <div className="hidden sm:flex items-center shrink-0">
                 <RoomAgentToggle
                   open={roomAgentOpen}
                   onToggle={onToggleRoomAgent}

@@ -195,7 +195,7 @@ export function AgentAppCard({
         className="border-t border-border py-1 px-3 bg-card rounded-b-lg min-h-[34px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-wrap items-center justify-between gap-1">
+        <div className="flex flex-wrap items-center justify-between">
           <ExternalLinkTapButton
             href={viewHref}
             target="_blank"

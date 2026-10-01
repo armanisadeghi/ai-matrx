@@ -56,7 +56,7 @@ export function ImagesListHeader() {
 
       {/* Desktop inline; on a phone they are rows in the shell's one ⋮
           (they used to vanish below sm with no phone counterpart). */}
-      <HeaderActionsSlot className="flex shrink-0 items-center gap-1">
+      <HeaderActionsSlot className="flex shrink-0 items-center">
         <ZapTapButton
           href="/images/studio"
           ariaLabel="Open Image Studio"

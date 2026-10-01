@@ -228,7 +228,7 @@ export function CaPdCalculatorClient({
           />
         }
         mobile={
-          <div className="grid grid-cols-[auto_1fr_auto] items-center w-full gap-2">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center w-full">
             <div className="flex items-center min-w-0">
               <ChevronLeftTapButton href="/legal/ca-wc" ariaLabel="Back to CA WC" />
               <span className="truncate max-w-[45vw] text-sm font-medium text-foreground px-1.5">

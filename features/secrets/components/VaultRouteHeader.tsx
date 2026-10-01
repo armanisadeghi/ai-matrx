@@ -28,7 +28,7 @@ export function VaultRouteHeader() {
         right={
           // A labelled tap button, so on a phone RouteHeader keeps it visible
           // icon-only (name + tooltip kept) rather than folding it into "…".
-          <div className="flex items-center gap-1">
+          <div className="flex items-center">
             <TapTargetButton
               onClick={() => setBrowsersOpen(true)}
               icon={<Globe className="h-4 w-4" />}

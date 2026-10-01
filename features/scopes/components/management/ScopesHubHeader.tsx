@@ -26,16 +26,19 @@ export function ScopesHubHeader() {
       right={
         <div className="hidden sm:flex items-center gap-1">
           <KgSuggestionsNavButton variant="outline" className="h-8" />
-          <TapTargetButton
-            icon={<ListChecks className="h-4 w-4" />}
-            ariaLabel="Context items"
-            href="/context-items"
-          />
-          <TapTargetButton
-            icon={<Network className="h-4 w-4" />}
-            ariaLabel="Knowledge graph"
-            href="/knowledge/graph"
-          />
+          {/* Tap buttons space themselves: grouped with no gap. */}
+          <div className="flex items-center">
+            <TapTargetButton
+              icon={<ListChecks className="h-4 w-4" />}
+              ariaLabel="Context items"
+              href="/context-items"
+            />
+            <TapTargetButton
+              icon={<Network className="h-4 w-4" />}
+              ariaLabel="Knowledge graph"
+              href="/knowledge/graph"
+            />
+          </div>
         </div>
       }
     />

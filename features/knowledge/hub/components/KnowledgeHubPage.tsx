@@ -2240,7 +2240,7 @@ export function KnowledgeHubPage({
         </div>
       }
       right={
-        <div className="flex items-center gap-1">
+        <div className="flex items-center">
           {runner.jobs.length ? (
             <TapTargetButton
               icon={<Activity className="h-4 w-4" />}
