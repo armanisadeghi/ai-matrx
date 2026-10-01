@@ -144,7 +144,12 @@ try {
   const tree = await timeTo(
     admin,
     `${ctx.origin}/scopes`,
-    () => document.querySelectorAll('[role="treeitem"], [role="tree"] a, a[href*="/scopes/"]').length > 0,
+    // The tree's own rows, inside the page's main region (the sidebar's static "/scopes" links do not count).
+    () => {
+      const main = document.querySelector("main, [role='main']") ?? document.body;
+      const rows = [...main.querySelectorAll('[role="treeitem"], [role="tree"] a, a[href*="/scopes/"]')].filter((e) => !e.closest("nav, aside, #shell-sidebar, [data-shell-sidebar]"));
+      return rows.length > 0;
+    },
     "scope tree",
   );
   await ctx.step(["P09"], `scope tree ≤ ${BUDGET.P09} ms`, admin, async () => ({
