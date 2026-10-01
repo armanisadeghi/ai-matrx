@@ -129,6 +129,30 @@ try {
     }
   }
 
+  if (PHASE === "b4") {
+    // BREAKER-4 B4-04 on its own fixture: "Visit Log B4", 300 visits. Restored first, archived after.
+    const FIXTURE = "cf27240e-2256-44f8-9aff-8e6cea876d94";
+    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await sleep(8000);
+    const back = page.getByRole("button", { name: "Bring it back" });
+    if (await back.count()) { await back.click(); await sleep(8000); step("restored Visit Log B4"); }
+    for (const layout of ["gallery", "kanban", "calendar"]) {
+      await page.goto(`${ORIGIN}/data-v2/${FIXTURE}?view=${layout}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+      await sleep(10000);
+      const pager = async () => (await page.locator("[data-view-pager]").innerText().catch(() => "")).replace(/\s+/g, " ");
+      const before = await pager();
+      await shot(`b4-04-${layout}-first-page`);
+      let clicks = 0;
+      while (clicks < 6 && (await page.getByRole("button", { name: /^Show \d+ more$/ }).count()) > 0) {
+        await page.getByRole("button", { name: /^Show \d+ more$/ }).first().click();
+        clicks += 1;
+        await sleep(6000);
+      }
+      await shot(`b4-04-${layout}-all`);
+      step(`B4-04 ${layout}`, { first: before, clicks, after: await pager(), text: (await text()).slice(0, 160) });
+    }
+  }
+
   if (PHASE === "b222") {
     // B2-22 on the preview: the Calendar's Ask AI opens with the ask typed and the chips in words.
     await page.goto(`${ORIGIN}/data-v2/${table}?view=calendar`, { waitUntil: "domcontentloaded", timeout: 180000 });

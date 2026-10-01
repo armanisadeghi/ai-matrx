@@ -459,5 +459,43 @@ export interface EntityListConfig<TRow> {
    */
   tableToolbar?: { tableId: string };
 
+  /**
+   * GROUP BY — the table's own group control (MatrxDataTable `grouping`), offered over these
+   * columns. NEVER A DEFAULT: the choice lives in the address (`?group=<column>`) and the session
+   * only, so every visit starts flat — no knob, no preference, no config sets one (Arman,
+   * 2026-10-01: grouping by organization only when the person picks it). While grouped, the whole
+   * result is ONE page, because the table counts what it holds and a 25-row page's group counts
+   * would lie. Meant for in-hand corpora (a memory-style service); a server-paged list that opts in
+   * pays one large read per grouped view.
+   */
+  grouping?: {
+    groupableColumnIds: string[];
+    /** Singular noun for a group's count ("table" → "12 tables"). */
+    rowNoun?: string;
+    /** The grouping value for a column, when its cell value is not it (a date → its bucket). */
+    readCell?: (row: TRow, columnId: string) => unknown;
+    /** The group header's words for one raw grouping value. */
+    labelOf?: (columnId: string, value: unknown) => string;
+  };
+
+  /** Render only the rows in view (MatrxDataTable `virtualize`). Engages past its threshold. */
+  virtualize?: { enabled?: boolean; threshold?: number; overscan?: number; rowHeight?: number };
+
+  /**
+   * TYPED TOKENS BECOME FILTERS (the Linear/Gmail move). Called when the search text ends in a
+   * space; return the text left to search and the filter-bag entries the finished tokens mean, or
+   * null when there are none. The entries join the bag, so they show as chips and in the headers.
+   */
+  searchTokens?: (search: string) => { search: string; filters: EntityFilters } | null;
+
+  /**
+   * Boolean filters offered as toggles inside the search box while something is typed (`Title
+   * only`). Each is a filter-bag entry `{ kind: "boolean", value: true }` under its `id`.
+   */
+  searchToggles?: Array<{ id: string; label: string }>;
+
+  /** The active filters as removable chips under the toolbar (rendered only while any is set). */
+  filterChips?: boolean;
+
   emptyState: { title: string; description: string };
 }

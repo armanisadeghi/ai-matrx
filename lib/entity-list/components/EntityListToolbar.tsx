@@ -88,6 +88,8 @@ interface Props<TRow> {
   hasCards: boolean;
   hasRows: boolean;
   onSearch: (value: string) => void;
+  /** Boolean filter toggles shown in the box while something is typed (config.searchToggles). */
+  searchToggles?: Array<{ id: string; label: string }>;
   onPatchQuery: (patch: Partial<EntityListQuery>) => void;
   onPatchPrefs: (patch: Partial<ListViewPrefs>) => void;
   onResetFilters: () => void;
@@ -156,6 +158,7 @@ export function EntityListToolbar<TRow>({
   hasCards,
   hasRows,
   onSearch,
+  searchToggles,
   onPatchQuery,
   onPatchPrefs,
   onResetFilters,
@@ -199,6 +202,30 @@ export function EntityListToolbar<TRow>({
         />
         {query.search && (
           <>
+            {searchToggles?.map((toggle) => {
+              const on = query.filters[toggle.id]?.kind === "boolean" && query.filters[toggle.id]?.value === true;
+              return (
+                <button
+                  key={toggle.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    const next = { ...query.filters };
+                    if (on) delete next[toggle.id];
+                    else next[toggle.id] = { kind: "boolean", value: true };
+                    onPatchQuery({ filters: next });
+                  }}
+                  className={cn(
+                    "inline-flex h-11 shrink-0 items-center rounded-md px-2 text-xs font-medium transition-colors lg:h-7",
+                    on
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  {toggle.label}
+                </button>
+              );
+            })}
             {deepSearchLabel && (
               <IconToggle
                 active={query.deep}

@@ -1,0 +1,16 @@
+import { openWalk, bodyText, sleep, until } from "../lib/harness.mjs";
+const ctx = await openWalk("t3-explore");
+const page = await ctx.page("admin");
+await ctx.goto(page, "/data-v2");
+await sleep(6000);
+console.log("BUTTONS", await page.locator("button:visible").allInnerTexts());
+await page.getByRole("button", { name: "New table" }).first().click();
+await page.getByPlaceholder("Table name").fill("Front Desk Follow-ups " + ctx.stamp);
+await page.getByRole("button", { name: "Create", exact: true }).click();
+await until("open", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 120000);
+console.log("URL", page.url());
+await sleep(8000);
+console.log("BUTTONS", await page.locator("button:visible").allInnerTexts());
+console.log("TEXT", (await bodyText(page, 1500)).replace(/\s+/g," "));
+await ctx.shot(page, "new");
+await ctx.finish();

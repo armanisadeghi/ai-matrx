@@ -1524,6 +1524,59 @@ try {
     }
   }
 
+  if (PHASE === "b4mine") {
+    // BREAKER-4's re-run of BREAKER-3 items in this lane's files: B3-31, B3-32 (Add Column), B3-22 (Phone).
+    const n = String(Date.now()).slice(-4);
+    await open(process.env.TABLE, "?view=sheet");
+    const telAsked = [];
+    page.on("request", (r) => { if (/^tel:/i.test(r.url())) telAsked.push(r.url()); });
+    page.on("framenavigated", (f) => { if (/^tel:/i.test(f.url())) telAsked.push(f.url()); });
+    await page.getByRole("button", { name: /^Column$/ }).first().click();
+    const dlg = page.getByRole("dialog").filter({ hasText: "Add New Column" });
+    await dlg.waitFor({ timeout: 20000 });
+    const labels = (await dlg.locator("label").allInnerTexts()).map((t) => t.trim());
+    await dlg.getByPlaceholder("e.g. Total Revenue").fill("created_at");
+    await sleep(500);
+    const kept = (await dlg.locator(".text-destructive").allInnerTexts()).join(" | ").replace(/\s+/g, " ");
+    await dlg.getByRole("combobox").first().click();
+    await sleep(700);
+    const lookList = (await page.locator("[role=listbox]").innerText().catch(() => "")).replace(/\s+/g, " ");
+    await shot("b4-32-look-list");
+    await page.keyboard.press("Escape");
+    await sleep(400);
+    step("B3-32 / B3-31 Add Column", { labels, kept_name_sentence: kept, look_list_says_stores: /stores /.test(lookList), look_list_sample: lookList.slice(0, 200) });
+    if (labels.includes("Data Type") || /stores /.test(lookList)) friction("Add Column still has a storage dropdown or 'stores' words");
+    if (/created_at number|Patient created_at/.test(kept) || !/Date added/.test(kept)) friction(`kept-name sentence: ${kept}`);
+    // B3-22: a Phone column, a number, then one click on the cell
+    const col = `Phone ${n}`;
+    await dlg.getByPlaceholder("e.g. Total Revenue").fill(col);
+    await dlg.getByRole("combobox").first().click();
+    await sleep(500);
+    await page.getByRole("option", { name: /^Phone/ }).first().click();
+    await sleep(600);
+    await dlg.getByRole("button", { name: "Add Column", exact: true }).click();
+    await sleep(6000);
+    const ci = await colIndex(col);
+    const cell = page.locator("tbody tr").nth(1).locator("td").nth(ci);
+    await cell.click();
+    await sleep(300);
+    await page.keyboard.type("7145550119", { delay: 25 });
+    await page.keyboard.press("Enter");
+    await sleep(3500);
+    await page.locator("tbody tr").nth(0).locator("td").nth(1).click();
+    await sleep(500);
+    const link = page.locator("tbody tr").nth(1).locator("td").nth(ci).locator("a[href^='tel:']");
+    const hasLink = await link.count();
+    if (hasLink) await link.first().click();
+    await sleep(1500);
+    const selectedNow = await page.locator("tbody tr").nth(1).locator("td").nth(ci).evaluate((td) => td.querySelector("[data-selected]") !== null || td.getAttribute("aria-selected") === "true");
+    await shot("b4-22-phone-click");
+    step("B3-22 one click on a Phone cell", { has_tel_link: hasLink, tel_requests: telAsked, selected_after_click: selectedNow });
+    if (telAsked.length) friction(`the selecting click asked for ${telAsked.join(", ")}`);
+    const gone = await deleteColumn(col).catch(() => false);
+    step("the walk's Phone column removed (Delete column…)", { [col]: gone });
+  }
+
   if (PHASE === "tidy") {
     // Columns earlier walks added and left on the test table, removed the way a person removes them.
     await open(T.supplies, "?view=sheet");

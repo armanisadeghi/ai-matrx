@@ -70,9 +70,18 @@ import { useEntityListSelection } from "../useEntityListSelection";
 import type { MatrxDataTableSelectionConfig } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntitySourceFailures } from "./EntitySourceFailures";
+import { EntityFilterChips } from "./EntityFilterChips";
 import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
 
 const EMPTY_ITEM_MENU_CONFIG: ItemMenuConfig = { sections: [] };
+
+/** The address word of the group-by choice (config.grouping). */
+export const GROUP_PARAM = "group";
+/**
+ * One page that holds the whole result while grouped. Not a limit on anything: the surfaces that
+ * group hold their corpus in hand, and a group count over a partial page would be a lie.
+ */
+const GROUPED_PAGE_SIZE = 100_000;
 
 /**
  * Bind an agent surface to a list page.
@@ -169,6 +178,11 @@ export interface EntityListPageProps<TRow> {
    * scope; there is simply no choice to draw.
    */
   scopeTabs?: boolean;
+  /**
+   * Content after the list, inside the same scroll (an archive disclosure, an inbox): the page's
+   * own sections that belong under its rows, without a second scroll container around the shell.
+   */
+  footer?: ReactNode;
 }
 
 export function EntityListPage<TRow>({
@@ -181,6 +195,7 @@ export function EntityListPage<TRow>({
   defaultScope,
   clearsShellHeader = true,
   scopeTabs = true,
+  footer,
 }: EntityListPageProps<TRow>) {
   // "All" and "My team" join every list that offers them here, once — never per page.
   const visibleScopes = withStandardLanes(scopes ?? config.scopes, {
@@ -225,6 +240,21 @@ export function EntityListPage<TRow>({
   const effectiveSort = urlState
     ? readSortFromParams(urlParams, prefsSort)
     : prefsSort;
+
+  // GROUP BY (config.grouping): the address only (`?group=`), never a preference or a default,
+  // so every visit starts flat. A column the surface does not offer reads as no grouping.
+  const [localGroup, setLocalGroup] = useState<string | null>(null);
+  const requestedGroup = urlState ? urlParams.get(GROUP_PARAM) : localGroup;
+  const groupColumnId =
+    config.grouping && requestedGroup && config.grouping.groupableColumnIds.includes(requestedGroup)
+      ? requestedGroup
+      : null;
+  const setGroupColumnId = (next: string | null) => {
+    if (urlState) commitUrlParams({ [GROUP_PARAM]: next, page: null }, "push");
+    else setLocalGroup(next);
+  };
+  // While grouped the whole result is one page: the table counts what it holds.
+  const pageSize = groupColumnId ? GROUPED_PAGE_SIZE : prefs.pageSize;
 
   // The explicit boolean sort is the grouping setting, including shared URLs.
   const effectiveFavoritesFirst =
@@ -295,9 +325,20 @@ export function EntityListPage<TRow>({
       sort: effectiveSort.sort,
       direction: effectiveSort.direction,
       favoritesFirst: effectiveFavoritesFirst,
-      pageSize: prefs.pageSize,
+      pageSize,
     },
   });
+
+  // TYPED TOKENS BECOME FILTERS once finished (config.searchTokens): `kind:form ` moves out of the
+  // text and into the filter bag in one step, so it shows as a chip and in the column header.
+  const onSearch = (value: string) => {
+    const parsed = config.searchTokens && /\s$/.test(value) ? config.searchTokens(value) : null;
+    if (parsed && Object.keys(parsed.filters).length > 0) {
+      list.patchQuery({ search: parsed.search, filters: { ...list.query.filters, ...parsed.filters } });
+      return;
+    }
+    list.setSearch(value);
+  };
 
   // UNIFORM COLUMNS hide by default where the surface opts in (they stay in
   // the picker; a column the person shows stays shown) — ../columnWidths.ts.
@@ -955,7 +996,8 @@ export function EntityListPage<TRow>({
           deepSearchLabel={config.deepSearch?.label}
           hasCards={Boolean(cardsView)}
           hasRows={Boolean(rowsView)}
-          onSearch={list.setSearch}
+          onSearch={onSearch}
+          searchToggles={config.searchToggles}
           tableControlsRef={setTableControlsSlot}
           onPatchQuery={list.patchQuery}
           // Sort changes route through commitSort so the panel's sort and the
@@ -977,6 +1019,15 @@ export function EntityListPage<TRow>({
               );
           }}
         />
+        )}
+
+        {config.filterChips && (
+          <EntityFilterChips
+            columns={config.columns}
+            filters={list.query.filters}
+            toggles={config.searchToggles}
+            onFiltersChange={list.setFilters}
+          />
         )}
 
         {/*
@@ -1094,7 +1145,7 @@ export function EntityListPage<TRow>({
             total={list.total}
             totalUnknown={Boolean(list.error)}
             page={list.query.page}
-            pageSize={prefs.pageSize}
+            pageSize={pageSize}
             sort={effectiveSort.sort}
             direction={effectiveSort.direction}
             filters={list.query.filters}
@@ -1108,6 +1159,19 @@ export function EntityListPage<TRow>({
             columnOrder={prefs.columnOrder}
             onColumnOrderChange={(columnOrder) => setPrefs({ columnOrder })}
             onSaveEdits={saveEdits}
+            {...(config.grouping
+              ? {
+                  grouping: {
+                    columnId: groupColumnId,
+                    onColumnIdChange: setGroupColumnId,
+                    groupableColumnIds: config.grouping.groupableColumnIds,
+                    ...(config.grouping.rowNoun ? { rowNoun: config.grouping.rowNoun } : {}),
+                    ...(config.grouping.readCell ? { readCell: config.grouping.readCell } : {}),
+                    ...(config.grouping.labelOf ? { labelOf: config.grouping.labelOf } : {}),
+                  },
+                }
+              : {})}
+            {...(config.virtualize ? { virtualize: config.virtualize } : {})}
             emptyState={resolvedEmptyState}
             {...(config.tableToolbar
               ? {}
@@ -1137,7 +1201,7 @@ export function EntityListPage<TRow>({
               ) {
                 commitSort({ sort: next.sort, direction: next.direction });
               }
-              if (next.pageSize !== prefs.pageSize) {
+              if (next.pageSize !== pageSize && !groupColumnId) {
                 setPrefs({ pageSize: next.pageSize });
               }
               // Table-toolbar mode only: the search box is the table's, and a
@@ -1183,6 +1247,7 @@ export function EntityListPage<TRow>({
             onPage={list.setPage}
           />
         )}
+        {footer ? <div className="pt-4">{footer}</div> : null}
       </div>
 
       {modals}

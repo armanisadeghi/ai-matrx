@@ -150,6 +150,17 @@ interface Props<TRow> {
     onChange: (views: SavedListView[]) => void;
   };
   emptyAction?: React.ReactNode;
+  /** GROUP BY (config.grouping), controlled by the page. Absent = no group control. */
+  grouping?: {
+    columnId: string | null;
+    onColumnIdChange: (columnId: string | null) => void;
+    groupableColumnIds: string[];
+    rowNoun?: string;
+    readCell?: (row: TRow, columnId: string) => unknown;
+    labelOf?: (columnId: string, value: unknown) => string;
+  };
+  /** Render only the rows in view (config.virtualize). */
+  virtualize?: { enabled?: boolean; threshold?: number; overscan?: number; rowHeight?: number };
   /** The outcome of the list read (RC-B12 r13) — the table shows `emptyState` only after it succeeded. */
   read?: ReadOutcome;
   /**
@@ -310,6 +321,8 @@ export function EntityListTable<TRow>({
   tableToolbar,
   pageToolbarSlot,
   viewTabsStore,
+  grouping,
+  virtualize,
 }: Props<TRow>) {
   const { favorite } = config;
 
@@ -682,6 +695,24 @@ export function EntityListTable<TRow>({
       // design-system 0.49.x an ABSENT key means "self-managed copy selection", which draws a
       // checkbox column (see Props). `false` is the package's own "no selection".
       selection={selection ?? false}
+      {...(grouping
+        ? {
+            grouping: {
+              columnId: grouping.columnId,
+              onColumnIdChange: grouping.onColumnIdChange,
+              groupableColumnIds: grouping.groupableColumnIds,
+              ...(grouping.rowNoun ? { rowNoun: grouping.rowNoun } : {}),
+              ...(grouping.readCell ? { readCell: grouping.readCell } : {}),
+              ...(grouping.labelOf
+                ? {
+                    renderLabel: (group: { value: unknown; label: string }) =>
+                      grouping.columnId ? grouping.labelOf?.(grouping.columnId, group.value) ?? group.label : group.label,
+                  }
+                : {}),
+            },
+          }
+        : {})}
+      {...(virtualize ? { virtualize } : {})}
       emptyState={emptyState ?? { ...config.emptyState, action: emptyAction }}
       read={read}
     />

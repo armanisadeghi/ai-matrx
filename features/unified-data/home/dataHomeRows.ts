@@ -1,0 +1,213 @@
+// features/unified-data/home/dataHomeRows.ts — LANE DATA-HOME-3A
+//
+// THE DATA HOME'S ONE ROW TYPE. Tables, forms, booking pages, portals, dashboards, digests,
+// checklists, automations, outside shares and tables shared in are ONE row type with a `kind`
+// column (the list shell's ratified rule: heterogeneous rows are one type, never special-cased
+// inside the shell — lib/entity-list/FEATURE.md).
+//
+// ADOPT, DO NOT REPLACE. Every row is built by the old hub's own declarations
+// (`features/unified-data/hub/capabilities.ts` HUB_CAPABILITIES): each kind's address, facts,
+// trouble sentence and public link are exactly what the ten sections showed. This file only
+// flattens the ten answers into one list, folds on the lane facts, and de-duplicates an accepted
+// share that is already a Table row (census item 8).
+
+import type { RecordsClient } from "@ai-matrx/records/core";
+import type { RecordsDataSource } from "@ai-matrx/records";
+
+import {
+  HUB_CAPABILITIES,
+  attachChangedBy,
+  type HubCapability,
+  type HubItem,
+  type HubReadContext,
+} from "@/features/unified-data/hub/capabilities";
+import type { DataHomeAnswer, DataHomeTableRow, DoorFailure } from "@/features/unified-data/hub/doors";
+import { isPublicVisibility, kindOne, type ScopeFacts } from "@/features/unified-data/hub/dataHomeScope";
+
+/** Which lane put a row in front of the person — one word, the strongest reason first. */
+export type DataHomeAccess = "mine" | "team" | "org" | "shared" | "public" | "system";
+
+export interface DataHomeRow {
+  /** Unique across kinds and organizations: `${kind}:${organization}:${item}`. */
+  id: string;
+  /** The thing's own id (a table, a form, an invitation …). */
+  itemId: string;
+  name: string;
+  /** The store's one kind word (`table`, `form`, `dashboard`, `list` …). */
+  kind: string;
+  organizationId: string | null;
+  organizationName: string | null;
+  tableId: string | null;
+  /** The table it belongs to, only when that is not the row's own name. */
+  parentName: string | null;
+  updatedAt: string | null;
+  /** The Table's maker, when the door says (`custom.data_home_tables.created_by`). */
+  createdBy: string | null;
+  mine: boolean;
+  team: boolean;
+  member: boolean;
+  sharedWithMe: boolean;
+  visibility: string | null;
+  system: boolean;
+  access: DataHomeAccess | null;
+  /** Record count. Null = not measured (the door does not count yet) — shown `—`, never 0. */
+  records: number | null;
+  changedBy: string | null;
+  /** The row's short facts joined ("4 stages · 12 answers"). */
+  details: string;
+  href: string;
+  publicHref: string | null;
+  publicLabel: string | null;
+  /** The store's own sentence when something is wrong with the row. */
+  trouble: string | null;
+}
+
+/** Singular kind words the hub's KIND_ONE does not carry (the item kinds). */
+const ITEM_KIND_ONE: Record<string, string> = {
+  portal: "Portal",
+  digest: "Digest",
+  automation: "Automation",
+  share: "Outside share",
+};
+
+export function dataHomeKindWord(kind: string): string {
+  return ITEM_KIND_ONE[kind] ?? kindOne(kind);
+}
+
+/** What each listing's rows are, in the store's kind words (the old hub's LISTING_KIND). */
+const LISTING_KIND: Record<string, string> = {
+  forms: "form",
+  bookings: "booking",
+  portals: "portal",
+  dashboards: "dashboard",
+  digests: "digest",
+  checklists: "checklist",
+  automations: "automation",
+  "shared-outside": "share",
+  "shared-with-me": "table",
+};
+
+export function accessOf(facts: ScopeFacts): DataHomeAccess | null {
+  if (facts.mine) return "mine";
+  if (facts.team) return "team";
+  if (facts.member) return "org";
+  if (facts.sharedWithMe) return "shared";
+  if (isPublicVisibility(facts.visibility)) return "public";
+  if (facts.system) return "system";
+  return null;
+}
+
+export const ACCESS_WORD: Record<DataHomeAccess, string> = {
+  mine: "Mine",
+  team: "Team",
+  org: "Org",
+  shared: "Shared",
+  public: "Public",
+  system: "System",
+};
+
+/** The tooltip: why this row is shown (one sentence, verified against the lane facts). */
+export const ACCESS_WHY: Record<DataHomeAccess, string> = {
+  mine: "You made it.",
+  team: "Someone on your team made it.",
+  org: "It is in an organization you belong to.",
+  shared: "Someone shared it with you.",
+  public: "Anyone with its link can open it.",
+  system: "AI Matrx keeps it for everyone.",
+};
+
+function toRow(item: HubItem & { kind: string }, tables: ReadonlyMap<string, DataHomeTableRow>): DataHomeRow {
+  const facts: ScopeFacts = item.scope ?? { mine: false, member: true, sharedWithMe: false, visibility: null };
+  const table = item.tableId ? tables.get(item.tableId) : undefined;
+  const parent = item.tableName && item.tableName !== item.title ? item.tableName : null;
+  return {
+    id: `${item.kind}:${item.organizationId ?? "-"}:${item.id}`,
+    itemId: item.id,
+    name: item.title,
+    kind: item.kind,
+    organizationId: item.organizationId ?? null,
+    organizationName: item.organizationName ?? null,
+    tableId: item.tableId,
+    // A table shared in names its organization in `tableName` (the hub's "in <their organization>"),
+    // which is the Organization column here — never repeated as a parent.
+    parentName: item.kind === "table" ? null : parent,
+    updatedAt: item.changedAt ?? null,
+    createdBy: table?.created_by ?? null,
+    mine: facts.mine,
+    team: Boolean(facts.team),
+    member: facts.member,
+    sharedWithMe: facts.sharedWithMe,
+    visibility: facts.visibility,
+    system: Boolean(facts.system),
+    access: accessOf(facts),
+    records: null,
+    changedBy: item.changedBy ?? null,
+    details: item.facts.filter(Boolean).join(" · "),
+    href: item.href,
+    publicHref: item.publicHref ?? null,
+    publicLabel: item.publicLabel ?? null,
+    trouble: item.trouble ?? null,
+  };
+}
+
+export interface DataHomeBuild {
+  rows: DataHomeRow[];
+  /** Listings whose door refused, in the store's own words — never an empty list standing in. */
+  refusals: Array<{ listing: string; error: DoorFailure }>;
+}
+
+/**
+ * Flatten the home's one answer (`custom.data_home`) into rows, through the old hub's declarations.
+ * `capabilities` is injectable for tests; the page passes HUB_CAPABILITIES.
+ */
+export async function buildDataHomeRows(
+  input: {
+    client: RecordsClient;
+    dataSource: RecordsDataSource;
+    answer: DataHomeAnswer;
+  },
+  capabilities: readonly HubCapability[] = HUB_CAPABILITIES,
+): Promise<DataHomeBuild> {
+  const { answer } = input;
+  const tables = new Map(answer.tables.map((t) => [t.table_id, t]));
+  const ctx: HubReadContext = {
+    client: input.client,
+    dataSource: input.dataSource,
+    organizationId: null,
+    tables: [],
+    tableKernelId: null,
+    everywhere: { ok: true, rows: answer.tables },
+    items: { ok: true, rows: answer.items },
+    changedBy: new Map(answer.changed_by.map((row) => [`${row.organization_id}:${row.id}`, { at: row.at, who: row.who }])),
+  };
+  const refusals: DataHomeBuild["refusals"] = [];
+  const answered = await Promise.all(
+    capabilities.map(async (capability) => {
+      const read = await capability.read(ctx);
+      if (!read.ok) {
+        refusals.push({ listing: capability.title, error: read.error });
+        return [] as Array<HubItem & { kind: string }>;
+      }
+      await attachChangedBy(ctx, capability, read.items);
+      return read.items
+        // An accepted share is already a row under Tables; listing it twice says one thing twice.
+        // An offer not yet accepted stays (census item 8).
+        .filter(
+          (item) =>
+            !(capability.id === "shared-with-me" && item.tableId && tables.has(item.tableId) && item.id.startsWith("accepted:")),
+        )
+        .map((item) => {
+          if (capability.id === "shared-with-me") {
+            return {
+              ...item,
+              kind: "table",
+              organizationName: item.tableName,
+              scope: item.scope ?? { mine: false, member: false, sharedWithMe: true, visibility: null },
+            };
+          }
+          return { ...item, kind: item.kind ?? LISTING_KIND[capability.id] ?? capability.id };
+        });
+    }),
+  );
+  return { rows: answered.flat().map((item) => toRow(item, tables)), refusals };
+}

@@ -520,6 +520,14 @@ export type ListViewsPreferences = Record<string, ListViewPrefs>;
 export interface ListsPreferences {
   /** "active" hides archived rows on arrival (platform default); "all" shows them. */
   archivedDefault: "active" | "all";
+  /**
+   * The data home's starred rows (`DataHomeRow.id`), newest first, capped at DATA_HOME_STAR_CAP in
+   * features/unified-data/home/useDataHomeMarks.ts. A person's own mark: it never narrows by the
+   * active organization (DATA-HOME-3-SPEC §2.4, decision D2).
+   */
+  dataHomeStarred?: string[];
+  /** The data home's last opened rows (`DataHomeRow.id`), newest first, at most ten. */
+  dataHomeRecent?: string[];
 }
 
 /**

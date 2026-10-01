@@ -16,6 +16,7 @@ import type {
   ScopeTypeNode,
 } from "@/features/scopes/types";
 import {
+  type StoreTypeRow,
   archivedTypeFromStore,
   contextItemRowFromStore,
   contextValueFromStore,
@@ -31,6 +32,9 @@ import {
 
 export type ContextReadDoor =
   | "context_tree"
+  | "context_tree_types"
+  | "context_tree_type_scopes"
+  | "context_tree_search"
   | "context_scopes"
   | "context_items"
   | "context_values"
@@ -137,4 +141,81 @@ export async function readArchivedScopeTypes(
   });
   if (!res.ok) return res;
   return ok((res.data ?? []).map(archivedTypeFromStore));
+}
+
+// ─── the paged tree (lane SCOPES-TREE-PAGED) ────────────────────────────────────────────────────
+//
+// The same rows as `readScopeTree`, asked in pieces: the scope types first (the first paint; counts
+// in a second call, because a count asks the one ladder of every Table), one type's scopes a page at a
+// time when it is opened, and a server-side search across every scope for the pickers and the chat
+// lens. The doors answer through custom.context_tree's own body (proof:
+// scripts/campaign-tests/scopestreepaged_same_rows_as_the_tree.sql).
+
+/** One page of a type's scopes is this many (the door's default; it answers at most 1000). */
+export const TYPE_SCOPES_PAGE = 200;
+
+export interface ScopeTypeSkeleton {
+  types: ScopeTypeNode[];
+  /** type id → how many scopes the caller sees in it; absent when asked without counts. */
+  counts: Record<string, number> | null;
+}
+
+/** The scope types of these organizations (each with `scopes: []`), with or without counts. */
+export async function readScopeTypes(
+  organizationIds: readonly string[],
+  withCounts: boolean,
+): Promise<ScopesRpcResult<ScopeTypeSkeleton>> {
+  const ids = [...new Set(organizationIds.filter(Boolean))];
+  if (ids.length === 0) return ok({ types: [], counts: withCounts ? {} : null });
+  const res = await callContextDoor<{ types?: Array<StoreTypeRow & { scope_count?: number }> }>(
+    "context_tree_types",
+    { p_organization_ids: ids, p_with_counts: withCounts },
+  );
+  if (!res.ok) return res;
+  const rows = res.data?.types ?? [];
+  const counts: Record<string, number> | null = withCounts ? {} : null;
+  if (counts) for (const r of rows) counts[r.id] = Number(r.scope_count ?? 0);
+  return ok({ types: rows.map(scopeTypeNodeFromStore), counts });
+}
+
+export interface ScopePage {
+  scopes: ScopeNode[];
+  total: number;
+  nextOffset: number | null;
+}
+
+/** One page of one type's scopes, in the whole tree's order. */
+export async function readTypeScopesPage(
+  scopeTypeId: string,
+  offset = 0,
+  limit = TYPE_SCOPES_PAGE,
+): Promise<ScopesRpcResult<ScopePage>> {
+  const res = await callContextDoor<{ scopes?: StoreScopeRow[]; total?: number; next_offset?: number | null }>(
+    "context_tree_type_scopes",
+    { p_scope_type_id: scopeTypeId, p_offset: offset, p_limit: limit },
+  );
+  if (!res.ok) return res;
+  return ok({
+    scopes: (res.data?.scopes ?? []).map(scopeNodeFromStore),
+    total: Number(res.data?.total ?? 0),
+    nextOffset: res.data?.next_offset ?? null,
+  });
+}
+
+/** The scopes whose name holds `query` (case-insensitive), across these organizations. */
+export async function searchScopesInStore(
+  organizationIds: readonly string[],
+  query: string,
+  limit = 100,
+): Promise<ScopesRpcResult<{ scopes: ScopeNode[]; total: number }>> {
+  const ids = [...new Set(organizationIds.filter(Boolean))];
+  const q = query.trim();
+  if (ids.length === 0 || q === "") return ok({ scopes: [], total: 0 });
+  const res = await callContextDoor<{ scopes?: StoreScopeRow[]; total?: number }>("context_tree_search", {
+    p_organization_ids: ids,
+    p_query: q,
+    p_limit: limit,
+  });
+  if (!res.ok) return res;
+  return ok({ scopes: (res.data?.scopes ?? []).map(scopeNodeFromStore), total: Number(res.data?.total ?? 0) });
 }
