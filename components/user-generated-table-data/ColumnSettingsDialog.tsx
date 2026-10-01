@@ -243,6 +243,14 @@ function ColumnSettingsForm({
   const allowedBases = new Set<string>(
     storageTypesToChangeInto({ onTheRecordStore: isRecordStoreTable(tableId), changeInto: RECORD_STORE_COLUMN_TYPES, current: field.data_type }).map((t) => t.value),
   );
+  // A COLUMN THAT IS A CHOICE COLUMN AGAIN TAKES BACK ITS "OTHER VALUES" SETTING (BREAKER-3 B3-15): a strict
+  // Priority changed to Text and back came back open, because the editor started from "anyone can type".
+  const keptAllowOther = (field.metadata as { list_kept_allow_other?: unknown } | null | undefined)?.list_kept_allow_other;
+  const withKeptAllowOther = (next: FieldFormatConfig | null): FieldFormatConfig | null => {
+    if (!next || (next.id !== "choice" && next.id !== "multi_choice")) return next;
+    if (typeof keptAllowOther !== "boolean" || next.options?.allowOther !== undefined) return next;
+    return { ...next, options: { ...(next.options ?? {}), allowOther: keptAllowOther } };
+  };
   const canBecome = (formatId: string): boolean => {
     const base = getFieldFormat(formatId)?.base;
     return !base || base === dataType || allowedBases.has(base);
@@ -422,12 +430,12 @@ function ColumnSettingsForm({
             <FieldFormatPicker
               dataType={dataType}
               value={format ?? resolveFieldFormat(dataType, null)}
-              onChange={setFormat}
+              onChange={(next) => setFormat(withKeptAllowOther(next))}
               offerFormat={(id) => offerFormatWhereRelationIs(relationEnabled)(id) && canBecome(id)}
               onDataTypeChange={(base, next) => {
                 setDataType(base as FieldDataType);
                 setRules({});
-                setFormat(next);
+                setFormat(withKeptAllowOther(next));
               }}
               siblingFields={siblings}
               {...(suggestions ? { suggestions } : {})}

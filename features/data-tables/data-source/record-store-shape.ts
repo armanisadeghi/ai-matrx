@@ -229,7 +229,14 @@ export function olderColumnFromField(
     is_required: Boolean(field.required),
     default_value: (field.default ?? null) as DatasetField["default_value"],
     validation_rules: olderValidationRules(field.rules, (field as { unique?: boolean | null }).unique) as DatasetField["validation_rules"],
-    metadata: (format ? { format } : {}) as DatasetField["metadata"],
+    metadata: ({
+      ...(format ? { format } : {}),
+      // A column that was a choice column and will be one again: its "take other values" setting,
+      // kept by the store beside its list (BREAKER-3 B3-15), so Column settings starts from it.
+      ...(typeof (field.config as { list_kept_allow_other?: unknown } | undefined)?.list_kept_allow_other === "boolean"
+        ? { list_kept_allow_other: (field.config as { list_kept_allow_other: boolean }).list_kept_allow_other }
+        : {}),
+    }) as DatasetField["metadata"],
     organization_id: field.organization_id,
     // component-created-by-ok: carries the record-store Field's own created_by into the legacy row shape verbatim (the Field is the store's entity, not a udt component row)
     user_id: (field.created_by ?? "") as string,
