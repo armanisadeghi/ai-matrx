@@ -141,6 +141,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { readOf } from "@/components/read-state/ReadGate";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { InfoHint } from "@/components/official/InfoHint";
 import { toast } from "@/lib/toast";
 
 type ToolsTab = "server" | "custom" | "client" | "mcp";
@@ -2305,8 +2306,9 @@ function ClientToolsTab({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-4 py-3 border-b border-border shrink-0">
-        <p className="text-xs font-semibold text-foreground">
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
           Client-Handled Tools
+          <InfoHint text="Checked tools run in the browser, not on the server; the run waits for the result with no timeout." />
         </p>
         {/* When the AI calls a client tool, the server delegates it to the
             browser and waits for the result with no countdown, so a tool may
