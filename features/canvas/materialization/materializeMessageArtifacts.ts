@@ -76,6 +76,9 @@ const graphGuardRejectedMessageIds = new Set<string>();
  * (message 2abb1798…, 09:14:30Z). The merge is paid once, by one writer, so
  * the next attempt lands in tens of milliseconds. Network errors carry no
  * SQLSTATE and are NOT retried — their outcome is unknown.
+ * 2026-10-01: the 666 MB whole-content trigram index was replaced by
+ * cx_message_text_trgm_idx (visible text only, 146 MB), which makes the merge
+ * rarer and smaller; the retry stays because the two GIN pending lists remain.
  */
 const TRANSIENT_SQLSTATES = new Set(["57014", "55P03", "40001", "40P01"]);
 const REWRITE_RETRY_DELAYS_MS = [750, 2000];

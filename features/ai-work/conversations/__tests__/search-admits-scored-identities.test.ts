@@ -132,6 +132,10 @@ describe("cvx_list_scoped search admits every field cvx_search_score ranks", () 
     );
   });
 
+  // Note (Claude Opus 5.5, 2026-10-01): live no longer matches these two files. Live has
+  // chat.cx_message_text_trgm_idx on chat.message_search_text(content) (visible text), and
+  // cvx_deep_hits ILIKEs that same expression. Both were applied via the Supabase MCP with no
+  // migration file (Arman's rule), so this pins the old files, not live. See features/ai-work/FEATURE.md.
   it("the trigram index exists on exactly the predicate the deep pass uses", () => {
     const idx = readMigration("cx_message_content_trgm_idx.sql");
     expect(idx).toContain(
