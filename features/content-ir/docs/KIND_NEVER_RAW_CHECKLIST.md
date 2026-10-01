@@ -136,8 +136,9 @@ Every stream item below adds its case there.
       `genericKindMarkdown` instead. Done through ONE helper, `kindTextToMarkdown`
       (`features/content-ir/surfaces/kind-text-to-markdown.ts`: whole-text, fenced and bare kind regions →
       `kindValueToMarkdown`), applied in `contentForDestination`, "Copy with thinking", conversation transfer
-      and `documentMarkdown`. A kind with no `toMarkdown` facet still exports `genericKindMarkdown`'s fenced
-      JSON (the converter's zero-loss floor) — a facet per kind is the fix there.
+      and `documentMarkdown`. A kind with no `toMarkdown` facet now exports `genericKindMarkdown`'s READABLE
+      fallback (instance-title heading, bold-label scalars, uniform arrays as tables, nested lists, nested
+      kinds through `kindValueToMarkdown`) — never the `__kind` key, never a JSON fence.
 - [x] O2. Context values and context items show it raw. `ContextValueDisplay` (markdown / text with a kind →
       `AnswerValueView`; every `value_json` → `AnswerValueView`) and `GenericBody` (kind text or kind-carrying
       payload → `AnswerValueView`). A kind NESTED in a kindless payload reaches `StructuredValueView`, which

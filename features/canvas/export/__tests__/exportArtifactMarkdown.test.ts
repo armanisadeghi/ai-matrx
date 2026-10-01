@@ -367,22 +367,23 @@ describe("exportArtifactMarkdown — string + fallback paths", () => {
     expect(markdown).toContain("**Front:** Q");
   });
 
-  it("falls back to a generic heading + fenced json for unregistered kinds", () => {
+  it("falls back to readable markdown (never a JSON dump) for unregistered kinds", () => {
     const value = { [KIND_KEY]: "totally_unknown_kind", payload: [1, 2, 3] };
     const { markdown } = exportArtifactMarkdown(row("mystery", value));
 
     expect(markdown).toContain("# Totally unknown kind");
-    expect(markdown).toContain("```json");
-    // Zero loss: the dump keeps everything, discriminator included.
-    expect(markdown).toContain('"payload"');
-    expect(markdown).toContain('"totally_unknown_kind"');
+    // Every field still appears — as words, never JSON (kind-never-raw O1).
+    expect(markdown).toContain("**Payload:** 1, 2, 3");
+    expect(markdown).not.toContain("```json");
+    expect(markdown).not.toContain(KIND_KEY);
   });
 
   it("never dead-ends on off-contract rows", () => {
     const nullRow = row("html", null, { content: null, title: null });
     const out = exportArtifactMarkdown(nullRow);
     expect(out.title).toBe("Artifact");
-    expect(out.markdown).toContain("```json");
+    expect(out.markdown).toMatch(/^# /);
+    expect(out.markdown).not.toContain("```json");
 
     const bareString = row("code", "", {
       content: "const x = 1;",
