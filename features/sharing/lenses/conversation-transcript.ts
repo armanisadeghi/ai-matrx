@@ -116,7 +116,7 @@ function readTool(raw: Record<string, unknown>, ordinal: number): SharedChatTool
       : truncated
         ? // The preview of a kind is broken kind JSON: `previewResult` reads it
           // as the kind's honest "not saved" state, never raw text.
-          previewResult(typeof raw.output_preview === "string" ? raw.output_preview : null)
+          previewResult(raw.output_preview)
         : parseOutput(raw.output),
     outputTruncated: !withheld && truncated,
     withheld,

@@ -40,8 +40,10 @@ function parseOutput(raw: string | null): unknown {
  * it reads as an honest one-line state naming the kind instead. Anything else
  * (prose, kindless JSON) stays the text it is.
  */
-export function previewResult(preview: string | null | undefined): unknown {
-  if (!preview) return null;
+export function previewResult(preview: unknown): unknown {
+  if (preview === undefined || preview === null || preview === "") return null;
+  // A preview that is already a value (the column is JSON) is used as is.
+  if (typeof preview !== "string") return preview;
   const parsed = parseOutput(preview);
   if (parsed !== preview) return parsed;
   if (jsonKindSignal(preview) !== "kind") return preview;
