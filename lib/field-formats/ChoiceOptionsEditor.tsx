@@ -114,7 +114,11 @@ export function ChoiceOptionsEditor({
   className,
 }: ChoiceOptionsEditorProps) {
   const binding = options.structuredList;
-  const source: Source = binding?.listId ? "list" : "inline";
+  // The mode is the binding's PRESENCE, not its list id: choosing "A shared pick list" writes
+  // `{ listId: "" }` until a list is picked, and reading the mode off `listId` snapped the
+  // selector straight back to inline — a dead control (PB-02, 2026-10-01). An unpicked binding
+  // resolves as inline everywhere else (`resolveFieldChoices` keys on `listId`).
+  const source: Source = binding ? "list" : "inline";
 
   const choices = useMemo(() => inlineChoices(options), [options]);
   const [draftValue, setDraftValue] = useState("");
