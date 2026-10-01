@@ -25,7 +25,10 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProInput } from "@/components/official/ProInput";
 import type { ThreadPickerOption } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import {
+  TapTargetButtonSolid,
+  TapTargetButtonTransparent,
+} from "@ai-matrx/tap-target";
 import {
   ChevronRightTapButton,
   LoadingTapButton,
@@ -262,30 +265,39 @@ export function QuickAddThread({
       <div
         role="group"
         aria-label="Thread type"
-        className="flex items-center gap-0.5 rounded-lg bg-muted/50 p-0.5"
+        className="flex items-center rounded-lg bg-muted/50 p-0.5"
       >
         {FLAVOR_OPTIONS.map((opt) => {
           const Icon = opt.icon;
           const active = flavor === opt.value;
           return (
-            <div
-              key={opt.value}
-              className={cn(
-                "flex min-w-0 flex-1 justify-center",
-                active &&
-                  "[&_.matrx-tap-pill]:bg-card [&_.matrx-tap-pill]:shadow-sm [&_.matrx-tap-icon]:text-foreground [&_.matrx-tap-label]:text-foreground",
-                !active &&
-                  "[&_.matrx-tap-icon]:text-muted-foreground [&_.matrx-tap-label]:text-muted-foreground",
+            <div key={opt.value} className="flex min-w-0 flex-1 justify-center">
+              {/* The selected segment is a solid card-coloured pill; the
+                  rest are transparent and muted — variants, never classes
+                  reaching into the tap button. */}
+              {active ? (
+                <TapTargetButtonSolid
+                  label={opt.label}
+                  icon={<Icon className="matrx-tap-icon shrink-0" />}
+                  onClick={() => onFlavorChange(opt.value)}
+                  disabled={busy}
+                  aria-pressed
+                  tooltip={false}
+                  bgColor="bg-card"
+                  iconColor="text-foreground"
+                  hoverBgColor="hover:bg-card"
+                />
+              ) : (
+                <TapTargetButtonTransparent
+                  label={opt.label}
+                  icon={<Icon className="matrx-tap-icon shrink-0" />}
+                  onClick={() => onFlavorChange(opt.value)}
+                  disabled={busy}
+                  aria-pressed={false}
+                  tooltip={false}
+                  className="text-muted-foreground"
+                />
               )}
-            >
-              <TapTargetButtonTransparent
-                label={opt.label}
-                icon={<Icon className="matrx-tap-icon shrink-0" />}
-                onClick={() => onFlavorChange(opt.value)}
-                disabled={busy}
-                aria-pressed={active}
-                tooltip={false}
-              />
             </div>
           );
         })}
