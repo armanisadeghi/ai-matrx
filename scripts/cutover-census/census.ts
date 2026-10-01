@@ -41,6 +41,7 @@ import {
   type Repo,
 } from "./integrations";
 import { guardIfProduction } from "../lib/production-guard";
+import { codeOnly } from "../lib/code-only";
 
 const ROOT = resolve(import.meta.dirname, "..", "..");
 const REPOS: Repo[] = ["matrx-frontend", "aidream", "matrx-extend", "matrx-local"];
@@ -65,40 +66,9 @@ export function globToRegex(glob: string): RegExp {
 
 export const matchesAny = (path: string, globs: string[]) => globs.some((g) => globToRegex(g).test(path));
 
-/** The CODE of a file: comments removed, strings kept (SQL lives in strings). */
-export function codeOnly(path: string, text: string): string {
-  if (/\.py$/.test(path)) {
-    const lines = text.split("\n");
-    const out: string[] = [];
-    let inDoc: string | null = null;
-    let prevCode = "";
-    for (const line of lines) {
-      if (inDoc) {
-        if (line.includes(inDoc)) {
-          inDoc = null;
-        }
-        out.push("");
-        continue;
-      }
-      const m = line.match(/^\s*[rRbBuU]?("""|''')/);
-      // A docstring: a triple-quoted string that opens a line right after a `def`/`class` (a line
-      // ending with ':') or at the top of the module. A SQL string opens after `(`, `=` or `,`.
-      if (m && (prevCode === "" || /:\s*$/.test(prevCode))) {
-        const q = m[1]!;
-        const rest = line.slice(line.indexOf(q) + 3);
-        if (!rest.includes(q)) inDoc = q;
-        out.push("");
-        continue;
-      }
-      const stripped = line.replace(/(^|\s)#.*$/, "$1");
-      out.push(stripped);
-      if (stripped.trim()) prevCode = stripped.trim();
-    }
-    return out.join("\n");
-  }
-  // TS / JS: block comments, then line comments (not the `//` of a URL).
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\"'`])\/\/.*$/gm, "$1");
-}
+/** The CODE of a file: comments removed, strings kept (SQL lives in strings) — the shared lexer, so a
+ *  "/*" inside a string never hides the code after it (lane OLD-READERS-REMOVAL, 2026-10-01). */
+export { codeOnly };
 
 export interface Hit {
   repo: Repo;
@@ -428,6 +398,7 @@ function selfTest(): number {
   expect(unlisted([{ ...plantedHit, file: "features/data-tables/save-to-table.ts" }]).length === 0, "a claimed file is not unlisted");
   // 2. A name only in a comment is not code.
   expect(olderDoorNames(codeOnly("a.ts", `// calls udt_bulk_write\n/* udt_datasets */\nconst u = "https://x//y";`)).length === 0, "TS comments are stripped");
+  expect(olderDoorNames(codeOnly("a.ts", `const g = "src/**/*.ts";\nawait supabase.rpc("udt_bulk_write", {});\n`)).length === 1, "a glob string never hides the code after it");
   expect(olderDoorNames(codeOnly("a.py", `"""Reads udt_datasets."""\n# udt_dataset_rows\ndef f():\n    """udt_bulk_write here."""\n    return 1\n`)).length === 0, "Python docstrings and comments are stripped");
   expect(olderDoorNames(codeOnly("a.py", `rows = await conn.fetch(\n    """\n    select * from workbench.udt_dataset_rows\n    """\n)\n`)).includes("udt_dataset_rows"), "a Python SQL string is still code");
   // 3. Globs with route-group parentheses and dynamic segments.

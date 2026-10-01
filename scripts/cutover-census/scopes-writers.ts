@@ -25,6 +25,7 @@
  * read RPCs, `route_read(source="context.…")`). Not a gate: while the write-through keeps context.*
  * exact these reads are correct; the list is what the final switch repoints before it stops the image.
  */
+import { codeOnly as lexCodeOnly } from "../lib/code-only";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -417,7 +418,8 @@ export function codeOnly(path: string, text: string): string {
       .replace(/("""|''')[\s\S]*?\1/g, (m) => (/(insert\s+into|update|delete\s+from)\s+context\./i.test(m) ? m : ""))
       .replace(/(^|\s)#.*$/gm, "$1");
   }
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\"'`])\/\/.*$/gm, "$1");
+  // The shared lexer: a "/*" inside a string never hides the code after it (lane OLD-READERS-REMOVAL).
+  return lexCodeOnly(path, text);
 }
 
 function runtimeFile(repo: Repo, f: string): boolean {
