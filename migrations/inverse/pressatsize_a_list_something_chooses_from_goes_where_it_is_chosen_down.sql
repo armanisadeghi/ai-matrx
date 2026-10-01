@@ -1,5 +1,6 @@
 -- inverse of migrations/campaign/pressatsize_a_list_something_chooses_from_goes_where_it_is_chosen.sql (lane PRESS-AT-SIZE): the body as it was (acc2e6aa…).
 -- lane: PRESS-AT-SIZE
+-- based-on: platform._final_switch_orphan_lists() b6057a3928a6dfc7da7b7d837c253b8173828895408e02d9d16e99804ccae14b
 
 CREATE OR REPLACE FUNCTION platform._final_switch_orphan_lists()
  RETURNS jsonb
