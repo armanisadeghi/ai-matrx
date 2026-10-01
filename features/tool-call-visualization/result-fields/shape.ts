@@ -26,6 +26,7 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
     firstKindSlug,
     isKindJsonText,
+    markdownCarriesKind,
     rootKindSlug,
     valueCarriesKind,
 } from "@/features/content-ir/surfaces/json-kind-signal";
@@ -573,6 +574,12 @@ export function detectResultShape(
     if (rootSlug) return { kind: "kindInstance", value, slug: rootSlug };
     if (typeof value === "string" && isKindJsonText(value)) {
         return { kind: "kindInstance", value, slug: firstKindSlug(value) };
+    }
+    // A string holding a kind region anywhere outside quoted source (prose
+    // before it, a table cell, …) is markdown the pipeline lifts the kind
+    // out of — the same rule the markdown leaves use (V3).
+    if (typeof value === "string" && markdownCarriesKind(value)) {
+        return { kind: "text", value, markdown: true };
     }
     if (Array.isArray(value) && value.some((item) => valueCarriesKind(item))) {
         return { kind: "kindList", items: value };

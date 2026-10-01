@@ -108,6 +108,28 @@ describe("a kind is never drawn raw by the value grid or a JSON viewer", () => {
     expect(container.textContent).not.toContain('"__kind"');
   });
 
+  // V3: prose before the kind used to make the string "plain text", drawn
+  // raw in a <p whitespace-pre-wrap>.
+  it.each([
+    ["full, multi-line", "full", `Generated the set:\n${JSON.stringify(TIMELINE)}`],
+    ["inline, multi-line", "inline", `Generated the set:\n${JSON.stringify(TIMELINE)}`],
+    ["full, one short line", "full", 'Done: {"__kind":"timeline","events":[]}'],
+    ["inline, one short line", "inline", 'Done: {"__kind":"timeline","events":[]}'],
+  ] as const)(
+    "ResultValue: a string with prose before a kind (%s) goes to the pipeline, never raw",
+    async (_label, density, text) => {
+      await render(<ResultValue value={text} density={density} />);
+      expect(container.querySelector("[data-markdown-stream]")).not.toBeNull();
+      expect(container.textContent).not.toContain('"__kind"');
+    },
+  );
+
+  it("ResultValue: a kind inside an inline code span stays as written (quoted source)", async () => {
+    await render(<ResultValue value={'Use `{"__kind":"timeline"}` to route it.'} density="full" />);
+    expect(container.querySelector("[data-markdown-stream]")).toBeNull();
+    expect(container.textContent).toContain('"__kind"');
+  });
+
   it("KeyValueGrid: an object carrying its own kind is not a field list", async () => {
     await render(<KeyValueGrid value={TIMELINE} density="full" />);
     expect(routes()).toEqual(["timeline"]);
