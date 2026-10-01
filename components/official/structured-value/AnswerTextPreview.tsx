@@ -11,7 +11,10 @@
 // one-line broken state. Kindless text is unchanged.
 
 import { AlertTriangle, Loader2 } from "lucide-react";
-import { kindTextPreview } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import {
+  kindTextPreview,
+  kindTextToMarkdown,
+} from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { humanizeKind } from "@/features/content-ir/kinds/kind-markdown-utils";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +50,15 @@ export function answerPreviewText(
     ? `${preview.pendingKind ? humanizeKind(preview.pendingKind) : "Building"}…`
     : unfinishedKindLabel(preview.pendingKind);
   return [preview.text, tail].filter(Boolean).join(" ");
+}
+
+/**
+ * The text an EDITABLE prose field shows while a stream fills it: settled →
+ * the kind's markdown (what a person edits); streaming → the compact preview
+ * (an arriving kind is its loader word, never half-arrived JSON).
+ */
+export function answerFieldText(text: string | null | undefined, streaming: boolean): string {
+  return streaming ? answerPreviewText(text, true) : kindTextToMarkdown(text);
 }
 
 export function AnswerTextPreview({

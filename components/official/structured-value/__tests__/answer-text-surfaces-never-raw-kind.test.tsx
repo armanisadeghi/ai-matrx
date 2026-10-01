@@ -19,7 +19,7 @@ jest.mock("@/components/official/structured-value/AnswerValueView", () => ({
   AnswerValueView: () => <div data-testid="answer-value-view" />,
 }));
 
-import { AnswerTextPreview } from "../AnswerTextPreview";
+import { AnswerTextPreview, answerFieldText } from "../AnswerTextPreview";
 import { VoiceTranscriptTurn } from "@/features/voice-agent/components/VoiceTranscriptTurn";
 import { RunRow } from "@/features/scheduling/components/detail/RunRow";
 
@@ -98,5 +98,15 @@ describe("RunRow", () => {
   it("a kindless summary is unchanged", () => {
     const host = mount(<RunRow run={{ ...run, result_summary: "Sent 3 emails" } as never} />);
     expect(host.textContent).toContain("Sent 3 emails");
+  });
+});
+
+describe("answerFieldText — an editable prose field filled by a stream", () => {
+  it("settled kind → markdown; streaming partial kind → its loader word; kindless unchanged", () => {
+    expect(answerFieldText(SET_JSON, false)).not.toContain("__kind");
+    const partial = answerFieldText('Notes {"__kind": "quiz_set", "ti', true);
+    expect(partial).not.toContain("__kind");
+    expect(partial).toContain("Quiz set");
+    expect(answerFieldText("Cleaned text.", false)).toBe("Cleaned text.");
   });
 });

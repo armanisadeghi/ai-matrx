@@ -50,6 +50,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import type { QuestionPacing } from "./types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 /** The Communicator's Mandate — resolve it (and refuse loudly) in the surface. */
 export const VOICE_COMMUNICATOR_MANDATE_KEY = MANDATE_KEYS.voice__communicator;
@@ -363,7 +364,8 @@ export function useVoiceRelaySession(
         if (!conversationId) return;
         const answer = selectLatestAnswerText(conversationId)(store.getState());
         if (answer.trim().length > 0) {
-          controller.speakDelivery(answer, {
+          // Spoken to a person: a kind is read as its words (kind-never-raw R1).
+          controller.speakDelivery(kindTextToMarkdown(answer), {
             ledgerSummary: getOrCreateLedger(instanceId).serialize(),
             pacing: pacingRef.current,
           });

@@ -95,6 +95,7 @@ import {
   zoneLabel,
   zonedToUtcIso,
 } from "@/features/meet/lib/zoned-time";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 export interface OccurrenceRef {
   /** The start the rule generates — the key of an exception. */
@@ -462,8 +463,10 @@ export function MeetingFormDialog({
       },
     });
     if (text === null) return;
-    if (draft.agenda.trim() === "") set({ agenda: text });
-    else setPendingAgenda(text);
+    // The agenda is prose a person edits: a kind answer lands as its markdown.
+    const agenda = kindTextToMarkdown(text);
+    if (draft.agenda.trim() === "") set({ agenda });
+    else setPendingAgenda(agenda);
   };
 
   const chooseTemplate = (id: string) => {

@@ -103,6 +103,16 @@ Every stream item below adds its case there.
       `MarkdownStream`; "Copy raw" is an explicit raw control — kept), `AgentExecutionTestModal` (direct and
       inline panes printed a `<pre>` → now `AnswerValueView`; copy and inline Replace keep the raw text the
       harness is proving).
+      FINAL SWEEP (every reader of the answer-text selectors, 2026-09-30) — fixed: voice relay speech
+      (`speakDelivery` gets the markdown), meeting agenda draft (`MeetingFormDialog` writes the markdown),
+      official-candidate transcription cleanup field (`answerFieldText`), markdown-studio lab picker label.
+      Display already canonical: `AgentAssistantMessage`/`AgentUserMessage` (MarkdownStream; action bars go
+      through `contentForDestination`), `CollabNoteMessage` (BasicMarkdownContent — C4 layer). Machine/data,
+      kept raw: execution thunks, message-crud, citations, wire transcript, `ChatConversationSurface` +
+      `chatTranscriptScope` (scope/edit resolution), display-group/answerless predicates, instant-analysis
+      hooks (JSON extraction), podcast source resolvers, page-image prompt, binding-suggestions length,
+      transcript-studio reattach, `ChatHistoryWindow` scope. Deliberate raw/debug views, kept: transcript
+      integrity report copy, `AgentExecutionDebugPanel`, `AgentDebugWindow`, `ExecutionInstanceInspector`.
 - [ ] R2. `selectAnswerDocumentText` / `selectLatestAnswerDocumentText` stringify kinds on purpose.
       PARTIAL — kept (stored/passed text). Its display reader, the cleanup pad, previews through `MarkdownStream`;
       transcript studio reattach is a data path.
@@ -122,16 +132,7 @@ Every stream item below adds its case there.
 - [x] T1. Generic tool renderer (`ResultValue`) never routes kinds → grid / raw JSON tree.
       `detectResultShape` → `kindInstance`/`kindList`; `ResultValue` routes them via `KindValueNode`.
 - [x] T2. Reloaded tool call with only `output_preview` → unparseable raw text. (→ `previewResult`: whole JSON parses; truncated kind JSON → "<Kind> · full output not saved")
-- [ ] T3. Sub-agent call results; collaboration cards on plain markdown. PARTIAL — settled answers DONE (→ `AnswerValueView`,
-      `readAgentCallAnswer`); the live child text still goes to `MarkdownStream` as plain `content` (re-split, not
-      the stream's own parsed blocks). The gap, exactly: the child's blocks DO exist in the parent request —
-      `renderBlocks[renderBlockOrder[blockAnchor .. blockEnd)]` of the `sub_agent` operation whose `toolCallId` is the
-      card (`selectAgentCallChildStream` reads that range but returns only the joined `.content` text). No canonical
-      render path takes them: `selectUnifiedSlots` deliberately DROPS child-owned block ids (the D209 handoff), and
-      `MarkdownStream`'s `streamSlotStart/End` are TIMELINE indices filtered through that same selector, so no slot
-      range can ever reach them. Fix owed (engine, not this card): a `selectAgentCallChildSlots(requestId, callId)`
-      returning those blocks as `render_block` slots, and a `MarkdownStream`/`EnhancedChatMarkdown` prop
-      (`childOfCallId`) that renders from it; then CollabCallCard passes `requestId` + `childOfCallId`.
+- [x] T3. Sub-agent call results; collaboration cards on plain markdown. (settled answers → `AnswerValueView` via `readAgentCallAnswer`; live child output → `MarkdownStream requestId agentCallId`: `selectAgentCallChildSlots` feeds the child's own render blocks — the `sub_agent` op's range in the parent request — to the normal BlockRenderer path; `selectUnifiedSlots` still drops them from the transcript, D209. Guard: `chat-markdown/__tests__/agent-call-child-renders-through-the-engine.test.tsx`)
 - [x] T4. Search / research / scrape / random-wheel / SQL renderers on plain markdown.
       Closed at the leaf: `BasicMarkdownContent` hands `__kind` text to `MarkdownStream` (`KindTextGate`).
 - [x] T5. Shared public conversation tool steps. (truncated `output_preview` → `previewResult`; the cards themselves are the chat's, so T1 covers the rest)

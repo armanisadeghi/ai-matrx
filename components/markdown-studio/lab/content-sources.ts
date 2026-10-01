@@ -43,6 +43,7 @@ import { operationFailed } from "@/utils/errors";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { loadDocument } from "@/features/rich-document/annotations/documentSource";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 export const STUDIO_SOURCE_KINDS = [
   "document",
@@ -179,7 +180,8 @@ async function listAssistantMessages(
       const text = extractInspectableText(messageRowToRecord(row)).text;
       return {
         id: row.id,
-        label: preview(text) || "(empty message)",
+        // A picker label reads a kind as words, never JSON (kind-never-raw R3).
+        label: preview(kindTextToMarkdown(text)) || "(empty message)",
         sublabel: formatWhen(row.created_at),
       };
     })

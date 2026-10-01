@@ -38,6 +38,7 @@ import {
   type AiPostProcessAgent,
 } from "../ai-agents";
 import { useAiPostProcess } from "../hooks/useAiPostProcess";
+import { answerFieldText } from "@/components/official/structured-value/AnswerTextPreview";
 
 const OVERLAY_ID = "transcriptionCleanup" as const;
 
@@ -234,7 +235,10 @@ export default function TranscriptionCleanup({
 
   // The execution system separates typed reasoning from answer content.
   const isThinking = ai.isThinking;
-  const responseValue = editedResponse ?? ai.accumulatedText;
+  // The field holds prose a person edits: a kind answer is its markdown, an
+  // arriving one its loader word — never JSON (kind-never-raw R2).
+  const responseValue =
+    editedResponse ?? answerFieldText(ai.accumulatedText, ai.isBusy);
   responseRef.current = responseValue;
   const isBusyEarly =
     ai.phase === "launching" ||
