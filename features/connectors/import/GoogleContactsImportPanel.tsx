@@ -1041,7 +1041,7 @@ export function GoogleContactsImportPanel({
         ) : null}
         <ul className="flex flex-col divide-y divide-border">
           {contacts.map((contact: ContactCandidatePending) => (
-            <li key={contact.external_id} className="flex items-center gap-3 px-4 py-2">
+            <li key={contact.external_id} className="flex flex-wrap items-center gap-3 px-4 py-2">
               <Checkbox
                 checked={selectedSet.has(contact.external_id)}
                 onCheckedChange={() => toggle(contact.external_id)}
@@ -1117,16 +1117,18 @@ export function GoogleContactsImportPanel({
                   Update from Google
                 </Button>
               ) : null}
-              {writeConnection && contact.source === "google_contacts" ? (
+              {writeConnection && contact.external_id.startsWith("people/") ? (
                 <Button size="sm" variant="outline" className="shrink-0"
                   onClick={() => setEditingGoogleContact((current) => current === contact.external_id ? null : contact.external_id)}>
                   {editingGoogleContact === contact.external_id ? "Close edit" : "Edit in Google"}
                 </Button>
               ) : null}
               {writeConnection && editingGoogleContact === contact.external_id && effectiveOrganizationId ? (
+                <div className="w-full">
                 <ContactWriteReview key={`${effectiveOrganizationId}:${writeConnection.id}:${contact.external_id}`}
                   organizationId={effectiveOrganizationId} connectionId={writeConnection.id}
                   resourceName={contact.external_id} displayName={contact.display_name} />
+                </div>
               ) : null}
             </li>
           ))}
