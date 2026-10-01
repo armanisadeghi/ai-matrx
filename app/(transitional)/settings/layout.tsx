@@ -1,6 +1,5 @@
 import React from "react";
 import { createRouteMetadata } from "@/utils/route-metadata";
-import SettingsLayoutClient from "./SettingsLayoutClient";
 
 export const metadata = createRouteMetadata("/settings", {
     title: "Settings",
@@ -12,5 +11,7 @@ export default function SettingsLayout({
 }: {
     children: React.ReactNode;
 }) {
-    return <SettingsLayoutClient>{children}</SettingsLayoutClient>;
+    // The menu is the shell sidebar's "Account" route menu
+    // (features/settings/route-menu/AccountSettingsRouteMenu).
+    return children;
 }

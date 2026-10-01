@@ -84,13 +84,21 @@ describe("the header right set", () => {
     expect(header).not.toContain("UserMenuTrigger");
     expect(header).not.toContain("UserMenuPanel");
     expect(header).not.toContain("shell-user-menu-wrapper");
-    for (const shell of [
-      "features/shell/components/AppShell.tsx",
+    const shell = read("features/shell/components/AppShell.tsx");
+    expect(shell).toContain("<ShellUserBlock");
+    expect(shell).toContain("<Header isAuthenticated={isAuthenticated} />");
+    // ONE shell: every route group that draws chrome renders AppShell itself,
+    // never a hand-wired copy of its parts (the demo site's copy had drifted).
+    for (const layout of [
+      "app/(core)/layout.tsx",
+      "app/(admin)/layout.tsx",
+      "app/(transitional)/layout.tsx",
       "app/(dev)/layout.dev.tsx",
     ]) {
-      const text = read(shell);
-      expect(text).toContain("<ShellUserBlock");
-      expect(text).toContain("<Header isAuthenticated={isAuthenticated} />");
+      const text = read(layout);
+      expect(text).toContain("<AppShell");
+      expect(text).not.toContain("<Sidebar ");
+      expect(text).not.toContain("ResponsiveLayout");
     }
   });
 

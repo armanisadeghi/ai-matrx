@@ -1,8 +1,7 @@
 /**
- * Menu items close THE menu they live in. Hardcoding `#shell-user-menu`
- * left the canvas-pane copy open and sent the click at the hidden header
- * checkbox. Mutation: restore `htmlFor="shell-user-menu"` in a menu item
- * file (except ShellUserMenu, which owns that id) — this file goes RED.
+ * Menu items close THE menu they live in, through `menuCheckboxId` — never a
+ * hardcoded `#shell-user-menu`. Mutation: restore `htmlFor="shell-user-menu"`
+ * in a menu item file — this file goes RED.
  */
 
 import { readFileSync, readdirSync } from "node:fs";
@@ -14,7 +13,6 @@ const DIR = path.join(
 );
 
 const ALLOWED_HARDCODE = new Set([
-  "ShellUserMenu.tsx",
   "menuCheckboxId.tsx",
   "menuCheckboxId.test.ts",
 ]);

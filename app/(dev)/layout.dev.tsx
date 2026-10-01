@@ -1,34 +1,19 @@
-import "@/styles/shell.css";
 import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-import { Providers } from "@/app/Providers";
 import { mapUserData } from "@/utils/userDataMapper";
 import {
   getAdminStatus,
   type AdminLevel,
 } from "@/utils/supabase/userSessionData";
 import type { BaseReduxState } from "@/types/reduxTypes";
-// Phase 4 PR 4.C: removed `setGlobalUserIdAndToken` import — `lib/globalState.ts`
-// is deleted in this PR. The Redux preloaded state below carries the user data;
-// `lib/sync/identity::attachStore` (called from StoreProvider) wires the
-// reactive identity source so non-React consumers see the current state.
-import Sidebar from "@/features/shell/components/sidebar/Sidebar";
-import Header from "@/features/shell/components/header/Header";
-import ShellUserBlock from "@/features/shell/components/user-block/ShellUserBlock";
-import MobileDock from "@/features/shell/components/dock/MobileDock";
-import MobileSideSheet from "@/features/shell/components/mobile-sheet/MobileSideSheet";
-import GlassPortal from "@/features/shell/components/GlassPortal";
-import NavActiveSync from "@/features/shell/components/NavActiveSync";
-import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
-import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
-import { ShellChromeRouteSync } from "@/features/shell/components/ShellChromeMode";
-import { shellChromeAttributes } from "@/features/shell/constants/canvas-chrome-routes";
+// THE ONE SHELL: the demo site renders the same AppShell as (core), (admin)
+// and (transitional) — it used to wire its own copy of the shell's parts and
+// had drifted (owner, 2026-09-30: one sidebar and header everywhere).
+import AppShell from "@/features/shell/components/AppShell";
 import { readSidebarExpandedCookie } from "@/features/shell/utils/server-cookies";
-import DeferredIslands from "@/features/shell/islands/DeferredIslands";
 import type { UserData } from "@/utils/userDataMapper";
 import type { Metadata } from "next";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const metadata: Metadata = {
   title: {
@@ -71,14 +56,20 @@ export default async function AppLayout({
     console.warn(
       `[(dev)/layout] identity could not be verified for ${pathname} — holding, NOT rendering as signed out.`,
     );
+    const unresolvedUserData = mapUserData(null, undefined, false);
     return (
-      <Providers initialReduxState={{ user: mapUserData(null, undefined, false) }}>
+      <AppShell
+        initialReduxState={{ user: unresolvedUserData }}
+        userData={unresolvedUserData}
+        isAuthenticated={false}
+        pathname={pathname}
+        sidebarExpanded={sidebarExpanded}
+      >
         <div className="p-4 text-sm text-muted-foreground">
           We could not verify who you are on this request, so this page is not
           loading its data. You have not been signed out — reload in a moment.
-          <ErrorAlchemyMenu />
         </div>
-      </Providers>
+      </AppShell>
     );
   }
 
@@ -122,44 +113,14 @@ export default async function AppLayout({
   }
 
   return (
-    <Providers initialReduxState={initialReduxState}>
-      <div
-        className="shell-root"
-        data-pathname={pathname}
-        {...shellChromeAttributes(pathname)}
-      >
-        <input
-          type="checkbox"
-          id="shell-sidebar-toggle"
-          aria-hidden="true"
-          defaultChecked={sidebarExpanded}
-        />
-        <input type="checkbox" id="shell-mobile-menu" aria-hidden="true" />
-        <input type="checkbox" id="shell-user-menu" aria-hidden="true" />
-        <input type="checkbox" id="shell-panel-toggle" aria-hidden="true" />
-        <input type="checkbox" id="shell-panel-mobile" aria-hidden="true" />
-
-        <Sidebar pathname={pathname} isAuthenticated={isAuthenticated} />
-        <Header isAuthenticated={isAuthenticated} />
-        <ShellUserBlock userData={userData} isAuthenticated={isAuthenticated} />
-
-        <main className="shell-main">{children}</main>
-
-        <MobileSideSheet
-          isAuthenticated={isAuthenticated}
-          pathname={pathname}
-        />
-      </div>
-
-      <GlassPortal>
-        <MobileDock isAuthenticated={isAuthenticated} />
-      </GlassPortal>
-
-      <NavActiveSync />
-      <VisualViewportSync />
-      <ShellSidebarCookieSync />
-      <ShellChromeRouteSync />
-      <DeferredIslands />
-    </Providers>
+    <AppShell
+      initialReduxState={initialReduxState}
+      userData={userData}
+      isAuthenticated={isAuthenticated}
+      pathname={pathname}
+      sidebarExpanded={sidebarExpanded}
+    >
+      {children}
+    </AppShell>
   );
 }
