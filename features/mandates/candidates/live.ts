@@ -130,14 +130,24 @@ export async function fetchCandidateCells(
   return (data ?? {}) as Record<string, MandateCandidateCell | null>;
 }
 
-/** Newer answers from the heartbeat, keyed by mandate id. */
-const liveCells = new Map<string, MandateCandidateCell | null>();
+/**
+ * Newer answers from the heartbeat, keyed by mandate id. Each publish stores a
+ * NEW entry object, so a cell's `useSyncExternalStore` snapshot changes exactly
+ * when its own answer does (React Compiler memoizes render values on their
+ * reactive inputs — a module variable read in render is not one, which is why
+ * the cell read its entry through the store, not through a module counter).
+ */
+interface LiveCellEntry {
+  version: number;
+  cell: MandateCandidateCell | null;
+}
+const liveCells = new Map<string, LiveCellEntry>();
 const cellListeners = new Set<() => void>();
 let cellVersion = 0;
 
 function publishCells(answer: Record<string, MandateCandidateCell | null>): void {
-  for (const [id, cell] of Object.entries(answer)) liveCells.set(id, cell);
   cellVersion += 1;
+  for (const [id, cell] of Object.entries(answer)) liveCells.set(id, { version: cellVersion, cell });
   for (const listener of cellListeners) listener();
 }
 
@@ -187,7 +197,11 @@ export function useLiveCandidateCell(
   listCell: MandateCandidateCell | null | undefined,
 ): MandateCandidateCell | null | undefined {
   const pollMs = useCandidatePollMs(listCell?.status === "collecting");
-  useSyncExternalStore(subscribeCells, () => cellVersion, () => 0);
+  const entry = useSyncExternalStore(
+    subscribeCells,
+    () => (mandateId ? liveCells.get(mandateId) : undefined),
+    () => undefined,
+  );
   // The list's own answer wins until the heartbeat has read something newer
   // than it: a fresh page read resets what this cell shows.
   // Compared by VALUE: a list may hand a fresh row object on every render, and
@@ -199,7 +213,7 @@ export function useLiveCandidateCell(
     setBaseline(listKey);
     setSeenAt(cellVersion);
   }
-  const live = mandateId && cellVersion > seenAt && liveCells.has(mandateId) ? liveCells.get(mandateId) : listCell;
+  const live = entry && entry.version > seenAt ? entry.cell : listCell;
   const collecting = Boolean(mandateId) && live?.status === "collecting";
   useEffect(() => {
     if (!collecting || !mandateId) return;

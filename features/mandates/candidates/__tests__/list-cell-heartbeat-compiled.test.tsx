@@ -10,12 +10,11 @@
  * (babel-plugin-react-compiler, default options) and drives the compiled hook.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import * as ts from "typescript";
-import { transformSync } from "@babel/core";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -31,26 +30,30 @@ jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
 const OUT_DIR = join(__dirname, "__compiled__");
 const OUT = join(OUT_DIR, "live.compiled.js");
 
+/**
+ * Compiled in a plain Node child (Babel 8 is ESM-only and cannot load inside
+ * Jest's CommonJS runtime): TypeScript strips the types, the React Compiler
+ * compiles, the result lands beside this test and is required like any module.
+ */
+const COMPILE = `
+const ts = require("typescript");
+const babel = require("@babel/core");
+const fs = require("fs");
+const [src, out] = process.argv.slice(1);
+const js = ts.transpileModule(fs.readFileSync(src, "utf8"), { compilerOptions: {
+  target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, jsx: ts.JsxEmit.Preserve } }).outputText;
+const compiled = babel.transformSync(js, { filename: "live.js", babelrc: false, configFile: false,
+  plugins: [[require.resolve("babel-plugin-react-compiler"), {}]] });
+if (!compiled.code.includes("react/compiler-runtime")) { console.error("not compiled"); process.exit(3); }
+fs.writeFileSync(out, compiled.code);
+`;
+
 function compileLive(): void {
-  const source = readFileSync(join(__dirname, "..", "live.ts"), "utf8");
-  const js = ts.transpileModule(source, {
-    compilerOptions: {
-      target: ts.ScriptTarget.ES2022,
-      module: ts.ModuleKind.ESNext,
-      jsx: ts.JsxEmit.Preserve,
-    },
-  }).outputText;
-  const compiled = transformSync(js, {
-    filename: "live.js",
-    babelrc: false,
-    configFile: false,
-    plugins: [[require.resolve("babel-plugin-react-compiler"), {}]],
-  });
-  if (!compiled?.code?.includes("react/compiler-runtime")) {
-    throw new Error("the React Compiler did not compile live.ts — this test proves nothing");
-  }
   mkdirSync(OUT_DIR, { recursive: true });
-  writeFileSync(OUT, compiled.code);
+  execFileSync(process.execPath, ["-e", COMPILE, join(__dirname, "..", "live.ts"), OUT], {
+    cwd: join(__dirname, "..", "..", "..", ".."),
+    stdio: "pipe",
+  });
 }
 
 const MANDATE = "458e658d-cb53-4af9-baa7-d366b993e59c";
