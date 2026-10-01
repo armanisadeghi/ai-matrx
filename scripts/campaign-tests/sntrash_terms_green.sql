@@ -26,7 +26,7 @@ begin
   perform set_config('role', 'postgres', true);
   insert into agent.term_list (name, description, entries, organization_id, created_by)
   values ('Rehab billing terms', 'CPT, modifier and payer words for the transcriber',
-          '[{"term":"97110","note":"therapeutic exercise"},{"term":"GP modifier"}]'::jsonb, c_org, c_admin)
+          '[{"kind":"spell_as","term":"97110","value":"nine-seven-one-one-zero"},{"kind":"do_not_translate","term":"GP modifier"}]'::jsonb, c_org, c_admin)
   returning id into v_id;
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform set_config('role', 'authenticated', true);
