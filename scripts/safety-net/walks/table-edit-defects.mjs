@@ -337,7 +337,10 @@ try {
 
   // ── T28: a typed edit ended by a click on another cell saves, every kind ──
   if (ONLY.includes("T28")) {
-    for (const c of COLS) {
+    // A choice is not walked here: words typed into an open choice list are its SEARCH, not a value,
+    // and a click elsewhere closes the list choosing nothing (Airtable, Notion). A pick saves at once;
+    // several choices commit on click-off (jest a-several-choice-click-off-asks).
+    for (const c of COLS.filter((x) => x.look !== "Choice")) {
       if (!made[c.name]) continue;
       await step(["T28"], `click-off saves a ${c.look} cell ("${c.name}" ← ${c.type})`, async () => {
         await typeInto(R1, c.name, c.type, { enter: false });
