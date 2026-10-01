@@ -163,7 +163,8 @@ function ScrapedOverviewPanel({ selected }: { selected: ScraperResult }) {
           },
           {
             label: "Words",
-            value: Math.round(chars / 5.5).toLocaleString(),
+            // An estimate from characters (÷ 5.5): "~" says so (cold walk 23).
+            value: `~${Math.round(chars / 5.5).toLocaleString()}`,
             icon: FileText,
             warn: false,
           },

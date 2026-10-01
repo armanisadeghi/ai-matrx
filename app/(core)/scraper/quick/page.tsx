@@ -453,7 +453,8 @@ export default function QuickScrapePage() {
                         </div>
                         <div>
                           <span className="font-medium">Words:</span>{" "}
-                          {Math.round(
+                          {/* An estimate from characters: "~" says so. */}
+                          ~{Math.round(
                             (data.overview.char_count || 0) / 5.5,
                           ).toLocaleString()}
                         </div>

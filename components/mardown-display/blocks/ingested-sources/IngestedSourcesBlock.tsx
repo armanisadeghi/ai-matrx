@@ -79,11 +79,17 @@ function sourceIcon(kind: string, className: string) {
   return createElement(SOURCE_ICON[kind] ?? Paperclip, { className });
 }
 
-/** Characters are the honest unit here, but words are the readable one. */
+/**
+ * Characters are the honest unit here, but words are the readable one. The
+ * block carries only a character count, so the words are an ESTIMATE
+ * (chars ÷ 5.5) and say so with "~" — never printed as a count (cold walk 23:
+ * "420 words" for 447 on the Masterwork record).
+ */
 function describeSize(chars: number): string {
   const words = Math.round(chars / 5.5);
-  if (words < 1) return "empty";
-  return `${words.toLocaleString()} ${words === 1 ? "word" : "words"}`;
+  if (chars <= 0) return "empty";
+  if (words < 1) return "~1 word";
+  return `~${words.toLocaleString()} ${words === 1 ? "word" : "words"}`;
 }
 
 /** The loud half: what was handed in that we could not read, and why. */
