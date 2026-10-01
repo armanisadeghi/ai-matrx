@@ -10,7 +10,8 @@
  * registry (features/dynamic-react/toolRendererScope.ts) already proved, plus
  * `cn`, recharts, and the full common React hook set. Rules that still hold:
  *  - every entry is EXPLICITLY named (no wildcard require) and documented;
- *  - unknown identifiers keep the safe-proxy fallback (never a crash);
+ *  - unknown identifiers get a VISIBLE stand-in (never a crash, never silent):
+ *    every one is recorded on the scope and reported by the compiler;
  *  - no entry may expose supabase clients, fetch wrappers, Redux internals,
  *    or anything that widens data reach beyond what the page already has.
  * Bundle note: this module lives ONLY in lazy chunks (compile-slot is reached
@@ -22,8 +23,9 @@
 import React from "react";
 import type { Json } from "@/types/database.types";
 import {
-  createFallbackIcon,
+  createUnresolvedImportStandIn,
   patchScopeForMissingIdentifiers as patchScopeForMissingIdentifiersImpl,
+  recordUnresolvedImport,
 } from "@/features/agent-apps/utils/patch-scope-identifiers";
 
 function coerceAllowedImportPaths(
@@ -422,12 +424,10 @@ function createSafeModuleProxy(
         return undefined;
       }
 
-      // If it looks like a PascalCase component name (icon), return a fallback
+      // A PascalCase name the module does not export gets the visible
+      // stand-in; the compile path records it (readUnresolvedImportMark).
       if (/^[A-Z]/.test(prop)) {
-        console.warn(
-          `[AgentApp] Missing icon "${prop}" from ${importPath}. Using fallback.`,
-        );
-        const fallback = createFallbackIcon(prop);
+        const fallback = createUnresolvedImportStandIn(prop, importPath);
         // Cache it so subsequent accesses don't re-create
         target[prop] = fallback;
         return fallback;
@@ -484,7 +484,9 @@ export function buildComponentScope(
     const config = ALLOWED_IMPORTS_CONFIG.find((c) => c.path === importPath);
 
     if (!config) {
-      console.warn(`Unknown import path: ${importPath}. Skipping.`);
+      // The app row lists a path the allowlist does not know. Recorded, not
+      // just logged: the compiler reports it with the tool/app it came from.
+      recordUnresolvedImport(scope, { identifier: "*", importPath });
       continue;
     }
 
@@ -570,7 +572,6 @@ export function patchScopeForMissingIdentifiers(
   declaredIdentifiers?: Set<string>,
 ): void {
   patchScopeForMissingIdentifiersImpl(code, scope, {
-    logPrefix: "[AgentApp]",
     declaredIdentifiers,
   });
 }
@@ -603,11 +604,13 @@ export interface SandboxImportBinding {
  * the factory ran and the reader silently got the generic viewer. The import
  * PATH was allowlisted, so no lint on either side could see it.
  *
- * This binds those locals to real values. Never throws and never leaves a
- * dangling identifier: an unresolvable namespace becomes a safe module proxy
- * (missing keys yield fallback icons) and an unresolvable PascalCase member
- * becomes a fallback icon, so a wrong import degrades to a visible placeholder
- * instead of killing the whole component.
+ * This binds those locals to real values. Never throws: an unresolvable
+ * namespace becomes a safe module proxy (missing keys yield stand-ins) and an
+ * unresolvable PascalCase member becomes the visible unresolved-import
+ * stand-in, so a wrong import degrades to an honest chip instead of killing
+ * the whole component. EVERY unresolved binding — stand-in or not — is
+ * recorded on the scope (`collectUnresolvedImports`) for the compiler to
+ * report with its origin (Law 4: nothing fails silently).
  */
 export function bindImportedIdentifiers(
   bindings: readonly SandboxImportBinding[],
@@ -630,10 +633,12 @@ export function bindImportedIdentifiers(
       // the FIRST branch truthy and silently render a placeholder icon in
       // place of the real component. Only a module we could not load at all
       // gets the safe proxy — there, a placeholder beats a TypeError.
-      scope[local] =
-        loaded && typeof loaded === "object"
-          ? { ...loaded, default: loaded.default ?? loaded }
-          : createSafeModuleProxy(source, {});
+      if (loaded && typeof loaded === "object") {
+        scope[local] = { ...loaded, default: loaded.default ?? loaded };
+      } else {
+        scope[local] = createSafeModuleProxy(source, {});
+        recordUnresolvedImport(scope, { identifier: `* as ${local}`, importPath: source });
+      }
       continue;
     }
 
@@ -644,7 +649,10 @@ export function bindImportedIdentifiers(
         (canonical ? scope[canonical] : undefined) ??
         (loaded ? (loaded.default ?? loaded) : undefined);
       if (value !== undefined) scope[local] = value;
-      else if (!(local in scope)) scope[local] = createFallbackIcon(local);
+      else if (!(local in scope)) {
+        scope[local] = createUnresolvedImportStandIn(local, source);
+        recordUnresolvedImport(scope, { identifier: local, importPath: source });
+      }
       continue;
     }
 
@@ -652,8 +660,13 @@ export function bindImportedIdentifiers(
     // case; an alias needs the same value under the author's name.
     const value = loaded?.[imported] ?? scope[imported];
     if (value !== undefined) scope[local] = value;
-    else if (!(local in scope) && /^[A-Z]/.test(local)) {
-      scope[local] = createFallbackIcon(local);
+    else if (!(local in scope)) {
+      // A lowercase name gets no stand-in (it is not a component), so it
+      // still throws "is not defined" where used — but it is recorded too.
+      if (/^[A-Z]/.test(local)) {
+        scope[local] = createUnresolvedImportStandIn(local, source);
+      }
+      recordUnresolvedImport(scope, { identifier: imported === local ? local : `${imported} as ${local}`, importPath: source });
     }
   }
 }

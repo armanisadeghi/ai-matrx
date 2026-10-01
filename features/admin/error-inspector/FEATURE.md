@@ -29,6 +29,14 @@ second symptom instead of deduping the incident.
 
 **Capture adapters (all → `captureError`):**
 
+- **Unresolved sandbox imports** — `captureUnresolvedImports.ts`
+  (`sandbox-unresolved-import`, red). Every in-page compile of stored component
+  code (`compileSlotComponent`) passes a required `origin` (`tool:<name>`,
+  `agent-app:<id>[:slot:<s>]`, `emit:<ref>`, `kind-component`); each name the
+  allowlisted scope could not supply is one row with that origin as `relation`
+  and the import path in `details`. The iframe kind sandbox reports the same
+  gaps through `matrx:sandbox:error` (source `content-ir`).
+
 - **Messaging operations** — `captureMessagingError.ts` consumes the package's
   typed engine diagnostics. The Supabase proxy remembers capture identity through
   error cause chains; the host enriches that incident with conversation identity
@@ -444,6 +452,10 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 - New downgrade → edit `DOWNGRADE_RULES` only.
 
 ## Change Log
+
+- 2026-10-01 — New source `sandbox-unresolved-import`: a stored component that
+  imports something the sandbox cannot supply files a red row naming the import
+  path and the tool/app/emit/kind it came from (it used to `console.warn`).
 
 - 2026-09-30 — Messaging preserves one structured incident across PostgREST,
   engine handling, and toast presentation, with the conversation ID and refusal

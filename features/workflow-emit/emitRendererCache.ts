@@ -86,6 +86,7 @@ export function loadEmitRenderer(
       const { Component, error } = compileEmitRenderer(
         row.inline_code,
         row.allowed_imports,
+        componentRef,
       );
 
       if (!Component || error) {

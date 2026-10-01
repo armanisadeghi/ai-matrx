@@ -6,7 +6,8 @@
  * renderer, the slot system, and the code-tab live preview can share a
  * single compile path. Compiled components run inside the same allowed-
  * imports scope (`buildComponentScope`); identifiers we never registered
- * fall back to the safe-icon proxy via `patchScopeForMissingIdentifiers`.
+ * render as a visible unresolved-import stand-in and are reported to the
+ * error queue under the caller's `origin` (captureUnresolvedImports).
  *
  * Returns a stable shape: either `{ Component }` on success or
  * `{ error }` on failure. The renderer is responsible for surfacing the
@@ -21,7 +22,12 @@ import {
   patchScopeForMissingIdentifiers,
   type SandboxImportBinding,
 } from "./allowed-imports";
-import { collectTopLevelBindingsPlugin } from "./patch-scope-identifiers";
+import {
+  collectTopLevelBindingsPlugin,
+  collectUnresolvedImports,
+  type UnresolvedImport,
+} from "./patch-scope-identifiers";
+import { captureUnresolvedImports } from "@/lib/diagnostics/captureUnresolvedImports";
 import {
   COMPONENT_BANNED_CALLABLES,
   COMPONENT_BANNED_GLOBALS,
@@ -31,6 +37,13 @@ import type { Json } from "@/types/database.types";
 export interface CompileSlotArgs {
   /** Raw TSX/JSX source authored by the app builder. */
   code: string;
+  /**
+   * Which stored component this is — `tool:<name>`, `agent-app:<id>:slot:<s>`,
+   * `emit:<ref>`, `kind-component`, … Required: an import the sandbox cannot
+   * resolve is reported to the error queue under this name, and an anonymous
+   * report tells nobody which row to fix (Law 4).
+   */
+  origin: string;
   /**
    * Shadow the dangerous browser globals inside the compiled body's scope with
    * throwing stubs (Q82 / B-17, 2026-09-11). ON for organization-authored kind
@@ -58,6 +71,11 @@ export interface CompileSlotArgs {
 export interface CompileSlotResult {
   Component: React.ComponentType<Record<string, unknown>> | null;
   error: string | null;
+  /**
+   * Names the code referenced that the sandbox could not supply. Each renders
+   * as a visible stand-in and has already been reported under `origin`.
+   */
+  unresolvedImports: UnresolvedImport[];
 }
 
 interface ImportDeclarationPathLike {
@@ -149,12 +167,13 @@ function buildDangerousGlobalStubs(): Record<string, unknown> {
 
 export function compileSlotComponent({
   code,
+  origin,
   allowedImports,
   scopeOverrides,
   sandboxDangerousGlobals,
 }: CompileSlotArgs): CompileSlotResult {
   if (!code || !code.trim()) {
-    return { Component: null, error: null };
+    return { Component: null, error: null, unresolvedImports: [] };
   }
 
   try {
@@ -207,6 +226,8 @@ export function compileSlotComponent({
       Object.assign(scope, buildDangerousGlobalStubs());
     if (transformed)
       patchScopeForMissingIdentifiers(transformed, scope, declaredTopLevel);
+    const unresolvedImports = collectUnresolvedImports(scope);
+    captureUnresolvedImports(origin, unresolvedImports);
 
     const { paramNames, paramValues } = getScopeFunctionParameters(
       scope,
@@ -217,10 +238,10 @@ export function compileSlotComponent({
       Record<string, unknown>
     > | null;
 
-    return { Component, error: null };
+    return { Component, error: null, unresolvedImports };
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Unknown compile error";
-    return { Component: null, error: message };
+    return { Component: null, error: message, unresolvedImports: [] };
   }
 }

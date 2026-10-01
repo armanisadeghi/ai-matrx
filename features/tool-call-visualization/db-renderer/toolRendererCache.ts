@@ -134,6 +134,7 @@ export function loadToolRenderer(
           const { Component: subFn } = compileSlotComponent({
             code: row.header_subtitle_code,
             allowedImports: [],
+            origin: `tool:${toolName}:subtitle`,
           });
           if (typeof subFn === "function") {
             subtitle = subFn as unknown as ToolSubtitleFn;
@@ -154,6 +155,7 @@ export function loadToolRenderer(
       const { Component, error } = compileToolRenderer(
         row.inline_code,
         row.allowed_imports,
+        toolName,
       );
 
       if (!Component || error) {

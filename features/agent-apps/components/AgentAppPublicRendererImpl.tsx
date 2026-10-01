@@ -8,17 +8,12 @@ import React, {
   useRef,
 } from "react";
 import dynamic from "next/dynamic";
-import { transform } from "@babel/standalone";
 import { AlertCircle, Copy, Check, MoreHorizontal } from "lucide-react";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { useGuestLimit } from "@/hooks/useGuestLimit";
 import { GuestLimitWarning } from "@/components/guest/GuestLimitWarning";
 import { SignupConversionModal } from "@/components/guest/SignupConversionModal";
-import {
-  buildComponentScope,
-  getScopeFunctionParameters,
-  patchScopeForMissingIdentifiers,
-} from "../utils/allowed-imports";
+import { compileSlotComponent } from "../utils/compile-slot";
 import { AgentAppErrorBoundary } from "./AgentAppErrorBoundary";
 import MarkdownStream from "@/components/MarkdownStream";
 import PublicMessageOptionsMenu from "@/features/public-chat/components/PublicMessageOptionsMenu";
@@ -586,40 +581,21 @@ function CustomComponentRenderer({
     if (TestComponent) return TestComponent;
     if (!app.component_code) return null;
 
-    try {
-      let processedCode = app.component_code.replace(
-        /import\s+.*?from\s+['"].*?['"];?\s*/g,
-        "",
-      );
-
-      const babelResult = transform(processedCode, {
-        presets: ["react", "typescript"],
-        filename: "component.tsx",
-      });
-
-      let transformed = babelResult.code || "";
-
-      transformed = transformed.replace(/export\s+default\s+/g, "return ");
-
-      const scope = buildComponentScope((app.allowed_imports as unknown) ?? []);
-      scope.MarkdownStream = AgentAppMarkdownStream;
-      scope.Markdown = AgentAppMarkdownStream;
-
-      if (transformed) {
-        patchScopeForMissingIdentifiers(transformed, scope);
-      }
-
-      const { paramNames, paramValues } = getScopeFunctionParameters(scope);
-
-      const componentFactory = new Function(...paramNames, transformed);
-      const Component = componentFactory(...paramValues);
-
-      return Component as React.ComponentType<Record<string, unknown>>;
-    } catch (err) {
-      console.error("Failed to transform custom UI:", err);
-      return null;
-    }
-  }, [app.component_code, app.allowed_imports, TestComponent]);
+    // The ONE compile path (compile-slot): import-binding contract, author
+    // top-level shadowing, and unresolved imports shown + reported under this
+    // app's origin. This used to be a regex-strip twin that did none of that.
+    const { Component, error } = compileSlotComponent({
+      code: app.component_code,
+      allowedImports: app.allowed_imports,
+      origin: `agent-app:${app.id}`,
+      scopeOverrides: {
+        MarkdownStream: AgentAppMarkdownStream,
+        Markdown: AgentAppMarkdownStream,
+      },
+    });
+    if (error) console.error("Failed to transform custom UI:", error);
+    return Component;
+  }, [app.component_code, app.allowed_imports, app.id, TestComponent]);
 
   // responseText is already derived from Redux above (selectResultText).
   // The old local-streamEvents → text reduction is gone with the bespoke fetch.

@@ -7,37 +7,126 @@
  */
 import React from "react";
 
-export function createFallbackIcon(iconName: string) {
-  const FallbackIcon = React.forwardRef<
-    SVGSVGElement,
-    React.SVGProps<SVGSVGElement> & { size?: number | string }
-  >(({ size = 24, className, ...props }, ref) => {
-    return React.createElement(
-      "svg",
+/**
+ * One name the sandboxed source referenced that nothing could supply — an
+ * import whose module is not allowlisted for this component, an export the
+ * module does not have, or a JSX tag no scope entry defines.
+ * `importPath` is null for a bare JSX reference with no import behind it.
+ */
+export interface UnresolvedImport {
+  identifier: string;
+  importPath: string | null;
+}
+
+const UNRESOLVED_IMPORT_MARK = Symbol.for("matrx.sandbox.unresolvedImport");
+const UNRESOLVED_LIST_KEY = "__unresolvedImports";
+
+/** The stand-in's own record, or null when `value` is a real binding. */
+export function readUnresolvedImportMark(
+  value: unknown,
+): UnresolvedImport | null {
+  if (!value || (typeof value !== "object" && typeof value !== "function")) {
+    return null;
+  }
+  const mark = (value as Record<symbol, unknown>)[UNRESOLVED_IMPORT_MARK];
+  return mark && typeof mark === "object" ? (mark as UnresolvedImport) : null;
+}
+
+/**
+ * Record an unresolved name on the scope being built. Every stand-in site
+ * calls this, so the compiler can report the whole list once with the
+ * tool / app / kind it is compiling (`collectUnresolvedImports`).
+ */
+export function recordUnresolvedImport(
+  scope: Record<string, any>,
+  entry: UnresolvedImport,
+): void {
+  const list = (scope[UNRESOLVED_LIST_KEY] ??= []) as UnresolvedImport[];
+  if (
+    !list.some(
+      (e) =>
+        e.identifier === entry.identifier && e.importPath === entry.importPath,
+    )
+  ) {
+    list.push(entry);
+  }
+}
+
+/** Every unresolved name recorded while building this scope, deduped. */
+export function collectUnresolvedImports(
+  scope: Record<string, any>,
+): UnresolvedImport[] {
+  return [...((scope[UNRESOLVED_LIST_KEY] ?? []) as UnresolvedImport[])];
+}
+
+/**
+ * NOTHING FAILS SILENTLY (Law 4). Stored component code that names something
+ * the sandbox cannot supply still renders — one bad import must not blank a
+ * whole tool display — but the gap is SHOWN where it sits: a compact dashed
+ * destructive chip carrying the missing name (tooltip: the import path), with
+ * the element's children rendered after it so wrapped content is not lost.
+ * It replaced a neutral question-mark glyph sized like an icon, which read as
+ * a real icon and told nobody anything (2026-10-01).
+ *
+ * The author's `className` / `size` are deliberately ignored: they were
+ * written for the real component, and an `h-4 w-4` would clip the name.
+ * Reporting to the error queue is the compiler's job (it knows the origin);
+ * this only renders.
+ */
+export function createUnresolvedImportStandIn(
+  identifier: string,
+  importPath: string | null = null,
+) {
+  const tip = importPath
+    ? `Not found: ${identifier} in "${importPath}"`
+    : `Not found: ${identifier}`;
+  const StandIn = React.forwardRef<
+    HTMLSpanElement,
+    { children?: React.ReactNode }
+  >(({ children }, ref) => {
+    const chip = React.createElement(
+      "span",
       {
         ref,
-        xmlns: "http://www.w3.org/2000/svg",
-        width: size,
-        height: size,
-        viewBox: "0 0 24 24",
-        fill: "none",
-        stroke: "currentColor",
-        strokeWidth: 2,
-        strokeLinecap: "round",
-        strokeLinejoin: "round",
-        className,
-        "data-missing-icon": iconName,
-        ...props,
+        title: tip,
+        "aria-label": tip,
+        role: "note",
+        "data-unresolved-import": identifier,
+        "data-import-path": importPath ?? undefined,
+        className:
+          "inline-flex items-center gap-0.5 rounded border border-dashed border-destructive/60 px-1 align-middle font-mono text-[10px] leading-4 text-destructive",
       },
-      React.createElement("circle", { cx: 12, cy: 12, r: 10 }),
-      React.createElement("path", {
-        d: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3",
-      }),
-      React.createElement("line", { x1: 12, y1: 17, x2: 12.01, y2: 17 }),
+      React.createElement(
+        "svg",
+        {
+          width: 10,
+          height: 10,
+          viewBox: "0 0 24 24",
+          fill: "none",
+          stroke: "currentColor",
+          strokeWidth: 2.5,
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+          "aria-hidden": true,
+        },
+        React.createElement("path", {
+          d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3",
+        }),
+        React.createElement("line", { x1: 12, y1: 9, x2: 12, y2: 13 }),
+        React.createElement("line", { x1: 12, y1: 17, x2: 12.01, y2: 17 }),
+      ),
+      identifier,
     );
+    return children == null
+      ? chip
+      : React.createElement(React.Fragment, null, chip, children);
   });
-  FallbackIcon.displayName = `MissingIcon(${iconName})`;
-  return FallbackIcon;
+  StandIn.displayName = `UnresolvedImport(${identifier})`;
+  Object.defineProperty(StandIn, UNRESOLVED_IMPORT_MARK, {
+    value: { identifier, importPath } satisfies UnresolvedImport,
+    enumerable: false,
+  });
+  return StandIn;
 }
 
 export function stripLiteralsForScan(code: string): string {
@@ -189,8 +278,6 @@ export function collectTopLevelBindingsPlugin(
 }
 
 export interface PatchScopeOptions {
-  /** Console prefix, e.g. `[AgentApp]` or `[DynamicReact]`. Omit to stay silent. */
-  logPrefix?: string;
   /**
    * Identifiers the author declares at the top level of the sandbox source (from
    * `collectTopLevelBindingsPlugin`). We must NOT inject a fallback for any of
@@ -201,7 +288,9 @@ export interface PatchScopeOptions {
 }
 
 /**
- * Adds fallback components for JSX references not present in the execution scope.
+ * Adds a visible unresolved-import stand-in for every JSX reference the
+ * execution scope does not define, and records each one on the scope
+ * (`collectUnresolvedImports`) so the compiler can report it.
  */
 export function patchScopeForMissingIdentifiers(
   code: string,
@@ -237,6 +326,8 @@ export function patchScopeForMissingIdentifiers(
         const value = proxy[identifier];
         if (value !== undefined) {
           scope[identifier] = value;
+          const mark = readUnresolvedImportMark(value);
+          if (mark) recordUnresolvedImport(scope, mark);
           provided = true;
           break;
         }
@@ -244,11 +335,7 @@ export function patchScopeForMissingIdentifiers(
       if (provided) continue;
     }
 
-    if (options?.logPrefix) {
-      console.warn(
-        `${options.logPrefix} Unknown JSX component "${identifier}" in sandboxed code. Injecting fallback.`,
-      );
-    }
-    scope[identifier] = createFallbackIcon(identifier);
+    scope[identifier] = createUnresolvedImportStandIn(identifier);
+    recordUnresolvedImport(scope, { identifier, importPath: null });
   }
 }

@@ -72,6 +72,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "api-network": "Backend network error",
   "app-api-http": "App API route error",
   "react-render": "React render error",
+  "context-truth": "Server context receipt disagreed with the composer",
   "agent-stream-error": "Server stream error",
   "agent-stream-warning": "Server stream warning",
   "agent-stream-tool-error": "Tool error",
@@ -110,6 +111,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "record-unavailable": "Record unavailable (deleted, or access gap)",
   associations: "Associations package scream (port degradation / schema violation)",
   "mandate-fast-path": "Hard-coded agent fast path disagrees with its Mandate",
+  "sandbox-unresolved-import": "Stored component imports something unavailable",
 };
 
 export function sourceLabel(source: CapturedErrorSource): string {

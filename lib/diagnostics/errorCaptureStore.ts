@@ -292,7 +292,15 @@ export type CapturedErrorSource =
    * is that verification failing. Filed by
    * `features/mandates/fast-path-guard.ts`.
    */
-  | "mandate-fast-path";
+  | "mandate-fast-path"
+  /**
+   * Component code stored in the database (a tool display, an agent-app slot
+   * or app, an emit renderer, a kind component) imported a name the sandbox
+   * allowlist could not supply. It still renders, with a visible stand-in in
+   * that spot; this row names the import path and the origin (`relation`).
+   * Filed by `lib/diagnostics/captureUnresolvedImports.ts`.
+   */
+  | "sandbox-unresolved-import";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =

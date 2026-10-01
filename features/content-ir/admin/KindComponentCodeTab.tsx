@@ -175,6 +175,7 @@ export default function KindComponentCodeTab({
         const compiled = compileSlotComponent({
           code: draft,
           allowedImports: declaredImports,
+          origin: `kind-component-editor:${selectedComponent.id}`,
           // Same scope the reader gets (Q82 / B-17) — the editor must never
           // compile against a wider scope than the one it saves into.
           sandboxDangerousGlobals: true,

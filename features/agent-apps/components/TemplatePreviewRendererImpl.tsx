@@ -14,14 +14,9 @@
  */
 
 import React, { useState, useMemo, useCallback, useRef } from "react";
-import { transform } from "@babel/standalone";
 import { AlertCircle } from "lucide-react";
-import {
-  buildComponentScope,
-  getDefaultImportsForNewApps,
-  getScopeFunctionParameters,
-  patchScopeForMissingIdentifiers,
-} from "../utils/allowed-imports";
+import { getDefaultImportsForNewApps } from "../utils/allowed-imports";
+import { compileSlotComponent } from "../utils/compile-slot";
 import { AgentAppErrorBoundary } from "./AgentAppErrorBoundary";
 import type { AppDisplayMode } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -130,33 +125,15 @@ export function TemplatePreviewRenderer({
   const CustomComponent = useMemo(() => {
     if (!templateCode) return null;
 
-    try {
-      const processedCode = templateCode.replace(
-        /import\s+.*?from\s+['"].*?['"];?\s*/g,
-        "",
-      );
-
-      const babelResult = transform(processedCode, {
-        presets: ["react", "typescript"],
-        filename: "component.tsx",
-      });
-
-      let transformed = babelResult.code || "";
-      transformed = transformed.replace(/export\s+default\s+/g, "return ");
-
-      const scope = buildComponentScope(getDefaultImportsForNewApps());
-      if (transformed) {
-        patchScopeForMissingIdentifiers(transformed, scope);
-      }
-
-      const { paramNames, paramValues } = getScopeFunctionParameters(scope);
-      const componentFactory = new Function(...paramNames, transformed);
-      return componentFactory(...paramValues);
-    } catch (err) {
-      console.error("Failed to transform template:", err);
-      return null;
-    }
-  }, [templateCode]);
+    // The ONE compile path (compile-slot) — see AgentAppPublicRendererImpl.
+    const { Component, error } = compileSlotComponent({
+      code: templateCode,
+      allowedImports: getDefaultImportsForNewApps(),
+      origin: `agent-app-template:${displayMode}`,
+    });
+    if (error) console.error("Failed to transform template:", error);
+    return Component;
+  }, [templateCode, displayMode]);
 
   if (!CustomComponent) {
     return (

@@ -5,6 +5,7 @@ import { compileSlotComponent } from "./compile-slot";
 describe("compileSlotComponent", () => {
   it("renders with the extracted input, sheet, popover, and skeleton imports", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         import { Input } from "@/components/ui/input";
         import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -46,6 +47,7 @@ describe("compileSlotComponent", () => {
 
   it("removes multiline allowlisted imports before evaluating sandbox code", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         import { useState } from "react";
         import {
@@ -68,6 +70,7 @@ describe("compileSlotComponent", () => {
 
   it("removes type-only and side-effect imports without rewriting strings", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         import type { ReactNode } from "react";
         import "sandbox-theme";
@@ -90,6 +93,7 @@ describe("compileSlotComponent", () => {
   // own declaration must simply shadow the injected scope.
   it("does not collide when the author declares a component used as a JSX tag (const arrow)", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         const IconBase = ({ label }: { label: string }) => <span>{label}</span>;
 
@@ -106,6 +110,7 @@ describe("compileSlotComponent", () => {
 
   it("does not collide when the author declares a class component used as a JSX tag", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         class Panel extends (globalThis as any).Object {
           render() { return null; }
@@ -127,6 +132,7 @@ describe("compileSlotComponent", () => {
   // the same name. The author's declaration must win.
   it("does not collide when the author redeclares an allowlisted identifier", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         const Button = ({ children }: { children?: unknown }) => <button>{children as any}</button>;
 
@@ -145,6 +151,7 @@ describe("compileSlotComponent", () => {
     const HostMarkdownStream = () =>
       createElement("span", { "data-host-stream": "true" });
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         import MarkdownStream from "@/components/MarkdownStream";
         export default function Result() {
@@ -170,6 +177,7 @@ describe("compileSlotComponent", () => {
   // component", and a stored, paid-for component silently never rendered.
   it("resolves a bare top-level PascalCase component with no default export", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         function Card({ data }) {
           return <div data-bare="true">{data?.title}</div>;
@@ -190,6 +198,7 @@ describe("compileSlotComponent", () => {
 
   it("prefers an explicit default export over a PascalCase candidate", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         function Helper() { return <span data-helper="true" />; }
         export default function Main() { return <div data-main="true" />; }
@@ -215,6 +224,7 @@ describe("compileSlotComponent", () => {
 describe("author-local import names", () => {
   it("binds a namespace import to a usable module object", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         import * as MarkdownStreamMod from "@/components/MarkdownStream";
         // The exact defensive shape authoring agents write. A namespace whose
@@ -247,6 +257,7 @@ describe("author-local import names", () => {
 
   it("binds an aliased named import", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         import { Badge as Chip } from "@/components/ui/badge";
         export default function Tags() {
@@ -266,6 +277,7 @@ describe("author-local import names", () => {
 
   it("binds a renamed default import", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         import Md from "@/components/MarkdownStream";
         export default function Body() {
@@ -285,6 +297,7 @@ describe("author-local import names", () => {
 
   it("degrades an unknown namespace import to a safe proxy, never a crash", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         import * as Nope from "@/components/does-not-exist";
         const Thing: any = (Nope as any).SomeWidget;
@@ -323,6 +336,7 @@ describe("compileSlotComponent — dangerous-global stubs", () => {
 
   it("lets the exfiltrating component run when the stubs are OFF (today's scope)", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: EXFILTRATING,
       allowedImports: ["react"],
     });
@@ -346,6 +360,7 @@ describe("compileSlotComponent — dangerous-global stubs", () => {
 
   it("throws a named error when the stubs are ON", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: EXFILTRATING,
       allowedImports: ["react"],
       sandboxDangerousGlobals: true,
@@ -358,6 +373,7 @@ describe("compileSlotComponent — dangerous-global stubs", () => {
 
   it("still renders an honest component with the stubs ON", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         import { Card } from "@/components/ui/card";
         export default function Honest({ data }) {
@@ -377,6 +393,7 @@ describe("compileSlotComponent — dangerous-global stubs", () => {
 
   it("does not steal a name the author declared themselves", () => {
     const result = compileSlotComponent({
+      origin: "test:compile-slot",
       code: `
         const localStorage = { getItem: () => "author-owned" };
         export default function Shadowed({ data }) {

@@ -36,7 +36,7 @@
 
 import React from "react";
 import {
-  createFallbackIcon,
+  createUnresolvedImportStandIn,
   patchScopeForMissingIdentifiers as patchScopeForMissingIdentifiersImpl,
 } from "@/features/agent-apps/utils/patch-scope-identifiers";
 
@@ -491,7 +491,7 @@ function createSafeModuleProxy(
         return undefined;
       }
       if (/^[A-Z]/.test(prop)) {
-        const fallback = createFallbackIcon(prop);
+        const fallback = createUnresolvedImportStandIn(prop, importPath);
         target[prop] = fallback;
         return fallback;
       }
@@ -608,7 +608,6 @@ export function patchScopeForMissingIdentifiers(
   declaredIdentifiers?: Set<string>,
 ): void {
   patchScopeForMissingIdentifiersImpl(code, scope, {
-    logPrefix: "[DynamicReact]",
     declaredIdentifiers,
   });
 }

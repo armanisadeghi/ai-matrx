@@ -117,7 +117,7 @@ describe("compileEmitRenderer (reused Babel sandbox)", () => {
     const { Component, error } = compileEmitRenderer(code, [
       "react",
       "lucide-react",
-    ]);
+    ], "test:emit");
 
     expect(error).toBeNull();
     expect(Component).toBeTruthy();
@@ -131,7 +131,7 @@ describe("compileEmitRenderer (reused Babel sandbox)", () => {
   });
 
   it("returns {Component:null,error:null} for empty code (no row authored)", () => {
-    const { Component, error } = compileEmitRenderer("", []);
+    const { Component, error } = compileEmitRenderer("", [], "test:emit");
     expect(Component).toBeNull();
     expect(error).toBeNull();
   });

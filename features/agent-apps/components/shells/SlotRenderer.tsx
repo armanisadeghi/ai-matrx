@@ -62,8 +62,12 @@ export function SlotRenderer<P extends Record<string, unknown>>({
     if (!isCustom || !source.trim()) {
       return { Component: null, error: null };
     }
-    return compileSlotComponent({ code: source, allowedImports });
-  }, [isCustom, source, allowedImports]);
+    return compileSlotComponent({
+      code: source,
+      allowedImports,
+      origin: `agent-app:${appName ?? "unnamed"}:slot:${slot}`,
+    });
+  }, [isCustom, source, allowedImports, appName, slot]);
 
   if (!isCustom || !Component) {
     if (isCustom && error) {

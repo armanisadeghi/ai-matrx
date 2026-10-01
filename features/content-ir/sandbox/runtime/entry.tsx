@@ -23,7 +23,10 @@
  */
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { executeKindBody } from "./execute-kind-body";
+import {
+    describeUnresolvedImports,
+    executeKindBody,
+} from "./execute-kind-body";
 import { frameRefusals, installFrameBridge } from "./frame-bridge";
 import type { SandboxBodyPayload } from "../transform/transform-kind-body";
 
@@ -188,7 +191,7 @@ export function mountKindComponent(
     applyTheme(options.themeTokens, options.colorScheme);
 
     const root = createRoot(container);
-    const { Component, error } = executeKindBody(payload);
+    const { Component, error, unresolvedImports } = executeKindBody(payload);
 
     if (!Component) {
         return renderFailure(
@@ -196,6 +199,13 @@ export function mountKindComponent(
             error ?? "The component could not be compiled inside the sandbox.",
             options.onError,
         );
+    }
+
+    // Renders anyway (each gap is a visible stand-in), but the host hears it:
+    // `onError` becomes a sandbox error, i.e. captureError + the kind's
+    // incident row — the same queue every other component failure reaches.
+    if (unresolvedImports.length > 0) {
+        options.onError?.(describeUnresolvedImports(unresolvedImports));
     }
 
     let props = options.props ?? {};

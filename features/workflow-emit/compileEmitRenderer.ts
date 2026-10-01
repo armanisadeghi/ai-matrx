@@ -26,10 +26,12 @@ export interface CompileEmitRendererResult {
 export function compileEmitRenderer(
   code: string,
   allowedImports: string[],
+  componentRef: string,
 ): CompileEmitRendererResult {
   const { Component, error } = compileSlotComponent({
     code,
     allowedImports,
+    origin: `emit:${componentRef}`,
   });
 
   // The agent-apps compiler types the component as

@@ -63,7 +63,13 @@ const cache = createDbKindComponentCache({
   // that reaches for fetch/XHR/WebSocket/eval/storage throws a NAMED error the
   // error boundary shows, instead of quietly reading the reader's session.
   compile: (args) =>
-    compileSlotComponent({ ...args, sandboxDangerousGlobals: true }),
+    // The package's compile port does not pass the kind, so the origin names
+    // the family only; the row's `route` narrows it to the page.
+    compileSlotComponent({
+      ...args,
+      origin: "kind-component",
+      sandboxDangerousGlobals: true,
+    }),
   defaultAllowedImports: getDefaultImportsForKindComponents,
   reportError: captureError,
   reportIncident: reportKindComponentIncident,

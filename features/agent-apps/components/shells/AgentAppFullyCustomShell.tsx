@@ -91,12 +91,13 @@ export function AgentAppFullyCustomShell({
       compileSlotComponent({
         code: sourceCode,
         allowedImports: app.allowed_imports,
+        origin: `agent-app:${app.id}`,
         scopeOverrides: {
           MarkdownStream: AgentAppMarkdownStream,
           Markdown: AgentAppMarkdownStream,
         },
       }),
-    [sourceCode, app.allowed_imports],
+    [sourceCode, app.allowed_imports, app.id],
   );
 
   const { isAuthenticated, fingerprintId } = useApiAuth();

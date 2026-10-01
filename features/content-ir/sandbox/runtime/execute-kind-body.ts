@@ -27,6 +27,10 @@ import {
     COMPONENT_BANNED_CALLABLES,
     COMPONENT_BANNED_GLOBALS,
 } from "@/features/agent-apps/utils/component-source-gate";
+import {
+    collectUnresolvedImports,
+    type UnresolvedImport,
+} from "@/features/agent-apps/utils/patch-scope-identifiers";
 import type { SandboxBodyPayload } from "../transform/transform-kind-body";
 
 /**
@@ -59,6 +63,27 @@ export interface ExecuteKindBodyResult {
     Component: React.ComponentType<Record<string, unknown>> | null;
     /** A human sentence. Never null-with-no-component and no reason. */
     error: string | null;
+    /**
+     * Names the body referenced that the scope could not supply. Each renders
+     * as a visible stand-in; the mount reports them to the host (Law 4).
+     */
+    unresolvedImports: UnresolvedImport[];
+}
+
+/** One sentence naming every unresolved import, for the host's error queue. */
+export function describeUnresolvedImports(
+    unresolved: readonly UnresolvedImport[],
+): string {
+    const names = unresolved
+        .map((u) =>
+            u.identifier === "*"
+                ? `"${u.importPath}" (not in the allowlist)`
+                : u.importPath
+                  ? `${u.identifier} from "${u.importPath}"`
+                  : u.identifier,
+        )
+        .join(", ");
+    return `This component imports something the sandbox cannot supply, so it shows a marked placeholder there: ${names}.`;
 }
 
 export function executeKindBody(
@@ -71,6 +96,7 @@ export function executeKindBody(
         return {
             Component: null,
             error: "The component body arrived empty, so there is nothing to render.",
+            unresolvedImports: [],
         };
     }
 
@@ -80,6 +106,7 @@ export function executeKindBody(
         bindImportedIdentifiers(importBindings ?? [], scope, declared);
         Object.assign(scope, buildDangerousGlobalStubs());
         patchScopeForMissingIdentifiers(transformed, scope, declared);
+        const unresolvedImports = collectUnresolvedImports(scope);
 
         const { paramNames, paramValues } = getScopeFunctionParameters(
             scope,
@@ -95,10 +122,11 @@ export function executeKindBody(
             return {
                 Component: null,
                 error: "This component compiled but returned nothing to render. A kind component must export a React component as its default export.",
+                unresolvedImports,
             };
         }
 
-        return { Component, error: null };
+        return { Component, error: null, unresolvedImports };
     } catch (err) {
         return {
             Component: null,
@@ -106,6 +134,7 @@ export function executeKindBody(
                 err instanceof Error
                     ? err.message
                     : "Unknown error while evaluating the component inside the sandbox.",
+            unresolvedImports: [],
         };
     }
 }

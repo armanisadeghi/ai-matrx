@@ -24,10 +24,12 @@ export interface CompileToolRendererResult {
 export function compileToolRenderer(
   code: string,
   allowedImports: string[],
+  toolName: string,
 ): CompileToolRendererResult {
   const { Component, error } = compileSlotComponent({
     code,
     allowedImports,
+    origin: `tool:${toolName}`,
   });
 
   // The agent-apps compiler types the component as
