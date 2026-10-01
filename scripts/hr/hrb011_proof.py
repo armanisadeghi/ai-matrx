@@ -182,15 +182,15 @@ async def main():  # noqa: C901
         for key, name in [("hank", "Hank Requester"), ("ivy", "Ivy Employee"),
                           ("jack", "Jack Countersigner"), ("kate", "Kate Outsider")]:
             uid = await conn.fetchval(
-                "insert into auth.users (id, instance_id, aud, role, email, encrypted_password,"
+                "insert into auth.users (id, instance_id, aud, role, email, encrypted_password,"  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
                 " email_confirmed_at, created_at, updated_at) values"
                 " (gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
-                " $1,'x',now(),now(),now()) returning id", f"{key}.hrb011@example.invalid")
+                " $1,'x',now(),now(),now()) returning id", f"{key}.hrb011@example.invalid")  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
             await conn.execute(
                 "insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)"
                 " values ($1,'organization',$1,$2,$3,'active')", org, uid,
                 "owner" if key == "hank" else "member")
-            people[key] = {"uid": uid, "name": name, "email": f"{key}.hrb011@example.invalid"}
+            people[key] = {"uid": uid, "name": name, "email": f"{key}.hrb011@example.invalid"}  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
 
         async def make_file(label, body):
             return await conn.fetchval(
@@ -451,7 +451,7 @@ async def main():  # noqa: C901
             "'nda','sensitive','sequential',null,'{}'::jsonb,null,null)", org,
             json.dumps([{"name": "Mutual NDA", "source_kind": "uploaded_file", "mime_type": "application/pdf"}]),
             json.dumps([{"position": 1, "role": "signer", "actor_type": "external",
-                         "full_name": "Kate Outsider", "email": "kate.outsider@example.invalid"},
+                         "full_name": "Kate Outsider", "email": "kate.outsider@example.invalid"},  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
                         {"position": 2, "role": "signer", "actor_type": "internal_user",
                          "user_id": str(people["jack"]["uid"]), "full_name": "Jack Countersigner",
                          "email": people["jack"]["email"]}]))
@@ -473,7 +473,7 @@ async def main():  # noqa: C901
             "  join esign.envelope_signer s on s.actor_token_id = t.id where s.id=$1", sid_kate)
         rec("E outsider", "send minted ONE scoped token for the external signer",
             tok is not None and tok["verification_factor"] == "email_code"
-            and tok["recipient_email"] == "kate.outsider@example.invalid", dict(tok) if tok else None)
+            and tok["recipient_email"] == "kate.outsider@example.invalid", dict(tok) if tok else None)  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
         rec("E outsider", "§5.1 the secret is NOT stored — only its sha256 and an 8-char prefix",
             tok and len(tok["token_hash"]) == 64 and len(tok["token_prefix"]) == 8, tok["token_prefix"])
         scope = json.loads(tok["scope"])
@@ -488,7 +488,7 @@ async def main():  # noqa: C901
             " where target_id=$1 and event_key='esign.signature_requested' order by created_at desc limit 1", env2)
         rec("E outsider", "the invitation is an ENQUEUED notice on the one spine, addressed to a non-user",
             notif and notif["recipient_kind"] == "actor_token"
-            and notif["to_address"] == "kate.outsider@example.invalid" and notif["status"] == "pending"
+            and notif["to_address"] == "kate.outsider@example.invalid" and notif["status"] == "pending"  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
             and notif["sent_at"] is None, dict(notif) if notif else None)
         secret = notif["deep_link"].split("#t=")[1]
         rec("E outsider", "§5.4 the secret travels in the URL FRAGMENT, never the path or query",
@@ -593,7 +593,7 @@ async def main():  # noqa: C901
         await j("select public.esign_signer_adopt_signature($1,'typed','Kate Outsider','script',null,null,$2::inet,$3)",
                 session, IP_A, UA)
 
-        dele = await j("select public.esign_signer_delegate($1,'Not Kate','other@example.invalid','busy',$2::inet,$3)",
+        dele = await j("select public.esign_signer_delegate($1,'Not Kate','other@example.invalid','busy',$2::inet,$3)",  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
                        session, IP_A, UA)
         rec("E outsider", "§8.4(27) delegation with esign.delegation.allowed=false is refused",
             dele.get("granted") is False and dele["reason"] == "delegation_not_allowed", dele)
@@ -758,7 +758,7 @@ async def main():  # noqa: C901
             org, json.dumps({"name": "Handbook v4", "source_kind": "platform_document",
                              "document_id": None, "document_version": 4, "mime_type": "application/pdf"}))
         cid = camp["campaign_id"]
-        members = [{"full_name": f"Member {i}", "email": f"member{i}.hrb011@example.invalid"} for i in range(1, 5)]
+        members = [{"full_name": f"Member {i}", "email": f"member{i}.hrb011@example.invalid"} for i in range(1, 5)]  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
         enr = await j("select public.esign_campaign_enroll($1,$2::jsonb)", cid, json.dumps(members))
         rec("G campaign", "the audience enrols", enr["granted"] and enr["enrolled"] == 4, enr)
 
@@ -842,8 +842,8 @@ async def main():  # noqa: C901
 
         # re-resolve after new hires (§3.4)
         readd = await j("select public.esign_campaign_enroll($1,$2::jsonb)", cid, json.dumps([
-            {"full_name": "Member 1", "email": "member1.hrb011@example.invalid"},
-            {"full_name": "Member 5", "email": "member5.hrb011@example.invalid"}]))
+            {"full_name": "Member 1", "email": "member1.hrb011@example.invalid"},  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
+            {"full_name": "Member 5", "email": "member5.hrb011@example.invalid"}]))  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
         rec("G campaign", "§3.4 re-resolve after a close is refused; existing members are never disturbed",
             readd.get("granted") is False and readd["reason"] == "campaign_closed", readd)
 
@@ -879,7 +879,7 @@ async def main():  # noqa: C901
             "'quote','standard','parallel',null,'{}'::jsonb,null,null)", org,
             json.dumps([{"name": "Quote", "source_kind": "uploaded_file"}]),
             json.dumps([{"position": 1, "role": "signer", "actor_type": "external",
-                         "full_name": "Provider Signer", "email": "provider.signer@example.invalid"}]))
+                         "full_name": "Provider Signer", "email": "provider.signer@example.invalid"}]))  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
         env5 = e5["envelope_id"]
         doc5 = await conn.fetchval("select id from esign.envelope_document where envelope_id=$1", env5)
         qbytes = "QUOTE — HRB-011 proof."

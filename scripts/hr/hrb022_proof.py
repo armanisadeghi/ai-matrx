@@ -196,10 +196,10 @@ async def main():
         for key, first, last in [("alice", "Alice", "Requester"), ("bob", "Bob", "Manager"),
                                  ("carol", "Carol", "Owner"), ("dave", "Dave", "Outsider")]:
             uid = await own(
-                "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+                "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
                 "email_confirmed_at, created_at, updated_at) values "
                 "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
-                "$1,'x',now(),now(),now()) returning id", f"{key}.hrb022@example.invalid")
+                "$1,'x',now(),now(),now()) returning id", f"{key}.hrb022@example.invalid")  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
             await own_exec(
                 "insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) "
                 "values ($1,'organization',$1,$2,$3,'active')", org, uid,

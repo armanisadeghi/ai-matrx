@@ -14,7 +14,7 @@ hand:
     signs in the admin from the environment. Every OTHER account that exists belongs to a real
     colleague or a real signup, and binding one of those to a fixture would hand a real person an
     employment and HR access they never asked for. So this creates a PURPOSE-MADE account that
-    exists only for this fixture, at an address in a reserved non-deliverable domain.
+    exists only for this fixture: the permanent hr-demo persona, looked up by id.
 
 🚨 THE PASSWORD IS NEVER STORED, LOGGED OR PRINTED. It is generated per run, used for one
 sign-in, and discarded when the process exits; only the resulting access token is printed, and it
@@ -35,6 +35,8 @@ import re
 import sys
 
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _demo_persona import resolve_demo_persona  # noqa: E402
 
 ORG = "7cd12da2-2213-4378-8fba-a9e2dc4ea657"            # Castellano & Reyes, LLP
 EMPLOYEE = "2e7c819d-16b1-4161-9203-fb7549ad7699"       # Marguerite Doyle, EMP-00002

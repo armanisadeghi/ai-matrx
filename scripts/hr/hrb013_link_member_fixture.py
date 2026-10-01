@@ -5,8 +5,8 @@ WHY THIS EXISTS. Proving "link an existing member-with-login at create completes
 needs exactly that shape, and it does not occur naturally in the fixtures: every current
 member of the G2 org is already an employee. Binding a REAL colleague's account into an
 employer to make the shape would hand a real person an employment they never asked for, so
-this creates an account that exists only for this proof, at a reserved non-deliverable
-address, and makes it an org member through the canonical membership door.
+this uses a purpose-made persona (looked up by id; re-made by the persona factory with an
+expiry if it is gone), and makes it an org member through the canonical membership door.
 
 🚨 THE PASSWORD IS NEVER STORED, LOGGED OR PRINTED. Generated per run, used for nothing here
 (no sign-in is needed — the account only has to EXIST and be a member), and discarded when the
@@ -25,6 +25,8 @@ import re
 import sys
 
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _demo_persona import resolve_demo_persona  # noqa: E402
 
 ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"  # Oak Street Studio (G2)
 # Optional argv[1] picks the persona BY ID, so several purpose-made members can be staged. Default:

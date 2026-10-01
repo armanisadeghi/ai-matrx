@@ -111,7 +111,7 @@ async def main():
         v = await conn.fetchval("""select platform.mint_outsider_token(
             p_consumer_key => 'esign.signer', p_subject_type => 'esign_envelope_signer',
             p_subject_id => $1::uuid, p_scope => '{}'::jsonb, p_organization_id => $2::uuid,
-            p_recipient => '{"email":"probe@example.invalid","name":"Probe"}'::jsonb,
+            p_recipient => '{"email":"probe@example.invalid","name":"Probe"}'::jsonb, -- matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
             p_overrides => '{}'::jsonb)::text""", _uuid.uuid4(), org)
         vj = json.loads(v)
         mint_keys = list(vj.keys())

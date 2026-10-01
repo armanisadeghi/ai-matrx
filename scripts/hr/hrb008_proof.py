@@ -66,10 +66,10 @@ async def main():
                                  ("carol", "Carol", "Owner"), ("dave", "Dave", "Delegate"),
                                  ("erin", "Erin", "Skip")]:
             uid = await conn.fetchval(
-                "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+                "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
                 "email_confirmed_at, created_at, updated_at) values "
                 "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
-                "$1,'x',now(),now(),now()) returning id", f"{key}.hrb008@example.invalid")
+                "$1,'x',now(),now(),now()) returning id", f"{key}.hrb008@example.invalid")  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
             await conn.execute(
                 "insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) "
                 "values ($1,'organization',$1,$2,$3,'active')", org, uid,
@@ -1453,10 +1453,10 @@ async def main():
             "insert into iam.organizations (name, slug, abbreviation) values "
             "('HRB-008 Solo Org','hrb008-solo-'||substr(gen_random_uuid()::text,1,8),'SOL') returning id")
         solo_uid = await conn.fetchval(
-            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
             "email_confirmed_at, created_at, updated_at) values "
             "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
-            "$1,'x',now(),now(),now()) returning id", f"solo.{uuid.uuid4().hex[:8]}@example.invalid")
+            "$1,'x',now(),now(),now()) returning id", f"solo.{uuid.uuid4().hex[:8]}@example.invalid")  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
         await conn.execute(
             "insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) "
             "values ($1,'organization',$1,$2,'owner','active')", solo_org, solo_uid)
@@ -1497,10 +1497,10 @@ async def main():
                 solo_uid, solo_ppe))
         # the moment a second actor exists, the carve-out closes again
         second_uid = await conn.fetchval(
-            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
             "email_confirmed_at, created_at, updated_at) values "
             "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
-            "$1,'x',now(),now(),now()) returning id", f"second.{uuid.uuid4().hex[:8]}@example.invalid")
+            "$1,'x',now(),now(),now()) returning id", f"second.{uuid.uuid4().hex[:8]}@example.invalid")  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
         second_party = await conn.fetchval(
             "insert into crm.party (organization_id, party_kind, display_name) "
             "values ($1,'person','Ada Second') returning id", solo_org)
@@ -1531,10 +1531,10 @@ async def main():
             "insert into iam.organizations (name, slug, abbreviation) values "
             "('HRB-008 Activation Org','hrb008-act-'||substr(gen_random_uuid()::text,1,8),'ACT') returning id")
         act_uid = await conn.fetchval(
-            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
             "email_confirmed_at, created_at, updated_at) values "
             "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
-            "$1,'x',now(),now(),now()) returning id", f"founder.{uuid.uuid4().hex[:8]}@example.invalid")
+            "$1,'x',now(),now(),now()) returning id", f"founder.{uuid.uuid4().hex[:8]}@example.invalid")  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
         await conn.execute(
             "insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) "
             "values ($1,'organization',$1,$2,'owner','active')", act_org, act_uid)
@@ -1650,10 +1650,10 @@ async def main():
             json.dumps(pf_self)[:200])
         # and with a requester who is NOT the approver, the very same request goes through
         gil_uid = await conn.fetchval(
-            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
             "email_confirmed_at, created_at, updated_at) values "
             "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
-            "$1,'x',now(),now(),now()) returning id", f"gil.{uuid.uuid4().hex[:8]}@example.invalid")
+            "$1,'x',now(),now(),now()) returning id", f"gil.{uuid.uuid4().hex[:8]}@example.invalid")  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
         gil_party = await conn.fetchval(
             "insert into crm.party (organization_id, party_kind, display_name) "
             "values ($1,'person','Gil Manager') returning id", act_org)
@@ -1751,10 +1751,10 @@ async def main():
         # party (§2.2 rule 2), so he is struck from every step of it. The second actor has to be a
         # genuinely uninvolved third person, which is the whole point of the rule.
         ivy_uid = await conn.fetchval(
-            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
             "email_confirmed_at, created_at, updated_at) values "
             "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
-            "$1,'x',now(),now(),now()) returning id", f"ivy.{uuid.uuid4().hex[:8]}@example.invalid")
+            "$1,'x',now(),now(),now()) returning id", f"ivy.{uuid.uuid4().hex[:8]}@example.invalid")  # matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
         ivy_party = await conn.fetchval(
             "insert into crm.party (organization_id, party_kind, display_name) "
             "values ($1,'person','Ivy Second') returning id", act_org)

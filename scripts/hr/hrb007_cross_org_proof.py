@@ -81,11 +81,11 @@ begin
   select id into v_party4 from crm.party where organization_id = v_org order by id offset 3 limit 1;
   if v_party4 is null then raise exception 'fixture needs 4 crm.party rows in the org'; end if;
 
-  insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
+  insert into auth.users (id, instance_id, aud, role, email, encrypted_password, -- matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
                           email_confirmed_at, created_at, updated_at,
                           raw_app_meta_data, raw_user_meta_data)
   values (u_hradmin, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-          'c3-probe-hradmin+' || substr(u_hradmin::text,1,8) || '@example.invalid', '',
+          'c3-probe-hradmin+' || substr(u_hradmin::text,1,8) || '@example.invalid', '', -- matrx-fixture:rollback-only the whole run is one transaction rolled back in finally, and the run prints the post-rollback row counts
           now(), now(), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb);
   -- iam.organization_member is a VIEW over iam.memberships; membership is written to the base table
   insert into iam.memberships (container_type, container_id, organization_id, user_id, role, status)

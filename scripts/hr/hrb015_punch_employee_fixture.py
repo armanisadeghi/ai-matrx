@@ -48,6 +48,8 @@ import re
 import sys
 
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _demo_persona import resolve_demo_persona  # noqa: E402
 
 ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"            # Oak Street Studio (the studio scenario org)
 HR_ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"  # admin@admin.com, hr_admin in this org

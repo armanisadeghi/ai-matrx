@@ -13,8 +13,8 @@ the HR admin can read; it is the departed person's own token returning NOTHING f
 data. Every access claim below is measured through the subject's session, twice: the doors through
 PostgREST, and the tables through RLS with that user's JWT claims.
 
-Fixture personas only: the subject is anika.joshi@example.test, a fixture org member with
-no employee record. Nothing here touches a real person.
+Fixture personas only: the subject is a persona made for this run by the persona factory, an org member
+with no employee record, torn down when the walk ends. Nothing here touches a real person.
 """
 import asyncio, json, os, sys, time
 from datetime import date
@@ -23,7 +23,7 @@ import asyncpg, httpx
 
 ENV = "/Users/armanisadeghi/code/aidream/.env"
 ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Oak Street Studio
-# 🚨 The actor is the org OWNER, not the fixture HR admin (priya.raman@example.test, 21
+# 🚨 The actor is the org OWNER, not the fixture HR admin (Priya Raman, 21
 # capabilities including working_record.write), because `hr_employee_create` calls
 # `public.mbr_add` unconditionally for a login-bearing hire and mbr_add raises
 # "membership manager role required" (42501) for any caller who is not an org manager — even when
@@ -34,8 +34,9 @@ HR_ADMIN = "admin@admin.com"                           # 37 capabilities, org ow
 # soft-deleted employee row still occupies that slot, so re-using one subject would make the walk
 # unrepeatable — and would test a reset instead of a hire.
 STAMP = date.today().strftime("%m%d") + f"{int(time.time()) % 100000:05d}"
-SUBJECT = f"elias.navarro.{STAMP}@example.test"
-SUBJECT_UID = None   # created below
+SUBJECT = None       # the factory persona's mailbox, set by main()
+SUBJECT_UID = None   # its auth user id, set by main()
+SUBJECT_FIRST = SUBJECT_LAST = None
 PAY_GROUP = "5fd777b5-923f-4253-86ca-369101059159"
 JOB_TITLE = "6e2275c6-47a4-4b6a-9ff4-f48e8adeedb0"
 DEPARTMENT = "6715f29c-c677-4546-9c9a-5e2b591ab16e"
@@ -67,7 +68,7 @@ def load_env(p):
     return out
 
 
-async def main():
+async def walk():
     env = load_env(ENV)
     base = env["SUPABASE_MATRIX_URL"].rstrip("/")
     anon = env["SUPABASE_MATRIX_PUBLISHABLE_KEY"]
@@ -124,15 +125,6 @@ async def main():
     # ── the subject exists as a person and an org member BEFORE HR ever sees them ──
     # (a fixture persona with no employment history; the employee record itself is created by the
     # product's own door below, never here)
-    global SUBJECT_UID
-    SUBJECT_UID = await conn.fetchval("select id::text from auth.users where email = $1", SUBJECT)
-    if SUBJECT_UID is None:
-        r = await http.post(f"{base}/auth/v1/admin/users",
-                            headers={"apikey": service, "Authorization": f"Bearer {service}",
-                                     "Content-Type": "application/json"},
-                            json={"email": SUBJECT, "email_confirm": True})
-        r.raise_for_status()
-        SUBJECT_UID = r.json()["id"]
     await conn.execute(
         "insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) "
         "values ($1::uuid,'organization',$1::uuid,$2::uuid,'member','active') "
@@ -151,7 +143,7 @@ async def main():
     print("\n=== A. SPELL 1, through hr_employee_create ===")
     st, ack = await rpc(hr_tok, "hr_employee_create", {"p_payload": {
         "organization_id": ORG, "link_user_id": SUBJECT_UID,
-        "legal_first_name": "Elias", "legal_last_name": "Navarro",
+        "legal_first_name": SUBJECT_FIRST, "legal_last_name": SUBJECT_LAST,
         "employee_number": f"EMP-{STAMP}",
         "hire_date": SPELL1_HIRE, "pay_group_id": PAY_GROUP, "job_title_id": JOB_TITLE,
         "department_id": DEPARTMENT, "location_id": LOCATION, "worker_class": "employee"}})
@@ -229,7 +221,7 @@ async def main():
         "from hr.employment where id=$1::uuid", spell1["id"])
     st, refuse = await rpc(hr_tok, "hr_employee_create", {"p_payload": {
         "organization_id": ORG, "link_user_id": SUBJECT_UID,
-        "legal_first_name": "Elias", "legal_last_name": "Navarro",
+        "legal_first_name": SUBJECT_FIRST, "legal_last_name": SUBJECT_LAST,
         "hire_date": SPELL2_HIRE, "pay_group_id": PAY_GROUP, "job_title_id": JOB_TITLE,
         "department_id": DEPARTMENT, "location_id": LOCATION, "worker_class": "employee"}})
     rec("a second record is REFUSED by name", "rehire_required", refuse.get("reason"),
@@ -245,7 +237,7 @@ async def main():
 
     st, ack2 = await rpc(hr_tok, "hr_employee_create", {"p_payload": {
         "organization_id": ORG, "link_user_id": SUBJECT_UID, "is_rehire": True,
-        "legal_first_name": "Elias", "legal_last_name": "Navarro",
+        "legal_first_name": SUBJECT_FIRST, "legal_last_name": SUBJECT_LAST,
         "hire_date": SPELL2_HIRE, "pay_group_id": PAY_GROUP, "job_title_id": JOB_TITLE,
         "department_id": DEPARTMENT, "location_id": LOCATION, "worker_class": "employee"}})
     rec("the rehire is accepted", True, bool(ack2.get("ok")), f"{st} {json.dumps(ack2)[:250]}")
@@ -330,6 +322,28 @@ async def main():
         print(f"  FAIL {c}: expected {e}, got {g} {d}")
     print(f"employee_id={employee_id}")
     return 1 if bad else 0
+
+
+async def main():
+    """Make this run's subject with the persona factory, walk, and tear the subject down in `finally`."""
+    global SUBJECT, SUBJECT_UID, SUBJECT_FIRST, SUBJECT_LAST
+    sys.path.insert(0, "/Users/armanisadeghi/code/aidream")
+    from aidream.testing.persona import PersonaFactoryRefusal, create_fixture_user, delete_fixture_user, live_target
+
+    target = live_target(reason="T-L1-5 rehire walk needs a fresh org member subject per run")
+    made = create_fixture_user(target, suite="hr-demo/t-l1-5-rehire-walk",
+                               purpose="a fresh subject hired, departed and rehired through the product's own doors")
+    SUBJECT, SUBJECT_UID = made.email, made.user_id
+    SUBJECT_FIRST, SUBJECT_LAST = made.persona.first_name, made.persona.last_name
+    try:
+        return await walk()
+    finally:
+        try:
+            delete_fixture_user(target, made.user_id)
+            print(f"fixture subject {made.user_id} torn down")
+        except PersonaFactoryRefusal as exc:
+            print(f"TEARDOWN BLOCKED for {made.user_id}: {exc}\n"
+                  f"It is tagged and expires {made.tag['expires_at']}; sweep_expired_fixtures.py removes it.")
 
 
 if __name__ == "__main__":
