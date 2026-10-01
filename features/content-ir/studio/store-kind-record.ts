@@ -48,6 +48,7 @@
  * show (THE NOTHING-FAILS-SILENTLY LAW) and is captured to the error store.
  */
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { supabase } from "@/utils/supabase/client";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -162,7 +163,12 @@ export function buildRecordMetadata(
 export async function storeKindRecord(
   args: StoreKindRecordArgs,
 ): Promise<StoreKindRecordResult> {
-  const metadata = buildRecordMetadata(args.provenance);
+  // Provenance names only a DURABLE message: a client-temp answer (incognito,
+  // reservation gap) has no row for the `produced_by` edge or `source_id`.
+  const provenance: KindRecordProvenance | undefined = args.provenance
+    ? { ...args.provenance, messageId: durableRecordId(args.provenance.messageId) }
+    : undefined;
+  const metadata = buildRecordMetadata(provenance);
   const saved = await withSaveTimeout(
     saveKindInstance({
       kindDefinitionId: args.kindDefinitionId,
@@ -172,12 +178,12 @@ export async function storeKindRecord(
       title: args.title,
       titleKey: args.titleKey,
       metadata,
-      producedByMessageId: args.provenance?.messageId ?? null,
+      producedByMessageId: provenance?.messageId ?? null,
     }),
     "Saving the record",
   );
 
-  const messageId = args.provenance?.messageId;
+  const messageId = provenance?.messageId;
   // An organization that keeps its kind records in the record store got the edge IN THE
   // SAME TRANSACTION as the record (`custom.record_write_graph`); writing it again here
   // would point a second edge at a `content_ir_kind_instance` id that does not exist.

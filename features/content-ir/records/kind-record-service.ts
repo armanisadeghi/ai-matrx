@@ -20,6 +20,7 @@
  * is that it is absent or honest — never a greyed-out button.
  */
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { supabase } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -199,6 +200,8 @@ export async function fetchRecordsProducedByMessage(args: {
   kind: string;
   messageId: string;
 }): Promise<RecordResult<KindRecord[]>> {
+  // A client-temp answer has produced nothing durable — and its id would 22P02.
+  if (durableRecordId(args.messageId) === null) return { ok: true, value: [] };
   const definition = await resolveKindDefinitionId(args.kind);
   if (!definition.ok) return definition;
   try {
