@@ -529,7 +529,7 @@ export function DrillExplorer({
       <div className="flex min-h-0 flex-1 flex-col overflow-auto">
         {question.by.length === 0 ? (
           def && records ? (
-            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={asking} resolvers={resolvers} book={nameBook} openRecord={openRecord} timeZone={zone} />
+            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={asking} resolvers={resolvers} book={nameBook} siblings={{ offered: (siblings ?? []).map((x) => x.token), described: siblingDefs }} openRecord={openRecord} timeZone={zone} />
           ) : (
             <p data-drill-explorer-no-grouping className="flex flex-wrap items-center gap-1.5 p-6 text-sm text-muted-foreground">
               <span>No grouping. Pick one in Group by.</span>

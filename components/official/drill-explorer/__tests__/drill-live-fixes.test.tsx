@@ -199,11 +199,16 @@ describe("F3/F4 — the records read in their own noun, with their sums and the 
           ]}
           rowNoun="request"
           timeZone="UTC"
+          siblings={{
+            offered: ["ai_usage_executions"],
+            described: [{ token: "ai_usage_executions", group: "Executions", go: () => {}, source: { kind: "entity", token: "ai_usage_executions" }, def: { grain: "one row per execution of the AI usage ledger (a model call, a tool run)" } as never }],
+          }}
         />,
       );
     });
     await act(async () => {});
-    expect(client.drillDescribe).toHaveBeenCalledWith({ source: { kind: "entity", token: "ai_usage_executions" } });
+    // the noun is the sibling definition's grain, already described by the explorer — never a describe of the fact (D2)
+    expect(client.drillDescribe).not.toHaveBeenCalled();
     expect(host.querySelector("[data-drill-explorer-records-count]")?.textContent).toBe("1,026 executions");
     expect(host.querySelector('[data-drill-explorer-records-sum="cost"]')?.textContent).toMatch(/Cost 3,773,448 points/);
     expect(host.querySelector('[data-drill-explorer-records-sum="requests"]')?.textContent).toMatch(/148 requests/);

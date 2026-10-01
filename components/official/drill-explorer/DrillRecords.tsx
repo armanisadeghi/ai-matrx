@@ -35,6 +35,7 @@ import { readOf } from "@/components/read-state/ReadGate";
 
 import { doorWindow } from "./useDrillExplorer";
 import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";
+import type { DrillSiblingDefinition } from "./drillSiblings";
 import { asOfPage, doorWhere, type DrillNameResolver, type DrillRecordOpener, type DrillRecordsDeclaration } from "./types";
 import type { DrillCarried } from "./questionParts";
 import { recordsColumnDimension, recordsColumnHeader } from "./recordsColumns";
@@ -54,33 +55,25 @@ interface DrillRowsPageSums {
 }
 
 /**
- * THE RECORDS' NOUN: a definer definition whose records are ANOTHER declared definition's rows (ai_usage
- * → ai_usage_executions) takes that definition's grain; any other takes its own ("one row per ingest
- * run" → "ingest run"). Null until known; the host's `rowNoun` stands in only when no grain says.
+ * THE RECORDS' NOUN: records that are ANOTHER declared definition's rows (ai_usage → ai_usage_executions,
+ * a sibling the host offers) take that definition's grain; records over the definition's own fact
+ * (workflow_runs → workflow_run_facts, kg_cost → rag_ingest_run) take its own ("one row per ingest run" →
+ * "ingest run"). Null while the sibling is still being described; the host's `rowNoun` stands in.
  *
- * Records over the definition's OWN fact (workflow_runs → workflow_run_facts, kg_cost → rag_ingest_run)
- * are its own rows: only a declared definition is ever described, never a raw fact token — describing
- * `workflow_run_facts` was refused 403 on every run-analysis load (lane DRILL-D1, VERIFY-DRILL-FINAL D2).
+ * NOTHING IS DESCRIBED HERE (lane DRILL-D1, VERIFY-DRILL-FINAL D2): `records.fact` is a fact token, and
+ * describing it asked the door to drill a System table by inference — refused 403 on every run-analysis
+ * load. Only declared definitions are described, and the siblings already are (`useDrillSiblings`).
  */
-export function useRecordsNoun(client: RecordsClient | null, def: DrillDefinition, records: DrillRecordsDeclaration): string | null {
+export function useRecordsNoun(
+  def: DrillDefinition,
+  records: DrillRecordsDeclaration,
+  siblings: { offered: readonly string[]; described: readonly DrillSiblingDefinition[] } = { offered: [], described: [] },
+): string | null {
   const own = grainNoun(def.grain);
-  // describe carries the declaration's `fact` (platform.drill_def__<key>()); the package type omits it
-  const ownFact = (def as DrillDefinition & { fact?: string }).fact ?? def.key;
-  const other = def.mode === "definer" && records.fact !== def.key && records.fact !== ownFact ? records.fact : null;
-  const [read, setRead] = useState<{ fact: string; noun: string | null } | null>(null);
-  useEffect(() => {
-    if (!client || !other) return;
-    let cancelled = false;
-    void client.drillDescribe({ source: { kind: "entity", token: other } }).then((got) => {
-      if (!cancelled) setRead({ fact: other, noun: got.ok ? grainNoun(got.data?.grain) : null });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [client, other]);
-  if (!other) return own;
-  if (read?.fact !== other) return null;
-  return read.noun ?? own;
+  if (records.fact === def.key || !siblings.offered.includes(records.fact)) return own;
+  const sibling = siblings.described.find((s) => s.token === records.fact);
+  if (!sibling) return null;
+  return grainNoun(sibling.def.grain) ?? own;
 }
 
 /** The first moment the platform holds any record: "All time" as the window records are listed for. */
@@ -104,9 +97,12 @@ export function DrillRecords({
   carried,
   resolvers,
   book: hostBook,
+  siblings,
   openRecord,
   timeZone,
 }: {
+  /** The host's sibling definitions: the records' noun when the records are a sibling's rows. */
+  siblings?: { offered: readonly string[]; described: readonly DrillSiblingDefinition[] } | undefined;
   /** The explorer's one name book (drillNames.ts); absent = one of this list's own over `resolvers`. */
   book?: DrillNameBook | undefined;
   client: RecordsClient | null;
@@ -275,7 +271,7 @@ export function DrillRecords({
     };
   });
 
-  const noun = useRecordsNoun(client, def, records) ?? rowNoun;
+  const noun = useRecordsNoun(def, records, siblings) ?? rowNoun;
   const measureOf = (key: string) => def.measures.find((m) => m.key === key);
   const fmtSum = (key: string, v: number | string | null | undefined) => {
     if (v === null || v === undefined) return "—";

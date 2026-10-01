@@ -114,8 +114,9 @@ organizations" (`mineScope`), because the door counts the person's rows in every
   book. A surface hands it the door rows it draws (`readRows`) or ids (`want`); the book keeps the
   door's labels and asks the host resolver for exactly the unnamed ids, once each. A failed read
   ends in the resolver's `unreadLabel`, never "Reading the name…". Never keep names in a surface.
-- **Only a declared definition is described.** Records over the definition's own fact are its own
-  rows; `records.fact` is described only when it is another definition's key (D2).
+- **Only a declared definition is described.** `records.fact` is a fact token and is never
+  described: records over the definition's own fact take its own grain; records that are a sibling
+  definition's rows take that sibling's grain, already described by `useDrillSiblings` (D2).
 
 - Import only what the PUBLISHED `@ai-matrx/design-system` / `@ai-matrx/records` export (lane
   DRILL-WIRE needs design-system 0.49.54+ and records 0.58.120+: `search`, Dimension `entity` /
