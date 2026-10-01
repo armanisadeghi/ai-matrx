@@ -163,30 +163,7 @@ export function saveContextRule(args: {
   key: string;
   rule: Partial<Record<keyof SavedContextRule, SavedContextRule[keyof SavedContextRule] | undefined>> | null;
 }): AppThunk<Promise<void>> {
-  return async (dispatch, getState) => {
-    // "NOT NOW" STANDS. The person cancelled the organization question for
-    // exactly this change: the same change arriving again (a field re-committing
-    // its value when focus returns after the picker closed) is dropped, never
-    // asked again — that re-commit re-opened the picker every ~1.5s, forever.
-    // A different change, or this one after a fresh deliberate act, may ask.
-    const signature = JSON.stringify([args.surfaceKey, args.key, args.rule]);
-    if (lastCancelledChange === signature && !(await personActedSinceCancel())) return;
-    try {
-      await applyRowPatch(dispatch, getState, args.surfaceKey, rulePatch(args.key, args.rule), true);
-      if (lastCancelledChange === signature) lastCancelledChange = null;
-    } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) throw error;
-      lastCancelledChange = signature;
-    }
-  };
-}
-
-/** The change whose organization question the person last cancelled. */
-let lastCancelledChange: string | null = null;
-
-async function personActedSinceCancel(): Promise<boolean> {
-  const { personJustActed } = await import("@/lib/organization/organization-gate");
-  return personJustActed();
+  return (dispatch, getState) => applyRowPatch(dispatch, getState, args.surfaceKey, rulePatch(args.key, args.rule));
 }
 
 /** Reset every rule on one surface row (the chip's "reset all"). */
@@ -199,9 +176,7 @@ async function applyRowPatch(
   getState: () => RootState,
   surfaceKey: string,
   patch: RowPatch,
-  rethrowCancel = false,
 ): Promise<void> {
-  let cancelled: unknown = null;
   // Optimistic: the screen shows the change at once.
   const shown = selectSavedContextRuleRows(getState())[surfaceKey] ?? {};
   dispatch(
@@ -244,8 +219,7 @@ async function applyRowPatch(
         settle();
         // "Not now" on the organization picker is an answer, not a failure:
         // nothing was saved, so show what is saved, without an error.
-        if (isOrganizationSelectionCancelled(error)) cancelled = error;
-        else {
+        if (!isOrganizationSelectionCancelled(error)) {
           console.error("[context-rules] save failed — reloading the saved rules", error);
           toast.error("Your context setting didn't save. Showing what's saved.");
         }
@@ -257,6 +231,4 @@ async function applyRowPatch(
     if (rowChains.get(surfaceKey) === next) rowChains.delete(surfaceKey);
   });
   await next;
-  // The write was dropped and the screen reverted; the caller learns why.
-  if (cancelled && rethrowCancel) throw cancelled;
 }
