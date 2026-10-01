@@ -348,7 +348,6 @@ export function ImportWizard() {
         <ChevronLeftTapButton
           onClick={() => router.back()}
           ariaLabel="Back"
-          className="mr-1"
         />
         {(
           [

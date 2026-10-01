@@ -41,10 +41,7 @@ export function SectionCard({
   return (
     <section
       className={cn(
-        // Dense on a desktop mouse: header TapButtons shrink to 28px (the
-        // package's own size variable), so a one-row card is one short band.
-        // Touch and narrow screens keep the 44px target.
-        "group/section rounded-md border border-border bg-card lg:pointer-fine:[--matrx-tap-target-size:1.75rem]",
+        "group/section rounded-md border border-border bg-card",
         className,
       )}
     >
@@ -66,13 +63,17 @@ export function SectionCard({
             {count}
           </span>
         )}
+        {/* The spacer, not a margin on the action slot, pushes the action
+            right: a slot holding one tap button must add no space around it
+            (tap buttons space themselves). */}
+        {action ? <span aria-hidden className="ml-auto" /> : null}
         {action ? (
           <div
             className={cn(
-              "flex items-center gap-1 max-sm:[&_button]:min-h-11",
+              "flex items-center",
               compactAction || empty
-                ? "ml-auto shrink-0"
-                : "mt-1 basis-full border-t border-border/60 pt-1 sm:ml-auto sm:mt-0 sm:basis-auto sm:border-0 sm:pt-0 max-sm:[&>div]:w-full",
+                ? "shrink-0"
+                : "mt-1 basis-full border-t border-border/60 pt-1 sm:mt-0 sm:basis-auto sm:border-0 sm:pt-0",
             )}
           >
             {action}

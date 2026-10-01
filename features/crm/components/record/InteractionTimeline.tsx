@@ -293,7 +293,7 @@ export function InteractionTimeline({
       count={interactions.length}
       compactAction
       action={
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center">
           {/* 🚨 SENDING AN EMAIL IS A FIRST-CLASS ACTION, not a mode of the
               log-a-past-activity strip. Until 2026-09-17 it appeared only after
               a person clicked the "Email" chip in that strip, so the one door to

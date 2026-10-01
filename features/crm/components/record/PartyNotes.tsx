@@ -208,7 +208,7 @@ export function PartyNotes({
       count={loadError ? undefined : comments.length}
       compactAction
       action={
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center">
           {copyParent && comments.length > 0 && (
             <CrmRecordCopyButtons
               label={`${copyParent.label} notes`}

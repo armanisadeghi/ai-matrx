@@ -140,7 +140,7 @@ export function AddressesCard({
       count={addresses.length}
       compactAction
       action={
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center">
           {addresses.length > 0 && (
             <CrmRecordCopyButtons
               label={`${partyLabel} addresses`}

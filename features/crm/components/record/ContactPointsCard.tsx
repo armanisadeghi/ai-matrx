@@ -335,7 +335,7 @@ export function ContactPointsCard({
       count={points.length}
       compactAction
       action={
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center">
           {points.length > 0 && (
             <CrmRecordCopyButtons
               label={`${partyLabel} contact methods`}
@@ -469,7 +469,7 @@ export function ContactPointsCard({
                   </span>
                 )}
                 {deliverabilityBadge(point)}
-                <span className="ml-auto flex shrink-0 items-center gap-0.5">
+                <span className="ml-auto flex shrink-0 items-center">
                   {/* A problem we can detect ships with its one-click fix. */}
                   {isTenantSuppressed(point.medium) && (
                     <Button

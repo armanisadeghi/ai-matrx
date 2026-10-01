@@ -417,7 +417,7 @@ export function EmploymentCard(props: Props) {
       count={rows.length}
       compactAction
       action={
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center">
           {rows.length > 0 && (
             <CrmRecordCopyButtons
               label={`${props.partyLabel} ${isPerson ? "employment" : "people"}`}
