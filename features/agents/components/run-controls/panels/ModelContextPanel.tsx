@@ -299,7 +299,7 @@ function TrimSummaryView({ trim }: TrimSummaryViewProps) {
       )}
       {skipped === "cache_protect" && (
         <p className="text-[10px] text-muted-foreground/80 mt-1">
-          Skipped for the cache; retries at 5K savings or expiry
+          Cache protected; retries at 5K tokens saved or cache expiry
         </p>
       )}
     </>

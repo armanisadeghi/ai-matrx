@@ -334,12 +334,10 @@ export function ContextPoliciesTab({ conversationId }: ContextPoliciesTabProps) 
 function SectionHeader({
   title,
   count,
-  description,
   rightPolicy,
 }: {
   title: string;
   count: number;
-  description: string;
   rightPolicy?: React.ReactNode;
 }) {
   return (
@@ -353,9 +351,6 @@ function SectionHeader({
             ({count})
           </span>
         </div>
-        <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-          {description}
-        </p>
       </div>
       {rightPolicy}
     </div>

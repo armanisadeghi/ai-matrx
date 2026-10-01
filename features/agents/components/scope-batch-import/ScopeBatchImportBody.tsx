@@ -603,7 +603,7 @@ export function ScopeBatchImportBody({
               ]
                 .filter(Boolean)
                 .join(" · ")
-            : "Select at least one item to add, or change a slot's agent access."}
+            : "Select an item to add, or change a slot's agent access"}
         </p>
         <Button onClick={handleSubmit} disabled={!canSubmit}>
           {selectedVariableCount + selectedSlotCount === 0 &&
