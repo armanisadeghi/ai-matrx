@@ -150,7 +150,10 @@ export function MemberInspector({ conductorId, member, accent, onClose }: Member
               <label htmlFor="member-required" className="text-xs font-medium text-foreground">
                 Must be consulted
               </label>
-              <InfoHint text="If skipped, the conductor is corrected; a run that still skips them is never marked complete." />
+              <InfoHint
+                text="If skipped, the conductor is corrected; a run that still skips them is never marked complete."
+                label="About Must be consulted"
+              />
             </div>
             <p className="text-[11px] leading-snug text-muted-foreground">
               The conductor must consult this member before finishing.
