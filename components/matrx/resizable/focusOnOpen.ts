@@ -13,9 +13,21 @@
 // focusPreferredTarget at 2921/2930/3043ms.
 //
 // The rule, shared by every window primitive in this folder (the docked host
-// and the floating frame both focused unconditionally): an opening window may
-// take focus from the page, a button, or its own shell — never from an
-// editable field outside it. Where she is typing wins.
+// and the floating frame): a window that opens takes focus, EXCEPT out of an
+// editable field that sits inside an element carrying KEEP_FOCUS_ATTRIBUTE —
+// an inline edit the page itself opened (the Rulebook title's rename on
+// `?rename=1`). A panel she opens with Enter or a hotkey from any other field
+// still takes focus: that is the panel she asked to type into.
+//
+// Why a mark and not `navigator.userActivation`: measured headless on
+// localhost, a cold load of the deep link reported `isActive === true` when
+// the panel opened, and a client navigation right after a click (Start → the
+// new Rulebook) is inside the click's activation window too — the gesture
+// cannot tell "she opened this panel" from "she clicked something earlier".
+// A <select> is never a field she is typing in.
+
+/** Put on an inline-edit container: a field inside it keeps focus when a window opens. */
+export const KEEP_FOCUS_ATTRIBUTE = "data-keep-focus-on-open";
 
 const EDITABLE_INPUT_TYPES = new Set([
   "",
@@ -37,7 +49,6 @@ const EDITABLE_INPUT_TYPES = new Set([
 export function isEditableField(el: Element | null): el is HTMLElement {
   if (!(el instanceof HTMLElement)) return false;
   if (el instanceof HTMLTextAreaElement) return !el.disabled && !el.readOnly;
-  if (el instanceof HTMLSelectElement) return !el.disabled;
   if (el instanceof HTMLInputElement) {
     return (
       !el.disabled &&
@@ -50,10 +61,12 @@ export function isEditableField(el: Element | null): el is HTMLElement {
 
 /**
  * May a window that is opening (`container`) move focus into itself right
- * now? False while the person is in an editable field outside it.
+ * now? False only while focus is in an editable field outside it that sits in
+ * a KEEP_FOCUS_ATTRIBUTE container.
  */
 export function mayTakeFocusOnOpen(container: HTMLElement | null): boolean {
   const active = typeof document === "undefined" ? null : document.activeElement;
   if (!isEditableField(active)) return true;
-  return container != null && container.contains(active);
+  if (container != null && container.contains(active)) return true;
+  return active.closest(`[${KEEP_FOCUS_ATTRIBUTE}]`) == null;
 }

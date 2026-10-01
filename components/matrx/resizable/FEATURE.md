@@ -27,6 +27,7 @@ right/top or goes fullscreen now claims nothing.
 
 ## Change log
 
+- `2026-09-30` — **Narrowed (review):** focus is held back only for a field inside a `data-keep-focus-on-open` container (`KEEP_FOCUS_ATTRIBUTE`; the Rulebook title's inline rename). Any other field yields to a panel she opens with Enter or a hotkey; `<select>` never holds focus; a declined first attempt still retries, so a field that unmounts a frame later leaves focus in the panel. `navigator.userActivation` was measured `true` on a cold deep-link load, so it cannot be the signal.
 - `2026-09-30` — **An opening window never takes focus out of a field she is typing in.** Both the docked host and the floating frame now skip focus-on-open while an editable field outside them holds focus (`focusOnOpen.ts`). Masterwork cold walk 23: `?interview=1&rename=1` closed the title's inline rename because the interview panel's focus blurred it. Guard: `__tests__/an-opening-panel-never-takes-focus-from-a-field.test.tsx`.
 - `2026-09-19` — **Avatar cover retired.** The shell profile menu moved bottom-left (`ShellUserBlock`); `ElevatedShellUserMenu.tsx`, `elevatedShellUserMenuStore.ts` and the panel's `claimDynamicPanelAvatarCover()` effect were deleted.
 - `2026-08-25` — **One centered header row:** host titles, caller actions, and

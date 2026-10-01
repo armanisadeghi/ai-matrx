@@ -14,6 +14,14 @@
  *
  * RED before the fix: "a field outside keeps focus" failed — focus moved to
  * the panel's own input.
+ *
+ * Review follow-up (2026-09-30): the rule holds only for a field inside a
+ * KEEP_FOCUS_ATTRIBUTE container (the inline rename the page opened). A panel
+ * she opens with Enter or a hotkey from any other field still takes focus; a
+ * declined first attempt still retries, so a field that goes away a frame
+ * later leaves focus in the panel, not on <body>; a <select> never holds
+ * focus back. RED before the follow-up: the unmarked-field, retry and select
+ * cases.
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -28,7 +36,11 @@ jest.mock("next/dynamic", () => () =>
 );
 
 import { MatrxDynamicPanelHost } from "../MatrxDynamicPanelHost";
-import { isEditableField, mayTakeFocusOnOpen } from "../focusOnOpen";
+import {
+  KEEP_FOCUS_ATTRIBUTE,
+  isEditableField,
+  mayTakeFocusOnOpen,
+} from "../focusOnOpen";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -51,10 +63,18 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-function Page({ open }: { open: boolean }) {
+function Page({ open, field = true }: { open: boolean; field?: boolean }) {
   return (
     <>
-      <input aria-label="Rulebook name" defaultValue="walk23-Recoat Verdict" />
+      {field ? (
+        <h2 {...{ [KEEP_FOCUS_ATTRIBUTE]: "" }}>
+          <input aria-label="Rulebook name" defaultValue="walk23-Recoat Verdict" />
+        </h2>
+      ) : null}
+      <input aria-label="Search" />
+      <select aria-label="Sort" defaultValue="a">
+        <option value="a">A</option>
+      </select>
       <MatrxDynamicPanelHost
         open={open}
         onOpenChange={() => {}}
@@ -81,7 +101,7 @@ const rename = () =>
 const composer = () =>
   document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]');
 
-it("a field outside the opening panel keeps focus", () => {
+it("a marked inline edit outside the opening panel keeps focus", () => {
   act(() => root.render(<Page open={false} />));
   rename().focus();
   expect(document.activeElement).toBe(rename());
@@ -91,6 +111,43 @@ it("a field outside the opening panel keeps focus", () => {
 
   expect(composer()).not.toBeNull();
   expect(document.activeElement).toBe(rename());
+});
+
+it("a panel opened from an ordinary field (Enter, a hotkey) takes focus", () => {
+  act(() => root.render(<Page open={false} />));
+  document.querySelector<HTMLInputElement>('input[aria-label="Search"]')!.focus();
+
+  act(() => root.render(<Page open />));
+  flushFrames();
+
+  expect(document.activeElement).toBe(composer());
+});
+
+it("a declined first attempt still retries, so a field gone a frame later leaves focus in the panel", () => {
+  act(() => root.render(<Page open={false} />));
+  rename().focus();
+
+  act(() => root.render(<Page open />));
+  // Portal rAF, then the first focus attempt (declined: she is in the field).
+  act(() => {
+    jest.advanceTimersByTime(40);
+  });
+  expect(document.activeElement).toBe(rename());
+  // The field commits and unmounts before the 120ms retry.
+  act(() => root.render(<Page open field={false} />));
+  flushFrames();
+
+  expect(document.activeElement).toBe(composer());
+});
+
+it("a <select> never holds focus back", () => {
+  act(() => root.render(<Page open={false} />));
+  document.querySelector<HTMLSelectElement>('select[aria-label="Sort"]')!.focus();
+
+  act(() => root.render(<Page open />));
+  flushFrames();
+
+  expect(document.activeElement).toBe(composer());
 });
 
 it("with nothing being typed in, the panel still takes focus on open", () => {
@@ -104,7 +161,8 @@ it("with nothing being typed in, the panel still takes focus on open", () => {
 });
 
 describe("focusOnOpen rule", () => {
-  it("treats text fields as editable and buttons as not", () => {
+  it("treats text fields as editable and buttons and selects as not", () => {
+    expect(isEditableField(document.createElement("select"))).toBe(false);
     const button = document.createElement("button");
     const text = document.createElement("input");
     const checkbox = document.createElement("input");
@@ -117,18 +175,26 @@ describe("focusOnOpen rule", () => {
     expect(isEditableField(readOnly)).toBe(false);
   });
 
-  it("allows focus from a field already inside the window", () => {
+  it("holds focus back only for a marked field outside the window", () => {
     const win = document.createElement("div");
     const inside = document.createElement("input");
     win.appendChild(inside);
     document.body.appendChild(win);
     inside.focus();
     expect(mayTakeFocusOnOpen(win)).toBe(true);
-    const outside = document.createElement("input");
-    document.body.appendChild(outside);
-    outside.focus();
+    const plain = document.createElement("input");
+    document.body.appendChild(plain);
+    plain.focus();
+    expect(mayTakeFocusOnOpen(win)).toBe(true);
+    const mark = document.createElement("div");
+    mark.setAttribute(KEEP_FOCUS_ATTRIBUTE, "");
+    const marked = document.createElement("input");
+    mark.appendChild(marked);
+    document.body.appendChild(mark);
+    marked.focus();
     expect(mayTakeFocusOnOpen(win)).toBe(false);
     win.remove();
-    outside.remove();
+    plain.remove();
+    mark.remove();
   });
 });

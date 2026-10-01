@@ -193,10 +193,12 @@ export function MatrxDynamicPanelHost({
       // A dynamically loaded panel body may appear a frame after the shell.
       // Retry only while focus is still on the opener/shell; never steal it
       // back after the user has already moved into another panel control.
-      // ...and never out of a field she is typing in outside the panel
+      // ...and never out of a marked inline edit outside the panel
       // (focusOnOpen.ts — cold walk 23: the interview panel closed the
       // title's inline rename on `?interview=1&rename=1`).
-      if (!mayTakeFocusOnOpen(panel)) return true;
+      // Declining returns false so the frame/120ms retries still run: if that
+      // field goes away meanwhile, focus lands in the panel, not on <body>.
+      if (!mayTakeFocusOnOpen(panel)) return false;
       const active = document.activeElement;
       if (
         active !== document.body &&
