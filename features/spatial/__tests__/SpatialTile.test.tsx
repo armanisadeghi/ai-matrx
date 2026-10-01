@@ -72,6 +72,14 @@ describe("SpatialTile focus round trip", () => {
   });
 });
 
+/** A mouse pointer event (jsdom has no PointerEvent): pointerId 1, type "mouse". */
+function mouse(type: string, init: { clientX: number; clientY: number; buttons: number }): MouseEvent {
+  const ev = new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, ...init });
+  Object.defineProperty(ev, "pointerId", { value: 1 });
+  Object.defineProperty(ev, "pointerType", { value: "mouse" });
+  return ev;
+}
+
 function must<E extends Element>(el: E | null): E {
   if (!el) throw new Error("element not rendered");
   return el;
@@ -119,6 +127,81 @@ describe("SpatialTile frame gestures", () => {
   afterEach(() => {
     act(() => root.unmount());
     container.remove();
+  });
+
+  /**
+   * THE STUCK GESTURE: a resize (or drag) that ends only when one pointerup
+   * reaches one element stayed open forever when that release was missed —
+   * the page-wide shield stayed up, the cursor stayed a resize arrow and the
+   * board took no more clicks (Arman, 2026-10-01). Every way a press can end
+   * must end it.
+   */
+  it("a resize whose release is never delivered ends on the next move with the button up", () => {
+    const store = onScreenStore({ x: 0, y: 0, z: 1 });
+    const onResize = jest.fn();
+    act(() => root.render(<ResizeHarness store={store} onResize={onResize} />));
+    act(() => store.recomputeCoarse());
+    const se = must(container.querySelector<HTMLElement>("[data-spatial-resize='se']"));
+    act(() => {
+      se.dispatchEvent(mouse("pointerdown", { clientX: 500, clientY: 400, buttons: 1 }));
+      se.dispatchEvent(mouse("pointermove", { clientX: 520, clientY: 420, buttons: 1 }));
+    });
+    expect(document.querySelector("[data-spatial-resize-shield]")).not.toBeNull();
+    expect(onResize).toHaveBeenLastCalledWith("tile", { x: 100, y: 100, w: 420, h: 320 });
+    // The release went somewhere we never heard; the next move reports no button.
+    act(() => {
+      window.dispatchEvent(mouse("pointermove", { clientX: 600, clientY: 500, buttons: 0 }));
+    });
+    expect(document.querySelector("[data-spatial-resize-shield]")).toBeNull();
+    expect(onResize).toHaveBeenCalledTimes(1); // the stray move did not resize
+  });
+
+  it("a resize ends when the window loses focus, and Escape puts the tile back", () => {
+    const store = onScreenStore({ x: 0, y: 0, z: 1 });
+    const onResize = jest.fn();
+    act(() => root.render(<ResizeHarness store={store} onResize={onResize} />));
+    act(() => store.recomputeCoarse());
+    const e = must(container.querySelector<HTMLElement>("[data-spatial-resize='e']"));
+    act(() => {
+      e.dispatchEvent(mouse("pointerdown", { clientX: 500, clientY: 200, buttons: 1 }));
+      window.dispatchEvent(new Event("blur"));
+    });
+    expect(document.querySelector("[data-spatial-resize-shield]")).toBeNull();
+
+    act(() => {
+      e.dispatchEvent(mouse("pointerdown", { clientX: 500, clientY: 200, buttons: 1 }));
+      window.dispatchEvent(mouse("pointermove", { clientX: 560, clientY: 200, buttons: 1 }));
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    expect(document.querySelector("[data-spatial-resize-shield]")).toBeNull();
+    expect(onResize).toHaveBeenLastCalledWith("tile", { x: 100, y: 100, w: 400, h: 300 });
+  });
+
+  it("a tile drag whose release is never delivered stops following the cursor", () => {
+    const store = onScreenStore({ x: 0, y: 0, z: 1 });
+    const onMove = jest.fn();
+    act(() =>
+      root.render(
+        <SpatialStoreContext.Provider value={store}>
+          <FocusHostContext.Provider value={null}>
+            <SpatialTile id="tile" rect={{ x: 100, y: 100, w: 400, h: 300 }} title="T" onMove={onMove} onResize={null}>
+              {() => <div>Body</div>}
+            </SpatialTile>
+          </FocusHostContext.Provider>
+        </SpatialStoreContext.Provider>,
+      ),
+    );
+    const header = must(container.querySelector<HTMLElement>("[data-spatial-card] > div"));
+    act(() => {
+      header.dispatchEvent(mouse("pointerdown", { clientX: 150, clientY: 110, buttons: 1 }));
+      window.dispatchEvent(mouse("pointermove", { clientX: 160, clientY: 120, buttons: 1 }));
+    });
+    expect(onMove).toHaveBeenCalledTimes(1);
+    act(() => {
+      window.dispatchEvent(mouse("pointermove", { clientX: 300, clientY: 300, buttons: 0 }));
+      window.dispatchEvent(mouse("pointermove", { clientX: 320, clientY: 320, buttons: 0 }));
+    });
+    expect(onMove).toHaveBeenCalledTimes(1);
   });
 
   it("has eight resize handles, and a left-edge drag moves the origin (scale-compensated)", () => {

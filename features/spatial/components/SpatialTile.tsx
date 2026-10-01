@@ -54,6 +54,7 @@ import {
   VelocityTracker,
   detectThrow,
 } from "../engine/throw";
+import { startPointerGesture } from "../engine/pointer-gesture";
 import { type StatusFrom, type TileStatus, useTileStatus } from "../streams/useSourceStatus";
 
 const IDLE_STATUS: StatusFrom = { kind: "static", value: { status: "idle", progress: null } };
@@ -195,13 +196,38 @@ export function SpatialTile({
     const tile = tileRef.current;
     if (!tile) return;
     const tracker = new VelocityTracker();
-    let start: { px: number; py: number; x: number; y: number } | null = null;
+    // The drag in flight, if any (`startPointerGesture` ends it on every way a
+    // press can end, so a missed release never leaves a tile glued to the cursor).
+    let gesture: (() => void) | null = null;
     let shownHint: ThrowAction = "none";
     const showHint = (next: ThrowAction) => {
       if (next !== shownHint) {
         shownHint = next;
         setHint(next);
       }
+    };
+
+    const release = (from: { px: number; py: number; x: number; y: number }, e: PointerEvent) => {
+      tracker.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
+      const dir = detectThrow(tracker.velocity(), { dx: e.clientX - from.px, dy: e.clientY - from.py });
+      const act = dir ? throwActionsRef.current[dir] : "none";
+      if (!dir || act === "none" || !onThrowRef.current) return;
+      // Fly off in the throw direction, return to where the drag began, then
+      // let the host act (it may remove the tile, or keep it).
+      onMoveRef.current?.(id, from.x, from.y);
+      const z = store.getCamera().z;
+      const d = FLY_DISTANCE_PX / z;
+      const [tx, ty] = { left: [-d, 0], right: [d, 0], up: [0, -d], down: [0, d] }[dir];
+      const done = () => onThrowRef.current?.(id, dir);
+      if (typeof tile.animate === "function") {
+        tile.animate(
+          [
+            { transform: "translate(0, 0)", opacity: 1 },
+            { transform: `translate(${tx}px, ${ty}px)`, opacity: 0 },
+          ],
+          { duration: FLY_MS, easing: "cubic-bezier(0.4, 0, 1, 1)" },
+        ).onfinish = done;
+      } else done();
     };
 
     const down = (e: PointerEvent) => {
@@ -225,59 +251,31 @@ export function SpatialTile({
       store.select(id);
       if (press === "select-native") return; // a finger scrolls the content
       if (!canMove) return;
-      start = { px: e.clientX, py: e.clientY, x: rectRef.current.x, y: rectRef.current.y };
+      const from = { px: e.clientX, py: e.clientY, x: rectRef.current.x, y: rectRef.current.y };
       tracker.reset({ x: e.clientX, y: e.clientY, t: e.timeStamp });
-      tile.setPointerCapture(e.pointerId);
       e.preventDefault(); // a move never starts a text selection
       e.stopPropagation();
-    };
-    const move = (e: PointerEvent) => {
-      if (!start) return;
-      tracker.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
-      const z = store.getCamera().z;
-      onMoveRef.current?.(id, start.x + (e.clientX - start.px) / z, start.y + (e.clientY - start.py) / z);
-      const dir = detectThrow(tracker.velocity(), { dx: e.clientX - start.px, dy: e.clientY - start.py });
-      showHint(dir && onThrowRef.current ? throwActionsRef.current[dir] : "none");
-    };
-    const up = (e: PointerEvent) => {
-      if (!start) return;
-      const from = start;
-      start = null;
-      tracker.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
-      const dir = detectThrow(tracker.velocity(), { dx: e.clientX - from.px, dy: e.clientY - from.py });
-      showHint("none");
-      const act = dir ? throwActionsRef.current[dir] : "none";
-      if (!dir || act === "none" || !onThrowRef.current) return;
-      // Fly off in the throw direction, return to where the drag began, then
-      // let the host act (it may remove the tile, or keep it).
-      onMoveRef.current?.(id, from.x, from.y);
-      const z = store.getCamera().z;
-      const d = FLY_DISTANCE_PX / z;
-      const [tx, ty] = { left: [-d, 0], right: [d, 0], up: [0, -d], down: [0, d] }[dir];
-      const done = () => onThrowRef.current?.(id, dir);
-      if (typeof tile.animate === "function") {
-        tile.animate(
-          [
-            { transform: "translate(0, 0)", opacity: 1 },
-            { transform: `translate(${tx}px, ${ty}px)`, opacity: 0 },
-          ],
-          { duration: FLY_MS, easing: "cubic-bezier(0.4, 0, 1, 1)" },
-        ).onfinish = done;
-      } else done();
-    };
-    const cancel = () => {
-      start = null;
-      showHint("none");
+      gesture?.();
+      gesture = startPointerGesture(e, tile, {
+        onMove: (m) => {
+          tracker.push({ x: m.clientX, y: m.clientY, t: m.timeStamp });
+          const z = store.getCamera().z;
+          onMoveRef.current?.(id, from.x + (m.clientX - from.px) / z, from.y + (m.clientY - from.py) / z);
+          const dir = detectThrow(tracker.velocity(), { dx: m.clientX - from.px, dy: m.clientY - from.py });
+          showHint(dir && onThrowRef.current ? throwActionsRef.current[dir] : "none");
+        },
+        onEnd: (how, end) => {
+          gesture = null;
+          showHint("none");
+          if (how === "escape") onMoveRef.current?.(id, from.x, from.y);
+          else if (how === "up" && end) release(from, end);
+        },
+      });
     };
     tile.addEventListener("pointerdown", down, true);
-    tile.addEventListener("pointermove", move);
-    tile.addEventListener("pointerup", up);
-    tile.addEventListener("pointercancel", cancel);
     return () => {
       tile.removeEventListener("pointerdown", down, true);
-      tile.removeEventListener("pointermove", move);
-      tile.removeEventListener("pointerup", up);
-      tile.removeEventListener("pointercancel", cancel);
+      gesture?.();
     };
   // Focus moves the card through a portal, replacing the header element on
   // both legs of the round trip. Rebind when either portal state changes so
@@ -451,34 +449,43 @@ function ResizeHandles({
 }) {
   const store = useSpatialStore();
   const [active, setActive] = useState<ResizeHandle | null>(null);
-  const drag = useRef<{ handle: ResizeHandle; px: number; py: number; start: Rect; pointer: number } | null>(null);
+  // The gesture lives outside React (`startPointerGesture`): it ends on every
+  // way a press can end, so the page-wide shield can never be left up.
+  const gesture = useRef<(() => void) | null>(null);
+  const onResizeRef = useRef(onResize);
+  const rectRef = useRef(rect);
+  useEffect(() => {
+    onResizeRef.current = onResize;
+    rectRef.current = rect;
+  });
+  // Unmounting mid-resize (the tile removed, focused, culled) ends it.
+  useEffect(() => () => gesture.current?.(), []);
 
   const begin = (handle: ResizeHandle) => (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { handle, px: e.clientX, py: e.clientY, start: rect, pointer: e.pointerId };
+    gesture.current?.();
+    const start = rectRef.current;
+    const px = e.clientX;
+    const py = e.clientY;
     store.select(id);
     setActive(handle);
-  };
-  const move = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = drag.current;
-    if (!d || e.pointerId !== d.pointer) return;
-    e.stopPropagation();
-    onResize(
-      id,
-      resizeRect(d.start, d.handle, e.clientX - d.px, e.clientY - d.py, {
-        z: store.getCamera().z,
-        keepAspect: e.shiftKey,
-      }),
-    );
-  };
-  const end = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!drag.current || e.pointerId !== drag.current.pointer) return;
-    drag.current = null;
-    setActive(null);
-    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    gesture.current = startPointerGesture(e.nativeEvent, e.currentTarget, {
+      onMove: (m) =>
+        onResizeRef.current(
+          id,
+          resizeRect(start, handle, m.clientX - px, m.clientY - py, {
+            z: store.getCamera().z,
+            keepAspect: m.shiftKey,
+          }),
+        ),
+      onEnd: (how) => {
+        gesture.current = null;
+        setActive(null);
+        if (how === "escape") onResizeRef.current(id, start);
+      },
+    });
   };
 
   const edge = `calc(${RESIZE_HANDLE_SCREEN_PX}px / var(--spatial-z, 1))`;
@@ -505,9 +512,6 @@ function ResizeHandles({
           data-spatial-resize={h}
           aria-hidden
           onPointerDown={begin(h)}
-          onPointerMove={move}
-          onPointerUp={end}
-          onPointerCancel={end}
           className="absolute z-10 flex max-w-none touch-none items-center justify-center"
           style={{ ...place[h], cursor: RESIZE_CURSOR[h] }}
         >

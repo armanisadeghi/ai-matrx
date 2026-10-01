@@ -9,10 +9,11 @@
  * until you choose another tool (FigJam).
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { screenToWorld } from "../engine/camera";
 import { useActiveTool, useSpatialStore } from "../engine/react";
 import { isCreationTool, type SpatialTool } from "../engine/tools";
+import { startPointerGesture } from "../engine/pointer-gesture";
 
 export type Creation =
   | { tool: "note" | "text"; at: { x: number; y: number } }
@@ -32,11 +33,15 @@ export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void })
   const store = useSpatialStore();
   const tool = useActiveTool();
   const [drag, setDrag] = useState<{ points: { x: number; y: number }[] } | null>(null);
+  // The drawing in flight; it ends on every way a press can end
+  // (`startPointerGesture`), so a missed release never leaves a shape half-drawn.
+  const gesture = useRef<(() => void) | null>(null);
+  useEffect(() => () => gesture.current?.(), []);
 
   if (!isCreationTool(tool)) return null;
 
-  const local = (e: React.PointerEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
+  const localTo = (el: Element, e: { clientX: number; clientY: number }) => {
+    const r = el.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
   const world = (p: { x: number; y: number }) => screenToWorld(store.getCamera(), p.x, p.y);
@@ -80,19 +85,24 @@ export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void })
       style={{ cursor: tool === "text" ? "text" : "crosshair" }}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
-        e.currentTarget.setPointerCapture(e.pointerId);
-        setDrag({ points: [local(e)] });
-      }}
-      onPointerMove={(e) => {
-        if (!drag) return;
-        const p = local(e);
-        setDrag((d) => (d ? { points: tool === "pen" ? [...d.points, p] : [d.points[0], p] } : d));
-      }}
-      onPointerUp={(e) => {
-        if (!drag) return;
-        const points = tool === "pen" ? [...drag.points, local(e)] : [drag.points[0], local(e)];
-        setDrag(null);
-        finish(points);
+        const layer = e.currentTarget;
+        let points = [localTo(layer, e)];
+        setDrag({ points });
+        gesture.current?.();
+        gesture.current = startPointerGesture(e.nativeEvent, layer, {
+          onMove: (m) => {
+            const p = localTo(layer, m);
+            points = tool === "pen" ? [...points, p] : [points[0], p];
+            setDrag({ points });
+          },
+          onEnd: (how, end) => {
+            gesture.current = null;
+            setDrag(null);
+            if (how === "escape") return; // Escape drops the drawing
+            if (end) points = tool === "pen" ? [...points, localTo(layer, end)] : [points[0], localTo(layer, end)];
+            finish(points);
+          },
+        });
       }}
     >
       {drag && <Preview tool={tool} points={drag.points} />}

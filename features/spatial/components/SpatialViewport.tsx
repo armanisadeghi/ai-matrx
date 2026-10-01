@@ -403,6 +403,12 @@ export function SpatialViewport({
     const onMove = (e: PointerEvent) => {
       const prev = pointers.get(e.pointerId);
       if (!prev) return;
+      // A mouse whose button is up was released somewhere we never heard
+      // (over an iframe, outside the window): end the press here, never pan on.
+      if (e.pointerType === "mouse" && e.buttons === 0) {
+        onUp(e);
+        return;
+      }
       const next = { x: e.clientX, y: e.clientY };
       pointers.set(e.pointerId, next);
       if (pointers.size === 2) {
@@ -427,10 +433,21 @@ export function SpatialViewport({
       }
     };
 
+    // The window losing focus mid-press ends every press (its release goes elsewhere).
+    const onBlur = () => {
+      pointers.clear();
+      pinchDist = 0;
+      if (panning) {
+        panning = false;
+        root.style.cursor = spaceDown ? "grab" : toolCursor(store.getTool());
+      }
+    };
+
     root.addEventListener("pointerdown", onDown, true);
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
+    window.addEventListener("blur", onBlur);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
     return () => {
@@ -438,6 +455,7 @@ export function SpatialViewport({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("blur", onBlur);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };

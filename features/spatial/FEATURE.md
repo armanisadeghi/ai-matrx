@@ -48,6 +48,12 @@ stale text. By construction a batched tile renders once per interval instead of 
   `useRetainRequestForViewer(requestId, …)` (LIVE-RUN-RETENTION.md).
 - **No per-frame React.** The camera never goes through React state; only coarse channels do.
   `will-change: transform` is set only while the camera moves (permanently on = blurry text).
+- **Every pointer gesture goes through `startPointerGesture` (`engine/pointer-gesture.ts`).** A
+  resize, a tile drag or a drawing ends on pointerup, pointercancel, lost capture, window blur, the
+  page hidden, Escape (puts it back), or the first move that reports the button up. A gesture that
+  ended only on one `pointerup` reaching one element stayed open when that release was missed: the
+  resize shield stayed over the page with a resize cursor and the board took no clicks (Arman,
+  2026-10-01). The board pan heals the same way. `__tests__/SpatialTile.test.tsx` holds it.
 - **The board model is never host React state.** It lives in a `BoardStore` (`board/board-store.ts`)
   outside React; a tile reads its own record (`useBoardTile`), a host reads structure only
   (`useBoardLayout` — tile ids, shelf, frames, shapes, connections, undo-ability). A drag or resize
@@ -301,6 +307,10 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-10-01 — No gesture can get stuck: `startPointerGesture` ends a resize, tile drag or drawing
+  on every way a press can end (a missed release heals on the next move); Escape puts a resize or
+  drag back. The board pan ends on a missed release or window blur too.
 
 - 2026-09-30 — The board model moved out of React into `BoardStore` with per-tile, layout and
   whole-board subscriptions; `/board` renders tiles by id (`useBoardTile`), the body sits behind a
