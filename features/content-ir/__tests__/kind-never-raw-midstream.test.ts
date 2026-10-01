@@ -89,7 +89,7 @@ function streamCharByChar(stream: string, requestId: string): Upsert[] {
 }
 
 /** BlockRenderer's question, asked through the ONE shared answer. */
-const rendersRawJson = drawsRawJsonCard;
+const rendersRawJson = (block: RenderBlockPayload) => drawsRawJsonCard(block);
 
 /** Stream one character at a time, FINALIZE, return the last frame per block. */
 function finalBlocks(stream: string, requestId: string): RenderBlockPayload[] {

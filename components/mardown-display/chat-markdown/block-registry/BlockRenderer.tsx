@@ -314,7 +314,9 @@ function unparsedKindPendingEnvelope(block: {
 export type BlockRenderGate =
   | {
       kind: "provisional";
-      provisional: NonNullable<ReturnType<typeof resolveProvisionalKindRender>>;
+      provisional: NonNullable<
+        ReturnType<typeof resolveProvisionalKindRender<RenderBlock>>
+      >;
     }
   | { kind: "loader"; envelope: CanonicalBlockIR }
   | null;
