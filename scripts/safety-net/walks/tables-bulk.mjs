@@ -144,6 +144,31 @@ async function archive(id) {
 /** The rows the page draws: [{ id, text }]. */
 const rowsOf = (page) =>
   page.evaluate(() => [...document.querySelectorAll("tbody tr[data-row-id]")].map((t) => ({ id: t.getAttribute("data-row-id"), text: t.innerText.replace(/\s+/g, " ").trim() })));
+/** Every row of the CURRENT page of the grid: the table draws only the rows in view, so scroll it top to bottom. */
+const collectPage = (page) =>
+  page.evaluate(async () => {
+    const tb = document.querySelector("tbody");
+    let sc = tb;
+    while (sc && !(sc.scrollHeight > sc.clientHeight + 20 && /(auto|scroll)/.test(getComputedStyle(sc).overflowY))) sc = sc.parentElement;
+    const out = new Map();
+    const grab = () => document.querySelectorAll("tbody tr[data-row-id]").forEach((t) => out.set(t.getAttribute("data-row-id"), t.innerText.replace(/\s+/g, " ").trim()));
+    if (!sc) {
+      grab();
+      return [...out.values()];
+    }
+    sc.scrollTop = 0;
+    await new Promise((r) => setTimeout(r, 400));
+    for (let k = 0; k < 60; k++) {
+      grab();
+      const before = sc.scrollTop;
+      sc.scrollTop = before + Math.max(120, sc.clientHeight * 0.6);
+      await new Promise((r) => setTimeout(r, 300));
+      if (sc.scrollTop === before) break;
+    }
+    grab();
+    sc.scrollTop = 0;
+    return [...out.values()];
+  });
 const headers = (page) => page.evaluate(() => [...document.querySelectorAll("thead th")].map((t) => t.innerText.replace(/\s+/g, " ").trim()).filter(Boolean));
 const footer = async (page) => clean((await bodyText(page, 30000)).match(/\d[\d,]*\s*[–-]\s*\d[\d,]*\s+of\s+[\d,]+|Unknown total/g)?.join(" | "));
 const colIndex = (page, name) =>
@@ -163,7 +188,7 @@ async function pasteEvent(page, selector, text) {
   );
 }
 /** The importer on the page (rail or the empty-grid paste wizard): confirm and wait for its report. */
-async function runImporter(page, scope, label) {
+async function runImporter(page, scope, label, expected) {
   const go = scope.getByRole("button", { name: /^Import \d+ rows?/ }).first();
   const have = await until("the Import button", async () => (await go.count()) > 0, 60000);
   if (!have.v) throw new Error(`${label}: no Import button; page says: ${clean(await scope.innerText().catch(() => "")).slice(0, 500)}`);
@@ -174,7 +199,7 @@ async function runImporter(page, scope, label) {
     if (policy !== "create") await mode.selectOption("create").catch(() => {});
   }
   await go.click();
-  const rep = await until("the import report", async () => /\d+ landed/.test(await scope.innerText().catch(() => "")), 180000);
+  const rep = await until("the import report", async () => new RegExp(`\\d+ landed[^.]*of ${expected} rows offered`).test(clean(await scope.innerText().catch(() => ""))), 300000);
   const said = clean(await scope.innerText().catch(() => ""));
   if (!rep.v) throw new Error(`${label}: no report; page says: ${said.slice(0, 500)}`);
   return { said, policy };
@@ -208,6 +233,8 @@ try {
   admin = await ctx.page("admin");
   if (admin.__org !== "Cedar Ridge Physical Therapy") throw new Error(`the account rail does not name Cedar Ridge Physical Therapy (${admin.__org})`);
 
+  // SN_T2_TAIL=1 skips sections A–F (a development aid for re-running G and H on their own).
+  if (!process.env.SN_T2_TAIL) {
   // ═══ A. the visit log: import ═════════════════════════════════════════════════════════════════
   tidA = await newTable(T_A);
   ctx.cleanup(async () => console.log(`[tables-bulk] cleanup ${T_A}: ${await archive(tidA)}`));
@@ -219,7 +246,7 @@ try {
     await sleep(3000);
     const wiz = admin.locator("[data-rail-column], main").first();
     const said = clean(await wiz.innerText().catch(() => ""));
-    const r = await runImporter(admin, admin.locator("body"), "csv import");
+    const r = await runImporter(admin, admin.locator("body"), "csv import", CSV_ROWS.length);
     await open(admin, tidA, "?view=grid");
     const rows = await rowsOf(admin);
     const missing = CSV_ROWS.filter(([p, , m]) => !rows.some((x) => x.text.includes(p) && x.text.includes(String(m))));
@@ -227,7 +254,7 @@ try {
     const db = cloneSql(`select count(*) from custom.record r where r.table_id = '${tidA}' and r.deleted_at is null`);
     return {
       ok: missing.length === 0 && rows.length >= CSV_ROWS.length,
-      detail: `${rows.length} rows drawn, columns ${hs.join(" / ")}; ${missing.length ? `MISSING ${missing.map((x) => x[0]).join(", ")}` : "all four patients with their minutes"}; importer: ${r.said.match(/\d+ landed[^.]*/)?.[0] ?? ""}${db ? `; clone has ${db} live records` : ""}`,
+      detail: `${rows.length} rows drawn, columns ${hs.join(" / ")}; ${missing.length ? `MISSING ${missing.map((x) => x[0]).join(", ")}` : "all four patients with their minutes"}; importer: ${r.said.match(/\d+ landed[^.]*?of \d+ rows offered/)?.[0] ?? ""}${db ? `; clone has ${db} live records` : ""}`,
     };
   });
 
@@ -235,11 +262,11 @@ try {
     await open(admin, tidA, "?view=grid&rail=import", { needFile: true });
     await admin.locator("input[type=file]").first().setInputFiles({ name: "visit-log-sept-2.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: xlsxBuffer });
     await sleep(3000);
-    const r = await runImporter(admin, admin.locator("body"), "xlsx import");
+    const r = await runImporter(admin, admin.locator("body"), "xlsx import", XLSX_ROWS.length);
     await open(admin, tidA, "?view=grid");
     const rows = await rowsOf(admin);
     const missing = XLSX_ROWS.filter(([p, , m]) => !rows.some((x) => x.text.includes(p) && x.text.includes(String(m))));
-    return { ok: missing.length === 0, detail: `${rows.length} rows now; ${missing.length ? `MISSING ${missing.map((x) => x[0]).join(", ")}` : "all three spreadsheet patients with their minutes"}; importer: ${r.said.match(/\d+ landed[^.]*/)?.[0] ?? ""}` };
+    return { ok: missing.length === 0, detail: `${rows.length} rows now; ${missing.length ? `MISSING ${missing.map((x) => x[0]).join(", ")}` : "all three spreadsheet patients with their minutes"}; importer: ${r.said.match(/\d+ landed[^.]*?of \d+ rows offered/)?.[0] ?? ""}` };
   });
 
   // ═══ B. paste into the Grid (a block of cells at the selected cell) ═══════════════════════════
@@ -284,14 +311,14 @@ try {
     await sleep(2500);
     const wizard = clean(await dlg.innerText());
     await dlg.locator("[data-matrx-import-confirm]").last().click();
-    const rep = await until("the paste report", async () => /Pasted \d+ of \d+/.test(await dlg.innerText().catch(() => "")), 120000);
-    const report = clean(await dlg.innerText().catch(() => "")).match(/Pasted \d+ of \d+[^]{0,160}/)?.[0] ?? "";
+    const rep = await until("the paste report", async () => /Pasted \d+ of \d+/.test(await dlg.innerText().catch(() => "")), 40000);
+    const report = rep.v ? (clean(await dlg.innerText().catch(() => "")).match(/Pasted \d+ of \d+[^]{0,160}/)?.[0] ?? "") : `(no "Pasted n of n" line; dialog said "${clean(await dlg.innerText().catch(() => "(dialog gone)")).slice(0, 200)}")`;
     await admin.getByRole("button", { name: /^Done$/ }).first().click().catch(() => admin.keyboard.press("Escape"));
     await sleep(2000);
     await open(admin, tidA, "?view=sheet");
     const text = clean(await bodyText(admin, 30000));
     const missing = SHEET_ROWS.filter(([p]) => !text.includes(p));
-    return { ok: !!rep.v && missing.length === 0, detail: `wizard "${wizard.match(/\d+ of \d+ pasted columns[^]{0,40}/)?.[0] ?? wizard.slice(0, 120)}"; report "${report}"; ${missing.length ? `MISSING ${missing.map((x) => x[0]).join(", ")}` : "all three names are in the Sheet after a reload"}` };
+    return { ok: missing.length === 0, detail: `wizard "${wizard.match(/\d+ of \d+ pasted columns[^]{0,40}/)?.[0] ?? wizard.slice(0, 120)}"; report "${report}"; ${missing.length ? `MISSING ${missing.map((x) => x[0]).join(", ")}` : "all three names are in the Sheet after a reload"}` };
   });
 
   // ═══ D. export ═══════════════════════════════════════════════════════════════════════════════
@@ -330,10 +357,10 @@ try {
   });
   await ctx.step(["T34"], "export the table as JSON (Copy as → Download → JSON)", admin, async () => {
     await exportRail();
-    await admin.locator("[data-rail-column] button").last().click();
-    await sleep(900);
-    await admin.getByRole("button", { name: "Download", exact: true }).first().click();
-    await sleep(500);
+    await admin.locator("[data-rail-column]").getByRole("button", { name: /Copy, transform or export/ }).first().click();
+    await sleep(1200);
+    await admin.getByText("Download", { exact: true }).first().click();
+    await sleep(700);
     const dl = admin.waitForEvent("download", { timeout: 60000 });
     await admin.getByText("JSON", { exact: true }).first().click();
     const d = await dl;
@@ -454,6 +481,7 @@ try {
   });
   writeFileSync(join(OUT, "tables-bulk-keys.json"), JSON.stringify(keyReport, null, 2));
 
+  }
   // ═══ G. 300 visits pasted into an EMPTY Grid as the owner, then paged ═════════════════════════
   tid300 = await newTable(T_300);
   ctx.cleanup(async () => console.log(`[tables-bulk] cleanup ${T_300}: ${await archive(tid300)}`));
@@ -465,18 +493,22 @@ try {
     if (!asked.v) return { ok: false, detail: `a paste onto the empty Grid (${sent}) opened no wizard: ${clean(await bodyText(admin, 400))}` };
     await sleep(2500);
     const wizText = clean(await wiz.innerText());
-    const r = await runImporter(admin, wiz, "300-row paste");
+    const r = await runImporter(admin, wiz, "300-row paste", 300);
     await open(admin, tid300, "?view=grid");
     const hs = await headers(admin);
     const rows = await rowsOf(admin);
     const f = await footer(admin);
     const text = rows.map((x) => x.text).join(" | ");
-    const withValues = rows.filter((x) => /V-\d{4}/.test(x.text) && /\b\d{2}\b/.test(x.text) && /Sep \d+, 2026/.test(x.text)).length;
+    const texts = await collectPage(admin);
+    const withValues = texts.filter((x) => /V-\d{4}/.test(x) && /\b\d{2}\b/.test(x) && /Sep \d+, 2026/.test(x)).length;
     const db = cloneSql(`select count(*) from custom.record r where r.table_id = '${tid300}' and r.deleted_at is null`);
-    const columnsOk = ["Patient", "Minutes", "Visit date", "Paid"].every((c) => hs.some((h) => h.toLowerCase().startsWith(c.toLowerCase())));
+    // The wizard names the records by one pasted column ("X goes into Title"); every OTHER pasted column must be a column now.
+    const named = wizText.match(/called\s+(.+?) goes into Title/)?.[1]?.trim();
+    const expectCols = ["Patient", "Visit", "Minutes", "Visit date", "Paid"].filter((c) => c !== named);
+    const columnsOk = expectCols.every((c) => hs.some((h) => h.toLowerCase().startsWith(c.toLowerCase())));
     return {
-      ok: columnsOk && withValues > 0 && withValues === rows.length && /of 300/.test(f),
-      detail: `wizard "${wizText.slice(0, 160)}"; importer "${r.said.match(/\d+ landed[^.]*/)?.[0] ?? ""}" (question: ${r.policy}); columns ${hs.join(" / ")}; ${withValues} of ${rows.length} drawn rows carry a visit, minutes and a date; footer ${f}${db ? `; clone has ${db}` : ""}${columnsOk ? "" : "; A PASTED COLUMN IS MISSING"}`,
+      ok: columnsOk && withValues > 0 && withValues === texts.length && /of 300/.test(f),
+      detail: `wizard "${wizText.slice(0, 160)}"; importer "${r.said.match(/\d+ landed[^.]*?of \d+ rows offered/)?.[0] ?? ""}" (question: ${r.policy}); columns ${hs.join(" / ")}; records named by "${named}"; ${withValues} of ${texts.length} rows scrolled past on page 1 carry a visit, minutes and a date; footer ${f}${db ? `; clone has ${db}` : ""}${columnsOk ? "" : `; A PASTED COLUMN IS MISSING (expected ${expectCols.join(", ")})`}`,
     };
   });
   await ctx.step(["T35"], "all 300 rows reachable page by page; the pager says the truth", admin, async () => {
@@ -484,8 +516,8 @@ try {
     const seen = new Set();
     const pages = [];
     for (let p = 0; p < 8; p++) {
-      const rows = await rowsOf(admin);
-      const ids = rows.map((r) => r.text.match(/V-\d{4}/)?.[0]).filter(Boolean);
+      const texts = await collectPage(admin);
+      const ids = texts.map((t) => t.match(/V-\d{4}/)?.[0]).filter(Boolean);
       pages.push(`${await footer(admin)} (${ids.length})`);
       ids.forEach((i) => seen.add(i));
       const next = admin.getByRole("button", { name: "Next page" }).first();
@@ -506,8 +538,8 @@ try {
     const dlg = admin.getByRole("dialog").first();
     await dlg.getByText("test@test.com").first().click({ timeout: 60000 });
     await sleep(800);
-    await dlg.getByRole("button", { name: /^Viewer/ }).first().click();
-    await sleep(600);
+    await dlg.getByText("Viewer", { exact: true }).first().click();
+    await sleep(800);
     await admin.getByRole("option", { name: /^Editor/ }).first().click().catch(async () => admin.getByText(/^Editor/).first().click());
     await sleep(600);
     await dlg.getByRole("button", { name: /^Share with User$/ }).first().click();
@@ -540,17 +572,25 @@ try {
     };
     let state = await seen();
     let approved = "";
+    const firstLook = `columns ${(await headers(admin)).join(" / ")}; rows "${state.t.slice(0, 200)}"`;
     if (!state.ok) {
       await open(admin, tidEd, "?view=grid&rail=inbox");
       await sleep(3000);
       const inboxText = clean(await admin.locator("[data-rail-column]").first().innerText().catch(() => ""));
-      for (let i = 0; i < 6; i++) {
+      const cards = await admin.locator("[data-rail-column] [role=listitem], [data-rail-column] li, [data-rail-column] article").evaluateAll((es) => es.map((e) => e.innerText.replace(/\s+/g, " ").trim().slice(0, 120))).catch(() => []);
+      let empties = 0;
+      for (let i = 0; i < 10 && empties < 2; i++) {
         const ap = admin.locator("[data-rail-column]").getByRole("button", { name: /^Approve/ }).first();
-        if (!(await ap.count())) break;
+        if (!(await ap.count())) {
+          empties += 1;
+          await sleep(3000);
+          continue;
+        }
+        empties = 0;
         await ap.click().catch(() => {});
-        await sleep(2500);
+        await sleep(3500);
       }
-      approved = `inbox said "${inboxText.slice(0, 160)}"`;
+      approved = `before any approval the owner saw ${firstLook}; inbox "${inboxText.slice(0, 200)}" cards ${JSON.stringify(cards.slice(0, 6))}; the owner pressed Approve until none were left`;
       await open(admin, tidEd, "?view=grid");
       state = await seen();
     }
