@@ -346,7 +346,9 @@ export function scanSource(file, source) {
         const nt = tagName(next);
         const t = directText(next);
         // A line ending in ":" labels what follows (a row of links, a list) — it is not a description.
-        if ((nt === "p" || /Description$/.test(nt ?? "")) && t.length >= 12 && /[a-z]/.test(t) && !/:\s*…?\s*$/.test(t)) {
+        // …nor is an empty state under a heading ("No values yet", "Pick a conversation…").
+        const emptyLine = /^(No |Nothing |None |Not yet |There (are|is) no |Pick |Select |Choose |Start |Add |Create )/.test(t) && t.length <= 140;
+        if ((nt === "p" || /Description$/.test(nt ?? "")) && t.length >= 12 && /[a-z]/.test(t) && !/:\s*…?\s*$/.test(t) && !emptyLine) {
           const dialog = /^(DialogTitle|SheetTitle)$/.test(h);
           if (!dialog) push("page-description", next.openingElement, t, `sentence under <${h}>`);
         }
