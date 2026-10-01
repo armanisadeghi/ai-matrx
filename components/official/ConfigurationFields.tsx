@@ -286,6 +286,26 @@ export interface ConfigurationColumn {
   help?: ReactNode;
 }
 
+/** Rich configuration values get a full-width reading surface below their label. */
+export function ConfigurationValueList({
+  label,
+  entries,
+}: {
+  label: string;
+  entries: readonly { key: string; label: string; value: ReactNode }[];
+}) {
+  return (
+    <dl aria-label={label} className="min-w-0 divide-y divide-border rounded-lg border border-border bg-card text-sm text-foreground">
+      {entries.map((entry) => (
+        <div key={entry.key} className="min-w-0 p-3">
+          <dt className="mb-2 break-words font-semibold">{entry.label}</dt>
+          <dd className="min-w-0 [overflow-wrap:anywhere]">{entry.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 /** Repeated configuration data: table on desktop, labeled records on phones. */
 export function ConfigurationTable({
   label,
