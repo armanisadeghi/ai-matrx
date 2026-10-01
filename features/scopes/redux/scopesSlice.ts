@@ -430,13 +430,24 @@ const scopesSlice = createSlice({
     // whole point: the tree changes rarely, so don't refetch every launch.
     builder.addCase(REHYDRATE_ACTION_TYPE, (state, action: RehydrateAction) => {
       if (action.payload.sliceName !== "scopesTree") return;
-      if (state.treeStatus === "ready" || state.treeStatus === "loading")
-        return;
+      // A tree that already landed is fresher than the saved one.
+      if (state.treeStatus === "ready") return;
       const loaded = action.payload.state as Partial<ScopesState> | undefined;
       const orgs = loaded?.organizations;
       if (!orgs) return;
       const ids = Object.keys(orgs);
       if (ids.length === 0) return;
+      if (state.treeStatus === "loading") {
+        // A fetch is in flight: keep the saved tree until a SUCCESSFUL fetch replaces it
+        // (`treeFetchFulfilled`). Ignoring it here left the slice empty when the held save ran,
+        // so `serialize` wrote `{}` over the saved tree — lost for good if the fetch then failed.
+        // Status stays "loading"; the fetch still owns "ready". A tree already in memory wins.
+        if (state.organizationIds.length > 0) return;
+        state.organizations = { ...orgs, ...state.organizations };
+        state.organizationIds = loaded?.organizationIds ?? ids;
+        state.treeFetchedAt = loaded?.treeFetchedAt ?? null;
+        return;
+      }
       state.organizations = orgs;
       state.organizationIds = loaded?.organizationIds ?? ids;
       state.treeStatus = "ready";
