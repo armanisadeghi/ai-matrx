@@ -395,6 +395,59 @@ class ReleaseWhilePaused(EveryPushPathHonoursThePause):
                             "is not an ancestor of")
         self.assertEqual(self.r.origin_head(), origin)
 
+    def foreign_push_cmd(self):
+        """A shell command that lands an unreviewed commit on origin from another clone."""
+        other = os.path.join(self.r.tmp, "racer")
+        sh(self.r.tmp, "git", "clone", "-q", self.r.origin, other)
+        for c in (["config", "user.email", "o@o"], ["config", "user.name", "o"]):
+            sh(other, "git", *c)
+        return ("cd '%s' && echo 'export const raced = 1;' > raced.ts && git add -A && "
+                "git commit -q -m raced && git push -q origin main" % other)
+
+    def release_env(self, *args, **extra):
+        env = dict(os.environ, PATH=self.bin + os.pathsep + os.environ["PATH"],
+                   AIDREAM_DIR=self.aidream, RELEASE_AFTER_PHASE="off", RELEASE_LOG_CAPTURED="1", **extra)
+        env.pop("RELEASE_PHASE", None)
+        return subprocess.run(["bash", "scripts/release.sh", *args], cwd=self.r.work,
+                              capture_output=True, text=True, env=env)
+
+    def test_migrations_run_only_after_the_push(self):
+        self.pause()
+        res = self.release("--while-paused", self.r.head(), captured=True)
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        self.assertTrue(os.path.exists(self.uv_calls))                  # migrations did run
+        self.assertIn("refs/tags/v0.1.1", self.remote_tags())
+
+    def test_origin_moving_before_migrations_refuses_and_no_migration_runs(self):
+        self.pause()
+        sha, cmd = self.r.head(), self.foreign_push_cmd()
+        res = self.release_env("--while-paused", sha, RELEASE_TEST_BEFORE_MIGRATIONS=cmd)
+        out = res.stdout + res.stderr
+        self.assertEqual(res.returncode, 3, out)
+        self.assertIn("--while-paused REFUSED", out)
+        self.assertIn("which is not an ancestor of", out)
+        self.assertFalse(os.path.exists(self.uv_calls), out)            # no migration step ran
+        self.assertEqual(self.remote_tags(), "")
+        self.assertEqual(sh(self.r.origin, "git", "log", "-1", "--format=%s", "main").stdout.strip(), "raced")
+
+    def test_pause_lifted_before_migrations_refuses(self):
+        self.pause()
+        res = self.release_env("--while-paused", self.r.head(),
+                               RELEASE_TEST_BEFORE_MIGRATIONS="rm -f '%s'" % os.path.join(self.r.work, PAUSE))
+        self.assertEqual(res.returncode, 3, res.stdout + res.stderr)
+        self.assertIn("no longer in force", res.stdout + res.stderr)
+        self.assertFalse(os.path.exists(self.uv_calls))
+
+    def test_push_race_refuses_and_no_migration_runs(self):
+        self.pause()
+        sha, cmd = self.r.head(), self.foreign_push_cmd()
+        res = self.release_env("--while-paused", sha, RELEASE_TEST_BEFORE_PUSH=cmd)
+        out = res.stdout + res.stderr
+        self.assertEqual(res.returncode, 3, out)
+        self.assertIn("--while-paused REFUSED", out)
+        self.assertFalse(os.path.exists(self.uv_calls), out)
+        self.assertEqual(self.remote_tags(), "")
+
     def test_refuses_with_named_paths(self):
         self.pause()
         self.r.write("notes.md", "x\n")

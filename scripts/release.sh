@@ -515,15 +515,35 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
     SHIP_MIG_PID=""
     SHIP_MIG_SUMMARY="${RELEASE_LOG_DIR:-$REPO_ROOT/tmp/release-logs}/migrations-${RELEASE_LOG_STAMP:-$$}.json"
     mkdir -p "$(dirname "$SHIP_MIG_SUMMARY")"; rm -f "$SHIP_MIG_SUMMARY"
-    if $NO_MIGRATE; then
-        :
-    elif [[ ! -f "$AIDREAM_DIR/db/apply_migrations.py" ]]; then
-        ship_finding "ERROR" "Migrations" "aidream applier not found at $AIDREAM_DIR — pending migrations were NOT applied" "AIDREAM_DIR=<aidream checkout> pnpm check:migrations:strict"
-    elif ! command -v uv >/dev/null 2>&1; then
-        ship_finding "ERROR" "Migrations" "uv is not installed — pending migrations were NOT applied" "pnpm check:migrations:strict"
+    ship_start_migrations() {
+        if $NO_MIGRATE; then
+            :
+        elif [[ ! -f "$AIDREAM_DIR/db/apply_migrations.py" ]]; then
+            ship_finding "ERROR" "Migrations" "aidream applier not found at $AIDREAM_DIR — pending migrations were NOT applied" "AIDREAM_DIR=<aidream checkout> pnpm check:migrations:strict"
+        elif ! command -v uv >/dev/null 2>&1; then
+            ship_finding "ERROR" "Migrations" "uv is not installed — pending migrations were NOT applied" "pnpm check:migrations:strict"
+        else
+            ship_quiet ship_apply_migrations &
+            SHIP_MIG_PID=$!
+        fi
+    }
+    if [[ -n "$WHILE_PAUSED_SHA" ]]; then
+        # --while-paused: every condition again, after a fresh fetch, at the point
+        # where migrations would start; and migrations wait until the push has
+        # landed, so they never start for a release that may still be refused.
+        [[ -n "${RELEASE_TEST_BEFORE_MIGRATIONS:-}" ]] && bash -c "$RELEASE_TEST_BEFORE_MIGRATIONS" >/dev/null 2>&1 || true
+        _pause_rc=0
+        python3 "$SCRIPT_DIR/sync-main.py" --pause-active 2>/dev/null || _pause_rc=$?
+        [[ $_pause_rc -eq 3 ]] || refuse_while_paused "the sync pause is no longer in force (reader exit $_pause_rc)"
+        [[ "$(git rev-parse HEAD)" == "$WHILE_PAUSED_SHA" ]] \
+            || refuse_while_paused "HEAD moved to $(git rev-parse HEAD), not ${WHILE_PAUSED_SHA}"
+        git fetch --quiet "$REMOTE" "$BRANCH" 2>/dev/null \
+            || refuse_while_paused "could not re-fetch $REMOTE/$BRANCH before migrations"
+        git merge-base --is-ancestor "$REMOTE/$BRANCH" "$WHILE_PAUSED_SHA" \
+            || refuse_while_paused "$REMOTE/$BRANCH moved to $(git rev-parse --short "$REMOTE/$BRANCH"), which is not an ancestor of ${WHILE_PAUSED_SHA:0:12}"
+        ship_mark "--while-paused re-checked before migrations: pause, HEAD, $REMOTE/$BRANCH ancestry"
     else
-        ship_quiet ship_apply_migrations &
-        SHIP_MIG_PID=$!
+        ship_start_migrations
     fi
 
     SHIP_FETCHED=false
@@ -601,6 +621,8 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
         fail "Cannot push to GitHub ($REMOTE/$BRANCH) — nothing was released."
     fi
     ship_mark "pushed ${RELEASE_SHA:0:9} as ${RELEASE_COMMIT_MSG}"
+    # --while-paused: the push landed, so nothing can refuse this release now.
+    [[ -n "$WHILE_PAUSED_SHA" ]] && ship_start_migrations
 
     # main carries a release-prefixed commit: Vercel is building. From here on
     # nothing may stop it; everything below is a finding at worst.
