@@ -39,7 +39,27 @@ function providerName(provider: string): string {
   return provider.charAt(0).toUpperCase() + provider.slice(1);
 }
 
-function statusCopy(retry: ProviderRetryPayload): {
+/**
+ * Whether the retry card still tells the truth. A `scheduled` / `retrying_now`
+ * card describes a retry in flight — once the stream has ended no retry is
+ * coming, and the turn's own error (with its Retry action) owns the screen.
+ * Leaving it up showed "Openai is busy · Retry 2 of 2" beside a failed answer
+ * (2026-10-01). After the stream only the run's terminal retry outcomes
+ * (`suspended`, `cancelled`) remain true.
+ */
+export function shouldShowProviderRetry(
+  retry: ProviderRetryPayload | null,
+  isStreamActive: boolean,
+): boolean {
+  if (!retry) return false;
+  if (isStreamActive) return true;
+  return retry.state === "suspended" || retry.state === "cancelled";
+}
+
+/** "Busy" only for capacity errors; any other retried error says so. */
+const CAPACITY_ERROR_TYPES = new Set(["provider_overloaded", "rate_limit"]);
+
+export function statusCopy(retry: ProviderRetryPayload): {
   title: string;
   body: string;
   tone: "waiting" | "active" | "done" | "stopped";
@@ -74,7 +94,9 @@ function statusCopy(retry: ProviderRetryPayload): {
     };
   }
   return {
-    title: `${provider} is busy`,
+    title: CAPACITY_ERROR_TYPES.has(retry.error_type)
+      ? `${provider} is busy`
+      : `${provider} hit an error`,
     body:
       retry.user_message ||
       "The provider is temporarily overloaded. We are waiting and retrying automatically.",
