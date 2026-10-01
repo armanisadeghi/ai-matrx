@@ -1,5 +1,5 @@
 // scripts/safety-net/walks/lists.mjs — LANE SN-DH (2026-10-01), check `lists.walk-lists`.
-// Items: L01 lists read the store only (/lists/v3 and a list page) · L02 a choice column bound to a list
+// Items: L01 lists read the store only (/lists and a list page) · L02 a choice column bound to a list
 // (its chips are the list's words; adding a word to the list adds it to the column's choices).
 //
 // THE REAL USE CASE: the front desk of Cedar Ridge Physical Therapy keeps a pick list "Visit Types <STAMP>"
@@ -80,9 +80,9 @@ try {
     if (r.status() >= 400 && /\/rest\/v1\//.test(r.url())) failed.push(`${r.status()} ${r.url().replace(/^https?:\/\/[^/]+\/rest\/v1\//, "").slice(0, 60)}`);
   });
 
-  // ── L01: /lists/v3 opens quietly ───────────────────────────────────────────────────────────────
-  await ctx.goto(page, "/lists/v3");
-  await ctx.step(["L01"], "/lists/v3 opens in Cedar Ridge, quietly", page, async () => {
+  // ── L01: /lists opens quietly ───────────────────────────────────────────────────────────────
+  await ctx.goto(page, "/lists");
+  await ctx.step(["L01"], "/lists opens in Cedar Ridge, quietly", page, async () => {
     if (!ready) return { ok: false, detail: `the switcher does not name ${FIXTURE_ORG}` };
     await until("the lists page", async () => (await bodyText(page, 3000)).match(/list/i) ? true : null, 120000);
     await sleep(8000);
@@ -94,7 +94,7 @@ try {
       detail: red ? `red sentence: "${t.slice(Math.max(0, red.index - 60), red.index + 100).replace(/\s+/g, " ")}"` : failed.length ? `failed calls: ${failed.slice(0, 4).join(" | ")}` : older.length ? `the page read the older list tables directly: ${older.join(", ")}` : `quiet; reads: ${[...new Set(calls)].slice(0, 6).join(", ")}`,
     };
   });
-  if (!base) throw new Error("no Supabase request was seen on /lists/v3 — cannot call the doors");
+  if (!base) throw new Error("no Supabase request was seen on /lists — cannot call the doors");
 
   // ── make the list (born in the store through custom.pick_list_create: where_lists_live says record) ───────────────────────────────
   await ctx.step(["L01"], `"${LIST_NAME}" is made and lives in the store`, page, async () => {
@@ -120,11 +120,11 @@ try {
   });
 
   // ── L01: the list appears on /lists/v3 and opens as a page with its four words ──────────────────────
-  await ctx.step(["L01"], "/lists/v3 lists it and its page shows the four words", page, async () => {
+  await ctx.step(["L01"], "/lists lists it and its page shows the four words", page, async () => {
     if (!listId) return { skip: "no list was made" };
-    await ctx.goto(page, "/lists/v3");
+    await ctx.goto(page, "/lists");
     const seen = await waitText(page, new RegExp(LIST_NAME.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), 150000);
-    if (!seen) return { ok: false, detail: `/lists/v3 never listed "${LIST_NAME}"` };
+    if (!seen) return { ok: false, detail: `/lists never listed "${LIST_NAME}"` };
     await page.getByText(LIST_NAME).first().evaluate((el) => el.click());
     const opened = (await until("the list's own address", async () => (page.url().includes(`/lists/${listId}`) ? true : null), 60000)).v;
     await sleep(6000);
