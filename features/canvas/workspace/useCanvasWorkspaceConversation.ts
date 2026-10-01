@@ -44,6 +44,8 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { describeLaunchError } from "./describe-launch-error";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
@@ -84,7 +86,37 @@ export type CanvasWorkspaceConversationOptions = {
    * (`runtime: { surfaceName: null }`). Omitted = the default adoption.
    */
   surfaceName?: null;
+  /**
+   * The query param this conversation lives at (`?chat=<id>`), so a reload
+   * returns the person to it the way `/chat/<id>` does. Read once on mount
+   * (it wins over the default new chat), written once the server has the
+   * conversation, removed by New chat. Omitted = the address is not touched
+   * (board chat TILES: many conversations, one page).
+   */
+  addressParam?: string;
 };
+
+/** A conversation id, as an address may name one. Anything else is ignored. */
+const CONVERSATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The conversation `?<param>=` names in the current address, or null. */
+export function conversationInAddress(param: string, search: string): string | null {
+  const value = new URLSearchParams(search).get(param);
+  return value && CONVERSATION_ID.test(value) ? value : null;
+}
+
+/** `search` with `?<param>=` set to `conversationId`, or removed when null. */
+export function addressWithConversation(
+  param: string,
+  search: string,
+  conversationId: string | null,
+): string {
+  const params = new URLSearchParams(search);
+  if (conversationId) params.set(param, conversationId);
+  else params.delete(param);
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
 
 /** A bare start (`{ kind }`) — as opposed to the options form, which never carries `kind`. */
 function isCanvasWorkspaceStart(
@@ -95,10 +127,21 @@ function isCanvasWorkspaceStart(
 
 function resolveStartOptions(
   input: CanvasWorkspaceStart | CanvasWorkspaceConversationOptions | undefined,
-): { enabled: boolean; start: CanvasWorkspaceStart | undefined; ownSurface: boolean } {
-  if (!input) return { enabled: true, start: undefined, ownSurface: false };
-  if (isCanvasWorkspaceStart(input)) return { enabled: true, start: input, ownSurface: false };
-  return { enabled: input.enabled ?? true, start: input.start, ownSurface: input.surfaceName === null };
+): {
+  enabled: boolean;
+  start: CanvasWorkspaceStart | undefined;
+  ownSurface: boolean;
+  addressParam: string | null;
+} {
+  if (!input) return { enabled: true, start: undefined, ownSurface: false, addressParam: null };
+  if (isCanvasWorkspaceStart(input))
+    return { enabled: true, start: input, ownSurface: false, addressParam: null };
+  return {
+    enabled: input.enabled ?? true,
+    start: input.start,
+    ownSurface: input.surfaceName === null,
+    addressParam: input.addressParam ?? null,
+  };
 }
 
 export interface CanvasWorkspaceConversationController {
@@ -121,7 +164,7 @@ export function useCanvasWorkspaceConversation(
   surfaceKey: string,
   input?: CanvasWorkspaceStart | CanvasWorkspaceConversationOptions,
 ): CanvasWorkspaceConversationController {
-  const { enabled, start, ownSurface } = resolveStartOptions(input);
+  const { enabled, start, ownSurface, addressParam } = resolveStartOptions(input);
   const dispatch = useAppDispatch();
   const { launchMandate, launchAgent } = useAgentLauncher();
   const [request, setRequest] = useState<Request>(() => initialRequest(start));
@@ -131,9 +174,39 @@ export function useCanvasWorkspaceConversation(
   const organizationId = useAppSelector(selectOrganizationId);
   const promptForOrganization = useAppSelector(selectShouldPromptForOrganization);
   const waitingForOrganization = request.kind !== "open" && !organizationId;
+  // Nothing launches until the address has been read: a reload must reopen the
+  // conversation it names, never start a new one beside it.
+  const [addressRead, setAddressRead] = useState(addressParam === null);
+  const serverHasIt = useAppSelector((state) =>
+    conversationId ? !selectIsCacheOnly(conversationId)(state) : false,
+  );
+
+  // Declared BEFORE the launch effect so it runs first in the same commit.
+  useEffect(() => {
+    if (addressRead || addressParam === null) return;
+    const named = conversationInAddress(addressParam, window.location.search);
+    if (named && !start) {
+      setRequest((current) =>
+        current.kind === "new" && current.nonce === 0
+          ? { kind: "open", conversationId: named, agentId: null, nonce: 0 }
+          : current,
+      );
+    }
+    setAddressRead(true);
+  }, [addressRead, addressParam, start]);
+
+  // The address follows the shown conversation: set once the server has it
+  // (a reopened one always has), cleared when a new chat has not been sent.
+  useEffect(() => {
+    if (addressParam === null || !addressRead || !conversationId) return;
+    const shown = request.kind === "open" || serverHasIt ? conversationId : null;
+    const search = addressWithConversation(addressParam, window.location.search, shown);
+    if (search === window.location.search) return;
+    replaceAddressWithoutNavigating(`${window.location.pathname}${search}${window.location.hash}`);
+  }, [addressParam, addressRead, conversationId, request.kind, serverHasIt]);
 
   useEffect(() => {
-    if (!enabled || waitingForOrganization) return;
+    if (!enabled || waitingForOrganization || !addressRead) return;
     const key = `${surfaceKey}#${request.kind}#${request.nonce}`;
     // Once per request: a re-run of this effect for any other reason never
     // launches twice. A result lands only if its request is still the latest.
@@ -175,7 +248,7 @@ export function useCanvasWorkspaceConversation(
           },
         );
     }
-  }, [enabled, surfaceKey, request, launchMandate, launchAgent, dispatch, waitingForOrganization, ownSurface]);
+  }, [enabled, surfaceKey, request, launchMandate, launchAgent, dispatch, waitingForOrganization, ownSurface, addressRead]);
 
   const startNew = () => {
     setConversationId(null);

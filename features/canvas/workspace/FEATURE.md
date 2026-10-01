@@ -119,6 +119,11 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 
 ## Change Log
 
+- **2026-10-01** — **A reload returns to the conversation.** The workspace chat lives at `?chat=<id>`
+  (`useCanvasWorkspaceConversation` option `addressParam`): read once on mount (nothing launches before it is read),
+  written once the server has the conversation, removed by New chat. Board chat tiles leave the address alone.
+  Guard: `__tests__/workspace-chat-survives-reload.test.tsx` (3 red on the old hook).
+
 - **2026-09-30** — The canvas re-read fires only for events inside the column's own DOM (React events bubble
   through portals, so the page-chip popover and value panel used to trigger it), and `setContextEntries`
   keeps the conversation's entries identical when the snapshot is unchanged.

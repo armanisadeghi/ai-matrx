@@ -98,6 +98,8 @@ import {
 const FLOATING_FALLBACK = { width: 340, height: 400 };
 /** Below this the workspace is one pane: the canvas, with chat / properties in sheets (navigation is the shell drawer). */
 const COMPACT_QUERY = "(max-width: 1023px)";
+/** The query param the workspace's own conversation lives at (`?chat=<id>`). */
+const WORKSPACE_CHAT_PARAM = "chat";
 
 export interface ChatCanvasWorkspaceRecord {
   resourceType: ResourceType;
@@ -215,7 +217,11 @@ export function ChatCanvasWorkspace({
       : viewportCompact
         ? mobileSheet === "chat"
         : chatState.open && !fullScreen;
-  const chat = useCanvasWorkspaceConversation(surfaceKey, { enabled: chatOnScreen });
+  // `?chat=<id>`: a reload returns to the conversation, as /chat/<id> does.
+  const chat = useCanvasWorkspaceConversation(surfaceKey, {
+    enabled: chatOnScreen,
+    addressParam: WORKSPACE_CHAT_PARAM,
+  });
   const [propertiesOpen, setPropertiesOpenRaw] = useState(initialLayout?.propertiesOpen ?? true);
   const [canvasEl, setCanvasEl] = useState<HTMLDivElement | null>(null);
   const floatingSize = readFloatingSize(

@@ -2166,6 +2166,13 @@ export function getToolPhaseLabel(
   errorMessage?: string | null,
   entry?: ToolLifecycleEntry,
 ): string {
+  // REFUSED, NOT FAILED. The server turned the call away before it ran — the
+  // agent asked for a tool it was not given this turn (`not_allowed`, raised by
+  // the executor's allowlist guard). "X failed" would tell the person the
+  // feature broke; nothing ran. Checked before any per-tool wording.
+  if (phase === "error" && entry?.errorType === "not_allowed") {
+    return `${displayName} · not available here`;
+  }
   if (toolName) {
     const reg = toolRendererRegistry[toolName];
     if (entry && reg?.getPhaseLabels) {
