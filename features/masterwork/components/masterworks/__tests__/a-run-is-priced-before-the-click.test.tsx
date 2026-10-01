@@ -17,8 +17,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 
 import { makeStore } from "@/lib/redux/store";
-import type { MasterworkRun } from "../../../service";
-import { lastPricedRunCost } from "../../../runPrice";
+import { lastPricedRunCost, type PricedRun } from "../../../runPrice";
 import { TryMasterworkBox } from "../TryMasterworkBox";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
@@ -29,13 +28,34 @@ import { TryMasterworkBox } from "../TryMasterworkBox";
   disconnect() {}
 };
 
-const listRecentRunsForMasterworks = jest.fn();
+/**
+ * The two tables the price is read from, as rows — and every filter the read
+ * applied, so the test proves it asks the server's question (finished,
+ * non-archived, newest three) and not a looser one.
+ */
+let tables: Record<string, { data: unknown[] | null; error: unknown }> = {};
+const filters: string[] = [];
+jest.mock("@/utils/supabase/client", () => {
+  const chain = (table: string) => {
+    const q: Record<string, unknown> = {};
+    for (const m of ["select", "eq", "is", "in", "order", "limit", "returns"]) {
+      q[m] = (...args: unknown[]) => {
+        filters.push(`${table}.${m}(${JSON.stringify(args)})`);
+        return q;
+      };
+    }
+    q.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+      Promise.resolve(tables[table] ?? { data: [], error: null }).then(resolve, reject);
+    return q;
+  };
+  return {
+    supabase: { schema: () => ({ from: (table: string) => chain(table) }) },
+  };
+});
 
 jest.mock("../../../service", () => ({
   getMasterworkDefinition: () => Promise.resolve(null),
   getMasterworkRunVerdict: () => Promise.resolve(null),
-  listRecentRunsForMasterworks: (...args: unknown[]) =>
-    listRecentRunsForMasterworks(...args),
 }));
 jest.mock("../../../unfolding/sealedCases", () => ({
   ...jest.requireActual("../../../unfolding/sealedCases"),
@@ -59,19 +79,8 @@ jest.mock("@/components/cost/pointsRate.client", () => ({
 
 const MASTERWORK_ID = "11111111-1111-4111-8111-111111111111";
 
-function run(partial: Partial<MasterworkRun>): MasterworkRun {
-  return {
-    id: "r",
-    status: "completed",
-    created_at: "2026-09-30T20:00:00Z",
-    started_at: null,
-    completed_at: null,
-    steps_executed: null,
-    cost_usd: null,
-    deliverable_preview: null,
-    error_message: null,
-    ...partial,
-  };
+function run(partial: Partial<PricedRun> & { id?: string }): PricedRun {
+  return { status: "completed", cost_usd: null, ...partial };
 }
 
 let container: HTMLDivElement;
@@ -81,7 +90,8 @@ beforeEach(() => {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
-  listRecentRunsForMasterworks.mockReset();
+  tables = {};
+  filters.length = 0;
   sessionStorage.clear();
 });
 
@@ -124,10 +134,29 @@ describe("the price of one run", () => {
   });
 
   it("sits beside Run it, in points, before anything is spent", async () => {
-    listRecentRunsForMasterworks.mockResolvedValue({
-      [MASTERWORK_ID]: [run({ cost_usd: 1.39 })],
-    });
+    tables = {
+      run: { data: [{ id: "run-1" }], error: null },
+      // A run's cost is the sum of its steps: ruling, Editor, auditors.
+      node_outcome: {
+        data: [
+          { run_id: "run-1", cost: "1.19" },
+          { run_id: "run-1", cost: "0.08" },
+          { run_id: "run-1", cost: "0.12" },
+          { run_id: "run-1", cost: null },
+        ],
+        error: null,
+      },
+    };
     await renderBox();
+    expect(filters).toEqual(
+      expect.arrayContaining([
+        `run.eq(["definition_id","${MASTERWORK_ID}"])`,
+        'run.eq(["status","completed"])',
+        'run.is(["deleted_at",null])',
+        "run.limit([3])",
+        'node_outcome.is(["deleted_at",null])',
+      ]),
+    );
     const price = container.querySelector('[data-masterwork-run-price="known"]');
     expect(price).not.toBeNull();
     expect(price?.textContent).toContain("Last run");
@@ -137,7 +166,7 @@ describe("the price of one run", () => {
   });
 
   it("says plainly when no run has been priced yet", async () => {
-    listRecentRunsForMasterworks.mockResolvedValue({ [MASTERWORK_ID]: [] });
+    tables = { run: { data: [], error: null } };
     await renderBox();
     const price = container.querySelector('[data-masterwork-run-price="unknown"]');
     expect(price).not.toBeNull();
@@ -145,7 +174,7 @@ describe("the price of one run", () => {
   });
 
   it("never blanks the box when the read fails", async () => {
-    listRecentRunsForMasterworks.mockRejectedValue(new Error("refused"));
+    tables = { run: { data: null, error: new Error("refused") } };
     await renderBox();
     expect(container.textContent).toContain("Run it");
     expect(container.querySelector("[data-masterwork-run-price]")).toBeNull();
