@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-01T09:46:05.403Z",
+  "generated_at": "2026-10-01T09:56:09.571Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3901,6 +3901,12 @@
       "filename": "readinesscap_the_check_says_when_it_hit_the_cap.sql",
       "checksum": "61d9257f4f35f9e03b048c408567d91c98f1b3840caa7540af2edf3ff1dbf9c1",
       "applied_at": "2026-09-27 05:16:32.424165+00"
+    },
+    "migrations/campaign/readinessparity_a_readiness_sees_a_store_writer_organizations_scopes_on_both_sides.sql": {
+      "source": "matrx-frontend",
+      "filename": "readinessparity_a_readiness_sees_a_store_writer_organizations_scopes_on_both_sides.sql",
+      "checksum": "886afd4891b8cb6416d210d3fcfd5a607669cadecc0df6c7fc96bb6d0f75d599",
+      "applied_at": "2026-10-01 09:56:06.349945+00"
     },
     "migrations/campaign/readinline_the_page_passes_the_row_it_already_holds.sql": {
       "source": "matrx-frontend",

@@ -279,6 +279,120 @@ export const NOT_WRITERS: { repo: Repo; claims: string[]; why: string }[] = [
   { repo: "matrx-frontend", claims: ["features/entitlements/stripe/connect.ts"], why: "edu_class_confer_purchase / revoke_purchase grant or take back a class seat (a scope membership); neither writes a context table (the catalogue census confirms)" },
 ];
 
+/**
+ * OPERATOR SCRIPTS — every script, fixture, repair and job that can write context.* OUTSIDE the doors (lane
+ * READINESS-PARITY, 2026-10-01; SAFETY-NET W24). The runtime scan above reads product code only, so the junk
+ * cleanup that hard-deleted "Biology 101 — Live Test" from context.scopes (common-docs, 2026-10-01 05:03Z) and
+ * the repair that put it back under `session_replication_role = replica` were writers nobody listed, and G6
+ * read "0 open" over them. This scan reads every operator file of matrx-frontend, aidream and common-docs: an
+ * SQL write naming a scope table, a scope table named as a quoted string (how dynamic-SQL helpers such as
+ * the junk cleanup's purge take their table), or a session switching triggers off. Every hit is claimed by a
+ * row below, or it is UNLISTED and keeps the fact false. pg_cron jobs are read from the catalogue: one whose
+ * command writes a scope table, or calls a function that does, must be claimed by a row's `cronJobs`.
+ */
+type OpRepo = Repo | "common-docs";
+const OP_REPOS: { repo: OpRepo; roots: RegExp }[] = [
+  { repo: "matrx-frontend", roots: /^(scripts|migrations)\// },
+  { repo: "aidream", roots: /^(scripts|db|tests_trials|packages\/[^/]+\/scripts)\// },
+  { repo: "common-docs", roots: /^(projects|operations)\// },
+];
+export const OPERATOR_TABLE_PATTERN = /["'`]context\.(scope_types|scopes|context_items|context_item_values)["'`]/gi;
+export const REPLICA_PATTERN = /\bsession_replication_role\s*(=|to)\s*'?replica\b/gi;
+const OPERATOR_FILE = /\.(sql|py|ts|mjs|js|sh)$/;
+
+interface OpRow { id: string; what: string; status: Status; plain: string; claims: Partial<Record<OpRepo, string[]>>; cronJobs?: string[] }
+export const OPERATOR_WRITERS: OpRow[] = [
+  {
+    id: "W24a",
+    what: "The junk-data cleanup's purge helper and the scripts that embed it",
+    status: "proven",
+    plain: "common-docs projects/junk-data-cleanup/delete/_lib.sql (pasted into A–E and G) walks the foreign-key graph and hard-deletes by ctid with dynamic SQL, so a scope, scope type, context item or value was a row it could delete. Since lane READINESS-PARITY it REFUSES any purge whose root or planned child is a scope table (XJ005, dry mode too, aborts the script): those rows are archived through the scope doors first. Test: delete/test_scope_tables_refused.sql (RED on the helper before, GREEN after, clone).",
+    claims: { "common-docs": ["projects/junk-data-cleanup/delete/_lib.sql", "projects/junk-data-cleanup/delete/A.sql", "projects/junk-data-cleanup/delete/B.sql", "projects/junk-data-cleanup/delete/C.sql", "projects/junk-data-cleanup/delete/D.sql", "projects/junk-data-cleanup/delete/E.sql", "projects/junk-data-cleanup/delete/G-delete.UNREHEARSED.sql", "projects/junk-data-cleanup/delete/test_scope_tables_refused.sql"] },
+  },
+  {
+    id: "W24b",
+    what: "The junk cleanup's E run as it ran on production (2026-09-30), and its repair",
+    status: "nothing",
+    plain: "delete/E-live.sql is the record of the run that hard-deleted 3 scopes from context.scopes outside the doors (the W1 cause); it embeds the helper from before XJ005 and must never be run again. The repair that restored them ran by hand under session_replication_role = replica (DELETE-PLAN.md \"Repair 2026-09-30\"), with no script kept; replica mode switches off the write-through, so a restored scope row left its store Record archived. Settled for Biology 101 by operations/for-arman/2026-10-01/readiness-parity/repair.sql (the scope door, as the system).",
+    claims: { "common-docs": ["projects/junk-data-cleanup/delete/E-live.sql"] },
+  },
+  {
+    id: "W24c",
+    what: "Clone-only proofs, plants and their logs",
+    status: "nothing",
+    plain: "matrx-frontend scripts/campaign-tests/** and scripts/safety-net/** plant rows in context.* on the dev clone inside rolled-back transactions; aidream scripts/context_follow_proof.py refuses anything but the clone (--expect clone); the safety-net logs under common-docs operations/for-arman/** are their printed output. None reaches production.",
+    claims: {
+      "matrx-frontend": ["scripts/campaign-tests/**", "scripts/safety-net/**"],
+      aidream: ["scripts/context_follow_proof.py"],
+      "common-docs": ["operations/for-arman/*/safety-net/**"],
+    },
+  },
+  {
+    id: "W24d",
+    what: "A rolled-back fixture that inserts scope rows on PRODUCTION",
+    status: "nothing",
+    plain: "aidream db/tests/verify_association_endpoint_access.py connects through _build_dsn (production by default) and inserts a scope type and a scope for fresh users in ONE transaction that is always rolled back; nothing persists, but it writes context.* outside the doors on the live database (store-writer personal organizations, so the write-through also writes the store in-transaction). Should move to the clone (never test against the live database).",
+    claims: { aidream: ["db/tests/verify_association_endpoint_access.py"] },
+  },
+  {
+    id: "W24e",
+    what: "Guards, censuses and checks that name the scope tables as data",
+    status: "nothing",
+    plain: "They name context.* tables in lists, regclass probes and planted test strings; they write nothing (check-archived-items-law, check-stamped-write-doors, scopes-side-effects, this census, aidream's check_context_reads_the_door / check_softdelete_unique_constraints).",
+    claims: {
+      "matrx-frontend": ["scripts/check-archived-items-law.ts", "scripts/check-stamped-write-doors.ts", "scripts/cutover-census/**"],
+      aidream: ["scripts/check_context_reads_the_door.py", "scripts/check_softdelete_unique_constraints.py"],
+    },
+  },
+  {
+    id: "W24f",
+    what: "Migration history and generated database helpers",
+    status: "nothing",
+    plain: "matrx-frontend migrations/** and aidream db/migrations/** are applied history; the live bodies they made are what the catalogue census above measures (DB_WRITERS_SQL). aidream db/helpers and db/managers are generated from the schema and name context tables as relations.",
+    claims: { "matrx-frontend": ["migrations/**"], aidream: ["db/migrations/**", "db/helpers/**", "db/managers/**", "db/models/**"] },
+  },
+];
+
+/** pg_cron jobs whose command writes a scope table, or calls a database function that does (one hop). */
+const CRON_WRITERS_SQL = `
+  with w as (
+    select p.proname
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname not in ('pg_catalog', 'information_schema', 'graveyard', 'deprecated')
+       and p.prokind = 'f'
+       and p.prosrc ~* '(insert\\s+into|update|delete\\s+from)\\s+(context\\.)?(scope_types|scopes|context_items|context_item_values)\\M'
+     group by 1)
+  select distinct j.jobname
+    from cron.job j
+   where j.command ~* '(insert\\s+into|update|delete\\s+from)\\s+(context\\.)?(scope_types|scopes|context_items|context_item_values)\\M'
+      or j.command ~* 'session_replication_role'
+      or exists (select 1 from w where j.command ~* ('\\m' || w.proname || '\\M'))
+   order by 1`;
+
+/** SQL comments off (`--` to end of line, block comments); strings kept. Other kinds as codeOnly does. */
+export function operatorCode(path: string, text: string): string {
+  if (/\.sql$/.test(path)) return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--.*$/gm, "");
+  if (/\.sh$/.test(path)) return text.replace(/(^|\s)#.*$/gm, "$1");
+  return codeOnly(path, text);
+}
+
+export function operatorHit(repo: OpRepo, file: string, text: string): { repo: OpRepo; file: string; names: string[] } | null {
+  const code = operatorCode(file, text);
+  const sqlWrite = new RegExp(`\\b(insert\\s+into|update|delete\\s+from)\\s+context\\.(scope_types|scopes|context_items|context_item_values)\\b`, "gi");
+  const found: string[] = [];
+  // Triggers off is a writer of whatever the session then writes: counted when the file names a scope table.
+  const namesScopes = /\bcontext\.(scope_types|scopes|context_items|context_item_values)\b/i.test(code);
+  for (const re of namesScopes ? [sqlWrite, OPERATOR_TABLE_PATTERN, REPLICA_PATTERN] : [sqlWrite, OPERATOR_TABLE_PATTERN]) {
+    for (const m of code.matchAll(new RegExp(re.source, re.flags))) found.push(m[0].replace(/\s+/g, " ").slice(0, 60));
+  }
+  const names = [...new Set(found)];
+  return names.length ? { repo, file, names } : null;
+}
+
+export function operatorClaimed(hit: { repo: OpRepo; file: string }): boolean {
+  return OPERATOR_WRITERS.some((row) => matchesAny(hit.file, row.claims[hit.repo] ?? []));
+}
+
 // ── the repos ─────────────────────────────────────────────────────────────────────────────────
 
 function globToRegex(glob: string): RegExp {
@@ -446,9 +560,26 @@ async function main(argv: string[]): Promise<number> {
   }
   const unlistedFiles = writerHits.filter((h) => !claimed(h));
 
+  // OPERATOR SCRIPTS (W24): scripts, fixtures, repairs — matrx-frontend, aidream and common-docs.
+  const opHits: { repo: OpRepo; file: string; names: string[] }[] = [];
+  const opMissing: string[] = [];
+  for (const { repo, roots } of OP_REPOS) {
+    const t = trees.find((x) => x.repo === repo) ?? (repo === "common-docs" ? readRepo(repo as Repo) : null);
+    if (!t) { opMissing.push(repo); continue; }
+    for (const f of t.files) {
+      if (!roots.test(f) || !OPERATOR_FILE.test(f)) continue;
+      const abs = resolve(t.root, f);
+      if (!existsSync(abs)) continue;
+      const h = operatorHit(repo, f, readFileSync(abs, "utf8"));
+      if (h) opHits.push(h);
+    }
+  }
+  const unlistedOps = opHits.filter((h) => !operatorClaimed(h));
+
   let dbWriters: string[] = [];
   let rpcBodiesOnOld: string[] = [];
   let clientOpen: string[] = [];
+  let cronWriters: string[] = [];
   let dbError: string | null = null;
   let db: pg.Client | null = null;
   try {
@@ -456,6 +587,7 @@ async function main(argv: string[]): Promise<number> {
     dbWriters = (await db.query(DB_WRITERS_SQL)).rows.map((r: { fn: string }) => r.fn);
     rpcBodiesOnOld = (await db.query(RPC_BODIES_ON_OLD_SQL, [CONTRACT_RPCS.split("|")])).rows.map((r: { fn: string }) => r.fn);
     clientOpen = (await db.query(CLIENT_OPEN_SQL, [WRITERS.flatMap((r) => r.clientClosed ?? [])])).rows.map((r: { fn: string }) => r.fn);
+    cronWriters = (await db.query(CRON_WRITERS_SQL)).rows.map((r: { jobname: string }) => r.jobname);
   } catch (e) {
     dbError = (e as Error).message;
   }
@@ -468,6 +600,9 @@ async function main(argv: string[]): Promise<number> {
   const unlisted = [
     ...unlistedFiles.map((h) => ({ kind: "file", repo: h.repo, where: h.file, names: h.names })),
     ...unlistedFns.map((fn) => ({ kind: "function", repo: "database", where: fn, names: [fn] })),
+    ...unlistedOps.map((h) => ({ kind: "operator_script", repo: h.repo, where: h.file, names: h.names })),
+    ...cronWriters.filter((j) => !OPERATOR_WRITERS.some((r) => (r.cronJobs ?? []).includes(j)))
+      .map((j) => ({ kind: "cron_job", repo: "database", where: `cron.job ${j}`, names: [j] })),
     ...oldWritersLeft.map(({ row, fn }) => ({ kind: "old_writer_left", repo: "database", where: fn, names: [`${row} says ${fn} writes through the doors, but it writes context.* itself`] })),
     // A ROW THAT SAYS "CLOSED TO CLIENTS" IS HELD TO IT (lane SCOPES-OLD-WRITERS, S5 / S9).
     ...(dbError ? [] : WRITERS.flatMap((r) => (r.clientClosed ?? []).filter((fn) => clientOpen.includes(fn))
@@ -485,11 +620,21 @@ async function main(argv: string[]): Promise<number> {
     contract_rpc_callers: rpcHits.map((h) => ({ repo: h.repo, file: h.file, names: h.names })),
     contract_rpcs_still_reading_context: rpcBodiesOnOld,
     old_doors_open_to_clients: clientOpen,
+    operator_rows: OPERATOR_WRITERS.map(({ id, what, status, plain }) => ({ id, what, status, plain })),
+    operator_hits: opHits.map((h) => ({ ...h, claimed_by: OPERATOR_WRITERS.find((r) => matchesAny(h.file, r.claims[h.repo] ?? []))?.id ?? null })),
+    cron_jobs_writing_context: cronWriters,
   };
 
   console.log(`SCOPES WRITERS CENSUS — catalogue on ${target}; code at ${trees.map((t) => `${t.repo} ${t.sha.slice(0, 10)}`).join(" · ")}`);
   for (const r of WRITERS) console.log(`  ${r.id.padEnd(4)} ${r.status.padEnd(9)} ${r.what}`);
   console.log(`  database functions writing context.*: ${dbWriters.length} (${unlistedFns.length} unlisted)`);
+  console.log(`  OPERATOR SCRIPTS writing or naming context.* outside the doors (W24): ${opHits.length} file(s), ${unlistedOps.length} unlisted`);
+  for (const r of OPERATOR_WRITERS) {
+    const n = opHits.filter((h) => matchesAny(h.file, r.claims[h.repo] ?? [])).length;
+    console.log(`  ${r.id.padEnd(4)} ${r.status.padEnd(9)} ${r.what} — ${n} file(s)`);
+  }
+  console.log(`  pg_cron jobs writing context.* (directly or through a writer): ${dbError ? "not measured" : cronWriters.length}`);
+  if (opMissing.length) console.log(`  NOT MEASURED (operator scripts): ${opMissing.join(", ")} not checked out beside this one`);
   for (const u of unlisted) console.log(`  UNLISTED ${u.repo} ${u.where}: ${u.names.join(", ")}`);
   const byRepo = new Map<string, number>();
   const product = readerHits.filter((h) => !withTheImage(h));
@@ -505,7 +650,7 @@ async function main(argv: string[]): Promise<number> {
 
   if (jsonOut) writeFileSync(jsonOut, JSON.stringify(census, null, 2));
   if (record) {
-    if (missing.some((m) => m !== "matrx-local") || dbError || !db) {
+    if (missing.some((m) => m !== "matrx-local") || opMissing.length || dbError || !db) {
       console.error("REFUSED: a census that did not read every repository and the catalogue is not recorded.");
       return 2;
     }
@@ -574,7 +719,29 @@ function selfTest(): number {
     console.error("SELF-TEST RED: a product file was claimed as going with the image");
     return 1;
   }
-  console.log("SELF-TEST GREEN — a planted old writer is unlisted, comments are not code, a direct table write is seen, a store door is not an old writer; an ORM model read / import / manager of a leaving table is a reader, a label, OAuth scopes and the store's reader are not; a contract RPC call is counted apart.");
+  // THE OPERATOR HALF (W24): the junk cleanup's dynamic purge and a replica-mode restore are writers.
+  const junk = operatorHit("common-docs", "projects/junk-data-cleanup/delete/planted.sql", "select pg_temp.purge_each('context.scopes','id', array['ad54136e-e8e0-4e2d-b215-fd788756d028']::uuid[]);");
+  if (!junk || operatorClaimed(junk)) {
+    console.error("SELF-TEST RED: a planted purge of context.scopes in an unclaimed operator script was not found unlisted");
+    return 1;
+  }
+  if (!operatorHit("common-docs", "operations/planted.sql", "set session_replication_role = replica;\ninsert into context.scopes select * from _snap;")) {
+    console.error("SELF-TEST RED: a replica-mode restore into context.scopes was not seen");
+    return 1;
+  }
+  if (operatorHit("aidream", "db/tests/planted.py", 'cur.execute("set local session_replication_role = replica"); cur.execute("update ops.check_run set deleted_at = now()")')) {
+    console.error("SELF-TEST RED: a replica-mode fixture that names no scope table counted as a scope writer");
+    return 1;
+  }
+  if (operatorHit("common-docs", "operations/planted.sql", "-- we once ran: delete from context.scopes where id = 'x'")) {
+    console.error("SELF-TEST RED: an SQL comment counted as an operator writer");
+    return 1;
+  }
+  if (operatorHit("common-docs", "operations/planted.sql", "select custom.context_scope_archive(s.id) from context.scopes s where s.id = 'x';")) {
+    console.error("SELF-TEST RED: a scope door call counted as an operator writer");
+    return 1;
+  }
+  console.log("SELF-TEST GREEN — a planted old writer is unlisted, comments are not code, a direct table write is seen, a store door is not an old writer; an ORM model read / import / manager of a leaving table is a reader, a label, OAuth scopes and the store's reader are not; a contract RPC call is counted apart; an unclaimed operator purge of context.scopes and a replica-mode restore are writers, an SQL comment and a scope door call are not.");
   return 0;
 }
 
