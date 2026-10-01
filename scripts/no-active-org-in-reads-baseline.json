@@ -390,6 +390,21 @@
       "class": "not-a-list",
       "owner": "rich-document",
       "note": "false positive from the wrapper rule: getAssociationsStore() is a 'carrier' only because its host object hands ensureOrgId to create paths (features/scopes/host/associationsStore.ts); the titles fetch takes no organization. Remove when the carrier rule ignores callbacks passed down for writes."
+    },
+    "features/scopes/hooks/useKindCounts.ts::useKindCounts::fetchKindCounts(stableScope, tokens, showSystemFiles)#1": {
+      "class": "not-a-list",
+      "owner": "scopes (V5-B inventory)",
+      "note": "active org only resolves the show_system_files knob (useShowSystemFiles); the count is scoped by the caller's explicit KindScope, not narrowed by the active org"
+    },
+    "features/scopes/hooks/useKindItems.ts::loadMore::fetchPage({ token: kind, scope: stableScope, query: settledQuery, offset, limit: pageSize, showSystemFiles })#1": {
+      "class": "not-a-list",
+      "owner": "scopes (V5-B inventory)",
+      "note": "active org only resolves the page-size and show_system_files knobs; the list is scoped by the caller's explicit KindScope, not narrowed by the active org"
+    },
+    "features/scopes/hooks/useKindItems.ts::useKindItems::fetchPage({ token: kind, scope: stableScope, query: settledQuery, offset: 0, limit: pageSize, showSystemFiles })#1": {
+      "class": "not-a-list",
+      "owner": "scopes (V5-B inventory)",
+      "note": "active org only resolves the page-size and show_system_files knobs; the list is scoped by the caller's explicit KindScope, not narrowed by the active org"
     }
   }
 }
