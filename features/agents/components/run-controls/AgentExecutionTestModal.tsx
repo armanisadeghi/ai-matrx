@@ -52,6 +52,7 @@ import {
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 import { toast } from "@/lib/toast";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 
 interface AgentExecutionTestModalProps {
   surfaceKey: string;
@@ -74,7 +75,8 @@ interface AgentExecutionTestModalProps {
 // Direct Test Mode
 // =============================================================================
 
-function DirectTestMode({
+/** Exported for the kind-never-raw harness test. */
+export function DirectTestMode({
   agentId,
   surfaceKey,
   variables,
@@ -183,9 +185,11 @@ function DirectTestMode({
 
       <ScrollArea className="h-64 rounded-md border border-border bg-muted/20 p-3">
         {responseText ? (
-          <pre className="text-xs whitespace-pre-wrap font-mono text-foreground">
-            {responseText}
-          </pre>
+          // The harness shows the answer as a person sees it — a kind as its
+          // kind, never JSON (kind-never-raw R1). Copy keeps the raw text.
+          <div className="text-xs text-foreground">
+            <AnswerValueView text={responseText} />
+          </div>
         ) : (
           <p className="text-xs text-muted-foreground">
             {isStreaming
@@ -215,7 +219,8 @@ function DirectTestMode({
 // Inline Test Mode
 // =============================================================================
 
-function InlineTestMode({
+/** Exported for the kind-never-raw harness test. */
+export function InlineTestMode({
   agentId,
   surfaceKey,
   variables,
@@ -363,9 +368,9 @@ function InlineTestMode({
             <p className="text-xs text-muted-foreground mb-2">
               Agent response:
             </p>
-            <pre className="text-xs whitespace-pre-wrap font-mono text-foreground mb-3">
-              {responseText}
-            </pre>
+            <div className="mb-3 text-xs text-foreground">
+              <AnswerValueView text={responseText} />
+            </div>
             <div className="flex items-center gap-2">
               <Button variant="default" size="sm" onClick={handleReplace}>
                 <Replace className="w-3.5 h-3.5 mr-1.5" />

@@ -5,11 +5,12 @@
  * (kind-never-raw S5). A kind answer opens AS ITS KIND: bound to a real
  * `canvas_items` row through `useOpenArtifactInCanvas` when the answer's
  * message is persisted, else as that kind's canvas type over its value (a
- * guest run has no row to bind). A kind with no canvas type opens as its
+ * guest run has no row to bind) — announced with a one-line toast. A kind with no canvas type opens as its
  * readable markdown; a kindless answer keeps the HTML canvas.
  */
 
 import { useAppStore } from "@/lib/redux/hooks";
+import { toast } from "@/lib/toast";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { selectLatestAssistantMessageId } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -46,6 +47,8 @@ export function useOpenAppResponseInCanvas() {
         data: target.structured,
         metadata: { ...metadata, title: target.title },
       });
+      // No saved message to bind to — say so; never a silent stand-in.
+      toast.info("Opened as a preview — not saved");
       return;
     }
     if (target.mode === "markdown") {

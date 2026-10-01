@@ -93,9 +93,14 @@ Every stream item below adds its case there.
       keeps the data. Agent-app "Open in canvas": see S5. Code editor readers of `selectLatestAccumulatedText`:
       `ContextAwareCodeEditorCompact`/`Modal` only feed `parseCodeEdits` (machine, kept); `useAICodeEditor` →
       `rawAIResponse` shows in the Response tab / `ReviewStage` (`MarkdownStream`, fine) and in the parse-failure
-      panel (`ErrorPanel`, `AICodeEditor`) — a kind there now draws through `AnswerValueView`. Not audited:
-      `useToolComponentAgent`, `useProposePack`, `SystemPromptOptimizer`, `AgentExecutionTestModal`,
-      `AgentGenerator`.
+      panel (`ErrorPanel`, `AICodeEditor`) — a kind there now draws through `AnswerValueView`. Also audited:
+      `useToolComponentAgent` (displays via `MarkdownStream`; the MCP preview's "Generated code" `<pre>` is a
+      deliberate source view of generated CODE meant for the Edit Code tab — kept), `useProposePack` (machine:
+      `parseProposal` — kept), `SystemPromptOptimizer` (display `MarkdownStream`; accept/copy/diff write a
+      SYSTEM PROMPT, which legitimately carries kind JSON examples — kept raw), `AgentGenerator` (display
+      `MarkdownStream`; "Copy raw" is an explicit raw control — kept), `AgentExecutionTestModal` (direct and
+      inline panes printed a `<pre>` → now `AnswerValueView`; copy and inline Replace keep the raw text the
+      harness is proving).
 - [ ] R2. `selectAnswerDocumentText` / `selectLatestAnswerDocumentText` stringify kinds on purpose.
       PARTIAL — kept (stored/passed text). Its display reader, the cleanup pad, previews through `MarkdownStream`;
       transcript studio reattach is a data path.
@@ -155,7 +160,8 @@ Every stream item below adds its case there.
       canvas" (custom shell + public renderer) goes through ONE door, `useOpenAppResponseInCanvas`: a kind answer
       opens as its kind (`detectKindInJsonText` → artifact canvas type, bound via `useOpenArtifactInCanvas` when
       the message is persisted, else the kind's canvas type over its value); a kind with no canvas type opens as
-      its markdown; kindless stays the HTML canvas.
+      its markdown; kindless stays the HTML canvas. The unbound (guest) open announces itself:
+      toast "Opened as a preview — not saved".
 - [x] S6. "Ask about this meeting". Answer drawn through `AnswerValueView` (no unit test — workspace too heavy).
 - [x] S7. Assignments demo. Output text and input values through `AnswerValueView` (no unit test).
 - [ ] S8. Research review/repair page. Already `BasicMarkdownContent` — left to the bottom-layer lane (C4).

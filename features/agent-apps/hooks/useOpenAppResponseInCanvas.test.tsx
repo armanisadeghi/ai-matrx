@@ -14,6 +14,8 @@ const openArtifact = jest.fn(async () => ({ ok: true }));
 let state: unknown = {};
 jest.mock("@/lib/redux/hooks", () => ({ useAppStore: () => ({ getState: () => state }) }));
 jest.mock("@/features/canvas/hooks/useCanvas", () => ({ useCanvas: () => ({ open: openCanvas }) }));
+const toastInfo = jest.fn();
+jest.mock("@/lib/toast", () => ({ toast: { info: (...a: unknown[]) => toastInfo(...a) } }));
 jest.mock("@/features/canvas/hooks/useOpenArtifactInCanvas", () => ({
   useOpenArtifactInCanvas: () => ({ openArtifact }),
 }));
@@ -38,6 +40,7 @@ beforeAll(() => {
 beforeEach(() => {
   openCanvas.mockClear();
   openArtifact.mockClear();
+  toastInfo.mockClear();
 });
 
 it("a kind answer on a persisted message opens as its kind artifact", async () => {
@@ -46,6 +49,7 @@ it("a kind answer on a persisted message opens as its kind artifact", async () =
   expect(openArtifact).toHaveBeenCalledWith(
     expect.objectContaining({ canvasType: "flashcards", title: "Cell biology", messageId: "m1" }),
   );
+  expect(toastInfo).not.toHaveBeenCalled();
   expect(openCanvas).not.toHaveBeenCalled();
 });
 
@@ -53,6 +57,11 @@ it("a guest kind answer opens the kind's canvas type over its value", async () =
   state = { messages: { byConversationId: {} } };
   await door(SET_JSON, "Study app", null);
   expect(openCanvas).toHaveBeenCalledWith(expect.objectContaining({ type: "flashcards" }));
+  // Nothing fails silently: an unsaved open says so, in one short line.
+  expect(toastInfo).toHaveBeenCalledTimes(1);
+  const line = String(toastInfo.mock.calls[0][0]);
+  expect(line.length).toBeLessThanOrEqual(60);
+  expect(line.toLowerCase()).toContain("not saved");
 });
 
 it("a kindless answer keeps the HTML canvas", async () => {
