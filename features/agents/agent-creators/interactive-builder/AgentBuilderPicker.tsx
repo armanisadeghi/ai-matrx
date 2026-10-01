@@ -10,7 +10,7 @@ const BUILDER_OPTIONS = [
     bgClass: "bg-purple-100 dark:bg-purple-900/30",
     title: "Instant Chat Assistant",
     description:
-      "Build a custom chat assistant by selecting key options like persona, tone, format, and fine-tuning sliders.",
+      "Options for persona, tone, format and sliders",
     badges: [
       { label: "No AI needed", color: "purple" },
       { label: "Instant creation", color: "green" },
@@ -23,7 +23,7 @@ const BUILDER_OPTIONS = [
     bgClass: "bg-blue-100 dark:bg-blue-900/30",
     title: "Comprehensive Builder",
     description:
-      "Build advanced agents using structured tabs for task, context, tone, format, knowledge, examples, and more.",
+      "Tabs for task, context, tone, examples and more",
     badges: [
       { label: "Advanced", color: "blue" },
       { label: "Detailed", color: "green" },
@@ -36,7 +36,7 @@ const BUILDER_OPTIONS = [
     bgClass: "bg-indigo-100 dark:bg-indigo-900/30",
     title: "AI Experience Customizer",
     description:
-      "Customize your AI's personality, communication style, intelligence, and output preferences through an intuitive card-based interface.",
+      "Cards for personality, style, intelligence and output",
     badges: [
       { label: "Interactive", color: "indigo" },
       { label: "User-friendly", color: "green" },

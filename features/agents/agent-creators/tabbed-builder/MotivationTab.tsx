@@ -82,7 +82,7 @@ const MotivationContent: React.FC<MotivationContentProps> = ({ updateContent }) 
         </Label>
         <ProTextarea
           id="motivation-details"
-          placeholder="Explain why this request is important or what problem it's trying to solve"
+          placeholder="Why this matters or what problem it solves"
           value={motivationDetails}
           onChange={(e) => setMotivationDetails(e.target.value)}
           className="w-full min-h-[150px] bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"

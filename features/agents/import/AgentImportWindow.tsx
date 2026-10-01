@@ -331,10 +331,9 @@ function PasteBody({
         <FileJson className="w-4 h-4 text-muted-foreground" />
         <span className="text-sm font-medium">Paste {sourceLabel}</span>
       </div>
+      {/* Matrx accepts snake_case, camelCase, and minor syntax fixes automatically. */}
       <p className="text-xs text-muted-foreground shrink-0">
-        Paste a JSON object below. Issues are checked as you paste — fix errors
-        before converting. Matrx accepts snake_case, camelCase, and minor syntax
-        fixes automatically.
+        Paste a JSON object; issues show as you paste.
       </p>
 
       <Textarea

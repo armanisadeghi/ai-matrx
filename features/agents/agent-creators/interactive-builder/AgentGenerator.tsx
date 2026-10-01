@@ -545,7 +545,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
     const ok = await confirm({
       title: "Discard this generated agent?",
       description:
-        "The agent that was just generated — its system prompt, tools, and configuration — is discarded and cannot be recovered. You will have to describe what you want and generate it again from scratch.",
+        "The generated agent, with its prompt, tools and settings, cannot be recovered.",
       confirmLabel: "Discard and start over",
       variant: "destructive",
     });
@@ -721,8 +721,8 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                 onChange={(e) => setUserInput(e.target.value)}
                 placeholder={
                   mandateMode
-                    ? "Anything the draft should know: tone, must-haves, what the last holder got wrong..."
-                    : "Add any specific requirements, tone, formats, or constraints..."
+                    ? "Tone, must-haves, what the last holder got wrong"
+                    : "Requirements, tone, formats or constraints"
                 }
                 className="min-h-[120px] sm:min-h-[180px] text-sm border border-border rounded-xl"
                 disabled={
@@ -744,11 +744,6 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                   })
                 }
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {mandateMode
-                  ? "Everything above is already sent — this is anything you want to add"
-                  : "Any additional context, requirements, or constraints"}
-              </p>
             </div>
 
             {showResult && (

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { usePromptBuilder } from './PromptBuilderContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CopyIcon, CheckIcon } from "lucide-react";
 
@@ -63,9 +63,6 @@ export const PreviewTab: React.FC = () => {
     <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm mb-4">
       <CardHeader>
         <CardTitle className="text-gray-900 dark:text-gray-100">Final Generated Prompt</CardTitle>
-        <CardDescription className="text-gray-600 dark:text-gray-400">
-          This is the complete prompt built from your selected sections.
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <Tabs value={previewTab} onValueChange={(v) => setPreviewTab(v as 'final' | 'structure')}>
@@ -99,9 +96,6 @@ export const PreviewTab: React.FC = () => {
             <div className="p-4 bg-zinc-50 dark:bg-zinc-800 text-gray-800 dark:text-gray-100 rounded-md overflow-auto max-h-[400px] border border-zinc-200 dark:border-zinc-700">
               {showStructureView()}
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              This view shows how the prompt is structured with placeholders. Each section is inserted between its corresponding placeholders.
-            </p>
           </TabsContent>
         </Tabs>
         

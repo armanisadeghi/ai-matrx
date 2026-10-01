@@ -308,8 +308,7 @@ export const MemoryFeaturesCard: React.FC<CardComponentProps> = (props) => {
     <div className="space-y-3 py-2">
       {createOptionComponent(memoryOption, currentValue, props.onChange)}
       <p className="text-xs text-muted-foreground mt-2">
-        When enabled, your AI will remember important information from previous
-        conversations.
+        Your AI remembers key details from past conversations.
       </p>
     </div>
   );
@@ -466,10 +465,7 @@ export const PersonalInfoCard: React.FC<CardComponentProps> = (props) => {
 
   return (
     <div className="space-y-2">
-      <p className="text-sm text-muted-foreground mb-4">
-        Add personal details to make your AI experience more relevant. All
-        information is optional and private.
-      </p>
+      {/* All personal details are optional and private. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {options.map((option) => {
           const currentValue =

@@ -20,11 +20,10 @@ import { EmphasisTab } from './EmphasisTab';
 import { GenericTextareaTab } from './GenericTextareaTab';
 import { PreviewTab } from './PreviewTab';
 
-// Placeholder tab for unimplemented tabs
-const PlaceholderTab: React.FC<{ tabId: string }> = ({ tabId }) => (
+// Placeholder tab for tabs not built yet; the heading carries the state.
+const PlaceholderTab: React.FC<{ tabId: string }> = () => (
   <div className="p-4 text-gray-600 dark:text-gray-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-md">
     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Coming Soon</h3>
-    <p>The "{tabId}" tab is not yet implemented. It will be available in a future update.</p>
   </div>
 );
 
@@ -129,9 +128,6 @@ export const MainPromptBuilder: React.FC = () => {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">AI Prompt Builder</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Build effective prompts by customizing each section
-            </p>
           </div>
           <PromptBuilderContent />
         </div>

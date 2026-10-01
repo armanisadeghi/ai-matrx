@@ -107,7 +107,7 @@ const EmphasisContent: React.FC<EmphasisContentProps> = ({ updateContent }) => {
         </Label>
         <ProTextarea
           id="emphasis-details"
-          placeholder="Provide any additional details about what should be emphasized"
+          placeholder="Anything else to emphasize"
           value={emphasisDetails}
           onChange={(e) => setEmphasisDetails(e.target.value)}
           className="w-full min-h-[150px] bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"

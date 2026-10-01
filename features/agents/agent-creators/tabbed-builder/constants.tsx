@@ -182,7 +182,7 @@ export const promptTemplateSource = {
     },
     context: {
       title: "Context",
-      description: "Provide additional context that helps the AI understand the background"
+      description: "Give background the AI needs to understand the task"
     },
     tone: {
       title: "Tone & Style",
@@ -198,7 +198,7 @@ export const promptTemplateSource = {
     },
     examples: {
       title: "Examples",
-      description: "Provide examples to guide the AI's response format or content"
+      description: "Give examples to guide the response format or content"
     },
     constraints: {
       title: "Constraints",
@@ -232,7 +232,7 @@ export const promptTemplateSource = {
     },
     specialInstructions: {
       title: "Special Instructions",
-      description: "Add any special or unique instructions for this specific request"
+      description: "Add special instructions for this request"
     }
   };
   

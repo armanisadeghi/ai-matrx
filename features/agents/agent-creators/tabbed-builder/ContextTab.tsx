@@ -47,7 +47,7 @@ const ContextContent: React.FC<ContextContentProps> = ({ updateContent }) => {
         </Label>
         <ProTextarea
           id="context-details"
-          placeholder="Provide relevant background information, data, or context to help the AI understand the situation better"
+          placeholder="Background, data or context the AI needs"
           value={contextDetails}
           onChange={(e) => setContextDetails(e.target.value)}
           className="w-full min-h-[200px] bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"

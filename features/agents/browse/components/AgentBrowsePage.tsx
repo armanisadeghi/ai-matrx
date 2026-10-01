@@ -126,9 +126,6 @@ export function AgentBrowsePage({
             <span className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 font-medium text-amber-700 dark:text-amber-300">
               Support tool
             </span>
-            <span className="hidden sm:inline">
-              Organizations&apos; and people&apos;s agents, for tech support.
-            </span>
           </span>
         ) : (
         <>

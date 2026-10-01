@@ -28,12 +28,12 @@ interface ComprehensiveBuilderProps {
   onComplete?: () => void;
 }
 
-const PlaceholderTab: React.FC<{ tabId: string }> = ({ tabId }) => (
+// Tab not built yet; the heading carries the state.
+const PlaceholderTab: React.FC<{ tabId: string }> = () => (
   <div className="p-4 text-gray-600 dark:text-gray-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-md">
     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
       Coming Soon
     </h3>
-    <p>The &ldquo;{tabId}&rdquo; tab is not yet implemented.</p>
   </div>
 );
 
