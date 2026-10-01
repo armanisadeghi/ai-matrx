@@ -32,6 +32,8 @@ export interface DataHomeCorpus {
     searchTrouble: string | null;
   };
   load: () => Promise<DataHomeRow[]>;
+  /** The rows `load` resolved to, once in hand (undefined before) — the list's synchronous answer. */
+  loaded: () => DataHomeRow[] | undefined;
   server: {
     lookup: (search: string, organizationId: string | null) => ServerMatches | undefined;
     request: (search: string, organizationId: string | null) => void;
@@ -59,6 +61,7 @@ export function createDataHomeCorpus(
     searchTrouble: null,
   };
   let held: Promise<DataHomeRow[]> | null = null;
+  let inHand: DataHomeRow[] | undefined;
 
   const read = async (): Promise<DataHomeRow[]> => {
     const answered = await dataHome(dataSource, null);
@@ -78,6 +81,7 @@ export function createDataHomeCorpus(
     meta.names = names;
     meta.kinds = [...new Set(rows.map((r) => r.kind))];
     meta.organizations = [...names.entries()].map(([id, name]) => ({ id, name }));
+    inHand = rows;
     return rows;
   };
 
@@ -123,6 +127,7 @@ export function createDataHomeCorpus(
       }
       return held;
     },
+    loaded: () => inHand,
     server: {
       lookup: (search, organizationId) => answers.get(keyOf(search, organizationId)),
       request: (search, organizationId) => {

@@ -102,6 +102,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
     () =>
       createDataHomeService({
         load: corpus.load,
+        loaded: corpus.loaded,
         server: corpus.server,
         isStarred: (row) => starredSet.has(row.id),
         ownerLabel,

@@ -46,6 +46,11 @@ export interface DataHomeServiceOptions {
   isStarred: (row: DataHomeRow) => boolean;
   ownerLabel: (row: DataHomeRow) => string | null;
   now?: () => number;
+  /**
+   * The rows `load` resolved to, synchronously, once they are in hand (undefined before). With it
+   * the service answers the shell's `peek` — every keystroke repaints in its own render.
+   */
+  loaded?: () => DataHomeRow[] | undefined;
 }
 
 /** The filterable value of a column, keyed by COLUMN ID (the filter bag's and the sort's ids). */
@@ -145,20 +150,30 @@ export function laneOf(query: EntityListQuery): DataHomeScope {
 
 export function createDataHomeService(opts: DataHomeServiceOptions): EntityListService<DataHomeRow> {
   let corpus: Promise<DataHomeRow[]> | null = null;
+  let held: DataHomeRow[] | undefined;
   const all = () => {
     if (!corpus) {
-      corpus = opts.load().catch((error: unknown) => {
-        corpus = null; // a failed read is retried on the next ask, never cached as empty
-        throw error;
-      });
+      corpus = opts.load().then(
+        (rows) => {
+          held = rows;
+          return rows;
+        },
+        (error: unknown) => {
+          corpus = null; // a failed read is retried on the next ask, never cached as empty
+          throw error;
+        },
+      );
     }
     return corpus;
   };
+  /** The rows in hand right now, or undefined (still loading) — the `peek` answers only then. */
+  const inHand = () => held ?? opts.loaded?.();
   const now = () => (opts.now ? opts.now() : Date.now());
 
+  type MatchOpts = { lane?: DataHomeScope | null; skip?: string; org?: boolean };
+
   /** Rows under everything but the lane (and one facet's own filter), with each one's relevance. */
-  const matching = async (query: EntityListQuery, o: { lane?: DataHomeScope | null; skip?: string; org?: boolean } = {}) => {
-    const rows = await all();
+  const matching = (rows: DataHomeRow[], query: EntityListQuery, o: MatchOpts = {}) => {
     const { text: words, tokens } = parseTokens(query.search);
     const titleOnly = tokens.titleOnly || query.filters.title_only?.kind === "boolean" && query.filters.title_only.value;
     const t = now();
@@ -183,13 +198,14 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
    * The rows only the server found, under the same lane, organization, filters and tokens as the
    * instant hits, best first, each saying where it matched.
    */
-  const serverOnly = async (
+  const serverOnly = (
+    rows: DataHomeRow[],
     query: EntityListQuery,
     server: ServerMatches,
     shown: ReadonlySet<string>,
-    o: { lane?: DataHomeScope | null; skip?: string; org?: boolean } = {},
-  ): Promise<DataHomeRow[]> => {
-    const under = await matching({ ...query, search: tokensOnly(query.search) }, o);
+    o: MatchOpts = {},
+  ): DataHomeRow[] => {
+    const under = matching(rows, { ...query, search: tokensOnly(query.search) }, o);
     return under.out
       .filter((m) => server.has(m.row.id) && !shown.has(m.row.id))
       .sort((a, b) => (server.get(b.row.id)?.rank ?? 0) - (server.get(a.row.id)?.rank ?? 0))
@@ -200,19 +216,17 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
   };
 
   /** Every row the list holds for this query — instant hits and server-only hits — for counts and facets. */
-  const everyMatch = async (query: EntityListQuery, o: { lane?: DataHomeScope | null; skip?: string; org?: boolean } = {}) => {
-    const m = await matching(query, o);
+  const everyMatch = (all: DataHomeRow[], query: EntityListQuery, o: MatchOpts = {}) => {
+    const m = matching(all, query, o);
     const rows = m.out.map((x) => x.row);
     const server = serverFor(query, m.words, m.searching, m.titleOnly);
     if (!server || server.size === 0) return rows;
-    return [...rows, ...(await serverOnly(query, server, new Set(rows.map((r) => r.id)), o))];
+    return [...rows, ...serverOnly(all, query, server, new Set(rows.map((r) => r.id)), o)];
   };
 
-  return {
-    async fetchPage(query: EntityListQuery, sort: EntityListSort) {
-      const { out, searching, words, titleOnly } = await matching(query, { lane: laneOf(query) });
+  const pageOf = (all: DataHomeRow[], query: EntityListQuery, sort: EntityListSort) => {
+      const { out, searching, words, titleOnly } = matching(all, query, { lane: laneOf(query) });
       const server = serverFor(query, words, searching, titleOnly);
-      if (!server && searching && !titleOnly && words.length >= 2) opts.server?.request(words, query.orgId);
       const sign = sort.direction === "desc" ? -1 : 1;
       const sortId = sort.sort === "favorite" ? "updated" : sort.sort;
       const byColumn = (a: DataHomeRow, b: DataHomeRow) => {
@@ -243,19 +257,19 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
       let rows = out.map((m) => m.row);
       if (server && server.size > 0) {
         // The instant hits stay put, in their order; what only the server found comes beneath them.
-        rows = [...rows, ...(await serverOnly(query, server, new Set(rows.map((r) => r.id)), { lane: laneOf(query) }))];
+        rows = [...rows, ...serverOnly(all, query, server, new Set(rows.map((r) => r.id)), { lane: laneOf(query) })];
       }
       const start = Math.max(0, (query.page - 1) * sort.pageSize);
       return { rows: rows.slice(start, start + sort.pageSize), total: rows.length };
-    },
+  };
 
-    async fetchCounts(query: EntityListQuery): Promise<EntityScopeCounts> {
+  const countsOf = (all: DataHomeRow[], query: EntityListQuery): EntityScopeCounts => {
       // THE COUNT IS THE LIST: every lane under the same search, filters and organization.
-      const out = await everyMatch(query);
+      const out = everyMatch(all, query);
       const byKind: EntityScopeCounts["byKind"] = {};
       for (const lane of LANES) byKind[lane] = out.filter((row) => inDataHomeScope(row, lane)).length;
       // Each organization's count, for the organization filter: the All lane, every organization.
-      const everyOrg = await everyMatch(query, { lane: "all", org: false });
+      const everyOrg = everyMatch(all, query, { lane: "all", org: false });
       const perOrg = new Map<string, { id: string; label: string; count: number }>();
       for (const row of everyOrg) {
         if (!row.organizationId) continue;
@@ -264,13 +278,13 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
         perOrg.set(row.organizationId, cur);
       }
       return { byKind, narrow: { all: [...perOrg.values()].sort((a, b) => a.label.localeCompare(b.label)) } };
-    },
+  };
 
-    async fetchFacets(query: EntityListQuery): Promise<EntityFacets> {
+  const facetsOf = (all: DataHomeRow[], query: EntityListQuery): EntityFacets => {
       const byKind: EntityFacets["byKind"] = {};
       for (const id of FACET_COLUMNS) {
         // A facet's own filter is skipped so its options stay choosable.
-        const out = await everyMatch(query, { lane: laneOf(query), skip: id });
+        const out = everyMatch(all, query, { lane: laneOf(query), skip: id });
         const counts = new Map<string, number>();
         for (const row of out) {
           const v = text(fieldValue(row, id, opts));
@@ -282,6 +296,48 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
           .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
       }
       return { byKind };
+  };
+
+  // THE PEEK ANSWERS ONLY WHAT THE ASYNC CALL WOULD: same rows, same functions. A question whose
+  // server layer would be asked (text of 2+ letters with no server answer yet) still answers in
+  // hand — the instant hits — and asks the server exactly as fetchPage does; its answer re-asks the
+  // list (DataHomeList's serverVersion → serviceKey).
+  const askServer = (query: EntityListQuery) => {
+    const { text: words, tokens } = parseTokens(query.search);
+    const titleOnly = tokens.titleOnly || (query.filters.title_only?.kind === "boolean" && query.filters.title_only.value);
+    const searching = words.length > 0;
+    if (!serverFor(query, words, searching, Boolean(titleOnly)) && searching && !titleOnly && words.length >= 2) {
+      opts.server?.request(words, query.orgId);
+    }
+  };
+
+  return {
+    async fetchPage(query: EntityListQuery, sort: EntityListSort) {
+      const rows = await all();
+      askServer(query);
+      return pageOf(rows, query, sort);
+    },
+    async fetchCounts(query: EntityListQuery): Promise<EntityScopeCounts> {
+      return countsOf(await all(), query);
+    },
+    async fetchFacets(query: EntityListQuery): Promise<EntityFacets> {
+      return facetsOf(await all(), query);
+    },
+    peek: {
+      page(query, sort) {
+        const rows = inHand();
+        if (!rows) return undefined;
+        askServer(query);
+        return pageOf(rows, query, sort);
+      },
+      counts(query) {
+        const rows = inHand();
+        return rows ? countsOf(rows, query) : undefined;
+      },
+      facets(query) {
+        const rows = inHand();
+        return rows ? facetsOf(rows, query) : undefined;
+      },
     },
   };
 }
