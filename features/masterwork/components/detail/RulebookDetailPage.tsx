@@ -921,6 +921,8 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // one `approachLane.ts` exists to stop happening a second time.
   // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
   // the Sources panel opens and scrolls into view as the next step.
+  // The title's inline rename, controlled so a deep link can open it.
+  const [nameEditing, setNameEditing] = useState(false);
   const dumpParam = searchParams.get("dump") === "1";
   /**
    * 🚨 THE INGEST DIALOG SESSION. One lane, resolved at open time and latched
@@ -1571,6 +1573,12 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // the page is unchanged for them.
   useDeepLinkArrival(searchParams.get("interview") === "1", canEdit, () =>
     setInterviewOpen(true),
+  );
+  // `?rename=1` — the duplicate-name notice's Rename button lands here and
+  // opens the inline title rename (cold walk 23): the control rides in the
+  // notice, so the notice can never cover the thing it asks her to click.
+  useDeepLinkArrival(searchParams.get("rename") === "1", canEdit, () =>
+    setNameEditing(true),
   );
 
 
@@ -2371,6 +2379,8 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                     {canEdit ? (
                       <EditableLabel
                         value={rulebook.name}
+                        editing={nameEditing}
+                        onEditingChange={setNameEditing}
                         commitMode="await"
                         ariaLabel="Rulebook name"
                         truncate={false}

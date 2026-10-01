@@ -169,10 +169,26 @@ describe("the Rulebook page and the notice agree with the controls", () => {
     );
   });
 
-  it("the duplicate-name notice names the two controls that exist", () => {
+  // Cold walk 23 (friction): the notice said "click its name at the top of
+  // its page" while it sat at the top of the page, over that name. The
+  // control now rides IN the notice — a toast cannot cover its own button.
+  it("the duplicate-name notice carries its Rename control instead of pointing at one", () => {
     const flow = read("../../intake/NewRulebookFlow.tsx");
     expect(flow).not.toContain("rename either from its own page");
-    expect(flow).toContain("click its name at the top of its page");
-    expect(flow).toContain("use Rename in its menu on the Masterworks list");
+    expect(flow).not.toContain("click its name at the top of its page");
+    const notice = flow.slice(flow.indexOf("rulebook.nameAlreadyInUse"));
+    expect(notice).toMatch(/action: \{\s*label: "Rename"/);
+    expect(notice).toContain('"rename"');
+  });
+
+  it("the page opens its inline rename when it arrives with ?rename=1", () => {
+    const page = read("../../components/detail/RulebookDetailPage.tsx");
+    expect(page).toContain('searchParams.get("rename") === "1"');
+    const nameBlock = page.slice(
+      page.indexOf('data-surface-value="rulebook_name"'),
+      page.indexOf('data-surface-value="rulebook_name"') + 900,
+    );
+    expect(nameBlock).toContain("editing={nameEditing}");
+    expect(nameBlock).toContain("onEditingChange={setNameEditing}");
   });
 });

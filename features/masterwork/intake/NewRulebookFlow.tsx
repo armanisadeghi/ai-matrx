@@ -703,8 +703,24 @@ export function NewRulebookFlow() {
         `"${rulebook.name}" started`,
         rulebook.nameAlreadyInUse
           ? {
-              description: `You already have a Rulebook called "${rulebook.name}". This one is separate — to rename either, click its name at the top of its page, or use Rename in its menu on the Masterworks list. ${approach.costTimeShape}`,
+              // 🚨 THE CONTROL RIDES IN THE NOTICE (cold walk 23, friction).
+              // It used to send her to the name at the top of the page while
+              // a stay-until-dismissed toast sat at the top of that page, over
+              // the name. A toast cannot cover its own button: Rename opens
+              // the page's inline rename (`?rename=1`). The older twin keeps
+              // Rename in its row menu on the Masterworks list.
+              description: "You already have a Rulebook with this name.",
               duration: Infinity,
+              action: {
+                label: "Rename",
+                onClick: () => {
+                  const renameParams = new URLSearchParams(params);
+                  renameParams.set("rename", "1");
+                  router.push(
+                    `/masterwork/${rulebook.id}?${renameParams.toString()}`,
+                  );
+                },
+              },
             }
           : { description: approach.costTimeShape },
       );
