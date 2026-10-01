@@ -194,3 +194,6 @@ work/
 /measurements/
 /scripts/.tmp-*
 .scratch-perf/
+
+# scripts/sync-main.py --pause: per-checkout, never committed (expires on its own)
+.matrx/sync-paused

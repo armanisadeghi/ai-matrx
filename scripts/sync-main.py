@@ -3,6 +3,10 @@
 
 Run it from the repo root:   python3 scripts/sync-main.py
 Options:                       --no-push   do everything locally, push nothing (for testing)
+GO-time switches (both off unless their file exists; see "GO-time switches" below):
+    python3 scripts/sync-main.py --pause "<reason>" [--minutes N] [--by NAME]   (default 90, max 480)
+    python3 scripts/sync-main.py --resume
+    python3 scripts/sync-main.py --status        pause state + old-path refusal state
 Replay a past sync (for re-testing how conflicts get resolved; commits locally, never pushes):
     python3 scripts/sync-main.py --replay <sync merge commit> <path> [<path> ...]
 
@@ -208,6 +212,248 @@ def sweep_message_body(files):
         return authors_body(files, found, why)
     except Exception as e:  # noqa: BLE001
         return "authors unknown (%s)" % str(e)[:80]
+
+
+# ── GO-time switches: both do nothing unless their file exists ─────────────────────────────
+# Built for planned tree moves (common-docs projects/chat-package-move/REGISTER.md R8): a sweep
+# firing mid-move would commit a half-moved tree, and after the move a peer with stale context
+# writes a file at an OLD path and the sweep would ship it, recreating the old tree.
+#
+# PAUSE  .matrx/sync-paused (gitignored; written by --pause, removed by --resume). While it is
+#        live every sweep exits at once with SYNC PAUSED and PAUSED_EXIT, touching nothing, and
+#        ./ship.sh skips its release. It always expires: at its `until:` line, never later than
+#        PAUSE_MAX_MIN after the file was written, and PAUSE_DEFAULT_MIN after it was written when
+#        `until:` is unreadable. An expired pause is removed and announced; the sweep runs.
+# OLD-PATH REFUSAL  .matrx/moved-paths.txt (tracked; one `old -> new` per line, a directory
+#        ends in `/`; `R100<TAB>old<TAB>new` lines from `git diff --name-status -M` also work).
+#        A NEW file (untracked, or staged as added) at a listed old path is never committed
+#        there: it is moved, bytes intact, to _conflicts/<stamp>-old-path-refused/<path>.held
+#        with the path it belongs at, listed in _conflicts/README.md, and the sweep goes on.
+#        A file still tracked at HEAD is never refused (it was not moved).
+PAUSE_REL = ".matrx/sync-paused"
+PAUSE_DEFAULT_MIN = 90
+PAUSE_MAX_MIN = 480
+PAUSED_EXIT = 3      # ship.sh reads it; 75 already means "release slot busy" to ship-all
+MOVED_REL = ".matrx/moved-paths.txt"
+REFUSED_DIR = "old-path-refused"
+
+
+def _now():
+    return datetime.datetime.now().astimezone()
+
+
+def _iso(t):
+    return t.replace(microsecond=0).isoformat()
+
+
+def read_pause():
+    """None when not paused. Otherwise {by, reason, since, until, note}. An expired pause file is
+    removed (announced) and reads as None, so a forgotten pause can never freeze the repo."""
+    if not os.path.lexists(PAUSE_REL):
+        return None
+    info = {}
+    try:
+        with open(PAUSE_REL, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                k, sep, v = line.partition(":")
+                if sep:
+                    info[k.strip().lower()] = v.strip()
+        written = datetime.datetime.fromtimestamp(os.path.getmtime(PAUSE_REL)).astimezone()
+    except OSError:
+        written = _now()
+    cap = written + datetime.timedelta(minutes=PAUSE_MAX_MIN)
+    note = ""
+    try:
+        until = datetime.datetime.fromisoformat(info.get("until", "")).astimezone()
+    except ValueError:
+        until = written + datetime.timedelta(minutes=PAUSE_DEFAULT_MIN)
+        note = "its until: line is unreadable, so it ends %d min after the file was written" % PAUSE_DEFAULT_MIN
+    if until > cap:
+        until = cap
+        note = "capped at %d min after the file was written" % PAUSE_MAX_MIN
+    if _now() >= until:
+        try:
+            os.remove(PAUSE_REL)
+        except OSError:
+            pass
+        say("SYNC PAUSE EXPIRED at %s (by %s: %s) — removed %s; syncing normally."
+            % (_iso(until), info.get("by", "?"), info.get("reason", "?"), PAUSE_REL))
+        return None
+    return {"by": info.get("by", "?"), "reason": info.get("reason", "?"),
+            "since": info.get("since", "?"), "until": until, "note": note}
+
+
+def pause_line(p):
+    left = max(1, int((p["until"] - _now()).total_seconds() // 60) + 1)
+    return "SYNC PAUSED by %s until %s (%d min left)%s: %s" % (
+        p["by"], _iso(p["until"]), left, " [%s]" % p["note"] if p["note"] else "", p["reason"])
+
+
+def stop_paused(p, where="Nothing was committed, merged or pushed."):
+    print(pause_line(p), file=sys.stderr, flush=True)
+    print(where + " Resume: python3 scripts/sync-main.py --resume", file=sys.stderr, flush=True)
+    sys.exit(PAUSED_EXIT)
+
+
+def other_sweeps():
+    """Other sync-main sweeps running right now ('pid command' lines), so a pauser knows to wait."""
+    r = subprocess.run(["pgrep", "-lf", "sync-main.py"], capture_output=True, text=True)
+    out = []
+    for line in r.stdout.splitlines():
+        pid, _, cmd = line.strip().partition(" ")
+        if pid != str(os.getpid()) and not re.search(r"--(pause|resume|status)\b", cmd):
+            out.append(line.strip())
+    return out
+
+
+def pause_cmd(argv):
+    """--pause "<reason>" [--minutes N] [--by NAME]"""
+    def opt(name, default):
+        if name in argv:
+            i = argv.index(name)
+            if i + 1 >= len(argv):
+                die("%s needs a value." % name)
+            return argv[i + 1]
+        return default
+    i = argv.index("--pause")
+    reason = argv[i + 1].strip() if i + 1 < len(argv) and not argv[i + 1].startswith("--") else ""
+    if not reason:
+        die('usage: python3 scripts/sync-main.py --pause "<reason>" [--minutes N] [--by NAME]')
+    try:
+        minutes = int(opt("--minutes", PAUSE_DEFAULT_MIN))
+    except ValueError:
+        die("--minutes takes a whole number.")
+    if not 1 <= minutes <= PAUSE_MAX_MIN:
+        die("--minutes must be 1..%d; a pause always expires." % PAUSE_MAX_MIN)
+    by = opt("--by", "%s@%s" % (os.environ.get("USER", "?"), os.uname().nodename.split(".")[0]))
+    now = _now()
+    os.makedirs(os.path.dirname(PAUSE_REL), exist_ok=True)
+    with open(PAUSE_REL, "w") as f:
+        f.write("by: %s\nreason: %s\nsince: %s\nuntil: %s\n" % (
+            by, " ".join(reason.split()), _iso(now), _iso(now + datetime.timedelta(minutes=minutes))))
+    say(pause_line(read_pause()))
+    say("Every sweep of this checkout now exits without touching anything; ./ship.sh skips its release.")
+    running = other_sweeps()
+    if running:
+        say("A sweep STARTED BEFORE the pause is still running; wait for it to finish:\n  "
+            + "\n  ".join(running))
+
+
+def resume_cmd():
+    p = read_pause()
+    if os.path.lexists(PAUSE_REL):
+        os.remove(PAUSE_REL)
+    say("sync resumed%s; the next sweep runs normally." % (
+        " (was: %s)" % pause_line(p) if p else " (it was not paused)"))
+
+
+def load_moved():
+    """[(old, new)] from MOVED_REL, longest old path first; None when the file is absent."""
+    if not os.path.isfile(MOVED_REL):
+        return None
+    entries = []
+    with open(MOVED_REL, encoding="utf-8", errors="replace") as f:
+        for raw in f:
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if " -> " in line:
+                old, new = (x.strip() for x in line.split(" -> ", 1))
+            elif "\t" in line:
+                parts = [x.strip() for x in raw.rstrip("\n").split("\t")]
+                if len(parts) == 3 and parts[0].startswith("R"):
+                    old, new = parts[1], parts[2]
+                elif len(parts) == 2:
+                    old, new = parts
+                else:
+                    continue
+            else:
+                old, new = line, ""
+            if old:
+                entries.append((old, new))
+    entries.sort(key=lambda e: -len(e[0]))
+    return entries
+
+
+def moved_target(path, entries):
+    """(old entry, where the file belongs) when `path` is a moved path, else None."""
+    for old, new in entries:
+        if old.endswith("/"):
+            if path.startswith(old):
+                return old, (new.rstrip("/") + "/" + path[len(old):]) if new else "(not listed)"
+        elif path == old:
+            return old, new or "(not listed)"
+    return None
+
+
+def moved_status():
+    entries = load_moved()
+    if entries is None:
+        return "old-path refusal: off (no %s)" % MOVED_REL
+    return "old-path refusal: ON — %d moved path(s) in %s" % (len(entries), MOVED_REL)
+
+
+def status_cmd():
+    p = read_pause()
+    say(pause_line(p) if p else "sync: not paused (no %s)" % PAUSE_REL)
+    say(moved_status())
+
+
+def refuse_old_paths(stamp):
+    """Move every NEW file at a moved path aside before the sweep commits. Returns held tuples
+    (path, held_path, summary) in update_log's shape."""
+    entries = load_moved()
+    if not entries:
+        return []
+    _, untracked, _ = git("ls-files", "--others", "--exclude-standard", "-z")
+    _, added, _ = git("diff", "--cached", "--name-only", "--no-renames", "--diff-filter=A", "-z")
+    staged = set(x for x in added.split("\0") if x)
+    candidates = sorted(set(x for x in untracked.split("\0") if x) | staged)
+    refused = []
+    for path in candidates:
+        if path == MOVED_REL or path.startswith(HOLD_ROOT + "/"):
+            continue
+        hit = moved_target(path, entries)
+        if not hit or blob_at("HEAD", path):
+            continue
+        old, new = hit
+        held = os.path.join(HOLD_ROOT, "%s-%s" % (stamp, REFUSED_DIR), path + ".held")
+        header = ("%s\n\n"
+                  "OLD PATH REFUSED, written by scripts/sync-main.py\n"
+                  "File:        %s\n"
+                  "Belongs at:  %s\n"
+                  "Why:         %s was moved (entry '%s' in %s). A file saved at the old path would\n"
+                  "             recreate it, so the sweep moved it here instead of committing it there.\n"
+                  "Done with it: the work is in the new path, this .held file is deleted, and its line in\n"
+                  "%s is deleted.\n"
+                  "---------------- THE REFUSED FILE BELOW ----------------\n"
+                  % (HELD_MARK, path, new, old, old, MOVED_REL, LOG_REL)).encode()
+        if os.path.islink(path):
+            data, binary = ("(a symlink to %s)\n" % os.readlink(path)).encode(), False
+        else:
+            with open(path, "rb") as f:
+                data = f.read()
+            binary = is_binary(data)
+        os.makedirs(os.path.dirname(held), exist_ok=True)
+        if binary:
+            with open(held, "wb") as f:
+                f.write(data)
+            with open(held + "-note.txt", "wb") as f:
+                f.write(header.replace(b"THE REFUSED FILE BELOW", b"THE REFUSED FILE IS NEXT TO THIS NOTE"))
+        else:
+            with open(held, "wb") as f:
+                f.write(header + data)
+        if path in staged:
+            git("rm", "-q", "--cached", "--", path)
+        os.remove(path)
+        try:
+            os.removedirs(os.path.dirname(path))   # only the now-empty old folders
+        except OSError:
+            pass
+        say("OLD PATH REFUSED: %s recreates a moved path; it belongs at %s. Moved aside to %s"
+            % (path, new, held))
+        refused.append((path, held, "recreated moved path %s; belongs at %s" % (path, new)))
+    return refused
 
 
 # ── step 1 ──────────────────────────────────────────────────────────────────────────────────
@@ -911,9 +1157,24 @@ def main():
         os.chdir(top.strip())
         replay(sys.argv[2:])
         return
-    push = "--no-push" not in sys.argv[1:]
+    argv = sys.argv[1:]
+    push = "--no-push" not in argv
     _, top, _ = git("rev-parse", "--show-toplevel")
     os.chdir(top.strip())
+    if "--pause" in argv:
+        pause_cmd(argv)
+        return
+    if "--resume" in argv:
+        resume_cmd()
+        return
+    if "--status" in argv:
+        status_cmd()
+        return
+    paused = read_pause()
+    if paused:
+        stop_paused(paused)
+    if load_moved() is not None:
+        say(moved_status())
     # Show where we started, so the terminal holds the before-state if anything goes wrong.
     say("==================== git status (before sync) ====================")
     subprocess.run(["git", "status"])
@@ -936,8 +1197,17 @@ def main():
     total_local = pulled = 0
     fixed, docs, held = [], [], []
     packages = None
+    refused = []
     for attempt in range(1, MAX_ATTEMPTS + 1):
+        if attempt > 1:
+            paused = read_pause()
+            if paused:
+                stop_paused(paused, "Paused mid-run: earlier attempts' commits are local only, nothing more was done.")
         prune()
+        r = refuse_old_paths(stamp)
+        if r:
+            update_log(stamp, [], r)
+            refused += r
         record_mtimes()
         total_local += commit_all()
         rc, _, err = git("fetch", "-q", REMOTE, BRANCH, check=False)
@@ -980,6 +1250,11 @@ def main():
     report(fixed, docs, held,
            "synced: %d local files committed, %d commits pulled from GitHub%s" % (
                total_local, pulled, "" if push else " (--no-push: nothing pushed)"))
+    for path, held_path, _ in refused:
+        say("  OLD PATH REFUSED: %s  ->  %s" % (path, held_path))
+    if refused:
+        say("%d file(s) recreated moved paths and were NOT committed there; listed in %s."
+            % (len(refused), LOG_REL))
     if packages:
         say(packages)
 

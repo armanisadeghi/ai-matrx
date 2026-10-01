@@ -36,6 +36,13 @@ if $DRY_RUN; then
 else
     python3 "$ROOT/scripts/sync-main.py"
     SYNC_RC=$?
+    # 3 = SYNC PAUSED (scripts/sync-main.py --pause): a planned tree move is in flight, so a
+    # release would ship a half-moved tree. Release nothing; the pause expires on its own.
+    if [[ $SYNC_RC -eq 3 ]]; then
+        echo ""
+        echo "ship.sh: sync exit 3 (SYNC PAUSED, reason above), release skipped"
+        exit 3
+    fi
     if [[ $SYNC_RC -ne 0 ]]; then
         echo ""
         echo "ship.sh: the sync did not finish (exit $SYNC_RC; its reason is printed above). Releasing anyway."
