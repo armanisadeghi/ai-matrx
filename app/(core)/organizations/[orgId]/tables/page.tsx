@@ -14,42 +14,34 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { KeptByTheAppLine } from "@/features/unified-data/hub/KeptByTheAppLine";
-import { oneRowPerTable } from "@/features/data-tables/data-source/one-row-per-table";
 
 const SELECT_COLS = "id, table_name, description, version, updated_at";
 
 /**
- * Which cards are record-store Tables — only those say where they live and can move
- * (`WhereItLives`); the older datasets have no such door. Filled by `listTables` before the
- * list renders its cards.
- */
-const storeTableIds = new Set<string>();
-
-/**
- * THE ORGANIZATION'S TABLES, READ WHERE TABLES LIVE (lane PROOF-DEFECTS, D5): one call to
- * `custom.table_list_everywhere` — the both-stores list door (GRID-PRIMITIVES G9) the table
- * pickers use — which answers each table's store and whether the app keeps it for itself. This
- * page used to read `workbench.udt_datasets` directly for the older side and list every
- * record-store table beside it, so a column's choice list ("Insurance Carriers") or a test's
- * choices showed as ordinary tables while /data-v2 kept them behind Show everything. A list that
- * cannot be read is a failure the page shows, never a silently shorter list.
+ * THE ORGANIZATION'S TABLES (lane PROOF-DEFECTS, D5): one call to `custom.table_list_everywhere` —
+ * the list door (GRID-PRIMITIVES G9) the table pickers use — which also answers whether the app
+ * keeps a table for itself, so a column's choice list stays behind Show everything as on /data-v2.
+ * A list that cannot be read is a failure the page shows, never a silently shorter list.
  */
 async function listTables(orgId: string): Promise<{ rows: Array<Record<string, unknown>>; kept: Array<Record<string, unknown>> }> {
   const store = await (supabase as unknown as SupabaseClient).schema("custom").rpc("table_list_everywhere", { p_organization_id: orgId });
   if (store.error) throw new Error(`The organization's tables could not be listed: ${store.error.message}`);
-  // A table in both stores is listed once, for the store it lives in (review 2, fix lane F item 3).
-  const tables = await oneRowPerTable(
-    supabase as unknown as SupabaseClient,
-    ((store.data as { tables?: unknown } | null)?.tables ?? []) as Array<Record<string, unknown>>,
-  );
-  storeTableIds.clear();
-  for (const t of tables) if (t.store === "records") storeTableIds.add(String(t.id));
+  const tables = ((store.data as { tables?: unknown } | null)?.tables ?? []) as Array<Record<string, unknown>>;
   const byRecent = (a: Record<string, unknown>, b: Record<string, unknown>) =>
     String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? ""));
   return {
     rows: tables.filter((t) => t.kept_by_the_app !== true).sort(byRecent),
     kept: tables.filter((t) => t.kept_by_the_app === true).sort(byRecent),
   };
+}
+
+/** A table another member shared with this organization, read from the store by id. */
+async function sharedTables(ids: string[]): Promise<Array<Record<string, unknown>>> {
+  const store = await (supabase as unknown as SupabaseClient).schema("custom").rpc("table_list_everywhere", {});
+  if (store.error) throw new Error(`The shared tables could not be read: ${store.error.message}`);
+  const wanted = new Set(ids);
+  const tables = ((store.data as { tables?: unknown } | null)?.tables ?? []) as Array<Record<string, unknown>>;
+  return tables.filter((t) => wanted.has(String(t.id)));
 }
 
 const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
@@ -117,29 +109,24 @@ export default function OrgTablesPage() {
             key={reread}
             orgId={resolvedOrgId}
             resourceType="dataset"
-            tableName="udt_datasets"
+            hydrateShared={sharedTables}
             selectColumns={SELECT_COLS}
             ownedQuery={ownedQuery}
             mapRow={mapRow}
-            // A table in the new system opens at its own address; only an older one at /data/<id>
-            // (lane HANDOVER: every card opened the older address, which then claimed the table
-            // had moved there).
-            getHref={(id) => (storeTableIds.has(id) ? `/data-v2/${id}` : `/data/${id}`)}
+            getHref={(id) => `/data-v2/${id}`}
             emptyTitle="No shared tables yet"
             emptyDescription="Data tables owned by this organization will appear here, along with tables other members share."
             emptyIcon={
               <Table className="h-8 w-8 text-cyan-600 dark:text-cyan-400" />
             }
-            renderCardAside={(item) =>
-              storeTableIds.has(item.id) ? (
-                <WhereItLives
-                  variant="row"
-                  tableId={item.id}
-                  knownOrganizationName={orgName}
-                  onMoved={() => setReread((n) => n + 1)}
-                />
-              ) : null
-            }
+            renderCardAside={(item) => (
+              <WhereItLives
+                variant="row"
+                tableId={item.id}
+                knownOrganizationName={orgName}
+                onMoved={() => setReread((n) => n + 1)}
+              />
+            )}
           />
           <div className="mt-4">
             <KeptByTheAppLine

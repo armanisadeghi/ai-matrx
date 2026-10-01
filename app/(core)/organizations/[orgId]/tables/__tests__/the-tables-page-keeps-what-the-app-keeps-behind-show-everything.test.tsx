@@ -1,11 +1,10 @@
 /**
- * LANE PROOF-DEFECTS (D5) — THE ORGANIZATION'S TABLES PAGE READS WHERE TABLES LIVE, AND KEEPS
+ * LANE PROOF-DEFECTS (D5) — THE ORGANIZATION'S TABLES PAGE READS THE RECORD STORE, AND KEEPS
  * WHAT THE APP KEEPS BEHIND "SHOW EVERYTHING".
  *
  * THE USE CASE. Harbor Dental Group's office manager opens the organization's Tables page. She
  * sees Hygiene Recall Schedule; she does not see "Insurance Carriers" (the choice list behind a
- * column) until she presses Show everything — the same as on /data-v2. RED against the old page:
- * it read workbench.udt_datasets directly and listed the kept list as an ordinary table.
+ * column) until she presses Show everything — the same as on /data-v2. No workbench table is read.
  */
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -82,7 +81,7 @@ test("the page lists the organization's own tables and keeps the app's behind Sh
   expect(host.textContent).toContain("Hygiene Recall Schedule");
   expect(host.textContent).not.toContain("Insurance Carriers");
   expect(host.textContent).toContain("1 table the app keeps for itself is not listed here.");
-  expect(fromCalls.filter((c) => c.includes("udt_datasets"))).toEqual([]);
+  expect(fromCalls.filter((c) => c.includes("workbench"))).toEqual([]);
   expect(rpc).toHaveBeenCalledWith("table_list_everywhere", { p_organization_id: ORG });
 
   const button = [...host.querySelectorAll("button")].find((b) => b.textContent === "Show everything");
