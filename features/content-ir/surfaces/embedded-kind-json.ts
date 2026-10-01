@@ -24,7 +24,13 @@ export interface EmbeddedKindJsonRegion {
 
 export type EmbeddedKindJsonPiece =
   | { type: "container"; content: string }
-  | { type: "kind"; content: string; kind: string };
+  | { type: "kind"; content: string; kind: string }
+  /**
+   * JSON punctuation that only held kinds together — the `[`, `,` and `]` of
+   * an array of kinds. Kept so the partition stays lossless; never rendered
+   * (a lone `[` drawn as a JSON card is noise, not content — A6).
+   */
+  | { type: "chrome"; content: string };
 
 function matchingJsonObjectEnd(source: string, start: number): number | null {
   if (source[start] !== "{" && source[start] !== "[") return null;
@@ -330,6 +336,42 @@ export function findEmbeddedKindJsonRegions(
   return regions;
 }
 
+/**
+ * The array punctuation around runs of kinds: for every run of regions joined
+ * only by commas, opened by a `[` (the last non-space byte before the run) and
+ * closed by a `]` (the first one after it), the spans `[…`, `,` and `…]` are
+ * chrome. Returned as [start, end) spans, in order.
+ */
+function kindArrayChromeSpans(
+  source: string,
+  regions: EmbeddedKindJsonRegion[],
+): Array<[number, number]> {
+  const spans: Array<[number, number]> = [];
+  let first = 0;
+  while (first < regions.length) {
+    let last = first;
+    while (
+      last + 1 < regions.length &&
+      /^\s*,\s*$/.test(source.slice(regions[last]!.end, regions[last + 1]!.start))
+    ) {
+      last++;
+    }
+    const before = source.slice(0, regions[first]!.start);
+    const open = /\[\s*$/.exec(before);
+    const after = source.slice(regions[last]!.end);
+    const close = /^\s*\]/.exec(after);
+    if (open && close) {
+      spans.push([open.index, regions[first]!.start]);
+      for (let k = first; k < last; k++) {
+        spans.push([regions[k]!.end, regions[k + 1]!.start]);
+      }
+      spans.push([regions[last]!.end, regions[last]!.end + close[0].length]);
+    }
+    first = last + 1;
+  }
+  return spans;
+}
+
 /** Losslessly partition a container around every recovered kind region. */
 export function splitAroundEmbeddedKindJson(
   source: string,
@@ -338,17 +380,38 @@ export function splitAroundEmbeddedKindJson(
   const regions = findEmbeddedKindJsonRegions(source, options);
   if (regions.length === 0) return [{ type: "container", content: source }];
 
+  // Every boundary in order: kind regions and chrome spans never overlap.
+  const marks: Array<
+    { start: number; end: number } & (
+      | { type: "kind"; kind: string }
+      | { type: "chrome" }
+    )
+  > = [
+    ...regions.map((r) => ({ start: r.start, end: r.end, type: "kind" as const, kind: r.kind })),
+    ...kindArrayChromeSpans(source, regions).map(([start, end]) => ({
+      start,
+      end,
+      type: "chrome" as const,
+    })),
+  ].sort((a, b) => a.start - b.start);
+
   const pieces: EmbeddedKindJsonPiece[] = [];
   let cursor = 0;
-  for (const region of regions) {
-    if (region.start > cursor) {
+  for (const mark of marks) {
+    if (mark.start > cursor) {
       pieces.push({
         type: "container",
-        content: source.slice(cursor, region.start),
+        content: source.slice(cursor, mark.start),
       });
     }
-    pieces.push({ type: "kind", content: region.content, kind: region.kind });
-    cursor = region.end;
+    if (mark.end > mark.start) {
+      pieces.push(
+        mark.type === "kind"
+          ? { type: "kind", content: source.slice(mark.start, mark.end), kind: mark.kind }
+          : { type: "chrome", content: source.slice(mark.start, mark.end) },
+      );
+    }
+    cursor = Math.max(cursor, mark.end);
   }
   if (cursor < source.length) {
     pieces.push({ type: "container", content: source.slice(cursor) });

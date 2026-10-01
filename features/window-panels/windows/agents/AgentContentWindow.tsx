@@ -458,7 +458,7 @@ function AgentJsonTab({ agentId }: { agentId: string }) {
 
   return (
     <div className="h-full p-2">
-      <JsonInspector
+      <JsonInspector showSource
         data={definition ?? {}}
         label="Agent Definition"
         defaultView="json"

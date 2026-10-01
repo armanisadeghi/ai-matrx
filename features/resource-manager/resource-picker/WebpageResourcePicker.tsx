@@ -53,14 +53,6 @@ export interface WebpageLanded {
 
 interface WebpageResourcePickerCoreProps {
   onSelect: (content: PreFetchedUrl, landed: WebpageLanded) => void;
-  /**
-   * A read of `url` started (after the link was checked). A host that keeps
-   * the link while it is read (the Source input: a reload mid-read brings it
-   * back) listens here; `onSelect` or `onReadEnd` follows.
-   */
-  onReadStart?: (url: string) => void;
-  /** The read ended without a pick: it failed, or the person closed the preview. */
-  onReadEnd?: () => void;
   onSwitchTo?: (
     type: "youtube" | "image_url" | "file_url",
     url: string,
@@ -73,6 +65,14 @@ interface WebpageResourcePickerCoreProps {
    * 2026-09-10 a PDF pasted into a Rulebook's "Add a link" did nothing at all.
    */
   onFileUrl?: (url: string, filename: string) => void;
+  /**
+   * A host that reads the page through its OWN door receives the checked,
+   * normalized web page link here; the picker then neither scrapes nor
+   * previews. The Source input does this so a web page takes the same
+   * organization ask → hold → continue path as every other intake door, and
+   * the page is added once it is read (no second "Add page" step).
+   */
+  onReadUrl?: (url: string) => void;
   initialUrl?: string;
 }
 
@@ -141,10 +141,9 @@ export function detectUrlType(
 
 export function WebpageResourcePickerCore({
   onSelect,
-  onReadStart,
-  onReadEnd,
   onSwitchTo,
   onFileUrl,
+  onReadUrl,
   initialUrl,
 }: WebpageResourcePickerCoreProps) {
   const [url, setUrl] = useState(initialUrl || "");
@@ -246,20 +245,21 @@ export function WebpageResourcePickerCore({
     setSuggestedType(null);
     setPasteOpen(false);
 
-    onReadStart?.(normalized);
+    if (onReadUrl) {
+      onReadUrl(normalized);
+      setUrl("");
+      return;
+    }
+
     try {
       const result = await scrapeUrl(normalized);
-      if (!result) {
-        onReadEnd?.();
-        return;
-      }
+      if (!result) return;
       setEditedContent(result.textContent);
       setCharLimit(0);
       setPreviewTab("pretty");
       setShowPreview(true);
     } catch {
       // Error is already captured in hook state (hasError / error)
-      onReadEnd?.();
     }
   };
 
@@ -297,7 +297,6 @@ export function WebpageResourcePickerCore({
   };
 
   const handleClosePreview = () => {
-    onReadEnd?.();
     setShowPreview(false);
     setPreviewTab("pretty");
     reset();

@@ -156,7 +156,13 @@ export function pendingStructuredEnvelope(block: {
   if (block.type !== "code") return null;
   const envelope = readEnvelope(block.metadata);
   if (!envelope) return unparsedKindPendingEnvelope(block);
-  if (envelope.root.status !== "streaming") return null;
+  if (envelope.root.status !== "streaming") {
+    // The parser gave up on a region whose BLOCK is still streaming (an array
+    // root — the kernel parses one object — or a grammar slip mid-payload):
+    // it names no kind, so the first-key rule decides exactly as it does for
+    // a region no parser opened (A6). A settled block falls through.
+    return envelope.root.kind ? null : unparsedKindPendingEnvelope(block);
+  }
   if (envelope.root.kind) {
     // Identified but UNROUTED. This function sees the block AFTER the kind
     // route ran, so a still-"code" type means the route had nothing to say

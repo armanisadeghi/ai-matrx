@@ -36,6 +36,25 @@ jest.mock("next/dynamic", () => ({
   },
 }));
 
+// A NESTED kind is drawn as its kind (C5/W4, Arman 2026-09-30): the floor
+// routes it through KindInstanceRender, whose lazy routes are stubbed by the
+// next/dynamic mock above. Stand in its unroutable floor — what these generic
+// kinds get in production — so nested children stay observable here.
+jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
+  __esModule: true,
+  default: function MockKindInstanceRender(props: { kind: string; value: unknown }) {
+    const react = require("react") as typeof React;
+    const { StructuredValueView } = jest.requireActual(
+      "@/components/official/structured-value/StructuredValueView",
+    ) as typeof import("@/components/official/structured-value/StructuredValueView");
+    return react.createElement(
+      "div",
+      { "data-nested-kind": props.kind },
+      react.createElement(StructuredValueView, { value: props.value, kind: props.kind }),
+    );
+  },
+}));
+
 import {
   applyIrKindRoute,
   GENERIC_STRUCTURED_COMPONENT_KEY,

@@ -12,11 +12,15 @@
  *    `collectExtras` + `additionalDetailsSection`.
  *
  * `genericKindMarkdown` is the fallback for kinds WITHOUT a `toMarkdown`
- * facet (and for unregistered kinds): a heading + fenced json body — the
- * honest zero-loss floor when no renderer knows the shape.
+ * facet (and for unregistered kinds): readable markdown built from the value
+ * itself — headings, bold-label lists, tables — never a JSON dump.
  */
 
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import {
+  deriveInstanceTitle,
+  INSTANCE_TITLE_KEYS,
+} from "@/features/content-ir/studio/instance-title";
 
 export function isRecordValue(
   value: unknown,
@@ -165,33 +169,193 @@ export function humanizeKind(kind: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+/** Renders a nested kind value as markdown (the registry's converter). */
+export type NestedKindMarkdown = (value: Record<string, unknown>) => string;
+
+function isKindValue(value: unknown): value is Record<string, unknown> {
+  return (
+    isRecordValue(value) &&
+    typeof value[KIND_KEY] === "string" &&
+    (value[KIND_KEY] as string).trim().length > 0
+  );
+}
+
+function scalarText(value: unknown): string {
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  return String(value);
+}
+
+function cellText(value: unknown): string {
+  return scalarText(value).replace(/\r?\n/g, " ").replace(/\|/g, "\\|");
+}
+
+/** Visible fields of a record: never `__kind`, never empty. */
+function visibleEntries(value: Record<string, unknown>): [string, unknown][] {
+  return Object.entries(value).filter(
+    ([key, child]) =>
+      key !== KIND_KEY &&
+      child !== null &&
+      child !== undefined &&
+      !(typeof child === "string" && child.trim() === "") &&
+      !(Array.isArray(child) && child.length === 0),
+  );
+}
+
+/** A table when every element is a non-kind record of scalars over one key set. */
+function uniformTable(items: unknown[]): string | null {
+  if (items.length === 0) return null;
+  let columns: string[] | null = null;
+  for (const item of items) {
+    if (!isRecordValue(item) || isKindValue(item)) return null;
+    const keys = Object.keys(item).filter((key) => key !== KIND_KEY);
+    if (keys.length === 0) return null;
+    if (!keys.every((key) => item[key] === null || isScalar(item[key]))) return null;
+    if (columns === null) columns = keys;
+    else if (keys.length !== columns.length || !keys.every((k, i) => k === columns![i]))
+      return null;
+  }
+  const cols = columns!;
+  const head = `| ${cols.map(plainFieldLabel).join(" | ")} |`;
+  const rule = `| ${cols.map(() => "---").join(" | ")} |`;
+  const rows = items.map(
+    (item) =>
+      `| ${cols
+        .map((key) => {
+          const cell = (item as Record<string, unknown>)[key];
+          return cell === null || cell === undefined ? "—" : cellText(cell);
+        })
+        .join(" | ")} |`,
+  );
+  return [head, rule, ...rows].join("\n");
+}
+
+function indentBlock(text: string, indent: string): string {
+  return text
+    .split("\n")
+    .map((line) => (line.trim() ? indent + line : line))
+    .join("\n");
+}
+
+/** Nested bullet lines for any value (lists inside lists, kinds as blocks). */
+function listLines(value: unknown, indent: string, nested: NestedKindMarkdown): string[] {
+  if (Array.isArray(value)) {
+    const lines: string[] = [];
+    for (const item of value) {
+      if (item === null || item === undefined) continue;
+      if (isScalar(item)) lines.push(`${indent}- ${scalarText(item)}`);
+      else if (isKindValue(item)) {
+        lines.push(`${indent}-`);
+        lines.push(indentBlock(nested(item), indent + "  "));
+      } else if (Array.isArray(item)) {
+        lines.push(`${indent}-`);
+        lines.push(...listLines(item, indent + "  ", nested));
+      } else if (isRecordValue(item)) {
+        const fields = listLines(item, indent + "  ", nested);
+        // The record's first field rides on the bullet itself.
+        if (fields.length > 0) {
+          lines.push(`${indent}- ${fields[0].trimStart().replace(/^- /, "")}`);
+          lines.push(...fields.slice(1));
+        }
+      }
+    }
+    return lines;
+  }
+  if (isRecordValue(value)) {
+    if (isKindValue(value)) return [indentBlock(nested(value), indent)];
+    const lines: string[] = [];
+    for (const [key, child] of visibleEntries(value)) {
+      const label = `**${plainFieldLabel(key)}:**`;
+      if (isScalar(child)) lines.push(`${indent}- ${label} ${scalarText(child)}`);
+      else if (Array.isArray(child) && child.every(isScalar))
+        lines.push(`${indent}- ${label} ${child.map(scalarText).join(", ")}`);
+      else {
+        lines.push(`${indent}- ${label}`);
+        lines.push(...listLines(child, indent + "  ", nested));
+      }
+    }
+    return lines;
+  }
+  return isScalar(value) ? [`${indent}- ${scalarText(value)}`] : [];
+}
+
+function headingFor(depth: number): string {
+  return "#".repeat(Math.min(Math.max(depth, 1), 6));
+}
+
+/** The body of a record: scalar list first, then one section per structure. */
+function recordBody(
+  value: Record<string, unknown>,
+  depth: number,
+  nested: NestedKindMarkdown,
+  skipKey: string | null,
+): string[] {
+  const scalars: string[] = [];
+  const sections: string[] = [];
+  for (const [key, child] of visibleEntries(value)) {
+    if (key === skipKey) continue;
+    const label = plainFieldLabel(key);
+    if (isScalar(child)) {
+      scalars.push(`- **${label}:** ${scalarText(child)}`);
+    } else if (Array.isArray(child) && child.every(isScalar)) {
+      scalars.push(`- **${label}:** ${child.map(scalarText).join(", ")}`);
+    } else if (isKindValue(child)) {
+      sections.push(joinBlocks([`${headingFor(depth + 1)} ${label}`, nested(child)]));
+    } else if (Array.isArray(child)) {
+      sections.push(
+        joinBlocks([
+          `${headingFor(depth + 1)} ${label}`,
+          uniformTable(child) ?? listLines(child, "", nested).join("\n"),
+        ]),
+      );
+    } else if (isRecordValue(child)) {
+      sections.push(
+        joinBlocks([
+          `${headingFor(depth + 1)} ${label}`,
+          ...recordBody(child, depth + 1, nested, null),
+        ]),
+      );
+    }
+  }
+  return [scalars.length ? scalars.join("\n") : null, ...sections].filter(
+    (block): block is string => block !== null,
+  );
+}
+
+/** Which key the derived title was read from, so it is not repeated below. */
+function titleSourceKey(value: Record<string, unknown>, title: string | null): string | null {
+  if (!title) return null;
+  for (const key of INSTANCE_TITLE_KEYS) {
+    const v = value[key];
+    if (typeof v === "string" && v.trim() === title) return key;
+  }
+  return null;
+}
+
 /**
  * Fallback markdown for kinds with no `toMarkdown` facet (or unregistered
- * kinds): a heading + the full value as a fenced json body. Zero loss —
- * `__kind` discriminators stay in the dump because they are the only thing
- * identifying the shape once no renderer knows it.
+ * kinds): READABLE markdown built from the value itself (kind-never-raw,
+ * Arman 2026-09-30 — a kind is never shown as raw JSON, an export included).
+ * Heading = the instance title (`deriveInstanceTitle`), then the kind's
+ * name; scalar fields as a bold-label list; arrays of uniform scalar records
+ * as a table, other arrays as nested lists; nested plain objects as
+ * sections; nested KINDS through `nested` (the registry converter —
+ * `kindValueToMarkdown` passes itself; default: this function). Never the
+ * `__kind` key, never a JSON fence. Every field still appears (zero loss in
+ * content; the discriminator is named in words by the subtitle).
  */
 export function genericKindMarkdown(
   kind: string,
   value: Record<string, unknown>,
+  nested?: NestedKindMarkdown,
 ): string {
-  const title =
-    typeof value.title === "string" && value.title.trim() !== ""
-      ? value.title
-      : typeof value.name === "string" && value.name.trim() !== ""
-        ? value.name
-        : humanizeKind(kind);
-
-  let body: string;
-  try {
-    body = JSON.stringify(value, null, 2);
-  } catch {
-    body = String(value);
-  }
-
+  const renderNested: NestedKindMarkdown =
+    nested ??
+    ((child) =>
+      genericKindMarkdown(String(child[KIND_KEY] ?? "artifact"), child));
+  const title = deriveInstanceTitle(value);
   return joinBlocks([
-    `# ${title}`,
+    `# ${title ?? humanizeKind(kind)}`,
     `*${humanizeKind(kind)}*`,
-    "```json\n" + body + "\n```",
+    ...recordBody(value, 1, renderNested, titleSourceKey(value, title)),
   ]);
 }

@@ -1045,7 +1045,7 @@ export default function JsonBlockDetectorPage() {
               )}
 
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <JsonInspector
+                <JsonInspector showSource
                   data={selectedBlockSchema}
                   label="Block Schema"
                   defaultView="json"
@@ -1064,7 +1064,7 @@ export default function JsonBlockDetectorPage() {
               )}
               {inspectorData && (
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                  <JsonInspector
+                  <JsonInspector showSource
                     data={inspectorData}
                     label="Validation report"
                     editorReadOnly

@@ -185,7 +185,7 @@ export const DynamicViewerTester: React.FC<DynamicViewerTesterProps> = ({ data, 
         // mismatch, exactly as this component is designed to exercise.
         switch (selectedViewer) {
             case "RawJsonExplorer":
-                return <RawJsonExplorer pageData={data} />;
+                return <RawJsonExplorer showSource pageData={data} />;
             case "LinesViewer":
                 return <LinesViewer data={data as import("./lines-viewer").LineItem[]} />;
             case "SectionViewerV2":

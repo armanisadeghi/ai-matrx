@@ -83,7 +83,7 @@ function endpointExampleTask(
 function JsonPanel({ title, value }: { title: string; value: unknown }) {
   return (
     <section className="h-[32rem] min-w-0 overflow-hidden rounded-lg border border-border bg-card">
-      <JsonInspector
+      <JsonInspector showSource
         data={value}
         label={title}
         defaultView="json"
@@ -448,7 +448,7 @@ export function DataForSeoLab() {
             </div>
           </div>
           <div className="h-80 min-w-0 overflow-hidden rounded-md border border-border xl:col-span-4">
-            <JsonInspector
+            <JsonInspector showSource
               data={task}
               label="DataForSEO task object"
               defaultView="edit"

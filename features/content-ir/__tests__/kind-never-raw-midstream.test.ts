@@ -251,3 +251,54 @@ describe("never raw: a kind on the same line as prose (A5)", () => {
     ]);
   });
 });
+
+describe("never raw: an array of kinds (A6)", () => {
+  const SECOND = JSON.stringify({
+    __kind: "flashcard_set",
+    title: "Second set",
+    cards: [{ __kind: "flashcard", front: "Q", back: "A" }],
+  });
+  const ONE_LINE = `[${KIND_PAYLOAD_ONE_LINE},${SECOND}]`;
+  const PRETTY = JSON.stringify(
+    [JSON.parse(KIND_PAYLOAD_ONE_LINE), JSON.parse(SECOND)],
+    null,
+    2,
+  );
+  const CASES: Array<[string, string]> = [
+    ["bare one-line array", `Here you go:\n\n${ONE_LINE}\n\nAfter.`],
+    ["bare pretty array", `Here you go:\n\n${PRETTY}\n\nAfter.`],
+    ["```json one-line array", `Here you go:\n\n\`\`\`json\n${ONE_LINE}\n\`\`\`\n\nAfter.`],
+    ["```json pretty array", `Here you go:\n\n\`\`\`json\n${PRETTY}\n\`\`\`\n\nAfter.`],
+  ];
+
+  it.each(CASES)("%s: no frame draws raw JSON once __kind is visible", (_label, stream) => {
+    const frames = streamingFrames(streamCharByChar(stream, `req-array-${_label}`));
+    const bad = frames.filter(
+      (b) =>
+        (b.type === "text" ? textShowsRawKind(b) : rendersRawJson(b)) &&
+        // before the first element's first key it may not show either
+        true,
+    );
+    expect(bad.map((b) => `${b.type}: ${(b.content ?? "").slice(0, 40)}`)).toEqual([]);
+  });
+
+  it.each(CASES)("%s: final blocks are the kinds alone — no [ , ] cards — identical on reload", (_label, stream) => {
+    const expected = ["Here you go:", "flashcard_set:Flashcards", "flashcard_set:Second set", "After."];
+    const label = (content: string) => {
+      const t = content.trim();
+      if (!t.startsWith("{")) return t;
+      const v = JSON.parse(t) as { __kind: string; title: string };
+      return `${v.__kind}:${v.title}`;
+    };
+    const blocks = finalBlocks(stream, `req-array-final-${_label}`);
+    expect(blocks.map((b) => label(b.content ?? ""))).toEqual(expected);
+    const reloaded = splitContentIntoBlocksV2(stream).filter((b) => b.content.trim());
+    expect(reloaded.map((b) => label(b.content))).toEqual(expected);
+  });
+
+  it("a kindless array of objects stays ONE JSON value (it is genuine JSON)", () => {
+    const stream = `Rows:\n\n\`\`\`json\n[{"id":1},{"id":2}]\n\`\`\`\n`;
+    const blocks = finalBlocks(stream, "req-array-kindless");
+    expect(blocks.map((b) => (b.content ?? "").trim())).toEqual(["Rows:", '[{"id":1},{"id":2}]']);
+  });
+});

@@ -117,13 +117,24 @@ describe("markdown leaves hand kind text to the canonical pipeline", () => {
     expect(mockCaptureError).not.toHaveBeenCalled();
   });
 
-  it("prose that only mentions a kind key in a non-JSON fence does not loop", () => {
-    // The stand-in hands this text straight back to the leaf: the guard must
-    // stop at one hop and render it as written.
-    const text = 'Use the key:\n\n```text\n"__kind": "x"\n```\n';
+  it("a kind fence the pipeline hands back renders once (no loop)", () => {
+    // An unlabelled fence: the stand-in only lifts ```json, so it hands this
+    // text straight back to the leaf — the guard must stop at one hop.
+    const text = 'Result:\n\n```\n{"__kind":"timeline","events":[]}\n```\n';
     act(() => root.render(<BasicMarkdownContent content={text} showCopyButton={false} />));
     expect(mockStreamCalls).toHaveLength(1);
     expect(container.querySelectorAll('[data-pipeline="markdown-stream"]')).toHaveLength(1);
+  });
+
+  it.each([
+    ["an xml fence", 'Payload:\n\n```xml\n<a/>\n{"__kind":"artifact","content":"x"}\n```\n'],
+    ["an inline code span", 'The marker is `{"__kind": "x"}` on every payload.'],
+    ["a sentence", 'It returned {"__kind":"x"} without a fence.'],
+  ])("a kind key inside %s is not a kind region and stays as written", (_label, text) => {
+    act(() => root.render(<BasicMarkdownContent content={text} showCopyButton={false} />));
+    expect(mockStreamCalls).toHaveLength(0);
+    expect(container.textContent).toContain('"__kind"');
+    expect(mockCaptureError).not.toHaveBeenCalled();
   });
 
   it("a deliberate source view keeps the text as written", () => {

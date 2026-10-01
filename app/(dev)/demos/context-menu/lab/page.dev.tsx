@@ -242,7 +242,7 @@ function JsonPanel({
       className={className}
     >
       <div className="h-[420px]">
-        <JsonInspector data={data} />
+        <JsonInspector showSource data={data} />
       </div>
     </Panel>
   );
@@ -1143,7 +1143,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
               }
             >
               <div className="h-[260px]">
-                <JsonInspector data={applicationScope} />
+                <JsonInspector showSource data={applicationScope} />
               </div>
             </Panel>
 

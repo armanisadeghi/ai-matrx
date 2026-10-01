@@ -47,6 +47,25 @@ jest.mock("next/dynamic", () => ({
   },
 }));
 
+// A NESTED kind is drawn as its kind (C5/W4, Arman 2026-09-30): the floor
+// routes it through KindInstanceRender, whose lazy routes are stubbed by the
+// next/dynamic mock above. Stand in its unroutable floor — what these generic
+// kinds get in production — so nested children stay observable here.
+jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
+  __esModule: true,
+  default: function MockKindInstanceRender(props: { kind: string; value: unknown }) {
+    const react = require("react") as typeof React;
+    const { StructuredValueView } = jest.requireActual(
+      "@/components/official/structured-value/StructuredValueView",
+    ) as typeof import("@/components/official/structured-value/StructuredValueView");
+    return react.createElement(
+      "div",
+      { "data-nested-kind": props.kind },
+      react.createElement(StructuredValueView, { value: props.value, kind: props.kind }),
+    );
+  },
+}));
+
 import {
   applyIrKindRoute,
   GENERIC_STRUCTURED_COMPONENT_KEY,
@@ -253,19 +272,12 @@ describe("every claimed kind renders its canonical example for real", () => {
 });
 
 describe("what the generic renderer does NOT show — recorded, not hidden", () => {
-  it("collapses an object nested inside a TABLE cell behind an Expand control", () => {
-    // Found while verifying `page_keyword_map_v1`: its `page_plans[]` render as
-    // a real table (uniform object array), and the `page` object inside each
-    // row becomes a `{2 fields}` Expand button rather than inline content. So
-    // `page_plans[].page.proposed.title` — the proposed page's NAME — is one
-    // click away, not on screen.
-    //
-    // This is StructuredValueView's deliberate table affordance, not a defect
-    // in the route, and it is exactly the honest ceiling of a basic route: the
-    // data is reachable and nothing is lost, but a reader scanning the document
-    // does not see it. Pinned here so the DISTILLATION pass (which is what
-    // decides whether this kind deserves a real component) inherits the finding
-    // instead of rediscovering it.
+  it("draws each nested page plan as its kind, so the proposed page's name is on screen", () => {
+    // Found while verifying `page_keyword_map_v1`: its `page_plans[]` used to
+    // render as a table whose `page` object collapsed behind a `{2 fields}`
+    // Expand button, so `page_plans[].page.proposed.title` was one click away.
+    // Each plan carries its own `__kind`, and a nested kind is now drawn as
+    // its kind (Arman, 2026-09-30; C5/W4) — the name reaches the document.
     registerWarmDefinition("page_keyword_map_v1");
     componentRegistry.ingestDbRows([
       routeRow("page_keyword_map_v1", GENERIC_STRUCTURED_COMPONENT_KEY),
@@ -280,8 +292,9 @@ describe("what the generic renderer does NOT show — recorded, not hidden", () 
       />,
     );
 
-    expect(markup).toContain("{2 fields}"); // the Expand control
-    expect(markup).not.toContain("Lip Filler Aftercare Guide"); // behind it
+    expect(markup).toContain("data-nested-kind");
+    expect(markup).not.toContain("{2 fields}");
+    expect(markup).toContain("Lip Filler Aftercare Guide");
   });
 });
 

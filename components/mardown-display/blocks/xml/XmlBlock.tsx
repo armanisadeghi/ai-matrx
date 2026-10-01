@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ChevronRight, ChevronDown, Copy, Check } from "lucide-react";
 import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
+import { KindSourceView } from "@/components/mardown-display/chat-markdown/KindTextGate";
 import { cn } from "@/styles/themes/utils";
 import { tokenizeXml } from "./xml-tokenize";
 import { useMarkdownStreaming } from "@/components/markdown-core/streaming-context";
@@ -215,7 +216,9 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
                   {renderedProse && idx in renderedProse && !isStreaming ? (
                     renderedProse[idx]
                   ) : (
-                    <NestedRichContent source={token.text ?? ""} />
+                    <KindSourceView>
+                      <NestedRichContent source={token.text ?? ""} />
+                    </KindSourceView>
                   )}
                 </div>
               );

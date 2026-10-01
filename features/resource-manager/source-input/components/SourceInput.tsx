@@ -39,6 +39,7 @@ import {
 import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-picker/WebpageResourcePicker";
 import { YouTubeResourcePicker } from "@/features/resource-manager/resource-picker/YouTubeResourcePicker";
 import { AudioResourcePicker } from "@/features/resource-manager/resource-picker/AudioResourcePicker";
+import { ResourcePickerTiles } from "@/features/resource-manager/resource-picker/ResourcePickerTiles";
 import type { KindScope } from "@/features/scopes/service/kindInventory";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import {
@@ -339,16 +340,12 @@ export function SourceInput({
       {query.trim() && existing ? null : (
         <div className="flex flex-col gap-2">
           <h3 className="text-xs font-medium text-muted-foreground">Add new</h3>
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
-            {tiles.map((tile) => (
-              <Tile
-                key={tile.id}
-                tile={tile}
-                selected={active === tile.id}
-                onSelect={() => setActive(active === tile.id ? null : tile.id)}
-              />
-            ))}
-          </div>
+          <ResourcePickerTiles
+            items={tiles}
+            selectedId={active}
+            onSelect={(tile) => setActive(active === tile.id ? null : tile.id)}
+            className="grid-cols-4 sm:grid-cols-7"
+          />
         </div>
       )}
 
@@ -418,45 +415,6 @@ export function SourceInput({
   );
 }
 
-function Tile({
-  tile,
-  selected,
-  onSelect,
-}: {
-  tile: SourceKindDef;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const Icon = tile.icon;
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
-      className={cn(
-        "group flex min-h-16 w-full min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border px-1 py-2.5 transition-all",
-        selected
-          ? "border-primary/60 bg-primary/5 shadow-sm ring-1 ring-primary/30"
-          : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
-      )}
-    >
-      <span
-        className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-          selected
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground group-hover:text-foreground",
-        )}
-      >
-        <Icon className="h-4 w-4" />
-      </span>
-      <span className="max-w-full truncate whitespace-nowrap text-xs font-medium text-foreground sm:text-sm">
-        {tile.label}
-      </span>
-    </button>
-  );
-}
-
 function TileArea({
   surfaceKey,
   tile,
@@ -522,7 +480,7 @@ function TileArea({
     case "url":
       return (
         <div className="max-h-[70dvh] overflow-y-auto">
-          <WebPageRead set={set} intake={intake} refuseOverMax={refuseOverMax} onVideoLink={onVideoLink} />
+          <WebPageRead intake={intake} refuseOverMax={refuseOverMax} onVideoLink={onVideoLink} />
         </div>
       );
     case "youtube":
@@ -602,65 +560,31 @@ function TileArea({
 }
 
 /**
- * The web page door. A read has a card — with its link kept — from the moment
- * it starts (`intake.beginWebPage`), so a reload mid-read brings it back and
- * lands it (verify-3 12a/12b: it was lost, link and all). Confirming settles
- * that card; dropping the preview or a failed read removes it; closing this
- * panel mid-read lands it through the web door (`intake.resume`).
+ * The web page door. The link goes straight to the intake (`addWebPage`) —
+ * the SAME ask → hold → continue path as every other door: a card exists from
+ * the moment the link is given (its link kept, so a reload re-reads it), with
+ * no organization it waits ("Choose organization") and continues by itself
+ * once one is set, and the page is added once read — no preview step
+ * (verify-5 #3, #7). Parts and the version are chosen on the card.
  */
 function WebPageRead({
-  set,
   intake,
   refuseOverMax,
   onVideoLink,
 }: {
-  set: ReturnType<typeof useSourceSet>;
   intake: ReturnType<typeof useSourceIntake>;
   refuseOverMax: () => boolean;
   onVideoLink: (url: string) => void;
 }) {
-  const reading = useRef<string | null>(null);
-  const latest = useRef({ set, intake });
-  useEffect(() => {
-    latest.current = { set, intake };
-  });
-  useEffect(
-    () => () => {
-      const id = reading.current;
-      reading.current = null;
-      if (!id) return;
-      const card = latest.current.set.controller.getState().cards.find((c) => c.id === id);
-      if (card && card.status !== "ready") latest.current.intake.resume(card);
-    },
-    [],
-  );
   return (
     <WebpageResourcePickerCore
       onSwitchTo={(type, url) => {
         if (type === "youtube") onVideoLink(url);
       }}
-      onReadStart={(url) => {
-        // At the limit nothing is added yet — confirming says so, as before.
-        reading.current = set.roomLeft() > 0 ? intake.beginWebPage(url) : null;
-      }}
-      onReadEnd={() => {
-        const id = reading.current;
-        reading.current = null;
-        if (id) set.remove(id);
-      }}
-      onSelect={(content, landed) => {
-        const pending = reading.current;
-        reading.current = null;
-        if (!pending && refuseOverMax()) return;
-        void intake.addScrapedPage(
-          {
-            url: content.url ?? "",
-            title: content.title ?? "",
-            text: content.textContent ?? "",
-            processedDocumentId: landed.processedDocumentId,
-          },
-          pending,
-        );
+      onSelect={() => undefined}
+      onReadUrl={(url) => {
+        if (refuseOverMax()) return;
+        void intake.addWebPage(url);
       }}
     />
   );

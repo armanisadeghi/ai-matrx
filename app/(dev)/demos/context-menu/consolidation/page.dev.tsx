@@ -136,7 +136,7 @@ export default function ContextMenuConsolidationPage() {
                 inside the shared menu.
               </p>
             </div>
-            <RawJsonExplorer pageData={JSON_FIXTURE} withSelect={false} />
+            <RawJsonExplorer showSource pageData={JSON_FIXTURE} withSelect={false} />
           </section>
 
           <section

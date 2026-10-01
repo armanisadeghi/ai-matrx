@@ -8,6 +8,7 @@ import {Copy, ChevronDown, ChevronUp, Minimize2, Expand} from 'lucide-react';
 import JsonViewerItem from './JsonViewerItem';
 import {stabilizeData} from './utils';
 import type {JsonValue} from '@/types/json';
+import { KindDataGate } from '@/components/official/structured-value/KindDataGate';
 
 interface JsonViewerProps extends React.HTMLAttributes<HTMLDivElement> {
     data: object | string;
@@ -16,9 +17,20 @@ interface JsonViewerProps extends React.HTMLAttributes<HTMLDivElement> {
     maxHeight?: string;
     disabled?: boolean;
     hideControls?: boolean;
+    /**
+     * A deliberate source view: data carrying a `__kind` is shown as written.
+     * Default false — kind data is drawn as its kind (`KindDataGate`).
+     */
+    showSource?: boolean;
 }
 
-export const JsonViewer: React.FC<JsonViewerProps> = (
+export const JsonViewer: React.FC<JsonViewerProps> = ({showSource, ...props}) => (
+    <KindDataGate component="JsonViewer" data={props.data} showSource={showSource}>
+        <JsonViewerBody {...props} />
+    </KindDataGate>
+);
+
+const JsonViewerBody: React.FC<JsonViewerProps> = (
     {
         data,
         className,

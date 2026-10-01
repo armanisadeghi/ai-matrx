@@ -293,7 +293,7 @@ export const RawDataView: React.FC<{ entry: ToolLifecycleEntry }> = ({
 
       <div className="min-h-0 flex-1 overflow-hidden p-2">
         <div className="h-full min-h-[280px] overflow-hidden rounded-md border border-border bg-card">
-          <JsonInspector data={bundle} />
+          <JsonInspector showSource data={bundle} />
         </div>
       </div>
     </div>

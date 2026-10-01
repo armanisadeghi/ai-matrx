@@ -210,7 +210,7 @@ function ProviderBatchDetail({
           <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-destructive">
             Batch error
           </p>
-          <JsonTreeViewer data={row.error} />
+          <JsonTreeViewer showSource data={row.error} />
           <ErrorAlchemyMenu />
         </div>
       ) : (

@@ -1,6 +1,14 @@
 "use client";
 
-import React, { Suspense, lazy, useMemo, useRef, useState } from "react";
+import React, {
+  Suspense,
+  createContext,
+  lazy,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Copy,
   FileSpreadsheet,
@@ -44,6 +52,8 @@ import { useOpenConvertToShapeWindow } from "@/features/overlays/openers/convert
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { findEscapedKindMarkers } from "@/features/content-ir/react/kind-problems";
 import KindEscapedNotice from "@/features/content-ir/react/KindEscapedNotice";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 
 // Lazy-loaded — these views/dialogs only open on user action, and JsonBlock
 // itself lives inside the MarkdownStream ssr:false gate, so the boundaries
@@ -68,6 +78,21 @@ function PaneFallback({ label = "Loading…" }: { label?: string }) {
 }
 
 type ViewMode = "code" | "tree" | "table" | "explorer";
+
+/**
+ * Values a JSON block above already handed to the value door. A kind whose
+ * route falls back to a JSON block for the same value (a structured handler
+ * missing its data) draws the code card instead of looping through the door.
+ */
+const JsonKindRouteContext = createContext<readonly string[]>([]);
+
+function canonicalJson(value: unknown): string {
+  try {
+    return JSON.stringify(value) ?? "";
+  } catch {
+    return "";
+  }
+}
 
 interface JsonBlockProps {
   content: string;
@@ -114,6 +139,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   meta,
 }) => {
   const openConvertToShape = useOpenConvertToShapeWindow();
+  const routedAbove = useContext(JsonKindRouteContext);
   const [mode, setMode] = useState<ViewMode>("code");
   const openSaveToTable = useOpenSaveToTable();
   // Local override for the displayed/edited text when the parent has not
@@ -211,7 +237,9 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
             value: data,
             title:
               tabular.source === "wrapped-array" && tabular.wrapperKey
-                ? tabular.wrapperKey.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+                ? tabular.wrapperKey
+                    .replace(/[_-]+/g, " ")
+                    .replace(/\b\w/g, (c) => c.toUpperCase())
                 : null,
           });
         },
@@ -422,6 +450,36 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   // belong to it, not to a wrapping container's onClick.
   const stopBubble = (e: React.SyntheticEvent) => e.stopPropagation();
 
+  // A SETTLED kind is never drawn as a code card (Arman, 2026-09-30): it
+  // renders through the one value door, its own component or the structured
+  // floor, whose footer is the explicit "view source" control. Mid-stream is
+  // the block router's (first-key loader); `allowConvertToShape === false`
+  // marks surfaces that show kind JSON on purpose. The tripwire still reports
+  // a registered slug that escaped promotion and names an unregistered one.
+  const routedKey =
+    !isStreamActive && allowConvertToShape && valueCarriesKind(data)
+      ? canonicalJson(data)
+      : null;
+  if (routedKey !== null && !routedAbove.includes(routedKey)) {
+    return (
+      <JsonKindRouteContext.Provider value={[...routedAbove, routedKey]}>
+        <div
+          data-content-renderer="JsonBlock"
+          data-kind-route="answer-value"
+          onClick={stopBubble}
+          onMouseDown={stopBubble}
+          onMouseUp={stopBubble}
+          onDoubleClick={stopBubble}
+        >
+          {kindMarkers.length > 0 ? (
+            <KindEscapedNotice markers={kindMarkers} rendered />
+          ) : null}
+          <AnswerValueView value={data} />
+        </div>
+      </JsonKindRouteContext.Provider>
+    );
+  }
+
   return (
     <div
       data-content-renderer="JsonBlock"
@@ -430,7 +488,9 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
       onMouseUp={stopBubble}
       onDoubleClick={stopBubble}
     >
-      {kindMarkers.length > 0 ? <KindEscapedNotice markers={kindMarkers} /> : null}
+      {kindMarkers.length > 0 ? (
+        <KindEscapedNotice markers={kindMarkers} />
+      ) : null}
       {mode === "code" ? (
         <Suspense fallback={<PaneFallback label="Loading code…" />}>
           <CodeBlockWithContextAttach

@@ -39,8 +39,17 @@ const registeredCache = new Map<string, { version: number; value: boolean }>();
 
 export function KindEscapedNotice({
   markers,
+  rendered = false,
 }: {
   markers: FoundKindMarker[];
+  /**
+   * The host already drew the value as its kind (the JSON block's settled
+   * kind route, Arman 2026-09-30). A REGISTERED slug is still reported — it
+   * escaped the promotion path — but the line saying it is "not rendering as
+   * its component" would now be false, so nothing is shown. An UNREGISTERED
+   * slug keeps its line.
+   */
+  rendered?: boolean;
 }) {
   const first = markers[0] ?? null;
   const slug = first?.slug ?? null;
@@ -86,6 +95,7 @@ export function KindEscapedNotice({
   }, [slug, registered, first?.path]);
 
   if (!first) return null;
+  if (rendered && registered) return null;
 
   return (
     <div className="mb-1 flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">

@@ -539,7 +539,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
 
         {effectiveView === "json" ? (
           <div className="h-[calc(100dvh-12rem)]">
-            <JsonInspector
+            <JsonInspector showSource
               data={definition ?? {}}
               label="Agent Definition"
               className="h-full"
@@ -984,7 +984,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                 </CardHeader>
                 <CardContent className="p-0 pb-0">
                   <div className="h-64">
-                    <JsonInspector
+                    <JsonInspector showSource
                       data={outputSchema}
                       className="h-full rounded-t-none"
                     />

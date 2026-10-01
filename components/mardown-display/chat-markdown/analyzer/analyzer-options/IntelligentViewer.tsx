@@ -552,7 +552,7 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                             </div>
                                         </div>
                                     )}
-                                    <RawJsonExplorer pageData={data} />
+                                    <RawJsonExplorer showSource pageData={data} />
                                 </div>
                             ) : selectedSection ? (
                                 selectedSection.content ? (

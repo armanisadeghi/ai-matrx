@@ -29,6 +29,9 @@ import { EmptyResult } from "./EmptyResult";
 import { KeyValueGrid } from "./KeyValueGrid";
 import { ResultTable } from "./ResultTable";
 import { ShortId, IdListChip } from "./ShortId";
+import { KindValueNode } from "./KindValueNode";
+import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
+import { useReportKindAtRawRenderer } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
 
 export type ResultDensity = "inline" | "full";
 
@@ -136,10 +139,25 @@ export const ResultValue: React.FC<ResultValueProps> = ({
 }) => {
     const shape = detectResultShape(value, { embedMedia });
 
+    // A kind handed straight to the grid (depth 0) means the caller skipped
+    // the value door — the node still renders as its kind; file the caller.
+    // Nested kinds are ordinary composition and are not reported.
+    useReportKindAtRawRenderer(
+        "ResultValue",
+        shape.kind === "kindInstance" ? shape.slug : null,
+        depth === 0 && shape.kind === "kindInstance",
+    );
+
     // In inline density, once we recurse too deep, stop expanding structures
     // and hand off to the JSON tree (which has its own collapse). This keeps
-    // the chat body compact while still exposing everything.
-    if (density === "inline" && depth > INLINE_MAX_DEPTH && (shape.kind === "object" || shape.kind === "table")) {
+    // the chat body compact while still exposing everything. Never for a
+    // subtree holding a kind: that would draw the kind as a JSON tree.
+    if (
+        density === "inline" &&
+        depth > INLINE_MAX_DEPTH &&
+        (shape.kind === "object" || shape.kind === "table") &&
+        !valueCarriesKind(value)
+    ) {
         return <ResultJson data={value} className={className} />;
     }
 
@@ -231,6 +249,33 @@ export const ResultValue: React.FC<ResultValueProps> = ({
 
             case "object":
                 return <KeyValueGrid value={shape.value} density={density} depth={depth} embedMedia={embedMedia} />;
+
+            case "kindInstance":
+                return (
+                    <KindValueNode
+                        value={shape.value}
+                        slug={shape.slug}
+                        density={density}
+                        depth={depth}
+                        embedMedia={embedMedia}
+                    />
+                );
+
+            case "kindList":
+                return (
+                    <div className="space-y-2">
+                        {shape.items.map((item, index) => (
+                            <ResultValue
+                                key={index}
+                                value={item}
+                                density={density}
+                                depth={depth + 1}
+                                embedMedia={embedMedia}
+                                mediaElementHint={mediaElementHint}
+                            />
+                        ))}
+                    </div>
+                );
 
             case "json":
                 return <ResultJson data={shape.value} />;

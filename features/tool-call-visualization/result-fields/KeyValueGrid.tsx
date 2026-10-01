@@ -50,6 +50,9 @@ import {
   type SchemaFieldLabel,
 } from "./document-presentation";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { KindValueNode } from "./KindValueNode";
+import { rootKindSlug } from "@/features/content-ir/surfaces/json-kind-signal";
+import { useReportKindAtRawRenderer } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
 
 export interface KeyValueGridProps {
   value: Record<string, unknown>;
@@ -328,7 +331,29 @@ const NotApplicableRow: React.FC<{
   );
 };
 
-export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
+/**
+ * An object carrying its own `__kind` is a kind, not a field list: it renders
+ * through the value door (`KindValueNode` → `AnswerValueView`) and the caller
+ * that handed it to the grid is reported.
+ */
+export const KeyValueGrid: React.FC<KeyValueGridProps> = (props) => {
+  const slug = rootKindSlug(props.value);
+  useReportKindAtRawRenderer("KeyValueGrid", slug, slug !== null);
+  if (slug) {
+    return (
+      <KindValueNode
+        value={props.value}
+        slug={slug}
+        density={props.density ?? "inline"}
+        depth={props.depth}
+        embedMedia={props.embedMedia}
+      />
+    );
+  }
+  return <KeyValueGridBody {...props} />;
+};
+
+const KeyValueGridBody: React.FC<KeyValueGridProps> = ({
   value,
   density = "inline",
   depth = 0,

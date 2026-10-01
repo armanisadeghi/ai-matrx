@@ -1035,7 +1035,7 @@ export function BacklinkEnrichmentDetail({
               inspection. Internal cache identifiers are excluded.
             </p>
             <div className="h-[min(52rem,70dvh)] min-h-[28rem] overflow-hidden rounded-md border border-border/60">
-              <JsonInspector
+              <JsonInspector showSource
                 data={displayRow}
                 label="Exact backlink record"
                 defaultView="json"

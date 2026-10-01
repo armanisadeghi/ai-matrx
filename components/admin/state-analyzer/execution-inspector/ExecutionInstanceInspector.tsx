@@ -340,7 +340,7 @@ function InstanceTab({
       </Section>
       <Section title="Raw Data" defaultOpen={false}>
         <div className="text-sm">
-          <JsonTreeViewer data={instance} />
+          <JsonTreeViewer showSource data={instance} />
         </div>
       </Section>
     </div>
@@ -405,41 +405,41 @@ function AgentTab({
       {agentData.messages && (
         <Section title="Messages" defaultOpen={false}>
           <div className="text-sm">
-            <JsonTreeViewer data={agentData.messages} />
+            <JsonTreeViewer showSource data={agentData.messages} />
           </div>
         </Section>
       )}
       {agentData.variableDefinitions && (
         <Section title="Variable Definitions" defaultOpen={false}>
           <div className="text-sm">
-            <JsonTreeViewer data={agentData.variableDefinitions} />
+            <JsonTreeViewer showSource data={agentData.variableDefinitions} />
           </div>
         </Section>
       )}
       {agentData.settings && (
         <Section title="Settings" defaultOpen={false}>
           <div className="text-sm">
-            <JsonTreeViewer data={agentData.settings} />
+            <JsonTreeViewer showSource data={agentData.settings} />
           </div>
         </Section>
       )}
       {agentData.tools && agentData.tools.length > 0 && (
         <Section title="Tools" defaultOpen={false}>
           <div className="text-sm">
-            <JsonTreeViewer data={agentData.tools} />
+            <JsonTreeViewer showSource data={agentData.tools} />
           </div>
         </Section>
       )}
       {agentData.contextPolicies && agentData.contextPolicies.length > 0 && (
         <Section title="Context Policies" defaultOpen={false}>
           <div className="text-sm">
-            <JsonTreeViewer data={agentData.contextPolicies} />
+            <JsonTreeViewer showSource data={agentData.contextPolicies} />
           </div>
         </Section>
       )}
       <Section title="Full Definition" defaultOpen={false}>
         <div className="text-sm">
-          <JsonTreeViewer data={agentData} />
+          <JsonTreeViewer showSource data={agentData} />
         </div>
       </Section>
     </div>
@@ -576,13 +576,13 @@ function HistoryTab({ data }: { data: MessagesEntry | undefined }) {
                     )}
                     <Section title="Content Blocks" defaultOpen={false}>
                       <div className="text-sm">
-                        <JsonTreeViewer data={record.content} />
+                        <JsonTreeViewer showSource data={record.content} />
                       </div>
                     </Section>
                     {record.metadata != null ? (
                       <Section title="Metadata" defaultOpen={false}>
                         <div className="text-sm">
-                          <JsonTreeViewer data={record.metadata} />
+                          <JsonTreeViewer showSource data={record.metadata} />
                         </div>
                       </Section>
                     ) : null}
@@ -638,7 +638,7 @@ function UIStateTab({ data }: { data: InstanceUIState | undefined }) {
                 {v === null ? (
                   <span className="text-muted-foreground italic">null</span>
                 ) : (
-                  <JsonTreeViewer data={v} />
+                  <JsonTreeViewer showSource data={v} />
                 )}
               </KVRow>
             ))}
@@ -652,7 +652,7 @@ function UIStateTab({ data }: { data: InstanceUIState | undefined }) {
           defaultOpen={k === "builderAdvancedSettings"}
         >
           <div className="text-sm">
-            <JsonTreeViewer data={v} />
+            <JsonTreeViewer showSource data={v} />
           </div>
         </Section>
       ))}
@@ -702,7 +702,7 @@ function VariablesTab({
                     {d.name}
                   </td>
                   <td className="py-1.5 pr-4 text-foreground">
-                    <JsonTreeViewer data={d.defaultValue} />
+                    <JsonTreeViewer showSource data={d.defaultValue} />
                   </td>
                   <td className="py-1.5 text-muted-foreground">
                     {d.helpText || "—"}
@@ -718,7 +718,7 @@ function VariablesTab({
           <div className="space-y-1">
             {Object.entries(data.userValues).map(([k, v]) => (
               <KVRow key={k} label={k} mono>
-                <JsonTreeViewer data={v} />
+                <JsonTreeViewer showSource data={v} />
               </KVRow>
             ))}
           </div>
@@ -729,7 +729,7 @@ function VariablesTab({
           <div className="space-y-1">
             {Object.entries(data.scopeValues).map(([k, v]) => (
               <KVRow key={k} label={k} mono>
-                <JsonTreeViewer data={v} />
+                <JsonTreeViewer showSource data={v} />
               </KVRow>
             ))}
           </div>
@@ -756,7 +756,7 @@ function ModelTab({ data }: { data: InstanceModelOverrideState | undefined }) {
         <EmptyState text="No model overrides configured" />
         <Section title="Raw Data" defaultOpen={false}>
           <div className="text-sm">
-            <JsonTreeViewer data={data} />
+            <JsonTreeViewer showSource data={data} />
           </div>
         </Section>
       </div>
@@ -770,7 +770,7 @@ function ModelTab({ data }: { data: InstanceModelOverrideState | undefined }) {
           <div className="space-y-1">
             {Object.entries(data.baseSettings).map(([k, v]) => (
               <KVRow key={k} label={k} mono>
-                <JsonTreeViewer data={v} />
+                <JsonTreeViewer showSource data={v} />
               </KVRow>
             ))}
           </div>
@@ -781,7 +781,7 @@ function ModelTab({ data }: { data: InstanceModelOverrideState | undefined }) {
           <div className="space-y-1">
             {Object.entries(data.overrides).map(([k, v]) => (
               <KVRow key={k} label={k} mono>
-                <JsonTreeViewer data={v} />
+                <JsonTreeViewer showSource data={v} />
               </KVRow>
             ))}
           </div>
@@ -835,7 +835,7 @@ function ResourcesTab({
           )}
           <Section title="Full Data" defaultOpen={false}>
             <div className="text-sm">
-              <JsonTreeViewer data={r} />
+              <JsonTreeViewer showSource data={r} />
             </div>
           </Section>
         </div>
@@ -874,7 +874,7 @@ function ContextTab({
             )}
           </div>
           <div className="mt-1.5 text-sm">
-            <JsonTreeViewer data={e.value} />
+            <JsonTreeViewer showSource data={e.value} />
           </div>
         </div>
       ))}
@@ -899,13 +899,13 @@ function UserInputTab({ data }: { data: InstanceUserInputState | undefined }) {
       {data.messageParts && data.messageParts.length > 0 && (
         <Section title="Message Parts">
           <div className="text-sm">
-            <JsonTreeViewer data={data.messageParts} />
+            <JsonTreeViewer showSource data={data.messageParts} />
           </div>
         </Section>
       )}
       <Section title="Full Data" defaultOpen={false}>
         <div className="text-sm">
-          <JsonTreeViewer data={data} />
+          <JsonTreeViewer showSource data={data} />
         </div>
       </Section>
     </div>
@@ -981,7 +981,7 @@ function RequestsTab({ requests }: { requests: ActiveRequest[] }) {
             )}
             {isExpanded && (
               <div className="mt-2 pt-2 border-t border-border text-sm">
-                <JsonTreeViewer data={req} />
+                <JsonTreeViewer showSource data={req} />
               </div>
             )}
           </div>
@@ -997,7 +997,7 @@ function RequestsTab({ requests }: { requests: ActiveRequest[] }) {
 
 function RawJsonTab({ data }: { data: Record<string, unknown> }) {
   return (
-    <JsonInspector
+    <JsonInspector showSource
       data={data}
       defaultView="json"
       className="h-full min-h-[24rem] rounded-none border-0 shadow-none"

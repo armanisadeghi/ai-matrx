@@ -16,7 +16,7 @@ const GenericSliceViewer = ({
   const navigate = useTabNavigation();
 
   return (
-    <JsonInspector
+    <JsonInspector showSource
       data={state}
       onBack={navigate ? () => navigate(TAB_INDEX_ID) : undefined}
       backLabel="Back to Tab Index"

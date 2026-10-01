@@ -164,7 +164,7 @@ const ColorTester = () => {
                 </TableBody>
             </Table>
 
-            <JsonViewer
+            <JsonViewer showSource
                 data={jsonData}
                 title="Color Test Results"
             />

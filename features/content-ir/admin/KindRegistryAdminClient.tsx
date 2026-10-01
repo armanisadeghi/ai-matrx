@@ -632,7 +632,7 @@ export default function KindRegistryAdminClient() {
 
                   {exportPayload ? (
                     <div className="flex flex-col overflow-hidden p-2">
-                      <JsonInspector
+                      <JsonInspector showSource
                         data={exportPayload}
                         label={`${selected.kind} schema`}
                         defaultView="json"

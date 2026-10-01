@@ -1584,7 +1584,7 @@ export function BacklinksWorkspace({
                   defaultOpen={receiptRun > 0}
                 >
                   <div className="h-80 overflow-hidden">
-                    <JsonInspector
+                    <JsonInspector showSource
                       data={receipt}
                       label="Last refresh details"
                       defaultView="json"

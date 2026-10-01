@@ -27,12 +27,19 @@ import NavigationRows from "./NavigationRows";
 import NavigationSelects from "./NavigationSelects";
 import ActionButtons from "./ActionButtons";
 import CopyPathObjectDialog from "./CopyPathObjectDialog";
+import { KindDataGate } from "@/components/official/structured-value/KindDataGate";
 
 interface RawJsonExplorerProps {
   pageData: unknown;
   ignorePrefix?: string;
   withSelect?: boolean;
   onPathCopy?: (path: string) => void;
+  /**
+   * A deliberate source view (scraper JSON tabs, admin): data carrying a
+   * `__kind` is explored as written. Default false — kind data is drawn as its
+   * kind (`KindDataGate`) and the caller is reported.
+   */
+  showSource?: boolean;
 }
 
 /**
@@ -50,7 +57,15 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = (props) => {
       </div>
     );
   }
-  return <RawJsonExplorerBody {...props} />;
+  return (
+    <KindDataGate
+      component="RawJsonExplorer"
+      data={props.pageData}
+      showSource={props.showSource}
+    >
+      <RawJsonExplorerBody {...props} />
+    </KindDataGate>
+  );
 };
 
 const RawJsonExplorerBody: React.FC<RawJsonExplorerProps> = ({

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Globe, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { ToggledDataBody } from "./ToggledDataBody";
 
 export interface FetchResultsBlockProps {
   results?: Record<string, unknown>[];
@@ -112,9 +113,10 @@ const FetchResultsBlock: React.FC<FetchResultsBlockProps> = ({
                     </button>
                   </div>
                   {isOpen && (
-                    <pre className="mt-2 text-xs bg-muted/50 rounded p-2 overflow-auto max-h-60 text-muted-foreground leading-relaxed">
-                      {JSON.stringify(item, null, 2)}
-                    </pre>
+                    <ToggledDataBody
+                      value={item}
+                      className="mt-2 text-xs bg-muted/50 rounded p-2 overflow-auto max-h-60 text-muted-foreground leading-relaxed"
+                    />
                   )}
                 </div>
               );

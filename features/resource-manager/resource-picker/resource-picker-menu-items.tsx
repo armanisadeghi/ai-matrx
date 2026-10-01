@@ -6,8 +6,10 @@ import {
   FileText,
   FolderOpen,
   Globe,
+  ClipboardType,
   Image,
   Layers,
+  Library,
   Lightbulb,
   MessagesSquare,
   Mic,
@@ -16,6 +18,7 @@ import {
   Table2,
   Wrench,
   Plug,
+  Upload,
 } from "lucide-react";
 import { Google, Youtube } from "@/components/icons/brand-icons";
 
@@ -269,4 +272,85 @@ export function getVisibleResourcePickerCategories(
       isResourcePickerItemAvailable(item, capabilities, options),
     ),
   })).filter((category) => category.items.length > 0);
+}
+
+// ── Association tiles ────────────────────────────────────────────────────────
+//
+// THE item definitions for every "add a source / attach a resource" door that
+// is drawn as a tile grid (ResourcePickerTiles) instead of menu rows. Doors
+// that already exist as menu rows reuse that row's icon + tint, so a kind
+// looks the same in the attach menu, the tile grid and anywhere else. Doors
+// that only exist as tiles (Upload, Paste text, Topic, Use existing) are
+// defined here — never in a host. These are NOT menu rows: the attach menu
+// keeps exactly one Files door (see resource-picker-menu-items.test.ts).
+
+/** One association door, independent of how it is drawn (row or tile). */
+export type ResourcePickerTileItem = {
+  id: string;
+  label: string;
+  icon: ResourcePickerMenuItem["icon"];
+  /** Tailwind classes on the icon — module / brand tint. */
+  iconClassName: string;
+};
+
+export type ResourcePickerSourceItemId =
+  | "upload"
+  | "paste"
+  | "web"
+  | "youtube"
+  | "audio"
+  | "image"
+  | "topic"
+  | "existing";
+
+function menuItemAsTile(
+  viewId: Exclude<ResourcePickerViewId, null>,
+  id: ResourcePickerSourceItemId,
+  label?: string,
+): ResourcePickerTileItem {
+  const row = flattenResourcePickerItems().find((item) => item.id === viewId);
+  if (!row) throw new Error(`resource-picker-menu-items: no menu row "${viewId}"`);
+  return { id, label: label ?? row.label, icon: row.icon, iconClassName: row.iconClassName };
+}
+
+/** Source doors (Create deck, Podcast Studio, …) keyed by source tile id. */
+export const RESOURCE_PICKER_SOURCE_ITEMS: Record<
+  ResourcePickerSourceItemId,
+  ResourcePickerTileItem
+> = {
+  upload: {
+    id: "upload",
+    label: "Upload",
+    icon: Upload,
+    iconClassName: "text-primary",
+  },
+  paste: {
+    id: "paste",
+    label: "Paste text",
+    icon: ClipboardType,
+    iconClassName: "text-slate-600 dark:text-slate-300",
+  },
+  web: menuItemAsTile("webpage", "web"),
+  youtube: menuItemAsTile("youtube", "youtube"),
+  audio: menuItemAsTile("audio", "audio", "Recording"),
+  image: menuItemAsTile("image_url", "image", "Image"),
+  topic: {
+    id: "topic",
+    label: "Topic",
+    icon: Lightbulb,
+    iconClassName: "text-orange-600 dark:text-orange-400",
+  },
+  existing: {
+    id: "existing",
+    label: "Use existing",
+    icon: Library,
+    iconClassName: "text-emerald-600 dark:text-emerald-400",
+  },
+};
+
+/** Every menu row as a tile item — the same doors, drawn as a grid. */
+export function resourcePickerItemsAsTiles(
+  items: readonly ResourcePickerMenuItem[] = flattenResourcePickerItems(),
+): ResourcePickerTileItem[] {
+  return items.map(({ id, label, icon, iconClassName }) => ({ id, label, icon, iconClassName }));
 }

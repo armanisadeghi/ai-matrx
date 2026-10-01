@@ -124,7 +124,7 @@ function useCopyText(text: string) {
 
 function JsonPane({ data, label }: { data: unknown; label?: string }) {
   return (
-    <JsonInspector
+    <JsonInspector showSource
       data={data}
       label={label}
       defaultView="json"

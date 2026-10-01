@@ -16,7 +16,10 @@
 
 import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence-meta";
 import { indexOutsideInlineCode } from "@/components/mardown-display/markdown-classification/processors/utils/inline-code-span";
-import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import {
+  hasKindKey,
+  jsonKindSignal,
+} from "@/features/content-ir/surfaces/json-kind-signal";
 import {
   findBalancedXmlClose,
   initialXmlBalance,
@@ -213,7 +216,19 @@ type BlockSubState =
        * JSON text while it streams in.
        */
       earlyTypeResolved: boolean;
-    };
+      /** This object is one element of an array of kinds (A6) — closing it returns to the array. */
+      inArray?: boolean;
+    }
+  /**
+   * Inside a bare ARRAY OF KINDS (`[{"__kind":…},{"__kind":…}]`, A6). Each
+   * element is its own bare-JSON region (so each kind resolves live); the
+   * `[`, `,` and `]` between them are chrome and never reach a block — the
+   * static splitter drops the same bytes (embedded-kind-json `chrome`).
+   * `held` is non-null while the array is still UNDECIDED: the lines since its
+   * `[`, shown nowhere, until the first element's first key says kind (commit)
+   * or not (replayed as ordinary lines — a kindless array is genuine JSON).
+   */
+  | { kind: "kind_array"; held: string[] | null };
 
 // ============================================================================
 // Known XML tag sets (mirrored from content-prefilter for closing-tag matching)
@@ -613,6 +628,7 @@ export class StreamBlockAccumulator {
     // moment its `__kind` key is visible, the prose before it becomes a line
     // of its own and the object is left as the fragment for the opener below.
     this.maybeSplitProseBeforeKindFragment(dispatch);
+    this.maybeEnterKindArrayFromFragment(dispatch);
 
     // A newline-less minified JSON object never completes a line during the
     // stream, so processLine never opens its region — it would project as raw
@@ -686,6 +702,8 @@ export class StreamBlockAccumulator {
       this.processLine(this.pendingLineFragment, dispatch);
       this.pendingLineFragment = "";
     }
+    // An array start still undecided at the end is ordinary source (A6).
+    this.releaseHeldArray(dispatch);
     // 🚨 STREAM ENDED INSIDE A REASONING REGION. Its closing tag never came, so
     // everything after the model stopped thinking — the ANSWER — is sitting in
     // a thinking block and renders as a collapsed "Thought process" with an
@@ -797,6 +815,8 @@ export class StreamBlockAccumulator {
       this.processLine(this.pendingLineFragment, dispatch);
       this.pendingLineFragment = "";
     }
+    // A held, still-undecided array start is ordinary source (A6).
+    this.releaseHeldArray(dispatch);
     // A tool call landing mid bare-JSON means the model closed that content
     // here. Run the same final type detection finalize() does so a partially
     // streamed bare-JSON block still commits with its resolved type.
@@ -900,6 +920,11 @@ export class StreamBlockAccumulator {
 
   private processLine(rawLine: string, dispatch: DispatchFn): void {
     this.lineQueue.push({ rawLine, dispatch });
+    this.drainLineQueue();
+  }
+
+  /** Process queued lines in order (re-entrant calls return; the outer loop drains). */
+  private drainLineQueue(): void {
     if (this.isProcessingLineQueue) return;
     this.isProcessingLineQueue = true;
     try {
@@ -1001,6 +1026,19 @@ export class StreamBlockAccumulator {
       if (stripped.trim().length === 0) return;
       this.processLine(stripped, dispatch);
       return;
+    }
+
+    // An ARRAY of kinds (A6): `[` opening a line, followed by an object. The
+    // first element's first key decides — kind → each element is its own
+    // region and the punctuation is chrome; not yet known → held, shown
+    // nowhere; not a kind → an ordinary line, exactly as before.
+    if (/^\[\s*(?:\{|$)/.test(trimmed)) {
+      const signal = jsonKindSignal(trimmed);
+      if (signal !== "not_kind") {
+        this.subState = { kind: "kind_array", held: [rawLine] };
+        if (signal === "kind") this.commitKindArray(dispatch);
+        return;
+      }
     }
 
     // A kind object inside a line of prose (A5): the prose, the object, and
@@ -1268,6 +1306,8 @@ export class StreamBlockAccumulator {
         this.appendToCurrentBlock(rawLine);
         return;
       }
+      const inArray = this.nextBareJsonInArray;
+      this.nextBareJsonInArray = false;
       this.closeCurrentBlock(dispatch);
       this.openBlock("code", dispatch); // may be upgraded to a typed JSON block
       this.subState = {
@@ -1275,6 +1315,7 @@ export class StreamBlockAccumulator {
         openBraces: openCount,
         closeBraces: closeCount,
         earlyTypeResolved: false,
+        inArray,
       };
       this.irOpenRegion();
       this.irFeedLine(rawLine);
@@ -1284,8 +1325,9 @@ export class StreamBlockAccumulator {
         const jsonType = detectJsonBlockType(this.currentBlockContent);
         this.currentBlockType = jsonType ?? "code";
         this.closeCurrentBlock(dispatch);
-        this.subState = { kind: "none" };
+        this.subState = inArray ? { kind: "kind_array", held: null } : { kind: "none" };
         this.openBlock("text", dispatch);
+        if (inArray) this.suppressEmptyTrailingSlot = true;
       } else {
         // Multi-line open: the opening line alone may already reveal the root
         // key (e.g. `{"quiz_title": "..."`). Resolve the type now so the very
@@ -1305,6 +1347,94 @@ export class StreamBlockAccumulator {
 
     // Fallback: treat as text
     this.appendToCurrentBlock(rawLine);
+  }
+
+  /** Set while the next bare-JSON region opens as an array element (A6). */
+  private nextBareJsonInArray = false;
+
+  /**
+   * The held array start is a kind array: close the prose before it, drop the
+   * `[`, and replay the held lines as array content (A6).
+   */
+  private commitKindArray(dispatch: DispatchFn): void {
+    if (this.subState.kind !== "kind_array" || this.subState.held === null) return;
+    const [first, ...rest] = this.subState.held;
+    this.subState = { kind: "kind_array", held: null };
+    this.closeCurrentBlock(dispatch);
+    this.openBlock("text", dispatch);
+    this.suppressEmptyTrailingSlot = true;
+    this.continueKindArray((first ?? "").replace(/^\s*\[/, ""), dispatch);
+    for (const line of rest) this.processLineNow(line, dispatch);
+  }
+
+  /** Not a kind array after all: the held lines are ordinary lines, in order. */
+  private releaseHeldArray(dispatch: DispatchFn): void {
+    if (this.subState.kind !== "kind_array" || this.subState.held === null) return;
+    const [first, ...rest] = this.subState.held;
+    this.subState = { kind: "none" };
+    this.appendToCurrentBlock(first ?? "");
+    this.lineQueue.unshift(...rest.map((rawLine) => ({ rawLine, dispatch })));
+    this.drainLineQueue();
+  }
+
+  /**
+   * Array content between (or opening) elements: `,` and whitespace are
+   * chrome, `]` ends the array, `{` opens the next element as its own
+   * bare-JSON region. Anything else ends the array as ordinary source.
+   */
+  private continueKindArray(text: string, dispatch: DispatchFn): void {
+    let rest = text;
+    while (this.subState.kind === "kind_array") {
+      rest = rest.replace(/^[\s,]*/, "");
+      if (!rest) return;
+      if (rest.startsWith("]")) {
+        this.subState = { kind: "none" };
+        const after = rest.slice(1);
+        if (after.trim()) this.processLineNow(after, dispatch);
+        return;
+      }
+      if (!rest.startsWith("{")) {
+        this.subState = { kind: "none" };
+        this.processLineNow(rest, dispatch);
+        return;
+      }
+      const end = firstCompleteRootObjectEnd(rest);
+      this.subState = { kind: "none" };
+      this.nextBareJsonInArray = true;
+      if (end === null) {
+        this.processLineNow(rest, dispatch);
+        this.nextBareJsonInArray = false;
+        return;
+      }
+      this.processLineNow(rest.slice(0, end), dispatch);
+      this.nextBareJsonInArray = false;
+      rest = rest.slice(end);
+    }
+    if (rest.trim()) this.processLineNow(rest, dispatch);
+  }
+
+  /**
+   * The fragment twin of the array entry in processLineNow: a newline-less
+   * `[{"__kind":…` decides on its first key while it streams (A6).
+   */
+  private maybeEnterKindArrayFromFragment(dispatch: DispatchFn): void {
+    if (this.subState.kind === "kind_array" && this.subState.held !== null) {
+      const signal = jsonKindSignal(
+        [...this.subState.held, this.pendingLineFragment].join("\n"),
+      );
+      if (signal !== "kind") return;
+      this.commitKindArray(dispatch);
+      return;
+    }
+    if (this.subState.kind !== "none") return;
+    const fragment = this.pendingLineFragment;
+    if (!/^\s*\[\s*\{/.test(fragment)) return;
+    if (jsonKindSignal(fragment) !== "kind") return;
+    this.closeCurrentBlock(dispatch);
+    this.openBlock("text", dispatch);
+    this.suppressEmptyTrailingSlot = true;
+    this.subState = { kind: "kind_array", held: null };
+    this.pendingLineFragment = fragment.replace(/^\s*\[/, "");
   }
 
   /** The fragment twin of the complete-line split in processLineNow (A5). */
@@ -1333,7 +1463,19 @@ export class StreamBlockAccumulator {
    * completing line counts them exactly once (see the bare_json substate case).
    */
   private maybeOpenBareJsonFromFragment(dispatch: DispatchFn): void {
-    if (this.subState.kind !== "none") return;
+    // Between the elements of an array of kinds: drop the `,` / `]` chrome
+    // from the fragment, then open the next element exactly as below.
+    let inArray = false;
+    if (this.subState.kind === "kind_array" && this.subState.held === null) {
+      const chrome = /^\s*,?\s*/.exec(this.pendingLineFragment)![0];
+      this.pendingLineFragment = this.pendingLineFragment.slice(chrome.length);
+      if (this.pendingLineFragment.startsWith("]")) {
+        this.pendingLineFragment = this.pendingLineFragment.slice(1);
+        this.subState = { kind: "none" };
+        return;
+      }
+      inArray = true;
+    } else if (this.subState.kind !== "none") return;
     // The fragment always begins at a LINE BOUNDARY (it is everything since
     // the last newline), so the regex below is exactly processLine's
     // `trimmed.startsWith("{")` gate: same-line prose (`Here: {"a":1}`) fails
@@ -1383,6 +1525,7 @@ export class StreamBlockAccumulator {
       openBraces: 0,
       closeBraces: 0,
       earlyTypeResolved: false,
+      inArray,
     };
     this.irOpenRegion();
     // Feed everything seen so far as an incomplete line part (records fed len);
@@ -1528,6 +1671,19 @@ export class StreamBlockAccumulator {
         return;
       }
 
+      case "kind_array": {
+        const held = this.subState.held;
+        if (held === null) {
+          this.continueKindArray(rawLine, dispatch);
+          return;
+        }
+        held.push(rawLine);
+        const signal = jsonKindSignal(held.join("\n"));
+        if (signal === "kind") this.commitKindArray(dispatch);
+        else if (signal === "not_kind") this.releaseHeldArray(dispatch);
+        return;
+      }
+
       case "generic_xml": {
         const rootEnd = this.subState.tracker.consumeLine(rawLine);
         if (rootEnd === null) {
@@ -1624,8 +1780,9 @@ export class StreamBlockAccumulator {
           // buildBlockData can still return { language: "json" } if needed.
           const jsonType = detectJsonBlockType(this.currentBlockContent);
           this.currentBlockType = jsonType ?? "code";
+          const inArray = this.subState.inArray === true;
           this.closeCurrentBlock(dispatch);
-          this.subState = { kind: "none" };
+          this.subState = inArray ? { kind: "kind_array", held: null } : { kind: "none" };
           this.openBlock("text", dispatch);
           // Keep a fresh slot for source that follows this root, but do not
           // emit that unused slot on finalize. Its inherited IR envelope
@@ -2050,6 +2207,8 @@ export class StreamBlockAccumulator {
     let emitted = 0;
     let followsKind = false;
     for (const piece of pieces) {
+      // Array punctuation between kinds is never a block (A6).
+      if (piece.type === "chrome") continue;
       const isKind = piece.type === "kind";
       const content =
         !isKind && containerType === "text"
@@ -2131,8 +2290,12 @@ export class StreamBlockAccumulator {
         // JSON) is flushed as text the moment its line completes / finalizes.
         const holdNascentJson =
           this.subState.kind === "none" &&
-          !this.currentBlockContent &&
-          this.pendingLineFragment.trimStart().startsWith("{");
+          ((!this.currentBlockContent &&
+            this.pendingLineFragment.trimStart().startsWith("{")) ||
+            // A nascent array of objects waits for its first element's first
+            // key the same way (A6) — a kindless one shows once it is known.
+            (/^\s*\[\s*(?:\{|$)/.test(this.pendingLineFragment) &&
+              jsonKindSignal(this.pendingLineFragment) !== "not_kind"));
         if (!holdNascentJson) {
           content = content
             ? content + "\n" + this.pendingLineFragment

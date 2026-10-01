@@ -104,33 +104,20 @@ export interface StructuredValueViewProps {
  * The `__kind` discriminator is how the platform ROUTES a payload; it is not
  * something the payload says. Rendering it puts a field reading
  * "Kind — action_io_docproc_ingest_from_media_refs_c6ee91fc_output" at the top
- * of a study document. Stripped recursively, by reference where nothing
- * changed so an untouched value never re-renders. It stays in the raw view.
+ * of a study document. This view is the floor FOR the root value, so only the
+ * ROOT marker is dropped from the display (by reference when absent). A NESTED
+ * node carrying its own `__kind` is a kind in its own right: the value grid
+ * routes it to its component (`KindValueNode` → `AnswerValueView`) — it is no
+ * longer stripped and drawn as anonymous fields (Arman, 2026-09-30). The
+ * marker stays in the raw view, and in the data.
  */
-function stripKindKeys(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    let changed = false;
-    const next = value.map((item) => {
-      const stripped = stripKindKeys(item);
-      if (stripped !== item) changed = true;
-      return stripped;
-    });
-    return changed ? next : value;
-  }
-  if (!isPlainObject(value)) return value;
-
-  let changed = false;
+function withoutRootKindKey(value: unknown): unknown {
+  if (!isPlainObject(value) || !(KIND_KEY in value)) return value;
   const next: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value)) {
-    if (key === KIND_KEY) {
-      changed = true;
-      continue;
-    }
-    const stripped = stripKindKeys(item);
-    if (stripped !== item) changed = true;
-    next[key] = stripped;
+    if (key !== KIND_KEY) next[key] = item;
   }
-  return changed ? next : value;
+  return next;
 }
 
 /** Serialized size, treating an unserializable value as "too big". */
@@ -152,7 +139,7 @@ export function StructuredValueView({
 }: StructuredValueViewProps) {
   const [showRaw, setShowRaw] = useState(false);
 
-  const shown = useMemo(() => stripKindKeys(value), [value]);
+  const shown = useMemo(() => withoutRootKindKey(value), [value]);
 
   const resolved: ResultDensity = useMemo(() => {
     if (density !== "auto") return density;
@@ -187,7 +174,7 @@ export function StructuredValueView({
         </div>
       ) : null}
 
-      {footer && showRaw ? <ResultJson data={value} /> : null}
+      {footer && showRaw ? <ResultJson data={value} showSource /> : null}
     </div>
   );
 }

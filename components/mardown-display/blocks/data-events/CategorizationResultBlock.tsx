@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Tag, ChevronDown, ChevronUp, TestTube2 } from "lucide-react";
+import { ToggledDataBody } from "./ToggledDataBody";
 
 export interface CategorizationResultBlockProps {
   promptId: string;
@@ -81,9 +82,10 @@ const CategorizationResultBlock: React.FC<CategorizationResultBlockProps> = ({
             </p>
           )}
           {metadata && Object.keys(metadata).length > 0 && (
-            <pre className="text-xs text-muted-foreground overflow-auto max-h-40">
-              {JSON.stringify(metadata, null, 2)}
-            </pre>
+            <ToggledDataBody
+              value={metadata}
+              className="text-xs text-muted-foreground overflow-auto max-h-40"
+            />
           )}
         </div>
       )}

@@ -10,6 +10,7 @@ import React, {
 import { Button } from "@/components/ui/button";
 import { Copy, Check, ChevronRight, ChevronDown } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
+import { KindDataGate } from "@/components/official/structured-value/KindDataGate";
 
 // =============================================================================
 // ERROR BOUNDARY
@@ -161,7 +162,25 @@ function JsonNode({
   );
 }
 
-export function JsonTreeViewer({ data }: { data: unknown }) {
+/**
+ * Data carrying a `__kind` is drawn as its kind (`KindDataGate`) unless the
+ * caller is a deliberate source view (`showSource`).
+ */
+export function JsonTreeViewer({
+  data,
+  showSource = false,
+}: {
+  data: unknown;
+  showSource?: boolean;
+}) {
+  return (
+    <KindDataGate component="JsonTreeViewer" data={data} showSource={showSource}>
+      <JsonTreeViewerBody data={data} />
+    </KindDataGate>
+  );
+}
+
+function JsonTreeViewerBody({ data }: { data: unknown }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {

@@ -12,6 +12,7 @@
 import { DecisionAnswers } from "@/features/agents/decision-answers/DecisionAnswers";
 import { readDecisionAnswers } from "@ai-matrx/agents/presentation/decision-answers";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 
 export interface DecisionAnswersBlockProps {
   serverData: Record<string, unknown>;
@@ -31,13 +32,15 @@ export default function DecisionAnswersBlock({
         <p className="font-medium text-destructive">
           These decision answers could not be read
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          The payload says it is `decision_answers` but carries no `answers`
-          object. The raw value is below so nothing is hidden.
-        </p>
-        <pre className="mt-2 max-h-64 overflow-auto rounded bg-muted p-2 text-xs">
-          {JSON.stringify(serverData.payload, null, 2)}
-        </pre>
+        {/* The kind's broken state: what arrived, drawn by the generic
+            structured floor (its raw data one explicit click away) — never a
+            raw JSON dump (Arman, 2026-09-30). */}
+        <StructuredValueView
+          className="mt-2"
+          value={serverData.payload}
+          kind="decision_answers"
+          note="could not be read"
+        />
         <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );

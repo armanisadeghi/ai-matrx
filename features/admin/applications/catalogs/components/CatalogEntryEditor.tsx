@@ -815,7 +815,7 @@ export function CatalogEntryEditor({
         ) : null}
         {/* Validated against the kind schema; unknown keys round-trip unchanged. */}
         <div className="h-96 min-h-72 overflow-hidden rounded-md border border-border">
-          <JsonInspector
+          <JsonInspector showSource
             data={payload}
             editOnly
             onUpdate={handlePayloadUpdate}

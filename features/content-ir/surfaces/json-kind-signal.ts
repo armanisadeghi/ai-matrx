@@ -18,6 +18,8 @@
  * reload, a plain markdown fence).
  */
 
+import { fenceOpenerOf, mapCodeRanges } from "@ai-matrx/content-ir/source";
+
 export type JsonKindSignal = "undecided" | "kind" | "not_kind";
 
 /**
@@ -132,4 +134,35 @@ export function rootKindSlug(value: unknown): string | null {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
   const kind = (value as Record<string, unknown>).__kind;
   return typeof kind === "string" && kind.trim() ? kind : null;
+}
+
+/** Fence languages whose body is a JSON region (an unlabelled fence included). */
+const JSON_FENCE_LANGS = new Set(["", "json", "jsonc", "json5"]);
+
+/**
+ * The MARKDOWN form: does this prose hold a kind REGION a reader would see raw
+ * — a `__kind` key inside a JSON fence (any case, unlabelled included), or the
+ * whole text being kind JSON? A key in a fence of another language (```xml,
+ * ```ts), in an inline code span, or loose inside a sentence is not a region
+ * the pipeline can lift (a kind inline with prose is the stream's job, A5) and
+ * stays as written.
+ */
+export function markdownCarriesKind(text: string): boolean {
+  if (!hasKindKey(text)) return false;
+  if (isKindJsonText(text)) return true;
+  let found = false;
+  mapCodeRanges(text, (range, raw) => {
+    if (found || range.kind !== "fence") return raw;
+    const newline = raw.indexOf("\n");
+    const opener = fenceOpenerOf((newline === -1 ? raw : raw.slice(0, newline)).trimStart());
+    if (
+      opener &&
+      JSON_FENCE_LANGS.has(opener.lang.toLowerCase()) &&
+      hasKindKey(newline === -1 ? "" : raw.slice(newline))
+    ) {
+      found = true;
+    }
+    return raw;
+  });
+  return found;
 }

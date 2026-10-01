@@ -13,13 +13,14 @@
  * It passes the message id straight through, because that is where a decision
  * on these proposals is remembered.
  *
- * A payload the reader refuses renders an honest notice with the raw value —
- * never nothing.
+ * A payload the reader refuses renders an honest notice over the generic
+ * structured floor — never nothing, never a raw JSON dump.
  */
 
 import { ListChangeProposalView } from "@/features/list-change-proposals/ListChangeProposalView";
 import { readListChangeProposal } from "@/features/content-ir/kinds/list-change-proposal";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 
 export interface ListChangeProposalBlockProps {
   serverData: Record<string, unknown>;
@@ -41,13 +42,15 @@ export default function ListChangeProposalBlock({
         <p className="font-medium text-destructive">
           These proposed changes could not be read
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          The payload says it is a `list_change_proposal_v1` but carries no readable
-          target and `proposals` list. The raw value is below so nothing is hidden.
-        </p>
-        <pre className="mt-2 max-h-64 overflow-auto rounded bg-muted p-2 text-xs">
-          {JSON.stringify(serverData.proposal, null, 2)}
-        </pre>
+        {/* The kind's broken state: what arrived, drawn by the generic
+            structured floor (its raw data one explicit click away) — never a
+            raw JSON dump (Arman, 2026-09-30). */}
+        <StructuredValueView
+          className="mt-2"
+          value={serverData.proposal}
+          kind="list_change_proposal_v1"
+          note="could not be read"
+        />
         <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );

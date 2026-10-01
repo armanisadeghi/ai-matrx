@@ -10,7 +10,7 @@
  *
  *   land / keep       → `features/sources/api/sourcesApi` (`POST /sources/land`, `/keep`)
  *   text landing      → `buildPastedTextLanding`
- *   web page          → `useScraperApi().scrapeUrl` (the scraper lands the page)
+ *   web page          → `useScraperApi().scrapeUrlSilent` (the scraper lands the page)
  *   YouTube           → Start's reader `fetchYouTubeTranscript`
  *   recording         → `transcribeCloudFile`
  *   file → target     → the ONE associations chokepoint (`associationsService`)
@@ -40,6 +40,7 @@ import {
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
+import { classifyScrapeFailure } from "@/features/scraper/failure/scrapeFailure";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
 import { fetchYouTubeTranscript } from "@/features/education/onboard/youtubeTranscript";
 import { youtubeId } from "@/lib/media/youtube";
@@ -66,7 +67,7 @@ export function useSourceIntake(
   const userId = useAppSelector(selectUserId);
   const activeOrgId = useAppSelector(selectOrganizationId);
   const backendApi = useBackendApi();
-  const { scrapeUrl } = useScraperApi();
+  const { scrapeUrlSilent } = useScraperApi();
 
   // The largest pasted text kept in the draft for a reload is a knob; while
   // it is unread (or unreadable) nothing is kept and the card says so.
@@ -87,14 +88,25 @@ export function useSourceIntake(
       keep: (processedDocumentId, keepOptions) => keepSource(processedDocumentId, keepOptions),
       buildTextLanding: (input) => buildPastedTextLanding(input),
       scrapeUrl: async (url) => {
-        const result = await scrapeUrl(url);
-        return result
-          ? {
-              processedDocumentId: result.processedDocumentId,
-              sourceNotices: result.sourceNotices,
-              pageTitle: result.overview?.page_title,
-            }
-          : null;
+        // The silent read THROWS: a refusal for a missing organization reaches
+        // the intake as itself (→ the card waits for one, like every door),
+        // and any other failure as the scraper's plain words + remedy. The
+        // stateful `scrapeUrl` swallowed both into `null` — "could not be read".
+        try {
+          const result = await scrapeUrlSilent(url, { use_cache: true });
+          return result
+            ? {
+                processedDocumentId: result.processedDocumentId,
+                sourceNotices: result.sourceNotices,
+                pageTitle: result.overview?.page_title,
+              }
+            : null;
+        } catch (err) {
+          if (waitsForOrganization(err)) throw err;
+          console.error("[useSourceIntake] web page read failed:", err);
+          const failure = classifyScrapeFailure({ error: err, diagnostics: null });
+          throw new Error(`${failure.title} ${failure.remedy}`.trim(), { cause: err });
+        }
       },
       fetchYouTubeTranscript: (url) => fetchYouTubeTranscript(backendApi.post, url), // org-filter: server-call the transcript call runs in the active organization on the server; it is not a list read
       transcribeFile: (input) => transcribeCloudFile(input),

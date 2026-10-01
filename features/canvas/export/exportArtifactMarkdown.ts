@@ -9,8 +9,8 @@
  * - STRUCTURED content (Track 2B: `content.data` is the zero-loss value
  *   object self-describing via `__kind`) routes to the kind registry's
  *   `toMarkdown` facet; kinds without one (and unregistered kinds) fall
- *   back to `genericKindMarkdown` (heading + fenced json — honest, zero
- *   loss).
+ *   back to `genericKindMarkdown` (readable markdown built from the value —
+ *   never a JSON dump, never the `__kind` key).
  * - STRING content returns as-is: it already IS markdown / wire text (the
  *   model authored it; html/code/mermaid strings are their own content).
  *
@@ -40,14 +40,16 @@ export function kindValueToMarkdown(
   value: Record<string, unknown>,
   fallbackKind = "artifact",
 ): string {
+  const nested = (child: Record<string, unknown>) => kindValueToMarkdown(child);
   const kind = readObjectKind(value);
-  if (!kind) return genericKindMarkdown(fallbackKind, value);
+  if (!kind) return genericKindMarkdown(fallbackKind, value, nested);
   const def = kindRegistry.getDefinition(kind);
   try {
-    return def?.toMarkdown?.(value) ?? genericKindMarkdown(kind, value);
+    return def?.toMarkdown?.(value) ?? genericKindMarkdown(kind, value, nested);
   } catch {
-    // A facet must never make content unexportable — degrade to the dump.
-    return genericKindMarkdown(kind, value);
+    // A facet must never make content unexportable — degrade to the readable
+    // generic rendering (never a JSON dump).
+    return genericKindMarkdown(kind, value, nested);
   }
 }
 

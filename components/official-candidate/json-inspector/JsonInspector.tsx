@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 // the CodeMirror graph, the one genuinely heavy dep here).
 import RawJsonExplorer from "@/components/official/json-explorer/RawJsonExplorer";
 import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
+import { KindDataGate } from "@/components/official/structured-value/KindDataGate";
 import { JsonTruncator } from "@/components/official-candidate/json-truncator/JsonTruncator";
 
 
@@ -95,6 +96,13 @@ export interface JsonInspectorProps {
   editOnly?: boolean;
   /** Forwarded to the outer wrapper. */
   className?: string;
+  /**
+   * A deliberate source view (admin debug, a "Raw" tab, kind authoring): data
+   * carrying a `__kind` is inspected as written. Default false — kind data is
+   * drawn as its kind (`AnswerValueView`) and the caller is reported. An
+   * editable inspector (`onUpdate`) is always a source view.
+   */
+  showSource?: boolean;
 }
 
 // Every interactive cell in the header is the same 20×20 square. Differences
@@ -158,7 +166,19 @@ function resolveDefaultExpandDepth(
   return maxDepth;
 }
 
-export function JsonInspector({
+export function JsonInspector(props: JsonInspectorProps) {
+  return (
+    <KindDataGate
+      component="JsonInspector"
+      data={props.data}
+      showSource={props.showSource || typeof props.onUpdate === "function"}
+    >
+      <JsonInspectorBody {...props} />
+    </KindDataGate>
+  );
+}
+
+function JsonInspectorBody({
   data,
   label,
   onBack,
@@ -525,14 +545,14 @@ export function JsonInspector({
 
         <TabsContent value="explorer" className={PANE_CLS}>
           {seen.has("explorer") ? (
-            <RawJsonExplorer pageData={data} />
+            <RawJsonExplorer pageData={data} showSource />
           ) : (
             <PaneFallback />
           )}
         </TabsContent>
 
         <TabsContent value="tree" className={PANE_CLS}>
-          {seen.has("tree") ? <JsonTreeViewer data={data} /> : <PaneFallback />}
+          {seen.has("tree") ? <JsonTreeViewer data={data} showSource /> : <PaneFallback />}
         </TabsContent>
 
         <TabsContent value="truncator" className={TRUNCATOR_PANE_CLS}>

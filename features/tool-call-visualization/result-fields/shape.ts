@@ -23,6 +23,12 @@ import {
 import { findCodeRanges } from "@ai-matrx/content-ir/source";
 import { findTableStart } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import {
+    firstKindSlug,
+    isKindJsonText,
+    rootKindSlug,
+    valueCarriesKind,
+} from "@/features/content-ir/surfaces/json-kind-signal";
 
 const hasMarkdownTable = (value: string): boolean => findTableStart(value.split("\n")) !== -1;
 
@@ -73,6 +79,14 @@ export type ResultShape =
     | { kind: "idList"; ids: string[] }
     | { kind: "table"; rows: Array<Record<string, unknown>>; columns: TableColumn[] }
     | { kind: "object"; value: Record<string, unknown> }
+    /**
+     * A kind instance — an object carrying its own `__kind`, or text that is
+     * kind JSON. Rendered through the one value door (`AnswerValueView`), never
+     * as a grid or a JSON tree (Arman, 2026-09-30: a kind is never drawn raw).
+     */
+    | { kind: "kindInstance"; value: unknown; slug: string | null }
+    /** An array holding a kind at any depth — each item rendered on its own, so each kind routes. */
+    | { kind: "kindList"; items: unknown[] }
     | { kind: "json"; value: unknown };
 
 // ─── Primitive guards ───────────────────────────────────────────────────────
@@ -550,6 +564,18 @@ export function detectResultShape(
     const objectFile = isPlainObject(value) ? coerceFileRef(value) : null;
     if (objectFile) {
         return { kind: "file", file: objectFile };
+    }
+
+    // 2c. A kind — after media/file (those already render as what they are,
+    //     never as JSON), before every shape that would draw it as a grid,
+    //     table, tree or text. The one detector decides.
+    const rootSlug = rootKindSlug(value);
+    if (rootSlug) return { kind: "kindInstance", value, slug: rootSlug };
+    if (typeof value === "string" && isKindJsonText(value)) {
+        return { kind: "kindInstance", value, slug: firstKindSlug(value) };
+    }
+    if (Array.isArray(value) && value.some((item) => valueCarriesKind(item))) {
+        return { kind: "kindList", items: value };
     }
 
     // 3. Strings: OUR file → media URI → uuid → url → markdown → scalar/text.

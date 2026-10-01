@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Search, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { ToggledDataBody } from "./ToggledDataBody";
 
 export interface SearchResultsBlockProps {
   results?: Record<string, unknown>[];
@@ -127,9 +128,10 @@ const SearchResultsBlock: React.FC<SearchResultsBlockProps> = ({
                     </button>
                   </div>
                   {isOpen && (
-                    <pre className="mt-2 text-xs bg-muted/50 rounded p-2 overflow-auto max-h-48 text-muted-foreground">
-                      {JSON.stringify(item, null, 2)}
-                    </pre>
+                    <ToggledDataBody
+                      value={item}
+                      className="mt-2 text-xs bg-muted/50 rounded p-2 overflow-auto max-h-48 text-muted-foreground"
+                    />
                   )}
                 </div>
               );

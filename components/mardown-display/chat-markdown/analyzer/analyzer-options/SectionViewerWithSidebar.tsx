@@ -261,7 +261,7 @@ const SectionViewerWithSidebar = ({ data }: { data: unknown }) => {
                 </div>
               </div>
               <div className="overflow-hidden" style={{ height: 'calc(100% - 80px)' }}>
-                <RawJsonExplorer pageData={data} />
+                <RawJsonExplorer showSource pageData={data} />
               </div>
             </>
           ) : (

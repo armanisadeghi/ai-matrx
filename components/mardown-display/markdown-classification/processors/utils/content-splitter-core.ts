@@ -54,6 +54,7 @@ import {
   normalizeRecoveredProsePiece,
   splitAroundEmbeddedKindJson,
 } from "@/features/content-ir/surfaces/embedded-kind-json";
+import { jsonKindSignal } from "@/features/content-ir/surfaces/json-kind-signal";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { isPageBreakLine } from "@ai-matrx/print/directives";
@@ -160,7 +161,11 @@ function looksLikeDirectiveHead(content: string): boolean {
  * lockstep by the stream/splitter parity suite). A JSON string cannot contain
  * a raw newline, so calling this per line is exact.
  */
-function countStructuralBraces(source: string): {
+function countStructuralBraces(
+  source: string,
+  open = "{",
+  close = "}",
+): {
   opens: number;
   closes: number;
 } {
@@ -177,8 +182,8 @@ function countStructuralBraces(source: string): {
       continue;
     }
     if (char === '"') inString = true;
-    else if (char === "{") opens++;
-    else if (char === "}") closes++;
+    else if (char === open) opens++;
+    else if (char === close) closes++;
   }
   return { opens, closes };
 }
@@ -241,6 +246,9 @@ export function recoverEmbeddedKindJsonBlocksWith(
 
     let followsKind = false;
     for (const piece of pieces) {
+      // Array punctuation between kinds is never a block (A6); what follows
+      // it still follows the kind.
+      if (piece.type === "chrome") continue;
       if (piece.type === "kind") {
         followsKind = true;
         // ONE PIPELINE: a recovered object whose `__kind` sits in the reserved
@@ -2517,6 +2525,46 @@ export const splitContentIntoBlocksWith = (
       }
 
       continue;
+    }
+
+    // 5.6a. A bare ARRAY OF KINDS (`[{"__kind":…},…]`, one line or pretty):
+    // the live accumulator gives each element its own region and drops the
+    // `[` `,` `]` chrome (A6). Here the whole array becomes one json code
+    // block and the embedded-kind recovery pass below splits it the same way.
+    // Only when it parses AND its first element's first key is `__kind` — a
+    // kindless array is ordinary source, exactly as before.
+    if (/^\[\s*(?:\{|$)/.test(trimmedLine)) {
+      const arrayLines: string[] = [processedLine];
+      const first = countStructuralBraces(trimmedLine, "[", "]");
+      let opens = first.opens;
+      let closes = first.closes;
+      let j = i + 1;
+      while (j < lines.length && opens > closes) {
+        const nextLine = normalizeLine(lines[j]);
+        arrayLines.push(nextLine);
+        const counts = countStructuralBraces(nextLine, "[", "]");
+        opens += counts.opens;
+        closes += counts.closes;
+        j++;
+      }
+      const arrayContent = arrayLines.join("\n").trim();
+      let isKindArray = false;
+      if (opens === closes && jsonKindSignal(arrayContent) === "kind") {
+        try {
+          isKindArray = Array.isArray(JSON.parse(arrayContent));
+        } catch {
+          isKindArray = false;
+        }
+      }
+      if (isKindArray) {
+        if (currentText.trim()) {
+          blocks.push({ type: "text", content: currentText.trimEnd() });
+          currentText = "";
+        }
+        blocks.push({ type: "code", content: arrayContent, language: "json" });
+        i = j;
+        continue;
+      }
     }
 
     // 5.6. Check for bare JSON objects (no ``` code fences).

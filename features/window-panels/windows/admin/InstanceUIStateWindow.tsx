@@ -189,7 +189,7 @@ function FullSliceView() {
   const instanceCount = Object.keys(sliceState.byConversationId).length;
 
   return (
-    <JsonInspector
+    <JsonInspector showSource
       data={sliceState}
       defaultView="json"
       label={

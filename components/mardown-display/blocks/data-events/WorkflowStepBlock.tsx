@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { ToggledDataBody } from "./ToggledDataBody";
 
 export interface WorkflowStepBlockProps {
   stepName: string;
@@ -96,9 +97,10 @@ const WorkflowStepBlock: React.FC<WorkflowStepBlockProps> = ({
       </div>
       {showData && data && (
         <div className="border-t border-border/40 px-3 py-2">
-          <pre className="text-xs text-muted-foreground overflow-auto max-h-40 leading-relaxed">
-            {JSON.stringify(data, null, 2)}
-          </pre>
+          <ToggledDataBody
+            value={data}
+            className="text-xs text-muted-foreground overflow-auto max-h-40 leading-relaxed"
+          />
         </div>
       )}
     </div>

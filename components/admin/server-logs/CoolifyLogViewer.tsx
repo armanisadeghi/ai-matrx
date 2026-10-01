@@ -1521,7 +1521,7 @@ export default function CoolifyLogViewer({
 
               {/* ── JSON panel body ── */}
               {jsonPanelData != null ? (
-                <JsonInspector
+                <JsonInspector showSource
                   data={jsonPanelData}
                   defaultView="json"
                   className="flex-1 min-h-0 rounded-none border-0 shadow-none"

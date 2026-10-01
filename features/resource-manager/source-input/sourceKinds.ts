@@ -19,22 +19,14 @@
  * kinds with live counts (`useKindCounts` / `useKindItems`, lane A5-P).
  *
  * Copy law (R9): a tile is a noun — no helper line, nothing that wraps.
+ * Label, icon and tint come from the canonical association items
+ * (`RESOURCE_PICKER_SOURCE_ITEMS`) and render through `ResourcePickerTiles`.
  * Hosts narrow the tiles with the `kinds` prop — never by forking this list.
  */
 
 import type { ComponentType } from "react";
-import {
-  ClipboardType,
-  FileAudio,
-  FileText,
-  Globe,
-  ImageIcon,
-  Library,
-  Lightbulb,
-  StickyNote,
-  Upload,
-} from "lucide-react";
-import { Youtube } from "@/components/icons/brand-icons";
+import { FileText, Library, StickyNote } from "lucide-react";
+import { RESOURCE_PICKER_SOURCE_ITEMS } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
   SOURCE_KIND_LABEL,
@@ -49,6 +41,8 @@ export interface SourceKindDef {
   /** The tile's one word or two. */
   label: string;
   icon: ComponentType<{ className?: string }>;
+  /** Module / brand tint on the icon (canonical item). */
+  iconClassName: string;
   control: SourceKindControl;
   /** Upload tiles: what the chooser and the drop accept. */
   accept?: string;
@@ -56,28 +50,24 @@ export interface SourceKindDef {
   noun: string;
 }
 
+const door = (id: Exclude<SourceTileId, "existing">) => {
+  const { label, icon, iconClassName } = RESOURCE_PICKER_SOURCE_ITEMS[id];
+  return { id, label, icon, iconClassName };
+};
+
 export const SOURCE_KINDS: readonly SourceKindDef[] = [
   {
-    id: "upload",
+    ...door("upload"),
     noun: "File",
-    label: "Upload",
-    icon: Upload,
     control: "upload",
     accept: ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.md,.rtf,.html,.json",
   },
-  { id: "paste", noun: "Pasted text", label: "Paste text", icon: ClipboardType, control: "paste" },
-  { id: "web", noun: "Web page", label: "Web page", icon: Globe, control: "url" },
-  { id: "youtube", noun: "YouTube video", label: "YouTube", icon: Youtube, control: "youtube" },
-  {
-    id: "audio",
-    noun: "Recording",
-    label: "Recording",
-    icon: FileAudio,
-    control: "audio",
-    accept: "audio/*,video/*",
-  },
-  { id: "image", noun: "Image", label: "Image", icon: ImageIcon, control: "upload", accept: "image/*" },
-  { id: "topic", noun: "Topic", label: "Topic", icon: Lightbulb, control: "topic" },
+  { ...door("paste"), noun: "Pasted text", control: "paste" },
+  { ...door("web"), noun: "Web page", control: "url" },
+  { ...door("youtube"), noun: "YouTube video", control: "youtube" },
+  { ...door("audio"), noun: "Recording", control: "audio", accept: "audio/*,video/*" },
+  { ...door("image"), noun: "Image", control: "upload", accept: "image/*" },
+  { ...door("topic"), noun: "Topic", control: "topic" },
 ];
 
 /** Every tile id a host may pass in `kinds` ("existing" = the Use existing row and search). */

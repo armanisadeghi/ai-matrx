@@ -328,7 +328,7 @@ const PageContentBody: React.FC<PageContentProps> = ({
               value="raw-explorer"
               className="m-0 h-full overflow-auto"
             >
-              <RawJsonExplorer pageData={pageData} />
+              <RawJsonExplorer showSource pageData={pageData} />
             </TabsContent>
             <TabsContent
               value="fancy-json-explorer"

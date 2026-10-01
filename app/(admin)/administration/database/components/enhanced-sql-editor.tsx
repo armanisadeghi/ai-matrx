@@ -645,7 +645,7 @@ export const EnhancedSQLEditor = ({
               )}
             </div>
 
-            <JsonInspector
+            <JsonInspector showSource
               data={queryResult}
               defaultView="json"
               className="flex-1 min-h-0 rounded-none border-0 shadow-none"

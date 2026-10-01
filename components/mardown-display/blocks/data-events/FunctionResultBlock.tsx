@@ -4,6 +4,7 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import React, { useState } from "react";
 import { Terminal, CheckCircle2, XCircle, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ToggledDataBody } from "./ToggledDataBody";
 
 export interface FunctionResultBlockProps {
   functionName: string;
@@ -22,7 +23,6 @@ const FunctionResultBlock: React.FC<FunctionResultBlockProps> = ({
 }) => {
   const [showResult, setShowResult] = useState(false);
   const hasResult = result != null;
-  const resultStr = hasResult ? JSON.stringify(result, null, 2) : null;
 
   return (
     <div className={`rounded-lg border my-2 overflow-hidden ${success ? "border-success/40 bg-success/5" : "border-destructive/40 bg-destructive/5"}`}>
@@ -60,11 +60,12 @@ const FunctionResultBlock: React.FC<FunctionResultBlockProps> = ({
           </button>
         )}
       </div>
-      {showResult && resultStr && (
+      {showResult && hasResult && (
         <div className="border-t border-border/40 px-3 py-2">
-          <pre className="text-xs text-muted-foreground overflow-auto max-h-48 leading-relaxed">
-            {resultStr}
-          </pre>
+          <ToggledDataBody
+            value={result}
+            className="text-xs text-muted-foreground overflow-auto max-h-48 leading-relaxed"
+          />
         </div>
       )}
     </div>

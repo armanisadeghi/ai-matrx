@@ -1,5 +1,6 @@
 import {
   isKindJsonText,
+  markdownCarriesKind,
   rootKindSlug,
   valueCarriesKind,
 } from "../json-kind-signal";
@@ -32,5 +33,22 @@ describe("valueCarriesKind — the value form of the kind signal", () => {
     expect(rootKindSlug([{ __kind: "timeline" }])).toBeNull();
     expect(isKindJsonText('  {"__kind":"a"}')).toBe(true);
     expect(isKindJsonText('see {"__kind":"a"}')).toBe(false);
+  });
+});
+
+describe("markdownCarriesKind — kind data a reader would see raw in prose", () => {
+  it.each([
+    ['```json\n{"__kind":"a"}\n```', true],
+    ['```JSON\n{"__kind":"a"}\n```', true],
+    ['```\n{"__kind":"a"}\n```', true],
+    ['~~~json\n{"__kind":"a"}\n~~~', true],
+    ['  {"__kind":"a","x":1}', true],
+    ['Here: {"__kind":"a","x":1}', false],
+    ['```xml\n{"__kind":"a"}\n```', false],
+    ['  ```ts\n  const k = {"__kind": "a"};\n  ```', false],
+    ['Use `"__kind": "a"` to route.', false],
+    ["No kind here.", false],
+  ])("%j → %s", (text, expected) => {
+    expect(markdownCarriesKind(text)).toBe(expected);
   });
 });

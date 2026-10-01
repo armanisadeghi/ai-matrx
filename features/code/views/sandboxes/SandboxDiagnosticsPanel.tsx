@@ -1126,7 +1126,7 @@ export const SandboxDiagnosticsPanel = forwardRef<
               value="raw"
               className="mt-2 md:h-[30rem] md:flex md:flex-col min-h-[18rem]"
             >
-              <JsonInspector
+              <JsonInspector showSource
                 data={diag}
                 defaultView="json"
                 className="h-full min-h-[18rem] rounded-md border border-border shadow-none"

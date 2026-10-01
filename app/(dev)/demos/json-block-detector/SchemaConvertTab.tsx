@@ -330,7 +330,7 @@ export function SchemaConvertTab({
             open={openPanel === "blockSchemas"}
             onOpenChange={(open) => setPanelOpen("blockSchemas", open)}
           >
-            <JsonInspector
+            <JsonInspector showSource
               data={conversion.blockSchemas}
               label="Block schemas"
               defaultView="json"
@@ -346,7 +346,7 @@ export function SchemaConvertTab({
             open={openPanel === "agentSchema"}
             onOpenChange={(open) => setPanelOpen("agentSchema", open)}
           >
-            <JsonInspector
+            <JsonInspector showSource
               data={conversion.agentSchemaWithKinds}
               label="Agent schema with __kind"
               defaultView="json"

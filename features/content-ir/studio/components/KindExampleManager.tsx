@@ -350,7 +350,7 @@ export default function KindExampleManager({
           <div className="space-y-1.5">
             <Label>Sample JSON</Label>
             <div className="h-96 min-h-72 overflow-hidden rounded-md border border-border">
-              <JsonInspector
+              <JsonInspector showSource
                 data={draft.data}
                 editOnly
                 onUpdate={(data) =>

@@ -673,7 +673,7 @@ function WorkItemDetail({
           <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-destructive">
             Delivery error (handler_error)
           </p>
-          <JsonTreeViewer data={row.handler_error} />
+          <JsonTreeViewer showSource data={row.handler_error} />
           <ErrorAlchemyMenu />
         </div>
       ) : null}
@@ -684,7 +684,7 @@ function WorkItemDetail({
             Provider error (error)
             <ErrorAlchemyMenu />
           </p>
-          <JsonTreeViewer data={row.error} />
+          <JsonTreeViewer showSource data={row.error} />
         </div>
       ) : null}
 

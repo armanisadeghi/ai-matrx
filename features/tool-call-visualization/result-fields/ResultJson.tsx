@@ -13,18 +13,27 @@
 
 import React from "react";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { KindDataGate } from "@/components/official/structured-value/KindDataGate";
 import { cn } from "@/lib/utils";
 
 export interface ResultJsonProps {
     data: unknown;
     className?: string;
+    /**
+     * A deliberate source view (a "Raw" tab, a "Show the raw data" escape):
+     * the tree shows kind data as written. Default false — kind data is drawn
+     * as its kind (`AnswerValueView`) and the caller is reported.
+     */
+    showSource?: boolean;
 }
 
-export const ResultJson: React.FC<ResultJsonProps> = ({ data, className }) => (
-    // JsonInspector is `h-full` with internally-scrolling panes, so an inline
-    // wrapper must give it a bounded height or it collapses to zero. A capped
-    // height keeps huge payloads scrollable instead of blowing out the page.
-    <div className={cn("min-w-0 h-80 overflow-hidden rounded-md border border-border bg-card", className)}>
-        <JsonInspector data={data} />
-    </div>
+export const ResultJson: React.FC<ResultJsonProps> = ({ data, className, showSource = false }) => (
+    <KindDataGate component="ResultJson" data={data} showSource={showSource}>
+        {/* JsonInspector is `h-full` with internally-scrolling panes, so an inline
+            wrapper must give it a bounded height or it collapses to zero. A capped
+            height keeps huge payloads scrollable instead of blowing out the page. */}
+        <div className={cn("min-w-0 h-80 overflow-hidden rounded-md border border-border bg-card", className)}>
+            <JsonInspector data={data} showSource />
+        </div>
+    </KindDataGate>
 );
