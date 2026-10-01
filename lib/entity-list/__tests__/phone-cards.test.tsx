@@ -216,6 +216,15 @@ describe("the phone card layout derived from a surface's own columns", () => {
 describe("a list surface that declares no phone layout", () => {
   let container: HTMLDivElement;
   let root: Root;
+  // The cards are drawn only at a phone's width (EntityListTable: above `sm` the table gets no card
+  // renderer at all). jest.setup's matchMedia answers width queries from `innerWidth`.
+  const desktopWidth = window.innerWidth;
+  beforeEach(() => {
+    window.innerWidth = 390;
+  });
+  afterEach(() => {
+    window.innerWidth = desktopWidth;
+  });
 
   async function render(cfg: EntityListConfig<Row>) {
     container = document.createElement("div");
@@ -276,6 +285,13 @@ describe("a list surface that declares no phone layout", () => {
       more!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     expect(cards()[0].textContent).toContain("Ready");
+  });
+
+  it("draws no card at all above the phone's width (only the table)", async () => {
+    window.innerWidth = 1440;
+    await render(config());
+    expect(cards()).toHaveLength(0);
+    expect(document.querySelectorAll("tr[data-row-id], [role=row][data-row-id]").length).toBeGreaterThan(0);
   });
 
   it("leaves a surface that wrote its own phone card alone", async () => {

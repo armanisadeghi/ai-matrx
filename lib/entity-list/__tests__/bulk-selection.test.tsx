@@ -370,17 +370,24 @@ describe("a surface that declares bulk actions", () => {
   });
 
   it("puts a 44px-capable tap area on the phone card's checkbox", async () => {
-    await render(bulkConfig());
-    const label = document.querySelector<HTMLElement>(
-      "[data-entity-phone-card-select]",
-    );
-    expect(label).not.toBeNull();
-    // THE ONE HIT-AREA RING (app/globals.css). The subtree floor deliberately
-    // excludes checkboxes, so the ring on the <label> is the only thing that
-    // makes this finger-sized.
-    expect(label!.className).toContain("matrx-tap-area");
-    expect(label!.tagName).toBe("LABEL");
-    expect(label!.querySelector("input[type='checkbox']")).not.toBeNull();
+    // The cards exist only at a phone's width (jest.setup's matchMedia reads innerWidth).
+    const desktopWidth = window.innerWidth;
+    window.innerWidth = 390;
+    try {
+      await render(bulkConfig());
+      const label = document.querySelector<HTMLElement>(
+        "[data-entity-phone-card-select]",
+      );
+      expect(label).not.toBeNull();
+      // THE ONE HIT-AREA RING (app/globals.css). The subtree floor deliberately
+      // excludes checkboxes, so the ring on the <label> is the only thing that
+      // makes this finger-sized.
+      expect(label!.className).toContain("matrx-tap-area");
+      expect(label!.tagName).toBe("LABEL");
+      expect(label!.querySelector("input[type='checkbox']")).not.toBeNull();
+    } finally {
+      window.innerWidth = desktopWidth;
+    }
   });
 
   it("renders no checkbox at all for a row the surface refuses in bulk", async () => {

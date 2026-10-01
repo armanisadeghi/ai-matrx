@@ -12,7 +12,10 @@ import { useSyncExternalStore } from "react";
 
 export const PHONE_WIDTH_QUERY = "(max-width: 639px)";
 
+const hasMatchMedia = () => typeof window !== "undefined" && typeof window.matchMedia === "function";
+
 function subscribe(onChange: () => void) {
+  if (!hasMatchMedia()) return () => {};
   const mq = window.matchMedia(PHONE_WIDTH_QUERY);
   mq.addEventListener("change", onChange);
   return () => mq.removeEventListener("change", onChange);
@@ -21,7 +24,7 @@ function subscribe(onChange: () => void) {
 export function usePhoneWidth(): boolean {
   return useSyncExternalStore(
     subscribe,
-    () => window.matchMedia(PHONE_WIDTH_QUERY).matches,
+    () => (hasMatchMedia() ? window.matchMedia(PHONE_WIDTH_QUERY).matches : false),
     () => false,
   );
 }

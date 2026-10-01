@@ -373,13 +373,11 @@ export function EntityListTable<TRow>({
   // its card list mounted at every width (inert and CSS-hidden above `sm`), one card per row of the
   // PAGE, never virtualized — so a 200-row page drew 200 hidden cards, each with its own copy menu
   // and ⋮, beside the 26 virtualized table rows, and every scroll step re-rendered all of them:
-  // 72-414 ms long tasks on /data-v2 at 1440. Above `sm` a card renders nothing; below it, the
-  // card. (Rows arrive after mount, so no server-rendered card is ever swapped.)
+  // 72-414 ms long tasks on /data-v2 at 1440. Even a card renderer answering null kept the cost
+  // (the primitive still builds each card's actions), so above `sm` the table gets NO card renderer
+  // at all — it then draws the table at every width, which above `sm` is what it drew anyway. Below
+  // `sm`, the cards. (Rows arrive after mount, so no server-rendered card is ever swapped.)
   const phone = usePhoneWidth();
-  const cardOnPhone =
-    (render: NonNullable<EntityListConfig<TRow>["mobileCards"]>) =>
-    (row: TRow, index: number, controls: MatrxDataTableMobileCardControls) =>
-      phone ? render(row, index, controls) : null;
 
   const defaultMobileCards = (
     row: TRow,
@@ -706,7 +704,7 @@ export function EntityListTable<TRow>({
       // the canonical stacked card from the columns the surface already
       // declared, so every list route inherits a phone layout instead of a
       // 3,000px table in a 364px box. See ../phoneCards.tsx.
-      mobileCards={cardOnPhone(config.mobileCards ?? defaultMobileCards)}
+      {...(phone ? { mobileCards: config.mobileCards ?? defaultMobileCards } : {})}
       // A surface that declared no `bulkActions` says `selection={false}` OUT LOUD: since
       // design-system 0.49.x an ABSENT key means "self-managed copy selection", which draws a
       // checkbox column (see Props). `false` is the package's own "no selection".
