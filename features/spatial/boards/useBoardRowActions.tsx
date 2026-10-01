@@ -134,15 +134,15 @@ export function useBoardRowActions(list: EntityListController<BoardListRow>): En
       onConfirm={async (value) => {
         if (!renaming) return;
         setRenameBusy(true);
-        try {
-          const { title } = await renameBoard(renaming.id, value);
-          list.patchRow(renaming.id, { title });
-          setRenaming(null);
-        } catch (error) {
+        // No `finally` here: it makes the React Compiler skip this whole hook.
+        const renamed = await renameBoard(renaming.id, value).catch((error: unknown) => {
           toast.error(failure(error, "The board could not be renamed. Try again."));
-        } finally {
-          setRenameBusy(false);
-        }
+          return null;
+        });
+        setRenameBusy(false);
+        if (!renamed) return;
+        list.patchRow(renaming.id, { title: renamed.title });
+        setRenaming(null);
       }}
     />
   );

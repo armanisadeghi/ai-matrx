@@ -76,10 +76,12 @@ export interface BoardView<T extends BoardTileBase> {
  * come or go, park, or frames/shapes/connections/undo-ability change — never
  * when a tile moves, resizes or its content changes (those wake that tile).
  */
-export interface BoardLayout {
+export interface BoardLayout<T extends BoardTileBase = BoardTileBase> {
   /** Tiles on the board (not parked), in order. */
   tileIds: readonly string[];
   parkedIds: readonly string[];
+  /** The parked tiles' records (a shelf shows their titles; they never move). */
+  parked: readonly T[];
   frames: readonly BoardFrame[];
   shapes: readonly BoardShape[];
   connections: readonly BoardConnection[];
@@ -144,7 +146,7 @@ export class BoardStore<T extends BoardTileBase> {
   private layoutListeners = new Set<Listener>();
   private tileListeners = new Map<string, Set<Listener>>();
   private viewCache: { now: Snapshot<T>; view: BoardView<T> } | null = null;
-  private layoutCache: BoardLayout | null = null;
+  private layoutCache: BoardLayout<T> | null = null;
 
   constructor(start: T[] | BoardSeed<T>) {
     this.h = seedHistory(start);
@@ -171,7 +173,7 @@ export class BoardStore<T extends BoardTileBase> {
   /** One tile's current record (on the board or parked). */
   getTile = (id: string): T | undefined => this.h.now.byId[id];
 
-  getLayout = (): BoardLayout => {
+  getLayout = (): BoardLayout<T> => {
     const now = this.h.now;
     const canUndo = this.h.past.length > 0;
     const canRedo = this.h.future.length > 0;
@@ -188,9 +190,11 @@ export class BoardStore<T extends BoardTileBase> {
       return c;
     }
     const parkedSet = new Set(now.parked);
+    const parkedIds = now.parked.filter((id) => now.byId[id]);
     this.layoutCache = {
       tileIds: now.order.filter((id) => !parkedSet.has(id) && now.byId[id]),
-      parkedIds: now.parked.filter((id) => now.byId[id]),
+      parkedIds,
+      parked: parkedIds.map((id) => now.byId[id]),
       frames: now.frames,
       shapes: now.shapes,
       connections: now.connections,
@@ -454,8 +458,9 @@ export class BoardStore<T extends BoardTileBase> {
   };
 }
 
-/** The cached layout still names exactly the snapshot's tile ids and shelf. */
-function sameIds<T>(c: BoardLayout, now: Snapshot<T>): boolean {
+/** The cached layout still names exactly the snapshot's tile ids and shelf
+ * (and the parked records are the same records). */
+function sameIds<T extends BoardTileBase>(c: BoardLayout<T>, now: Snapshot<T>): boolean {
   const parkedSet = now.parked.length ? new Set(now.parked) : null;
   let i = 0;
   for (const id of now.order) {
@@ -466,7 +471,8 @@ function sameIds<T>(c: BoardLayout, now: Snapshot<T>): boolean {
   let j = 0;
   for (const id of now.parked) {
     if (!now.byId[id]) continue;
-    if (c.parkedIds[j++] !== id) return false;
+    if (c.parkedIds[j] !== id || c.parked[j] !== now.byId[id]) return false;
+    j++;
   }
   return j === c.parkedIds.length;
 }

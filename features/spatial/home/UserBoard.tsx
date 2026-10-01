@@ -135,11 +135,16 @@ export function UserBoard({
   // Every change to the model is reported straight from the store — not from
   // a render — so saving never depends on (or causes) a board re-render. The
   // autosaver debounces; a drag reports each step and only the last is written.
-  const [startCamera] = useState(doc.camera);
-  useEffect(
-    () => board.subscribe(() => onChangeRef.current(toDocRef.current(storeRef.current?.getCamera() ?? startCamera))),
-    [board, startCamera],
-  );
+  // What the board looked like when it opened: a change made before this
+  // effect subscribed (a tile body upgrading its source in its own mount
+  // effect — children's effects run first) is reported once on subscribe.
+  const [opened] = useState(() => ({ view: board.read(), camera: doc.camera }));
+  useEffect(() => {
+    const report = () => onChangeRef.current(toDocRef.current(storeRef.current?.getCamera() ?? opened.camera));
+    const unsubscribe = board.subscribe(report);
+    if (board.read() !== opened.view) report();
+    return unsubscribe;
+  }, [board, opened]);
 
   // The camera is saved once it settles (the URL hash follows it live).
   useEffect(() => {
@@ -354,10 +359,7 @@ export function UserBoard({
 
   const onBoard = new Set(layout.tileIds);
   const empty = layout.tileIds.length === 0 && layout.parkedIds.length === 0;
-  const parkedTiles = layout.parkedIds.flatMap((id) => {
-    const t = board.getTile(id);
-    return t ? [t] : [];
-  });
+  const parkedTiles = layout.parked;
 
   return (
     <SpatialBoardSurface host={agentHost}>

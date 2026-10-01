@@ -96,7 +96,7 @@ export function useBoardStore<T extends BoardTileBase>(initial: () => T[] | Boar
 
 /** The board's structure; re-renders only when tiles come, go or park, or
  * frames, shapes, connections or undo-ability change. */
-export function useBoardLayout<T extends BoardTileBase>(board: BoardStore<T>): BoardLayout {
+export function useBoardLayout<T extends BoardTileBase>(board: BoardStore<T>): BoardLayout<T> {
   return useSyncExternalStore(board.subscribeLayout, board.getLayout, board.getLayout);
 }
 

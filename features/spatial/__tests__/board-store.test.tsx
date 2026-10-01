@@ -90,6 +90,14 @@ describe("board store — a change wakes only who reads it", () => {
     expect(s.getLayout().tileIds).toEqual(["a"]);
   });
 
+  it("renaming a PARKED tile reaches the layout (the shelf shows its title)", () => {
+    const s = new BoardStore<T>({ tiles: [tile("a"), tile("p", 200)], parked: ["p"] });
+    const before = s.getLayout();
+    s.updateTile("p", { title: "Renamed" });
+    expect(s.getLayout()).not.toBe(before);
+    expect(s.getLayout().parked.map((t) => t.title)).toEqual(["Renamed"]);
+  });
+
   it("useBoard's operations keep their identity across renders, so the compiler's memoization holds", () => {
     const seen: Board<T>[] = [];
     function Probe() {
