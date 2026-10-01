@@ -54,7 +54,9 @@ Every stream item below adds its case there.
 - [x] A7. Kind nested inside a non-kind object → whole region should show as could-be-kind; wrapper
       fragments left broken after recovery. Mid-stream the first-key gate already held (now guarded); after
       recovery a JSON wrapper splits into its kinds + ONE `residual` piece (its data, kinds removed, valid JSON).
-- [ ] A8. Kind inside a simple XML tag → rescued only at tag close.
+- [x] A8. Kind inside a simple XML tag → rescued only at tag close.
+      A JSON object in a simple section leaves it the moment `__kind` is visible (line or fragment) and the
+      section resumes after it; recovered section pieces are trimmed on both hosts so live = reload.
 - [ ] A9. Transport drop mid-fence (no `finalize`) → block stuck `streaming` forever.
 - [ ] A10. Fence closes on truncated/invalid JSON with `__kind` → should be the kind's broken state, not raw.
 - [ ] A11. Cold registry at stream end → raw until the registry repaints.

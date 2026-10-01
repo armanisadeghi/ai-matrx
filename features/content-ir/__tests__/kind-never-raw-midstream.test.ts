@@ -348,3 +348,31 @@ describe("never raw: a kind nested inside a non-kind object (A7)", () => {
     expect(blocks.map((b) => (b.content ?? "").trim())).toEqual([KIND_PAYLOAD_ONE_LINE]);
   });
 });
+
+describe("never raw: a kind inside a simple XML tag (A8)", () => {
+  const PRETTY = JSON.stringify(JSON.parse(KIND_PAYLOAD_ONE_LINE), null, 2);
+  /** An XML section block (or prose) that prints a `__kind` key prints raw kind JSON. */
+  const sectionShowsRawKind = (b: RenderBlockPayload) =>
+    b.type !== "code" && hasKindKey(b.content ?? "") && applyIrKindRoute(renderBlockToContentBlock(b)).type === b.type;
+  const CASES: Array<[string, string]> = [
+    ["<info> one-line", `<info>\nBefore the cards.\n${KIND_PAYLOAD_ONE_LINE}\nAfter the cards.\n</info>\nDone.`],
+    ["<info> pretty", `<info>\nBefore the cards.\n${PRETTY}\nAfter the cards.\n</info>\nDone.`],
+    ["<thinking> one-line", `<thinking>\nWorking it out.\n${KIND_PAYLOAD_ONE_LINE}\nChecked.\n</thinking>\nDone.`],
+  ];
+
+  it.each(CASES)("%s: rescued live — no frame prints the kind inside the section", (_label, stream) => {
+    const frames = streamingFrames(streamCharByChar(stream, `req-xml-${_label}`));
+    const afterKind = frames.filter((b) => hasKindKey(b.content ?? ""));
+    expect(afterKind.length).toBeGreaterThan(0);
+    expect(afterKind.filter(sectionShowsRawKind).map((b) => `${b.type}: ${(b.content ?? "").slice(0, 40)}`)).toEqual([]);
+    expect(afterKind.filter(rendersRawJson).map((b) => (b.content ?? "").slice(0, 40))).toEqual([]);
+  });
+
+  it.each(CASES)("%s: final blocks match the reload", (_label, stream) => {
+    const shape = (b: { type: string; content?: string | null }) => `${b.type}:${(b.content ?? "").trim().slice(0, 30)}`;
+    const blocks = finalBlocks(stream, `req-xml-final-${_label}`).map(shape);
+    const reloaded = splitContentIntoBlocksV2(stream).filter((b) => b.content.trim()).map(shape);
+    expect(blocks).toEqual(reloaded);
+    expect(blocks.filter((b) => b.startsWith("code:{"))).toHaveLength(1);
+  });
+});

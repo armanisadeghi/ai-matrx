@@ -51,7 +51,7 @@ import {
   mightBeOurFileUrl,
 } from "@/lib/media/our-file-sources";
 import {
-  normalizeRecoveredProsePiece,
+  normalizeRecoveredContainerPiece,
   splitAroundEmbeddedKindJson,
 } from "@/features/content-ir/surfaces/embedded-kind-json";
 import { jsonKindSignal } from "@/features/content-ir/surfaces/json-kind-signal";
@@ -285,10 +285,11 @@ export function recoverEmbeddedKindJsonBlocksWith(
         continue;
       }
 
-      const content =
-        block.type === "text"
-          ? normalizeRecoveredProsePiece(piece.content, followsKind)
-          : piece.content;
+      const content = normalizeRecoveredContainerPiece(
+        piece.content,
+        block.type,
+        followsKind,
+      );
       followsKind = false;
       if (!content) continue;
       recovered.push({

@@ -74,7 +74,7 @@ import {
   envelopeForCompletedXmlRegion,
 } from "@/features/content-ir/surfaces/xml-finalize";
 import {
-  normalizeRecoveredProsePiece,
+  normalizeRecoveredContainerPiece,
   splitAroundEmbeddedKindJson,
 } from "@/features/content-ir/surfaces/embedded-kind-json";
 import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
@@ -151,6 +151,8 @@ function firstCompleteRootObjectEnd(
   return null;
 }
 
+type XmlTagSubState = Extract<BlockSubState, { kind: "xml_tag" }>;
+
 type BlockSubState =
   | { kind: "none" }
   | {
@@ -195,6 +197,20 @@ type BlockSubState =
        * static splitter.
        */
       balance: XmlBalanceState;
+      /**
+       * A JSON object that started on a line of this SIMPLE section and has
+       * not balanced yet: where it starts in the block, and its lines so far.
+       * The moment its text carries a `__kind` key it leaves the section as
+       * its own region (A8) — the reload's recovery splits the same bytes.
+       */
+      jsonCandidate?: {
+        contentLen: number;
+        lineCount: number;
+        lines: string[];
+        depth: number;
+      } | null;
+      /** This block resumes a section a kind split (A8): its content is trimmed at close, as the reload trims each piece. */
+      resumedAfterKind?: boolean;
     }
   // `container`: the header's indent — indentation 4+ past it is indented code, which ends the table.
   | { kind: "table"; container: number }
@@ -218,6 +234,8 @@ type BlockSubState =
       earlyTypeResolved: boolean;
       /** This object is one element of an array of kinds (A6) — closing it returns to the array. */
       inArray?: boolean;
+      /** The simple XML section this kind was split out of (A8) — closing it resumes the section. */
+      resumeXml?: XmlTagSubState;
     }
   /**
    * Inside a bare ARRAY OF KINDS (`[{"__kind":…},{"__kind":…}]`, A6). Each
@@ -629,6 +647,7 @@ export class StreamBlockAccumulator {
     // of its own and the object is left as the fragment for the opener below.
     this.maybeSplitProseBeforeKindFragment(dispatch);
     this.maybeEnterKindArrayFromFragment(dispatch);
+    this.maybeSplitKindFromXmlFragment(dispatch);
 
     // A newline-less minified JSON object never completes a line during the
     // stream, so processLine never opens its region — it would project as raw
@@ -1308,6 +1327,8 @@ export class StreamBlockAccumulator {
       }
       const inArray = this.nextBareJsonInArray;
       this.nextBareJsonInArray = false;
+      const resumeXml = this.nextBareJsonResumeXml ?? undefined;
+      this.nextBareJsonResumeXml = null;
       this.closeCurrentBlock(dispatch);
       this.openBlock("code", dispatch); // may be upgraded to a typed JSON block
       this.subState = {
@@ -1316,6 +1337,7 @@ export class StreamBlockAccumulator {
         closeBraces: closeCount,
         earlyTypeResolved: false,
         inArray,
+        resumeXml,
       };
       this.irOpenRegion();
       this.irFeedLine(rawLine);
@@ -1325,6 +1347,10 @@ export class StreamBlockAccumulator {
         const jsonType = detectJsonBlockType(this.currentBlockContent);
         this.currentBlockType = jsonType ?? "code";
         this.closeCurrentBlock(dispatch);
+        if (resumeXml) {
+          this.resumeXmlSection(resumeXml, dispatch);
+          return;
+        }
         this.subState = inArray ? { kind: "kind_array", held: null } : { kind: "none" };
         this.openBlock("text", dispatch);
         if (inArray) this.suppressEmptyTrailingSlot = true;
@@ -1351,6 +1377,111 @@ export class StreamBlockAccumulator {
 
   /** Set while the next bare-JSON region opens as an array element (A6). */
   private nextBareJsonInArray = false;
+  /** Set while the next bare-JSON region is a kind split out of a section (A8). */
+  private nextBareJsonResumeXml: XmlTagSubState | null = null;
+
+  /**
+   * Track a JSON object inside a simple XML section; split it out the moment
+   * it carries a `__kind` key (A8). `line` is the section body part of a
+   * line. Returns true when the line was consumed by the split.
+   */
+  private trackXmlKindCandidate(line: string, dispatch: DispatchFn): boolean {
+    if (this.subState.kind !== "xml_tag" || this.subState.isAttrXml) return false;
+    let candidate = this.subState.jsonCandidate ?? null;
+    if (!candidate) {
+      if (!line.trimStart().startsWith("{")) return false;
+      candidate = {
+        contentLen: this.currentBlockContent.length,
+        lineCount: this.currentBlockLineCount,
+        lines: [],
+        depth: 0,
+      };
+    }
+    candidate.lines.push(line);
+    const { opens, closes } = countStructuralObjectBraces(line);
+    candidate.depth += opens - closes;
+    if (hasKindKey(candidate.lines.join("\n"))) {
+      this.splitKindOutOfXmlSection(candidate, dispatch);
+      return true;
+    }
+    this.subState.jsonCandidate = candidate.depth > 0 ? candidate : null;
+    return false;
+  }
+
+  /**
+   * Close the section's part before the kind (trimmed, like the reload's
+   * piece), then replay the kind's lines so far as a bare-JSON region that
+   * resumes the section when it balances (A8).
+   */
+  private splitKindOutOfXmlSection(
+    candidate: NonNullable<XmlTagSubState["jsonCandidate"]>,
+    dispatch: DispatchFn,
+  ): void {
+    if (this.subState.kind !== "xml_tag") return;
+    const section: XmlTagSubState = {
+      ...this.subState,
+      jsonCandidate: null,
+      balance: { ...this.subState.balance },
+    };
+    // The candidate's earlier lines are already in the block — take them back.
+    this.currentBlockContent = this.currentBlockContent
+      .slice(0, candidate.contentLen)
+      .trim();
+    this.currentBlockLineCount = this.currentBlockContent ? candidate.lineCount : 0;
+    this.regionContinuesAfterClose = true;
+    this.closeCurrentBlock(dispatch);
+    this.regionContinuesAfterClose = false;
+    this.subState = { kind: "none" };
+    this.openBlock("text", dispatch);
+    this.suppressEmptyTrailingSlot = true;
+    this.nextBareJsonResumeXml = section;
+    const [first, ...rest] = candidate.lines;
+    if (first !== undefined) {
+      const trimmedFirst = first.trimStart();
+      const end = firstCompleteRootObjectEnd(trimmedFirst);
+      if (rest.length === 0 && end !== null && trimmedFirst.slice(end).trim()) {
+        // `{…kind…} more section text` on one line.
+        this.processLineNow(trimmedFirst.slice(0, end), dispatch);
+        this.processLine(trimmedFirst.slice(end), dispatch);
+        return;
+      }
+      this.processLineNow(trimmedFirst, dispatch);
+    }
+    for (const line of rest) this.processLineNow(line, dispatch);
+  }
+
+  /** The section a kind was split out of continues in a fresh block (A8). */
+  private resumeXmlSection(section: XmlTagSubState, dispatch: DispatchFn): void {
+    this.openBlock(mapXmlTagToBlockType(section.tagName), dispatch);
+    this.subState = { ...section, jsonCandidate: null, resumedAfterKind: true };
+    this.suppressEmptyTrailingSlot = true;
+  }
+
+  /**
+   * The fragment twin of the section split: a newline-less kind object inside
+   * a simple section (`<info>{"__kind":…`) leaves it as soon as `__kind` is
+   * visible, and the fragment opens the region below (A8).
+   */
+  private maybeSplitKindFromXmlFragment(dispatch: DispatchFn): void {
+    if (this.subState.kind !== "xml_tag" || this.subState.isAttrXml) return;
+    const fragment = this.pendingLineFragment;
+    if (fragment.includes(this.subState.closingTag)) return;
+    const candidate = this.subState.jsonCandidate;
+    const text = candidate ? [...candidate.lines, fragment].join("\n") : fragment;
+    if (!candidate && !BARE_JSON_OPEN_RE.test(fragment.trimStart())) return;
+    if (!hasKindKey(text)) return;
+    this.splitKindOutOfXmlSection(
+      candidate ?? {
+        contentLen: this.currentBlockContent.length,
+        lineCount: this.currentBlockLineCount,
+        lines: [],
+        depth: 0,
+      },
+      dispatch,
+    );
+    // With no lines replayed, the fragment opens the region itself.
+    if (!candidate) this.pendingLineFragment = fragment.trimStart();
+  }
 
   /**
    * The held array start is a kind array: close the prose before it, drop the
@@ -1518,6 +1649,8 @@ export class StreamBlockAccumulator {
     // Retract the speculative text projection of these chars (the previous
     // ingest emitted them as a `text` block at this index), then open a fresh
     // block for the JSON region.
+    const resumeXml = this.nextBareJsonResumeXml ?? undefined;
+    this.nextBareJsonResumeXml = null;
     this.closeCurrentBlock(dispatch);
     this.openBlock("code", dispatch);
     this.subState = {
@@ -1526,6 +1659,7 @@ export class StreamBlockAccumulator {
       closeBraces: 0,
       earlyTypeResolved: false,
       inArray,
+      resumeXml,
     };
     this.irOpenRegion();
     // Feed everything seen so far as an incomplete line part (records fed len);
@@ -1645,6 +1779,17 @@ export class StreamBlockAccumulator {
             : rawLine.slice(0, closingIdxRaw);
         }
         const isClosingLine = closingIdxRaw !== -1;
+        // A kind object inside a SIMPLE section leaves it the moment its
+        // `__kind` key is visible (A8) — never printed as section prose.
+        if (!isAttrXml) {
+          const body = isClosingLine ? rawLine.slice(0, closingIdxRaw) : rawLine;
+          if (this.trackXmlKindCandidate(body, dispatch)) {
+            // The section was split; the JSON (and, on a closing line, the
+            // tag) continues through the normal line path.
+            if (isClosingLine) this.processLine(rawLine.slice(closingIdxRaw), dispatch);
+            return;
+          }
+        }
         // Wrapped-payload class: an attr-XML body that is JSON feeds the kind
         // parser, so the block carries `metadata.__ir` like any other JSON
         // region. The closing-tag line is chrome, never region content.
@@ -1656,6 +1801,9 @@ export class StreamBlockAccumulator {
           }
         }
         this.appendToCurrentBlock(lineToAppend);
+        if (isClosingLine && this.subState.resumedAfterKind) {
+          this.currentBlockContent = this.currentBlockContent.trim();
+        }
         if (isClosingLine) {
           // Record the clean close BEFORE closing: the keystone convergence hook
           // must distinguish a completed region from a stream-death truncation,
@@ -1781,7 +1929,12 @@ export class StreamBlockAccumulator {
           const jsonType = detectJsonBlockType(this.currentBlockContent);
           this.currentBlockType = jsonType ?? "code";
           const inArray = this.subState.inArray === true;
+          const resumeXml = this.subState.resumeXml;
           this.closeCurrentBlock(dispatch);
+          if (resumeXml) {
+            this.resumeXmlSection(resumeXml, dispatch);
+            return;
+          }
           this.subState = inArray ? { kind: "kind_array", held: null } : { kind: "none" };
           this.openBlock("text", dispatch);
           // Keep a fresh slot for source that follows this root, but do not
@@ -2214,9 +2367,9 @@ export class StreamBlockAccumulator {
       const isResidual = piece.type === "residual";
       const content = isResidual
         ? piece.json
-        : !isKind && containerType === "text"
-          ? normalizeRecoveredProsePiece(piece.content, followsKind)
-          : piece.content;
+        : isKind
+          ? piece.content
+          : normalizeRecoveredContainerPiece(piece.content, containerType, followsKind);
       followsKind = isKind;
       if (!content) continue;
       if (emitted > 0) this.currentBlockIndex++;

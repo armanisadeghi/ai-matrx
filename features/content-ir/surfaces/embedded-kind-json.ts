@@ -535,3 +535,21 @@ export function normalizeRecoveredProsePiece(
   const start = followsKind ? content.replace(/^[ \t]*(?:\r?\n)?/, "") : content;
   return start.trimEnd();
 }
+
+/**
+ * Every recovered container piece, by its container's block type: prose by
+ * the rule above, code byte-verbatim, and a SECTION (`thinking`, `info`, …)
+ * trimmed — the live stream splits a kind out of a section as it arrives
+ * (A8) and each part is a section body, which is trimmed like a whole one.
+ */
+export function normalizeRecoveredContainerPiece(
+  content: string,
+  containerType: string,
+  followsKind: boolean,
+): string {
+  if (containerType === "text") {
+    return normalizeRecoveredProsePiece(content, followsKind);
+  }
+  if (containerType === "code") return content;
+  return content.trim();
+}
