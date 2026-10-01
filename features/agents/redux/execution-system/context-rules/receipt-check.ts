@@ -54,7 +54,10 @@ export function toContextReceipt(data: ContextReceiptData): ContextReceipt {
         : null,
       clamped: row.clamped ?? false,
       client_sent_excluded: row.client_sent_excluded ?? false,
-      blocked_by: row.blocked_by ?? null,
+      // "self_check" (the server stripped the value after rendering) is typed
+      // by @ai-matrx/agents 0.21.20; until it is installed the row still reads
+      // delivery "off", and compareReceipt reports the difference.
+      blocked_by: row.blocked_by === "model" ? "model" : null,
     })),
   };
 }

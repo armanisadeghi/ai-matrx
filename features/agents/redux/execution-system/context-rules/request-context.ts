@@ -25,6 +25,7 @@ import {
   resolveContextRow,
   type ContextRowSource,
   type ResolvedContextRow,
+  withheldKeys,
 } from "@ai-matrx/agents/context";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
@@ -72,6 +73,13 @@ export interface RequestContext {
   rows: ResolvedContextRow[];
   /** The request body's `context`, or undefined when nothing is included. */
   context: Record<string, unknown> | undefined;
+  /**
+   * The request body's `context_withheld`: every key this client holds a value
+   * for but is not sending (off by the page, the agent or the person's rule),
+   * from the SAME rows. The server then lists saved off-rules only for these
+   * keys. Always sent — an empty list means nothing was withheld.
+   */
+  context_withheld: string[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -292,7 +300,11 @@ export function buildRequestContext(
     resolveContextRow(source, saved, cap, primarySurface),
   );
   const wire = buildContextWire(rows);
-  return { rows, context: Object.keys(wire).length > 0 ? wire : undefined };
+  return {
+    rows,
+    context: Object.keys(wire).length > 0 ? wire : undefined,
+    context_withheld: withheldKeys(rows),
+  };
 }
 
 // ── The table's rows, memoized ──────────────────────────────────────────────

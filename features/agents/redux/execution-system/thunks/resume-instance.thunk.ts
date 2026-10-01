@@ -246,7 +246,11 @@ export const resumeInstance = createAsyncThunk<
       // writes this conversation made, or the model reads its own write as a
       // value that was already there (2026-09-27).
       const writesNote = surfaceWritesNoteSource(freshState, conversationId);
-      const { rows: contextRows, context } = buildRequestContext(freshState, conversationId, {
+      const {
+        rows: contextRows,
+        context,
+        context_withheld,
+      } = buildRequestContext(freshState, conversationId, {
         includeAmbient: true,
         mandateKillSwitch: await resolveMandateKillSwitch(
           freshState.conversations.byConversationId[conversationId]?.mandateKey,
@@ -285,6 +289,7 @@ export const resumeInstance = createAsyncThunk<
       const body: Record<string, unknown> = {
         user_request_id: userRequestId,
         ...(context && { context }),
+        context_withheld,
         ...(injection.tools && { tools: injection.tools }),
         ...(injection.tools_replace !== undefined && {
           tools_replace: injection.tools_replace,

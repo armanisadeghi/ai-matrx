@@ -13,7 +13,11 @@
 //   2. reading `selectResourceContextPayload(` (attached files are rows of the door);
 //   3. assigning `<request|payload|body>.context =` in the execution system;
 //   4. spreading a hand-built `context` into a request body (`...(context && { context })`
-//      is allowed only where `context` came from the door, i.e. in the allowed files).
+//      is allowed only where `context` came from the door, i.e. in the allowed files);
+//   5. setting a request's `context_withheld` anywhere but the door's request builders;
+//   6. a request builder that sends the door's `context` WITHOUT its `context_withheld` (the
+//      keys the person's rules withheld, from the same rows) — the server would then list every
+//      saved off-rule instead of the ones withheld on this page.
 //
 // `--self-test` plants each violation in memory and proves it is caught, then proves a clean file
 // passes and that a stale allow-list entry fails.
@@ -38,7 +42,27 @@ const ALLOWED = {
     "resume spreads the door's context into its body",
 };
 
+/** The request builders: each sends the door's `context` AND its `context_withheld`. */
+const REQUEST_BUILDERS = [
+  "features/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
+  "features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
+  "features/agents/redux/execution-system/thunks/resume-instance.thunk.ts",
+];
+
+/** Rule 6 for one builder's text: the door's withheld keys must reach its body. */
+export function builderFindings(relPath, text) {
+  if (!/\bbuildRequestContext\s*\(/.test(text)) {
+    return [{ file: relPath, line: 1, rule: "builder-no-door", text: "a request builder that no longer calls buildRequestContext" }];
+  }
+  const destructures = /\bcontext_withheld\b[\s\S]{0,200}?\}\s*=\s*buildRequestContext\s*\(/.test(text);
+  const sends = /(\.\s*context_withheld\s*=|^\s*context_withheld\s*[,:])/m.test(text);
+  return destructures && sends
+    ? []
+    : [{ file: relPath, line: 1, rule: "withheld-missing", text: "sends the door's context without its context_withheld" }];
+}
+
 const RULES = [
+  { id: "withheld-assign", re: /\bcontext_withheld\s*[:=](?!=)/ },
   { id: "wire-builder", re: /\b(buildContextWire|buildAmbientContext)\s*\(/ },
   { id: "resource-context", re: /\bselectResourceContextPayload\s*\(/ },
   { id: "context-assign", re: /\b(request|payload|body|routedPayload)\s*\.\s*context\s*=(?!=)/ },
@@ -80,12 +104,18 @@ function walk(dir, acc) {
 }
 
 function staleAllowList() {
+  for (const p of REQUEST_BUILDERS) if (!ALLOWED[p]) return [`${p} (request builder missing from ALLOWED)`];
   return Object.keys(ALLOWED).filter((p) => !existsSync(join(ROOT, p)));
 }
 
 function run() {
   const files = SCAN_DIRS.filter((d) => existsSync(join(ROOT, d))).flatMap((d) => walk(join(ROOT, d), []));
-  const all = files.flatMap((f) => findings(relative(ROOT, f), readFileSync(f, "utf8")));
+  const all = [
+    ...files.flatMap((f) => findings(relative(ROOT, f), readFileSync(f, "utf8"))),
+    ...REQUEST_BUILDERS.filter((p) => existsSync(join(ROOT, p))).flatMap((p) =>
+      builderFindings(p, readFileSync(join(ROOT, p), "utf8")),
+    ),
+  ];
   const stale = staleAllowList();
   for (const f of all) console.error(`✗ ${f.file}:${f.line} [${f.rule}] ${f.text}`);
   for (const p of stale) console.error(`✗ stale allow-list entry: ${p}`);
@@ -107,6 +137,8 @@ function selfTest() {
     ["features/x/d.ts", "  request.context = { ...a, ...b };", "context-assign"],
     ["features/x/e.ts", "  payload.context = merged;", "context-assign"],
     ["features/agents/redux/execution-system/thunks/x.ts", "  ...(context && { context }),", "context-spread"],
+    ["features/x/f.ts", "  request.context_withheld = [];", "withheld-assign"],
+    ["features/x/g.ts", "  body = { context_withheld: keys };", "withheld-assign"],
   ];
   let ok = true;
   for (const [file, text, rule] of planted) {
@@ -129,6 +161,17 @@ function selfTest() {
   }
   if (findings("features/agents/redux/execution-system/context-rules/request-context.ts", "buildContextWire(rows)").length) {
     console.error("✗ self-test: the door itself was flagged");
+    ok = false;
+  }
+  // Rule 6, per builder shape: a body that forgets the withheld keys, and one that has them.
+  const forgot = "const { rows, context } = buildRequestContext(state, id);\nif (context) request.context = context;";
+  if (!builderFindings("features/x/builder.ts", forgot).some((f) => f.rule === "withheld-missing")) {
+    console.error("✗ self-test: a builder that drops context_withheld was NOT caught");
+    ok = false;
+  }
+  const kept = "const {\n  rows,\n  context,\n  context_withheld,\n} = buildRequestContext(state, id);\nrequest.context_withheld = context_withheld;";
+  if (builderFindings("features/x/builder.ts", kept).length) {
+    console.error("✗ self-test: a builder that sends context_withheld was flagged");
     ok = false;
   }
   ALLOWED["features/x/does-not-exist.ts"] = "planted stale entry";

@@ -46219,6 +46219,11 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
+             * Context Withheld
+             * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
+             */
+            context_withheld?: string[] | null;
+            /**
              * Writable Variables
              * @default []
              */
@@ -59159,6 +59164,11 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
+             * Context Withheld
+             * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
+             */
+            context_withheld?: string[] | null;
+            /**
              * Writable Variables
              * @default []
              */
@@ -64636,6 +64646,11 @@ export interface components {
             context?: {
                 [key: string]: components["schemas"]["ContextEnvelope"] | components["schemas"]["JsonValue"];
             } | null;
+            /**
+             * Context Withheld
+             * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
+             */
+            context_withheld?: string[] | null;
             /** Surface */
             surface?: string | null;
             /** Question */
@@ -65113,6 +65128,11 @@ export interface components {
             context?: {
                 [key: string]: components["schemas"]["ContextEnvelope"] | components["schemas"]["JsonValue"];
             } | null;
+            /**
+             * Context Withheld
+             * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
+             */
+            context_withheld?: string[] | null;
             /** Surface */
             surface?: string | null;
         };
@@ -65297,7 +65317,7 @@ export interface components {
              */
             client_sent_excluded?: boolean;
             /** Blocked By */
-            blocked_by?: "model" | null;
+            blocked_by?: ("model" | "self_check") | null;
         };
         /** ContextRenderRequest */
         ContextRenderRequest: {
@@ -65727,6 +65747,11 @@ export interface components {
             context?: {
                 [key: string]: unknown;
             };
+            /**
+             * Context Withheld
+             * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
+             */
+            context_withheld?: string[] | null;
             /**
              * Writable Variables
              * @default []
@@ -79211,6 +79236,11 @@ export interface components {
             context?: {
                 [key: string]: unknown;
             };
+            /**
+             * Context Withheld
+             * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
+             */
+            context_withheld?: string[] | null;
             /**
              * Writable Variables
              * @default []
@@ -109989,6 +110019,11 @@ export interface components {
             context?: {
                 [key: string]: unknown;
             };
+            /**
+             * Context Withheld
+             * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
+             */
+            context_withheld?: string[] | null;
         };
         /**
          * PromptUserValueMapping
@@ -143016,6 +143051,11 @@ export interface components {
             context?: {
                 [key: string]: unknown;
             };
+            /**
+             * Context Withheld
+             * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
+             */
+            context_withheld?: string[] | null;
             /**
              * Writable Variables
              * @default []

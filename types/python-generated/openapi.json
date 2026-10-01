@@ -107519,6 +107519,21 @@
             "title": "Context",
             "default": {}
           },
+          "context_withheld": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Withheld",
+            "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
+          },
           "writable_variables": {
             "items": {
               "type": "string"
@@ -137010,6 +137025,21 @@
             "title": "Context",
             "default": {}
           },
+          "context_withheld": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Withheld",
+            "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
+          },
           "writable_variables": {
             "items": {
               "type": "string"
@@ -150370,6 +150400,21 @@
             ],
             "title": "Context"
           },
+          "context_withheld": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Withheld",
+            "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
+          },
           "surface": {
             "anyOf": [
               {
@@ -151639,6 +151684,21 @@
             ],
             "title": "Context"
           },
+          "context_withheld": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Withheld",
+            "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
+          },
           "surface": {
             "anyOf": [
               {
@@ -152126,7 +152186,10 @@
             "anyOf": [
               {
                 "type": "string",
-                "const": "model"
+                "enum": [
+                  "model",
+                  "self_check"
+                ]
               },
               {
                 "type": "null"
@@ -153244,6 +153307,21 @@
             "type": "object",
             "title": "Context",
             "default": {}
+          },
+          "context_withheld": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Withheld",
+            "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
           },
           "writable_variables": {
             "items": {
@@ -185625,6 +185703,21 @@
             "type": "object",
             "title": "Context",
             "default": {}
+          },
+          "context_withheld": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Withheld",
+            "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
           },
           "writable_variables": {
             "items": {
@@ -254007,6 +254100,21 @@
             "type": "object",
             "title": "Context",
             "default": {}
+          },
+          "context_withheld": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Withheld",
+            "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
           }
         },
         "type": "object",
@@ -330115,6 +330223,21 @@
             "type": "object",
             "title": "Context",
             "default": {}
+          },
+          "context_withheld": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Withheld",
+            "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
           },
           "writable_variables": {
             "items": {

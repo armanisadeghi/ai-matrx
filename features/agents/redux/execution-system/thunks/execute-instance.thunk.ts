@@ -286,7 +286,11 @@ export function assembleRequest(
   // composer's table shows, every rule applied, then `buildContextWire`. The
   // first turn's system values (user, client, route…) are rows too, so the
   // person can see and govern them like everything else.
-  const { rows: contextRows, context } = buildRequestContext(state, conversationId, {
+  const {
+    rows: contextRows,
+    context,
+    context_withheld,
+  } = buildRequestContext(state, conversationId, {
     mandateKillSwitch: opts?.mandateKillSwitch,
   });
 
@@ -367,6 +371,7 @@ export function assembleRequest(
   }
   if (config_overrides) request.config_overrides = config_overrides;
   if (context) request.context = context;
+  request.context_withheld = context_withheld;
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
   if (scope_ids.length > 0) request.scope_ids = scope_ids;
@@ -1019,6 +1024,7 @@ export const executeInstance = createAsyncThunk<
             config_overrides: payload.config_overrides,
           }),
           ...(payload.context && { context: payload.context }),
+          context_withheld: payload.context_withheld,
           ...(payload.tools && { tools: payload.tools }),
           ...(payload.tools_replace !== undefined && {
             tools_replace: payload.tools_replace,

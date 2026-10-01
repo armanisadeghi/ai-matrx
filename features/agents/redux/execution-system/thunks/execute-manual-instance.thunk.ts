@@ -388,7 +388,11 @@ export async function assembleManualRequest(
   // Context — THE ONE DOOR (context-rules/request-context.ts). Whether the
   // first turn's system values ride is decided there from the conversation
   // (`ambientIncluded`) — the same answer the composer's table shows.
-  const { rows: contextRows, context } = buildRequestContext(state, conversationId);
+  const {
+    rows: contextRows,
+    context,
+    context_withheld,
+  } = buildRequestContext(state, conversationId);
 
   // ── Tool wire shape — unified through buildToolInjection ────────────────
   // agent.tools (UUID array) becomes seed RegisteredToolSpec entries with
@@ -485,6 +489,7 @@ export async function assembleManualRequest(
       agent.variableDefinitions;
   }
   if (context) request.context = context;
+  request.context_withheld = context_withheld;
   if (injection.tools_replace)
     request.tools_replace =
       injection.tools_replace as ChatRequestPayload["tools_replace"];

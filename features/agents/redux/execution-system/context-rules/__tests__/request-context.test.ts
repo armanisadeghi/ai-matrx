@@ -426,3 +426,27 @@ describe("an unlabelled key reads exactly as the server names it", () => {
     expect(rows[0]?.label).toBe("Meeting notes");
   });
 });
+
+// Break this catches: a send that tells the server nothing about the values the
+// person's rules withheld, so the receipt lists every saved off-rule on every
+// page instead of the ones withheld here.
+describe("the request names what it withheld, from the same rows", () => {
+  it.each([
+    [{ "matrx-user/demo": { plain: { include: false } } }, ["plain"], ["selection"]],
+    [{ "matrx-user/demo": { selection: { include: false } } }, ["selection"], ["plain"]],
+    [{}, [], ["plain", "selection"]],
+  ])("rules %j withhold %j and send %j", (saved, withheld, sent) => {
+    const { context, context_withheld } = build(
+      makeState({
+        surfaceName: "matrx-user/demo",
+        entries: [
+          { key: "plain", value: "Quarterly planning notes" },
+          { key: "selection", value: "the budget paragraph" },
+        ],
+        saved,
+      }),
+    );
+    expect(context_withheld).toEqual(withheld);
+    expect(Object.keys(context ?? {}).sort()).toEqual(sent);
+  });
+});
