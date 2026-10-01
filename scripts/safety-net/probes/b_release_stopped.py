@@ -12,7 +12,8 @@ refuse). So "stopped" is proven by what would have to move if anything shipped:
   2. no ship-all ran since the freeze (~/.matrx/ship-all/latest.json `stamp`);
   3. GitHub main did not move for aidream and matrx-frontend (`git ls-remote origin refs/heads/main`, no fetch);
   4. the live web build did not change (https://www.aimatrx.com/api/version `commit`);
-  5. the live server was not replaced (https://server.app.matrxserver.com/health `uptime_seconds` kept growing).
+  5. the live server's build did not change (`/cutover/final-switch/capabilities` git_sha as admin@admin.com, sampled
+     three times because several server tasks answer behind the balancer; uptime is reported, never judged).
 Snapshot mode records all five (FAIL only when it cannot read one). Freeze mode FAILs on any movement.
 """
 
@@ -23,6 +24,7 @@ import os
 import re
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -65,7 +67,40 @@ def snapshot() -> dict:
     h = get_json("https://server.app.matrxserver.com/health")
     s["server_uptime_s"] = h.get("uptime_seconds")
     s["server_checked_at"] = h.get("timestamp")
+    s["server_shas"] = server_shas()
     return s
+
+
+def _env(path: Path) -> dict:
+    out = {}
+    if path.exists():
+        for line in path.read_text().splitlines():
+            if "=" in line and not line.lstrip().startswith("#"):
+                k, v = line.split("=", 1)
+                out.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+    return out
+
+
+def server_shas() -> list:
+    """The build the live server runs, as the Final switch page asks it (admin seat; the token never printed)."""
+    env = {**_env(CODE / "aidream/.env"), **_env(CODE / "matrx-frontend/.env.local")}
+    if env.get("AI_ADMIN_USERNAME") != "admin@admin.com":
+        return ["unread: the admin seat is not admin@admin.com"]
+    body = json.dumps({"email": env["AI_ADMIN_USERNAME"], "password": env["AI_ADMIN_PASSWORD"]}).encode()
+    req = urllib.request.Request("https://db.matrxserver.com/auth/v1/token?grant_type=password", data=body, method="POST",
+                                 headers={**UA, "content-type": "application/json", "apikey": env["SUPABASE_MATRIX_PUBLISHABLE_KEY"]})
+    with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310
+        jwt = json.loads(r.read())["access_token"]
+    shas = set()
+    for _ in range(3):
+        req = urllib.request.Request("https://server.app.matrxserver.com/cutover/final-switch/capabilities",
+                                     headers={**UA, "authorization": f"Bearer {jwt}", "origin": "https://manage.aimatrx.com"})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310
+                shas.add(json.loads(r.read()).get("git_sha") or "none")
+        except urllib.error.HTTPError as e:
+            shas.add(f"http {e.code}")
+    return sorted(shas)
 
 
 def main() -> int:
@@ -74,7 +109,7 @@ def main() -> int:
         active = [k for k, v in now["shippers"].items() if v != "PAUSED"]
         step(["C11"], "release.snapshot", all(now["main"].values()) and now["web_commit"] and now["server_uptime_s"] is not None,
              f"shippers {now['shippers']} (ACTIVE = still shipping: {active or 'none'}); last ship-all {now['ship_all_stamp']}; "
-             f"main {json.dumps({k: (v or '')[:10] for k, v in now['main'].items()})}; web {str(now['web_commit'])[:10]}; server up {now['server_uptime_s']} s")
+             f"main {json.dumps({k: (v or '')[:10] for k, v in now['main'].items()})}; web {str(now['web_commit'])[:10]}; server build {[x[:10] for x in now['server_shas']]} (up {now['server_uptime_s']} s)")
         step(["C11"], "release.claude_ship_task", None, "ship-all-claude / hourly-ship-all-sweep: confirm disabled in the desktop scheduler (no file holds its enabled bit)")
     else:
         was = json.loads(Path(FREEZE).read_text())["snapshot"]
@@ -85,8 +120,8 @@ def main() -> int:
         moved = {k: (was["main"].get(k), v) for k, v in now["main"].items() if v != was["main"].get(k)}
         step(["C11"], "release.main_did_not_move", not moved, f"moved: {moved or 'none'}")
         step(["C11"], "release.web_build_unchanged", now["web_commit"] == was["web_commit"], f"{str(was['web_commit'])[:10]} → {str(now['web_commit'])[:10]}")
-        step(["C11"], "release.server_not_replaced", (now["server_uptime_s"] or 0) >= (was["server_uptime_s"] or 0),
-             f"uptime {was['server_uptime_s']} s at the freeze → {now['server_uptime_s']} s now")
+        step(["C11"], "release.server_build_unchanged", now["server_shas"] == was.get("server_shas"),
+             f"server build {was.get('server_shas')} at the freeze → {now['server_shas']} now (uptime {now['server_uptime_s']} s, not judged)")
     (OUT / "b-release-state.json").write_text(json.dumps({"results": results, "snapshot": now}, indent=2))
     fails = [x for x in results if x["status"] == "FAIL"]
     print(f"\nb_release_stopped: {sum(x['status'] == 'PASS' for x in results)} pass · {len(fails)} fail → {OUT / 'b-release-state.json'}")
