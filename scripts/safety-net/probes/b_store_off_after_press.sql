@@ -54,7 +54,11 @@ begin
   update custom.io_outbox set consumed_at = clock_timestamp()
    where event_key = 'context.follow' and consumed_at is null and deleted_at is null;
   get diagnostics v_lag = row_count;
-  perform platform.final_switch_copy_again_record(v_run, 'start', null, true, '{"says": "safety-net-b: stand-in green Step 1"}'::jsonb);
+  -- The record door takes the person who runs Step 1 (claims + the page's origin + the admin lane), like the page.
+  perform set_config('request.jwt.claims', c_claims, true);
+  perform set_config('request.headers', c_page, true);
+  v_x := platform.final_switch_copy_again_record(v_run, 'start', null, true, '{"says": "safety-net-b: stand-in green Step 1"}'::jsonb);
+  if v_x ->> 'ok' = 'false' then raise exception 'PRECONDITION: the Step 1 stand-in was refused: %', v_x ->> 'says'; end if;
   perform platform.final_switch_copy_again_record(v_run, 'finish', null, true, '{"says": "safety-net-b: stand-in green Step 1"}'::jsonb);
   v_report := v_report || format('stand-ins: %s waiting follow rows marked consumed; one green Step 1 recorded', v_lag);
 
