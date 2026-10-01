@@ -404,7 +404,7 @@ export function AgentContentHistoryPanel({
               <SquareStack className="w-10 h-10 mb-3 opacity-20" />
               <p className="text-sm font-medium">Select a conversation</p>
               <p className="text-xs opacity-60 mt-1">
-                Choose a run from the list to view the conversation (read-only)
+                Choose a run to view its conversation (read-only)
               </p>
             </div>
           )}

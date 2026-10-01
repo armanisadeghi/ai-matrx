@@ -107,7 +107,7 @@ export default function AgentConvertSystemWindow({
         <AgentComingSoonContent
           icon={Link2}
           title="No agent selected"
-          description="Open this window from an agent's actions menu to sync it with its linked system or user agent."
+          description="Open it from an agent's actions menu"
           agentId={null}
         />
       </WindowPanel>

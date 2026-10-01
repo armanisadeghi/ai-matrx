@@ -157,8 +157,7 @@ function ChatDebugWindowInner({
                   Global Debug Mode
                 </span>
                 <span className="font-normal text-xs text-red-600 dark:text-red-400">
-                  Enable system-wide debug features and indicators across all
-                  sessions
+                  Debug features and indicators in every session
                 </span>
               </Label>
               <Switch

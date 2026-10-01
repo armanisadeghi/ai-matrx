@@ -154,9 +154,9 @@ export default function AgentAssistantMarkdownDebugWindow({
                   className="text-xs bg-textured"
                 />
               ) : (
+                // The main message UI stays on the source column until persistence is wired.
                 <p className="text-xs text-muted-foreground p-2">
-                  Edits from the assistant bubble appear here; the main message
-                  UI stays on the source column until you wire persistence.
+                  Assistant bubble edits appear here
                 </p>
               )}
             </div>

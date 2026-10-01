@@ -92,7 +92,7 @@ export function AgentFindUsagesWindow({ isOpen, onClose, agentId }: AgentFindUsa
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">Pick an agent</p>
             <p className="text-xs opacity-60">
-              Choose an agent from the title bar to see everywhere it&apos;s used and any drift.
+              Pick one in the title bar to see its uses and drift
             </p>
           </div>
         </div>

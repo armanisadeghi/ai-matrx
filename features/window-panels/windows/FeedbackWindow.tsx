@@ -1282,7 +1282,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
           <blockquote className="mt-1 line-clamp-4 border-l-2 border-primary/50 pl-2 text-muted-foreground">
             {form.subject.quote}
           </blockquote>
-          <p className="mt-1 text-xs text-muted-foreground">The passage and its exact position are sent with your report.</p>
+          <p className="mt-1 text-xs text-muted-foreground">The passage and its position are sent with your report.</p>
         </div>
       ) : null}
 
@@ -1330,7 +1330,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         ) : null}
         {!draft.available ? (
           <p className="text-xs text-muted-foreground">
-            This browser is not keeping drafts — your text is lost if the window closes.
+            Drafts aren&apos;t saved here — closing loses your text
           </p>
         ) : null}
         <p className="text-xs text-muted-foreground pointer-coarse:hidden">

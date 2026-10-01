@@ -265,7 +265,7 @@ function UserSearchWindowInner({
                 ? "Loading users"
                 : "No matching users",
             description: error
-              ? "This is not an empty directory — the read failed; the message above says why."
+              ? "The read failed; see the message above."
               : loading
                 ? "Reading the available user directory."
                 : "Change the search or clear column filters.",

@@ -849,12 +849,8 @@ function SurfaceContextInspectorWindowInner({
               </span>
             )}
           </div>
-        ) : (
-          <span className="text-[11px] text-muted-foreground">
-            DB-owned fields are editable; manifest declarations remain
-            code-owned.
-          </span>
-        )
+        ) : // Settings view: DB-owned fields are editable; manifest declarations stay code-owned.
+        null
       }
       footerRight={
         view === "values" ? (

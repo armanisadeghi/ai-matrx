@@ -429,10 +429,9 @@ function PdfBatchExtractDebugWindowInner({
               <p className="text-sm font-medium text-foreground">
                 No session selected
               </p>
+              {/* Captures the /utilities/pdf/batch-extract stream. */}
               <p className="text-xs opacity-60">
-                Upload a PDF to capture the live{" "}
-                <code className="font-mono">/utilities/pdf/batch-extract</code>{" "}
-                stream.
+                Upload a PDF to capture its live stream.
               </p>
             </div>
           </div>

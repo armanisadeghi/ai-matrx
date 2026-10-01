@@ -74,7 +74,7 @@ export function AgentOptimizerWindow(props: PlaceholderProps) {
       overlayId="agentOptimizerWindow"
       title="Matrx Agent Optimizer"
       icon={PartyPopper}
-      description="Automated tuning for this agent. Analyzes prompts, variables, and tool usage to suggest concrete improvements."
+      description="Tuning suggestions for prompts, variables, and tools"
       bullets={[
         "Prompt quality & clarity scoring",
         "Variable coverage and redundancy checks",
@@ -93,7 +93,7 @@ export function AgentInterfaceVariationsWindow(props: PlaceholderProps) {
       overlayId="agentInterfaceVariationsWindow"
       title="Interface Variations"
       icon={Layers}
-      description="Try this agent across every surface — modals, sidebars, inline panels, floating bubbles, toasts, and background processes — from one place."
+      description="Try this agent in every surface from one place"
       bullets={[
         "Full Modal · Compact Modal · Inline",
         "Sidebar · Flexible Panel · Floating",
@@ -116,7 +116,7 @@ export function AgentDataStorageWindow(props: PlaceholderProps) {
       overlayId="agentDataStorageWindow"
       title="Data Storage Support"
       icon={Database}
-      description="Give this agent persistent data storage — structured tables, vector memory, and cross-conversation recall."
+      description="Persistent tables, vector memory, and recall"
       bullets={[
         "Typed tables with schema validation",
         "Vector search across conversations",

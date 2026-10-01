@@ -107,7 +107,7 @@ export function AgentAdminFindUsagesWindow({
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">Pick an agent</p>
             <p className="text-xs opacity-60">
-              Choose an agent to see every usage across all users and orgs.
+              See every usage across all users and orgs.
             </p>
           </div>
         </div>

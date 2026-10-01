@@ -219,7 +219,7 @@ function CreateAppWindowBody({
       <AgentComingSoonContent
         icon={AppWindow}
         title="No agents available"
-        description="Create or open an agent first, then use this window to publish it as an app."
+        description="Create or open an agent first to publish it as an app."
         agentId={null}
       />
     );
@@ -246,8 +246,8 @@ function CreateAppWindowBody({
           </div>
           <p className="text-xs text-muted-foreground max-w-sm">
             {publishAsGlobal
-              ? "System app saved as a draft — visible to every user once published."
-              : "Your agent app is saved as a draft. Open the editor to tweak the layout, component code, and publishing settings."}
+              ? "System app draft saved — all users see it once published"
+              : "Draft saved — open the editor to finish it"}
           </p>
         </div>
         <div

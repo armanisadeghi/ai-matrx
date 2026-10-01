@@ -335,12 +335,9 @@ function AgentPickerFallback({ onSelect }: AgentPickerFallbackProps) {
   return (
     <div className="flex flex-col h-full min-h-0 p-4">
       <div className="mb-3">
-        <h2 className="text-sm font-semibold text-foreground mb-1">
+        <h2 className="text-sm font-semibold text-foreground">
           Select an Agent
         </h2>
-        <p className="text-xs text-muted-foreground">
-          Choose an agent to open in the editor.
-        </p>
       </div>
       <AgentListInlinePicker
         consumerId={PICKER_CONSUMER_ID}
@@ -578,8 +575,7 @@ function DirtyGuardDesktop({ open, onConfirm, onCancel }: DirtyGuardProps) {
         <AlertDialogHeader>
           <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
           <AlertDialogDescription>
-            You have unsaved changes in this agent. Switching agents will
-            discard them. Do you want to continue?
+            Switching agents discards your unsaved changes
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -605,8 +601,7 @@ function DirtyGuardMobile({ open, onConfirm, onCancel }: DirtyGuardProps) {
         <DrawerHeader>
           <DrawerTitle>Unsaved Changes</DrawerTitle>
           <DrawerDescription>
-            You have unsaved changes in this agent. Switching agents will
-            discard them. Do you want to continue?
+            Switching agents discards your unsaved changes
           </DrawerDescription>
         </DrawerHeader>
         <DrawerFooter>
