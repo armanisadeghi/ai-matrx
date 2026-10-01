@@ -364,7 +364,8 @@ try {
       const confirm = page.getByRole("alertdialog");
       await confirm.waitFor({ timeout: 15000 });
       await confirm.getByRole("button", { name: "Change type", exact: true }).click();
-      const undo = page.getByRole("button", { name: "Undo", exact: true });
+      // The Undo ON THE TYPE-CHANGE NOTICE — never the toolbar's undo-a-cell button of the same name.
+      const undo = page.locator("[data-sonner-toast], [role=status], li[role=status], [data-radix-toast-announce-exclude], ol > li").filter({ hasText: /set aside/i }).getByRole("button", { name: "Undo", exact: true });
       const offered = await until("Undo", async () => (await undo.count()) > 0, 20000);
       await sleep(2500);
       const whileNumber = await cellText(R2, "Session Notes");
@@ -378,7 +379,7 @@ try {
       await d2.getByRole("button", { name: "Cancel", exact: true }).click().catch(() => page.keyboard.press("Escape"));
       await sleep(800);
       const db = cloneSql(`select (data ->> 'type') || ' ' || coalesce(data -> 'display_format' ->> 'id', '-') from custom.record where table_id = custom.field_kernel_id() and deleted_at is null and data ->> 'entity_definition_id' = '${tid}' and data ->> 'label' = 'Session Notes'`);
-      const ok = !!offered.v && after === before && /^Text/.test(look) && (db == null || /^text -$/.test(db));
+      const ok = !!offered.v && after === before && /^Text/.test(look) && (db == null || /^text (-|text)$/.test(db));
       return { ok, detail: `while Number "${whileNumber}"; Undo offered ${!!offered.v}; after Undo + reload "${after}" (was "${before}"), shows as ${look}${db ? `; clone field ${db}` : ""}` };
     });
     await step(["T28"], "after that Undo, a click-off on Session Notes saves words", async () => {
