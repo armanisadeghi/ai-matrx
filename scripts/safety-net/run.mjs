@@ -88,6 +88,19 @@ if (TARGET === "clone") {
 }
 const DSN = TARGET === "clone" ? CLONE_DSN : LIVE_DSN;
 
+// A CLONE run through the local preview must find the preview serving the CLONE — the one dev server
+// switches modes, and at ~02:00 PT on 2026-10-01 it was restarted in LIVE mode while clone walks ran
+// (their writes went to production and their plants, on the clone, were invisible). Refuse by name.
+function previewServesTheClone(origin) {
+  if (!/localhost/.test(origin)) return { ok: false, why: `${origin} is not the local preview; a clone walk needs the clone-mode preview` };
+  const r = spawnSync("bash", [join(REPO, "scripts/agent-dev-server.sh"), "status"], { encoding: "utf8", cwd: REPO });
+  const out = `${r.stdout}${r.stderr}`;
+  const mode = (out.match(/mode=(\w+)/) ?? [])[1];
+  if (mode !== "clone") return { ok: false, why: `the preview is ${mode ? `in ${mode.toUpperCase()} mode` : "not running"} (pnpm preview:status); a clone walk would ${mode === "live" ? "write to PRODUCTION" : "find nothing"}. Start it in clone mode: pnpm preview:start` };
+  if (cloneRef && !out.includes(cloneRef)) return { ok: false, why: `the preview serves a clone other than the current ${cloneRef}` };
+  return { ok: true };
+}
+
 const ORIGIN = opt("origin") ?? (TARGET === "live" ? "https://www.aimatrx.com" : "http://safety-net.localhost:3001");
 const MANAGE = TARGET === "live" ? "https://manage.aimatrx.com" : ORIGIN;
 const hhmm = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Los_Angeles" }).replace(":", "");
@@ -119,6 +132,14 @@ let selected = CHECKS.filter((c) => c.targets.includes(TARGET));
 if (HALF !== "all") selected = selected.filter((c) => (HALF === "b") === HALF_B.has(c.area));
 if (only) selected = selected.filter((c) => only.some((o) => c.id === o || c.id.startsWith(`${o}.`) || c.area === o));
 if (plant) selected = selected.filter((c) => c.id === plant.check);
+if (flag("no-walks")) selected = selected.filter((c) => c.kind !== "walk");
+if (TARGET === "clone" && selected.some((c) => c.kind === "walk")) {
+  const p = previewServesTheClone(ORIGIN);
+  if (!p.ok) {
+    console.error(`refused: ${p.why}. (SQL and cmd checks only: add --no-walks.)`);
+    process.exit(2);
+  }
+}
 if (!selected.length) {
   console.error("nothing selected");
   process.exit(2);
