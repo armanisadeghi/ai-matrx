@@ -30,6 +30,7 @@ import { KeyValueGrid } from "./KeyValueGrid";
 import { ResultTable } from "./ResultTable";
 import { ShortId, IdListChip } from "./ShortId";
 import { KindValueNode } from "./KindValueNode";
+import { ResultRecordRef } from "./ResultRecordRef";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 import { useReportKindAtRawRenderer } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
 
@@ -260,6 +261,9 @@ export const ResultValue: React.FC<ResultValueProps> = ({
                         embedMedia={embedMedia}
                     />
                 );
+
+            case "recordRef":
+                return <ResultRecordRef token={shape.token} id={shape.id} />;
 
             case "kindList":
                 return (

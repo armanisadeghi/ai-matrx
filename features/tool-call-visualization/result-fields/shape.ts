@@ -88,6 +88,12 @@ export type ResultShape =
     | { kind: "kindInstance"; value: unknown; slug: string | null }
     /** An array holding a kind at any depth — each item rendered on its own, so each kind routes. */
     | { kind: "kindList"; items: unknown[] }
+    /**
+     * A `resource_ref` wire pointer (aidream
+     * `conversation_context/resource_context.py`) — drawn as the record it
+     * points to (title + door), never as kind data or JSON.
+     */
+    | { kind: "recordRef"; token: string; id: string }
     | { kind: "json"; value: unknown };
 
 // ─── Primitive guards ───────────────────────────────────────────────────────
@@ -527,6 +533,35 @@ export interface DetectResultShapeOptions {
     embedMedia?: boolean;
 }
 
+/**
+ * A `resource_ref` envelope — `{__kind:"resource_ref", resource_type,
+ * resource_id}` — as an object or as the JSON text of one (a write receipt's
+ * excerpt is a string). It is a WIRE pointer, not a content-IR output kind:
+ * no registered shape renders it, so it must not reach the kind door.
+ */
+export function coerceResourceRef(
+    value: unknown,
+): { token: string; id: string } | null {
+    let candidate: unknown = value;
+    if (typeof value === "string") {
+        const text = value.trim();
+        if (!text.startsWith("{") || !text.endsWith("}") || !text.includes("resource_ref")) {
+            return null;
+        }
+        try {
+            candidate = JSON.parse(text);
+        } catch {
+            return null;
+        }
+    }
+    if (!isPlainObject(candidate) || candidate.__kind !== "resource_ref") return null;
+    const token = candidate.resource_type;
+    const id = candidate.resource_id;
+    if (typeof token !== "string" || !token.trim()) return null;
+    if (typeof id !== "string" || !id.trim()) return null;
+    return { token: token.trim().toLowerCase(), id: id.trim() };
+}
+
 export function detectResultShape(
     value: unknown,
     options: DetectResultShapeOptions = {},
@@ -566,6 +601,11 @@ export function detectResultShape(
     if (objectFile) {
         return { kind: "file", file: objectFile };
     }
+
+    // 2b'. A resource_ref pointer — before the kind branch: it carries a
+    //      `__kind` but no shape renders it; it is a reference to a record.
+    const recordRef = coerceResourceRef(value);
+    if (recordRef) return { kind: "recordRef", ...recordRef };
 
     // 2c. A kind — after media/file (those already render as what they are,
     //     never as JSON), before every shape that would draw it as a grid,
