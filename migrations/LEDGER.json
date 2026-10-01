@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-01T11:41:53.365Z",
+  "generated_at": "2026-10-01T11:59:25.563Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3847,6 +3847,12 @@
       "filename": "portalbind_the_portal_accept_doors_are_reachable.sql",
       "checksum": "fd7963e8fd91aaf8c7b0597260b24e68f07fa7fb7c3206130d8a7690244f4b36",
       "applied_at": "2026-09-21 22:29:57.273243+00"
+    },
+    "migrations/campaign/postpress_a_store_off_organization_makes_tables_after_the_press.sql": {
+      "source": "matrx-frontend",
+      "filename": "postpress_a_store_off_organization_makes_tables_after_the_press.sql",
+      "checksum": "86686ab148969f125aec9182751ba6e948118acccb62b01d5e456c9130e152a8",
+      "applied_at": "2026-10-01 11:59:24.545579+00"
     },
     "migrations/campaign/pressatsize_a_list_something_chooses_from_goes_where_it_is_chosen.sql": {
       "source": "matrx-frontend",
