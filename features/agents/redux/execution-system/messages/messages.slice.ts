@@ -296,6 +296,49 @@ export function nextTranscriptPosition(
   return max + 1;
 }
 
+function plainUserText(record: MessageRecord): string {
+  return (Array.isArray(record.content) ? record.content : [])
+    .map((part) =>
+      part && typeof part === "object" && "text" in part &&
+      typeof (part as { text?: unknown }).text === "string"
+        ? (part as { text: string }).text
+        : "",
+    )
+    .join("")
+    .trim();
+}
+
+/**
+ * THE DURABLE TWIN of a client-pending user row: a server row holding the
+ * same words at the same position. When one exists the pending row is
+ * already persisted under another id — keeping both renders the line twice.
+ * That is how a delivered inbox message doubled after a reload mid-run (PB-05
+ * W-43): the database hydrate brought the row, and the rejoin replay's
+ * `injection_consumed` echo seeded `inbox_<id>` beside it, never promoted
+ * again. Position AND text must both match, so a line the person really sent
+ * twice (a new position) is never folded.
+ */
+function hasDurableTwin(
+  rows: Iterable<MessageRecord>,
+  pending: MessageRecord,
+): boolean {
+  if (pending.role !== "user") return false;
+  const text = plainUserText(pending);
+  if (!text) return false;
+  for (const candidate of rows) {
+    if (
+      candidate.id !== pending.id &&
+      candidate.role === "user" &&
+      !isPendingClientRow(candidate) &&
+      candidate.position === pending.position &&
+      plainUserText(candidate) === text
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** A row this client minted and the server has not yet acknowledged. */
 function isPendingClientRow(record: MessageRecord | undefined): boolean {
   return (
@@ -474,6 +517,23 @@ const messagesSlice = createSlice({
           id: shortId(clientTempId),
         });
         return; // idempotent
+      }
+      if (
+        hasDurableTwin(Object.values(entry.byId), {
+          id: clientTempId,
+          role: "user",
+          position,
+          content,
+          source: "client",
+          _clientStatus: "pending",
+        } as MessageRecord)
+      ) {
+        recordTranscriptEvent(conversationId, "optimistic_user_duplicate_ignored", {
+          id: shortId(clientTempId),
+          position,
+          durableTwin: true,
+        });
+        return; // already persisted under its server id
       }
       const now = new Date().toISOString();
       const textLength = content.reduce(
@@ -718,7 +778,10 @@ const messagesSlice = createSlice({
       // rows are carried across; the promotion (or the next hydrate, once the
       // server holds the row) still retires them by id.
       const carriedPendingIds = entry.orderedIds.filter(
-        (id) => isPendingClientRow(previous[id]) && !messages.some((m) => m.id === id),
+        (id) =>
+          isPendingClientRow(previous[id]) &&
+          !messages.some((m) => m.id === id) &&
+          !hasDurableTwin(messages, previous[id]),
       );
       entry.byId = {};
       entry.orderedIds = [];
