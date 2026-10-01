@@ -80,6 +80,26 @@ describe("system DM organization boundary", () => {
       client_message_id: options.clientMessageId,
     }));
 
+    // The durable worker can win the race with equivalent task action data
+    // but a different display-name or title truncation in its prose.
+    insert.mockResolvedValue({ error: {
+      code: "23505",
+      message: 'duplicate key value violates unique constraint "dm_task_assignment_client_message_id_uidx"',
+    } });
+    conversationQuery.maybeSingle.mockResolvedValue({
+      data: {
+        conversation_id: "conversation-id",
+        organization_id: "task-org",
+        sender_id: "sender-id",
+        content: "AI Matrx assigned you a task: Review the contract",
+        action_data: { kind: "task_reminder", payload: { task_id: "task-id" } },
+      }, error: null,
+    });
+    expect(await sendDm({
+      ...options,
+      actionData: { kind: "task_reminder", payload: { task_id: "task-id" } },
+    })).toMatchObject({ ok: true });
+
     insert.mockResolvedValue({ error: {
       code: "23505",
       message: 'duplicate key value violates unique constraint "dm_task_assignment_client_message_id_uidx"',

@@ -153,7 +153,6 @@ export async function sendDm(options: SendDmOptions): Promise<SendDmResult> {
       if (existing.conversation_id !== conversationId ||
           existing.organization_id !== organizationId ||
           existing.sender_id !== senderId ||
-          existing.content !== options.content ||
           actionObject?.kind !== options.actionData?.kind ||
           existingTaskId !== (options.actionData?.payload.task_id ?? null)) {
         return { ok: false, conversationId, error: "Assignment DM key belongs to a different message" };
