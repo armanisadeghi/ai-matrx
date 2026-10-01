@@ -36,6 +36,7 @@ import {
 import { saveContextRule } from "@/features/agents/redux/execution-system/context-rules/context-rules.thunks";
 import { resolveMandateKillSwitch } from "@/features/agents/redux/execution-system/context-rules/mandate-kill-switch";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
 
 /** The Mandate's context kill switch for this conversation (false until known). */
 export function useMandateKillSwitch(mandateKey: AnyMandateKey | null | undefined): boolean {
@@ -73,8 +74,18 @@ export function useSaveContextRule() {
   };
 }
 
-/** True when the chip has anything to show (values, or a page switched off). */
+/**
+ * True when the chip has anything to show (values, or a page switched off)
+ * AND its reader may see the machinery. Every mount asks this one hook.
+ *
+ * The table (Item · Include · Chars · Inline max over Route Brief, Lane,
+ * Workspace state…) is a builder's instrument. On an expert-audience
+ * transcript — the Masterwork interview — it showed as "Rulebook 35", a count
+ * of context items beside a panel counting her rules (cold walk 23, defect
+ * E). Creator mode still shows it: see shared/transcript-audience.tsx.
+ */
 export function useConversationContextChipShown(conversationId: string): boolean {
+  const machineFramesVisible = useMachineFramesVisible();
   const mandateKey = useAppSelector(
     (state) => state.conversations.byConversationId[conversationId]?.mandateKey ?? null,
   );
@@ -85,6 +96,7 @@ export function useConversationContextChipShown(conversationId: string): boolean
   );
   const off = useAppSelector(selectPageContextOff(conversationId));
   const ownPage = isPageOwnConversation(conversationId);
+  if (!machineFramesVisible) return false;
   return rows.length > 0 || (!ownPage && (Boolean(stamped) || Boolean(off?.previousSurfaceName)));
 }
 

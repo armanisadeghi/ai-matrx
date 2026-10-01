@@ -180,6 +180,41 @@ describe("the composer's raw context chips are gated too", () => {
     const branch = source.slice(Math.max(0, fallbackAt - 900), fallbackAt);
     expect(branch).toContain("if (!machineFramesVisible) continue;");
   });
+
+  it("the composer's context rules chip is gated at its one shown-rule", () => {
+    // Cold walk 23, defect E: the interview composer showed "Rulebook 35"
+    // (aria-label "Context: Rulebook") opening an Item · Include · Chars ·
+    // Inline max table of Route Brief, Lane, Workspace state… — a developer
+    // context table on an Expert's page. The chip (2026-09-30) was added
+    // beside the gated pills without the gate. The gate lives in the ONE hook
+    // every mount asks (`useConversationContextChipShown`), so the rail and
+    // every other composer that mounts the chip inherit it.
+    const source = read(
+      "features/agents/components/inputs/smart-input/ConversationContextChip.tsx",
+    );
+    const hookAt = source.indexOf(
+      "export function useConversationContextChipShown(",
+    );
+    expect(hookAt).toBeGreaterThan(-1);
+    const hookBody = source.slice(hookAt, source.indexOf("\n}\n", hookAt));
+    expect(hookBody).toContain("useMachineFramesVisible()");
+    expect(hookBody).toMatch(/if \(!machineFramesVisible\) return false;/);
+  });
+
+  it("every composer mounts the context rules chip only behind that hook", () => {
+    for (const path of [
+      "features/agents/components/inputs/smart-input/ConversationContextRail.tsx",
+      "features/ai-work/compose/components/AiWorkComposer.tsx",
+    ]) {
+      const source = read(path);
+      const mountAt = source.indexOf("<ConversationContextChip");
+      expect(mountAt).toBeGreaterThan(-1);
+      expect(source.slice(Math.max(0, mountAt - 400), mountAt)).toContain(
+        "contextChipShown",
+      );
+      expect(source).toContain("useConversationContextChipShown(");
+    }
+  });
 });
 
 describe("a context snapshot is a builder's record, not the Expert's", () => {
@@ -190,8 +225,13 @@ describe("a context snapshot is a builder's record, not the Expert's", () => {
     const source = read(
       "features/agents/components/messages-display/user/AgentUserMessage.tsx",
     );
+    // Since the server receipt landed, the bubble shows the receipt when one
+    // exists and the snapshot strip otherwise — both branches carry the gate.
     expect(source).toContain(
-      "{machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (",
+      "machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (",
+    );
+    expect(source).toContain(
+      "{machineFramesVisible && contextReceipt && (contextReceipt.rows?.length ?? 0) > 0 ? (",
     );
   });
 
