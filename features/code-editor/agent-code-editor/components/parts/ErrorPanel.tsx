@@ -10,6 +10,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Copy, Check } from "lucide-react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
 
 interface ErrorPanelProps {
   errorMessage: string;
@@ -82,9 +84,14 @@ export function ErrorPanel({
             </Button>
           </div>
           <div className="flex-1 overflow-auto p-2 bg-background">
-            <pre className="text-[10px] whitespace-pre-wrap font-mono">
-              {rawAIResponse}
-            </pre>
+            {/* A kind answer is drawn as its kind, never a JSON dump (kind-never-raw R1). */}
+            {hasKindKey(rawAIResponse) ? (
+              <AnswerValueView text={rawAIResponse} />
+            ) : (
+              <pre className="text-[10px] whitespace-pre-wrap font-mono">
+                {rawAIResponse}
+              </pre>
+            )}
           </div>
         </div>
       </div>

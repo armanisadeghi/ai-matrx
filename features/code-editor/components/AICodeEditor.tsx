@@ -40,6 +40,7 @@ import { CODE_EDITOR_AGENTS } from "@/features/code-editor/agent-code-editor/age
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AnswerTextPreview } from "@/components/official/structured-value/AnswerTextPreview";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
 
 export type AICodeEditorProps = UseAICodeEditorProps & {
   title?: string;
@@ -110,7 +111,7 @@ export function AICodeEditor({
           </span>
         </div>
         <div className="flex-1 overflow-auto relative">
-          <CodeBlock
+          <CodeBlock showSource
             code={currentCode}
             language={language}
             showLineNumbers={true}
@@ -298,7 +299,7 @@ export function AICodeEditor({
                     className="h-full m-0 p-0 overflow-hidden"
                   >
                     <div className="h-full overflow-auto">
-                      <CodeBlock
+                      <CodeBlock showSource
                         code={currentCode}
                         language={language}
                         showLineNumbers={true}
@@ -311,7 +312,7 @@ export function AICodeEditor({
                     className="h-full m-0 p-0 overflow-hidden"
                   >
                     <div className="h-full overflow-auto">
-                      <CodeBlock
+                      <CodeBlock showSource
                         code={modifiedCode}
                         language={language}
                         showLineNumbers={true}
@@ -405,9 +406,14 @@ export function AICodeEditor({
                     </Button>
                   </div>
                   <div className="flex-1 overflow-auto p-2 bg-background">
-                    <pre className="text-[10px] whitespace-pre-wrap font-mono">
-                      {rawAIResponse}
-                    </pre>
+                    {/* A kind answer is drawn as its kind (kind-never-raw R1). */}
+                    {hasKindKey(rawAIResponse) ? (
+                      <AnswerValueView text={rawAIResponse} />
+                    ) : (
+                      <pre className="text-[10px] whitespace-pre-wrap font-mono">
+                        {rawAIResponse}
+                      </pre>
+                    )}
                   </div>
                 </div>
               </div>

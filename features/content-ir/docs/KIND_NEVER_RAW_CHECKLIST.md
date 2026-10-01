@@ -85,7 +85,12 @@ Every stream item below adds its case there.
       `agent-run-history-scope`) and the model-battle scope are agent context (kept). Comparison
       `battleMarkdown` → people get `battleMarkdownForPeople` (copy + .md export) and the CSV/sheet answer cell is the kind's
       markdown (full answer, like every kindless cell beside it — a title alone would say less); the agent payload
-      keeps the data. Agent-app "Open in canvas": see S5.
+      keeps the data. Agent-app "Open in canvas": see S5. Code editor readers of `selectLatestAccumulatedText`:
+      `ContextAwareCodeEditorCompact`/`Modal` only feed `parseCodeEdits` (machine, kept); `useAICodeEditor` →
+      `rawAIResponse` shows in the Response tab / `ReviewStage` (`MarkdownStream`, fine) and in the parse-failure
+      panel (`ErrorPanel`, `AICodeEditor`) — a kind there now draws through `AnswerValueView`. Not audited:
+      `useToolComponentAgent`, `useProposePack`, `SystemPromptOptimizer`, `AgentExecutionTestModal`,
+      `AgentGenerator`.
 - [ ] R2. `selectAnswerDocumentText` / `selectLatestAnswerDocumentText` stringify kinds on purpose.
       PARTIAL — kept (stored/passed text). Its display reader, the cleanup pad, previews through `MarkdownStream`;
       transcript studio reattach is a data path.
