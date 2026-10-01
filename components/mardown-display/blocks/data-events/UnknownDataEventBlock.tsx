@@ -2,6 +2,12 @@
 import React, { useState } from "react";
 import { HelpCircle, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import {
+  rootKindSlug,
+  valueCarriesKind,
+} from "@/features/content-ir/surfaces/json-kind-signal";
+import { useReportKindAtRawRenderer } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
 
 export interface UnknownDataEventBlockProps {
   dataType: string;
@@ -28,6 +34,15 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
   const [aiCopied, setAiCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const pretty = JSON.stringify(data, null, 2);
+  // A payload carrying `__kind` is a kind whatever its event type: it renders
+  // through the one value door, never as this card's JSON dump (Arman,
+  // 2026-09-30). The unregistered event type is still filed for the team.
+  const kindPayload = valueCarriesKind(data);
+  useReportKindAtRawRenderer(
+    "UnknownDataEventBlock",
+    kindPayload ? (rootKindSlug(data) ?? dataType) : null,
+    kindPayload,
+  );
 
   const handleCopy = async () => {
     try {
@@ -63,6 +78,14 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
       /* silent */
     }
   };
+
+  if (kindPayload) {
+    return (
+      <div className="my-2 min-w-0">
+        <AnswerValueView value={data} />
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-warning/50 bg-warning/5 my-2 overflow-hidden">

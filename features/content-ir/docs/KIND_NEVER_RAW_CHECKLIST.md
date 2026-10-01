@@ -27,13 +27,14 @@ Every stream item below adds its case there.
       (one-line JSON never completed a line, so `__kind` was unseen until the fence closed).
 - [x] C2. Live stream: ```JSON (any case) is treated as json at early and close detection.
 - [x] C3. Renderer: the 300-character "kindless patience" is replaced by the first-key rule.
-- [ ] C4. Bottom-layer refusal: the JSON code card, code block, plain markdown renderers, JSON tree viewer and
+- [x] C4. Bottom-layer refusal: the JSON code card, code block, plain markdown renderers, JSON tree viewer and
       the generic value grid each run the detector themselves and render the kind (or its loader) when handed
       kind data, and report the caller to the Error Inspector.
       PARTIAL (2026-09-30): markdown leaves (`KindTextGate`), value grid (`ResultValue`/`KeyValueGrid`/`ResultJson`
       via `KindValueNode`), JSON viewers (`JsonInspector`/`JsonTreeViewer`/`RawJsonExplorer`/`JsonViewer` via
       `KindDataGate`, `showSource` for deliberate raw views) and the settled `JsonBlock` all refuse and report
-      (`report-kind-at-raw-renderer.ts`). Still open: the plain `CodeBlock` (BlockFallback's B1 path).
+      (`report-kind-at-raw-renderer.ts`). The plain `CodeBlock` (json/jsonc/json5/unlabelled, settled) refuses too;
+      source-view callers (editors, diffs, artifact/canvas source) pass `showSource`. `KindDataGate` loop-guards.
 - [x] C5. One value renderer for every non-stream surface, routing `__kind` at any depth.
       Bottom layer: every raw renderer above routes kind data through `AnswerValueView` (text through
       `MarkdownStream`), nested kinds at any depth; surfaces above it are their own items.
@@ -64,8 +65,10 @@ Every stream item below adds its case there.
 
 ## B. Rendering-layer fallbacks
 
-- [ ] B1. Kind component crash → JSON code block fallback (`BlockFallback.tsx`).
-- [ ] B2. Unregistered block type → `UnknownDataEventBlock` prints JSON.
+- [x] B1. Kind component crash → JSON code block fallback (`BlockFallback.tsx`).
+      A crashed kind now falls to `StructuredValueView` with its kind ("its view hit an error").
+- [x] B2. Unregistered block type → `UnknownDataEventBlock` prints JSON.
+      A payload carrying `__kind` renders through `AnswerValueView`; kindless keeps the catch-all card.
 - [x] B3. Nested search/rank/rag/scraper/seo-ruling helpers drop to the JSON card when the route declines.
       Closed at the leaf: `renderJsonFallback` → `JsonBlock` now draws a settled kind through `AnswerValueView`
       (a loop back to the same value keeps the code card).

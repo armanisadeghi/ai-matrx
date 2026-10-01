@@ -417,7 +417,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
         onMouseDown={(e) => e.stopPropagation()}
       >
         <Suspense fallback={<PaneFallback label="Loading code…" />}>
-          <CodeBlockWithContextAttach
+          <CodeBlockWithContextAttach showSource
             code={content}
             language="json"
             meta={meta}
@@ -493,7 +493,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
       ) : null}
       {mode === "code" ? (
         <Suspense fallback={<PaneFallback label="Loading code…" />}>
-          <CodeBlockWithContextAttach
+          <CodeBlockWithContextAttach showSource
             code={effectiveContent}
             language="json"
             meta={meta}

@@ -275,7 +275,7 @@ export default function DirectChatClient() {
                   </Button>
                 )}
               </div>
-              <CodeBlock
+              <CodeBlock showSource
                 code={requestJson || "// Select a prompt or edit JSON manually"}
                 language="json"
                 fontSize={12}
@@ -296,7 +296,7 @@ export default function DirectChatClient() {
                   </span>
                 )}
               </div>
-              <CodeBlock
+              <CodeBlock showSource
                 code={responseJson || "// Response will appear here"}
                 language="json"
                 wrapLines={true}

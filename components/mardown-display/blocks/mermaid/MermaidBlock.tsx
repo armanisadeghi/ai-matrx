@@ -536,7 +536,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
       {showSource && !isStreamActive && (
         <div className="border-t border-border">
           <Suspense fallback={<MatrxMiniLoader />}>
-            <CodeBlock code={source} language="mermaid" fontSize={13} />
+            <CodeBlock showSource code={source} language="mermaid" fontSize={13} />
           </Suspense>
         </div>
       )}

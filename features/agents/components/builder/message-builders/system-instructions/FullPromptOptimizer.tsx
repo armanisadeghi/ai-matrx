@@ -239,7 +239,7 @@ export function FullPromptOptimizer({
             </div>
             <div className="flex-1 bg-gray-50 dark:bg-gray-900 border-border rounded-lg overflow-hidden">
               <div className="h-full overflow-y-auto p-3">
-                <CodeBlock
+                <CodeBlock showSource
                   code={currentPromptJson}
                   language="json"
                   showLineNumbers={true}

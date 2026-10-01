@@ -10,7 +10,7 @@
 // kind is never drawn as raw JSON). A deliberate source view (admin debug
 // windows, a "Raw" tab, a "Show the raw data" escape) passes `showSource`.
 
-import React from "react";
+import React, { createContext, useContext } from "react";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import {
   firstKindSlug,
@@ -28,6 +28,21 @@ export interface KindDataGateProps {
   children: React.ReactNode;
 }
 
+/**
+ * Values an ancestor gate already drew through the value door. A kind whose
+ * own rendering falls back to a raw viewer for the SAME value (a component's
+ * JSON fallback, a crash floor) shows the source there instead of looping.
+ */
+const RoutedValuesContext = createContext<readonly string[]>([]);
+
+function canonicalJson(data: unknown): string {
+  try {
+    return JSON.stringify(data) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 function slugOf(data: unknown): string | null {
   return typeof data === "string" ? firstKindSlug(data) : rootKindSlug(data);
 }
@@ -38,10 +53,17 @@ export function KindDataGate({
   showSource = false,
   children,
 }: KindDataGateProps) {
-  const kindData = !showSource && valueCarriesKind(data);
+  const routedAbove = useContext(RoutedValuesContext);
+  const candidate = !showSource && valueCarriesKind(data);
+  const key = candidate ? canonicalJson(data) : "";
+  const kindData = candidate && !routedAbove.includes(key);
   useReportKindAtRawRenderer(component, kindData ? slugOf(data) : null, kindData);
-  if (kindData) return <AnswerValueView value={data} />;
-  return <>{children}</>;
+  if (!kindData) return <>{children}</>;
+  return (
+    <RoutedValuesContext.Provider value={[...routedAbove, key]}>
+      <AnswerValueView value={data} />
+    </RoutedValuesContext.Provider>
+  );
 }
 
 export default KindDataGate;

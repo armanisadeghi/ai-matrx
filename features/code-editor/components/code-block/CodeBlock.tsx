@@ -2,6 +2,11 @@
 import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 import React, { useRef, useState, useEffect } from "react";
+import { KindDataGate } from "@/components/official/structured-value/KindDataGate";
+import {
+  isKindJsonText,
+  valueCarriesKind,
+} from "@/features/content-ir/surfaces/json-kind-signal";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/styles/themes/utils";
 import SmallCodeEditor from "./SmallCodeEditor";
@@ -65,11 +70,48 @@ interface CodeBlockProps {
    * header title, highlighted lines and line numbering.
    */
   meta?: string;
+  /**
+   * A deliberate source view (code editors, diff views, artifact and canvas
+   * source, a JSON card that already decided): kind JSON is shown as code.
+   * Default false — a settled json / jsonc / json5 / unlabelled block whose
+   * content is kind JSON is drawn as its kind (`KindDataGate`) and the caller
+   * is reported (Arman, 2026-09-30: a kind is never drawn as raw JSON).
+   */
+  showSource?: boolean;
 }
 
 export type { CodeBlockProps };
 
-const CodeBlock: React.FC<CodeBlockProps> = ({
+/** Languages whose body is a JSON region (an unlabelled block included). */
+const JSON_LANGUAGES = new Set(["", "json", "jsonc", "json5"]);
+
+/** The parsed value when this block is settled kind JSON, else undefined. */
+function settledKindValue(props: CodeBlockProps): unknown {
+  if (props.showSource || props.isStreamActive || props.inline) return undefined;
+  if (!JSON_LANGUAGES.has((props.language ?? "").trim().toLowerCase())) return undefined;
+  if (!isKindJsonText(props.code)) return undefined;
+  try {
+    const value: unknown = JSON.parse(props.code);
+    return valueCarriesKind(value) ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const CodeBlock: React.FC<CodeBlockProps> = (props) => {
+  const kindValue = settledKindValue(props);
+  return (
+    <KindDataGate
+      component="CodeBlock"
+      data={kindValue}
+      showSource={kindValue === undefined}
+    >
+      <CodeBlockBody {...props} />
+    </KindDataGate>
+  );
+};
+
+const CodeBlockBody: React.FC<CodeBlockProps> = ({
   code: initialCode,
   language: rawLanguage = "text",
   fontSize = 12,

@@ -3,11 +3,20 @@
 import React, { Suspense, lazy } from "react";
 import { MarkdownErrorBoundary } from "./MarkdownErrorBoundary";
 import { RenderBlock } from "../block-registry/BlockRenderer";
+import {
+  isKindJsonText,
+  rootKindSlug,
+  valueCarriesKind,
+} from "@/features/content-ir/surfaces/json-kind-signal";
 
 // Lazy so the fallback path never pulls the code highlighter into the main
 // bundle. Mirrors the registry's CodeBlock import.
 const CodeBlock = lazy(
   () => import("@/features/code-editor/components/code-block/CodeBlock"),
+);
+// The structured floor, for a crashed KIND (same lazy reason).
+const StructuredValueView = lazy(
+  () => import("@/components/official/structured-value/StructuredValueView"),
 );
 
 /**
@@ -70,6 +79,27 @@ function resolveCodeFallback(block: RenderBlock): {
   return { code: content, language: block.language || "" };
 }
 
+/**
+ * The value of a settled block whose content is kind JSON, with its slug —
+ * a crashed kind component falls to its generic structured floor, never to a
+ * raw code block (Arman, 2026-09-30: a kind is never drawn as raw JSON).
+ */
+function crashedKindValue(
+  block: RenderBlock,
+  isStreamActive: boolean | undefined,
+): { value: unknown; slug: string | null } | null {
+  if (isStreamActive) return null;
+  const content = (block.content ?? "").trim();
+  if (!isKindJsonText(content)) return null;
+  try {
+    const value: unknown = JSON.parse(content);
+    if (!valueCarriesKind(value)) return null;
+    return { value, slug: rootKindSlug(value) };
+  } catch {
+    return null;
+  }
+}
+
 interface BlockFallbackProps {
   block: RenderBlock;
   isStreamActive?: boolean;
@@ -92,6 +122,23 @@ export const BlockFallback: React.FC<BlockFallbackProps> = ({
   isStreamActive,
 }) => {
   const { code, language } = resolveCodeFallback(block);
+  const crashedKind = crashedKindValue(block, isStreamActive);
+
+  if (crashedKind) {
+    return (
+      <MarkdownErrorBoundary fallback={<PlainTextFallback content={code} />}>
+        <Suspense fallback={null}>
+          <div className="my-3">
+            <StructuredValueView
+              value={crashedKind.value}
+              kind={crashedKind.slug ?? undefined}
+              note="its view hit an error"
+            />
+          </div>
+        </Suspense>
+      </MarkdownErrorBoundary>
+    );
+  }
 
   return (
     <MarkdownErrorBoundary fallback={<PlainTextFallback content={code} />}>

@@ -33,7 +33,7 @@ export default function CodeArtifact({
 
   return (
     <Suspense fallback={<MatrxMiniLoader />}>
-      <CodeBlockWithContextAttach
+      <CodeBlockWithContextAttach showSource
         code={code}
         language={language}
         isStreamActive={isStreamActive}

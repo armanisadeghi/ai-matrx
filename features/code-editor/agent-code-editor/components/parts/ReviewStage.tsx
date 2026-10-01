@@ -134,7 +134,7 @@ export function ReviewStage({
             className="h-full m-0 p-0 overflow-hidden"
           >
             <div className="h-full overflow-auto">
-              <CodeBlock
+              <CodeBlock showSource
                 code={currentCode}
                 language={language}
                 showLineNumbers={true}
@@ -147,7 +147,7 @@ export function ReviewStage({
             className="h-full m-0 p-0 overflow-hidden"
           >
             <div className="h-full overflow-auto">
-              <CodeBlock
+              <CodeBlock showSource
                 code={modifiedCode}
                 language={language}
                 showLineNumbers={true}

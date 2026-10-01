@@ -86,7 +86,7 @@ export const DiffBlock: React.FC<DiffBlockProps> = (props) => {
   const content = props.content ?? "";
   if (isUnifiedDiff(content)) {
     return (
-      <CodeBlock
+      <CodeBlock showSource
         code={content}
         language="diff"
         isStreamActive={props.isStreamActive}

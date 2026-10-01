@@ -111,7 +111,7 @@ const MarkdownPreviewBlock: React.FC<MarkdownPreviewBlockProps> = ({
         </div>
       ) : (
         <Suspense fallback={<MatrxMiniLoader />}>
-          <CodeBlock
+          <CodeBlock showSource
             code={content}
             language="markdown"
             fontSize={14}

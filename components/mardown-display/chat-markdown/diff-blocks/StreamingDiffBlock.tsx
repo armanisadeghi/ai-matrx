@@ -129,7 +129,7 @@ export const StreamingDiffBlock: React.FC<StreamingDiffBlockProps> = React.memo(
       case "fallback":
         // Couldn't detect or low confidence - just show as code
         return (
-          <CodeBlock
+          <CodeBlock showSource
             code={content}
             language="diff"
             showLineNumbers={true}
@@ -188,7 +188,7 @@ function renderDiffByStyle(
       // Fallback to code block
       const fallbackData = parsedData as Partial<SearchReplaceBlock> | null;
       return (
-        <CodeBlock
+        <CodeBlock showSource
           code={
             fallbackData?.search ||
             fallbackData?.replace ||

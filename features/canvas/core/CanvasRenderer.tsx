@@ -443,7 +443,7 @@ function renderContent(content: CanvasContent): React.ReactNode {
       return (
         <div className="h-full p-0">
           <Suspense fallback={null}>
-            <CodeBlock
+            <CodeBlock showSource
               code={data.code || data}
               language={data.language || "javascript"}
             />

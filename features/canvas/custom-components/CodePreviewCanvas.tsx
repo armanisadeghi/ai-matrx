@@ -181,7 +181,7 @@ export function CodePreviewCanvas({
 
           <TabsContent value="original" className="h-full m-0 p-0 overflow-hidden">
             <div className="h-full overflow-auto">
-              <CodeBlock
+              <CodeBlock showSource
                 code={originalCode}
                 language={language}
                 showLineNumbers={true}
@@ -191,7 +191,7 @@ export function CodePreviewCanvas({
 
           <TabsContent value="preview" className="h-full m-0 p-0 overflow-hidden">
             <div className="h-full overflow-auto">
-              <CodeBlock
+              <CodeBlock showSource
                 code={modifiedCode}
                 language={language}
                 showLineNumbers={true}

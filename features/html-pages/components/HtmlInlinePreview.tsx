@@ -167,7 +167,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
 
   const renderCodeBlock = useCallback(
     () => (
-      <CodeBlock
+      <CodeBlock showSource
         code={code}
         language={language}
         fontSize={16}

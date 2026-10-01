@@ -169,7 +169,7 @@ export const SearchReplaceDiffRenderer: React.FC<
             ref={streamScrollRef}
             className="max-h-[140px] overflow-y-auto overscroll-contain"
           >
-            <CodeBlock
+            <CodeBlock showSource
               code={replace}
               language={language}
               showLineNumbers={true}
@@ -218,7 +218,7 @@ export const SearchReplaceDiffRenderer: React.FC<
         className,
       )}
     >
-      <CodeBlock
+      <CodeBlock showSource
         code={replace || search || "// No content"}
         language={language}
         showLineNumbers={true}

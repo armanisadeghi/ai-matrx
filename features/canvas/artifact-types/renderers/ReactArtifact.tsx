@@ -31,7 +31,7 @@ export default function ReactArtifact({
   if (isPublic) {
     return (
       <Suspense fallback={<MatrxMiniLoader />}>
-        <CodeBlock code={code} language="tsx" fontSize={14} />
+        <CodeBlock showSource code={code} language="tsx" fontSize={14} />
       </Suspense>
     );
   }

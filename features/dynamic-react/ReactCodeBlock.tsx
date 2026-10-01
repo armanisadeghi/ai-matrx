@@ -127,7 +127,7 @@ const ReactCodeBlock: React.FC<ReactCodeBlockProps> = ({
 
   const renderCodeBlock = useCallback(
     () => (
-      <CodeBlock
+      <CodeBlock showSource
         code={code}
         language={language || "tsx"}
         fontSize={16}

@@ -343,7 +343,7 @@ const MarkdownPreview: React.FC<{ content: string }> = ({ content }) => (
 /** Fallback: render JSON as syntax-highlighted code */
 const JsonFallback: React.FC<{ content: string }> = ({ content }) => (
   <Suspense fallback={<MatrxMiniLoader />}>
-    <CodeBlock code={content} language="json" fontSize={14} />
+    <CodeBlock showSource code={content} language="json" fontSize={14} />
   </Suspense>
 );
 

@@ -1,0 +1,123 @@
+/**
+ * C4 — the plain code block never draws settled kind JSON. A json / jsonc /
+ * json5 / unlabelled block whose content is kind JSON renders through the one
+ * value door (`KindDataGate` → `AnswerValueView` → `KindInstanceRender`) and
+ * files its caller; a deliberate source view (`showSource`), a streaming
+ * buffer, another language, and kindless JSON keep the code.
+ */
+import React, { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppDispatch: () => jest.fn(),
+  useAppSelector: () => undefined,
+}));
+jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@/styles/themes/useThemeMode", () => ({ useThemeMode: () => "dark" }));
+jest.mock("@/features/canvas/hooks/useCanvas", () => ({ useCanvas: () => ({ open: jest.fn() }) }));
+jest.mock("@/features/overlays/openers/smartCodeEditorWindow", () => ({
+  useOpenSmartCodeEditorWindow: () => jest.fn(),
+}));
+jest.mock("../SmallCodeEditor", () => ({ __esModule: true, default: () => null }));
+jest.mock("../CodeBlockHeader", () => ({ __esModule: true, default: () => null }));
+jest.mock("../StickyButtons", () => ({ __esModule: true, default: () => null }));
+jest.mock("@/features/html-pages/services/htmlPageService", () => ({ HTMLPageService: {} }));
+// jsdom has no IntersectionObserver; CodeBlock's sticky buttons observe its
+// edges. An inert, fully typed stand-in (never reports an intersection).
+class InertIntersectionObserver implements IntersectionObserver {
+  readonly root = null;
+  readonly rootMargin = "0px";
+  readonly scrollMargin = "0px";
+  readonly thresholds: ReadonlyArray<number> = [0];
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
+  }
+}
+globalThis.IntersectionObserver = InertIntersectionObserver;
+
+// When set, the stand-in kind component falls back to a code block of its
+// own value — the loop a kind's JSON fallback would cause.
+const mockLoop = { value: null as string | null };
+jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
+  __esModule: true,
+  default: ({ kind }: { kind: string }) => {
+    const { default: Block } = jest.requireActual("../CodeBlock") as typeof import("../CodeBlock");
+    return (
+      <div data-kind-route={kind}>
+        {mockLoop.value ? <Block code={mockLoop.value} language="json" /> : null}
+      </div>
+    );
+  },
+}));
+const mockCaptureError = jest.fn();
+jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+  captureError: (input: unknown) => mockCaptureError(input),
+}));
+
+import CodeBlock from "../CodeBlock";
+import { resetKindAtRawRendererReports } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
+
+const KIND = JSON.stringify({ __kind: "timeline", title: "History", events: [] }, null, 2);
+const KINDLESS = JSON.stringify({ name: "Ada Lovelace" }, null, 2);
+
+let container: HTMLDivElement;
+let root: Root;
+beforeEach(() => {
+  mockLoop.value = null;
+  mockCaptureError.mockClear();
+  resetKindAtRawRendererReports();
+  container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container);
+});
+afterEach(() => {
+  act(() => root.unmount());
+  container.remove();
+});
+
+const routes = () =>
+  [...container.querySelectorAll("[data-kind-route]")].map((n) => n.getAttribute("data-kind-route"));
+
+describe("CodeBlock never draws settled kind JSON", () => {
+  it.each(["json", "JSON", "jsonc", "json5", ""])("language %j: kind JSON renders as its kind", (language) => {
+    act(() => root.render(<CodeBlock code={KIND} language={language} />));
+    expect(routes()).toEqual(["timeline"]);
+    expect(container.textContent).not.toContain("__kind");
+    expect(
+      mockCaptureError.mock.calls.some(([i]) => (i as { message: string }).message.startsWith("CodeBlock")),
+    ).toBe(true);
+  });
+
+  it.each([
+    ["showSource", { showSource: true }],
+    ["a streaming buffer", { isStreamActive: true }],
+  ])("%s keeps the code", (_label, extra) => {
+    act(() => root.render(<CodeBlock code={KIND} language="json" {...extra} />));
+    expect(routes()).toEqual([]);
+    expect(container.textContent).toContain("__kind");
+  });
+
+  it("another language keeps the code", () => {
+    act(() => root.render(<CodeBlock code={KIND} language="typescript" />));
+    expect(routes()).toEqual([]);
+  });
+
+  it("kindless JSON stays JSON", () => {
+    act(() => root.render(<CodeBlock code={KINDLESS} language="json" />));
+    expect(routes()).toEqual([]);
+    expect(container.textContent).toContain("Ada Lovelace");
+  });
+
+  it("a kind whose own view falls back to a code block of the same value does not loop", () => {
+    mockLoop.value = KIND;
+    act(() => root.render(<CodeBlock code={KIND} language="json" />));
+    expect(routes()).toEqual(["timeline"]);
+    expect(container.textContent).toContain("__kind"); // the inner fallback shows source once
+  });
+});
