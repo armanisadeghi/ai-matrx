@@ -34,6 +34,10 @@ const ROWS = [
   ["Marcus Bell - post-op shoulder check-in", "Scheduled", "24"],
   ["Hana Okafor - discharge summary request", "Completed", "03"],
 ];
+// SN_T3_PARTS narrows a run (red proofs): setup (the follow-up list), views (grid/sheet/board/calendar/gallery),
+// make (Make it work + Ask AI on a plain list), visit (300-visit gallery), share (owner/viewer/editor). Default: all.
+const WANT = new Set((process.env.SN_T3_PARTS ?? "setup,views,make,visit,share").split(",").map((x) => x.trim()));
+const want = (p) => WANT.has(p);
 const clean = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
 
 let admin = null;
@@ -66,7 +70,7 @@ async function guard(page, path, fn) {
   }
 }
 const main = async (page) => clean(await page.locator("main").innerText().catch(() => ""));
-const heads = (page) => page.locator("thead th").evaluateAll((ths) => ths.map((t) => (t.textContent ?? "").replace(/[↑↓]/g, "").trim()).filter(Boolean));
+const heads = (page) => page.locator("thead th").evaluateAll((ths) => ths.map((t) => (t.textContent ?? "").replace(/[↑↓⚿▾]/g, "").trim()).filter(Boolean));
 const board = (page) =>
   page.locator("section[data-board-column]").evaluateAll((els) =>
     els.map((e) => ({ name: e.getAttribute("data-board-column"), cards: [...e.querySelectorAll("li")].map((l) => (l.textContent ?? "").trim()) })),
@@ -177,7 +181,7 @@ try {
   ctx.cleanup(async () => keep && clearInterval(keep));
 
   // ── SETUP: the follow-up list, made through the product ─────────────────────────────────────
-  await ctx.step([], "make the follow-up list (table, 4 columns, 5 patients)", admin, async () => {
+  if (want("setup") || want("views") || want("share")) await ctx.step([], "make the follow-up list (table, 4 columns, 5 patients)", admin, async () => {
     if (!admin.__org) return { ok: false, detail: "the organization switcher never named Cedar Ridge Physical Therapy" };
     tid = await newTable(admin, NAME);
     made.push(tid);
@@ -190,19 +194,18 @@ try {
     await addColumn(admin, path, "Notes", /^Text\s*Plain/);
     await addColumn(admin, path, "Called back", /^Yes \/ No/);
     for (const [t, status, day] of ROWS) await addRow(admin, path, t, { status, day });
-    await go(admin, path);
-    await until("the rows", async () => (await admin.locator("tbody tr").count()) >= ROWS.length, 60000);
+    await openTable(admin, tid, "grid", async () => (await admin.locator("tbody tr", { hasText: / - / }).count()) >= ROWS.length);
     const hs = await heads(admin);
     const rows = await admin.locator("tbody tr", { hasText: / - / }).count();
     return { ok: rows === ROWS.length && ["Status", "Follow-up date", "Notes", "Called back"].every((h) => hs.includes(h)), detail: `table ${tid}: columns ${hs.join(" | ")}; ${rows} patients` };
   });
-  if (!tid) throw new Error("no follow-up list to walk");
+  if (!tid && (want("views") || want("share"))) throw new Error("no follow-up list to walk");
 } catch (e) {
   await ctx.step([], "walk aborted in setup", admin, async () => ({ ok: false, detail: String(e?.message ?? e).slice(0, 400) }));
 }
 
 // ── PART 1: the owner's four looks at the follow-up list ─────────────────────────────────────
-if (tid) {
+if (tid && want("views")) {
   try {
     await ctx.step(["T36"], "grid: every patient, every column, the status words", admin, async () => {
       const ok = await openTable(admin, tid, "grid", async () => (await admin.locator("tbody tr", { hasText: / - / }).count()) >= ROWS.length);
@@ -267,7 +270,7 @@ if (tid) {
 }
 
 // ── PART 2: calendar and gallery on the follow-up list (T39, T40) ─────────────────────────────
-if (tid) {
+if (tid && want("views")) {
   try {
     await ctx.step(["T39"], "calendar: each patient sits on their follow-up date", admin, async () => {
       const path = `/data-v2/${tid}?view=calendar`;
@@ -316,7 +319,7 @@ if (tid) {
 }
 
 // ── PART 3: "Make it work" on a plain callback list (T41) ───────────────────────────────────
-try {
+if (want("make")) try {
   await ctx.step([], "make the plain callback list (title only, 3 patients)", admin, async () => {
     pid = await newTable(admin, PLAIN);
     ctx.cleanup(async () => archive(admin, pid, "cleanup callback list"));
@@ -407,7 +410,7 @@ try {
 }
 
 // ── PART 4: the gallery on a 300-visit log (T40, BREAKER-4 B4-04) ───────────────────────────
-try {
+if (want("visit")) try {
   let vid = null;
   await ctx.step([], "make the visit log (300 visits pasted)", admin, async () => {
     vid = await newTable(admin, `Visit Log ${STAMP}`);
@@ -468,7 +471,7 @@ try {
 }
 
 // ── PART 5: sharing — owner, viewer, editor (T44, T45, T46) ────────────────────────────────
-if (tid) {
+if (tid && want("share")) {
   try {
     const rail = () => admin.locator('[role="dialog"], [data-rail], aside').filter({ hasText: /Current Access/ }).first();
     const access = async () => {
