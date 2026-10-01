@@ -22136,6 +22136,109 @@
         }
       }
     },
+    "/google-integrations/contacts/write/preview": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Contact Write Preview",
+        "operationId": "google_contact_write_preview_google_integrations_contacts_write_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleContactEditPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleContactEditPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/contacts/write/admission": {
+      "get": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Contact Write Admission",
+        "operationId": "google_contact_write_admission_google_integrations_contacts_write_admission_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactWriteAdmission"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/contacts/write/apply": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Contact Write Apply",
+        "operationId": "google_contact_write_apply_google_integrations_contacts_write_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleContactEditApplyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleContactEditResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-integrations/other-contacts/preview": {
       "post": {
         "tags": [
@@ -60030,6 +60133,50 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BenchProofResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/{masterwork_id}/run-estimate": {
+      "get": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Read Run Estimate",
+        "description": "THE PRICE BEFORE THE FIRST RUN (cold walk 24, defect F) — an aggregate of\nother Masterworks' finished runs, which row security would never let the\nviewer read one by one. The viewer must be able to read THIS Masterwork;\nnothing about any peer leaves the server but the median and its count.",
+        "operationId": "read_run_estimate_masterworks__masterwork_id__run_estimate_get",
+        "parameters": [
+          {
+            "name": "masterwork_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Masterwork Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunEstimateResponse"
                 }
               }
             }
@@ -149719,6 +149866,35 @@
         ],
         "title": "ContactSearchResult"
       },
+      "ContactWriteAdmission": {
+        "properties": {
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "admission_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admission Error"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "eligible",
+          "message"
+        ],
+        "title": "ContactWriteAdmission"
+      },
       "ContentBlockDetailResponse": {
         "properties": {
           "content_block": {
@@ -152196,6 +152372,30 @@
               }
             ],
             "title": "Blocked By"
+          },
+          "consumed_as": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "directive",
+                  "expanded",
+                  "renamed",
+                  "unaccounted"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumed As"
+          },
+          "consumed_into": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Consumed Into"
           }
         },
         "additionalProperties": false,
@@ -170811,6 +171011,7 @@
           "reason": {
             "type": "string",
             "enum": [
+              "archived",
               "failed",
               "missing",
               "no_access",
@@ -189681,6 +189882,301 @@
           "connection_id"
         ],
         "title": "GoogleConnectionReadRequest"
+      },
+      "GoogleContactEditApplyRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Organization Id"
+          },
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "resource_name": {
+            "type": "string",
+            "maxLength": 520,
+            "minLength": 9,
+            "pattern": "people/[A-Za-z0-9._-]{1,512}$",
+            "title": "Resource Name"
+          },
+          "edits": {
+            "$ref": "#/components/schemas/GoogleContactEdits"
+          },
+          "review_receipt": {
+            "type": "string",
+            "maxLength": 16384,
+            "minLength": 1,
+            "title": "Review Receipt"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "connection_id",
+          "resource_name",
+          "edits",
+          "review_receipt"
+        ],
+        "title": "GoogleContactEditApplyRequest"
+      },
+      "GoogleContactEditPreview": {
+        "properties": {
+          "resource_name": {
+            "type": "string",
+            "title": "Resource Name"
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag"
+          },
+          "field_mask": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Field Mask"
+          },
+          "before": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Before"
+          },
+          "after": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "After"
+          },
+          "receipt": {
+            "type": "string",
+            "title": "Receipt"
+          },
+          "recovery_notice": {
+            "type": "string",
+            "title": "Recovery Notice",
+            "default": "This is a conditional remote update. A later Google Contact change requires a new review; there is no universal undo."
+          }
+        },
+        "type": "object",
+        "required": [
+          "resource_name",
+          "etag",
+          "field_mask",
+          "before",
+          "after",
+          "receipt"
+        ],
+        "title": "GoogleContactEditPreview"
+      },
+      "GoogleContactEditPreviewRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Organization Id"
+          },
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "resource_name": {
+            "type": "string",
+            "maxLength": 520,
+            "minLength": 9,
+            "pattern": "people/[A-Za-z0-9._-]{1,512}$",
+            "title": "Resource Name"
+          },
+          "edits": {
+            "$ref": "#/components/schemas/GoogleContactEdits"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "connection_id",
+          "resource_name",
+          "edits"
+        ],
+        "title": "GoogleContactEditPreviewRequest"
+      },
+      "GoogleContactEditResult": {
+        "properties": {
+          "resource_name": {
+            "type": "string",
+            "title": "Resource Name"
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag"
+          },
+          "field_mask": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Field Mask"
+          },
+          "before": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Before"
+          },
+          "after": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "After"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified",
+            "default": true
+          },
+          "recovery_notice": {
+            "type": "string",
+            "title": "Recovery Notice",
+            "default": "Google confirmed this selected-field update. A later edit needs a new review; there is no universal undo."
+          }
+        },
+        "type": "object",
+        "required": [
+          "resource_name",
+          "etag",
+          "field_mask",
+          "before",
+          "after"
+        ],
+        "title": "GoogleContactEditResult"
+      },
+      "GoogleContactEdits": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleContactNameEdit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "email_addresses": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/GoogleContactValue"
+                },
+                "type": "array",
+                "maxItems": 100,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Addresses"
+          },
+          "phone_numbers": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/GoogleContactValue"
+                },
+                "type": "array",
+                "maxItems": 100,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Numbers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "GoogleContactEdits",
+        "description": "Selected field families only; email and phone lists replace that family."
+      },
+      "GoogleContactNameEdit": {
+        "properties": {
+          "given_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given Name"
+          },
+          "family_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "GoogleContactNameEdit",
+        "description": "Patch only explicitly named portions of the current primary name."
+      },
+      "GoogleContactValue": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "maxLength": 320,
+            "minLength": 1,
+            "title": "Value"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "GoogleContactValue",
+        "description": "One explicit replacement email or phone value; blank values are refused."
       },
       "GoogleDisconnectRequest": {
         "properties": {
@@ -219605,6 +220101,25 @@
               }
             ],
             "title": "State Detail"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "archived",
+                  "failed",
+                  "missing",
+                  "no_access",
+                  "not_ready",
+                  "over_budget"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
           },
           "forms": {
             "items": {
@@ -272590,6 +273105,47 @@
         "title": "RunCostSummary",
         "description": "Aggregated cost for one workflow run.\n\nComputed by ``aidream/api/workflow_cost.py::compute_run_cost`` — sums\nchat.request rows across every conversation the run touched (the run's\nown plus each AI node's), falling back to the run's durable node_cost\nevents. `total_cost_usd` is already USD (straight sum, no re-pricing)."
       },
+      "RunEstimateResponse": {
+        "properties": {
+          "masterwork_id": {
+            "type": "string",
+            "title": "Masterwork Id"
+          },
+          "estimated_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Cost Usd"
+          },
+          "priced_runs": {
+            "type": "integer",
+            "title": "Priced Runs",
+            "default": 0
+          },
+          "basis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Basis"
+          }
+        },
+        "type": "object",
+        "required": [
+          "masterwork_id"
+        ],
+        "title": "RunEstimateResponse",
+        "description": "What a first run of this Masterwork will likely cost, or null."
+      },
       "RunEventRecord": {
         "properties": {
           "event_type": {
@@ -288974,6 +289530,7 @@
               {
                 "type": "string",
                 "enum": [
+                  "archived",
                   "failed",
                   "missing",
                   "no_access",
@@ -330250,6 +330807,11 @@
           "allow_context_create": {
             "type": "boolean",
             "title": "Allow Context Create",
+            "default": false
+          },
+          "block_mode": {
+            "type": "boolean",
+            "title": "Block Mode",
             "default": false
           }
         },

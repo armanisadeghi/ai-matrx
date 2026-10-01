@@ -8215,6 +8215,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/google-integrations/contacts/write/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Google Contact Write Preview */
+        post: operations["google_contact_write_preview_google_integrations_contacts_write_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/contacts/write/admission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Google Contact Write Admission */
+        get: operations["google_contact_write_admission_google_integrations_contacts_write_admission_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/contacts/write/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Google Contact Write Apply */
+        post: operations["google_contact_write_apply_google_integrations_contacts_write_apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-integrations/other-contacts/preview": {
         parameters: {
             query?: never;
@@ -28715,6 +28766,29 @@ export interface paths {
          *     it never means an empty success.
          */
         get: operations["read_bench_proof_masterworks__rulebook_id__bench_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/{masterwork_id}/run-estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Run Estimate
+         * @description THE PRICE BEFORE THE FIRST RUN (cold walk 24, defect F) — an aggregate of
+         *     other Masterworks' finished runs, which row security would never let the
+         *     viewer read one by one. The viewer must be able to read THIS Masterwork;
+         *     nothing about any peer leaves the server but the median and its count.
+         */
+        get: operations["read_run_estimate_masterworks__masterwork_id__run_estimate_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -64321,6 +64395,15 @@ export interface components {
             /** Warnings */
             warnings?: string[];
         };
+        /** ContactWriteAdmission */
+        ContactWriteAdmission: {
+            /** Eligible */
+            eligible: boolean;
+            /** Admission Error */
+            admission_error?: string | null;
+            /** Message */
+            message: string;
+        };
         /** ContentBlockDetailResponse */
         ContentBlockDetailResponse: {
             /** Content Block */
@@ -65318,6 +65401,10 @@ export interface components {
             client_sent_excluded?: boolean;
             /** Blocked By */
             blocked_by?: ("model" | "self_check") | null;
+            /** Consumed As */
+            consumed_as?: ("directive" | "expanded" | "renamed" | "unaccounted") | null;
+            /** Consumed Into */
+            consumed_into?: string[];
         };
         /** ContextRenderRequest */
         ContextRenderRequest: {
@@ -72945,7 +73032,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "failed" | "missing" | "no_access" | "not_ready" | "over_budget";
+            reason: "archived" | "failed" | "missing" | "no_access" | "not_ready" | "over_budget";
             /** Detail */
             detail?: string | null;
         };
@@ -81180,6 +81267,110 @@ export interface components {
             connection_id: string;
             /** Organization Id */
             organization_id?: string | null;
+        };
+        /** GoogleContactEditApplyRequest */
+        GoogleContactEditApplyRequest: {
+            /** Organization Id */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Resource Name */
+            resource_name: string;
+            edits: components["schemas"]["GoogleContactEdits"];
+            /** Review Receipt */
+            review_receipt: string;
+        };
+        /** GoogleContactEditPreview */
+        GoogleContactEditPreview: {
+            /** Resource Name */
+            resource_name: string;
+            /** Etag */
+            etag: string;
+            /** Field Mask */
+            field_mask: string[];
+            /** Before */
+            before: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** After */
+            after: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Receipt */
+            receipt: string;
+            /**
+             * Recovery Notice
+             * @default This is a conditional remote update. A later Google Contact change requires a new review; there is no universal undo.
+             */
+            recovery_notice?: string;
+        };
+        /** GoogleContactEditPreviewRequest */
+        GoogleContactEditPreviewRequest: {
+            /** Organization Id */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Resource Name */
+            resource_name: string;
+            edits: components["schemas"]["GoogleContactEdits"];
+        };
+        /** GoogleContactEditResult */
+        GoogleContactEditResult: {
+            /** Resource Name */
+            resource_name: string;
+            /** Etag */
+            etag: string;
+            /** Field Mask */
+            field_mask: string[];
+            /** Before */
+            before: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** After */
+            after: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Verified
+             * @default true
+             */
+            verified?: boolean;
+            /**
+             * Recovery Notice
+             * @default Google confirmed this selected-field update. A later edit needs a new review; there is no universal undo.
+             */
+            recovery_notice?: string;
+        };
+        /**
+         * GoogleContactEdits
+         * @description Selected field families only; email and phone lists replace that family.
+         */
+        GoogleContactEdits: {
+            name?: components["schemas"]["GoogleContactNameEdit"] | null;
+            /** Email Addresses */
+            email_addresses?: components["schemas"]["GoogleContactValue"][] | null;
+            /** Phone Numbers */
+            phone_numbers?: components["schemas"]["GoogleContactValue"][] | null;
+        };
+        /**
+         * GoogleContactNameEdit
+         * @description Patch only explicitly named portions of the current primary name.
+         */
+        GoogleContactNameEdit: {
+            /** Given Name */
+            given_name?: string | null;
+            /** Family Name */
+            family_name?: string | null;
+        };
+        /**
+         * GoogleContactValue
+         * @description One explicit replacement email or phone value; blank values are refused.
+         */
+        GoogleContactValue: {
+            /** Value */
+            value: string;
+            /** Type */
+            type?: string | null;
         };
         /** GoogleDisconnectRequest */
         GoogleDisconnectRequest: {
@@ -94223,6 +94414,8 @@ export interface components {
             state: "failed" | "processing" | "ready" | "unavailable";
             /** State Detail */
             state_detail?: string | null;
+            /** Reason */
+            reason?: ("archived" | "failed" | "missing" | "no_access" | "not_ready" | "over_budget") | null;
             /** Forms */
             forms?: components["schemas"]["SourceForm"][];
             /** Default Form */
@@ -117945,6 +118138,23 @@ export interface components {
             by_model?: components["schemas"]["ModelCostBreakdown"][];
         };
         /**
+         * RunEstimateResponse
+         * @description What a first run of this Masterwork will likely cost, or null.
+         */
+        RunEstimateResponse: {
+            /** Masterwork Id */
+            masterwork_id: string;
+            /** Estimated Cost Usd */
+            estimated_cost_usd?: number | null;
+            /**
+             * Priced Runs
+             * @default 0
+             */
+            priced_runs?: number;
+            /** Basis */
+            basis?: string | null;
+        };
+        /**
          * RunEventRecord
          * @description One row from ``wf_node_events``. Shape mirrors
          *     ``matrx_graph.types.events`` — payload carries the full original
@@ -125044,7 +125254,7 @@ export interface components {
              */
             truncated?: boolean;
             /** Unavailable */
-            unavailable?: ("failed" | "missing" | "no_access" | "not_ready") | null;
+            unavailable?: ("archived" | "failed" | "missing" | "no_access" | "not_ready") | null;
             /** Detail */
             detail?: string | null;
         };
@@ -143066,6 +143276,11 @@ export interface components {
              * @default false
              */
             allow_context_create?: boolean;
+            /**
+             * Block Mode
+             * @default false
+             */
+            block_mode?: boolean;
         };
         /** RowUpdate */
         aidream__services__datasets__wire__RowUpdate: {
@@ -160281,6 +160496,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CalendarRsvpPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_contact_write_preview_google_integrations_contacts_write_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleContactEditPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleContactEditPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_contact_write_admission_google_integrations_contacts_write_admission_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactWriteAdmission"];
+                };
+            };
+        };
+    };
+    google_contact_write_apply_google_integrations_contacts_write_apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleContactEditApplyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleContactEditResult"];
                 };
             };
             /** @description Validation Error */
@@ -189259,6 +189560,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BenchProofResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_run_estimate_masterworks__masterwork_id__run_estimate_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                masterwork_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunEstimateResponse"];
                 };
             };
             /** @description Validation Error */
