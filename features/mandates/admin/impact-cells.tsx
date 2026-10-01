@@ -68,7 +68,7 @@ import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandat
 export type UngradedReason = "loading" | "read_failed" | "no_agent" | "not_returned";
 
 const UNGRADED_SENTENCE: Record<UngradedReason, string> = {
-  loading: "Grading against the server…",
+  loading: "Grading this pin…",
   read_failed:
     "The impact read failed, so this row's danger is unknown — not safe.",
   no_agent:
