@@ -156,7 +156,11 @@ describe("terminal incomplete Shape reload", () => {
       />,
     );
 
-    expect(html).toContain('data-routed-type="code"');
+    // Still streaming: the first-key rule (2026-09-30) shows the kind's
+    // LOADER for bytes whose first key is `__kind` — never the raw code card,
+    // and never the terminal "incomplete" normalization.
+    expect(html).toContain("data-kind-loading");
+    expect(html).not.toContain('data-routed-type="code"');
     expect(html).not.toContain("data-root-kind");
     expect(html).not.toContain("This response is incomplete");
   });

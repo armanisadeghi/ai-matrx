@@ -24,6 +24,7 @@ import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 import { pendingStructuredEnvelope } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { applyIrKindRoute } from "../react/kind-route";
+import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 
 type Upsert = { requestId: string; block: RenderBlockPayload };
 
@@ -78,6 +79,23 @@ function rendersRawJson(block: RenderBlockPayload): boolean {
   const routed = applyIrKindRoute(renderBlockToContentBlock(block));
   if (routed.type !== "code") return false; // a kind / its loader / text
   return pendingStructuredEnvelope(routed) === null;
+}
+
+/** Stream one character at a time, FINALIZE, return the last frame per block. */
+function finalBlocks(stream: string, requestId: string): RenderBlockPayload[] {
+  const upserts: Upsert[] = [];
+  const accumulator = new StreamBlockAccumulator(requestId, (payload) => {
+    upserts.push(payload as Upsert);
+    return { type: "test/upsert", payload };
+  });
+  const dispatch = (action: unknown) => action;
+  for (const ch of stream) accumulator.ingest(ch, dispatch);
+  accumulator.finalize(dispatch);
+  const last = new Map<string, RenderBlockPayload>();
+  for (const { block } of upserts) last.set(block.blockId, block);
+  return [...last.values()]
+    .filter((b) => (b.content ?? "").trim())
+    .sort((a, b) => a.blockIndex - b.blockIndex);
 }
 
 function jsonFrames(upserts: Upsert[]): RenderBlockPayload[] {
@@ -157,4 +175,27 @@ describe("never raw mid-stream: a __kind region is a kind from its first key", (
       ).toEqual([]);
     },
   );
+});
+
+describe("never raw: ~~~ is a real fence (A4)", () => {
+  const PRETTY = JSON.stringify(JSON.parse(KIND_PAYLOAD_ONE_LINE), null, 2);
+  it.each([
+    ["~~~json one-line", `Here you go:\n\n~~~json\n${KIND_PAYLOAD_ONE_LINE}\n~~~\n\nAfter.`],
+    ["~~~json pretty", `Here you go:\n\n~~~json\n${PRETTY}\n~~~\n\nAfter.`],
+    ["~~~~JSON long run", `Here you go:\n\n~~~~JSON\n${PRETTY}\n~~~~\n\nAfter.`],
+  ])("%s: no raw frame, the fence opens a json region, no stray ~~~ chrome", (_label, stream) => {
+    const frames = jsonFrames(streamCharByChar(stream, `req-tilde-${_label}`));
+    expect(frames.filter(rendersRawJson).map((b) => (b.content ?? "").slice(0, 40))).toEqual([]);
+
+    const blocks = finalBlocks(stream, `req-tilde-final-${_label}`);
+    expect(blocks.filter((b) => (b.content ?? "").includes("~~~"))).toEqual([]);
+    const kindBlock = blocks.find((b) => (b.content ?? "").includes('"__kind"'));
+    expect(kindBlock?.data).toEqual(expect.objectContaining({ language: expect.stringMatching(/^json$/i) }));
+    expect(blocks.map((b) => (b.content ?? "").trim())).toEqual(["Here you go:", kindBlock?.content, "After."]);
+
+    // Reload (the static splitter) opens the same fence — same blocks.
+    const reloaded = splitContentIntoBlocksV2(stream).filter((b) => b.content.trim());
+    expect(reloaded.map((b) => b.content.trim())).toEqual(["Here you go:", kindBlock?.content, "After."]);
+    expect(reloaded[1]?.language?.toLowerCase()).toBe("json");
+  });
 });

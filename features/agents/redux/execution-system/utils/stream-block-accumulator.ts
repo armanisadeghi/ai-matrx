@@ -24,6 +24,7 @@ import {
 import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
+  FenceReader,
   trimFenceLine,
 } from "@ai-matrx/content-ir/source";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
@@ -151,6 +152,12 @@ type BlockSubState =
       /** The fence info string after the language (fence-meta.ts). */
       meta?: string;
       fenceTicks: number;
+      /**
+       * A `~~~` fence's closer — THE one closer rule (FenceReader,
+       * @ai-matrx/content-ir/source): only a bare `~~~` run at least as long
+       * closes it. Null for backtick fences (the nesting rule below owns those).
+       */
+      tildeReader: FenceReader | null;
       /**
        * Open inner ```lang fences inside a ```markdown fence — the nesting
        * rule in @ai-matrx/content-ir/source (source/fence-nesting.ts) (shared with
@@ -284,13 +291,15 @@ const BARE_JSON_OPEN_RE = /^\{\s*"[^"]*"\s*:/;
 
 function extractFenceInfo(
   trimmed: string,
-): { language: string; meta?: string; ticks: number } | null {
+): { language: string; meta?: string; ticks: number; char: "`" | "~" } | null {
+  const char = trimmed[0];
+  if (char !== "`" && char !== "~") return null;
   let ticks = 0;
-  while (ticks < trimmed.length && trimmed[ticks] === "`") ticks++;
+  while (ticks < trimmed.length && trimmed[ticks] === char) ticks++;
   if (ticks < 3) return null;
   // The ONE info-string reader, shared with the static splitter.
   const { language, meta } = splitFenceInfo(trimmed.slice(ticks));
-  return { language: language ?? "", meta, ticks };
+  return { language: language ?? "", meta, ticks, char };
 }
 
 function extractOpeningXmlTag(trimmed: string): string | null {
@@ -1010,6 +1019,14 @@ export class StreamBlockAccumulator {
           language: fence.language,
           meta: fence.meta,
           fenceTicks: fence.ticks,
+          tildeReader:
+            fence.char === "~"
+              ? new FenceReader({
+                  char: "~",
+                  ticks: fence.ticks,
+                  lang: fence.language,
+                })
+              : null,
           nestedFences: 0,
           earlyTypeResolved: false,
         };
@@ -1328,12 +1345,17 @@ export class StreamBlockAccumulator {
       }
       case "code_fence": {
         // The shared rule's whitespace, never String#trim (verify-RC-B3 residual R4).
-        const fenceLine = classifyInnerFenceLine(
-          trimFenceLine(rawLine),
-          this.subState.fenceTicks,
-          fenceNestsInnerFences(this.subState.language),
-          this.subState.nestedFences,
-        );
+        // A ~~~ fence closes by FenceReader alone (a backtick line inside it is content).
+        const fenceLine = this.subState.tildeReader
+          ? this.subState.tildeReader.feed(rawLine)
+            ? "close-outer"
+            : "content"
+          : classifyInnerFenceLine(
+              trimFenceLine(rawLine),
+              this.subState.fenceTicks,
+              fenceNestsInnerFences(this.subState.language),
+              this.subState.nestedFences,
+            );
         if (fenceLine === "open-nested") this.subState.nestedFences++;
         if (fenceLine === "close-nested") this.subState.nestedFences--;
         if (fenceLine === "close-outer") {

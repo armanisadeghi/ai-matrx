@@ -1417,13 +1417,17 @@ function detectCodeBlock(line: string): {
   /** The info string after the language (`title="x" {1,3}`) — fence-meta.ts. */
   meta?: string;
   ticks?: number;
+  /** The fence character — a ~~~ fence closes only on ~~~ (CommonMark 4.5). */
+  char?: "`" | "~";
 } {
-  // THE one fence rule (@ai-matrx/content-ir/source): a backtick fence opens
-  // where the trimmed line starts with ``` at any indent. The run's length is
-  // load-bearing: only a later bare fence at least this long closes it. The
-  // renderer's splitter does not open ~~~ fences (remark draws those).
+  // THE one fence rule (@ai-matrx/content-ir/source): a fence opens where the
+  // line starts with ``` (any indent) or ~~~. The run's length is load-bearing:
+  // only a later bare fence of the SAME character, at least this long, closes
+  // it. ~~~ is a real fence (2026-09-30, the never-raw law): left to remark, a
+  // ~~~json kind payload was drawn as a raw code block and the stream left
+  // stray `~~~` chrome behind — the accumulator opens it identically.
   const opener = fenceOpenerOf(line);
-  if (!opener || opener.char !== "`") {
+  if (!opener) {
     return { isCodeBlock: false };
   }
   const trimmed = line.trim();
@@ -1431,7 +1435,7 @@ function detectCodeBlock(line: string): {
 
   const { language, meta } = splitFenceInfo(trimmed.slice(ticks));
 
-  return { isCodeBlock: true, language, meta, ticks };
+  return { isCodeBlock: true, language, meta, ticks, char: opener.char };
 }
 
 /**
@@ -1445,11 +1449,12 @@ function extractCodeBlock(
   openTicks: number,
   startIndex: number,
   lines: string[],
+  fenceChar: "`" | "~" = "`",
 ): ExtractionResult & { closedCleanly: boolean } {
   const end = closeFence(
     { count: lines.length, line: (k) => lines[k] ?? "" },
     startIndex - 1,
-    { char: "`", ticks: openTicks, lang: language ?? "" },
+    { char: fenceChar, ticks: openTicks, lang: language ?? "" },
   );
   if (!end.closed) {
     return {
@@ -1462,7 +1467,7 @@ function extractCodeBlock(
   const closer = lines[end.line] ?? "";
   // A bare closing fence line (the normal case) vs the line-end closer, whose
   // text before the backticks is code.
-  const bare = fenceOpenerOf(closer)?.char === "`";
+  const bare = fenceOpenerOf(closer)?.char === fenceChar;
   const before = bare ? "" : closer.slice(0, closer.indexOf("`".repeat(3)));
   const body = lines.slice(startIndex, end.line);
   if (before.trim()) body.push(before);
@@ -2046,6 +2051,7 @@ export const splitContentIntoBlocksWith = (
         codeCheck.ticks ?? 3,
         i + 1,
         lines,
+        codeCheck.char,
       );
 
       const normalizedLanguage = normalizeCodeLanguage(codeCheck.language);

@@ -38,7 +38,8 @@ Every stream item below adds its case there.
 - [x] A2. `__kind` not first key, or after 300 chars → raw until reached.
 - [x] A3. ```jsonc / ```json5 / fence with no language → raw for the whole stream (parser never opens).
       Mid-stream now held by the renderer's first-key gate. Still open: jsonc WITH comments never parses at close.
-- [ ] A4. `~~~json` fences → only work by accident; stray empty code blocks left behind.
+- [x] A4. `~~~json` fences → only work by accident; stray empty code blocks left behind.
+      `~~~` is a real fence in the prefilter, accumulator (FenceReader closer) and static splitter.
 - [ ] A5. Kind object on the same line as prose → raw until stream end.
 - [ ] A6. Array of kinds → raw mid-stream; leftover `[` `,` `]` render as tiny JSON cards after.
 - [ ] A7. Kind nested inside a non-kind object → whole region should show as could-be-kind; wrapper

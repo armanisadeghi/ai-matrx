@@ -125,6 +125,11 @@ const FIXTURES: Array<[string, string, number]> = [
     `Intro text.\n\n\`\`\`json\n${FLASHCARDS}\n\`\`\`\n\nOutro.\n`,
     1,
   ],
+  [
+    "~~~ fenced flashcards between prose (a tilde fence is a real fence)",
+    `Intro text.\n\n~~~json\n${FLASHCARDS}\n~~~\n\nOutro.\n`,
+    1,
+  ],
   ["bare flashcards JSON", `Here:\n${FLASHCARDS}\nDone.\n`, 1],
   [
     "unknown kind falls back raw IDENTICALLY on both paths",

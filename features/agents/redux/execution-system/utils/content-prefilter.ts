@@ -24,7 +24,7 @@ import { OUR_FILE_URL_MARKERS } from "@/lib/media/our-file-sources";
 export const Candidate = {
   NONE: 0,
   TEXT: 0, // No special block detected — plain text
-  CODE: 1 << 0, // ``` fenced code block
+  CODE: 1 << 0, // ``` or ~~~ fenced code block
   XML_SIMPLE: 1 << 1, // <thinking>, <flashcards>, etc.
   XML_ATTR: 1 << 2, // <decision prompt="...">, <artifact ...>
   TABLE: 1 << 3, // | col | col |
@@ -159,9 +159,10 @@ export function classifyLine(line: string, trimmed: string): CandidateFlags {
   // Fast checks based on first character of trimmed line
   const first = trimmed[0];
 
-  // CODE: line starts with ` — need at least ```
-  if (first === "`") {
-    if (len >= 3 && trimmed[1] === "`" && trimmed[2] === "`") {
+  // CODE: line starts with ``` or ~~~ (a tilde fence is a real fence — the
+  // static splitter opens it too; @ai-matrx/content-ir/source fenceOpenerOf)
+  if (first === "`" || first === "~") {
+    if (len >= 3 && trimmed[1] === first && trimmed[2] === first) {
       flags |= Candidate.CODE;
     }
   }
