@@ -85,6 +85,7 @@ import {
   type KnobRow,
   type SourceFile,
 } from "./settings-guards/lib";
+import { featureRegExp } from "./lib/source-roots.cjs";
 
 const GUARD = "check:settings-orphans";
 const BASELINE_FILE = join(ROOT, "scripts", "settings-orphans-baseline.json");
@@ -155,7 +156,7 @@ async function main(): Promise<void> {
   // itself said "Not connected yet"). They edit settings; they do not honour
   // them.
   const fe = collectFrontend().filter(
-    (f) => !/matrx-frontend\/(features\/settings\/(universal|tabs)|features\/admin\/limits)\//.test(f.rel),
+    (f) => !featureRegExp(/matrx-frontend\/(features\/settings\/(universal|tabs)|features\/admin\/limits)\//).test(f.rel),
   );
   const ai = collectAidream(AIDREAM_SCAN_DIRS);
   if (!ai) {

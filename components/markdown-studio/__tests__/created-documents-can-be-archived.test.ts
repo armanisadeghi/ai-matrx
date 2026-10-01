@@ -14,6 +14,7 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { featureRegExp } from "@/scripts/lib/source-roots.cjs";
 
 const ROOT = join(__dirname, "..", "..", "..");
 /** Files that create a content.document, and where its archive action lives. */
@@ -36,7 +37,7 @@ it("every content.document creator has an archive path", () => {
     .flatMap((d) => walk(join(ROOT, d)))
     .filter((f) => {
       const src = readFileSync(f, "utf8");
-      return /from\s+["']@\/features\/rich-document\/annotations\/documentSource["']/.test(src) && /\bcreateDocument\s*\(/.test(src);
+      return featureRegExp(/from\s+["']@\/features\/rich-document\/annotations\/documentSource["']/).test(src) && /\bcreateDocument\s*\(/.test(src);
     })
     .map((f) => relative(ROOT, f));
   expect(creators.sort()).toEqual(Object.keys(CREATORS_WITH_ARCHIVE).sort());

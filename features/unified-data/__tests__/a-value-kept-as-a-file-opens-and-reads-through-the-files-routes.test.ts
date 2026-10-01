@@ -16,6 +16,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { hrefForFile, readFileText } from "../recordsFiles";
+import { featureRegExp } from "@/scripts/lib/source-roots.cjs";
 
 jest.mock("@/features/files/api/files", () => ({ downloadFile: jest.fn() }));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -69,7 +70,7 @@ describe("the table page binds the file ports", () => {
     expect(page).toMatch(/<RecordsMount[\s\S]*?host=\{recordsUiHostFor\(/);
   });
   it("the binding imports the one files module", () => {
-    expect(binding).toMatch(/import \{ RECORDS_FILES \} from "@\/features\/unified-data\/recordsFiles";/);
+    expect(binding).toMatch(featureRegExp(/import \{ RECORDS_FILES \} from "@\/features\/unified-data\/recordsFiles";/));
   });
   it("the binding spreads both ports into the host", () => {
     const host = binding.slice(binding.indexOf("export function recordsUiHostFor"), binding.indexOf("export function useRecordsUiPorts"));

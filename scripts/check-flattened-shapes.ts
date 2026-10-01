@@ -55,7 +55,7 @@ import { fileURLToPath } from "node:url";
 import * as dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { aliasTarget } from "./lib/source-roots.cjs";
+import { aliasTarget, featureRegExp } from "./lib/source-roots.cjs";
 import {
   FLATTENING_REMEDY,
   isStructuredOutputKind,
@@ -70,7 +70,7 @@ const SKIP_FILE = /\.(test|spec)\.tsx?$/;
  * The primitive's own home: `runHeadlessAgentJson` and the scream module name
  * `expect: "text"` in their judges and messages, and that is not a run.
  */
-const SKIP_PRIMITIVE = /(^|\/)features\/agents\/redux\/execution-system\/thunks\//;
+const SKIP_PRIMITIVE = featureRegExp(/(^|\/)features\/agents\/redux\/execution-system\/thunks\//);
 const SOURCE_FILE = /\.tsx?$/;
 
 // ── scanning ────────────────────────────────────────────────────────────────

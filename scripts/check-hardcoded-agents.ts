@@ -74,6 +74,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { featureRegExp } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ALLOWLIST_FILE = join(ROOT, "scripts", "hardcoded-agents-allowlist.json");
@@ -86,7 +87,7 @@ const SKIP_FILE = /(\.test\.tsx?$|\.spec\.tsx?$|\.d\.ts$)/;
 /** Lines above the literal in which a `SEED MIRROR` marker exonerates it. */
 const SEED_MIRROR_WINDOW = 10;
 const SEED_MIRROR_RE = /seed[ -]?mirror/i;
-const MANIFEST_DIR_RE = /^features\/surfaces\/manifests\//;
+const MANIFEST_DIR_RE = featureRegExp(/^features\/surfaces\/manifests\//);
 /** `defaultAgentId: <anything but null>` — an agent id reaching a manifest by any route. */
 const MANIFEST_DEFAULT_AGENT_RE = /\bdefaultAgentId\s*:\s*(?!\s|null\b)([^,}\n]+)/g;
 /** Nearest top-level `const NAME` above a literal names an agent roster. */

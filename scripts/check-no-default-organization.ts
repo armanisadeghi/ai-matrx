@@ -78,6 +78,7 @@ import {
 } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { featureRegExp } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(__dirname, "..");
 const ALLOWLIST_PATH = join(
@@ -95,8 +96,8 @@ const SKIP_DIR = new Set(["node_modules", ".next", "dist", "build", "__tests__"]
  * neither may hand the id to a data path.
  */
 const PREFERENCE_HOMES: readonly RegExp[] = [
-  /^features\/organizations\//,
-  /^features\/settings\//,
+  featureRegExp(/^features\/organizations\//),
+  featureRegExp(/^features\/settings\//),
 ];
 
 /** Rule 2 — RPCs deleted from the database; naming one anywhere reintroduces it. */

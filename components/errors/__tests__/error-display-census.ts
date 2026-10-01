@@ -44,6 +44,7 @@
  * file-wide.
  */
 import ts from "typescript";
+import { featureRegExp } from "../../../scripts/lib/source-roots.cjs";
 
 export interface ErrorDisplayHit {
   line: number;
@@ -866,7 +867,7 @@ export const CENSUS_PRIMITIVES = new Set([
  * an isolated iframe and relays its render error to the host, whose boundary
  * carries the menu.
  */
-const ISOLATED_BUNDLES = [/^features\/content-ir\/sandbox\/runtime\//];
+const ISOLATED_BUNDLES = [featureRegExp(/^features\/content-ir\/sandbox\/runtime\//)];
 
 export function isCensusScannable(rel: string): boolean {
   if (!/\.tsx$/.test(rel)) return false;

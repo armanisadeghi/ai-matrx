@@ -50,17 +50,18 @@ import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
+import { featureRegExp } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ARGS = process.argv.slice(2);
 const SELF_TEST = ARGS.includes("--self-test");
 
 const OWNER_EXEMPT_PATTERNS = [
-  /^features\/mandates\/feature-intelligence\//,
+  featureRegExp(/^features\/mandates\/feature-intelligence\//),
   /^components\/official\/entity-ref\//,
-  /^features\/organizations\/peek\//,
-  /^features\/mandates\/peek\//,
-  /^features\/mandates\/member-list\/MandateMemberPeek\.tsx$/,
+  featureRegExp(/^features\/organizations\/peek\//),
+  featureRegExp(/^features\/mandates\/peek\//),
+  featureRegExp(/^features\/mandates\/member-list\/MandateMemberPeek\.tsx$/),
 ];
 
 const ICON_RE = /<ExternalLink(Icon)?(?=[\s/>])/;

@@ -42,6 +42,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { featureRegExp } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCAN_DIR = "features/marketing";
@@ -102,7 +103,7 @@ const SECOND_QUERY =
   /rpc\(\s*["'](gsc_topic_unassigned_keywords|gsc_topic_proposed_keywords|site_keyword_performance_page)["']/;
 
 /** The shared data module IS the one door — it is allowed to name the RPC. */
-const SHARED_DATA_MODULE = /features\/marketing\/seo\/keyword-table\//;
+const SHARED_DATA_MODULE = featureRegExp(/features\/marketing\/seo\/keyword-table\//);
 
 interface Finding {
   file: string;

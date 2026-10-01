@@ -37,6 +37,7 @@ import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { repoFiles } from "./lib/repo-files";
 import { emitItem, endItems } from "./checks/items.mjs";
+import { featureRegExp } from "./lib/source-roots.cjs";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -451,7 +452,7 @@ function detectHandRolledLadder(allow: Allowlist) {
 // it's exempt (e.g. genuinely public reference data). Single-record `.eq("id",
 // ...)` / `.single()` reads are exempt — they're not "list" reads.
 
-const VIEW_LAW_DIR_RE = /^features\/[^/]+\/(service|services|redux)\//;
+const VIEW_LAW_DIR_RE = featureRegExp(/^features\/[^/]+\/(service|services|redux)\//);
 const SCOPE_EQ_RE =
   /\.eq\(\s*["'](created_by|user_id|owner_id|owner|organization_id|org_id|project_id|task_id|conversation_id|scope_id|[a-z_]+_id)["']/;
 const SCOPE_OR_RE =

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { featureRegExp } from "@/scripts/lib/source-roots.cjs";
 
 const resourcesSource = readFileSync(
   join(__dirname, "WarRoomResourcesList.tsx"),
@@ -25,7 +26,7 @@ describe("war-room resource attach boundaries", () => {
 
   it("keeps the conversation picker WindowPanel behind a dynamic boundary", () => {
     expect(conversationPickerSource).not.toMatch(
-      /import\s+\{\s*WindowPanel\s*\}\s+from\s+["']@\/features\/window-panels\/WindowPanel["']/,
+      featureRegExp(/import\s+\{\s*WindowPanel\s*\}\s+from\s+["']@\/features\/window-panels\/WindowPanel["']/),
     );
     expect(conversationPickerSource).toContain(
       'import("@/features/window-panels/WindowPanel")',

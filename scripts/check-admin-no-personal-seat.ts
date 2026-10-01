@@ -48,7 +48,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { aliasTarget } from "./lib/source-roots.cjs";
+import { aliasTarget, featureRegExp } from "./lib/source-roots.cjs";
 
 const ROOT = path.resolve(__dirname, "..");
 const ADMIN_ROOT = path.join(ROOT, "app", "(admin)");
@@ -71,8 +71,8 @@ const NOT_FOLLOWED = [
   /\/components\/ui\//,
   // App chrome and metadata every page carries (the user menu, nav data,
   // surface manifests) — not the admin page's own content.
-  /\/features\/shell\//,
-  /\/features\/surfaces\/manifests\//,
+  featureRegExp(/\/features\/shell\//),
+  featureRegExp(/\/features\/surfaces\/manifests\//),
 ];
 // How far into the import graph an admin page's CONTENT reaches: the route
 // file, its page component, that component's parts, and their parts. Deeper

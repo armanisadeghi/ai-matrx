@@ -17,6 +17,7 @@ import {
   fireInvalidation,
   registerInvalidationCallback,
 } from "@/lib/invalidation/invalidation-registry";
+import { featureRegExp } from "@/scripts/lib/source-roots.cjs";
 
 // Keep the cache module light in jest: the compiler + fetch paths are not
 // under test here (invalidation + version bookkeeping are).
@@ -226,7 +227,7 @@ describe("THE FRAGMENTATION LAW source guard (D115)", () => {
     // The exact detonator class: any import() or static import reaching the
     // content-ir registry cluster or the Babel-adjacent db-renderer chunk
     // from this ubiquitous (process-stream-reachable) module.
-    expect(source).not.toMatch(/from\s+["']@\/features\/content-ir/);
+    expect(source).not.toMatch(featureRegExp(/from\s+["']@\/features\/content-ir/));
     expect(source).not.toMatch(/from\s+["'][^"']*db-renderer/);
     expect(source).not.toMatch(/import\s*\(/);
   });

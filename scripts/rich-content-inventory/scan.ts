@@ -18,6 +18,7 @@ import {
   type HeuristicRule,
   type LegacyPiece,
 } from "./registry";
+import { featureRegExp } from "../lib/source-roots.cjs";
 
 // ─── Host ─────────────────────────────────────────────────────────────────────
 
@@ -606,7 +607,7 @@ export const OVERLAY_CONTROLLER = "features/overlays/OverlayController.tsx";
 const WINDOW_REGISTRY = "features/window-panels/registry/windowRegistryMetadata.ts";
 const ROUTE_FILE = /^app\/(.*\/)?(page|layout|template|default|not-found|error|global-error|loading)\.(tsx|ts|jsx|js)$/;
 const API_FILE = /^app\/(.*\/)?route\.(ts|js)$/;
-const OPENER_FILE = /^features\/overlays\/openers\/[^/]+\.tsx?$/;
+const OPENER_FILE = featureRegExp(/^features\/overlays\/openers\/[^/]+\.tsx?$/);
 
 function routeUrl(rel: string): string {
   const segs = rel.split("/").slice(1, -1).filter((s) => !(s.startsWith("(") && s.endsWith(")")));

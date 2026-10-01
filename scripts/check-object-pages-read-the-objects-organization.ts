@@ -55,6 +55,7 @@
 import { readFileSync, readdirSync, statSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { tmpdir } from "node:os";
+import { featureRegExp } from "./lib/source-roots.cjs";
 
 const ROOT = join(__dirname, "..");
 
@@ -233,7 +234,7 @@ export function guessedRefusals(root: string): Finding[] {
   return findings;
 }
 
-const OPENS_THE_STORE = /from\s+["'](@ai-matrx\/records-ui|@ai-matrx\/records|@\/features\/unified-data\/[^"']*)["']/;
+const OPENS_THE_STORE = featureRegExp(/from\s+["'](@ai-matrx\/records-ui|@ai-matrx\/records|@\/features\/unified-data\/[^"']*)["']/);
 const EXEMPT = /\/\/\s*object-org-exempt:(.*)$/;
 
 export interface Finding {

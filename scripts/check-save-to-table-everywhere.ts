@@ -28,6 +28,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { featureRegExp } from "./lib/source-roots.cjs";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -104,7 +105,7 @@ export function judge(files: ReadonlyMap<string, string>): Finding[] {
   }
   for (const [file, text] of files) {
     if (file in BIRTH_HOMES || /\.test\.tsx?$/.test(file) || file.includes("__tests__") || file.startsWith("features/data-tables/")) continue;
-    const seamBirth = /\bcreateTable\b[^;]*from\s+["']@\/features\/data-tables\/service["']/.test(text) && /\bcreateTable\(/.test(text);
+    const seamBirth = featureRegExp(/\bcreateTable\b[^;]*from\s+["']@\/features\/data-tables\/service["']/).test(text) && /\bcreateTable\(/.test(text);
     const storeBirth = /\bdeclareTable\b[^;]*from\s+["']@ai-matrx\/records(-ui)?(\/core)?["']/.test(text);
     if (seamBirth || storeBirth) {
       out.push({ rule: 4, file, says: "makes a table itself — open the saveToTable overlay (useOpenSaveToTable) instead" });

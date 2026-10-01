@@ -21,6 +21,7 @@ import { join } from "node:path";
 import { applyAcceptRule, readUtf8Strict, ruleFiles } from "./accept-rules.mjs";
 import ACCEPT_RULES from "./accept-rules.json" with { type: "json" };
 import { SUMMARY as VISIBILITY_SUMMARY, remedyForKey as visibilityRemedyForKey } from "../visibility-vocab/remedies.mjs";
+import { featureRegExp } from "../lib/source-roots.cjs";
 
 /**
  * accept / noAccept come from accept-rules.json — the ONE declaration the server's Mark OK button
@@ -149,7 +150,7 @@ export const FINDINGS_CHECKS = [
   },
   {
     id: "surfaces-running-an-agent-without-naming-it",
-    watch: /(^(app|features|components)\/.*\.tsx?$)|^features\/surfaces\/manifests\//,
+    watch: featureRegExp(/(^(app|components)\/.*\.tsx?$)|(^features\/.*\.tsx?$)|^features\/surfaces\/manifests\//),
     fix: "Register the surface's fixed job in the top Agents menu (manifest agentRole with mandateKey, or useDeclaredSurfaceMandates) — invoke the `agent-disclosure` skill; never add visible page content.",
     ...fromRules("surfaces-running-an-agent-without-naming-it"),
   },

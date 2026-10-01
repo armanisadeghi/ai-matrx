@@ -26,7 +26,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { execSync } from "node:child_process";
 import { emitItem, endItems } from "../checks/items.mjs";
-import { aliasTarget, featureRootOf } from "../lib/source-roots.cjs";
+import { aliasTarget, featureRootOf, featureRegExp } from "../lib/source-roots.cjs";
 
 const ROOT = process.cwd();
 const REPORT = join(ROOT, "scripts/access-errors/report.json");
@@ -76,7 +76,7 @@ const RULES: Array<{ kind: Kind; re: RegExp }> = [
  * few surfaces legitimately describe a permission rather than report one.
  */
 const ALLOW = [
-  /^features\/access-gate\//,
+  featureRegExp(/^features\/access-gate\//),
   /^lib\/records\/recordUnavailable\.ts$/,
   /^lib\/coming-soon\//,
   // API routes answer MACHINES. A JSON 404 with "not found" is the correct

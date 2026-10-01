@@ -68,6 +68,41 @@ const ALIAS_PREFIX_PATTERN = MODULE_ALIASES.map(([prefix]) =>
   prefix.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&"),
 ).join("|");
 
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
+
+/**
+ * Regex source for "any feature root, then a slash" — today `(?:features|packages\/chat\/src)\/`.
+ * Matches repo-relative paths under every feature root.
+ */
+const FEATURE_ROOT_PATTERN = `(?:${FEATURE_ROOTS.map(escapeRegExp).join("|")})\\/`;
+
+/**
+ * Regex source for every aliased spelling of an import that reaches feature code: each alias
+ * prefix joined to each feature root it can address — today `@/features/`, `@/packages/chat/src/`,
+ * `@host/features/`, `@host/packages/chat/src/` and `@ai-matrx/chat/`.
+ */
+const FEATURE_SPECIFIER_PATTERN = `(?:${MODULE_ALIASES.flatMap(([prefix, dir]) =>
+  FEATURE_ROOTS.filter((root) => `${root}/`.startsWith(dir)).map((root) =>
+    escapeRegExp(`${prefix}${`${root}/`.slice(dir.length)}`),
+  ),
+).join("|")})`;
+
+/**
+ * Widen a regex written against `features/` to every feature root, so a guard keeps matching
+ * moved code. Write the literal exactly as before and wrap it:
+ * `featureRegExp(/^features\/agents\//)` or `featureRegExp(/from "@\/features\/x"/)`.
+ * Each `@\/features\/` in the source becomes FEATURE_SPECIFIER_PATTERN, each other standalone
+ * `features\/` becomes FEATURE_ROOT_PATTERN (non-capturing, so group numbers are unchanged).
+ * Flags are kept. While nothing lives under the package root and no import spells `@host/` or
+ * `@ai-matrx/chat/`, the result matches exactly what the literal did.
+ */
+function featureRegExp(re) {
+  const source = re.source.replace(/(?<![\w-])(@\\\/)?features\\\//g, (_match, at) =>
+    at ? FEATURE_SPECIFIER_PATTERN : FEATURE_ROOT_PATTERN,
+  );
+  return new RegExp(source, re.flags);
+}
+
 /** The roots that exist under `repoRoot` (default: every source root), in the given order. */
 function existingRoots(repoRoot, roots = SOURCE_ROOTS) {
   return roots.filter((root) => existsSync(join(repoRoot, root)));
@@ -108,6 +143,9 @@ exports.FEATURE_ROOTS = FEATURE_ROOTS;
 exports.SOURCE_ROOTS = SOURCE_ROOTS;
 exports.MODULE_ALIASES = MODULE_ALIASES;
 exports.ALIAS_PREFIX_PATTERN = ALIAS_PREFIX_PATTERN;
+exports.FEATURE_ROOT_PATTERN = FEATURE_ROOT_PATTERN;
+exports.FEATURE_SPECIFIER_PATTERN = FEATURE_SPECIFIER_PATTERN;
+exports.featureRegExp = featureRegExp;
 exports.aliasTarget = aliasTarget;
 exports.isAliasSpecifier = isAliasSpecifier;
 exports.existingRoots = existingRoots;

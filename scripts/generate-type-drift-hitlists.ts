@@ -28,6 +28,7 @@
 import { execSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { featureRegExp } from "./lib/source-roots.cjs";
 
 // ⛔ Wave-5 guard: campaign complete, output dir archived. See banner above.
 // Escape hatch (deliberate friction): pass --allow-archived, and only after
@@ -160,7 +161,7 @@ function scanFile(
 ): Offender[] {
   const content = readFileSync(join(ROOT, file), "utf8");
   const lines = content.split("\n");
-  const feature = file.match(/^features\/([^/]+)/)?.[1] ?? "(non-feature)";
+  const feature = file.match(featureRegExp(/^features\/([^/]+)/))?.[1] ?? "(non-feature)";
   const offenders: Offender[] = [];
 
   for (let i = 0; i < lines.length; i++) {

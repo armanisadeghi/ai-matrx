@@ -17,6 +17,7 @@
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { featureRegExp } from "@/scripts/lib/source-roots.cjs";
 
 const ROOT = join(__dirname, "..");
 
@@ -46,7 +47,7 @@ test("every screen that paints the effective holder resolves holder-neutrally", 
     .filter(
       (f) =>
         /\buseMandate\(/.test(f.text) ||
-        /from "(@\/features\/mandates|\.\.?)\/useMandate"/.test(f.text),
+        featureRegExp(/from "(@\/features\/mandates|\.\.?)\/useMandate"/).test(f.text),
     )
     .map((f) => f.path);
   expect(offenders).toEqual([]);

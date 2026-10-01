@@ -18,6 +18,7 @@ import { join, relative } from "path";
 import { createRoot, type Root } from "react-dom/client";
 
 import type { WorkflowRunEmission } from "../../redux/workflow-runs.slice";
+import { featureRegExp } from "@/scripts/lib/source-roots.cjs";
 
 let emissions: WorkflowRunEmission[] = [];
 
@@ -101,7 +102,7 @@ describe("workflow emissions go through the kind door", () => {
   it("no run surface mounts DbEmitRenderer except EmissionRender", () => {
     const offenders = sourceFiles(RUNTIME_ROOT)
       .filter((file) =>
-        /from\s+["']@\/features\/workflow-emit\/DbEmitRenderer["']/.test(
+        featureRegExp(/from\s+["']@\/features\/workflow-emit\/DbEmitRenderer["']/).test(
           readFileSync(file, "utf8"),
         ),
       )

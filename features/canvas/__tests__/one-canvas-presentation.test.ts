@@ -32,6 +32,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { featureRegExp } from "@/scripts/lib/source-roots.cjs";
 
 const REPO = path.join(__dirname, "..", "..", "..");
 const read = (rel: string) => readFileSync(path.join(REPO, rel), "utf8");
@@ -109,7 +110,7 @@ describe("the canvas has exactly one presentation", () => {
     // It may open things INTO the canvas (the headless openers) but it may not
     // present the canvas itself.
     expect(chat).not.toMatch(/<Canvas(Dock|SideSheet|Surface|Pane)\b/);
-    expect(chat).not.toMatch(/from "@\/features\/canvas\/core\//);
+    expect(chat).not.toMatch(featureRegExp(/from "@\/features\/canvas\/core\//));
     // What it legitimately keeps: the headless openers that make records
     // reachable in the ONE canvas.
     expect(chat).toContain("<SandboxCanvasOpener");

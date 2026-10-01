@@ -21,6 +21,7 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { featureRegExp } from "@/scripts/lib/source-roots.cjs";
 
 const GMAIL_DIR = __dirname;
 
@@ -157,7 +158,7 @@ describe("CENSUS: nothing in features/crm/gmail can write a sent record", () => 
       if (name.endsWith(".test.ts") || name.endsWith(".test.tsx")) continue;
       const source = readFileSync(join(GMAIL_DIR, name), "utf8");
       if (/from "@\/utils\/supabase\/client"/.test(source)) offenders.push(name);
-      if (/from "@\/features\/scopes\/host\/associationsStore"/.test(source)) {
+      if (featureRegExp(/from "@\/features\/scopes\/host\/associationsStore"/).test(source)) {
         // `GmailSentRecordDetails` may READ associations to show the edges; only
         // a write (`.add(`) is the defect.
         if (/getAssociationsStore\(\)\s*\.\s*add\s*\(/.test(source)) {

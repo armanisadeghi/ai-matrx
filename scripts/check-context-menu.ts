@@ -113,7 +113,7 @@ import { readFileSync, globSync } from "node:fs";
 import { basename, join } from "node:path";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { aliasTarget } from "./lib/source-roots.cjs";
+import { aliasTarget, featureRegExp } from "./lib/source-roots.cjs";
 import { isGfmDelimiterRow, isPipeLedRow, rowCells } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 const ROOT = process.cwd();
@@ -161,21 +161,21 @@ const SCAN = ["app/**/*.tsx", "components/**/*.tsx", "features/**/*.tsx", "lib/*
  */
 const SKIP: Array<{ match: RegExp; reason: string }> = [
   { match: /^app\/\(dev\)\//, reason: "demos — the canonical menu demos live here" },
-  { match: /^features\/context-menu-v3\//, reason: "the menu system itself" },
+  { match: featureRegExp(/^features\/context-menu-v3\//), reason: "the menu system itself" },
   { match: /^components\/ui\//, reason: "primitive library — the caller wraps" },
   { match: /__tests__|\.test\.tsx?$|\.stories\.tsx?$/, reason: "not a surface" },
   { match: /^app\/\(auth-pages\)\//, reason: "login/signup — no records shown" },
   {
-    match: /^features\/overlays\/(openers|registry)\//,
+    match: featureRegExp(/^features\/overlays\/(openers|registry)\//),
     reason:
       "opener HOOKS and the id registry — they dispatch overlays, they render no surface",
   },
   {
-    match: /^features\/overlays\/(OverlayController|surfaces)\b/,
+    match: featureRegExp(/^features\/overlays\/(OverlayController|surfaces)\b/),
     reason: "the overlay host/chrome — the CONTENT it hosts is the surface",
   },
   {
-    match: /^features\/overlays\/boundary\//,
+    match: featureRegExp(/^features\/overlays\/boundary\//),
     reason:
       "error/loading FALLBACKS and the lazyOverlay helper — a fallback shows a failure, it renders no record, and lazyOverlay is not a component at all",
   },
@@ -268,7 +268,7 @@ const IS_BESPOKE = /onContextMenu\s*=/;
 function classify(path: string, src: string): Population | null {
   if (path.startsWith("features/overlays/") && /export\s+(default\s+)?function/.test(src))
     return "overlays";
-  if (/^features\/window-panels\/windows\/.*Window\.tsx$/.test(path)) return "windows";
+  if (featureRegExp(/^features\/window-panels\/windows\/.*Window\.tsx$/).test(path)) return "windows";
   if (IS_TABLE.test(src)) return "tables";
   if (IS_EDITABLE.test(src))
     return isContentSurface(path, src) ? "editables" : "form-fields";

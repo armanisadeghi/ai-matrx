@@ -26,6 +26,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { featureRegExp } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCAN_DIRS = ["features", "lib", "components", "app", "hooks", "utils"];
@@ -74,7 +75,7 @@ const RULES = [
     re: /\.\.\.\s*\(\s*context\s*&&\s*\{\s*context\s*\}\s*\)/,
     // Request builders only: elsewhere `context` is often a template VARIABLE
     // named "context" (e.g. a code editor's `variables: { context }`).
-    only: /^(features\/agents\/redux\/execution-system\/|lib\/api\/)/,
+    only: featureRegExp(/^(features\/agents\/redux\/execution-system\/|lib\/api\/)/),
   },
 ];
 

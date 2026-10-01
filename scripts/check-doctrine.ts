@@ -22,6 +22,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { featureRegExp } from "./lib/source-roots.cjs";
 
 interface Args {
   mode: "staged" | "branch";
@@ -142,8 +143,8 @@ const CREATE_SLICE_CALL_RE = /\bcreateSlice\s*\(/;
 const PRIMARY_URL_CAPTURE_RE = /\.primary_url\b/;
 // The file subsystem legitimately defines/maps primary_url; exempt it.
 const FILE_INFRA_RE =
-  /^(features\/files\/|components\/official\/Image(Asset|Crop))/;
-const MARKETING_TSX_RE = /^features\/marketing\/.*\.tsx$/;
+  featureRegExp(/^(features\/files\/|components\/official\/Image(Asset|Crop))/);
+const MARKETING_TSX_RE = featureRegExp(/^features\/marketing\/.*\.tsx$/);
 const MARKETING_RAW_TABLE_PATTERNS = [
   { pattern: /<table\b/i, detail: "raw JSX <table>" },
   {
@@ -283,8 +284,8 @@ function scanMarketingTables(args: Args, file: string, report: Report): void {
 const ALLOWED_SLICE_GLOBS = [
   /^lib\/redux\//,
   /^lib\/sync\//,
-  /^features\/[^/]+\/redux\//,
-  /^features\/[^/]+\/state\//,
+  featureRegExp(/^features\/[^/]+\/redux\//),
+  featureRegExp(/^features\/[^/]+\/state\//),
   /^styles\/themes\//,
   /__tests__\//,
   /\.test\.tsx?$/,

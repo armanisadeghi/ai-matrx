@@ -16,6 +16,7 @@
  */
 import { readFileSync } from "fs";
 import { join } from "path";
+import { featureRegExp } from "@/scripts/lib/source-roots.cjs";
 
 const ROOT = join(__dirname, "..", "..", "..");
 
@@ -35,7 +36,7 @@ const CONSUMERS = [
 
 function importedEmitModules(source: string): string[] {
   const found: string[] = [];
-  const pattern = /from\s+["'](?:@\/features\/workflow-emit|\.\.\/\.\.\/workflow-emit)\/([\w./-]+)["']/g;
+  const pattern = featureRegExp(/from\s+["'](?:@\/features\/workflow-emit|\.\.\/\.\.\/workflow-emit)\/([\w./-]+)["']/g);
   let match = pattern.exec(source);
   while (match !== null) {
     found.push(match[1]);
