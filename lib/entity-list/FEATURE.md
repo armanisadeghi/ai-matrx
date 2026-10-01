@@ -384,7 +384,13 @@ names on one page.
    row actions either way; a card's every value goes through
    `controls.renderCell`, so it is a LAYOUT, never a second renderer. Never
    fetch a second mobile list or rebuild those actions inside the card.
-   Guard: `__tests__/phone-cards.test.tsx`.
+   `config.phoneCardDensity: "line"` is the same card at Linear's mobile-list
+   density for a list scanned by NAME: two lines (title; `primary` then `meta`
+   values joined by " · ", no labels), `rest` not drawn, the title's door
+   stretched over the card, the value line plain text (2026-10-01, DATA-HOME-3F:
+   the data home went from ~215 px cards, three a screen, to 50 px, twelve).
+   Guard: `__tests__/phone-cards.test.tsx`; line density
+   `features/unified-data/home/__tests__/the-phone-cards-and-the-archive-tell-the-truth.test.tsx`.
 9. **One context menu per pane.** The shell wraps the list once and resolves
    the clicked `data-row-id` at open time. Every view must stamp that anchor;
    the table already does. The resolver reuses `actions.menuFor(row)`, supplies
