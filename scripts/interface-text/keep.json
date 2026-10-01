@@ -7,6 +7,13 @@
       "reason": "Arman's own expert ruling, used as the example placeholder; round 1 shortened it and was reverted",
       "by": "check-owner-words",
       "on": "2026-09-30"
+    },
+    {
+      "text": "No organization is selected, so the reference board cannot read anything — choose one from the organization picker in the header and this fills in.",
+      "file": "features/mandates/admin/MandateReferenceBoardView.tsx",
+      "reason": "Arman's own cause-and-remedy rule for the no-organization state, spelled out verbatim (owner-words check, round 2 review)",
+      "by": "check-owner-words",
+      "on": "2026-09-30"
     }
   ]
 }

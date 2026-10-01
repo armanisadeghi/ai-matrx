@@ -217,6 +217,9 @@ function objectHost(obj) {
   return "";
 }
 
+/** `Component.prop` pairs that render their text in a help popover/tooltip, not inline. */
+const TOOLTIP_HOSTS = new Set(["SettingsSubHeader.description", "SettingsSection.helpText", "CompactHelpPopover.description"]);
+
 /** Components whose body text explains a consequence or a state: dialogs, sheets, alerts, empty/error states. */
 const CONSEQUENCE_HOST = /(Dialog|AlertDialog|Sheet|Drawer|Alert|Confirm|EmptyState|ErrorState|ReadFailure|Notice|Empty)(Content|Body)?$/;
 function insideConsequenceHost(node) {
@@ -291,6 +294,8 @@ export function scanSource(file, source) {
         const name = attrName(a);
         let kind = SECONDARY_PROPS.has(name) ? "secondary" : TOOLTIP_PROPS.has(name) ? "tooltip" : PLACEHOLDER_PROPS.has(name) ? "placeholder" : null;
         if (kind === "secondary" && CONSEQUENCE_HOST.test(tag)) kind = "consequence";
+        // Props a component renders inside a help popover, not on the page (round-2 review: 26 overturns).
+        if (kind === "secondary" && TOOLTIP_HOSTS.has(`${tag}.${name}`)) kind = "tooltip";
         if (!kind) continue;
         for (const t of attrTexts(a)) {
           where = `${tag}.${name}`;
