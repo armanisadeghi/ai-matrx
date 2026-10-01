@@ -42,6 +42,7 @@ import {
   type SavedSourceGroup,
 } from "@/features/resource-manager/source-input/savedWebPages";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadGate, type ReadStatus } from "@/components/read-state/ReadGate";
 import { useKindItemStages } from "@/features/resource-manager/source-input/itemStage";
 import { cn } from "@/utils/cn";
 
@@ -173,7 +174,8 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
   const [open, setOpen] = useState<string | null>(null);
   const [openQuery, setOpenQuery] = useState("");
   // Matches per kind under the one search box, keyed by query so an old answer never counts.
-  const [matchCounts, setMatchCounts] = useState<{ query: string; byToken: Record<string, number> }>({
+  // "failed" = that kind's search read failed (its section says so); it never counts as "no matches".
+  const [matchCounts, setMatchCounts] = useState<{ query: string; byToken: Record<string, number | "failed"> }>({
     query: "",
     byToken: {},
   });
@@ -187,10 +189,24 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
   if (searching) {
     if (counts.loading) return <TileSkeleton />;
     const settled = matchCounts.query === query ? matchCounts.byToken : {};
-    const none = kinds.every((k) => settled[k.key] === 0);
+    // The search's read is every kind's read: "No matches" only once each one ANSWERED with none.
+    const anyMatched = kinds.some((k) => typeof settled[k.key] === "number" && settled[k.key] !== 0);
+    const searchStatus: ReadStatus = kinds.some((k) => !(k.key in settled))
+      ? "loading"
+      : !anyMatched && kinds.some((k) => settled[k.key] === "failed")
+        ? "error"
+        : "ready";
     return (
       <div className="flex flex-col gap-3">
-        {none ? <p className="py-3 text-center text-sm text-muted-foreground">No matches</p> : null}
+        <ReadGate
+          status={searchStatus}
+          what="matches"
+          isEmpty={!anyMatched}
+          loading={null}
+          empty={<p className="py-3 text-center text-sm text-muted-foreground">No matches</p>}
+        >
+          {null}
+        </ReadGate>
         {kinds.map((kind) => (
           <KindMatches
             key={kind.key}
@@ -295,16 +311,17 @@ function KindMatches({
   query: string;
   isPicked: UseExistingProps["isPicked"];
   onToggle: UseExistingProps["onToggle"];
-  /** How many matched, once this kind's search answered. */
-  onSettled: (count: number) => void;
+  /** How many matched once this kind's search answered, or "failed" when it could not. */
+  onSettled: (count: number | "failed") => void;
 }) {
   const [all, setAll] = useState(false);
   const list = useOfferedKindItems(kind, scope, query);
   const answered = !list.loading && !list.error;
-  const reportSettled = useEffectEvent(() => onSettled(list.items.length));
+  const failed = !list.loading && Boolean(list.error);
+  const reportSettled = useEffectEvent(() => onSettled(failed ? "failed" : list.items.length));
   useEffect(() => {
-    if (answered) reportSettled();
-  }, [answered, list.items.length]);
+    if (answered || failed) reportSettled();
+  }, [answered, failed, list.items.length]);
   if (!list.loading && !list.error && list.items.length === 0) return null;
   const { plural, token } = kind;
   return (
