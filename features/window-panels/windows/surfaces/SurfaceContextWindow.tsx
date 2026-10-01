@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { InfoHint } from "@/components/official/InfoHint";
 
 export interface SurfaceContextWindowProps {
   isOpen: boolean;
@@ -625,11 +626,9 @@ export default function SurfaceContextWindow({
               (PLAN 7.6, un-approved), so this window shows which items are
               available but cannot yet show which known values resolve. Said in
               the UI rather than left as a silent gap. */}
-          <span
-            className="text-amber-600 dark:text-amber-400"
-            title="Census #52 has two clauses. The availability clause is live above. The known-values clause needs the known-values design (PLAN 7.6), which is not approved — so no known-value resolution is shown here, and none is implied."
-          >
+          <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
             known values: not yet
+            <InfoHint text="Known-value resolution is not shown yet" />
           </span>
         </div>
       }
@@ -732,8 +731,7 @@ export default function SurfaceContextWindow({
               <>
               {isPresentEmpty(selectedRaw) && (
                 <p className="mb-2 text-xs text-muted-foreground">
-                  Supplied, empty — the page provided this value and it has
-                  nothing in it right now (not the same as not supplied).
+                  Supplied by the page, but empty
                 </p>
               )}
               <pre className="min-h-full whitespace-pre-wrap break-words rounded-lg border border-border bg-card p-4 font-mono text-xs leading-relaxed shadow-sm">
@@ -772,10 +770,7 @@ export default function SurfaceContextWindow({
           <div>
             <h2 className="text-base font-semibold">{friendlySurfaceName}</h2>
             <p className="mt-1 max-w-lg text-xs leading-relaxed text-muted-foreground">
-              This surface has no declared or emitted values to inspect yet.
-              {isEditable
-                ? " The page reports that its content is editable."
-                : ""}
+              No declared or emitted values yet
             </p>
           </div>
         </div>

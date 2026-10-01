@@ -203,7 +203,7 @@ function RagAiCopyWindowInner({
           <div className="space-y-2 overflow-y-auto border-b border-border p-3 md:border-b-0">
             <OptionRow
               label="Source + retrieval identifiers"
-              hint="Source, file/document, chunk, parent, field, page, and href. Always included."
+              hint="Source, document, chunk, field, page, and link"
               checked
               disabled
               onCheckedChange={() => undefined}
@@ -223,13 +223,13 @@ function RagAiCopyWindowInner({
             })}
             <OptionRow
               label="Ranking facts"
-              hint="Scores, vector/lexical/rerank positions, and matched entities."
+              hint="Scores, ranking positions, and matched entities."
               checked={options.includeRanking}
               onCheckedChange={(checked) => update({ includeRanking: checked })}
             />
             <OptionRow
               label="Raw result metadata"
-              hint="Additional non-content metadata after large source fields are removed."
+              hint="Extra metadata with large source fields removed."
               checked={options.includeMetadata}
               onCheckedChange={(checked) =>
                 update({ includeMetadata: checked })
@@ -244,7 +244,8 @@ function RagAiCopyWindowInner({
                 Max characters per text field
               </label>
               <p className="mt-0.5 text-[10px] text-muted-foreground">
-                0 keeps the full text. Truncation is labeled inside the payload.
+                {/* Truncation is labeled inside the payload. */}
+                0 keeps the full text
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-1">
                 {[2_000, 8_000, 20_000, 0].map((value) => (

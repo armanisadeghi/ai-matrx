@@ -576,7 +576,8 @@ function AssetInspector({
               variant="outline"
               className="h-7"
               onClick={orderReplacement}
-              title="Opens the brand's asset desk with this image's replacement brief already written — generated images are brand assets, so ordering happens one level up."
+              // Generated images are brand assets, so ordering happens on the brand's asset desk.
+              title="Opens the brand's asset desk with a replacement brief ready."
             >
               <ImagePlus className="mr-1.5 h-3.5 w-3.5" />
               Order replacement

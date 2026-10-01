@@ -151,8 +151,7 @@ export default function MessagesWindow({
               Select a conversation
             </h2>
             <p className="max-w-xs text-sm text-zinc-500 dark:text-zinc-400">
-              Pick a conversation from the list, or start a new one to begin
-              messaging.
+              Pick a conversation or start a new one.
             </p>
           </div>
         </NonEditableContextMenu>

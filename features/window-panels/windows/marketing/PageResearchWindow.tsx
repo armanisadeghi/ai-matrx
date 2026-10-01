@@ -431,9 +431,7 @@ function PageResearchWindowInner({
       </div>
 
       <p className="text-xs text-muted-foreground" data-surface-value="context">
-        A small, focused research project for this one page. Its report is
-        attached to the page and every agent that runs here reads it — on top of
-        the site&apos;s own research, which is always included.
+        Agents here read this report plus the site&apos;s research
       </p>
 
       <div className="space-y-3" data-surface-value="draft_summary">
