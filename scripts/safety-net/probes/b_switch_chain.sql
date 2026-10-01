@@ -103,9 +103,9 @@ begin
    where r.deleted_at is null
      and exists (select 1 from workbench.udt_datasets d where d.id = r.table_id and d.deleted_at is null
                   and exists (select 1 from custom.record t where t.id = d.id and t.data_class = 'table' and t.deleted_at is null))
-     and not exists (select 1 from custom.record c where c.id = r.id);
+     and not exists (select 1 from custom.record c where c.id = r.id and c.deleted_at is null);
   get diagnostics v_n = row_count;
-  if v_n > 0 then v_report := v_report || format('stand-in: %s older rows with no copy (added after Step 1) set aside', v_n); end if;
+  if v_n > 0 then v_report := v_report || format('stand-in: %s older rows with no live copy (added, or archived on the copy, after Step 1) set aside', v_n); end if;
   -- (d) Step 1's own orphan-list adoption (platform.final_switch_adopt_orphan_lists — the door Step 1 calls first).
   if coalesce((platform._final_switch_readiness() ->> 'adopt_orphans')::int, 0) > 0 then
     perform platform.final_switch_adopt_orphan_lists(v_run);
