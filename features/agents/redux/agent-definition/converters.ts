@@ -53,6 +53,7 @@ import {
   recordAgentDataIssue,
   recoverAgentDataField,
 } from "./data-issue-recovery";
+import { persistableVariableDefinitions } from "@/features/agents/utils/variable-binding";
 
 // ---------------------------------------------------------------------------
 // settings sanitizer — settings holds ONLY server-consumed model params.
@@ -445,7 +446,8 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
 
     model_id: agent.modelId,
     messages: agent.messages,
-    variable_definitions: agent.variableDefinitions,
+    // An empty "Fill automatically" draft is never saved as a real binding.
+    variable_definitions: persistableVariableDefinitions(agent.variableDefinitions),
     settings: sanitizeServerSettings(agent.settings),
     tools: sanitizeAgentToolIds(agent.tools, "agentDefinitionToInsert"),
 
@@ -505,7 +507,9 @@ export function agentDefinitionToUpdate(
   if (partial.modelId !== undefined) update.model_id = partial.modelId;
   if (partial.messages !== undefined) update.messages = partial.messages;
   if (partial.variableDefinitions !== undefined)
-    update.variable_definitions = partial.variableDefinitions;
+    update.variable_definitions = persistableVariableDefinitions(
+      partial.variableDefinitions,
+    );
   if (partial.settings !== undefined)
     update.settings = sanitizeServerSettings(partial.settings);
   if (partial.tools !== undefined) {

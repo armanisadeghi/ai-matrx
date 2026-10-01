@@ -22,6 +22,7 @@ import type {
 import {
   contextItemBindingOf,
   isCustomDataBinding,
+  isEmptyBinding,
 } from "@/features/agents/utils/variable-binding";
 import { CustomDataBindingPicker } from "./custom-data/CustomDataBindingPicker";
 import { emptyCustomDataBinding } from "./custom-data/customDataBinding";
@@ -134,6 +135,13 @@ export function ContextItemBindingEditor({
           disabled={readonly}
         />
       </div>
+
+      {bound && isEmptyBinding(binding) && (
+        // A draft: saving keeps the variable and drops the empty binding.
+        <p className="text-[11px] text-warning">
+          Not set up — saves as a normal input
+        </p>
+      )}
 
       {bound && (
         <div className="space-y-2 pt-1">

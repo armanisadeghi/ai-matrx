@@ -172,12 +172,12 @@ export function CustomDataBindingPicker({
     <div className="space-y-2">
       {/* ── Table ─────────────────────────────────────────────────────── */}
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Label className="shrink-0 text-xs font-medium text-foreground">
             Table
           </Label>
           {/* THE SHELL'S TAB BAR, on the row it filters — never a private one. */}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-[12rem] flex-1">
             <EntityScopeTabs
               scope={makeScope(lane)}
               scopes={[...DATA_HOME_SHELL_LANES]}
@@ -439,9 +439,13 @@ function BoundTableDetails({
 
   const insertPlaceholder = (token: string) => {
     const current = binding.transform?.template ?? "";
+    // With the text editor closed the chip appends; open, it goes at the caret.
     const el = templateRef.current;
-    const start = el?.selectionStart ?? current.length;
-    const end = el?.selectionEnd ?? current.length;
+    const editing = Boolean(el?.closest("details")?.open);
+    const start = editing
+      ? (el?.selectionStart ?? current.length)
+      : current.length;
+    const end = editing ? (el?.selectionEnd ?? current.length) : current.length;
     const next = current.slice(0, start) + token + current.slice(end);
     // The caret is placed once the NEW value has committed to the textarea
     // (TemplateEditor's layout effect). Placing it before the store round trip
@@ -720,24 +724,67 @@ function TemplateEditor({
     const el = textareaRef.current;
     if (caret === null || !el || el.value !== value) return;
     pendingCaretRef.current = null;
+    if (!el.closest("details")?.open) return;
     el.focus();
     el.setSelectionRange(caret, caret);
   }, [value, pendingCaretRef, textareaRef]);
+
+  // A person reads the template as words and field chips — never `{field_key}`
+  // braces. The raw text stays editable behind "Edit text".
+  const labelFor = new Map<string, string>();
+  for (const f of fields) {
+    for (const p of placeholdersFor(f)) labelFor.set(p.token, p.label);
+  }
+  const pieces = value.split(/(\{[^{}]+\})/).filter((piece) => piece !== "");
 
   return (
     <div className="space-y-1.5">
       <Label className="text-xs font-medium text-foreground">
         {perRow ? "How each row reads" : "How the record reads"}
       </Label>
-      <Textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="- {name}: {description}"
-        disabled={readonly}
-        rows={2}
-        className="font-mono text-base sm:text-sm"
-      />
+      <div className="min-h-9 rounded-md border border-border bg-background px-2 py-1.5 text-sm leading-7 text-foreground">
+        {pieces.length === 0 ? (
+          <span className="text-muted-foreground">Add fields below</span>
+        ) : (
+          pieces.map((piece, i) => {
+            const isToken = /^\{[^{}]+\}$/.test(piece);
+            if (!isToken) {
+              return (
+                <span key={i} className="whitespace-pre-wrap">
+                  {piece}
+                </span>
+              );
+            }
+            const label = labelFor.get(piece);
+            return (
+              <span
+                key={i}
+                className={
+                  label
+                    ? "mx-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary"
+                    : "mx-0.5 rounded bg-warning/10 px-1.5 py-0.5 text-xs font-medium text-warning"
+                }
+              >
+                {label ?? "Unknown field"}
+              </span>
+            );
+          })
+        )}
+      </div>
+      <details className="group">
+        <summary className="cursor-pointer select-none text-[11px] text-muted-foreground hover:text-foreground">
+          Edit text
+        </summary>
+        <Textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="- {name}: {description}"
+          disabled={readonly}
+          rows={2}
+          className="mt-1 font-mono text-base sm:text-sm"
+        />
+      </details>
       <div className="flex flex-wrap gap-1">
         {fieldsLoading && (
           <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -754,7 +801,7 @@ function TemplateEditor({
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => onInsert(p.token)}
               disabled={readonly}
-              title={`Insert ${p.token}`}
+              aria-label={`Add ${p.label}`}
               className="rounded-md border border-border bg-background px-1.5 py-0.5 text-[11px] text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10 disabled:opacity-50"
             >
               {p.label}
@@ -762,9 +809,6 @@ function TemplateEditor({
           )),
         )}
       </div>
-      <p className="text-[11px] text-muted-foreground">
-        Click a field to insert it where your cursor is.
-      </p>
     </div>
   );
 }

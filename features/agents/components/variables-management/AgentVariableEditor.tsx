@@ -16,7 +16,7 @@
  * Items, so the two surfaces never drift.
  */
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
@@ -35,7 +35,11 @@ import type {
   VariableDefinition,
 } from "@/features/agents/types/agent-definition.types";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import {
+  useAppSelector,
+  useAppDispatch,
+  useAppStore,
+} from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/slice";
@@ -92,6 +96,12 @@ export function AgentVariableEditor({
   readonly,
 }: AgentVariableEditorProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
+  // See updateVariable: the name a write targets, following a same-event rename.
+  const currentName = useRef(variableName);
+  useEffect(() => {
+    currentName.current = variableName;
+  }, [variableName]);
   const userId = useAppSelector(selectUserId);
   const { organizationId, organizationState } = useOrganizationRequired();
   const rawVariables = useAppSelector((state) =>
@@ -151,9 +161,18 @@ export function AgentVariableEditor({
     );
   };
 
+  // EVERY WRITE READS THE STORE, NOT THIS RENDER. Typing a new name and then
+  // clicking a control fires the name field's blur (which renames) and then the
+  // click in ONE event sequence, before React re-renders — so the click's
+  // closure still held the old name and the old list, matched nothing, and
+  // re-dispatched the pre-rename list: the switch stayed off and the rename was
+  // undone. `currentName` follows a rename made in the same sequence.
   const updateVariable = (patch: Partial<VariableDefinition>) => {
+    const latest =
+      selectAgentVariableDefinitions(store.getState(), agentId) ?? [];
+    const name = currentName.current;
     dispatchVariables(
-      variables.map((v) => (v.name === variableName ? { ...v, ...patch } : v)),
+      latest.map((v) => (v.name === name ? { ...v, ...patch } : v)),
     );
   };
 
@@ -170,11 +189,13 @@ export function AgentVariableEditor({
       return;
     }
     if (existingNames.includes(sanitized)) return; // keep draft; dup border shows
+    const latest =
+      selectAgentVariableDefinitions(store.getState(), agentId) ?? [];
+    const from = currentName.current;
     dispatchVariables(
-      variables.map((v) =>
-        v.name === variableName ? { ...v, name: sanitized } : v,
-      ),
+      latest.map((v) => (v.name === from ? { ...v, name: sanitized } : v)),
     );
+    currentName.current = sanitized;
     onRenamed?.(sanitized);
   };
 
@@ -416,7 +437,7 @@ export function AgentVariableEditor({
         // The person running it sees the value locked, so no input type is configured here.
         <p className="border-t border-border pt-3 text-xs text-foreground">
           {/* read-gate-exempt: static label for data-bound variables, not an empty view */}
-          <span className="font-medium">Filled from your data</span> · locked when it runs
+          <span className="font-medium">Filled from your data</span> on every run
         </p>
       ) : isBound ? (
         // Input type comes from the bound context item; at run time the value is

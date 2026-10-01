@@ -510,8 +510,7 @@ export function ContextItemPicker({
           ) : null}
           {isSystem && (
             <p className="text-[11px] text-muted-foreground">
-              Resolves for every user with no scope selection. Ambient items are
-              recomputed on every request.
+              Same value for every user
             </p>
           )}
           {itemDraft !== null && !isSystem && scopeType && (

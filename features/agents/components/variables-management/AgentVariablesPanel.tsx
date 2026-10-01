@@ -33,7 +33,10 @@ import {
   isDeclarableVariableName,
 } from "@/features/agents/utils/variable-utils";
 import { AgentVariableEditor } from "./AgentVariableEditor";
-import { isCustomDataBinding } from "@/features/agents/utils/variable-binding";
+import {
+  isCustomDataBinding,
+  isEmptyBinding,
+} from "@/features/agents/utils/variable-binding";
 import { CustomDataBindingSummary } from "./custom-data/CustomDataBindingSummary";
 
 interface AgentVariablesPanelProps {
@@ -216,6 +219,13 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
                   <span className="flex-1 text-xs font-mono truncate">
                     {variable.name}
                   </span>
+                  {isEmptyBinding(variable.binding) && (
+                    <span
+                      className="shrink-0 rounded px-1 text-[10px] font-medium text-warning ring-1 ring-warning/40"
+                    >
+                      Not set up
+                    </span>
+                  )}
                   {isCustomDataBinding(variable.binding) && (
                     <CustomDataBindingSummary
                       binding={variable.binding}
