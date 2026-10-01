@@ -284,25 +284,18 @@ if (tid) {
       }
       await sleep(2500);
       const t = await main(admin);
-      // Where each patient sits: the cell (a gridcell / day box) that holds their name and a day number.
+      // The calendar is an agenda: one row per date (its label first), the patients' buttons inside it.
+      const label = (day) => new Date(now.getFullYear(), now.getMonth(), Number(day)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
       const placed = await admin.evaluate((names) => {
         const out = {};
         for (const n of names) {
-          const el = [...document.querySelectorAll("main *")].find((e) => e.children.length === 0 && (e.textContent ?? "").includes(n));
-          if (!el) { out[n] = null; continue; }
-          let cell = el;
-          for (let i = 0; i < 8 && cell; i += 1, cell = cell.parentElement) {
-            const attr = cell.getAttribute?.("data-date") ?? cell.getAttribute?.("data-day") ?? cell.getAttribute?.("aria-label");
-            if (attr && /\d{4}-\d{2}-\d{2}|\b\d{1,2}\b/.test(attr)) { out[n] = attr; break; }
-          }
-          if (!out[n]) out[n] = "(no dated cell found)";
+          const btn = [...document.querySelectorAll("main button[title]")].find((b) => (b.getAttribute("title") ?? "").startsWith(n));
+          const li = btn?.closest("ol > li");
+          out[n] = li ? (li.textContent ?? "").slice(0, 14) : null;
         }
         return out;
       }, ROWS.map(([n]) => n.split(" - ")[0]));
-      const wrong = ROWS.filter(([n, , day]) => {
-        const seen = placed[n.split(" - ")[0]];
-        return !seen || !new RegExp(`(^|\\D)${YM}-${day}(\\D|$)|-${day}$`).test(seen);
-      }).map(([n, , day]) => `${n.split(" - ")[0]} should be on the ${Number(day)}th, found ${placed[n.split(" - ")[0]]}`);
+      const wrong = ROWS.filter(([n, , day]) => !(placed[n.split(" - ")[0]] ?? "").startsWith(label(day))).map(([n, , day]) => `${n.split(" - ")[0]} should sit on ${label(day)}, found ${placed[n.split(" - ")[0]] ?? "no date row"}`);
       return { ok: !wrong.length, detail: wrong.length ? `WRONG: ${wrong.join("; ")}` : `all ${ROWS.length} patients on their dates (${JSON.stringify(placed)}); page says: ${t.slice(0, 120)}` };
     });
 
@@ -349,6 +342,41 @@ try {
       await sleep(3000);
       return !!gone.v;
     };
+    // T42 — Ask AI on the board's offer: one short request; the change waits as an approval card.
+    await ctx.step(["T42"], "Ask AI: a new patient waits as an approval card, Approve lands the record", admin, async () => {
+      await offers("kanban", "This table has no choice column to make the board's columns from.");
+      await admin.getByRole("button", { name: "Ask AI" }).first().click();
+      const box = admin.getByPlaceholder("Type your message...").last();
+      await box.waitFor({ timeout: 90000 });
+      await sleep(2500);
+      await box.fill("Add one new record to this table: Hana Okafor - discharge summary request.");
+      await admin.keyboard.press("Enter");
+      let approve = null;
+      let tail = "";
+      for (let i = 0; i < 30; i += 1) {
+        await sleep(8000);
+        await unpark(admin);
+        const btn = admin.getByRole("button", { name: /^Approve/ });
+        if ((await btn.count()) > 0) { approve = btn.first(); break; }
+        tail = clean(await admin.locator("body").innerText().catch(() => "")).slice(-260);
+      }
+      if (!approve) return { ok: false, detail: `no approval card within 4 minutes; the screen ends: ${tail}` };
+      const held = clean(await admin.locator("body").innerText()).match(/Held for your approval[^.]{0,120}/)?.[0] ?? "(no 'Held for your approval' line)";
+      const before = await admin.locator("tbody tr", { hasText: "Hana Okafor" }).count();
+      await ctx.shot(admin, "approval card");
+      await approve.click();
+      await until("applied", async () => /Applied/.test(clean(await admin.locator("body").innerText().catch(() => ""))), 60000);
+      await sleep(3000);
+      await admin.keyboard.press("Escape");
+      let landed = false;
+      for (let i = 0; i < 4 && !landed; i += 1) {
+        await openTable(admin, pid, "grid", async () => (await admin.locator("tbody tr").count()) > 1);
+        landed = (await admin.locator("tbody tr", { hasText: "Hana Okafor - discharge summary request" }).count()) > 0;
+        if (!landed) await sleep(5000);
+      }
+      return { ok: landed && before === 0, detail: `${held}; after Approve the grid ${landed ? "holds" : "does NOT hold"} Hana Okafor's record` };
+    });
+
     await ctx.step(["T41"], "board with no choice column: says so, Make it work makes Status and groups by it", admin, async () => {
       const o = await offers("kanban", "This table has no choice column to make the board's columns from.");
       const ok1 = await made("kanban", "the board");
@@ -376,6 +404,177 @@ try {
   }
 } catch (e) {
   await ctx.step([], "part 3 aborted", admin, async () => ({ ok: false, detail: String(e?.message ?? e).slice(0, 400) }));
+}
+
+// ── PART 4: the gallery on a 300-visit log (T40, BREAKER-4 B4-04) ───────────────────────────
+try {
+  let vid = null;
+  await ctx.step([], "make the visit log (300 visits pasted)", admin, async () => {
+    vid = await newTable(admin, `Visit Log ${STAMP}`);
+    ctx.cleanup(async () => archive(admin, vid, "cleanup visit log"));
+    const path = `/data-v2/${vid}?view=sheet`;
+    await go(admin, path);
+    await guard(admin, path, async () => {
+      await admin.getByRole("button", { name: /^Paste$/ }).first().click({ timeout: 150000 });
+      const d = admin.getByRole("dialog").last();
+      const lines = ["Title"];
+      for (let i = 1; i <= 300; i += 1) lines.push(`Visit ${String(i).padStart(3, "0")} - home exercise check`);
+      await d.locator("textarea").fill(lines.join("\n"));
+      await d.getByRole("button", { name: "Parse", exact: true }).click();
+      await d.getByRole("button", { name: /^Paste 300 Rows$/ }).click({ timeout: 60000 });
+      await until("the paste finishes", async () => (await admin.getByRole("dialog").count()) === 0, 150000);
+      await sleep(8000);
+    });
+    await openTable(admin, vid, "grid", async () => (await admin.locator("tbody tr").count()) > 3);
+    const total = Number((clean(await admin.locator("main").innerText()).match(/of (\d+)/) ?? [])[1] ?? 0);
+    return { ok: total === 300, detail: `table ${vid}: the grid footer says ${total} records` };
+  });
+  if (vid) {
+    await ctx.step(["T40"], "gallery of 300 visits: every visit reachable, or an honest count", admin, async () => {
+      await go(admin, `/data-v2/${vid}?view=gallery`);
+      await until("the gallery draws", async () => {
+        await unpark(admin);
+        return (await main(admin)).includes("Visit 0");
+      }, 150000);
+      await sleep(8000);
+      const cards = async () => admin.evaluate(() => {
+        const ul = [...document.querySelectorAll("main ul")].find((u) => /grid/.test(u.className) && u.querySelector("li"));
+        return ul ? ul.querySelectorAll(":scope > li").length : 0;
+      });
+      let n = await cards();
+      // Anything that reaches the rest counts: a pager, a "show more", or scrolling the card list to its end.
+      const more = admin.getByRole("button", { name: /^Show \d+ more$|^Load more|^Next/ });
+      for (let i = 0; i < 6 && (await more.count()) > 0; i += 1) {
+        await more.first().click();
+        await sleep(4000);
+        n = await cards();
+      }
+      await admin.evaluate(() => {
+        const ul = [...document.querySelectorAll("main ul")].find((u) => /overflow-y-auto/.test(u.className) && u.querySelector("li"));
+        if (ul) ul.scrollTop = ul.scrollHeight;
+      });
+      await sleep(4000);
+      n = Math.max(n, await cards());
+      const t = await main(admin);
+      const honest = /\b\d+ of 300\b|\b100 of\b|showing \d+|more records|\bpage\b/i.test(t) || (await admin.locator("[data-view-pager]").count()) > 0;
+      return {
+        ok: n >= 300 || (n < 300 && honest),
+        detail: n >= 300 ? `all ${n} cards reachable` : `${n} cards for 300 visits; ${honest ? "the page says how many it shows" : "NO pager, NO count, NO sentence — the other " + (300 - n) + " are unreachable"}`,
+      };
+    });
+  }
+} catch (e) {
+  await ctx.step([], "part 4 aborted", admin, async () => ({ ok: false, detail: String(e?.message ?? e).slice(0, 400) }));
+}
+
+// ── PART 5: sharing — owner, viewer, editor (T44, T45, T46) ────────────────────────────────
+if (tid) {
+  try {
+    const rail = () => admin.locator('[role="dialog"], [data-rail], aside').filter({ hasText: /Current Access/ }).first();
+    const access = async () => {
+      const t = clean(await rail().innerText().catch(() => ""));
+      const i = t.indexOf("Current Access");
+      return i < 0 ? "" : t.slice(i, i + 200);
+    };
+    const openRail = async () => {
+      await go(admin, `/data-v2/${tid}?rail=share`);
+      await rail().waitFor({ timeout: 150000 });
+      await until("the rail settles", async () => !/Loading/i.test(await access()), 40000);
+      await sleep(1500);
+    };
+    const levelIs = async (word) => new RegExp(`${MEMBER}\\s*${word}`).test(await access());
+    let shared = false;
+    ctx.cleanup(async () => {
+      if (!shared) return;
+      await openRail();
+      const rv = rail().getByRole("button", { name: /^Revoke access for/ });
+      if (await rv.count()) {
+        await rv.first().click();
+        await sleep(2000);
+        await admin.getByRole("button", { name: /^Revoke Access$/ }).last().click();
+        await sleep(3000);
+      }
+      console.log(`[tables-views-share] cleanup unshare: ${(await rv.count()) === 0 ? "revoked" : "STILL SHARED"}`);
+    });
+
+    await ctx.step(["T44"], "owner shares the follow-up list with test@test.com as Viewer", admin, async () => {
+      await openRail();
+      const before = await access();
+      await rail().locator(`button:has-text("${MEMBER}")`).first().click();
+      await sleep(800);
+      await rail().getByRole("button", { name: "Share with User" }).last().click();
+      shared = true;
+      const named = await until("named", async () => (await levelIs("Viewer")) || null, 45000);
+      await openRail();
+      const after = await access();
+      return { ok: !!named.v && (await levelIs("Viewer")), detail: `before: ${before.slice(15, 80)}; after a reload: ${after.slice(15, 90)}` };
+    });
+
+    member = await ctx.page("member", { org: null });
+    // ── T46: the colleague, a Viewer ──
+    await ctx.step(["T46"], "viewer: the grid is read-only (no edit control, checkboxes disabled), a board drag does nothing", member, async () => {
+      await openTable(member, tid, "grid", async () => (await member.locator("tbody tr", { hasText: / - / }).count()) >= ROWS.length);
+      const newRecord = await member.getByRole("button", { name: "New record" }).count();
+      const deletes = await member.getByRole("button", { name: "Delete" }).count();
+      await member.locator('tbody td[data-matrx-cell-col="notes"]').first().dblclick();
+      await sleep(1500);
+      const editors = await member.locator("tbody textarea:visible, tbody input[type=text]:visible, [data-matrx-cell-editor]").count();
+      await member.keyboard.press("Escape");
+      const ticks = await member.locator('tbody td[data-matrx-cell-col="called_back"] [role="checkbox"]').evaluateAll((els) => els.map((e) => e.hasAttribute("disabled") || e.hasAttribute("data-disabled") || e.getAttribute("aria-disabled") === "true"));
+      // the board: grouped by Status (her own look), no card can be picked up, a drag changes nothing
+      await go(member, `/data-v2/${tid}?view=kanban`);
+      const sel = member.locator("#view-field-kanban");
+      await sel.waitFor({ timeout: 150000 });
+      await sel.selectOption({ label: "Status" });
+      await until("columns", async () => (await member.locator("section[data-board-column]").count()) >= 3, 60000);
+      await sleep(2500);
+      const before = await board(member);
+      const draggable = await member.locator("section[data-board-column] li").evaluateAll((els) => els.filter((e) => e.draggable).length);
+      const card = member.locator("section[data-board-column] li", { hasText: "Hana Okafor" }).first();
+      await card.dragTo(member.locator('section[data-board-column="New"]')).catch(() => {});
+      await sleep(3000);
+      const after = await board(member);
+      const same = JSON.stringify(before.map((c) => [c.name, c.cards.length])) === JSON.stringify(after.map((c) => [c.name, c.cards.length]));
+      const bad = [];
+      if (newRecord) bad.push("a New record button is offered");
+      if (deletes) bad.push(`${deletes} Delete buttons are offered`);
+      if (editors) bad.push("a cell opened an editor");
+      if (ticks.length && ticks.some((d) => !d)) bad.push("a checkbox is drawn enabled");
+      if (draggable) bad.push(`${draggable} board cards are draggable`);
+      if (!same) bad.push("a board drag moved a card");
+      return { ok: !bad.length, detail: bad.length ? `WRONG: ${bad.join("; ")}` : `read-only: no New record, no Delete, no cell editor, ${ticks.length} checkboxes disabled, 0 draggable cards, drag changed nothing` };
+    });
+
+    await ctx.step(["T44"], "owner raises test@test.com to Editor and it holds after a reload", admin, async () => {
+      await openRail();
+      await rail().getByRole("combobox").first().click();
+      await sleep(600);
+      await admin.getByRole("option", { name: /^Editor/ }).first().click();
+      const set = await until("editor", async () => (await levelIs("Editor")) || null, 45000);
+      await openRail();
+      return { ok: !!set.v && (await levelIs("Editor")), detail: `after a reload: ${(await access()).slice(15, 90)}` };
+    });
+
+    // ── T45: the colleague, an Editor ──
+    await ctx.step(["T45"], "editor: test@test.com edits a Notes cell and it lands (owner sees it)", member, async () => {
+      await openTable(member, tid, "grid", async () => (await member.locator("tbody tr", { hasText: / - / }).count()) >= ROWS.length);
+      const note = "Called, left a voicemail";
+      const cell = member.locator("tbody tr", { hasText: "Dana Whitcomb" }).first().locator('td[data-matrx-cell-col="notes"]');
+      await cell.dblclick();
+      await sleep(1500);
+      const opened = await member.locator("tbody textarea:visible, tbody input[type=text]:visible, [data-matrx-cell-editor]").count();
+      await member.keyboard.type(note);
+      await member.keyboard.press("Enter");
+      await sleep(4000);
+      await openTable(member, tid, "grid", async () => (await member.locator("tbody tr", { hasText: "Dana Whitcomb" }).count()) > 0);
+      const seenByMember = clean(await member.locator("tbody tr", { hasText: "Dana Whitcomb" }).first().innerText());
+      await openTable(admin, tid, "grid", async () => (await admin.locator("tbody tr", { hasText: "Dana Whitcomb" }).count()) > 0);
+      const seenByOwner = clean(await admin.locator("tbody tr", { hasText: "Dana Whitcomb" }).first().innerText());
+      return { ok: opened > 0 && seenByMember.includes(note) && seenByOwner.includes(note), detail: `editor opened: ${opened > 0}; after a reload the colleague reads "${seenByMember.slice(0, 90)}"; the owner reads "${seenByOwner.slice(0, 90)}"` };
+    });
+  } catch (e) {
+    await ctx.step([], "part 5 aborted", member ?? admin, async () => ({ ok: false, detail: String(e?.message ?? e).slice(0, 400) }));
+  }
 }
 
 await ctx.finish();
