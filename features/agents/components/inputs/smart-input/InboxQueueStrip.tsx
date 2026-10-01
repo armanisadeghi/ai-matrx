@@ -39,6 +39,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { selectInboxItems } from "@/features/agents/redux/execution-system/inbox/inbox.selectors";
+import { TERMINAL_RUNTIME_STATUSES } from "@/features/agents/runtime-reconnect/types";
+import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   enqueueInboxMessage,
   promoteQueuedToSteer,
@@ -57,15 +59,20 @@ interface InboxQueueStripProps {
 const queueActionClassName =
   "h-11 w-11 min-h-11 min-w-11 shrink-0 rounded p-0 text-muted-foreground hover:bg-muted hover:text-foreground lg:h-8 lg:w-8 lg:min-h-8 lg:min-w-8";
 
-function statusLabel(item: ConversationInboxItem): string {
+function statusLabel(item: ConversationInboxItem, running: boolean): string {
   if (item.status === "failed") return item.error ?? "Failed to send";
   if (item.status === "sending") return "Sending…";
   if (isCollabNoteItem(item)) {
     return "Collaboration note — this agent sees it next turn";
   }
-  return item.mode === "queue"
-    ? "Queued — sends when the agent finishes"
-    : "Sent · awaiting the next pause";
+  // With no run to finish, "when the agent finishes" is false (W-48): the
+  // server delivers a waiting item at the end of the NEXT run.
+  if (item.mode === "queue") {
+    return running
+      ? "Queued — sends when the agent finishes"
+      : "Waiting — sends after your next message";
+  }
+  return running ? "Sent · awaiting the next pause" : "Waiting — sends after your next message";
 }
 
 /**
@@ -91,6 +98,15 @@ export function parseCollabNoteAgent(text: string): string | null {
 export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
   const dispatch = useAppDispatch();
   const items = useAppSelector(selectInboxItems(conversationId));
+  // A run is live when this client streams it OR the server still holds one
+  // this page is reconnecting to (reload mid-run).
+  const streamingHere = useAppSelector(selectIsExecuting(conversationId));
+  const serverRunLive = useAppSelector((state) => {
+    const op =
+      state.conversations?.byConversationId[conversationId]?.serverOperation;
+    return !!op && !TERMINAL_RUNTIME_STATUSES.has(op.status);
+  });
+  const running = streamingHere || serverRunLive;
   const [editing, setEditing] = useState<{
     injectionId: string;
     mode: ConversationInboxItem["mode"];
@@ -132,7 +148,9 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
             ? "Saving this message to the waiting queue."
             : collabNote
               ? "A collaborating agent left context for this conversation. It will be added automatically on the next turn."
-              : item.mode === "queue"
+              : !running
+                ? "Nothing is running; this sends after the agent answers your next message."
+                : item.mode === "queue"
                 ? "This message is saved and waiting in line. It sends automatically after the current run finishes, even if you leave this page."
                 : "This message will reach the agent at its next natural pause without stopping the current work.";
         return (
@@ -233,7 +251,7 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                         failed ? "text-destructive" : "text-muted-foreground"
                       }`}
                     >
-                      {promoting ? "Sending…" : statusLabel(item)}
+                      {promoting ? "Sending…" : statusLabel(item, running)}
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-[20rem]">

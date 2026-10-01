@@ -753,6 +753,32 @@ const messagesSlice = createSlice({
      * `pagination` seeds the older-page cursor so the scroll sentinel knows
      * (a) where to resume from and (b) whether older history exists at all.
      */
+    /**
+     * A STOPPED request's rows stop rendering from the stream (W-47). The
+     * stream froze where the person pressed Stop, but the server finishes the
+     * in-flight provider call and persists it (cooperative cancel), so the
+     * screen must follow the database for those rows. `hydrateMessages`
+     * carries `_streamRequestId` across a re-read; dropping it here first lets
+     * the re-read's persisted content win.
+     */
+    releaseStreamAnchors(
+      state,
+      action: PayloadAction<{ conversationId: string; requestIds: string[] }>,
+    ) {
+      const { conversationId, requestIds } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (!entry || requestIds.length === 0) return;
+      const released = new Set(requestIds);
+      for (const id of entry.orderedIds) {
+        const record = entry.byId[id];
+        if (record?._streamRequestId && released.has(record._streamRequestId)) {
+          delete record._streamRequestId;
+          delete record._streamSlotStart;
+          delete record._streamSlotEnd;
+        }
+      }
+    },
+
     hydrateMessages(
       state,
       action: PayloadAction<{
@@ -1064,6 +1090,7 @@ export const {
   reserveMessage,
   updateMessageRecord,
   hydrateMessages,
+  releaseStreamAnchors,
   prependMessages,
   setOlderLoading,
   setVisibleGroupLimit,

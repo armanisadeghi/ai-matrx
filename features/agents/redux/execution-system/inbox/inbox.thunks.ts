@@ -318,3 +318,56 @@ export const hydrateInbox = createAsyncThunk<
   }));
   dispatch(hydrateInboxItems({ conversationId, items }));
 });
+
+/**
+ * STOP RETURNS THE QUEUE TO THE COMPOSER (PB-05 W-48). A queued message means
+ * "send this when the agent finishes"; Stop ends the run without a final
+ * boundary, so nothing would ever send it — the card used to keep promising
+ * "sends when the agent finishes" with nothing running. Like Claude Code's
+ * Esc with queued prompts, each of the person's own waiting messages is
+ * withdrawn from the server and put back in the composer, in order, after any
+ * draft already there: nothing is lost, nothing is sent behind their back,
+ * and one Enter sends it. Only a confirmed withdrawal moves text — a message
+ * the run already picked up stays delivered. Collaboration notes stay queued
+ * (they are the agent's, not the person's).
+ */
+export const returnQueuedToComposer = createAsyncThunk<
+  number,
+  { conversationId: string },
+  { state: RootState; dispatch: AppDispatch }
+>(
+  "conversationInbox/returnQueuedToComposer",
+  async ({ conversationId }, { dispatch, getState }) => {
+    const waiting = (
+      getState().conversationInbox?.byConversationId[conversationId] ?? []
+    ).filter(
+      (item) =>
+        item.mode === "queue" &&
+        item.kind === "user_message" &&
+        item.status === "pending" &&
+        item.isVisibleToUser &&
+        item.source !== "agent_collab",
+    );
+    if (waiting.length === 0) return 0;
+
+    const returned: string[] = [];
+    for (const item of waiting) {
+      const outcome = await dispatch(
+        retractInboxItem({ conversationId, injectionId: item.injectionId }),
+      ).unwrap();
+      if (outcome === "retracted") returned.push(item.text);
+    }
+    if (returned.length === 0) return 0;
+
+    const { setUserInputText } =
+      await import("../instance-user-input/instance-user-input.slice");
+    const draft =
+      getState().instanceUserInput?.byConversationId[conversationId]?.text ??
+      "";
+    const text = [draft.trim() ? draft : null, ...returned]
+      .filter((part): part is string => part !== null)
+      .join("\n\n");
+    dispatch(setUserInputText({ conversationId, text }));
+    return returned.length;
+  },
+);

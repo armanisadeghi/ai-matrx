@@ -75,11 +75,21 @@ describe("InboxQueueStrip turn-boundary feedback", () => {
   let root: Root;
   let store: ReturnType<typeof makeStore>;
 
+  // The conversation's run state: the strip's promises depend on it (W-48).
+  let runStatus: "running" | "cancelled" = "running";
   const makeStore = () =>
-    configureStore({ reducer: { conversationInbox: inboxReducer } });
+    configureStore({
+      reducer: {
+        conversationInbox: inboxReducer,
+        conversations: (
+          state = { byConversationId: { [CONVERSATION_ID]: { status: runStatus } } },
+        ) => state,
+      },
+    });
 
   beforeEach(() => {
     jest.mocked(promoteQueuedToSteer).mockClear();
+    runStatus = "running";
     store = makeStore();
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -163,6 +173,22 @@ describe("InboxQueueStrip turn-boundary feedback", () => {
     expect(
       queue?.querySelector('[aria-label="Withdraw queued message"]'),
     ).not.toBeNull();
+  });
+
+  it("never promises 'when the agent finishes' with nothing running", () => {
+    runStatus = "cancelled";
+    store = makeStore();
+    render([
+      item("steer-pending", { mode: "steer", text: "steer instruction" }),
+      item("queue-pending", { text: "Also confirm the wine fridge travels upright." }),
+    ]);
+    const text = container.textContent ?? "";
+    expect(text).not.toContain("sends when the agent finishes");
+    expect(text).not.toContain("awaiting the next pause");
+    expect(
+      container.querySelectorAll('[data-inbox-mode] ').length,
+    ).toBeGreaterThan(0);
+    expect(text.match(/Waiting — sends after your next message/g)).toHaveLength(2);
   });
 
   it("keeps a failed message visible with its retry affordance", () => {

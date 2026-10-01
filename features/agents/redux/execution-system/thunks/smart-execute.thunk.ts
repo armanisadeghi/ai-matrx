@@ -23,7 +23,11 @@ import {
   selectResourcePayloads,
 } from "../instance-resources/instance-resources.selectors";
 import { selectIsExecuting } from "../selectors/aggregate.selectors";
-import { enqueueInboxMessage } from "../inbox/inbox.thunks";
+import {
+  enqueueInboxMessage,
+  returnQueuedToComposer,
+} from "../inbox/inbox.thunks";
+import { settleAfterStop } from "./settle-after-stop.thunk";
 import { cancelAgentRunRequest } from "@/lib/api/matrx-transport";
 import { toast } from "@/lib/toast";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
@@ -570,6 +574,19 @@ export const cancelExecution = createAsyncThunk<
     // Return the input phase to idle so the user can edit/re-submit without
     // appearing stuck in "pending". Keep any `text` they had in place.
     dispatch(resetSubmissionPhase(conversationId));
+
+    // W-48: nothing will drain the queue after a Stop — give it back.
+    void dispatch(returnQueuedToComposer({ conversationId }));
+    // W-47: the server finishes its in-flight call and persists it; follow
+    // the run to its end (cancelling it if the stream never opened) and
+    // re-read, so the screen shows what persisted, not where the read froze.
+    void dispatch(
+      settleAfterStop({
+        conversationId,
+        serverRequestId,
+        localRequestIds: [...(requestIds ?? [])],
+      }),
+    );
   },
 );
 
