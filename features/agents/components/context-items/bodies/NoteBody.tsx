@@ -110,8 +110,8 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
 
   return (
     <NotesInstanceProvider value={instanceId}>
-      <div className="h-full min-h-0">
-        <NoteContentEditor noteId={noteId} />
+      <div className="flex h-full min-h-0 flex-col">
+        <NoteContentEditor noteId={noteId} embedded />
       </div>
       <NoteVersionHistory
         noteId={noteId}
