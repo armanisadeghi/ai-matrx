@@ -43,6 +43,11 @@ export default [
   sql("scopesaccess_platform_tags_are_read_through_the_scopes_door_red_green", ["S13"], { short: "platform-tags-wall" }),
   // S14 (closest real check): a field kept out of what an agent sees stays kept out, through formulas and rollups.
   sql("storetails3_context_green", ["S14"], { short: "restricted-field-agent", passWhen: "ALL PASS", failWhen: "P[0-9] FAIL" }),
+  // S15 / S16 over every live class: the Stripe class checkout's reader and the education functions
+  // (edu_class_state, edu_my_classes as the class's creator) read what the old row says. Written by SN-SCOPES.
+  // RED on clone bsrxywzdgakicuvyigwv: "Biology 101 — Live Test" (Alex Hart's Workspace) is archived in the
+  // store only (updated 2026-10-01 05:03:40Z by no one) — the same divergence context_parity --every-type reports.
+  sql("safetynet_scopes_classes_through_the_switch_red_green", ["S15", "S16"], { short: "classes-through-the-switch" }),
   // S15 / S16: the class functions — a disabled join code and a cleared teacher leave the Record (no stale admit).
   sql("scopesaccess_a_removed_scope_setting_leaves_the_store_red_green", ["S15", "S16"], { short: "class-settings" }),
   // S09 / S10 on the fixture organization: every live Cedar Ridge PT scope (Patients, Departments, Team
