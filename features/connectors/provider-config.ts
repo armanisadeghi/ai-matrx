@@ -411,7 +411,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       key: "contacts",
       name: "Contacts",
       promise:
-        "Bring a contact you choose into your People. We never edit Google Contacts.",
+        "Bring a contact you choose into your People.",
       group: WORKSPACE_GROUP,
       icon: Contact,
       mark: GoogleContactsMark,

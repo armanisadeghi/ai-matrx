@@ -73,6 +73,8 @@ export interface ContactCandidatePending {
 export interface ContactSearchResultPending {
   provider_key: string;
   google_account: string | null;
+  /** Exact connection that supplied these rows; absent in older test fixtures. */
+  connection_id?: import("@/types/python-generated/api-types").components["schemas"]["ContactSearchResult"]["connection_id"];
   contacts: ContactCandidatePending[];
   count: number;
   total_read: number;

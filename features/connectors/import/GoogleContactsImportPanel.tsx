@@ -440,12 +440,12 @@ export function GoogleContactsImportPanel({
   );
 
   const contacts = search?.contacts ?? [];
-  const writeConnections = (connectionInventory.data?.connections ?? []).filter(
-    (connection) => connection.owner_type === "user" && connection.status === "connected" &&
+  const writeConnection = (connectionInventory.data?.connections ?? []).find(
+    (connection) => Boolean(search?.connection_id) && connection.id === search?.connection_id &&
+      connection.owner_type === "user" && connection.status === "connected" &&
       connection.scopes.includes(GOOGLE_SCOPE.contactsWrite) &&
-      Boolean(search?.google_account && connection.account_email?.toLowerCase() === search.google_account.toLowerCase()),
-  );
-  const writeConnection = writeConnections.length === 1 ? writeConnections[0] : null;
+      (!googleAccount || googleAccount === search?.google_account),
+  ) ?? null;
   const selectedSet = useMemo(() => new Set(selection.selected), [selection.selected]);
   const { requestedExternalId, unfilteredSearch, seenIds } = selection;
   const requestedFound = Boolean(requestedExternalId && seenIds.has(requestedExternalId));
