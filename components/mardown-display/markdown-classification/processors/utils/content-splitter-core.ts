@@ -55,6 +55,7 @@ import {
   splitAroundEmbeddedKindJson,
 } from "@/features/content-ir/surfaces/embedded-kind-json";
 import { jsonKindSignal } from "@/features/content-ir/surfaces/json-kind-signal";
+import { liftQuotedKindRegions } from "@/features/content-ir/surfaces/quoted-kind-lift";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { isPageBreakLine } from "@ai-matrx/print/directives";
@@ -2009,7 +2010,9 @@ export const splitContentIntoBlocksWith = (
   envelopes: SplitterEnvelopes,
 ): SplitterBlock[] => {
   const blocks: SplitterBlock[] = [];
-  const lines = mdContent.split(/\r?\n/);
+  // A JSON region inside a blockquote leaves the quote first — the same
+  // transform the live accumulator runs on every delta (V1, quoted-kind-lift).
+  const lines = liftQuotedKindRegions(mdContent).split(/\r?\n/);
 
   let currentText = "";
   let i = 0;

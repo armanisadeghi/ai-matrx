@@ -132,6 +132,11 @@ const FIXTURES: Array<[string, string, number]> = [
   ],
   ["bare flashcards JSON", `Here:\n${FLASHCARDS}\nDone.\n`, 1],
   [
+    "flashcards fenced inside a blockquote leave the quote on BOTH paths (V1)",
+    `> Intro text.\n${`\`\`\`json\n${FLASHCARDS}\n\`\`\``.split("\n").map((l) => `> ${l}`).join("\n")}\n> Outro.\n`,
+    1,
+  ],
+  [
     "unknown kind falls back raw IDENTICALLY on both paths",
     `\`\`\`json\n${UNKNOWN_KIND}\n\`\`\`\n`,
     1,

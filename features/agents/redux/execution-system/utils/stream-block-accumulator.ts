@@ -14,6 +14,7 @@
  * accumulator never re-reads completed blocks.
  */
 
+import { QuotedKindLift } from "@/features/content-ir/surfaces/quoted-kind-lift";
 import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence-meta";
 import { indexOutsideInlineCode } from "@/components/mardown-display/markdown-classification/processors/utils/inline-code-span";
 import {
@@ -582,6 +583,8 @@ export class StreamBlockAccumulator {
    * slot creates a second, empty terminal block after the actual answer.
    */
   private suppressEmptyTrailingSlot = false;
+  /** Lifts JSON regions out of blockquotes before the line machine (V1). */
+  private quoteLift = new QuotedKindLift();
 
   constructor(
     requestId: string,
@@ -601,8 +604,20 @@ export class StreamBlockAccumulator {
    * Processes only complete lines; the trailing fragment is held until the
    * next call or finalize().
    */
-  ingest(text: string, dispatch: DispatchFn): void {
+  ingest(delta: string, dispatch: DispatchFn): void {
     this.ingestCount++;
+    // A JSON region inside a blockquote leaves the quote before the line
+    // machine sees it — the same transform the static splitter runs (V1).
+    this.ingestText(this.quoteLift.push(delta), dispatch);
+  }
+
+  /** Release what the quote lift still holds (stream end or a hard boundary). */
+  private flushQuoteLift(dispatch: DispatchFn): void {
+    const held = this.quoteLift.flush();
+    if (held) this.ingestText(held, dispatch);
+  }
+
+  private ingestText(text: string, dispatch: DispatchFn): void {
     const combined = this.pendingLineFragment + text;
     const parts = combined.split("\n");
 
@@ -717,6 +732,7 @@ export class StreamBlockAccumulator {
    * Called once after the stream loop ends.
    */
   finalize(dispatch: DispatchFn): void {
+    this.flushQuoteLift(dispatch);
     if (this.pendingLineFragment) {
       this.processLine(this.pendingLineFragment, dispatch);
       this.pendingLineFragment = "";
@@ -798,6 +814,7 @@ export class StreamBlockAccumulator {
     this.isProcessingLineQueue = false;
     this.genericXmlRecoverySuppressed = false;
     this.suppressEmptyTrailingSlot = false;
+    this.quoteLift = new QuotedKindLift();
   }
 
   /**
@@ -823,6 +840,7 @@ export class StreamBlockAccumulator {
    * preceding text, a tool right after a media block), so it is always safe.
    */
   breakTextBlock(dispatch: DispatchFn): void {
+    this.flushQuoteLift(dispatch);
     if (
       !this.currentBlockContent &&
       !this.pendingLineFragment &&
