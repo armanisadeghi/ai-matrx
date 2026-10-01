@@ -49,6 +49,7 @@ Write the batches as JSON the Fix agents consume directly:
 
 
 - ≤ 15 files per batch, grouped by feature so one fixer sees whole rows and pages.
+- A wording family that spans files (every mode's start-new / reset / clear confirm) gets ONE exact string per member in your output, written before batches split — round 2 had two fixers invent two wordings for the same family in one minute.
 - Each batch lists its findings with the reviewed verdict and exact replacement text.
 - Mechanical batches (deletes, page descriptions, pure shortenings) → `quick` lane.
   Batches with primitive swaps, tooltips needing new props, or sibling re-balancing → `standard`.
