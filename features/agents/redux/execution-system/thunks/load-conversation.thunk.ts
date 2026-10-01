@@ -35,7 +35,10 @@ import {
   setMessagesHydrationFailure,
 } from "../messages/messages.slice";
 import { reconcileMessagesArtifacts } from "@/features/canvas/materialization/reconcileArtifacts";
-import { parsePersistedSurfaceOwnsOutput } from "../conversations/surface-owns-output.persistence";
+import {
+  parsePersistedEngineeredInputs,
+  parsePersistedSurfaceOwnsOutput,
+} from "../conversations/surface-owns-output.persistence";
 import { selectConversationSurfaceOwnsOutput } from "../conversations/conversations.selectors";
 import { conversationSandboxBindingFromRow } from "@/lib/sandbox/conversation-binding-row";
 import { hydrateObservability } from "../observability/observability.slice";
@@ -363,6 +366,11 @@ export const loadConversation = createAsyncThunk<
         // cleared here: a live launch may hold it before the row has it).
         ...(parsePersistedSurfaceOwnsOutput(conv.metadata)
           ? { surfaceOwnsOutput: true }
+          : {}),
+        // A shortcut/binding/per-launch-mapped run keeps its input boundary
+        // after a reload — refreshSurfaceScope reads this (W-31).
+        ...(parsePersistedEngineeredInputs(conv.metadata)
+          ? { engineeredInputs: true }
           : {}),
         // THE compute-target binding — the same shape a locally-created
         // conversation carries, so nothing downstream can tell a fetched

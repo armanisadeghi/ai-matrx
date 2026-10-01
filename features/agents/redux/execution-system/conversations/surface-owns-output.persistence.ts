@@ -12,6 +12,11 @@
  * browser-owned metadata as `metadata.surface_owns_output` once the row
  * exists, and `loadConversation` restores it, so a reload or a resumed run
  * keeps it — the old module-level Set was lost on every reload.
+ *
+ * `metadata.engineered_inputs` rides the same path: a conversation launched
+ * with a shortcut, binding or per-launch mapping keeps receiving only what it
+ * mapped after a reload (`ExecutionInstance.engineeredInputs`, W-31) — the
+ * in-memory stamp alone let a reopened shortcut chat re-send the whole note.
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
@@ -23,32 +28,45 @@ import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { waitForConversationPersisted } from "./conversation-persistence";
 
 export const SURFACE_OWNS_OUTPUT_METADATA_KEY = "surface_owns_output";
+export const ENGINEERED_INPUTS_METADATA_KEY = "engineered_inputs";
+
+type PersistedConversationFlag =
+  | typeof SURFACE_OWNS_OUTPUT_METADATA_KEY
+  | typeof ENGINEERED_INPUTS_METADATA_KEY;
 
 type ConversationMetadataRow = Pick<
   Database["chat"]["Tables"]["conversation"]["Row"],
   "id" | "version" | "metadata"
 >;
 
-/** Read the persisted flag off a `chat.conversation.metadata` value. */
-export function parsePersistedSurfaceOwnsOutput(metadata: unknown): boolean {
+function parsePersistedFlag(metadata: unknown, key: PersistedConversationFlag): boolean {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return false;
   }
-  return Reflect.get(metadata, SURFACE_OWNS_OUTPUT_METADATA_KEY) === true;
+  return Reflect.get(metadata, key) === true;
 }
 
-export const persistSurfaceOwnsOutput = createAsyncThunk<
+/** Read the persisted flag off a `chat.conversation.metadata` value. */
+export function parsePersistedSurfaceOwnsOutput(metadata: unknown): boolean {
+  return parsePersistedFlag(metadata, SURFACE_OWNS_OUTPUT_METADATA_KEY);
+}
+
+export function parsePersistedEngineeredInputs(metadata: unknown): boolean {
+  return parsePersistedFlag(metadata, ENGINEERED_INPUTS_METADATA_KEY);
+}
+
+/** Write one browser-owned `true` flag into the conversation's metadata. */
+export const persistConversationFlag = createAsyncThunk<
   void,
-  { conversationId: string },
+  { conversationId: string; flag: PersistedConversationFlag },
   { dispatch: AppDispatch; state: RootState }
->("conversations/persistSurfaceOwnsOutput", async ({ conversationId }) => {
+>("conversations/persistConversationFlag", async ({ conversationId, flag }) => {
   if (!(await hasBrowserSession())) return;
   const persisted = await waitForConversationPersisted(conversationId);
   if (!persisted) {
     console.error(
-      `[surface-owns-output] Conversation ${conversationId} never materialised — ` +
-        "its surface-owned flag could not be saved, so reopening it may " +
-        "materialize a duplicate record from its reply.",
+      `[conversation-flag] Conversation ${conversationId} never materialised — ` +
+        `its ${flag} flag could not be saved and will be lost on reopen.`,
     );
     return;
   }
@@ -65,7 +83,7 @@ export const persistSurfaceOwnsOutput = createAsyncThunk<
     readColumn: (row) => row.metadata,
     merge: (current) => ({
       ...current,
-      [SURFACE_OWNS_OUTPUT_METADATA_KEY]: true,
+      [flag]: true,
     }),
     applyUpdate: ({ value, expectedVersion, nextVersion }) =>
       supabase
@@ -80,11 +98,11 @@ export const persistSurfaceOwnsOutput = createAsyncThunk<
 
   if (result.status !== "saved") {
     console.error(
-      `[surface-owns-output] Failed to persist ${conversationId}: ` +
+      `[conversation-flag] Failed to persist ${flag} on ${conversationId}: ` +
         (result.status === "error"
           ? String(result.error)
           : `metadata write ${result.status}`) +
-        ". Reopening this conversation may materialize a duplicate record.",
+        ". It will be lost on reopen.",
     );
   }
 });

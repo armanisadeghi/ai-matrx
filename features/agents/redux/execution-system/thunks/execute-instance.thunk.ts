@@ -146,7 +146,7 @@ import {
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 import { persistInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
-import { persistSurfaceOwnsOutput } from "../conversations/surface-owns-output.persistence";
+import { persistConversationFlag } from "../conversations/surface-owns-output.persistence";
 import { extractErrorMessage } from "@/utils/errors";
 
 /**
@@ -1273,7 +1273,15 @@ export const executeInstance = createAsyncThunk<
             // and resumes (loadConversation restores it) so no reconcile or
             // later commit materializes a twin of the surface's own record.
             if (surfaceOwnsOutput) {
-              await dispatch(persistSurfaceOwnsOutput({ conversationId }));
+              await dispatch(
+                persistConversationFlag({ conversationId, flag: "surface_owns_output" }),
+              );
+            }
+            // An engineered run stays engineered after a reload (W-31).
+            if ((getState() as RootState).conversations.byConversationId[conversationId]?.engineeredInputs) {
+              await dispatch(
+                persistConversationFlag({ conversationId, flag: "engineered_inputs" }),
+              );
             }
             // Which of the launch variables the HOST wired — written beside
             // them so a reopen of this conversation can still tell the
