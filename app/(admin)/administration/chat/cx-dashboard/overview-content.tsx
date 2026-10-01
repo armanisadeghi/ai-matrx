@@ -40,7 +40,8 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { CxKpiCard } from "@/features/cx-dashboard/components/CxKpiCard";
 import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxJsonViewer } from "@/features/cx-dashboard/components/CxJsonViewer";
-import { formatAdminCost, formatAdminUsdAxisTick } from "@/components/cost/formatAdminCost";
+import { formatAdminUsdAxisTick } from "@/components/cost/formatAdminCost";
+import { useAdminCost } from "@/components/cost/useAdminCost";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import {
   formatTokens,
@@ -111,7 +112,7 @@ const toolUsageColumns: MatrxColumnDef<ToolUsageRow>[] = [
 ];
 
 export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
-  const formatCostDisplay = formatAdminCost;
+  const formatCostDisplay = useAdminCost();
   const router = useRouter();
   const [clickedTool, setClickedTool] = useState<ToolUsageRow | null>(null);
 

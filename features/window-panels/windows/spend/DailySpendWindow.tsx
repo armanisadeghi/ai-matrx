@@ -43,7 +43,7 @@ export default function DailySpendWindow(props: DailySpendWindowProps) {
 
 function DailySpendWindowInner({ onClose }: DailySpendWindowProps) {
   const router = useRouter();
-  const { unit } = useCostDisplay();
+  const { rate } = useCostDisplay();
   const [snapshot, setSnapshot] = useState<SpendHeadlineSnapshot | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const knobsState = useSpendPopoverKnobs();
@@ -130,7 +130,7 @@ function DailySpendWindowInner({ onClose }: DailySpendWindowProps) {
               <span className="font-medium text-foreground">
                 {snapshot.topOrg ? snapshot.topOrg.name : "nothing recorded yet"}
               </span>
-              {snapshot.topOrg ? ` · ${usd(snapshot.topOrg.cost, unit)}` : ""}
+              {snapshot.topOrg ? ` · ${usd(snapshot.topOrg.cost, rate)}` : ""}
             </div>
             <div>
               {snapshot.gapCount} cost sources measure nothing, so the figure

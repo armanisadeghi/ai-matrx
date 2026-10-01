@@ -46,7 +46,7 @@ import {
   safeRatio,
 } from "@ai-matrx/kit/format";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
-import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { useAdminCost } from "@/components/cost/useAdminCost";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
@@ -253,7 +253,7 @@ export default function AgentAppsAnalyticsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { toast } = useToast();
-  const formatCostDisplay = formatAdminCost;
+  const formatCostDisplay = useAdminCost();
   const tableQuery = useTableUrlState({
     tableId: "admin-agent-apps-analytics",
     defaultSort: { id: "executions", direction: "desc" },

@@ -21,6 +21,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
 }));
 jest.mock("@/components/cost/costUnit", () => ({ selectCostUnit: () => "points", selectCanToggleCostUnit: () => true }));
+// the points rate is the billing.points_per_usd knob (subscribed since lane DRILL-CLOSE); pinned here
+jest.mock("@/components/cost/pointsRate.client", () => ({ usePointsRate: () => 20_000 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd" }));
 jest.mock("@/lib/redux/preferences/userPreferencesSlice", () => ({ setModulePreferences: (p: unknown) => ({ type: "prefs", payload: p }) }));
 jest.mock("@/components/official/InfoHint", () => ({ InfoHint: ({ text }: { text: string }) => <i data-hint={text} /> }));

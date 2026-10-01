@@ -86,6 +86,7 @@ import { clockWords, measureFactWords, momentWords } from "./explorerWords";
 import { useDrillChart } from "./useDrillChart";
 import { drillReconcileChip, useDrillReconcile } from "./useDrillReconcile";
 import { DrillExplorerHeadline } from "./DrillExplorerHeadline";
+import { usePointsRate } from "@/components/cost/pointsRate.client";
 import { carriedWords, splitExplorerQuestion, viewQuestionFromAddress, type DrillCarried, type ExplorerQuestion } from "./questionParts";
 import { autoTimeRef, drillExplorerAutoGrain, withAutoGrain } from "./grain";
 import {
@@ -158,6 +159,7 @@ export function DrillExplorer({
 }: DrillExplorerProps) {
   const userId = useAppSelector(selectUserId);
   const { unit, canToggle, setUnit } = useUnit();
+  const rate = usePointsRate();
 
   // The first screen: the host's, else the definition's own default (read once describe answers).
   const [definitionDefault, setDefinitionDefault] = useState<MatrxDrillQuestion | null>(null);
@@ -252,7 +254,7 @@ export function DrillExplorer({
   // ONE mapping with the siblings (lane DRILL-WIRE): words, record kind (`entity`), choice colours,
   // and moments — so the answer, the chart and a sibling's findings read a Dimension the same way.
   const dimensions: MatrxDrillDimension[] = def ? drillSiblingDimensions(def, names, resolvers, words) : [];
-  const measures: MatrxDrillMeasure[] = def ? drillSiblingMeasures(def, unit) : [];
+  const measures: MatrxDrillMeasure[] = def ? drillSiblingMeasures(def, unit, rate) : [];
   const hasMoney = (def?.measures ?? []).some((m) => m.unit === "usd");
   const headlineKey = headline?.measure ?? (def?.measures ?? []).find((m) => m.unit === "usd")?.key ?? question.show[0] ?? null;
   const headlineMeasure = measures.find((m) => m.key === headlineKey);

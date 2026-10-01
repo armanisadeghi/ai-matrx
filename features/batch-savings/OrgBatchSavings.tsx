@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { PiggyBank } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
 
-import { usdPrecise } from "@/features/admin/spend/format";
+import { AdminCost } from "@/components/cost/AdminCost";
 
 import { fetchBatchSavings } from "./service";
 import type { BatchSavingsSummary } from "./types";
@@ -57,8 +57,8 @@ export function OrgBatchSavings({ organizationId }: { organizationId: string }) 
           </div>
         ) : (
           <div className="text-xs tabular-nums text-muted-foreground">
-            <span className="text-foreground">{usdPrecise(data.actualUsd)}</span> billed ·{" "}
-            <span className="font-medium text-success">{usdPrecise(data.savedUsd)} saved</span>
+            <span className="text-foreground"><AdminCost usd={data.actualUsd} unknown="not measured" /></span> billed ·{" "}
+            <span className="font-medium text-success"><AdminCost usd={data.savedUsd} unknown="not measured" /> saved</span>
             {data.discountPct !== null ? ` (${data.discountPct.toFixed(0)}% below live price)` : ""} ·{" "}
             {formatCount(data.items)} {data.items === 1 ? "item" : "items"}. Already included in the spend above.
           </div>

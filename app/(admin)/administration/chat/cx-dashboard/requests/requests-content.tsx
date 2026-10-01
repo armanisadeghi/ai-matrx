@@ -41,6 +41,7 @@ import {
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { Cost } from "@/components/cost/Cost";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 
@@ -420,7 +421,7 @@ export function RequestsContent({ result }: Props) {
                   `Status: ${r.status}${r.finish_reason ? ` (${r.finish_reason})` : ""}`,
                   `Iterations: ${r.iterations} · Tool calls: ${r.total_tool_calls}`,
                   `Tokens: ${formatTokens(r.total_tokens)} (${formatTokens(r.total_input_tokens)} in / ${formatTokens(r.total_output_tokens)} out)`,
-                  `Cost: ${formatAdminCost(r.total_cost)}`,
+                  `Cost: ${formatAdminCost(r.total_cost, { rate: currentPointsRate() })}`,
                   `Duration: ${formatDuration(requestDuration(r))}`,
                   `Created: ${r.created_at}`,
                   ...(r.error ? [`Error: ${r.error}`] : []),

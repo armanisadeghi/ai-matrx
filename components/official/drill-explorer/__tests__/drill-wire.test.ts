@@ -55,7 +55,7 @@ describe("the explorer's Dimensions carry what the definition declares", () => {
 });
 
 describe("the explorer's Measures", () => {
-  const measures = drillSiblingMeasures(usage, "points");
+  const measures = drillSiblingMeasures(usage, "points", 20_000);
   const by = (key: string) => measures.find((m) => m.key === key)!;
 
   it("a moment is a moment: never additive, never a share or a change", () => {

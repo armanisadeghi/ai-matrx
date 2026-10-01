@@ -1,7 +1,7 @@
 "use client";
 
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
-import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { useAdminCost } from "@/components/cost/useAdminCost";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -104,7 +104,7 @@ function campaign(row: AdminUserAcquisitionRow): string {
 }
 
 export function UserAcquisitionTableClient() {
-  const fmtCost = formatAdminCost;
+  const fmtCost = useAdminCost();
   const router = useRouter();
   const searchParams = useSearchParams();
   const focusUser = searchParams.get("user");

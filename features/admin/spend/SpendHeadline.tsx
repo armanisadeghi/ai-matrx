@@ -111,7 +111,7 @@ export function SpendHeadline({
   density = "full",
   headlineActions,
 }: SpendHeadlineProps) {
-  const { unit } = useCostDisplay();
+  const { rate } = useCostDisplay();
   const alarm = today > scareThresholdUsd;
   const delta = deltaPercent(today, yesterday);
 
@@ -134,13 +134,13 @@ export function SpendHeadline({
         >
           <Tile
             label="Spent so far today"
-            value={usd(today, unit)}
+            value={usd(today, rate)}
             size="hero"
             tone={alarm ? "alarm" : "normal"}
             actions={headlineActions}
             hint={
               alarm
-                ? `Past the ${usd(scareThresholdUsd, unit)} alarm line${
+                ? `Past the ${usd(scareThresholdUsd, rate)} alarm line${
                     todayRuns === undefined ? "" : ` · ${formatCount(todayRuns)} runs`
                   }`
                 : todayRuns === undefined
@@ -151,24 +151,24 @@ export function SpendHeadline({
         </div>
         <Tile
           label="Yesterday"
-          value={usd(yesterday, unit)}
+          value={usd(yesterday, rate)}
           hint={formatDelta(delta)}
         />
         <Tile
           label="Last 7 days"
-          value={usd(last7d, unit)}
-          hint={`${usd(last7d / 7, unit)} daily average`}
+          value={usd(last7d, rate)}
+          hint={`${usd(last7d / 7, rate)} daily average`}
         />
         {density === "full" && last30d !== undefined ? (
           <Tile
             label="Last 30 days"
-            value={usd(last30d, unit)}
-            hint={`${usd(last30d / 30, unit)} daily average`}
+            value={usd(last30d, rate)}
+            hint={`${usd(last30d / 30, rate)} daily average`}
           />
         ) : null}
         <Tile
           label="This month"
-          value={usd(monthToDate, unit)}
+          value={usd(monthToDate, rate)}
           // `null` means the month is too young to extrapolate; `undefined`
           // means this caller never carried a projection (the popover). They
           // are different facts and the tile must never claim the first when
@@ -178,7 +178,7 @@ export function SpendHeadline({
               ? undefined
               : monthProjection === null
                 ? "too early to project"
-                : `on pace for ${usd(monthProjection, unit)}`
+                : `on pace for ${usd(monthProjection, rate)}`
           }
         />
       </div>

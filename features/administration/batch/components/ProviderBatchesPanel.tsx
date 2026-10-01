@@ -8,7 +8,7 @@
  * did the provider take, how many polls did it cost us, was it escalated or
  * cancelled, and what did the grouping actually save.
  */
-import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { useAdminCost } from "@/components/cost/useAdminCost";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { useState } from "react";
 import { ListFilter, PackageOpen } from "lucide-react";
@@ -157,7 +157,7 @@ function ProviderBatchDetail({
   row: ProviderBatch;
   onShowItems: (id: string) => void;
 }) {
-  const fmtUsd = formatAdminCost;
+  const fmtUsd = useAdminCost();
   const estBatch = num(row.est_cost_usd);
   const actual = num(row.cost_usd);
   return (

@@ -69,7 +69,7 @@ function cellId(planId: string, capability: string, period: string): string {
 }
 
 export function PlanAllowancesPanel() {
-  const { unit: costUnit } = useCostDisplay();
+  const { rate: costRate } = useCostDisplay();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [limits, setLimits] = useState<PlanLimit[]>([]);
@@ -220,9 +220,9 @@ export function PlanAllowancesPanel() {
                 // The live hint follows what is being TYPED; the saved line
                 // follows what is in the row. When they differ the admin sees
                 // both, which is the point of showing a draft at all.
-                const draftUsd = points ? pointsToUsdLabel(draft, period, costUnit) : null;
+                const draftUsd = points ? pointsToUsdLabel(draft, period, costRate) : null;
                 const savedUsd = points
-                  ? pointsToUsdLabel(savedValue, period, costUnit)
+                  ? pointsToUsdLabel(savedValue, period, costRate)
                   : null;
                 return (
                   <div
@@ -279,7 +279,7 @@ export function PlanAllowancesPanel() {
                           </span>
                         ) : null}
                         <span>
-                          saved: {limitToHuman(cap.capability, savedValue, costUnit)}
+                          saved: {limitToHuman(cap.capability, savedValue, costRate)}
                           {savedValue === 0
                             ? " (not included)"
                             : savedUsd

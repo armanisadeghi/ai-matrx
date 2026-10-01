@@ -20,7 +20,7 @@
  * (`features/administration/batch/FEATURE.md`). Do not grow a third cost
  * surface here; send the operator there.
  */
-import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { useAdminCost } from "@/components/cost/useAdminCost";
 import { splitAdminCostColumns } from "@/components/cost/adminCostColumns";
 import { useEffect, useState } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
@@ -139,7 +139,7 @@ function KpiTiles({
   summary: KgCostSummaryResponse | null;
   loading: boolean;
 }) {
-  const fmtUsd = formatAdminCost;
+  const fmtUsd = useAdminCost();
   const orgsOverCap = summary?.orgs_over_80pct ?? 0;
 
   return (
@@ -202,7 +202,7 @@ function OrgLeaderboard({
   onPick: (orgId: string) => void;
   read: ReadOutcome;
 }) {
-  const fmtUsd = formatAdminCost;
+  const fmtUsd = useAdminCost();
   const columns: MatrxColumnDef<OrgCostRow>[] = splitAdminCostColumns<OrgCostRow>([
     {
       id: "organization",
@@ -322,7 +322,7 @@ function PendingBatchesTable({
   onPick: (batchRowId: string) => void;
   read: ReadOutcome;
 }) {
-  const fmtUsd = formatAdminCost;
+  const fmtUsd = useAdminCost();
   const columns: MatrxColumnDef<BatchRow>[] = splitAdminCostColumns<BatchRow>([
     {
       accessorKey: "custom_id",
@@ -558,7 +558,7 @@ function OrgDetailDialog({
   onClose: () => void;
   onDetailChange: (detail: OrgCostDetailResponse | null) => void;
 }) {
-  const fmtUsd = formatAdminCost;
+  const fmtUsd = useAdminCost();
   const [detail, setDetail] = useState<OrgCostDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -805,7 +805,7 @@ function BatchDetailDialog({
   onClose: () => void;
   onDetailChange: (detail: BatchDetailResponse | null) => void;
 }) {
-  const fmtUsd = formatAdminCost;
+  const fmtUsd = useAdminCost();
   const [detail, setDetail] = useState<BatchDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -34,6 +34,7 @@ import type {
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { formatCount, formatDurationMs, type CostUnit } from "@ai-matrx/kit/format";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { Cost } from "@/components/cost/Cost";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
@@ -124,7 +125,7 @@ export function humanExecution(row: AgentAppExecutionRow, unit: CostUnit = curre
     `${row.app_name ?? row.app_id} — ${row.success === true ? "OK" : row.success === false ? "Failed" : "Pending"}`,
     `Task: ${row.task_id}`,
     row.error_message ? `Error: ${row.error_message}` : null,
-    `Tokens: ${formatCount(row.tokens_used)} · Cost: ${formatAdminCost(row.cost)}`,
+    `Tokens: ${formatCount(row.tokens_used)} · Cost: ${formatAdminCost(row.cost, { rate: currentPointsRate() })}`,
     row.execution_time_ms == null ? null : `Time: ${row.execution_time_ms}ms`,
     `When: ${new Date(row.created_at).toLocaleString()}`,
   ]

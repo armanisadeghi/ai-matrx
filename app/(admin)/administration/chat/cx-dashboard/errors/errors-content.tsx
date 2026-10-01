@@ -37,6 +37,7 @@ import {
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { Cost } from "@/components/cost/Cost";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 
@@ -395,7 +396,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                     `Issue: ${ISSUE_LABELS[requestIssue(r)]}`,
                     `Conversation: ${r.conversation_title ?? "Untitled"}`,
                     `Status: ${r.status}${r.finish_reason ? ` (${r.finish_reason})` : ""}`,
-                    `Cost: ${formatAdminCost(r.total_cost)}`,
+                    `Cost: ${formatAdminCost(r.total_cost, { rate: currentPointsRate() })}`,
                     `Created: ${r.created_at}`,
                     ...(r.error ? [`Error: ${r.error}`] : []),
                   ].join("\n"),

@@ -22,7 +22,7 @@ describe("a moment Measure (Last active)", () => {
 
   it("reads as the viewer's local date and time, a blank as a dash, and never adds up", () => {
     const at = Date.parse("2026-09-30T14:00:00Z");
-    const time = drillUnitFormatter("time", "points");
+    const time = drillUnitFormatter("time", "points", 20_000);
     expect(time(at)).toBe(formatAbsoluteDate(at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, "—"));
     expect(time(at)).not.toMatch(/^[\d,]+$/);
     expect(time(null)).toBe("—");

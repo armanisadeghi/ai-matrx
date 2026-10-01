@@ -51,7 +51,7 @@ import {
 } from "@/features/cx-dashboard/components/cx-row-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { useAdminCost } from "@/components/cost/useAdminCost";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 
 type Detail = {
@@ -147,6 +147,7 @@ const apiRequestColumns: MatrxColumnDef<CxRequest>[] = [
 
 export function RequestDetailContent({ detail }: { detail: Detail }) {
   const router = useRouter();
+  const formatAdminCost = useAdminCost();
   const { user_request: ur, requests, tool_calls, cost_verification } = detail;
   const dur = computeDuration(
     ur.created_at,

@@ -11,12 +11,18 @@ jest.mock("@/components/cost/pointsRate", () => ({
 
 describe("admin cost display", () => {
   it("shows the recorded dollar cost and its points equivalent together", () => {
-    expect(formatAdminCost(0.004)).toBe("$0.004000 · 80 points");
+    expect(formatAdminCost(0.004, { rate: 20_000 })).toBe("$0.004000 · 80 points");
   });
 
   it("keeps an unmeasured cost distinct from zero", () => {
-    expect(formatAdminCost(null)).toBe("—");
-    expect(formatAdminCost(null, { unknown: "not measured" })).toBe("not measured");
-    expect(formatAdminCost(0)).toBe("$0.00 · 0 points");
+    expect(formatAdminCost(null, { rate: 20_000 })).toBe("—");
+    expect(formatAdminCost(null, { rate: 20_000, unknown: "not measured" })).toBe("not measured");
+    expect(formatAdminCost(0, { rate: 20_000 })).toBe("$0.00 · 0 points");
+  });
+});
+
+describe("the rate is the caller's, never a silent read (VERIFY-DRILL-FINAL L-b)", () => {
+  it("a missing rate is an unmeasured points half, said with the dollars", () => {
+    expect(formatAdminCost(0.0204, { rate: null })).toBe("$0.0204 · —");
   });
 });

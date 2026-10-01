@@ -151,9 +151,9 @@ describe("F4 · the records table's words", () => {
 describe("F5 · one value, one reading (owner ruling 2026-09-30: every value rounded on its own)", () => {
   it("the header's total, a cell and the coverage line's whole print the same number the same way", () => {
     const usd = 2394.24896491; // 47,884,979.3 points
-    const money = drillUnitFormatter("usd", "points");
+    const money = drillUnitFormatter("usd", "points", 20_000);
     // every place the explorer prints this Measure goes through the one formatter of its unit
-    expect(money(usd)).toBe(formatAdminPoints(usd));
+    expect(money(usd)).toBe(formatAdminPoints(usd, 20_000));
     expect(money(usd)).toBe(money(Number(String(usd))));
   });
 });
@@ -178,7 +178,7 @@ describe("F1 · the header's headline", () => {
 
 describe("F9 · the Cost column says the unit its cells print", () => {
   it("points over points, dollars over dollars", () => {
-    const cellWord = formatAdminPoints(1.5).split(" ").at(-1)!; // "points"
+    const cellWord = formatAdminPoints(1.5, 20_000).split(" ").at(-1)!; // "points"
     expect(costColumnLabel("Cost", "points")).toBe(`Cost (${cellWord})`);
     expect(costColumnLabel("Cost", "usd")).toBe("Cost ($)");
   });

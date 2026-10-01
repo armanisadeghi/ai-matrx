@@ -5,8 +5,7 @@
 //
 // Doc: features/admin/spend/FEATURE.md
 
-import { formatCount, formatRelativeTime, type CostUnit } from "@ai-matrx/kit/format";
-import { currentCostUnit } from "@/components/cost/costUnit";
+import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
 
 /**
@@ -20,12 +19,12 @@ import { formatAdminCost } from "@/components/cost/formatAdminCost";
  * hand-rolled sub-cent branch that used to live here were found by the money
  * shape lane of `check:package-twins`.
  *
- * The unit argument is retained for existing callers; this admin-only surface
- * always shows both units.
+ * `rate` is the SUBSCRIBED points rate (`useCostDisplay().rate` / `usePointsRate()`): a component
+ * that formats without subscribing printed "$0.0204 · —" whenever its data landed before the rate
+ * knob did (lane DRILL-CLOSE, VERIFY-DRILL-FINAL L-b). This admin-only surface always shows both units.
  */
-export function usd(value: number | null | undefined, unit: CostUnit = currentCostUnit()): string {
-  void unit;
-  return formatAdminCost(value, { unknown: "not measured" });
+export function usd(value: number | null | undefined, rate: number | null): string {
+  return formatAdminCost(value, { rate, unknown: "not measured" });
 }
 
 /**
@@ -35,11 +34,10 @@ export function usd(value: number | null | undefined, unit: CostUnit = currentCo
  * places, so `usdPrecise(0.000004)` returned "$0.00" — the exact failure the
  * comment says it exists to stop. `digits: "adaptive"` gives two decimals at a
  * dollar or more, four down to a cent and six below that, so the same value now
- * reads "$0.000004". See {@link usd} for the `unit` contract.
+ * reads "$0.000004". See {@link usd} for the `rate` contract.
  */
-export function usdPrecise(value: number | null | undefined, unit: CostUnit = currentCostUnit()): string {
-  void unit;
-  return formatAdminCost(value, { unknown: "not measured" });
+export function usdPrecise(value: number | null | undefined, rate: number | null): string {
+  return formatAdminCost(value, { rate, unknown: "not measured" });
 }
 
 /** A localized item count, with an honest absence when the ledger is unknown. */

@@ -23,6 +23,8 @@ import { ChevronDown, ChevronRight, PiggyBank } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
+import { AdminCost } from "@/components/cost/AdminCost";
+import { usePointsRate } from "@/components/cost/pointsRate.client";
 import { count, usdPrecise } from "@/features/admin/spend/format";
 import { buildBillingBatchSavingsScope } from "@/features/admin/spend/spend-surface-scope";
 import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
@@ -104,14 +106,14 @@ function LaneBar({ data }: { data: BatchSavingsSummary }) {
       </div>
       <div className="flex min-w-0 flex-wrap gap-x-3 text-[11px] tabular-nums text-muted-foreground">
         <span>
-          <span className="text-foreground">Live</span> {usdPrecise(liveUsd)}
+          <span className="text-foreground">Live</span> <AdminCost usd={liveUsd} unknown="not measured" />
         </span>
         <span>
-          <span className="text-success">Batch</span> {usdPrecise(batchUsd)} · {count(data.lanes.batchExecutions)}
+          <span className="text-success">Batch</span> <AdminCost usd={batchUsd} unknown="not measured" /> · {count(data.lanes.batchExecutions)}
         </span>
         {escalatedUsd > 0 ? (
           <span>
-            <span className="text-warning">Escalated</span> {usdPrecise(escalatedUsd)}
+            <span className="text-warning">Escalated</span> <AdminCost usd={escalatedUsd} unknown="not measured" />
           </span>
         ) : null}
       </div>
@@ -133,9 +135,9 @@ const columns = (first: string): MatrxColumnDef<BatchSavingsRow>[] => [
     ),
   },
   { id: "items", header: "Items", accessorFn: (r) => r.items, width: 70, align: "right", cell: (r) => <span className="tabular-nums">{count(r.items)}</span> },
-  { id: "actual", header: "Billed", accessorFn: (r) => r.actualUsd, width: 100, align: "right", cell: (r) => <span className="tabular-nums">{usdPrecise(r.actualUsd)}</span> },
-  { id: "live", header: "At live price", accessorFn: (r) => r.liveEquivalentUsd, width: 110, align: "right", cell: (r) => <span className="tabular-nums text-muted-foreground">{usdPrecise(r.liveEquivalentUsd)}</span> },
-  { id: "saved", header: "Saved", accessorFn: (r) => r.savedUsd, width: 100, align: "right", cell: (r) => <span className="tabular-nums text-success">{usdPrecise(r.savedUsd)}</span> },
+  { id: "actual", header: "Billed", accessorFn: (r) => r.actualUsd, width: 100, align: "right", cell: (r) => <span className="tabular-nums"><AdminCost usd={r.actualUsd} unknown="not measured" /></span> },
+  { id: "live", header: "At live price", accessorFn: (r) => r.liveEquivalentUsd, width: 110, align: "right", cell: (r) => <span className="tabular-nums text-muted-foreground"><AdminCost usd={r.liveEquivalentUsd} unknown="not measured" /></span> },
+  { id: "saved", header: "Saved", accessorFn: (r) => r.savedUsd, width: 100, align: "right", cell: (r) => <span className="tabular-nums text-success"><AdminCost usd={r.savedUsd} unknown="not measured" /></span> },
   { id: "discount", header: "Discount", accessorFn: (r) => r.discountPct ?? -1, width: 90, align: "right", cell: (r) => <span className="tabular-nums">{pct(r.discountPct)}</span> },
 ];
 
@@ -151,6 +153,7 @@ export function BatchSavingsPanel({
   const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const rate = usePointsRate();
 
   const fromIso = from?.toISOString() ?? null;
   const toIso = to?.toISOString() ?? null;
@@ -226,17 +229,17 @@ export function BatchSavingsPanel({
               hero
               tone={data.savedUsd > 0 ? "success" : "muted"}
               label="Saved by batching"
-              value={usdPrecise(data.savedUsd)}
+              value={usdPrecise(data.savedUsd, rate)}
               hint={
                 data.items === 0
                   ? `No batch work completed in ${windowLabel.toLowerCase()}`
                   : `${pct(data.discountPct)} below live price · ${count(data.items)} items · ${windowLabel}`
               }
             />
-            <Tile label="Batch billed" value={usdPrecise(data.actualUsd)} hint="what the providers charged" />
+            <Tile label="Batch billed" value={usdPrecise(data.actualUsd, rate)} hint="what the providers charged" />
             <Tile
               label="Same work at live price"
-              value={usdPrecise(data.liveEquivalentUsd)}
+              value={usdPrecise(data.liveEquivalentUsd, rate)}
               hint="actual tokens × the model's live catalog rate"
             />
             <div className="col-span-2">
@@ -253,7 +256,7 @@ export function BatchSavingsPanel({
           {data.escalatedItems > 0 ? (
             <p className="text-[11px] text-muted-foreground">
               {count(data.escalatedItems)} {data.escalatedItems === 1 ? "item" : "items"} missed its deadline and ran
-              live ({usdPrecise(data.escalatedActualUsd)}); those saved nothing and are counted as such.
+              live (<AdminCost usd={data.escalatedActualUsd} unknown="not measured" />); those saved nothing and are counted as such.
             </p>
           ) : null}
 
@@ -268,7 +271,7 @@ export function BatchSavingsPanel({
                 {open ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
                 Breakdown by consumer and by model
                 <span className="tabular-nums">
-                  · pre-submission estimate for these items was {usdPrecise(data.preSubmissionEstimateUsd)} (an estimate,
+                  · pre-submission estimate for these items was <AdminCost usd={data.preSubmissionEstimateUsd} unknown="not measured" /> (an estimate,
                   never the saving basis)
                 </span>
               </button>

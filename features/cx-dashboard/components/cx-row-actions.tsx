@@ -34,6 +34,7 @@ import {
   formatTokens,
 } from "@/features/cx-dashboard/utils/format";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import type {
   CxConversation,
   CxRequest,
@@ -115,7 +116,7 @@ export function cxUserRequestMenuTarget(r: CxUserRequest): CxMenuTarget {
     lines: [
       `Status: ${r.status}${r.finish_reason ? ` (${r.finish_reason})` : ""}`,
       `Tokens: ${formatTokens(r.total_tokens)}`,
-      `Cost: ${formatAdminCost(r.total_cost)}`,
+      `Cost: ${formatAdminCost(r.total_cost, { rate: currentPointsRate() })}`,
       r.error ? `Error: ${r.error}` : "",
     ],
   };
@@ -145,7 +146,7 @@ export function cxApiRequestMenuTarget(r: CxRequest): CxMenuTarget {
     requestId: r.user_request_id,
     lines: [
       r.ai_model_id ? `Model: ${r.ai_model_id}` : "",
-      `Cost: ${formatAdminCost(r.cost)}`,
+      `Cost: ${formatAdminCost(r.cost, { rate: currentPointsRate() })}`,
       r.finish_reason ? `Finish: ${r.finish_reason}` : "",
     ],
   };

@@ -42,7 +42,7 @@ import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
-import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { useAdminCost } from "@/components/cost/useAdminCost";
 
 const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
   ssr: false,
@@ -57,6 +57,7 @@ type Detail = {
 
 export function ConversationDetailContent({ detail }: { detail: Detail }) {
   const router = useRouter();
+  const formatAdminCost = useAdminCost();
   const {
     conversation: conv,
     messages,

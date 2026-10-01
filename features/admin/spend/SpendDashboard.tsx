@@ -149,7 +149,7 @@ function Folded({
 }
 
 export function SpendDashboard() {
-  const { unit } = useCostDisplay();
+  const { rate } = useCostDisplay();
   const [timezone] = useState(() => viewerTimezone());
   const [data, setData] = useState<SpendOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -354,7 +354,7 @@ export function SpendDashboard() {
                     ? "loading"
                     : fixedMonthly === "missing" || fixedMonthly <= 0
                       ? "not set"
-                      : `${usd(fixedMonthly, unit)}/month`
+                      : `${usd(fixedMonthly, rate)}/month`
                 }.`}
               >
                 <Info className="h-3.5 w-3.5" aria-hidden />
@@ -432,7 +432,7 @@ export function SpendDashboard() {
           <Folded
             icon={Package}
             title="Print orders"
-            summary={`${usd(data.printOrders.revenueUsd, unit)} revenue · ${usd(data.printOrders.marginUsd, unit)} margin`}
+            summary={`${usd(data.printOrders.revenueUsd, rate)} revenue · ${usd(data.printOrders.marginUsd, rate)} margin`}
             open={printOrdersExpanded}
             onOpenChange={setPrintOrdersExpanded}
           >
@@ -442,7 +442,7 @@ export function SpendDashboard() {
                   Revenue (paid)
                 </div>
                 <div className="text-lg font-semibold tabular-nums text-foreground">
-                  {usd(data.printOrders.revenueUsd, unit)}
+                  {usd(data.printOrders.revenueUsd, rate)}
                 </div>
                 <div className="text-[11px] text-muted-foreground">
                   {formatCount(data.printOrders.paidOrders)} of{" "}
@@ -454,7 +454,7 @@ export function SpendDashboard() {
                   Refunded
                 </div>
                 <div className="text-lg font-semibold tabular-nums text-foreground">
-                  {usd(data.printOrders.refundedUsd, unit)}
+                  {usd(data.printOrders.refundedUsd, rate)}
                 </div>
               </div>
               <div className="rounded-md border border-border bg-card px-3 py-2">
@@ -462,7 +462,7 @@ export function SpendDashboard() {
                   Our Lulu cost
                 </div>
                 <div className="text-lg font-semibold tabular-nums text-foreground">
-                  {usd(data.printOrders.luluCostUsd, unit)}
+                  {usd(data.printOrders.luluCostUsd, rate)}
                 </div>
               </div>
               <div
@@ -488,7 +488,7 @@ export function SpendDashboard() {
                       : "text-foreground"
                   }`}
                 >
-                  {usd(data.printOrders.marginUsd, unit)}
+                  {usd(data.printOrders.marginUsd, rate)}
                 </div>
                 <div
                   className={`text-[11px] ${

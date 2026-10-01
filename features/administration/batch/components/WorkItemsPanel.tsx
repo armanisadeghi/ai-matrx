@@ -11,7 +11,7 @@
  * list; the money column is Stripe's (what it cost, what it would have cost,
  * the discount stated out loud).
  */
-import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { useAdminCost } from "@/components/cost/useAdminCost";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Inbox, Search, X } from "lucide-react";
@@ -588,7 +588,7 @@ function WorkItemDetail({
   row: WorkItem;
   onOpenBatch: (id: string) => void;
 }) {
-  const fmtUsd = formatAdminCost;
+  const fmtUsd = useAdminCost();
   const delivery = deliveryOf(row.handler_status);
   return (
     <div className="space-y-3">

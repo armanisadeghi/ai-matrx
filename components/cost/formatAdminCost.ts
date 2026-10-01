@@ -1,35 +1,34 @@
 import { formatCost, usdToPoints } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "./pointsRate";
 
-/**
- * The points rate for an admin figure: the caller's (a subscribed render path
- * passes `useCostDisplay().rate`), else the viewer's rate read now.
- */
-function rateOr(rate: number | null | undefined): number | null {
-  return rate === undefined ? currentPointsRate() : rate;
-}
+// THE RATE IS ALWAYS THE CALLER'S (lane DRILL-CLOSE, VERIFY-DRILL-FINAL L-b). These used to fall back
+// to `currentPointsRate()` when no rate was passed. That read is a one-shot peek: on a miss it answers
+// null and never re-renders, so a panel whose data landed before the knob snapshot printed
+// "$0.0204 · —" for good (the slim spend page's batch savings and estimated cost). The rate is now a
+// required argument: a render path passes the SUBSCRIBED rate (`usePointsRate()` /
+// `useCostDisplay().rate`), and only code that runs outside render (copy text, a toast) passes
+// `currentPointsRate()` — by name, where a reader can see it.
 
 export function formatAdminUsd(usd: number | null | undefined): string {
   return formatCost(usd, { unit: "usd", rate: null });
 }
 
-export function formatAdminPoints(usd: number | null | undefined, rate?: number | null): string {
-  return formatCost(usd, { unit: "points", rate: rateOr(rate) });
+export function formatAdminPoints(usd: number | null | undefined, rate: number | null): string {
+  return formatCost(usd, { unit: "points", rate });
 }
 
-export function adminCostPoints(usd: number | null | undefined, rate?: number | null): number | null {
-  return usdToPoints(usd, { rate: rateOr(rate) });
+export function adminCostPoints(usd: number | null | undefined, rate: number | null): number | null {
+  return usdToPoints(usd, { rate });
 }
 
 /** Admin ledger values show the charged USD amount beside its points equivalent. */
 export function formatAdminCost(
   usd: number | null | undefined,
-  options: { short?: boolean; unknown?: string; rate?: number | null } = {},
+  options: { rate: number | null; short?: boolean; unknown?: string },
 ): string {
   if (usd === null || usd === undefined || !Number.isFinite(usd)) {
     return options.unknown ?? "—";
   }
-  return `${formatAdminUsd(usd)} · ${formatCost(usd, { unit: "points", short: options.short, rate: rateOr(options.rate) })}`;
+  return `${formatAdminUsd(usd)} · ${formatCost(usd, { unit: "points", short: options.short, rate: options.rate })}`;
 }
 
 /** Compact chart ticks use USD; the surrounding totals show both units. */

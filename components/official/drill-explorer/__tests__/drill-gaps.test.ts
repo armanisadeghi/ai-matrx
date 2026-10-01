@@ -12,23 +12,23 @@ type Dim = DrillDefinition["dimensions"][number] & { empty_label?: string };
 
 describe("every unit the contract carries is formatted by the screen", () => {
   it("money goes through the one points / $ switch", () => {
-    expect(drillUnitFormatter("usd", "points")(3.57849)).toBe(formatAdminPoints(3.57849));
-    expect(drillUnitFormatter("usd", "usd")(3.57849)).toBe(formatAdminUsd(3.57849));
+    expect(drillUnitFormatter("usd", "points", 20_000)(3.57849)).toBe(formatAdminPoints(3.57849, 20_000));
+    expect(drillUnitFormatter("usd", "usd", 20_000)(3.57849)).toBe(formatAdminUsd(3.57849));
   });
   it("a duration in ms reads as a human duration, never a bare number of milliseconds", () => {
-    const ms = drillUnitFormatter("ms", "points");
+    const ms = drillUnitFormatter("ms", "points", 20_000);
     expect(ms(850)).toBe("850ms");
     expect(ms(4200)).toBe("4.2s");
     expect(ms(185_000)).toBe("3m 05s");
     expect(ms(7_500_000)).toBe("2h 05m");
   });
   it("a share of 1 reads as a percent, a multiplier with ×, tokens compact, a count whole", () => {
-    expect(drillUnitFormatter("share", "points")(0.1234)).toBe("12.3%");
-    expect(drillUnitFormatter("times", "points")(5.99475984)).toBe("6.0×");
-    expect(drillUnitFormatter("tokens", "points")(12_400_000)).toBe("12M");
-    expect(drillUnitFormatter("count", "points")(1204)).toBe("1,204");
-    expect(drillUnitFormatter(undefined, "points")(0.000434)).toBe("0.000434");
-    expect(drillUnitFormatter("ms", "points")(null)).toBe("—");
+    expect(drillUnitFormatter("share", "points", 20_000)(0.1234)).toBe("12.3%");
+    expect(drillUnitFormatter("times", "points", 20_000)(5.99475984)).toBe("6.0×");
+    expect(drillUnitFormatter("tokens", "points", 20_000)(12_400_000)).toBe("12M");
+    expect(drillUnitFormatter("count", "points", 20_000)(1204)).toBe("1,204");
+    expect(drillUnitFormatter(undefined, "points", 20_000)(0.000434)).toBe("0.000434");
+    expect(drillUnitFormatter("ms", "points", 20_000)(null)).toBe("—");
   });
   it("a share, a multiplier or a duration never adds up across groups", () => {
     expect(drillUnitAdds("share")).toBe(false);

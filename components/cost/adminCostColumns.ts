@@ -1,5 +1,8 @@
+import { createElement } from "react";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { adminCostPoints, formatAdminPoints, formatAdminUsd } from "./formatAdminCost";
+import { AdminPoints } from "./AdminCost";
+import { adminCostPoints, formatAdminUsd } from "./formatAdminCost";
+import { currentPointsRate } from "./pointsRate";
 
 /** Keep USD and points independently visible, sortable, and filterable in admin tables. */
 export function adminCostColumns<T>({
@@ -33,14 +36,15 @@ export function adminCostColumns<T>({
     {
       id: `${id}_points`,
       header: label === "Cost" ? "Points" : `${label} (points)`,
-      accessorFn: (row) => adminCostPoints(value(row)),
+      // sorting and filtering run on interaction, after the rate has landed; the cell subscribes
+      accessorFn: (row) => adminCostPoints(value(row), currentPointsRate()),
       filter,
       sortable,
       defaultSortDirection: "desc",
       align: "right",
       width: 140,
       mobileHidden,
-      cell: (row) => formatAdminPoints(value(row)),
+      cell: (row) => createElement(AdminPoints, { usd: value(row) }),
     },
   ];
 }

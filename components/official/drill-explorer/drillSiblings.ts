@@ -96,14 +96,14 @@ export function drillSiblingDimensions(
  * A definition's Measures, formatted by unit — the ONE mapping the explorer and its siblings share. A
  * moment (`unit: "time"`, "Last active") is never a share, a change or a Pareto line.
  */
-export function drillSiblingMeasures(def: DrillDefinition, money: DrillMoneyUnit): MatrxDrillMeasure[] {
+export function drillSiblingMeasures(def: DrillDefinition, money: DrillMoneyUnit, rate: number | null): MatrxDrillMeasure[] {
   return def.measures.map((m) => ({
     key: m.key,
     // The column's unit word is the one its cells print (VERIFY-DRILL-WAVE1 F9).
     label: m.unit === "usd" ? costColumnLabel(m.label, money) : m.label,
     // a ratio, a percentile, a run rate, an average or a moment is recomputed per group, never added up
     additive: m.additive ?? (["count", "sum", "filled", "empty"].includes(m.op) && drillUnitAdds(m.unit)),
-    format: drillUnitFormatter(m.unit, money),
+    format: drillUnitFormatter(m.unit, money, rate),
     // what the number counts, as the header's tooltip (lane DRILL-FLIP-FIXES R5, L2)
     ...(m.description ? { description: m.description } : {}),
     ...(m.unit === "usd" ? { lowerIsBetter: true } : {}),

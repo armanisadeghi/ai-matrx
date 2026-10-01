@@ -1,4 +1,10 @@
+import type { ReactElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { adminCostColumns, splitAdminCostColumns } from "./adminCostColumns";
+
+// the points cell is an element that subscribes to the rate (VERIFY-DRILL-FINAL L-b)
+jest.mock("@/components/cost/pointsRate.client", () => ({ usePointsRate: () => 20_000 }));
+const text = (node: unknown) => renderToStaticMarkup(node as ReactElement);
 
 
 // The points rate is the billing.points_per_usd knob; this suite runs with no
@@ -22,12 +28,12 @@ describe("admin cost columns", () => {
     expect(columns[0].accessorFn?.({ cost: 0.004 })).toBe(0.004);
     expect(columns[1].accessorFn?.({ cost: 0.004 })).toBe(80);
     expect(columns[0].cell?.({ cost: 0.004 }, 0)).toBe("$0.004000");
-    expect(columns[1].cell?.({ cost: 0.004 }, 0)).toBe("80 points");
+    expect(text(columns[1].cell?.({ cost: 0.004 }, 0))).toBe("80 points");
   });
 
   it("does not report an unknown charge as zero", () => {
     expect(columns[0].cell?.({ cost: null }, 0)).toBe("—");
-    expect(columns[1].cell?.({ cost: null }, 0)).toBe("—");
+    expect(text(columns[1].cell?.({ cost: null }, 0))).toBe("—");
   });
 
   it("splits a stored numeric cost field while keeping other fields", () => {

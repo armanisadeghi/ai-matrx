@@ -6,9 +6,7 @@
 // deploy" half of that rule — without it the rows are just a nicer place to
 // hardcode.
 
-import { pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
-import { currentCostUnit } from "@/components/cost/costUnit";
+import { pointsToUsd } from "@ai-matrx/kit/format";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
 
 /** One operational knob: a ceiling, backstop, cadence or default. */
@@ -156,14 +154,14 @@ export function isPoints(capability: string): boolean {
 export function pointsToUsdLabel(
   points: number | string | null | undefined,
   period: string | null | undefined,
-  unit: CostUnit = currentCostUnit(),
+  /** The SUBSCRIBED points rate (`usePointsRate()`), never a one-shot read in render. */
+  rate: number | null,
 ): string | null {
   if (points === null || points === undefined) return null;
   const numeric = typeof points === "string" ? Number(points.trim()) : points;
   if (typeof points === "string" && points.trim() === "") return null;
   if (!Number.isFinite(numeric) || numeric < 0) return null;
-  void unit;
-  const money = formatAdminCost(pointsToUsd(numeric, { rate: currentPointsRate() }));
+  const money = formatAdminCost(pointsToUsd(numeric, { rate }), { rate });
   const per = period && period !== "lifetime" ? ` / ${period}` : "";
   return `~${money}${per} of AI`;
 }
@@ -183,12 +181,12 @@ export function capabilityUnitLabel(capability: string): string {
 export function limitToHuman(
   capability: string,
   stored: number | null,
-  unit: CostUnit = currentCostUnit(),
+  /** The SUBSCRIBED points rate (`usePointsRate()`), never a one-shot read in render. */
+  rate: number | null,
 ): string {
   if (stored === null || stored === undefined) return "unlimited";
-  void unit;
   if (isMicroUsd(capability)) {
-    return formatAdminCost(stored / MICRO_USD_PER_USD);
+    return formatAdminCost(stored / MICRO_USD_PER_USD, { rate });
   }
   return stored.toLocaleString("en-US");
 }

@@ -19,7 +19,8 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-import { count, timestamp, usdPrecise } from "../format";
+import { AdminCost } from "@/components/cost/AdminCost";
+import { count, timestamp } from "../format";
 import {
   ESTIMATED_SPEND_ROW_CAP,
   fetchEstimatedSpend,
@@ -58,7 +59,7 @@ const columns: MatrxColumnDef<EstimatedSpendRow>[] = [
     accessorFn: (r) => r.estimatedUsd,
     width: 110,
     align: "right",
-    cell: (r) => <span className="tabular-nums">{usdPrecise(r.estimatedUsd)}</span>,
+    cell: (r) => <span className="tabular-nums"><AdminCost usd={r.estimatedUsd} unknown="not measured" /></span>,
   },
   {
     id: "ledger",
@@ -67,7 +68,7 @@ const columns: MatrxColumnDef<EstimatedSpendRow>[] = [
     width: 90,
     align: "right",
     cell: (r) => (
-      <span className="tabular-nums text-muted-foreground">{usdPrecise(r.ledgerCostUsd)}</span>
+      <span className="tabular-nums text-muted-foreground"><AdminCost usd={r.ledgerCostUsd} unknown="not measured" /></span>
     ),
   },
 ];
@@ -130,7 +131,7 @@ export function EstimatedCostPanel({
           {data?.capped ? ` · first ${ESTIMATED_SPEND_ROW_CAP}` : ""}
         </span>
         <span className="ml-auto text-sm font-semibold tabular-nums text-foreground">
-          {data ? usdPrecise(data.totalEstimatedUsd) : loading ? "…" : "—"}
+          {data ? <AdminCost usd={data.totalEstimatedUsd} unknown="not measured" /> : loading ? "…" : "—"}
         </span>
       </header>
       {error ? (

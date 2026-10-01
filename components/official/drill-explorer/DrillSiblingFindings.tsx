@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import type { RecordsClient } from "@ai-matrx/records/core";
 import { drillInto, drillValueLabel, type MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
 import { formatCount } from "@ai-matrx/kit/format";
+import { usePointsRate } from "@/components/cost/pointsRate.client";
 
 import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";
 import { drillSiblingDimensions, drillSiblingMeasures, type DrillSiblingDefinition } from "./drillSiblings";
@@ -55,6 +56,7 @@ export function DrillSiblingFindings({
   onOpen: (question: MatrxDrillQuestion) => void;
 }) {
   const findings = findingsOf(sibling.def);
+  const rate = usePointsRate();
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const book = useDrillNameBookOr(hostBook, resolvers);
   const names = useDrillNames(book);
@@ -94,7 +96,7 @@ export function DrillSiblingFindings({
   }, [open, client, key, book]);
 
   const dimensions = drillSiblingDimensions(sibling.def, names, resolvers);
-  const measures = drillSiblingMeasures(sibling.def, money);
+  const measures = drillSiblingMeasures(sibling.def, money, rate);
   const paths = (sibling.def.paths ?? []).map((p) => p.levels);
 
   return (

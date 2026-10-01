@@ -94,8 +94,6 @@ import {
 } from "../types";
 import { EnforcementBadge } from "./PlanAllowancesPanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { CostUnit } from "@ai-matrx/kit/format";
-import { currentCostUnit } from "@/components/cost/costUnit";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 const dateFmt = new Intl.DateTimeFormat("en-US", {
@@ -157,7 +155,8 @@ export function createAddonTableRow(
   capabilityDef: Capability | undefined,
   planContext: PlanContext,
   now: Date,
-  unit: CostUnit = currentCostUnit(),
+  /** The SUBSCRIBED points rate (`useCostDisplay().rate`). */
+  rate: number | null,
 ): AddonTableRow {
   const startsLater = new Date(addon.effective_from).getTime() > now.getTime();
   const inEffect = addonIsInEffect(addon, now);
@@ -180,7 +179,7 @@ export function createAddonTableRow(
   } else if (allowanceState === "not_included" || planLimit === 0) {
     raiseState = "from_nothing";
     raiseAmount = addon.limit_value;
-    raiseLabel = "from nothing (+" + limitToHuman(addon.capability, addon.limit_value, unit) + ")";
+    raiseLabel = "from nothing (+" + limitToHuman(addon.capability, addon.limit_value, rate) + ")";
   } else if (allowanceState === "unlimited" || planLimit === null) {
     raiseState = "already_unlimited";
     raiseLabel = "plan is already unlimited";
@@ -190,8 +189,8 @@ export function createAddonTableRow(
     raiseState = delta > 0 ? "positive" : "no_raise";
     raiseLabel =
       delta > 0
-        ? "+" + limitToHuman(addon.capability, delta, unit)
-        : "no raise (" + limitToHuman(addon.capability, delta, unit) + ")";
+        ? "+" + limitToHuman(addon.capability, delta, rate)
+        : "no raise (" + limitToHuman(addon.capability, delta, rate) + ")";
   }
 
   if (startsLater) {
@@ -224,14 +223,14 @@ function sameAddonIds(left: readonly string[], right: readonly string[]): boolea
 
 /** A saved limit in the viewer's cost unit — subscribes, so the admin switch flips it live. */
 function LimitHuman({ capability, value }: { capability: string; value: number | null }) {
-  const { unit } = useCostDisplay();
-  return <>{limitToHuman(capability, value, unit)}</>;
+  const { rate } = useCostDisplay();
+  return <>{limitToHuman(capability, value, rate)}</>;
 }
 
 /** "~N points / month of AI" (or dollars for an admin who asked) for a points grant. */
 function PointsUsdLabel({ points, period }: { points: number | null; period: string | null }) {
-  const { unit } = useCostDisplay();
-  return <>{pointsToUsdLabel(points, period, unit)}</>;
+  const { rate } = useCostDisplay();
+  return <>{pointsToUsdLabel(points, period, rate)}</>;
 }
 
 const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
@@ -488,7 +487,7 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
 ];
 
 export function AccountAddonsPanel() {
-  const { unit: costUnit } = useCostDisplay();
+  const { rate: costRate } = useCostDisplay();
   const [addons, setAddons] = useState<AccountAddon[]>([]);
   const [orgs, setOrgs] = useState<OrganizationOption[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -614,10 +613,10 @@ export function AccountAddonsPanel() {
           capabilityByName.get(addon.capability),
           planContextFor(addon.organization_id, addon.capability),
           now,
-          costUnit,
+          costRate,
         ),
       ),
-    [addons, capabilityByName, now, orgById, planContextFor, costUnit],
+    [addons, capabilityByName, now, orgById, planContextFor, costRate],
   );
   const processedAddonRows = useMemo(() => {
     const rowsById = new Map(
@@ -787,8 +786,8 @@ function GrantAddonDialog({
   const period = cap?.period ?? "lifetime";
   const money = cap ? isMicroUsd(cap.capability) : false;
   const points = cap ? isPoints(cap.capability) : false;
-  const { unit: costUnit } = useCostDisplay();
-  const draftUsd = points ? pointsToUsdLabel(limitRaw, period, costUnit) : null;
+  const { rate: costRate } = useCostDisplay();
+  const draftUsd = points ? pointsToUsdLabel(limitRaw, period, costRate) : null;
   const planContext =
     orgId && capability ? planContextFor(orgId, capability) : null;
 
@@ -839,7 +838,7 @@ function GrantAddonDialog({
       });
       toast.success(
         `Granted ${org?.name ?? "the organization"} ${
-          stored === null ? "unlimited" : limitToHuman(cap.capability, stored)
+          stored === null ? "unlimited" : limitToHuman(cap.capability, stored, costRate)
         } ${cap.capability}`,
       );
       reset();
@@ -997,7 +996,7 @@ function GrantAddonDialog({
               <p className="text-xs text-muted-foreground">
                 Plan {planContext.plan.name} gives{" "}
                 {planContext.limit
-                  ? limitToHuman(capability, planContext.limit.limit_value, costUnit)
+                  ? limitToHuman(capability, planContext.limit.limit_value, costRate)
                   : "nothing"}{" "}
                 for this capability
                 {planContext.limit &&

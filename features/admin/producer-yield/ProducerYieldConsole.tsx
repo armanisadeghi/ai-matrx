@@ -60,7 +60,7 @@ import {
 } from "./types";
 import { readOf } from "@/components/read-state/ReadGate";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
-import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { useAdminCost } from "@/components/cost/useAdminCost";
 
 const TONE_CLASS: Record<string, string> = {
   critical:
@@ -150,7 +150,7 @@ function StatCard({
 export function ProducerYieldConsole() {
   const params = useSearchParams();
   const focused = params?.get("producer") ?? null;
-  const formatCostDisplay = formatAdminCost;
+  const formatCostDisplay = useAdminCost();
 
   const [checking, setChecking] = useState(false);
   const [showIdle, setShowIdle] = useState(false);
@@ -342,7 +342,7 @@ export function ProducerYieldConsole() {
           Alarms: yield &lt; <strong>{formatRate(floors.yield_floor)}</strong> ·
           undecided <strong>{floors.never_decided_min_age_days}d</strong> ·
           unmeasured ≥{" "}
-          <strong>{formatAdminCost(floors.no_signal_min_cost_usd)}</strong>
+          <strong>{formatCostDisplay(floors.no_signal_min_cost_usd)}</strong>
         </p>
       )}
 

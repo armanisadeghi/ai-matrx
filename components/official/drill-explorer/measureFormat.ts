@@ -29,10 +29,11 @@ import { formatAdminPoints, formatAdminUsd } from "@/components/cost/formatAdmin
 export type DrillMoneyUnit = "points" | "usd";
 
 /** The formatter of one Measure unit (money through the one switch). */
-export function drillUnitFormatter(unit: string | undefined, money: DrillMoneyUnit): (value: number | null) => string {
+/** `rate` is the SUBSCRIBED points rate (`usePointsRate()`), so money fills in when the rate knob lands. */
+export function drillUnitFormatter(unit: string | undefined, money: DrillMoneyUnit, rate: number | null): (value: number | null) => string {
   switch (unit) {
     case "usd":
-      return (v) => (v === null ? "—" : money === "usd" ? formatAdminUsd(v) : formatAdminPoints(v));
+      return (v) => (v === null ? "—" : money === "usd" ? formatAdminUsd(v) : formatAdminPoints(v, rate));
     case "tokens":
       return (v) => (v === null ? "—" : formatCount(v, { style: "compact" }));
     case "ms":

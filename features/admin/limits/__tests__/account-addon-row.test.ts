@@ -49,6 +49,7 @@ describe("account add-on table semantics", () => {
       undefined,
       { kind: "known", plan, limit: null },
       now,
+      20_000,
     );
     const unlimited = createAddonTableRow(
       addon,
@@ -56,6 +57,7 @@ describe("account add-on table semantics", () => {
       undefined,
       known(null),
       now,
+      20_000,
     );
 
     expect(absent.planAllowanceState).toBe("not_included");
@@ -72,6 +74,7 @@ describe("account add-on table semantics", () => {
       undefined,
       known(320_000),
       now,
+      20_000,
     );
     const toUnlimited = createAddonTableRow(
       { ...addon, limit_value: null },
@@ -79,6 +82,7 @@ describe("account add-on table semantics", () => {
       undefined,
       known(320_000),
       now,
+      20_000,
     );
     const noRaise = createAddonTableRow(
       { ...addon, limit_value: 100_000 },
@@ -86,6 +90,7 @@ describe("account add-on table semantics", () => {
       undefined,
       known(320_000),
       now,
+      20_000,
     );
 
     expect(positive.raiseState).toBe("positive");
@@ -103,6 +108,7 @@ describe("account add-on table semantics", () => {
       undefined,
       known(320_000),
       now,
+      20_000,
     );
 
     expect(expired.status).toBe("expired");
@@ -118,6 +124,7 @@ describe("account add-on table semantics", () => {
       undefined,
       known(320_000),
       now,
+      20_000,
     );
 
     expect(future.status).toBe("starts_later");
