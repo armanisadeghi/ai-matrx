@@ -126,7 +126,7 @@ function ReachFactRows({ facts }: { facts: ReachFacts }): ReactNode {
   ];
   return (
     <div className="mt-1 space-y-3">
-      <p className="text-xs text-muted-foreground">Affected by this agent’s saved changes</p>
+      <p className="text-xs text-muted-foreground">Mandate pins after this save</p>
       <div className="grid grid-cols-3 gap-2">
         {rows.map(({ label, value, icon: Icon, tone, background }) => (
           <div key={label} className={`min-w-0 rounded-xl p-3 ${background}`}>
@@ -140,8 +140,8 @@ function ReachFactRows({ facts }: { facts: ReachFacts }): ReactNode {
       </div>
       {(facts.blocked > 0 || facts.current > 0) && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 text-xs text-muted-foreground">
-          {facts.blocked > 0 && <span className="inline-flex items-center gap-1.5"><LockKeyhole className="size-3.5" aria-hidden="true" /><span className="font-semibold text-foreground">{facts.blocked}</span> blocked</span>}
-          {facts.current > 0 && <span className="inline-flex items-center gap-1.5"><CircleCheck className="size-3.5" aria-hidden="true" /><span className="font-semibold text-foreground">{facts.current}</span> current</span>}
+          {facts.blocked > 0 && <span className="inline-flex items-center gap-1.5"><LockKeyhole className="size-3.5" aria-hidden="true" /><span className="font-semibold text-foreground">{facts.blocked}</span> blocked {facts.blocked === 1 ? "pin" : "pins"}</span>}
+          {facts.current > 0 && <span className="inline-flex items-center gap-1.5"><CircleCheck className="size-3.5" aria-hidden="true" /><span className="font-semibold text-foreground">{facts.current}</span> current {facts.current === 1 ? "pin" : "pins"}</span>}
         </div>
       )}
     </div>
