@@ -205,6 +205,27 @@ test-fixture organization (the nightly clone also wipes anything created on it).
 the clone or on those disposable records only. Check the organization is not archived before installing
 (a 2026-10-01 install went into an archived twin; the server admitted it and the doors refused it).
 
+**The channel is part of the test — a rehearsal that runs as a privileged database role proves nothing
+about the production channel.** On 2026-10-01 the production final switch was refused twice (the copy
+fence refused the press's own writes because the server presses as `app.actor_tier=code`, then an
+organization wall refused the presser, who was not a member) after every clone rehearsal had passed: the
+rehearsal synthesised the person's token and called the database functions as the store-owner role, which
+every fence and wall lets through. A dress rehearsal drives the SAME doors the person's click reaches
+(the server route, with a real session from the product's own auth) as a person shaped like the real one
+(the admin lane, and NOT a member of what the step touches), so that the server channel's actor settings,
+caller role, request headers and the person's memberships are the ones judged. Prove the rehearsal red
+against the pre-fix bodies before trusting it green; a rehearsal that never saw the production sentence
+cannot vouch for the fix. Method and proof: `projects/data-doctrine-adoption/v5/PROGRESS-PRESS-FENCE.md`
+(the honest rehearsal, lane PRESS-FENCE-HONEST).
+
+**Runners on one machine.** The provider's in-app browser pane is one per machine: every runner and every fixer takes
+a lock before its first browser step — `mkdir /tmp/matrx-browser-lane.lock && echo <name> > …/owner` — checks the
+owner is itself before every browser step, releases only its own lock, and never removes another's (2026-10-01: a
+fixer tested without the lock and deleted a runner's; the runner's tab was navigated away twice). Each seat gets its
+own preview hostname (`MATRX_PREVIEW_SESSION=<name> pnpm dev-login …`); the plain host is shared and other
+sessions navigate it. A run during which the shared preview changed database mode, or another lane's edit raised a
+build error, is INCONCLUSIVE; say so and rerun.
+
 ## 6. Where it lives
 
 `common-docs/operations/real-tests/<area>/` — the playbooks and one `LEDGER.md`. Playbooks walk
