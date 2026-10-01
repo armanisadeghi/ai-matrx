@@ -145,6 +145,7 @@ export async function openWalk(name, { headless = true } = {}) {
       const s = SEATS[seat];
       if (!s?.password) throw new Error(`no password for seat ${seat} in .env.local / aidream/.env`);
       const context = await browser.newContext({ viewport: { width, height }, colorScheme });
+      await installIntercepts(context);
       const page = await context.newPage();
       page.on("console", (m) => {
         if (m.type() === "error") errors.console.push({ seat, url: page.url(), text: m.text().slice(0, 300) });
@@ -230,7 +231,8 @@ export async function openWalk(name, { headless = true } = {}) {
       }
       await browser.close().catch(() => {});
       const file = join(OUT, `${name}.json`);
-      writeFileSync(file, JSON.stringify({ walk: name, target: TARGET, origin: ORIGIN, stamp: STAMP, results, errors }, null, 2));
+      writeFileSync(file, JSON.stringify({ walk: name, target: TARGET, origin: ORIGIN, stamp: STAMP, results, errors, intercepts: interceptHits }, null, 2));
+      if (INTERCEPTS.length && !interceptHits.length) console.log(`[harness] 🚨 an intercept plant was set but never fired — this run proves nothing about it`);
       const failed = results.filter((r) => r.status === "FAIL").length;
       console.log(`[harness] ${name}: ${results.filter((r) => r.status === "PASS").length} pass, ${failed} fail, ${results.filter((r) => r.status === "SKIP").length} skip → ${file}`);
       process.exitCode = failed ? 1 : 0;
@@ -238,6 +240,53 @@ export async function openWalk(name, { headless = true } = {}) {
     },
   };
   return ctx;
+}
+
+/**
+ * INTERCEPT PLANTS (mode "intercept"): a break planted at the network boundary of THIS test browser
+ * only — nothing on any server or database changes, so it is safe on live and on the clone. The runner
+ * passes the plant's rules as SN_INTERCEPT (JSON array). Each rule: { match: "<url regex>",
+ * method?: "POST", action: "status" | "drop" | "fake-ok" | "abort" | "rewrite", status?, keep?, body?,
+ * from?, to? }.
+ *   status  — answer with that status and a refusal body, the request never reaches the server
+ *   drop    — let it through, then keep only the first `keep` (default 0) items of a JSON array answer
+ *   fake-ok — answer 200 with `body` (default "null") WITHOUT sending: a write that claims success
+ *   abort   — the request fails at the network
+ *   rewrite — let it through, then replace the text `from` with `to` in the answer
+ * Every interception is logged, so a red run shows the fault actually fired.
+ */
+export const INTERCEPTS = (() => {
+  try {
+    return JSON.parse(process.env.SN_INTERCEPT ?? "[]");
+  } catch {
+    throw new Error("SN_INTERCEPT is not JSON");
+  }
+})();
+export const interceptHits = [];
+async function installIntercepts(context) {
+  for (const rule of INTERCEPTS) {
+    const re = new RegExp(rule.match);
+    await context.route(re, async (route) => {
+      const req = route.request();
+      if (rule.method && req.method() !== rule.method) return route.continue();
+      interceptHits.push({ rule: rule.match, action: rule.action, url: req.url().slice(0, 160) });
+      console.log(`[harness] PLANT intercept ${rule.action} ${req.method()} ${req.url().slice(0, 120)}`);
+      if (rule.action === "abort") return route.abort();
+      if (rule.action === "status")
+        return route.fulfill({ status: rule.status ?? 500, contentType: "application/json", body: JSON.stringify({ message: "planted by safety-net", code: "SNPLANT" }) });
+      if (rule.action === "fake-ok") return route.fulfill({ status: 200, contentType: "application/json", body: rule.body ?? "null" });
+      const res = await route.fetch();
+      let body = await res.text();
+      if (rule.action === "drop") {
+        try {
+          const j = JSON.parse(body);
+          if (Array.isArray(j)) body = JSON.stringify(j.slice(0, rule.keep ?? 0));
+        } catch {}
+      }
+      if (rule.action === "rewrite") body = body.split(rule.from).join(rule.to);
+      return route.fulfill({ response: res, body });
+    });
+  }
 }
 
 /** Wait until `fn` (run in the page) returns truthy; returns the value or null. */

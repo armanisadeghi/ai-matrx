@@ -51,10 +51,8 @@ if (!["live", "clone"].includes(TARGET)) {
   process.exit(2);
 }
 const PLANT = opt("plant");
-if (PLANT && TARGET !== "clone") {
-  console.error("refused: a planted break runs on the clone only");
-  process.exit(2);
-}
+// Plants run on the clone only — except an `intercept` plant, which breaks only this run's own test
+// browser at its network boundary and changes nothing on any server (checked after the plant loads).
 
 // ── environment ────────────────────────────────────────────────────────────────────────────
 function readEnvFile(path) {
@@ -119,6 +117,10 @@ if (PLANT) {
     process.exit(2);
   }
   plant = (await import(file)).default;
+  if (TARGET !== "clone" && plant.mode !== "intercept") {
+    console.error("refused: a planted break runs on the clone only (an intercept plant may run on live)");
+    process.exit(2);
+  }
 }
 // HALVES (2026-10-01 split): a = SAFETY-NET (tables, lists, scopes, datahome, drill, platform);
 // b = SAFETY-NET-B (cutover, agents). `--half all` (default) runs both.
@@ -189,7 +191,7 @@ async function runCheck(c) {
   const log = join(OUT, "logs", `${c.id}.log`);
   writeFileSync(log, `# ${c.id} (${c.kind}) target=${TARGET}${plant ? ` plant=${plant.id}` : ""}\n`);
   if (c.kind === "walk") {
-    const r = await run(process.execPath, [join(REPO, c.file)], { env: { ...walkEnv, ...(c.env ?? {}), ...(plant && plant.mode === "env" ? plant.env : {}) }, log, timeoutMs: c.timeoutMs ?? 40 * 60 * 1000 });
+    const r = await run(process.execPath, [join(REPO, c.file)], { env: { ...walkEnv, ...(c.env ?? {}), ...(plant && plant.mode === "env" ? plant.env : {}), ...(plant && plant.mode === "intercept" ? { SN_INTERCEPT: JSON.stringify(plant.rules) } : {}) }, log, timeoutMs: c.timeoutMs ?? 40 * 60 * 1000 });
     const name = c.walkName ?? c.file.split("/").pop().replace(/\.mjs$/, "");
     const jf = join(OUT, `${name}.json`);
     const steps = existsSync(jf) ? JSON.parse(readFileSync(jf, "utf8")).results : [];
