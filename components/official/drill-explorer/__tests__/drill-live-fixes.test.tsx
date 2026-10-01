@@ -190,7 +190,7 @@ describe("F3/F4 — the records read in their own noun, with their sums and the 
           question={{ by: [], show: ["cost", "requests"], where: [], window: "2026-09-12..2026-09-13" }}
           dimensions={[{ key: "person", label: "Person", kind: "relation" }]}
           measures={[
-            { key: "cost", label: "Cost (points)", additive: true, format: (v: number) => `${Math.round(v * 20_000).toLocaleString("en-US")} points` },
+            { key: "cost", label: "Cost (points)", additive: true, format: (v: number | null) => `${Math.round((v ?? 0) * 20_000).toLocaleString("en-US")} points` },
             { key: "requests", label: "Requests", additive: true },
           ]}
           rowNoun="request"
@@ -249,7 +249,7 @@ describe("F3/F4 — the records read in their own noun, with their sums and the 
           records={USAGE_DEF.records!}
           question={{ by: [], show: ["cost"], where: [], window: "24h" }}
           dimensions={[]}
-          measures={[{ key: "cost", label: "Cost (points)", additive: true, format: (v: number) => `${Math.round(v * 20_000).toLocaleString("en-US")} points` }]}
+          measures={[{ key: "cost", label: "Cost (points)", additive: true, format: (v: number | null) => `${Math.round((v ?? 0) * 20_000).toLocaleString("en-US")} points` }]}
           rowNoun="request"
         />,
       );
