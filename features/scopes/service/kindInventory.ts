@@ -73,8 +73,10 @@ function failure(what: string, error: { message?: string; code?: string } | null
 
 /**
  * How many kinds one count call carries. Every kind is its own count query inside the one
- * function, and the function runs under the signed-in role's statement timeout, so a long list
- * (every pickable kind — "All" in Use existing) is split into calls of this size, run in parallel.
+ * function, and the function runs under the signed-in role's statement timeout — which cancels the
+ * WHOLE call, so one slow kind would take every kind in its call down with it. A short list (the
+ * Source input's Use existing: up to this many kinds) is therefore counted one kind per call, in
+ * parallel; a long list ("All": every pickable kind) is split into calls of this size.
  */
 const COUNT_CHUNK = 8;
 
@@ -111,7 +113,8 @@ async function countChunk(
 /**
  * Per-kind counts. `tokens` omitted = every kind the Source input offers (one call).
  * A kind the database could not count comes back as `null` (show a dash, never a fake 0).
- * A long list is counted in parallel chunks; a chunk that fails leaves its kinds `null`
+ * A short list is counted one kind per call, a long list in chunks, all in parallel; a call that
+ * fails (a statement timeout included) leaves only its kinds `null`
  * (and says so in the console) — only when every chunk fails does the read fail.
  */
 export async function fetchKindCounts(
@@ -119,9 +122,10 @@ export async function fetchKindCounts(
   tokens?: readonly string[],
   showSystemFiles?: boolean,
 ): Promise<Map<string, number | null>> {
-  if (!tokens || tokens.length <= COUNT_CHUNK) return countChunk(scope, tokens, showSystemFiles);
+  if (!tokens || tokens.length <= 1) return countChunk(scope, tokens, showSystemFiles);
+  const size = tokens.length <= COUNT_CHUNK ? 1 : COUNT_CHUNK;
   const chunks: string[][] = [];
-  for (let i = 0; i < tokens.length; i += COUNT_CHUNK) chunks.push(tokens.slice(i, i + COUNT_CHUNK));
+  for (let i = 0; i < tokens.length; i += size) chunks.push(tokens.slice(i, i + size));
   const settled = await Promise.allSettled(chunks.map((c) => countChunk(scope, c, showSystemFiles)));
   const failed = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
   if (failed.length === settled.length) throw failed[0]!.reason;

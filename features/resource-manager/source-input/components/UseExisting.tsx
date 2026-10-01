@@ -126,14 +126,17 @@ function useOfferedCounts(scope: KindScope, offered: OfferedKind[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestKey]);
   const counts = new Map<string, number | null>();
-  for (const k of inventoryKinds) if (inventory.counts.has(k.token)) counts.set(k.key, inventory.counts.get(k.token)!);
+  for (const k of inventoryKinds) {
+    // A count read that failed outright leaves every kind it carried uncounted: each shows a dash
+    // and still opens its list — never one error block in place of the whole row.
+    if (inventory.error) counts.set(k.key, null);
+    else if (inventory.counts.has(k.token)) counts.set(k.key, inventory.counts.get(k.token)!);
+  }
   const savedReady = !groupsKey || saved.key === requestKey;
   if (savedReady) for (const [key, n] of saved.counts) counts.set(key, n);
   return {
     counts,
     loading: inventory.loading || (Boolean(userId) && !savedReady),
-    error: inventory.error,
-    retry: inventory.retry,
   };
 }
 
@@ -180,18 +183,6 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
   const openKind = kinds.find((k) => k.key === open) ?? null;
   // A list's page size is a knob that resolves with or without an organization
   // (user override -> platform default), so a read never waits on one.
-
-  if (counts.error) {
-    return (
-      <p role="alert" className="flex items-center gap-2 text-sm text-destructive">
-        {counts.error.message}
-        <ErrorAlchemyMenu error={counts.error.message} operation="Count what you have" />
-        <button type="button" className="underline" onClick={counts.retry}>
-          Try again
-        </button>
-      </p>
-    );
-  }
 
   if (searching) {
     if (counts.loading) return <TileSkeleton />;
