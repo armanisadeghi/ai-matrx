@@ -50,7 +50,7 @@ TARGET = os.environ.get("SN_TARGET", "clone")
 OUT = Path(os.environ.get("SN_OUT", str(CODE / "common-docs/operations/for-arman/2026-10-01/safety-net/adhoc")))
 OUT.mkdir(parents=True, exist_ok=True)
 STAMP = os.environ.get("SN_STAMP") or datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%b %-d %H%M")
-COMPARE = sys.argv[sys.argv.index("--compare") + 1] if "--compare" in sys.argv else None
+COMPARE = sys.argv[sys.argv.index("--compare") + 1] if "--compare" in sys.argv else (os.environ.get("SN_B_BEFORE_API") or None)
 
 ADMIN_ID = "87a6e699-3622-4869-8843-d0867456c0dd"
 SWITCHING = {"key": "switching", "id": "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f", "name": "admin's Workspace"}

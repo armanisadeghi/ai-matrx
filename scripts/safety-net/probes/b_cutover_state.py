@@ -38,7 +38,7 @@ CODE = Path(__file__).resolve().parents[4]
 TARGET = os.environ.get("SN_TARGET", "clone")
 OUT = Path(os.environ.get("SN_OUT", str(CODE / "common-docs/operations/for-arman/2026-10-01/safety-net/adhoc")))
 OUT.mkdir(parents=True, exist_ok=True)
-AFTER = sys.argv[sys.argv.index("--after") + 1] if "--after" in sys.argv else None
+AFTER = sys.argv[sys.argv.index("--after") + 1] if "--after" in sys.argv else (os.environ.get("SN_B_BEFORE") or None)
 PSQL = next((p for p in ("/opt/homebrew/opt/libpq/bin/psql", "/opt/homebrew/opt/postgresql@17/bin/psql") if Path(p).exists()), "psql")
 TEST_SEAT_ORGS = {"884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f": "admin's Workspace", "0a54df90-eab8-4d07-ab29-81a45fb41e04": "Cedar Ridge Physical Therapy"}
 PAGE_BUDGET_MS = 8000
@@ -171,6 +171,15 @@ def main() -> int:
         step(["C06"], "births.after_in_the_store", knob == "true", f"data_tables/older_tables_moved = {knob}")
         step(["C12"], "undo.offered_after", r.get("state") == "new" and (r.get("undo") is not None), f"undo plan for {len((r.get('undo') or {}).get('plan') or [])} organizations; needs_confirm={(r.get('undo') or {}).get('needs_confirm')}")
 
+    # C09 — the hour moves nothing to the graveyard (chair's ruling 2026-10-01 02:30 PT): every older table is where it
+    # was, and nothing of the older systems sits in `graveyard`.
+    kept = q("""select concat_ws(',', to_regclass('workbench.udt_datasets') is not null, to_regclass('workbench.udt_dataset_rows') is not null,
+                       to_regclass('workbench.udt_structured_lists') is not null, to_regclass('context.scopes') is not null,
+                       to_regclass('context.scope_types') is not null,
+                       (select count(*) from pg_tables where schemaname = 'graveyard' and (tablename like 'udt\_%' or tablename like 'scope%' or tablename like 'context%')));""")
+    parts = kept.split(",")
+    step(["C09"], "graveyard.nothing_moved", parts[:5] == ["true"] * 5 and parts[5] == "0",
+         f"older tables in place (udt_datasets, udt_dataset_rows, udt_structured_lists, context.scopes, context.scope_types): {parts[:5]}; older-system tables in graveyard: {parts[5]}")
     lag = qj("""select jsonb_build_object('n', count(*), 'orgs', count(distinct organization_id), 'oldest', min(created_at))
                   from custom.io_outbox where event_key = 'context.follow' and consumed_at is null and deleted_at is null;""")
     step(["C08"], "follow.backlog_zero", lag["n"] == 0, f"{lag['n']} context edits waiting in {lag['orgs']} organizations (oldest {lag['oldest']})")

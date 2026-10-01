@@ -1,2 +1,76 @@
-// Checks for area "cutover". Each: { id, area, kind: "walk"|"sql"|"cmd", file|cmd/args, items: [ids], targets: ["live","clone"], liveReadOnly? }
-export default [];
+// Checks for area "cutover" — lane SAFETY-NET-B (2026-10-01). Items C01–C13 (+ A11 copy edits).
+// Each: { id, area, kind: "walk"|"sql"|"cmd", file|cmd/args, items: [ids], targets: ["live","clone"], liveReadOnly? }
+//
+// AFTER the press (the switch hour): run with SN_B_BEFORE=<before run dir>/b-cutover-state.json so the state check
+// compares the plan; with SN_B_FREEZE_FROM=<freeze-start dir>/b-release-state.json so C11 judges movement.
+export default [
+  {
+    // Read-only on live: readiness truthful + in time, the plan, test edits the press puts back, doors/births state,
+    // follow backlog, the window policy, the undo's reach, nothing in the graveyard. AFTER: exactly the plan switched.
+    id: "cutover.state",
+    area: "cutover",
+    kind: "cmd",
+    cmd: "python3",
+    args: ["scripts/safety-net/probes/b_cutover_state.py"],
+    stepsJson: "b-cutover-state.json",
+    items: ["C01", "C02", "C04", "C05", "C06", "C08", "C09", "C10", "C12", "A11"],
+    targets: ["live", "clone"],
+    timeoutMs: 10 * 60 * 1000,
+  },
+  {
+    // One rolled-back transaction on the clone: readiness names 4 planted holds (P1 un-copied row, P2 stale copy,
+    // P3 live fields under an archived Table, P4 a table born after Step 1) and the press agrees; the press switches
+    // exactly the plan; old doors refuse in a person's words; lists follow; births in the store; the undo restores;
+    // W10 outside FKs; W15 a cut press leaves all-old.
+    id: "cutover.switch-chain",
+    area: "cutover",
+    kind: "sql",
+    file: "scripts/safety-net/probes/b_switch_chain.sql",
+    items: ["C01", "C02", "C03", "C04", "C05", "C06", "C13"],
+    targets: ["clone"],
+    passWhen: "SWITCH CHAIN GREEN",
+    timeoutMs: 25 * 60 * 1000,
+  },
+  {
+    // The static census: nothing outside the baseline names an old door. Its own red: `pnpm check:old-system-unreachable:self-test`.
+    id: "cutover.old-system-unreachable",
+    area: "cutover",
+    kind: "cmd",
+    cmd: "pnpm",
+    args: ["-s", "check:old-system-unreachable"],
+    items: ["C07"],
+    targets: ["live", "clone"],
+  },
+  {
+    id: "cutover.old-system-unreachable-self-test",
+    area: "cutover",
+    kind: "cmd",
+    cmd: "pnpm",
+    args: ["-s", "check:old-system-unreachable:self-test"],
+    items: ["C07"],
+    targets: ["clone"],
+  },
+  {
+    // The watched-window file on the clone through db:rehearse: sign-in freeze under 100 ms.
+    id: "cutover.window-policy-freeze",
+    area: "cutover",
+    kind: "cmd",
+    cmd: "zsh",
+    args: ["scripts/safety-net/probes/b_policy_freeze.sh", "100"],
+    items: ["C10"],
+    targets: ["clone"],
+    passWhen: "C10 PASS",
+    timeoutMs: 15 * 60 * 1000,
+  },
+  {
+    // Releases stopped: snapshot before the hour; in the hour SN_B_FREEZE_FROM=<snapshot> judges any movement.
+    id: "cutover.release-stopped",
+    area: "cutover",
+    kind: "cmd",
+    cmd: "python3",
+    args: ["scripts/safety-net/probes/b_release_stopped.py"],
+    stepsJson: "b-release-state.json",
+    items: ["C11"],
+    targets: ["live"],
+  },
+];

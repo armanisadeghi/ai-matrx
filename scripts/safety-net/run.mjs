@@ -256,7 +256,11 @@ async function runCheck(c) {
     let code = r.code;
     if (code === 0 && passRe && !passRe.test(r.out)) code = 1;
     if (failRe && failRe.test(r.out)) code = 1;
-    return { code, ms: r.ms, steps: [], tail: r.out.slice(-1500) };
+    // SAFETY-NET-B: a cmd probe that writes per-step results ({ results: [{ step, items, status, detail }] }, the walk
+    // shape) to OUT/<stepsJson> is graded per item like a walk, so one failed step does not fail every item it names.
+    const sj = c.stepsJson ? join(OUT, c.stepsJson) : null;
+    const steps = sj && existsSync(sj) ? JSON.parse(readFileSync(sj, "utf8")).results ?? [] : [];
+    return { code, ms: r.ms, steps, tail: r.out.slice(-1500) };
   }
   return { code: 99, steps: [], tail: `unknown kind ${c.kind}` };
 }

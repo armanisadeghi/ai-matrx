@@ -27,7 +27,9 @@
 \timing off
 \pset tuples_only on
 
-begin;
+-- One snapshot for the whole chain: the shared clone is written by peers all night, and under READ COMMITTED each
+-- readiness call would see their newest commits (a peer's fixture between two calls reads as "not Ready").
+begin isolation level repeatable read;
 set local statement_timeout = '20min';
 set local lock_timeout = '30s';
 
@@ -63,6 +65,25 @@ begin
   perform platform.final_switch_copy_again_record(v_run, 'finish', null, true, '{"says": "safety-net-b: stand-in green Step 1"}'::jsonb);
   v_report := v_report || format('stand-ins: %s waiting follow rows marked consumed; one green Step 1 recorded', v_lag);
 
+  -- (b2) W1 (lane READINESS-PARITY's, not this chain's): a scope live in the current tables whose store Record was
+  -- archived by a junk sweep (production: Alex Hart's Workspace → "Biology 101 — Live Test"). Readiness now names it,
+  -- correctly; this chain tests the press's OTHER mechanics, so here the Record is brought back the way the repair
+  -- would, inside this rolled-back transaction, and counted.
+  perform set_config('matrx.actor_system', 'safety-net-b stand-in (clone, rolled back)', true);
+  update custom.record r set deleted_at = null
+   where r.deleted_at is not null
+     and exists (select 1 from context.scopes s where s.id = r.id and s.organization_id = r.organization_id and s.deleted_at is null);
+  get diagnostics v_n = row_count;
+  if v_n > 0 then v_report := v_report || format('stand-in: %s scope Records brought back beside their live current-table scopes (W1)', v_n); end if;
+  -- (c) Step 1's own removal carry (platform.cutover_carry_removals — the door Copy again calls) for every organization
+  -- whose only difference is "something removed on the older side is still on its copy" (peers' fixtures, all night).
+  v_r := platform._final_switch_readiness();
+  for v_o in select x from jsonb_array_elements(v_r -> 'organizations') x
+              where (x ->> 'needs_copy_again')::boolean
+                and not exists (select 1 from jsonb_array_elements(x -> 'rerun_clears') c where c ->> 'key' <> 'removals_carried') loop
+    perform platform.cutover_carry_removals((v_o ->> 'id')::uuid, null);
+    v_report := v_report || format('stand-in: Step 1''s removal carry for %s', v_o ->> 'name');
+  end loop;
   v_r := platform._final_switch_readiness();
   if not (v_r ->> 'ready')::boolean then
     raise exception 'C01 PRECONDITION: the clone is not Ready even after the stand-ins: % — blocking: %',
@@ -181,6 +202,34 @@ begin
       case when (v_x -> 'p' ->> 'ok')::boolean then 'went through' else 'refused' end, left(v_x -> 'p' ->> 'says', 200));
   end if;
 
+  -- P4 (W16) — a table born on the older side AFTER Step 1 (the agents' dataset tool still does this in an unswitched
+  -- organization until the press). Readiness must say Copy again is needed and name the table; the press refuses.
+  begin
+    insert into workbench.udt_datasets (table_name, organization_id, user_id, created_by, visibility)
+    select 'Supply Reorders — born after Step 1', c_ws, c_admin, c_admin, d.visibility from workbench.udt_datasets d limit 1;
+    v_x := platform._final_switch_readiness();
+    perform set_config('request.jwt.claims', c_claims, true);
+    perform set_config('request.headers', c_page, true);
+    perform set_config('role', 'authenticated', true);
+    v_p := platform.final_switch_press('safety-net-b P4', null);
+    perform set_config('role', 'postgres', true);
+    raise exception using errcode = 'SNB01', message = jsonb_build_object('r', v_x - 'organizations' - 'platform',
+      'org', (select o from jsonb_array_elements(v_x -> 'organizations') o where (o ->> 'id')::uuid = c_ws), 'p', v_p - 'readiness')::text;
+  exception when sqlstate 'SNB01' then v_x := sqlerrm::jsonb;
+  end;
+  perform set_config('role', 'postgres', true);
+  if (v_x -> 'r' ->> 'ready')::boolean then
+    raise exception 'C13/W16 RED: readiness says Ready with an older table born after Step 1: %', v_x -> 'r' ->> 'says';
+  end if;
+  if not exists (select 1 from jsonb_array_elements(v_x -> 'org' -> 'rerun_clears') c
+                  where c ->> 'key' = 'copied' and c ->> 'detail' like '%Supply Reorders — born after Step 1%') then
+    raise exception 'C13/W16 RED: the refusal does not name the table born after Step 1: %', left((v_x -> 'org' -> 'rerun_clears')::text, 500);
+  end if;
+  if v_x -> 'p' ->> 'reason' is distinct from 'not_ready' then
+    raise exception 'C13/W16 RED: the press did not refuse "not_ready" with a table born after Step 1: %', left((v_x -> 'p')::text, 400);
+  end if;
+  v_report := v_report || format('P4 a table born after Step 1 → %s', v_x -> 'p' ->> 'says');
+
   -- ── the press (C02) ─────────────────────────────────────────────────────────────────────────────────────────
   perform set_config('request.jwt.claims', c_claims, true);
   perform set_config('request.headers', c_page, true);
@@ -201,7 +250,10 @@ begin
    where (x -> 'plan' ->> 'press_tables')::boolean
      and coalesce((platform._cutover_seam_last_done('older_tables', (x ->> 'id')::uuid)).direction, 'old') <> 'new';
   if v_n > 0 then raise exception 'C02 RED: % planned organizations were not switched by the press', v_n; end if;
-  v_report := v_report || format('press → %s', v_p ->> 'says');
+  v_report := v_report || format('press → %s · timings %s · listed %s organizations', v_p ->> 'says', v_p -> 'timings', jsonb_array_length(v_r -> 'organizations'));
+  -- W15 below cuts a second press half way through its Data tables step, measured from this one.
+  perform set_config('sn.cut_ms', (coalesce((v_p -> 'timings' ->> 'readiness_ms')::int, 3000)
+                                    + greatest(coalesce((v_p -> 'timings' ->> 'data_tables_ms')::int, 1000) / 2, 200))::text || 'ms', false);
 
   -- ── C04: the older doors refuse ──────────────────────────────────────────────────────────────────────────────
   select count(*) into v_n from unnest(platform._final_switch_old_write_doors()) d
@@ -211,9 +263,12 @@ begin
     perform set_config('request.jwt.claims', c_claims, true);
     perform set_config('role', 'authenticated', true);
     perform public.add_data_row_to_user_table(v_table, jsonb_build_object('work_order', v_marker || '-DOOR'));
-    perform set_config('role', 'postgres', true);
-    raise exception 'C04 RED: a signed-in person added a row to a moved older table through add_data_row_to_user_table';
-  exception when insufficient_privilege then v_err := sqlerrm;
+    raise exception using errcode = 'SNB03', message = 'it took the row';
+  exception
+    when insufficient_privilege then v_err := sqlerrm;
+    when others then
+      perform set_config('role', 'postgres', true);
+      raise exception 'C04 RED: after the press a signed-in person still reaches add_data_row_to_user_table on a moved table (it answered: %)', sqlerrm;
   end;
   perform set_config('role', 'postgres', true);
   begin
@@ -253,6 +308,20 @@ begin
   end if;
   v_report := v_report || format('older birth refused: %s', left(v_err, 160));
 
+  -- ── W10: the two outside foreign keys still land on a table that works ─────────────────────────────────────
+  select count(*) into v_n from pg_constraint c
+   where c.contype = 'f' and c.confrelid = 'workbench.udt_datasets'::regclass
+     and c.conrelid in ('extend.wbx_pattern'::regclass, 'context.scope_dataset_instances'::regclass);
+  if v_n < 2 then raise exception 'C13/W10 RED: % of the 2 outside foreign keys onto workbench.udt_datasets remain', v_n; end if;
+  select count(*) into v_n from (
+    select w.target_user_table_id as t from extend.wbx_pattern w where w.target_user_table_id is not null
+    union all
+    select i.dataset_id from context.scope_dataset_instances i where i.dataset_id is not null) refs
+   where exists (select 1 from workbench.udt_datasets d where d.id = refs.t and d.deleted_at >= now())
+     and not exists (select 1 from custom.record c where c.id = refs.t and c.data_class = 'table' and c.deleted_at is null);
+  if v_n > 0 then raise exception 'C13/W10 RED: % saved patterns or scope datasets point at a table the press archived that has no live copy', v_n; end if;
+  v_report := v_report || 'W10 outside foreign keys: both present; every pointer at a moved table has its live copy'::text;
+
   -- ── C03: the undo puts everything back ──────────────────────────────────────────────────────────────────────
   -- What one transaction CANNOT prove, said plainly: that the undo carries a person's copy edit back into the older
   -- row. The carry reads each row's history AS OF the press (custom.record_state_as_of), and inside one transaction
@@ -286,5 +355,36 @@ begin
   raise notice E'SWITCH CHAIN GREEN\n  %', array_to_string(v_report, E'\n  ');
 end
 $chain$;
+
+-- ── W15: a press cut off part way (server replaced, stream dropped) leaves everything as it was ─────────────────
+-- The press is ONE database statement: cancelled mid-way, nothing it did survives. Cut it half way through its Data
+-- tables step (readiness_ms + data_tables_ms/2 of the chain's own press), then read the state back.
+select current_setting('sn.cut_ms', true) as cut_ms \gset
+savepoint sn_cut;
+select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated","session_id":"safety-net-b"}', true),
+       set_config('request.headers', '{"origin":"https://manage.aimatrx.com","x-matrx-admin-lane":"1"}', true);
+set local statement_timeout = :'cut_ms';
+\set ON_ERROR_STOP off
+select set_config('role', 'authenticated', true), platform.final_switch_press('safety-net-b W15 cut', null);
+\set ON_ERROR_STOP on
+rollback to savepoint sn_cut;
+set local statement_timeout = '20min';
+select set_config('sn.cut_sqlstate', :'LAST_ERROR_SQLSTATE', true);
+do $cut$
+declare v_n int;
+begin
+  if current_setting('sn.cut_sqlstate', true) is distinct from '57014' then
+    raise exception 'C13/W15 INCONCLUSIVE: the press was not cut (it answered sqlstate %), so a cut press was not observed', current_setting('sn.cut_sqlstate', true);
+  end if;
+  if coalesce((platform._final_switch_last()).direction, 'old') = 'new' then raise exception 'C13/W15 RED: a cut press left the platform switched'; end if;
+  select count(*) into v_n from unnest(platform._final_switch_old_write_doors()) d where not has_function_privilege('authenticated', d, 'EXECUTE');
+  if v_n > 0 then raise exception 'C13/W15 RED: a cut press left % older write doors closed', v_n; end if;
+  if coalesce((select value::text from platform.feature_knob where feature = 'data_tables' and key = 'older_tables_moved'), 'absent') <> 'false' then
+    raise exception 'C13/W15 RED: a cut press left data_tables/older_tables_moved set';
+  end if;
+  raise notice 'W15 GREEN: a press cancelled at % (sqlstate 57014)', current_setting('sn.cut_ms', true);
+  raise notice 'W15: it left the platform on the older side, every door open, the value false';
+end
+$cut$;
 
 rollback;
