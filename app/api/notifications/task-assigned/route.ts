@@ -141,7 +141,10 @@ export async function POST(request: Request) {
         console.error("[task-assigned] in-app notice read failed:", inAppError);
         return NextResponse.json({ success: false, msg: "Could not verify assignment DM" }, { status: 503 });
       }
-      assignmentNoticeExists = Boolean(inAppNotice) || Date.parse(taskRow.updated_at) < cutoverAt;
+      // An older write is not proof that the recipient allowed in-app
+      // notification. Only the saved, preference-gated row authorizes an
+      // action DM once the assignment outbox has been activated.
+      assignmentNoticeExists = Boolean(inAppNotice);
       // The cutover marker is an intention, not delivery proof. A transition
       // is owned by the durable path only after its own dedupe row exists.
       // This preserves the browser fallback if activation ran ahead of the

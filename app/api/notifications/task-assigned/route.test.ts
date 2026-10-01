@@ -284,7 +284,7 @@ describe("task assignment notification admission", () => {
     const response = await POST(request({ taskId, taskVersion: 4 }));
 
     expect(response.status).toBe(200);
-    expect(sendDm).toHaveBeenCalledTimes(1);
+    expect(sendDm).not.toHaveBeenCalled();
     expect(sendTaskAssignmentEmail).toHaveBeenCalledTimes(1);
   });
 
