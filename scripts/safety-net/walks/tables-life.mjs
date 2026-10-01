@@ -177,16 +177,17 @@ async function typeInto(row, col, words, { enter = true, replace = true } = {}) 
 async function columnSettings(col) {
   const exact = new RegExp(`^\\s*[⚿]?\\s*${esc(col)}\\s*[↑↓]?\\s*$`, "i");
   await page.locator("thead th", { hasText: exact }).first().click({ button: "right" });
-  await sleep(900);
+  const cfg = page.locator('[role=menu] [data-alchemy-node="cm:x:grid-col-configure"]').first();
+  await until("Column settings…", async () => (await cfg.count()) > 0, 15000);
   const items = page.locator("[role=menu] [role^=menuitem]");
   const texts = await items.allInnerTexts();
-  const i = texts.findIndex((t) => /Column settings/i.test(t));
+  const i = (await cfg.count()) ? 0 : -1;
   if (i < 0) {
     await probe(`header-menu-${col}`);
     await page.keyboard.press("Escape");
     throw new Error(`the header menu of "${col}" has no Column settings: ${texts.join(" | ")}`);
   }
-  await items.nth(i).click();
+  await cfg.click();
   const d = page.getByRole("dialog").filter({ hasText: `Column · ${col}` });
   await d.waitFor({ timeout: 20000 });
   await sleep(1200);
@@ -421,7 +422,7 @@ try {
         await sleep(2000);
       }
       await probe(`relation-picker-${col}`);
-      const opts = page.locator("[role=listbox] [role=option], [cmdk-item], [role=dialog] [role=option], [data-radix-popper-content-wrapper] [role=option]");
+      const opts = page.locator("[data-matrx-cell-editor] button[data-relation-candidate], [role=listbox] [role=option], [cmdk-item]");
       await until("the records to pick", async () => (await opts.count()) > 0, 25000);
       if (!(await opts.count())) await probe(`relation-picker-late-${col}`);
       const names = (await opts.allInnerTexts()).map(clean).filter(Boolean);
@@ -430,11 +431,12 @@ try {
         await opts.nth(k).click();
         await sleep(1200);
       }
-      // A several-record picker may stay open with a Done.
+      // A several-record picker stays open; the cell saves when it is left.
       const done = page.getByRole("button", { name: /^(Done|Save|Apply)$/ });
       if (await done.count()) await done.first().click().catch(() => {});
-      await page.keyboard.press("Escape").catch(() => {});
-      await sleep(2500);
+      await sleep(800);
+      if (await page.locator("[data-matrx-cell-editor]").count()) await (await cellOf(R3, "Copay")).click().catch(() => {});
+      await sleep(3000);
       const now = await cellText(R1, col);
       const want = names.slice(0, n).map((x) => x.split(" ")[0]);
       return { ok: want.every((w) => now.includes(w)) && !/[0-9a-f]{8}-[0-9a-f]{4}/.test(now), detail: `picked ${names.slice(0, n).join(" + ")}; cell reads "${now}"` };
@@ -467,8 +469,11 @@ try {
       const row = page.locator("div, li, label").filter({ hasText: new RegExp(`^\\s*${esc(fname)}`) });
       await until("the uploaded file", async () => (await page.getByText(fname).count()) > 0, 60000);
       await sleep(2000);
+      const attachN = page.getByRole("button", { name: /^Attach \d+ files?$/ });
       const box = page.getByRole("checkbox", { name: new RegExp(esc(fname)) });
-      if (await box.count()) await box.first().click();
+      if (await attachN.count()) {
+        // An upload is selected by itself.
+      } else if (await box.count()) await box.first().click();
       else {
         const item = page.getByText(fname).first();
         const cb = item.locator("xpath=ancestor::*[.//*[@role='checkbox' or @type='checkbox']][1]").locator("[role=checkbox], input[type=checkbox]").first();
@@ -477,10 +482,12 @@ try {
       }
       void row;
       await sleep(1000);
-      const attach = page.getByRole("button", { name: /^Attach files?$/ });
-      const n = await attach.count();
-      if (n) await attach.last().click().catch(() => {});
+      await until("Attach 1 file", async () => (await attachN.count()) > 0, 10000);
+      if (await attachN.count()) await attachN.last().click().catch(() => {});
       await sleep(4000);
+      const done = page.getByRole("button", { name: /^Done$/ });
+      if (await done.count()) await done.first().click().catch(() => {});
+      await sleep(2500);
       await probe("attachment-after");
       const now = await cellText(R1, "Handout PDF");
       return { ok: now.includes("home-exercise-handout") || /1 file|\.txt/.test(now), detail: `uploaded ${fname}; cell reads "${now}"` };
