@@ -26,8 +26,10 @@ export default [
     // W10 outside FKs; W15 a cut press leaves all-old.
     id: "cutover.switch-chain",
     area: "cutover",
-    kind: "sql",
-    file: "scripts/safety-net/probes/b_switch_chain.sql",
+    // cmd, not sql: probes/b_clone_suite.py first runs the REAL Step 1 on the clone server when readiness asks for it.
+    kind: "cmd",
+    cmd: "python3",
+    args: ["scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_switch_chain.sql"],
     items: ["C01", "C02", "C03", "C04", "C05", "C06", "C13", "A02"],
     targets: ["clone"],
     passWhen: "SWITCH CHAIN GREEN",
@@ -37,8 +39,10 @@ export default [
     // W4: after the press, no older READ door answers a moved table with the old value and no mark (clone, rolled back).
     id: "cutover.old-reads-after-press",
     area: "cutover",
-    kind: "sql",
-    file: "scripts/safety-net/probes/b_old_reads_after_press.sql",
+    // cmd, not sql: probes/b_clone_suite.py first runs the REAL Step 1 on the clone server when readiness asks for it.
+    kind: "cmd",
+    cmd: "python3",
+    args: ["scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_old_reads_after_press.sql"],
     items: ["C14"],
     targets: ["clone"],
     passWhen: "W4 GREEN",
@@ -49,8 +53,10 @@ export default [
     // the truth (clone, rolled back).
     id: "cutover.store-off-after-press",
     area: "cutover",
-    kind: "sql",
-    file: "scripts/safety-net/probes/b_store_off_after_press.sql",
+    // cmd, not sql: probes/b_clone_suite.py first runs the REAL Step 1 on the clone server when readiness asks for it.
+    kind: "cmd",
+    cmd: "python3",
+    args: ["scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_store_off_after_press.sql"],
     items: ["C15"],
     targets: ["clone"],
     passWhen: "W14 GREEN",

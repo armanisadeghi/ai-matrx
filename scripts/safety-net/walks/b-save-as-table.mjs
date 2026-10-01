@@ -71,14 +71,24 @@ async function newNote(page, text) {
 }
 
 async function rightClickSave(page, scope, position) {
-  await scope.click({ button: "right", ...(position ? { position } : {}) });
-  await sleep(2000);
-  const direct = page.getByRole("menuitem", { name: /^Save to a table/ }).first();
-  if (!(await direct.isVisible().catch(() => false))) {
-    await page.getByRole("menuitem", { name: /^Save$/ }).first().hover();
-    await sleep(1200);
+  // The menu draws late while a stream settles: two tries, the second after closing whatever opened.
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    await scope.click({ button: "right", ...(position ? { position } : {}) });
+    await sleep(2500);
+    const direct = page.getByRole("menuitem", { name: /^Save to a table/ }).first();
+    if (!(await direct.isVisible().catch(() => false))) {
+      await page.getByRole("menuitem", { name: /^Save$/ }).first().hover().catch(() => {});
+      await sleep(1500);
+    }
+    try {
+      await page.getByRole("menuitem", { name: /^Save to a table/ }).first().click({ timeout: 15000 });
+      return;
+    } catch (e) {
+      if (attempt === 2) throw e;
+      await page.keyboard.press("Escape");
+      await sleep(2000);
+    }
   }
-  await page.getByRole("menuitem", { name: /^Save to a table/ }).first().click({ timeout: 15000 });
 }
 
 try {
