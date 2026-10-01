@@ -229,13 +229,13 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <header
         className={cn(
-          "shrink-0 flex h-11 items-center gap-1 px-0.5",
+          "shrink-0 flex h-11 items-center px-0.5",
           "border-b border-border/70",
         )}
       >
         {/* LEFT: Title + subtitle. Truncate aggressively so headers never
             push action icons offscreen. */}
-        <div className="flex min-w-0 flex-1 items-center gap-2 pl-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2 pl-2 pr-1">
           <span className="text-sm font-semibold text-foreground truncate">
             {title}
           </span>
@@ -248,7 +248,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
 
         {/* CENTER: View toggle pill + admin artifact debug toggle */}
         {(hasViewToggle(content.type) || isAdmin) && (
-          <div className="mx-1 flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5">
             {hasViewToggle(content.type) && (
               <div className="flex items-center gap-0.5 rounded-full bg-muted/60 p-0.5">
                 <ViewToggleButton
@@ -293,7 +293,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
 
         {/* RIGHT: Actions. All glass tap targets for consistency with the
             rest of the app's icon language. */}
-        <div className="flex items-center pr-0.5">
+        <div className="flex items-center">
           {/* Navigation chevrons + dropdown (single/top only) */}
           {showNavigation && (
             <CanvasNavigation

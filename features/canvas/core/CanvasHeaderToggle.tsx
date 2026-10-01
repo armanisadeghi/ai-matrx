@@ -24,7 +24,6 @@ import {
   LayersTapButton,
   PanelRightTapButton,
 } from "@ai-matrx/tap-target/buttons";
-import { cn } from "@/lib/utils";
 
 /** The canvas control's state and actions — shared by the header button and the phone overflow. */
 export function useCanvasHeaderToggle() {
@@ -76,13 +75,13 @@ export function useCanvasHeaderToggle() {
 /**
  * THE SLOT IS PART OF THE HEADER, NOT PART OF THE CANVAS.
  *
- * Exactly `--matrx-tap-target-size` (2.75rem / 44px outside tables) — the same
- * expression `.matrx-tap-target` itself uses, so the reserved box and the real
- * control are identical to the pixel even where that variable is overridden.
+ * Exactly one tap box — the pill plus one gap, the same expression
+ * `.matrx-tap-target` itself uses (40px), so the reserved box and the real
+ * control are identical to the pixel.
  */
 const CANVAS_HEADER_SLOT_BOX = {
-  width: "var(--matrx-tap-target-size, 2.75rem)",
-  height: "var(--matrx-tap-target-size, 2.75rem)",
+  width: "calc(var(--matrx-tap-pill-size) + var(--matrx-tap-gap))",
+  height: "calc(var(--matrx-tap-pill-size) + var(--matrx-tap-gap))",
 } as const;
 
 /** The empty canvas opens its home: saved items and the Board. */
@@ -169,11 +168,7 @@ export function CanvasShellHeaderToggle({
         onClick={isOpen ? putAway : reopen}
         ariaLabel={ariaLabel}
         tooltip={tooltip}
-        className={cn(
-          state !== "empty" || isOpen ? "text-primary" : undefined,
-          isOpen && "bg-primary/10",
-          "hover:bg-primary/10",
-        )}
+        className={state !== "empty" || isOpen ? "text-primary" : undefined}
       />
       {itemCount > 1 && (
         <span

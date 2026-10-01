@@ -161,7 +161,7 @@ describe("the canvas has exactly one presentation", () => {
     expect(toggle).not.toContain("!isAvailable || itemCount === 0");
     // One box, one constant, every state.
     expect(toggle).toContain(
-      'width: "var(--matrx-tap-target-size, 2.75rem)"',
+      'width: "calc(var(--matrx-tap-pill-size) + var(--matrx-tap-gap))"',
     );
     // The empty state is a LIVE control: it opens the canvas home (owner,
     // 2026-09-30: "permanently there, always available and clickable").

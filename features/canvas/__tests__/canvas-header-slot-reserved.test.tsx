@@ -98,6 +98,10 @@ function mount(): Harness {
 }
 
 /** What the element actually declares for width — the only layout fact jsdom keeps. */
+/** The tap box: the pill plus one gap — the expression `.matrx-tap-target`
+ *  itself sizes by, so the reserved slot equals the control it holds. */
+const TAP_BOX = "calc(var(--matrx-tap-pill-size) + var(--matrx-tap-gap))";
+
 function declaredWidth(el: HTMLElement | null): string | null {
   return el ? el.style.width : null;
 }
@@ -145,7 +149,7 @@ describe("canvas shell header slot", () => {
     expect(slot).not.toBeNull();
     expect(slot!.dataset.canvasHeaderSlot).toBe("control");
     expect(slot!.dataset.canvasHeaderSlotState).toBe("empty");
-    expect(declaredWidth(slot)).toBe("var(--matrx-tap-target-size, 2.75rem)");
+    expect(declaredWidth(slot)).toBe(TAP_BOX);
   });
 
   it("the empty state opens the canvas home, and the same button closes it", () => {
@@ -243,7 +247,7 @@ describe("canvas shell header slot", () => {
     });
     const folded = declaredWidth(h.slot());
 
-    expect(empty).toBe("var(--matrx-tap-target-size, 2.75rem)");
+    expect(empty).toBe(TAP_BOX);
     expect(open).toBe(empty);
     expect(folded).toBe(empty);
   });
