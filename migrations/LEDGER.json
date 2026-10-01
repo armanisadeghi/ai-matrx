@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-01T20:13:42.440Z",
+  "generated_at": "2026-10-01T20:38:42.330Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3590,6 +3590,12 @@
       "checksum": "bef04a763f99f25538eda9796073d4f560ed67ac0e880ae2d12bc75da140217e",
       "applied_at": "2026-09-26 14:44:33.56292+00"
     },
+    "migrations/campaign/oldreadersremoval_a_a_new_pick_list_is_born_in_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "oldreadersremoval_a_a_new_pick_list_is_born_in_the_store.sql",
+      "checksum": "3abd13299850e4529e874a99920210bdb73a0bd40dad99726ba6be414d96069a",
+      "applied_at": "2026-10-01 20:23:04.58668+00"
+    },
     "migrations/campaign/oldtables_w0_the_two_halves_of_a_relation_can_never_disagree.sql": {
       "source": "matrx-frontend",
       "filename": "oldtables_w0_the_two_halves_of_a_relation_can_never_disagree.sql",
@@ -5887,6 +5893,72 @@
       "filename": "switchsteptwo_c_the_older_doors_answer_that_the_tables_moved.sql",
       "checksum": "91ef695ac9151228147d44aecc0b318a81483b3cad12c244196a026273ea1cbd",
       "applied_at": "2026-10-01 20:13:28.905942+00"
+    },
+    "migrations/campaign/switchsteptwo_d20_udt_datasets_lets_go_of_live_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_d20_udt_datasets_lets_go_of_live_tables.sql",
+      "checksum": "9cce308d6dbcd42199b122642547cdb7ce899e47bfbf963bad9b24a4c44d676f",
+      "applied_at": "2026-10-01 20:37:25.20137+00"
+    },
+    "migrations/campaign/switchsteptwo_d2_udt_datasets_moves_to_the_graveyard.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_d2_udt_datasets_moves_to_the_graveyard.sql",
+      "checksum": "a1f421766f8d38e9cfd6b0da551ffd359873ce11e020c8565f7fd3bc6bd0467d",
+      "applied_at": "2026-10-01 20:37:32.374196+00"
+    },
+    "migrations/campaign/switchsteptwo_d40_udt_dataset_fields_lets_go_of_live_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_d40_udt_dataset_fields_lets_go_of_live_tables.sql",
+      "checksum": "76ffef705b16b45beabf110a15c1b960914627f1b3374a135ef897150802293f",
+      "applied_at": "2026-10-01 20:37:39.714804+00"
+    },
+    "migrations/campaign/switchsteptwo_d4_udt_dataset_fields_moves_to_the_graveyard.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_d4_udt_dataset_fields_moves_to_the_graveyard.sql",
+      "checksum": "e54374769e1a116ee402c339d1fe653b7ff3e4c5887729ecbd248ce5c5a7972e",
+      "applied_at": "2026-10-01 20:37:46.853615+00"
+    },
+    "migrations/campaign/switchsteptwo_d50_udt_dataset_rows_lets_go_of_live_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_d50_udt_dataset_rows_lets_go_of_live_tables.sql",
+      "checksum": "a6ff80e6721ecabe678bef879a847fd305f0ca5bd6ccad4f91b2c47bb4877f84",
+      "applied_at": "2026-10-01 20:37:54.779753+00"
+    },
+    "migrations/campaign/switchsteptwo_d5_udt_dataset_rows_moves_to_the_graveyard.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_d5_udt_dataset_rows_moves_to_the_graveyard.sql",
+      "checksum": "a1e16651454017a9023425a09df5e3046bb2ddd8969d6dd5f3603e260d30da4a",
+      "applied_at": "2026-10-01 20:38:02.121978+00"
+    },
+    "migrations/campaign/switchsteptwo_d6_udt_dataset_row_versions_moves_to_the_graveyard.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_d6_udt_dataset_row_versions_moves_to_the_graveyard.sql",
+      "checksum": "abcaa7b08e855f62a8ab33b7ff2169a9a2e6447d7836de5dfae075818f0c5500",
+      "applied_at": "2026-10-01 20:38:09.916698+00"
+    },
+    "migrations/campaign/switchsteptwo_d70_udt_structured_lists_lets_go_of_live_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_d70_udt_structured_lists_lets_go_of_live_tables.sql",
+      "checksum": "634c245b70ce08a788b7cc5f1af72ac05dac23aa14fab326e18e087d86723fe1",
+      "applied_at": "2026-10-01 20:38:19.170441+00"
+    },
+    "migrations/campaign/switchsteptwo_d7_udt_structured_lists_moves_to_the_graveyard.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_d7_udt_structured_lists_moves_to_the_graveyard.sql",
+      "checksum": "bf3109f5037bc7d89a2e31aff07e0cf3a2a191bd6d91e01ac3b9e11ecd7960ba",
+      "applied_at": "2026-10-01 20:38:26.899685+00"
+    },
+    "migrations/campaign/switchsteptwo_d80_udt_structured_list_items_lets_go_of_live_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_d80_udt_structured_list_items_lets_go_of_live_tables.sql",
+      "checksum": "2ca1794078088fe46a40af633ddc7d080c5ad0dfdb1fa0e95d6ee2923529cb74",
+      "applied_at": "2026-10-01 20:38:34.091535+00"
+    },
+    "migrations/campaign/switchsteptwo_d8_udt_structured_list_items_moves_to_the_graveyard.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_d8_udt_structured_list_items_moves_to_the_graveyard.sql",
+      "checksum": "f41ce74cb1657d56dfc395aebbf77768fc9b16c0d77eaaa87b349bb81fa21cb5",
+      "applied_at": "2026-10-01 20:38:41.351621+00"
     },
     "migrations/campaign/tableapi1_a_person_can_hold_a_key_that_is_them.sql": {
       "source": "matrx-frontend",
