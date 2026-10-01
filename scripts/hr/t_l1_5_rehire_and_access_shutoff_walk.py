@@ -52,6 +52,7 @@ SPELL2_HIRE = "2026-08-27"
 TODAY = date.today().isoformat()
 
 R = []
+MINTED = []   # every access token this run minted; signed out in `finally` so the walk leaves no session behind
 
 
 def rec(case, expect, got, detail=""):
@@ -92,6 +93,7 @@ async def walk(env):
                             json={"type": "magiclink", "token_hash": r.json()["hashed_token"]})
         r.raise_for_status()
         j = r.json()
+        MINTED.append(j["access_token"])
         return j["access_token"], j["user"]["id"]
 
     async def rpc(tok, fn, payload):
@@ -326,6 +328,16 @@ async def walk(env):
     return 1 if bad else 0
 
 
+async def sign_out_minted(env):
+    """End every session this run minted (the HR admin's included), so the walk leaves no auth.sessions row."""
+    base = env["SUPABASE_MATRIX_URL"].rstrip("/")
+    anon = env["SUPABASE_MATRIX_PUBLISHABLE_KEY"]
+    async with httpx.AsyncClient(timeout=30) as http:
+        for token in MINTED:
+            await http.post(f"{base}/auth/v1/logout?scope=local",
+                            headers={"apikey": anon, "Authorization": f"Bearer {token}"})
+
+
 async def main():
     """Make this run's subject with the persona factory, walk, and tear the subject down in `finally`."""
     global SUBJECT, SUBJECT_UID, SUBJECT_FIRST, SUBJECT_LAST
@@ -351,6 +363,10 @@ async def main():
     try:
         return await walk(env)
     finally:
+        try:
+            await sign_out_minted(env)
+        except Exception as exc:  # a failed sign-out must never hide the teardown below
+            print(f"sign-out of the minted sessions failed: {exc}")
         try:
             delete_fixture_user(target, made.user_id)
             print(f"fixture subject {made.user_id} torn down")
