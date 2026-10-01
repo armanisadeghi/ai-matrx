@@ -26403,6 +26403,74 @@ export type Database = {
           },
         ]
       }
+      party_research: {
+        Row: {
+          category: string
+          contact_state: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          id: string
+          label: string
+          metadata: Json
+          notes: string
+          organization_id: string
+          outreach: Json
+          party_id: string
+          subject_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          category?: string
+          contact_state?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          label: string
+          metadata?: Json
+          notes?: string
+          organization_id: string
+          outreach?: Json
+          party_id: string
+          subject_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          category?: string
+          contact_state?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          label?: string
+          metadata?: Json
+          notes?: string
+          organization_id?: string
+          outreach?: Json
+          party_id?: string
+          subject_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "party_research_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_ingest_run: {
         Row: {
           candidates_created: number
@@ -30846,6 +30914,16 @@ export type Database = {
         }
         Returns: Json
       }
+      _io_fill_held_column: {
+        Args: {
+          p_column: string
+          p_field_id: string
+          p_import_id: string
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
       _older_table_copy_refusal: {
         Args: { p_table_id: string }
         Returns: string
@@ -31431,6 +31509,15 @@ export type Database = {
       agg_view_admits_state: {
         Args: { p_definition: Json; p_state: Json }
         Returns: boolean
+      }
+      agg_withheld_marker: {
+        Args: {
+          p_key: string
+          p_organization_id: string
+          p_required?: string
+          p_table_id: string
+        }
+        Returns: Json
       }
       agg_zero: { Args: { p_measures: Json }; Returns: Json }
       anon_capture: {
@@ -32346,7 +32433,10 @@ export type Database = {
           version: number
         }[]
       }
-      data_home: { Args: { p_organization_id?: string }; Returns: Json }
+      data_home: {
+        Args: { p_organization_id?: string; p_search?: string }
+        Returns: Json
+      }
       data_home_changed_by: {
         Args: { p_asks: Json }
         Returns: {
@@ -72441,6 +72531,326 @@ export type Database = {
           },
         ]
       }
+      candidate: {
+        Row: {
+          baseline_holder_id: string | null
+          baseline_holder_type: string | null
+          baseline_holder_version_id: string | null
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          holder_id: string
+          holder_type: string
+          holder_version_id: string | null
+          id: string
+          mandate_id: string
+          mandate_key: string
+          metadata: Json
+          organization_id: string
+          promotion_ref: Json | null
+          recommendation: string | null
+          recommendation_reason: string | null
+          rung: string
+          rung_principal_id: string | null
+          runs_claimed: number
+          runs_wanted: number
+          set_by: string
+          skips: Json
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          baseline_holder_id?: string | null
+          baseline_holder_type?: string | null
+          baseline_holder_version_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          holder_id: string
+          holder_type: string
+          holder_version_id?: string | null
+          id?: string
+          mandate_id: string
+          mandate_key: string
+          metadata?: Json
+          organization_id: string
+          promotion_ref?: Json | null
+          recommendation?: string | null
+          recommendation_reason?: string | null
+          rung: string
+          rung_principal_id?: string | null
+          runs_claimed?: number
+          runs_wanted: number
+          set_by: string
+          skips?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          baseline_holder_id?: string | null
+          baseline_holder_type?: string | null
+          baseline_holder_version_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          holder_id?: string
+          holder_type?: string
+          holder_version_id?: string | null
+          id?: string
+          mandate_id?: string
+          mandate_key?: string
+          metadata?: Json
+          organization_id?: string
+          promotion_ref?: Json | null
+          recommendation?: string | null
+          recommendation_reason?: string | null
+          rung?: string
+          rung_principal_id?: string | null
+          runs_claimed?: number
+          runs_wanted?: number
+          set_by?: string
+          skips?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "candidate_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
+      }
+      candidate_run: {
+        Row: {
+          attempts: number
+          candidate_conversation_id: string | null
+          candidate_error_code: string | null
+          candidate_execution_id: string | null
+          candidate_id: string
+          candidate_metrics: Json | null
+          candidate_request_id: string | null
+          candidate_resolved_holder_id: string | null
+          candidate_resolved_version_id: string | null
+          candidate_wf_run_id: string | null
+          created_at: string
+          created_by: string | null
+          door: string
+          human_agreement: string | null
+          id: string
+          input_differences: Json | null
+          judge_verdict_id: string | null
+          lease_expires_at: string | null
+          live_conversation_id: string | null
+          live_error_code: string | null
+          live_execution_id: string | null
+          live_metrics: Json | null
+          live_organization_id: string | null
+          live_request_id: string
+          live_user_id: string | null
+          live_wf_run_id: string | null
+          metadata: Json
+          notified_at: string | null
+          organization_id: string
+          status: string
+          stop_match: string | null
+          tool_dispositions: Json
+          updated_at: string
+          updated_by: string | null
+          verdict: string | null
+          version: number
+        }
+        Insert: {
+          attempts?: number
+          candidate_conversation_id?: string | null
+          candidate_error_code?: string | null
+          candidate_execution_id?: string | null
+          candidate_id: string
+          candidate_metrics?: Json | null
+          candidate_request_id?: string | null
+          candidate_resolved_holder_id?: string | null
+          candidate_resolved_version_id?: string | null
+          candidate_wf_run_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          door: string
+          human_agreement?: string | null
+          id?: string
+          input_differences?: Json | null
+          judge_verdict_id?: string | null
+          lease_expires_at?: string | null
+          live_conversation_id?: string | null
+          live_error_code?: string | null
+          live_execution_id?: string | null
+          live_metrics?: Json | null
+          live_organization_id?: string | null
+          live_request_id: string
+          live_user_id?: string | null
+          live_wf_run_id?: string | null
+          metadata?: Json
+          notified_at?: string | null
+          organization_id: string
+          status?: string
+          stop_match?: string | null
+          tool_dispositions?: Json
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+        }
+        Update: {
+          attempts?: number
+          candidate_conversation_id?: string | null
+          candidate_error_code?: string | null
+          candidate_execution_id?: string | null
+          candidate_id?: string
+          candidate_metrics?: Json | null
+          candidate_request_id?: string | null
+          candidate_resolved_holder_id?: string | null
+          candidate_resolved_version_id?: string | null
+          candidate_wf_run_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          door?: string
+          human_agreement?: string | null
+          id?: string
+          input_differences?: Json | null
+          judge_verdict_id?: string | null
+          lease_expires_at?: string | null
+          live_conversation_id?: string | null
+          live_error_code?: string | null
+          live_execution_id?: string | null
+          live_metrics?: Json | null
+          live_organization_id?: string | null
+          live_request_id?: string
+          live_user_id?: string | null
+          live_wf_run_id?: string | null
+          metadata?: Json
+          notified_at?: string | null
+          organization_id?: string
+          status?: string
+          stop_match?: string | null
+          tool_dispositions?: Json
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_run_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_run_payload: {
+        Row: {
+          candidate_error: Json | null
+          candidate_input_digest: Json | null
+          candidate_output: Json | null
+          candidate_run_id: string
+          created_at: string
+          created_by: string | null
+          door_args: Json
+          id: string
+          judge: Json | null
+          live_conversation_id: string
+          live_error: Json | null
+          live_input_digest: Json | null
+          live_output: Json | null
+          live_tool_results: Json | null
+          metadata: Json
+          organization_id: string
+          stopped_at: Json | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          candidate_error?: Json | null
+          candidate_input_digest?: Json | null
+          candidate_output?: Json | null
+          candidate_run_id: string
+          created_at?: string
+          created_by?: string | null
+          door_args: Json
+          id?: string
+          judge?: Json | null
+          live_conversation_id: string
+          live_error?: Json | null
+          live_input_digest?: Json | null
+          live_output?: Json | null
+          live_tool_results?: Json | null
+          metadata?: Json
+          organization_id: string
+          stopped_at?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          candidate_error?: Json | null
+          candidate_input_digest?: Json | null
+          candidate_output?: Json | null
+          candidate_run_id?: string
+          created_at?: string
+          created_by?: string | null
+          door_args?: Json
+          id?: string
+          judge?: Json | null
+          live_conversation_id?: string
+          live_error?: Json | null
+          live_input_digest?: Json | null
+          live_output?: Json | null
+          live_tool_results?: Json | null
+          metadata?: Json
+          organization_id?: string
+          stopped_at?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_run_payload_candidate_run_id_fkey"
+            columns: ["candidate_run_id"]
+            isOneToOne: true
+            referencedRelation: "candidate_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       definition: {
         Row: {
           accepts_user_input: boolean
@@ -73449,6 +73859,7 @@ export type Database = {
       }
     }
     Functions: {
+      _admin_list_candidate: { Args: { p_mandate_id: string }; Returns: Json }
       _admin_list_match: {
         Args: { p_filters: Json; p_skip?: string; p_vals: Json }
         Returns: boolean
@@ -87052,6 +87463,7 @@ export type Database = {
         Returns: Json
       }
       cutover_seams: { Args: { p_organization_id: string }; Returns: Json }
+      cutover_store_writer_scope_parity: { Args: never; Returns: Json }
       cutover_tables_copied: { Args: { p_org: string }; Returns: Json }
       data_tables_born_in_the_new_system_for_me: {
         Args: never
@@ -98898,6 +99310,7 @@ export type Database = {
         }
         Returns: Json
       }
+      mnd_candidate_cells: { Args: { p_mandate_ids: string[] }; Returns: Json }
       mnd_filled_by: {
         Args: {
           p_holder_ids: string[]
