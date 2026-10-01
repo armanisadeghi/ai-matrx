@@ -136,7 +136,8 @@ def main() -> int:
         all_out.append("\n".join(notes) + "\n" + out)
         if not (code and race.search(out)):
             break
-        print(f"[b-clone-suite] attempt {n} lost a race with a peer on the shared clone: {race.search(out).group(0)} — trying again", flush=True)
+        line = next((ln for ln in out.splitlines() if race.search(ln)), race.search(out).group(0))
+        print(f"[b-clone-suite] attempt {n} lost a race with a peer on the shared clone: {line[-600:]} — trying again", flush=True)
     log.write_text("\n\n".join(all_out))
     print(out[-6000:])
     return code

@@ -186,13 +186,161 @@ function coveredInDocument(r: DockRect): boolean {
   return false;
 }
 
-/** One pass: rest the dock where it covers no control, or let it yield. */
+// ── THE RESERVED SLOT: NO FREE SPOT → THE DOCK JOINS THE PAGE'S CHROME (chair ruling, 2026-10-01) ──
+//
+// On a full-width list every row carries copy + menu buttons at the right, so no lift within reach
+// is free and the dock used to YIELD — faded to 30 % over the last row's actions ("Visit Log 300
+// 1797", data home). A half-visible control over other controls is a screen that lies. Linear and
+// Notion never float a badge over a row's actions; they give it a place in the chrome. So when no
+// free spot exists the dock rests in the chrome's own empty space, at full opacity, never over
+// anything it would hide:
+//   1. the list's pager/footer bar (`[data-matrx-table-footer]`, or any `[data-assist-dock-slot="footer"]`),
+//      scanned from its right edge leftward;
+//   2. else the header bar, just left of its right cluster (`[data-header-right-set]`, or any
+//      `[data-assist-dock-slot="header"]`).
+// Only when neither has room does it still yield. Where a free spot exists the 09-28 lift is kept.
+//
+// Placement is published on <html> as `--assist-dock-slot-right` / `--assist-dock-slot-bottom`
+// (footer) or `--assist-dock-slot-top` (header, so the open panel drops DOWN, not off-screen), and
+// `data-assist-dock-slot` names which slot holds it. AssistsDock reads them with its own resting
+// place as the fallback, so removing them returns it to floating.
+
+const SLOT_ATTR = "data-assist-dock-slot";
+const SLOT_VARS = ["--assist-dock-slot-right", "--assist-dock-slot-bottom", "--assist-dock-slot-top"] as const;
+/** Breathing room between the docked control and the chrome's own content. */
+const SLOT_GAP_PX = 6;
+const SLOT_STEP_PX = 8;
+
+export type DockSlotKind = "footer" | "header";
+
+export interface DockSlotRegion {
+  kind: DockSlotKind;
+  /** The band the dock may rest in (the bar's box). */
+  band: DockRect;
+  /** The right-most x the dock may reach (the bar's edge, or the start of the header's right cluster). */
+  startRight: number;
+}
+
+/**
+ * The right-most spot in a slot's band where a `width`×`height` dock, centered on the band, covers
+ * nothing (`isCovered` false), or null when the band has no room. Pure, so the rule is tested
+ * without a browser.
+ */
+export function slotSpotFor(
+  region: DockSlotRegion,
+  size: { width: number; height: number },
+  isCovered: (r: DockRect) => boolean,
+): DockRect | null {
+  const mid = (region.band.top + region.band.bottom) / 2;
+  const top = Math.round(mid - size.height / 2);
+  const bottom = top + size.height;
+  for (
+    let right = Math.floor(region.startRight - SLOT_GAP_PX);
+    right - size.width >= region.band.left + SLOT_GAP_PX;
+    right -= SLOT_STEP_PX
+  ) {
+    const r = { top, bottom, left: right - size.width, right };
+    if (!isCovered(r)) return r;
+  }
+  return null;
+}
+
+function visibleRect(el: Element | null): DOMRect | null {
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return null;
+  if (r.bottom <= 0 || r.top >= window.innerHeight || r.right <= 0 || r.left >= window.innerWidth) return null;
+  return r;
+}
+
+/** The slots on screen, footer first (the ruling's order). */
+function slotRegions(): { region: DockSlotRegion; host: Element }[] {
+  const out: { region: DockSlotRegion; host: Element }[] = [];
+  const footers = document.querySelectorAll('[data-matrx-table-footer], [data-assist-dock-slot="footer"]');
+  for (const el of footers) {
+    if (el.closest(DOCK_SELECTOR)) continue;
+    const r = visibleRect(el);
+    if (r) out.push({ host: el, region: { kind: "footer", band: r, startRight: Math.min(r.right, window.innerWidth) } });
+  }
+  const explicitHeaders = document.querySelectorAll('[data-assist-dock-slot="header"]');
+  for (const el of explicitHeaders) {
+    const r = visibleRect(el);
+    if (r) out.push({ host: el, region: { kind: "header", band: r, startRight: Math.min(r.right, window.innerWidth) } });
+  }
+  const cluster = document.querySelector("[data-header-right-set]");
+  const header = cluster?.closest("header") ?? null;
+  const clusterRect = visibleRect(cluster);
+  const headerRect = visibleRect(header);
+  if (header && clusterRect && headerRect) {
+    out.push({ host: header, region: { kind: "header", band: headerRect, startRight: clusterRect.left } });
+  }
+  return out;
+}
+
+/** What the chrome itself shows: its controls, and any element that paints its own text or icon. */
+function chromeContentRects(host: Element): DOMRect[] {
+  const rects: DOMRect[] = [];
+  for (const el of host.querySelectorAll("*")) {
+    if (el.closest(DOCK_SELECTOR)) continue;
+    const paints =
+      el.matches(INTERACTIVE) ||
+      el.matches("svg, img, canvas, video") ||
+      [...el.childNodes].some((n) => n.nodeType === 3 && (n.textContent ?? "").trim() !== "");
+    if (!paints) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) rects.push(r);
+  }
+  return rects;
+}
+
+function coveredInSlot(r: DockRect, host: Element): boolean {
+  const pad = { top: r.top, bottom: r.bottom, left: r.left - SLOT_GAP_PX, right: r.right + SLOT_GAP_PX };
+  for (const c of chromeContentRects(host)) if (overlaps(pad, c)) return true;
+  for (const el of document.querySelectorAll<HTMLElement>(ATTENTION_DOCK_SELECTOR)) {
+    const a = el.getBoundingClientRect();
+    if (a.width > 0 && a.height > 0 && overlaps(r, a)) return true;
+  }
+  // Anything else laid over the bar (another floating control) still counts.
+  const xs = [r.left + 2, (r.left + r.right) / 2, r.right - 2];
+  const ys = [r.top + 2, (r.top + r.bottom) / 2, r.bottom - 2];
+  for (const x of xs) {
+    for (const y of ys) {
+      const stack = document.elementsFromPoint?.(x, y) ?? [];
+      const under = stack.find((el) => !el.closest(DOCK_SELECTOR));
+      if (under?.closest(INTERACTIVE)) return true;
+    }
+  }
+  return false;
+}
+
+function clearSlot(root: HTMLElement) {
+  for (const v of SLOT_VARS) root.style.removeProperty(v);
+  root.removeAttribute(SLOT_ATTR);
+}
+
+function placeInSlot(root: HTMLElement, kind: DockSlotKind, spot: DockRect) {
+  root.setAttribute(SLOT_ATTR, kind);
+  root.style.setProperty("--assist-dock-slot-right", `${Math.round(window.innerWidth - spot.right)}px`);
+  if (kind === "header") {
+    root.style.setProperty("--assist-dock-slot-top", `${Math.round(spot.top)}px`);
+    root.style.setProperty("--assist-dock-slot-bottom", "auto");
+  } else {
+    root.style.removeProperty("--assist-dock-slot-top");
+    root.style.setProperty("--assist-dock-slot-bottom", `${Math.round(window.innerHeight - spot.bottom)}px`);
+  }
+}
+
+/** One pass: rest the dock where it covers no control, else in the chrome's slot, else yield. */
 export function applyAssistDockLift(): void {
   const root = document.documentElement;
-  const docks = [...document.querySelectorAll<HTMLElement>(DOCK_SELECTOR)].filter((el) => {
-    const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
-  });
+  const visibleDocks = () =>
+    [...document.querySelectorAll<HTMLElement>(DOCK_SELECTOR)].filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    });
+  // Measure from the dock's own resting place: drop last pass's slot so the rect is the floating one.
+  clearSlot(root);
+  const docks = visibleDocks();
   if (docks.length === 0) {
     root.style.removeProperty(LIFT_VAR);
     return;
@@ -204,6 +352,15 @@ export function applyAssistDockLift(): void {
   const lift = liftFor(base, coveredInDocument);
   if (lift === null) {
     root.style.removeProperty(LIFT_VAR);
+    const size = { width: r.width, height: r.height };
+    for (const { region, host } of slotRegions()) {
+      const spot = slotSpotFor(region, size, (c) => coveredInSlot(c, host));
+      if (spot) {
+        placeInSlot(root, region.kind, spot);
+        for (const d of docks) d.removeAttribute(YIELD_ATTR);
+        return;
+      }
+    }
     for (const d of docks) d.setAttribute(YIELD_ATTR, "");
     return;
   }
@@ -257,6 +414,7 @@ export function useAssistClearance(active: boolean): void {
       document.removeEventListener("scroll", schedule, true);
       mo.disconnect();
       document.documentElement.style.removeProperty(LIFT_VAR);
+      clearSlot(document.documentElement);
       for (const el of document.querySelectorAll<HTMLElement>(`[${CLEARED_ATTR}]`)) clear(el);
     };
   }, [active]);

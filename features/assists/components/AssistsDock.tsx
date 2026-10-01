@@ -166,10 +166,14 @@ export default function AssistsDock() {
   // A page with a bottom bar (a list's pager, a note's toolbar) publishes its
   // height as --page-bottom-dock-h; the desktop pill rests above it too
   // (page-pass 2026-09-27: it sat on the flashcards list's pager arrow).
+  // When no spot near the work is free, the dock rests in the chrome's own slot (the pager bar, or
+  // the header beside its right cluster) — `--assist-dock-slot-*`, written by ../assistClearance.ts;
+  // unset, each falls back to the floating resting place.
   const style = {
-    right: `${offset.right}px`,
+    right: `var(--assist-dock-slot-right, ${offset.right}px)`,
     // + the auto-dock lift: off any control it would otherwise cover (../assistClearance.ts).
-    bottom: `calc(${offset.bottom}px + var(--page-bottom-dock-h, 0px) + var(--assist-dock-lift, 0px))`,
+    bottom: `var(--assist-dock-slot-bottom, calc(${offset.bottom}px + var(--page-bottom-dock-h, 0px) + var(--assist-dock-lift, 0px)))`,
+    top: "var(--assist-dock-slot-top, auto)",
   };
 
   // The mobile launcher follows the established inbox/chat-launcher pattern:
@@ -181,8 +185,10 @@ export default function AssistsDock() {
     // A page with its own bottom dock (the phone note editor's toolbar)
     // publishes its height as --page-bottom-dock-h; the launcher sits above it
     // instead of covering the dock's last button.
+    right: "var(--assist-dock-slot-right, 0.75rem)",
     bottom:
-      "calc(max(0.75rem, env(safe-area-inset-bottom, 0px)) + var(--page-bottom-dock-h, 0px) + var(--assist-dock-lift, 0px))",
+      "var(--assist-dock-slot-bottom, calc(max(0.75rem, env(safe-area-inset-bottom, 0px)) + var(--page-bottom-dock-h, 0px) + var(--assist-dock-lift, 0px)))",
+    top: "var(--assist-dock-slot-top, auto)",
     transform: "translateY(var(--keyboard-inset-height, 0px))",
   };
 
@@ -336,6 +342,8 @@ export default function AssistsDock() {
         // clicks (D225 — the record page's Log button). The panel and the pill
         // re-enable their own events below.
         "pointer-events-none fixed z-40 hidden flex-col items-end gap-1.5 pb-safe md:flex",
+        // Docked in the header: the pill stays in the bar and the panel opens DOWN, never off-screen.
+        "[:root[data-assist-dock-slot=header]_&]:flex-col-reverse [:root[data-assist-dock-slot=header]_&]:pb-0",
         dragging && "select-none",
       )}
       style={style}

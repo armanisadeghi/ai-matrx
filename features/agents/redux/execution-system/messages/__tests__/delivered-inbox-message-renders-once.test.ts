@@ -69,8 +69,11 @@ function echo(position: number, text = STEER) {
 function textsInOrder(s: ReturnType<typeof store>): string[] {
   const e = s.getState().messages.byConversationId[CONV];
   return e.orderedIds.map((id) => {
-    const part = e.byId[id].content[0] as { text?: string };
-    return part.text ?? "";
+    const content: unknown = e.byId[id].content;
+    const part: unknown = Array.isArray(content) ? content[0] : undefined;
+    return part && typeof part === "object" && "text" in part && typeof part.text === "string"
+      ? part.text
+      : "";
   });
 }
 

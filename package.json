@@ -37,6 +37,7 @@
     "check:univer-doc-theme:self-test": "node scripts/check-univer-doc-theme.mjs --self-test",
     "check:no-session-read-only": "node scripts/check-no-session-read-only.mjs",
     "check:no-session-read-only:self-test": "node scripts/check-no-session-read-only.mjs --self-test",
+    "pooler:sweep": "node scripts/pooler-sweep.mjs",
     "check:no-placeholder-data": "node scripts/check-no-placeholder-data.mjs",
     "check:no-placeholder-data:self-test": "node scripts/check-no-placeholder-data.mjs --self-test",
     "check:no-placeholder-data:live": "node scripts/check-no-placeholder-data.mjs --live",
