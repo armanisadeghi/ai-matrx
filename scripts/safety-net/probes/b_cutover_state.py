@@ -134,16 +134,20 @@ def main() -> int:
              + (f" — NOT a test seat: {[e['name'] for e in strangers]}" if strangers else ""))
         # Step 1 adopts an ownerless list whose users are in one organization, but leaves its CHOICES with no
         # organization, and Copy again then refuses that organization ("custom.record_write_many: organization_id is
-        # required") — found on clone-20261001 tonight (SAFETY-NET-B). Predict it: any list Step 1 would adopt, or
-        # already adopted, whose live choices have no organization.
+        # required") — found on clone-20261001 tonight (SAFETY-NET-B). Predict it: any list that already has an
+        # organization whose choices (live or archived — the mover carries both) have none, and any list Step 1 would
+        # adopt whose choices have none — the latter only while the adoption door does not give choices their list's
+        # organization (lane ORPHAN-CHOICES, orphanchoices_an_adopted_lists_choices_take_its_organization.sql).
         orgless = q("""select coalesce(string_agg(l.list_name || ' (' || coalesce(o.name, 'to be adopted') || ')', '; '), '')
                          from workbench.udt_structured_lists l left join iam.organizations o on o.id = l.organization_id
-                        where l.deleted_at is null
-                          and (l.id in (select (x ->> 'id')::uuid from jsonb_array_elements(platform._final_switch_orphan_lists()) x where x ->> 'resolution' = 'organization')
-                               or (l.organization_id is not null and l.metadata ? 'final_switch_adopted'))
-                          and exists (select 1 from workbench.udt_structured_list_items i where i.list_id = l.id and i.deleted_at is null and i.organization_id is null);""")
+                        where (l.organization_id is not null
+                               or (l.deleted_at is null
+                                   and pg_get_functiondef('platform.final_switch_adopt_orphan_lists(uuid)'::regprocedure) not like '%choices_given_their_list_organization%'
+                                   and l.id in (select (x ->> 'id')::uuid from jsonb_array_elements(platform._final_switch_orphan_lists()) x where x ->> 'resolution' = 'organization')))
+                          and not platform._older_list_moved_by_switch(l.id)
+                          and exists (select 1 from workbench.udt_structured_list_items i where i.list_id = l.id and i.organization_id is null);""")
         step(["C01"], "step1.no_adopted_list_with_orgless_choices", orgless == "",
-             "no list Step 1 adopts has choices without an organization" if not orgless else f"Copy again will refuse these (their choices have no organization): {orgless}")
+             "no list Step 1 adopts or copies has choices without an organization" if not orgless else f"Copy again will refuse these (their choices have no organization): {orgless}")
         doors_open = int(q("select count(*) filter (where has_function_privilege('authenticated', x, 'EXECUTE')) from unnest(platform._final_switch_old_write_doors()) x;"))
         n_doors = int(q("select cardinality(platform._final_switch_old_write_doors());"))
         step(["C04"], "doors.before_open_to_signed_in", doors_open == n_doors, f"{doors_open} of {n_doors} older write doors open to signed-in callers before the press")
