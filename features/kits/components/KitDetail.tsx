@@ -174,9 +174,8 @@ export function KitDetail({
                   <KitIcon name={m.icon} tintKey={kit.key} />
                   <h1 className="min-w-0 text-2xl font-semibold tracking-tight text-foreground">{m.name}</h1>
                 </div>
-                <p className="mt-3 text-base text-foreground">{m.tagline}</p>
+                <p className="mt-3 max-w-3xl text-base text-foreground">{m.description || m.tagline}</p>
                 <WhatYouGet kit={kit} className="mt-2" />
-                {m.description && <p className="mt-4 max-w-3xl text-sm leading-relaxed text-foreground">{m.description}</p>}
                 {m.teaches.length > 0 && (
                   <div className="mt-6">
                     <h2 className="text-base font-semibold text-foreground">What you&rsquo;ll learn</h2>

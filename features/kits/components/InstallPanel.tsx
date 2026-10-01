@@ -235,7 +235,18 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
               </ErrorNotice>
             )}
 
-            {(install || busy || api.attached) && <InstallStepper steps={steps} />}
+            {/* The step log is for work in flight or unfinished; a finished install shows only its doors. */}
+            {(busy || partial || api.attached) && <InstallStepper steps={steps} />}
+            {installed && !busy && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {steps.flatMap((s) => s.links ?? []).map((l) => (
+                  <Link key={l.href} href={l.href} className="inline-flex items-center gap-0.5 text-sm font-medium text-primary hover:underline">
+                    {l.label}
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                ))}
+              </div>
+            )}
 
             <div className="flex flex-col gap-2">
               {installed && !busy ? (

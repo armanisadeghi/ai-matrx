@@ -50,6 +50,15 @@ export function drillClientFor(organizationId: string, userId: string | null): R
 type RawRow = DrillAnswer["rows"][number];
 const NO_ANSWERS: MatrxDrillAnswers = {};
 
+/** A door value as a number: a moment's ISO text becomes epoch ms, anything else is read as a number. */
+export function drillValueNumber(v: number | string): number | null {
+  if (typeof v === "number") return v;
+  const n = Number(v);
+  if (!Number.isNaN(n)) return n;
+  const t = Date.parse(v);
+  return Number.isNaN(t) ? null : t;
+}
+
 /** One door row as the answer table reads it (a prior-only group keeps its values). */
 export function drillRowOf(
   r: Pick<RawRow, "groups" | "measures" | "row_count"> & Partial<Pick<RawRow, "prior_groups" | "prior_measures" | "distinct_groups" | "kind">>,
@@ -61,7 +70,9 @@ export function drillRowOf(
   for (const [k, v] of Object.entries(r.groups ?? r.prior_groups ?? {})) groups[k] = v === null || v === undefined ? null : String(v);
   const num = (m: Record<string, number | string | null> | null | undefined) => {
     const out: Record<string, number | null> = {};
-    for (const [k, v] of Object.entries(m ?? {})) out[k] = v === null || v === undefined ? null : Number(v);
+    // a moment (unit time, "Last active") arrives as ISO text: it is carried as epoch ms so it sorts
+    // and formats like every other value (measureFormat's "time"); any other text is a number
+    for (const [k, v] of Object.entries(m ?? {})) out[k] = v === null || v === undefined ? null : drillValueNumber(v);
     return out;
   };
   return {

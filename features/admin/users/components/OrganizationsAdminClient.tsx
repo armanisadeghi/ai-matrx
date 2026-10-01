@@ -74,6 +74,7 @@ export function OrganizationsAdminClient() {
   const focusedUserId = searchParams.get("user");
   const requestedOrganizationId = searchParams.get("org");
 
+  const [showGuestWorkspaces, setShowGuestWorkspaces] = useState(false);
   const [directory, setDirectory] = useState<AdminOrganizationDirectory | null>(
     null,
   );
@@ -146,9 +147,17 @@ export function OrganizationsAdminClient() {
       .filter((membership) => membership.user_id === focusedUserId)
       .map((membership) => membership.organization_id),
   );
+  // A guest (anonymous visitor) owns an auto-created workspace. Those are
+  // hidden unless the admin asks for them, or is looking at that very guest.
+  const guestUserIds = new Set(
+    users.filter((user) => user.is_anonymous).map((user) => user.id),
+  );
+  const isGuestWorkspace = (organization: AdminOrganizationRow): boolean =>
+    organization.created_by !== null && guestUserIds.has(organization.created_by);
   const visibleOrganizations = (directory?.organizations ?? []).filter(
     (organization) =>
-      !focusedUserId || membershipOrganizationIds.has(organization.id),
+      (!focusedUserId || membershipOrganizationIds.has(organization.id)) &&
+      (showGuestWorkspaces || Boolean(focusedUserId) || !isGuestWorkspace(organization)),
   );
 
   // The organization shown is the one the admin PICKED — from the URL (`?org=`)
@@ -528,6 +537,15 @@ export function OrganizationsAdminClient() {
                 />
               </p>
             </div>
+            <Button
+              size="sm"
+              variant={showGuestWorkspaces ? "secondary" : "outline"}
+              aria-pressed={showGuestWorkspaces}
+              title="Show guest workspaces"
+              onClick={() => setShowGuestWorkspaces((on) => !on)}
+            >
+              Guests
+            </Button>
             <Button
               size="icon"
               variant="ghost"

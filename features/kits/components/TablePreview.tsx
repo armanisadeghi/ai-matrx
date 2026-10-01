@@ -9,6 +9,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { KitTable } from "../types";
 import { count } from "../format";
 import { Skeleton } from "@ai-matrx/design-system";
+import { cn } from "@/utils/cn";
 
 
 const TYPE_WORDS: Record<string, string> = {
@@ -28,7 +29,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-function Cell({ value, refNames }: { value: unknown; refNames: Record<string, string> }) {
+function Cell({ value, type, refNames }: { value: unknown; type: string; refNames: Record<string, string> }) {
   if (value === null || value === undefined || value === "") {
     return <span className="text-muted-foreground">—</span>;
   }
@@ -41,6 +42,13 @@ function Cell({ value, refNames }: { value: unknown; refNames: Record<string, st
         name={refNames[`${value.token}:${value.id}`] ?? null}
         className="max-w-full text-[11px]"
       />
+    );
+  }
+  if (type === "url" && typeof value === "string") {
+    return (
+      <span className="block truncate" title={value}>
+        {value.replace(/^https?:\/\/(www\.)?/, "")}
+      </span>
     );
   }
   if (Array.isArray(value)) return <span className="line-clamp-2">{value.map(String).join(", ")}</span>;
@@ -88,9 +96,9 @@ export function TablePreview({
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i} className="border-b border-border/60 last:border-0 hover:bg-muted/30">
-                  {table.fields.map((f) => (
-                    <td key={f.key} className="max-w-[260px] px-4 py-2 align-top text-foreground">
-                      <Cell value={r[f.key]} refNames={refNames} />
+                  {table.fields.map((f, c) => (
+                    <td key={f.key} className={cn("max-w-[260px] px-4 py-2 align-top text-foreground", c === 0 && "min-w-[10rem]")}>
+                      <Cell value={r[f.key]} type={f.type} refNames={refNames} />
                     </td>
                   ))}
                 </tr>

@@ -352,12 +352,12 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
               {detectError && <ErrorNotice title="The setup could not be read." error={detectError} onRetry={() => setAttempt((n) => n + 1)} />}
               {/* read-gate-exempt: `detected` is set only by a SUCCESSFUL setup read (cleared when a read starts); its failure renders ErrorNotice on the line above */}
               {detected && detected.bindings.length === 0 && (
-                <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
-                  <p>{detected.agent.name} doesn&rsquo;t read any of your tables yet.</p>
-                  <Link href={KIT_ROUTES.gallery} className="mt-1 inline-block text-xs text-primary hover:underline" onClick={onClose}>
+                <p className="text-sm text-foreground">
+                  {detected.agent.name} doesn&rsquo;t read any of your tables yet.{" "}
+                  <Link href={KIT_ROUTES.gallery} className="font-medium text-primary hover:underline" onClick={onClose}>
                     Browse {KIT_WORD.manyLower} that do
                   </Link>
-                </div>
+                </p>
               )}
               {detected && detected.bindings.length > 0 && (
                 <ul className="space-y-1 text-sm">
@@ -374,9 +374,10 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
             </div>
           ) : step === "data" && detected ? (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Checked tables bring their rows as example data.</p>
+              <p className="text-sm text-foreground">Checked tables bring their rows as example data.</p>
+              <div className="divide-y divide-border rounded-lg border border-border">
               {detected.tables.map((t) => (
-                <label key={t.id} className="flex items-start gap-3 rounded-lg border border-border bg-card p-3">
+                <label key={t.id} className="flex items-start gap-3 px-3 py-2.5">
                   <Checkbox
                     checked={!!includeRows[t.id]}
                     onCheckedChange={(v) => setIncludeRows((cur) => ({ ...cur, [t.id]: v === true }))}
@@ -406,6 +407,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                   </Link>
                 </label>
               ))}
+              </div>
               {forkable && !forkable.ok && (
                 <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
@@ -493,9 +495,10 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                 <p className="text-sm text-muted-foreground">No workflow uses this agent or its tables.</p>
               ) : (
                 <>
-                  <p className="text-sm text-muted-foreground">Checked workflows are recreated on install.</p>
+                  <p className="text-sm text-foreground">Checked workflows are recreated on install.</p>
+                  <div className="divide-y divide-border rounded-lg border border-border">
                   {detected.workflows.map((w) => (
-                    <label key={w.id} className="flex items-start gap-3 rounded-lg border border-border bg-card p-3">
+                    <label key={w.id} className="flex items-start gap-3 px-3 py-2.5">
                       <Checkbox
                         checked={!!includeWorkflows[w.id]}
                         onCheckedChange={(v) => setIncludeWorkflows((cur) => ({ ...cur, [w.id]: v === true }))}
@@ -503,23 +506,26 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                       />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-foreground">{w.name}</p>
-                        {w.description && <p className="text-xs text-muted-foreground">{w.description}</p>}
+                        {w.description && <p className="text-xs text-foreground">{w.description}</p>}
                       </div>
                       <Link href={KIT_ROUTES.workflow(w.id)} target="_blank" className="shrink-0 text-xs text-primary hover:underline">
                         Open
                       </Link>
                     </label>
                   ))}
+                  </div>
                 </>
               )}
             </div>
           ) : step === "review" && built ? (
             <div className="space-y-3">
-              <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
-                <KitIcon name={built.manifest.icon} tintKey={built.manifest.name} />
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{built.manifest.name}</p>
-                  <p className="text-xs text-muted-foreground">{built.manifest.tagline}</p>
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <KitIcon name={built.manifest.icon} tintKey={built.manifest.name} size="sm" />
+                  <p className="min-w-0 truncate text-sm font-semibold text-foreground">{built.manifest.name}</p>
+                </div>
+                <div>
+                  <p className="mt-2 text-sm text-foreground">{built.manifest.tagline}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {/* read-gate-exempt: counts of the kit manifest this dialog just built (review step follows a successful build; a failed detect shows detectError) */}
                     {built.manifest.tables.length} {built.manifest.tables.length === 1 ? "table" : "tables"} ·{" "}
@@ -530,7 +536,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                 </div>
               </div>
               {built.notes.length > 0 && (
-                <ul className="space-y-1 rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
+                <ul className="space-y-1 text-xs text-foreground">
                   {built.notes.map((n) => (
                     <li key={n} className="flex items-start gap-1.5">
                       <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-warning" />
@@ -539,10 +545,9 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                   ))}
                 </ul>
               )}
-              <p className="text-xs text-muted-foreground">
-                {editing
-                  ? "Existing installs are not changed."
-                  : `Everyone in ${orgName} can install it. Your tables and agent stay as they are.`}
+              {/* Saving copies nothing out of the person's tables or agent; they stay as they are. */}
+              <p className="text-sm text-foreground">
+                {editing ? "Existing installs are not changed" : `Installable by everyone in ${orgName}`}
               </p>
               {saveError && <ErrorNotice title="It was not saved." error={saveError} />}
             </div>

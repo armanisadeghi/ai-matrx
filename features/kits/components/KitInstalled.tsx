@@ -42,6 +42,7 @@ import { previewBinding, type PreviewAnswer } from "../preview";
 import type { KitAgent, KitEntry, KitInstallRecord, KitManifest } from "../types";
 import { InstallStepper } from "./InstallPanel";
 import { ErrorNotice } from "./ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { KitIcon } from "./KitIcon";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
@@ -371,20 +372,6 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
     const steps = install.steps;
     body = (
       <div className="space-y-6">
-        {/* Doors to what the panels below don't show (tables and agents open from their own panel). */}
-        <div className="flex flex-wrap gap-2">
-          {m.workflows.map((w) => {
-            const id = steps.workflows?.[w.key];
-            return id ? (
-              <Link key={w.key} href={KIT_ROUTES.workflow(id)} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-primary/40">
-                <Workflow className="h-3.5 w-3.5 text-chart-3" />
-                {w.name}
-                <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
-              </Link>
-            ) : null;
-          })}
-        </div>
-
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="min-w-0 space-y-6">
             <RecordsMount
@@ -493,7 +480,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
             </div>
           </div>
           {found.installs.length > 0 && (
-            <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="mb-6 flex flex-wrap items-center gap-2">
               {found.installs.map((i) => (
                 <button
                   key={i.organizationId}
@@ -508,9 +495,21 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                 </button>
               ))}
               {selected && (
-                <Link href={detailHref(selected.organizationId)} className="ml-auto text-xs font-medium text-primary hover:underline">
-                  Update or remove
-                </Link>
+                <div className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-1">
+                  {selected.install.status === "installed" &&
+                    m.workflows.map((w) => {
+                      const id = selected.install.steps.workflows?.[w.key];
+                      return id ? (
+                        <Link key={w.key} href={KIT_ROUTES.workflow(id)} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                          <Workflow className="h-3.5 w-3.5" />
+                          {w.name}
+                        </Link>
+                      ) : null;
+                    })}
+                  <Link href={detailHref(selected.organizationId)} className="text-sm font-medium text-primary hover:underline">
+                    Update or remove
+                  </Link>
+                </div>
               )}
             </div>
           )}
@@ -518,6 +517,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
             <p className="mb-4 flex items-center gap-1.5 text-xs text-warning">
               <AlertTriangle className="h-3 w-3" />
               {`${found.failures.length} ${found.failures.length === 1 ? "organization" : "organizations"} could not be read.`}
+              <ErrorAlchemyMenu error={found.failures.map((f) => f.message).join(" · ")} />
               <button type="button" onClick={found.retry} className="font-medium text-primary hover:underline">
                 Check again
               </button>

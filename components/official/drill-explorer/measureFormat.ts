@@ -13,6 +13,8 @@
 //   share       a fraction of 1 as a percent, one decimal (0.1234 → 12.3%)
 //   percent     a number already in percent (12.3 → 12.3%)
 //   times       a multiplier (6.0×)
+//   time        a MOMENT (lane DRILL-PARITY-LAST: "Last active"): the door sends ISO, the row reader
+//               turns it into epoch ms (drillRowOf), read here as the viewer's local date and time
 //
 // ONE VALUE, ONE READING (owner ruling, 2026-09-30, replacing the rows-add-up-to-the-rounded-total
 // rule): every value is rounded on its own by its unit's formatter — the header's total, a table
@@ -20,7 +22,7 @@
 // appears (the BI norm: Stripe, Looker and Amplitude round each cell independently and never
 // redistribute remainders).
 
-import { formatCount, formatDurationMs, formatPercentFromFraction } from "@ai-matrx/kit/format";
+import { formatAbsoluteDate, formatCount, formatDurationMs, formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 import { formatAdminPoints, formatAdminUsd } from "@/components/cost/formatAdminCost";
 
@@ -41,6 +43,8 @@ export function drillUnitFormatter(unit: string | undefined, money: DrillMoneyUn
       return (v) => (v === null ? "—" : formatPercentFromFraction(v / 100, { digits: 1 }));
     case "times":
       return (v) => (v === null ? "—" : `${v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}×`);
+    case "time":
+      return (v) => (v === null ? "—" : formatAbsoluteDate(v, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, "—"));
     case "count":
     case "characters":
       return (v) => (v === null ? "—" : formatCount(v));
@@ -52,5 +56,5 @@ export function drillUnitFormatter(unit: string | undefined, money: DrillMoneyUn
 
 /** Does a Measure of this unit add up across groups by default? (A share or a multiplier never does.) */
 export function drillUnitAdds(unit: string | undefined): boolean {
-  return !(unit === "share" || unit === "percent" || unit === "times" || unit === "ms");
+  return !(unit === "share" || unit === "percent" || unit === "times" || unit === "ms" || unit === "time");
 }
