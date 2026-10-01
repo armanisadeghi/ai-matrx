@@ -13,9 +13,7 @@ jest.mock("next/link", () => ({
   __esModule: true,
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
 }));
-jest.mock("@/app/(core)/data-v2/[tableId]/LivesInTheNewSystem", () => ({
-  LivesInTheNewSystem: ({ children }: { children: React.ReactNode }) => <p data-testid="line">{children}</p>,
-}));
+jest.mock("@/app/(core)/data-v2/[tableId]/page", () => ({ __esModule: true, default: () => null }));
 
 // eslint-disable-next-line import/first
 import { StoreListPage } from "../StoreListPage";

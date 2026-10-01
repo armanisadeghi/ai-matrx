@@ -43,6 +43,3 @@ export async function organizationPickListsInTheNewSystem(
   const { lists } = await readPickListIndexOrThrow(client, { organizationId });
   return lists.map((list) => ({ id: list.id, list_name: list.listName, updated_at: list.updatedAt }));
 }
-
-/** The one line over a list's page (/lists/<id>): what the page is. */
-export const LIST_PAGE_LINE = "A pick list: each row below is one of its choices.";

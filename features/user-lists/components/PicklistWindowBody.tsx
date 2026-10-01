@@ -6,29 +6,33 @@
 // with a list named, the window is that list's table page (the screen /lists/<id> is); without one,
 // it is the Picklists index (the screen /lists is), each row opening the list's page.
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
-import { LivesInTheNewSystem } from "@/app/(core)/data-v2/[tableId]/LivesInTheNewSystem";
+import UnifiedDataTableRoute from "@/app/(core)/data-v2/[tableId]/page";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { createClient } from "@/utils/supabase/client";
-import { LIST_PAGE_LINE } from "../where-lists-live";
+import { LIST_PAGE_LINE } from "../list-page-line";
 import { PicklistsIndex } from "./PicklistsIndex";
 
 export function PicklistWindowBody({ forcedListId }: { forcedListId?: string | null }) {
   const userId = useAppSelector(selectUserId);
   const organizationName = useAppSelector(selectOrganizationName);
   const [dataSource] = useState(() => recordsDataSource(createClient()));
+  const params = useMemo(() => Promise.resolve({ tableId: forcedListId ?? "" }), [forcedListId]);
 
   if (forcedListId) {
     // Inside a window there is no shell header above the page.
     return (
-      <div className="h-full [--shell-header-h:0px]">
-        <LivesInTheNewSystem tableId={forcedListId} testId="list-page-line">
+      <div className="flex h-full flex-col [--shell-header-h:0px]">
+        <p className="shrink-0 px-4 pb-1 pt-1 text-xs text-muted-foreground" data-testid="list-page-line">
           {LIST_PAGE_LINE}
-        </LivesInTheNewSystem>
+        </p>
+        <div className="min-h-0 flex-1">
+          <UnifiedDataTableRoute params={params} />
+        </div>
       </div>
     );
   }
