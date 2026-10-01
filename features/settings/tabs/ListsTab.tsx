@@ -31,14 +31,12 @@ const OPTIONS: SettingsOption<ArchivedDefault>[] = [
   {
     value: "active",
     label: "Hidden by default",
-    description:
-      "Lists open showing active items only. Archived items stay one click away on each list.",
+    description: "Lists show active items; archived ones are one click away.",
   },
   {
     value: "all",
     label: "Shown by default",
-    description:
-      "Lists open showing archived items alongside active ones. You can still narrow any list back down.",
+    description: "Lists show active and archived items; narrow any time.",
   },
 ];
 
@@ -58,7 +56,7 @@ export default function ListsTab() {
         <SettingsSection title="Archived items">
           <SettingsRadioGroup<ArchivedDefault>
             label="Archived items"
-            description="Archiving never deletes anything — this only decides what a list shows before you touch it."
+            description="Archiving never deletes; this sets what lists show first."
             value={archivedDefault ?? "active"}
             onValueChange={setArchivedDefault}
             options={OPTIONS}

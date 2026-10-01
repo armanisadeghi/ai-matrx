@@ -35,7 +35,8 @@ export default function AdminServerTab() {
     {
       value: "auto",
       label: "Auto / installed app",
-      description: "Send no target_instance_id.",
+      // Auto sends no target_instance_id, so aidream routes by default.
+      description: "Default routing",
     },
     ...desktopInstances.map((target) => {
       const channel = target.dev ? "dev" : "live";
@@ -107,7 +108,7 @@ export default function AdminServerTab() {
       <SettingsSection title="Desktop app (dev override)" icon={Monitor}>
         <SettingsSelect<string>
           label="Desktop instance"
-          description="Admin-only target for delegated desktop tools. Auto preserves the default aidream routing behavior."
+          description="Desktop app for delegated tools; Auto keeps default routing"
           warning={desktopInstancesError}
           badge={{ label: "Admin", variant: "admin" }}
           value={desktopTargetInstanceId ?? "auto"}

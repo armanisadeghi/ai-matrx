@@ -31,8 +31,7 @@ export default function CodingTab() {
       <SettingsSection title="Editor appearance">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="text-sm text-muted-foreground">
-            The code editor's theme follows your app-wide color mode — there
-            is no separate editor theme.
+            Editor theme follows your app color mode.
           </div>
           <SettingDoor
             target={{

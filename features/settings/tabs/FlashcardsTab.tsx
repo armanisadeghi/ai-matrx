@@ -33,13 +33,13 @@ export default function FlashcardsTab() {
       <SettingsSection title="Tutor">
         <SettingsLink
           label="Tutor voice"
-          description="The voice tutor is one of AI Matrx's live assistants, so it speaks in your live conversation voice (Eve unless you pick one)."
+          description="Your live conversation voice, Eve by default."
           href={settingDoorHref(VOICE_SETTING_DOORS.liveConversation)}
           actionLabel="Voices"
         />
         <SettingsLink
           label="Intelligence"
-          description="See what runs your flashcards — the deck generator and the study tutor — duplicate it to change it, or use your own agent."
+          description="See or copy the deck generator and tutor agents."
           href={featureIntelligenceHref("flashcards")}
           actionLabel="Open intelligence"
           last

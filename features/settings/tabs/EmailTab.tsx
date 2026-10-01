@@ -151,6 +151,7 @@ export default function EmailTab() {
         />
         <SettingsSwitch
           label="Organization invitations"
+          description="When someone invites you to an organization."
           checked={prefs.organization_invitations}
           onCheckedChange={set("organization_invitations")}
         />
@@ -162,6 +163,7 @@ export default function EmailTab() {
         />
         <SettingsSwitch
           label="Comment notifications"
+          description="When someone comments on your tasks, canvases, or notes."
           checked={prefs.comment_notifications}
           onCheckedChange={set("comment_notifications")}
           last

@@ -46,7 +46,8 @@ export default function AssistantTab() {
         <SettingsSection title="Composing" icon={PenLine}>
           <SettingsSwitch
             label="Put unsent drafts back"
-            description="If you reload or crash while writing a message, we keep what you typed in that tab and put it back in the box, per conversation. A sent message is never put back."
+            description="Restores unsent text after a reload or crash."
+            helpText="Kept per conversation in that tab. A sent message is never put back."
             checked={restoreUnsentDrafts !== false}
             onCheckedChange={setRestoreUnsentDrafts}
             last
@@ -63,7 +64,8 @@ export default function AssistantTab() {
             read — this row is a door to the real one. */}
         <SettingsLink
           label="Default AI model"
-          description="Chat, quick questions and everyday drafting answer with this model unless you pick another. Your organization can set one for everyone; yours wins for you."
+          description="Answers chat and drafting unless you pick another"
+          helpText="Your organization can set one for everyone; yours wins for you."
           href={settingDoorHref({
             scope: "user",
             tabId: "firstScreen",

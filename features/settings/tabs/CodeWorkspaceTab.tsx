@@ -101,7 +101,8 @@ export default function CodeWorkspaceTab() {
         <SettingsSection title="Agent filter" icon={Filter}>
           <SettingsSegmented<CodeAgentFilter["mode"]>
             label="Which agents should appear?"
-            description="Applies to the Chat picker and the History sidebar. Users can always clear this filter in the picker."
+            description="Applies to the chat picker and history sidebar."
+            helpText="Users can always clear this filter in the picker."
             value={filter.mode}
             onValueChange={(mode) => patchFilter({ mode })}
             options={[
@@ -191,7 +192,7 @@ export default function CodeWorkspaceTab() {
         <SettingsSection title="History sidebar" icon={History}>
           <SettingsSegmented<ConversationHistoryGrouping>
             label="Default grouping"
-            description="How the history sidebar groups conversations on first load. Users can still flip between groupings per session."
+            description="How history groups conversations on first load."
             value={grouping}
             onValueChange={setGrouping}
             options={[
@@ -201,7 +202,7 @@ export default function CodeWorkspaceTab() {
           />
           <SettingsNumberInput
             label="Conversations per page"
-            description="Batch size used when loading the history list. 30 is a good default."
+            description="Conversations loaded per batch."
             value={pageSize}
             onValueChange={setPageSize}
             min={10}
@@ -212,9 +213,12 @@ export default function CodeWorkspaceTab() {
         </SettingsSection>
 
         <SettingsSection title="Editor type environments" icon={Layers}>
+          {/* Curated React/Lucide/shadcn/Node typings for the prompt-app,
+              aga-app, tool-ui and sandbox tabs. */}
           <SettingsSwitch
             label="Load per-tab type definitions"
-            description="Load curated React/Lucide/ShadCN/Node typings for prompt-app, aga-app, tool-ui, and sandbox tabs. Disable to see vanilla TypeScript errors instead."
+            description="Typings for React, Lucide and shadcn in code tabs."
+            helpText="Turn off to see plain TypeScript errors instead."
             checked={monacoEnvironmentsEnabled ?? true}
             onCheckedChange={setMonacoEnvironmentsEnabled}
             last

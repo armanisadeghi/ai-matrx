@@ -45,12 +45,12 @@ export default function ImageGenerationTab() {
             scope="all"
             allowPlatformDefault
             platformDefaultLabel="AI Matrx default (chosen by the platform)"
-            description="Leave on the AI Matrx default to use whichever image model the platform has set for image generation."
+            description="The AI Matrx default uses the platform's image model."
             defaultModality="image"
           />
           <SettingsSelect
             label="Style"
-            description="Seeds the style field when you open image generation — you can still change it per image."
+            description="Pre-fills the style field; change it per image."
             value={style}
             onValueChange={setStyle}
             placeholder="None — no style added"

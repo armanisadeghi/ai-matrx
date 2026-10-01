@@ -227,7 +227,7 @@ export default function FirstScreenTab() {
       {settings.editingContext === "user" && <SettingsSection title="Appearance">
         <SettingsSelect<ThemeMode>
           label="Theme"
-          description="Use your device setting, light, or dark. Saved in this browser; every open tab follows it."
+          description="Device setting, light, or dark; every open tab follows it."
           value={mode}
           onValueChange={setMode}
           options={THEME_MODE_OPTIONS}
@@ -244,7 +244,7 @@ export default function FirstScreenTab() {
         <SettingsSection title="Account defaults">
           <SettingsRow
             label="Default organization"
-            description="Where you land when you sign in. You can switch organizations any time from the header."
+            description="Where you land at sign-in; switch any time from the header."
             id="settings-default-organization"
             // Stacks under its label on a narrow screen, like every select row.
             controlLayout="wide"
@@ -325,7 +325,7 @@ export const FIRST_SCREEN_TAB: SettingsTabDef = {
   id: "firstScreen",
   label: "Settings",
   icon: SlidersHorizontal,
-  description: "Theme, the organization you open at sign-in, and your default AI model and voice.",
+  description: "Theme, default organization, AI model and voice.",
   component: FirstScreenTab,
   persistence: "server",
 };

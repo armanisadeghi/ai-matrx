@@ -203,8 +203,8 @@ export default function ApiKeysTab() {
             </div>
             {created.expiry_capped && created.expires_at && (
               <p className="text-xs text-muted-foreground">
-                Your organization limits how long a key lasts, so this one
-                expires on {formatDate(created.expires_at)}.
+                Expires {formatDate(created.expires_at)} under your
+                organization&apos;s key limit.
               </p>
             )}
           </div>
@@ -225,7 +225,7 @@ export default function ApiKeysTab() {
           </dl>
           <SettingsButton
             label="Hide the key"
-            description="Closing this removes the key from the screen for good, so copy it first."
+            description="The key is never shown again; copy it first."
             actionLabel="Done"
             kind="default"
             onClick={() => {
@@ -276,7 +276,7 @@ export default function ApiKeysTab() {
           />
           <SettingsButton
             label="Create key"
-            description="It works until you revoke it or it reaches your organization's maximum age."
+            description="Works until you revoke it or it hits your org's max age."
             actionLabel="Create"
             kind="default"
             onClick={() => void handleCreate()}

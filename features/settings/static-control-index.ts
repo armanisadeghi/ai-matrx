@@ -11,11 +11,6 @@ export type StaticSettingsControl = {
 
 export const staticSettingsControlIndex = [
   {
-    "tabId": "general.notifications",
-    "label": "Applies to",
-    "controlId": "settings-control-who-these-settings-are-about-applies-to"
-  },
-  {
     "tabId": "general.language",
     "label": "Voice input",
     "description": "Speech-to-text recognition language.",
@@ -48,7 +43,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "general.lists",
     "label": "Archived items",
-    "description": "Archiving never deletes anything — this only decides what a list shows before you touch it.",
+    "description": "Archiving never deletes; this sets what lists show first.",
     "controlId": "settings-control-archived-items-archived-items"
   },
   {
@@ -66,19 +61,19 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "appearance",
     "label": "Color mode",
-    "description": "Use your device setting, light, or dark. Applies before first paint and syncs across tabs.",
+    "description": "Device setting, light, or dark; every open tab follows it.",
     "controlId": "settings-control-theme-color-mode"
   },
   {
     "tabId": "appearance.theme",
     "label": "Color mode",
-    "description": "Use your device setting, light, or dark. Applies before first paint and syncs across tabs.",
+    "description": "Device setting, light, or dark; every open tab follows it.",
     "controlId": "settings-control-theme-color-mode"
   },
   {
     "tabId": "appearance.density",
     "label": "Color mode",
-    "description": "Use your device setting, light, or dark. Applies before first paint and syncs across tabs.",
+    "description": "Device setting, light, or dark; every open tab follows it.",
     "controlId": "settings-control-theme-color-mode"
   },
   {
@@ -127,13 +122,13 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "ai.assistants",
     "label": "Put unsent drafts back",
-    "description": "If you reload or crash while writing a message, we keep what you typed in that tab and put it back in the box, per conversation. A sent message is never put back.",
+    "description": "Restores unsent text after a reload or crash.",
     "controlId": "settings-control-composing-put-unsent-drafts-back"
   },
   {
     "tabId": "ai.assistants",
     "label": "Default AI model",
-    "description": "Chat, quick questions and everyday drafting answer with this model unless you pick another. Your organization can set one for everyone; yours wins for you.",
+    "description": "Answers chat and drafting unless you pick another",
     "controlId": "settings-control-model-default-ai-model"
   },
   {
@@ -160,19 +155,19 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "ai.imageGeneration",
     "label": "Model",
-    "description": "Leave on the AI Matrx default to use whichever image model the platform has set for image generation.",
+    "description": "The AI Matrx default uses the platform's image model.",
     "controlId": "settings-control-output-model"
   },
   {
     "tabId": "ai.imageGeneration",
     "label": "Style",
-    "description": "Seeds the style field when you open image generation — you can still change it per image.",
+    "description": "Pre-fills the style field; change it per image.",
     "controlId": "settings-control-output-style"
   },
   {
     "tabId": "editor.codeWorkspace",
     "label": "Which agents should appear?",
-    "description": "Applies to the Chat picker and the History sidebar. Users can always clear this filter in the picker.",
+    "description": "Applies to the chat picker and history sidebar.",
     "controlId": "settings-control-agent-filter-which-agents-should-appear"
   },
   {
@@ -196,20 +191,30 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "editor.codeWorkspace",
     "label": "Default grouping",
-    "description": "How the history sidebar groups conversations on first load. Users can still flip between groupings per session.",
+    "description": "How history groups conversations on first load.",
     "controlId": "settings-control-history-sidebar-default-grouping"
   },
   {
     "tabId": "editor.codeWorkspace",
     "label": "Conversations per page",
-    "description": "Batch size used when loading the history list. 30 is a good default.",
+    "description": "Conversations loaded per batch.",
     "controlId": "settings-control-history-sidebar-conversations-per-page"
   },
   {
     "tabId": "editor.codeWorkspace",
     "label": "Load per-tab type definitions",
-    "description": "Load curated React/Lucide/ShadCN/Node typings for prompt-app, aga-app, tool-ui, and sandbox tabs. Disable to see vanilla TypeScript errors instead.",
+    "description": "Typings for React, Lucide and shadcn in code tabs.",
     "controlId": "settings-control-editor-type-environments-load-per-tab-type-definitions"
+  },
+  {
+    "tabId": "editor.notes",
+    "label": "Notes open in",
+    "controlId": "settings-control-on-a-computer-notes-open-in"
+  },
+  {
+    "tabId": "editor.notes",
+    "label": "Notes open in",
+    "controlId": "settings-control-on-a-phone-notes-open-in"
   },
   {
     "tabId": "devices",
@@ -259,7 +264,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "voice.voices",
     "label": "Read-aloud speed",
-    "description": "1.0 is the voice's natural pace. Our default is 1.2.",
+    "description": "1.0 is natural pace; our default is 1.2.",
     "controlId": "settings-control-how-your-read-aloud-voice-speaks-read-aloud-speed"
   },
   {
@@ -270,25 +275,25 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "voice.voices",
     "label": "Read-aloud emotion",
-    "description": "The tone your read-aloud voice speaks in — the chat speaker, the Listen panel and spoken replies. Live conversation uses a different engine and is not affected.",
+    "description": "Read-aloud tone; live conversation is not affected.",
     "controlId": "settings-control-how-your-read-aloud-voice-speaks-read-aloud-emotion"
   },
   {
     "tabId": "voice.voices",
     "label": "Podcast hosts",
-    "description": "Each episode casts its hosts from the voice library below — Google voices for one or two hosts, ElevenLabs voices for three or more.",
+    "description": "Hosts are cast from the voice library below.",
     "controlId": "settings-control-voices-for-what-you-build-podcast-hosts"
   },
   {
     "tabId": "voice.voices",
     "label": "Speakers in an agent's speech script",
-    "description": "Each speaker gets a voice from the library below, picked in the agent builder's speech script editor.",
+    "description": "Each speaker's voice is picked in the speech script editor.",
     "controlId": "settings-control-voices-for-what-you-build-speakers-in-an-agent-s-speech-script"
   },
   {
     "tabId": "voice.voices",
     "label": "Live voice agents you build",
-    "description": "Your voice agent speaks in one of the five live voices (Ara, Eve, Leo, Rex, Sal), set in the voice playground and saved on the agent.",
+    "description": "One of five live voices, set in the voice playground.",
     "controlId": "settings-control-voices-for-what-you-build-live-voice-agents-you-build"
   },
   {
@@ -312,6 +317,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "communication.email",
     "label": "Organization invitations",
+    "description": "When someone invites you to an organization.",
     "controlId": "settings-control-collaboration-organization-invitations"
   },
   {
@@ -323,6 +329,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "communication.email",
     "label": "Comment notifications",
+    "description": "When someone comments on your tasks, canvases, or notes.",
     "controlId": "settings-control-collaboration-comment-notifications"
   },
   {
@@ -417,19 +424,37 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "learning.flashcards",
     "label": "Tutor voice",
-    "description": "The voice tutor is one of AI Matrx's live assistants, so it speaks in your live conversation voice (Eve unless you pick one).",
+    "description": "Your live conversation voice, Eve by default.",
     "controlId": "settings-control-tutor-tutor-voice"
   },
   {
     "tabId": "learning.flashcards",
     "label": "Intelligence",
-    "description": "See what runs your flashcards — the deck generator and the study tutor — duplicate it to change it, or use your own agent.",
+    "description": "See or copy the deck generator and tutor agents.",
     "controlId": "settings-control-tutor-intelligence"
   },
   {
     "tabId": "organizations",
     "label": "Switch organization when a link asks",
     "controlId": "settings-control-links-from-notifications-and-emails-switch-organization-when-a-link-asks"
+  },
+  {
+    "tabId": "integrations.apiKeys",
+    "label": "Name",
+    "description": "What will use it, so you can tell your keys apart.",
+    "controlId": "settings-control-new-key-name"
+  },
+  {
+    "tabId": "integrations.apiKeys",
+    "label": "Organization",
+    "description": "Where the key works when a request names no organization.",
+    "controlId": "settings-control-new-key-organization"
+  },
+  {
+    "tabId": "integrations.apiKeys",
+    "label": "Create key",
+    "description": "Works until you revoke it or it hits your org's max age.",
+    "controlId": "settings-control-new-key-create-key"
   },
   {
     "tabId": "admin.server",
@@ -446,7 +471,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "admin.server",
     "label": "Desktop instance",
-    "description": "Admin-only target for delegated desktop tools. Auto preserves the default aidream routing behavior.",
+    "description": "Desktop app for delegated tools; Auto keeps default routing",
     "controlId": "settings-control-desktop-app-dev-override-desktop-instance"
   },
   {

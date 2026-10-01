@@ -65,7 +65,7 @@ export default function ConversationFiltersTab() {
     <>
       <SettingsSubHeader
         title="Conversation filters"
-        description="Choose which surfaces' conversations each history view shows by default. The in-app filter still lets you reach everything else any time."
+        description="Which surfaces each history view shows by default"
         icon={Filter}
       />
 
@@ -103,7 +103,7 @@ export default function ConversationFiltersTab() {
               />
               <SettingsSwitch
                 label="Include generic / system conversations"
-                description="Conversations with no recorded source (automations, scripted runs)."
+                description="Automations and scripted runs with no source."
                 checked={pref.includeEmptySource}
                 onCheckedChange={(checked) =>
                   updateSurface(surface.id, { includeEmptySource: checked })

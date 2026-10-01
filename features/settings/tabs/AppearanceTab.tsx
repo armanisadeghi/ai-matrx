@@ -75,7 +75,7 @@ export default function AppearanceTab() {
       <SettingsSection title="Theme" icon={Sun}>
         <SettingsSelect<ThemeMode>
           label="Color mode"
-          description="Use your device setting, light, or dark. Applies before first paint and syncs across tabs."
+          description="Device setting, light, or dark; every open tab follows it."
           value={mode}
           onValueChange={setMode}
           options={THEME_MODE_OPTIONS}
