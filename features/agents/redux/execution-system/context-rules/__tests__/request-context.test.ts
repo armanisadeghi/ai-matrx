@@ -252,7 +252,7 @@ describe("the table and the send agree on the first turn's system values", () =>
     state.messages = { byConversationId: { c1: { orderedIds: [], apiEndpointMode } } };
     state.userAuth = { id: "u1", email: "admin@admin.com" };
     state.userProfile = {};
-    state.appContext = {};
+    state.appContext = { scope_selections: {} };
     return state as unknown as RootState;
   }
 
