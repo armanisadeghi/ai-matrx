@@ -48,3 +48,27 @@ describe("the Sources archive axis", () => {
     expect(isSourceArchived({ deleted_at: null, archived_at: null })).toBe(false);
   });
 });
+
+/**
+ * V6-B (2026-10-01): archived Sources read "Not yet searchable" (they were "Searchable · key terms
+ * found"): archiving takes a Source's index out of search with it, so its facts read zero chunks.
+ * The archive is the state the cell shows; the stage comes back on restore.
+ */
+import { stageCellLabel, stageCellState, type SourceFacts } from "../sourceRows";
+
+describe("an archived Source's Stage cell", () => {
+  const archivedFacts: SourceFacts = {
+    chunkCount: 0, hasEntities: false, attachments: [], currentDocumentId: "d", currentChunkCount: 0,
+    currentHasEntities: false, staleChunkCount: 0, indexing: false, headDocumentId: "d", entitiesState: "done",
+  };
+  const read = { loading: false, failed: false, retrying: false };
+
+  it("says Archived, never a search stage", () => {
+    expect(stageCellLabel(stageCellState(archivedFacts, read, true))).toBe("Archived");
+    expect(stageCellLabel(stageCellState(undefined, { ...read, loading: true }, true))).toBe("Archived");
+  });
+
+  it("a live Source still shows its stage", () => {
+    expect(stageCellLabel(stageCellState(archivedFacts, read, false))).toBe("Not yet searchable");
+  });
+});
