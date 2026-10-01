@@ -93,13 +93,8 @@ function makeStore(dispatched: Action[]) {
     },
     userPreferences: {
       coding: { activeAgentSandboxBySurface: {} },
-      sandbox: {
-        template: "base",
-        tier: "ec2",
-        ttl_seconds: null,
-        default_git_repo: null,
-      },
     },
+    userAuth: { id: "user-1" },
     chatIncognito: { isActive: false },
     appContext: { organization_id: "org-1" },
   };

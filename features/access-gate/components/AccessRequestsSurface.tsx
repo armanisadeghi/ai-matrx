@@ -20,11 +20,20 @@
  * unpaged, authorization-derived list — an inbox, not an entity list — and
  * satisfying the shell would mean inventing an `access_request_list_scoped`
  * family for a set that is small by construction.
+ *
+ * Where it lives (2026-10-01): a settings tab — `General › Access requests`,
+ * `ACCESS_REQUESTS_HREF` — rendered by the ONE settings core, so the route,
+ * the Preferences window and the phone drawer all show it. It therefore owns
+ * no route chrome: the two boxes and Refresh sit in an inline bar, and the box
+ * is local state (seeded once from `?box=sent`, which old DM links and the
+ * `/settings/access-requests` redirect still carry), because pushing a URL
+ * from inside the window would navigate the page out from under it. The old
+ * standalone route is a config redirect in `next.config.js`.
  */
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   CircleCheck,
   CircleSlash,
@@ -45,7 +54,6 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { UserIdentity } from "@/components/user/UserIdentity";
 import { SettingRequestActionButtons } from "@/features/access-gate/components/SettingRequestActionButtons";
 import { ResourceActionRequestButtons } from "@/features/access-gate/components/ResourceActionRequestButtons";
-import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   NAV_ITEM_SELECTED,
@@ -68,6 +76,9 @@ import type {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Box = "inbox" | "sent";
+
+/** The one address of this inbox: the settings tab `accessRequests`. */
+export const ACCESS_REQUESTS_HREF = "/user-settings/access-requests";
 
 const STATUS_LABEL: Record<AccessRequestStatus, string> = {
   pending: "Pending",
@@ -217,9 +228,8 @@ function EmptyState({ box }: { box: Box }) {
 }
 
 export function AccessRequestsSurface() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const box = boxFromParam(searchParams.get("box"));
+  const [box, setBox] = useState<Box>(() => boxFromParam(searchParams.get("box")));
   const currentUserId = useAppSelector(selectUserId);
 
   const [rows, setRows] = useState<Record<Box, AccessRequestRow[] | null>>({
@@ -345,18 +355,10 @@ export function AccessRequestsSurface() {
     <button
       key={target}
       type="button"
-      onClick={() =>
-        // Discrete tab switch — Back returns to the previous box.
-        router.push(
-          target === "inbox"
-            ? "/settings/access-requests"
-            : "/settings/access-requests?box=sent",
-          { scroll: false },
-        )
-      }
+      onClick={() => setBox(target)}
       aria-current={box === target ? "page" : undefined}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-colors",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs transition-colors",
         box === target ? NAV_ITEM_SELECTED : NAV_ITEM_UNSELECTED,
       )}
     >
@@ -367,7 +369,7 @@ export function AccessRequestsSurface() {
       )}
       {label}
       {count > 0 && (
-        <Badge className="pointer-events-none h-4 min-w-[16px] border-0 bg-primary px-1 text-[9px] font-semibold hover:bg-primary">
+        <Badge className="pointer-events-none h-4 min-w-[16px] border-0 bg-primary px-1 text-[9px] font-semibold text-primary-foreground hover:bg-primary">
           {count > 99 ? "99+" : count}
         </Badge>
       )}
@@ -375,40 +377,28 @@ export function AccessRequestsSurface() {
   );
 
   return (
-    <>
-      <RouteHeader
-        left={
-          // The title text steps out below `sm`: the mobile header budget is
-          // identity + ONE control, and a long title there squeezes the tab
-          // pill until the two overlap. The icon keeps the identity.
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium">
-            <KeyRound className="h-4 w-4" aria-hidden />
-            <span className="hidden sm:inline">Access requests</span>
-            <span className="sr-only sm:hidden">Access requests</span>
-          </span>
-        }
-        center={
-          // RouteHeader's center slot is a full-width box inset around the
-          // header's center: the pill has to center ITSELF inside it, or it
-          // sits at the slot's left edge.
-          <div className="flex w-full justify-center">
-            <div className="matrx-glass-thin-border inline-flex items-center gap-1 rounded-full p-1">
-              {tab("inbox", "To me", inboxCount)}
-              {tab("sent", "I sent", sentPending)}
-            </div>
+    <div className="mx-auto w-full max-w-3xl">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        {/* The host (settings breadcrumb, drawer header) already names the
+            page on a phone; the title steps out there so the pill fits. */}
+        <span className="hidden items-center gap-1.5 text-sm font-medium sm:inline-flex">
+          <KeyRound className="h-4 w-4" aria-hidden />
+          Access requests
+        </span>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="matrx-glass-thin-border inline-flex items-center gap-1 rounded-full p-1">
+            {tab("inbox", "To me", inboxCount)}
+            {tab("sent", "I sent", sentPending)}
           </div>
-        }
-        right={
           <RefreshCwTapButton
             ariaLabel="Refresh access requests"
             disabled={refreshing}
             onClick={() => void refresh()}
           />
-        }
-      />
+        </div>
+      </div>
 
-      <div className="h-full overflow-y-auto">
-        <div className="mx-auto w-full max-w-3xl px-3 pb-10 pt-[var(--shell-header-h)] sm:px-4">
+      <div>
           {error && (
             <div className="mb-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
@@ -596,9 +586,8 @@ export function AccessRequestsSurface() {
               ))}
             </ul>
           )}
-        </div>
       </div>
-    </>
+    </div>
   );
 }
 

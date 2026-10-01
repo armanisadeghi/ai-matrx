@@ -53,7 +53,8 @@ import {
   resolveBoundTargetView,
 } from "@/lib/sandbox/bound-target-view";
 import type { ComputeTarget } from "@/hooks/sandbox/use-compute-targets";
-import { selectSandboxPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
+import { resolveSandboxCreateDefaults, type SandboxCreateDefaults } from "@/lib/sandbox/sandbox-defaults";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { CloneRepoDialog } from "@/features/code/views/sandboxes/CloneRepoDialog";
 import {
   getEffectiveStatus,
@@ -144,14 +145,13 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   const verified = useVerifiedSandboxBinding(conversationId);
 
 
-  // Sandbox defaults the user configured in Settings → Sandbox. The "New
-  // sandbox" button passes these to the orchestrator so every box the user
-  // creates from chat matches their configured template / tier / env / etc.
-  // Must sit ABOVE the `sandboxBlocked` early return — it used to live below it,
-  // which made this a conditional hook (React would misalign the hook order the
-  // first time incognito flipped mid-session).
-  const sandboxPrefs = useAppSelector(selectSandboxPreferences);
+  // Sandbox defaults (Settings › Devices & storage › Sandbox defaults) are
+  // scoped knobs, resolved at click time from the ONE knob snapshot for this
+  // person in this organization (`resolveSandboxCreateDefaults`). Must sit
+  // ABOVE the `sandboxBlocked` early return — a conditional hook here misaligns
+  // the hook order the first time incognito flips mid-session.
   const organizationId = useAppSelector(selectOrganizationId);
+  const userId = useAppSelector(selectUserId);
 
   const {
     instances,
@@ -290,25 +290,26 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
         );
         return;
       }
+      let defaults: SandboxCreateDefaults;
+      try {
+        defaults = await resolveSandboxCreateDefaults(organizationId, userId);
+      } catch (readError) {
+        // Never block the click on a settings read: create with the service's
+        // own defaults, and say so (law 4).
+        console.error("[SandboxPanel] sandbox defaults could not be read", readError);
+        toast.warning(
+          "Your sandbox defaults could not be read, so this sandbox uses the standard setup.",
+        );
+        defaults = { labels: {} };
+      }
+      // No `config.env`: a sandbox's environment comes only from your Vault,
+      // which the orchestrator reads itself at boot.
       const { instance, error } = await createInstance({
         organization_id: organizationId,
-        template: sandboxPrefs.template,
-        tier: sandboxPrefs.tier,
-        ttl_seconds: sandboxPrefs.ttl_seconds ?? undefined,
-        labels: {
-          ...(sandboxPrefs.default_git_repo
-            ? { default_git_repo: sandboxPrefs.default_git_repo }
-            : {}),
-          ...(sandboxPrefs.default_git_branch
-            ? { default_git_branch: sandboxPrefs.default_git_branch }
-            : {}),
-          ...(sandboxPrefs.auto_clone_on_create ? { auto_clone: "true" } : {}),
-        },
-        config: {
-          // Forward env vars so the orchestrator can materialise them on
-          // container start. Coexists with the orchestrator's own defaults.
-          env: sandboxPrefs.env,
-        },
+        template: defaults.template,
+        tier: defaults.tier ?? "ec2",
+        ttl_seconds: defaults.ttl_seconds,
+        labels: defaults.labels,
       });
       if (error || !instance) {
         toast.error(error ?? "Failed to create sandbox");

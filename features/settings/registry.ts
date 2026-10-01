@@ -43,6 +43,9 @@ import {
   Gauge,
   Archive,
   Clapperboard,
+  PenLine,
+  UserCheck,
+  Server,
 } from "lucide-react";
 import { Chrome } from "@/components/icons/brand-icons";
 import Placeholder from "./tabs/PlaceholderTab";
@@ -86,6 +89,9 @@ import SandboxStorageTab from "./tabs/SandboxStorageTab";
 import FeedbackTab from "./tabs/FeedbackTab";
 import ExtensionTab from "./tabs/ExtensionTab";
 import ApiKeysTab from "./tabs/ApiKeysTab";
+import AccessRequestsTab from "./tabs/AccessRequestsTab";
+import WritingVoiceTab from "./tabs/WritingVoiceTab";
+import SandboxDefaultsTab from "./tabs/SandboxDefaultsTab";
 import VoiceMicTab from "./tabs/VoiceMicTab";
 import MemoryTab from "./tabs/MemoryTab";
 import ConversationFiltersTab from "./tabs/ConversationFiltersTab";
@@ -687,6 +693,24 @@ export const settingsRegistry: SettingsTabDef[] = [
     component: ProfileEmergencyTab,
     persistence: "synced",
   },
+  {
+    id: "account.writingVoice",
+    label: "Writing voice",
+    icon: PenLine,
+    parentId: "account",
+    description: "How you write, measured from your own emails or posts.",
+    searchKeywords: [
+      "voice",
+      "writing voice",
+      "tone",
+      "style",
+      "fingerprint",
+      "brand voice",
+      "ai tells",
+    ],
+    component: WritingVoiceTab,
+    persistence: "server",
+  },
 
   // ── Plan & usage ──────────────────────────────────────────────────────────
   // "Where am I at right now" (Arman, 2026-08-14). Lives beside the account
@@ -822,6 +846,29 @@ export const settingsRegistry: SettingsTabDef[] = [
     component: SandboxStorageTab,
     persistence: "synced",
   },
+  // Knob-backed (`infrastructure.sandbox.defaults.*`, organization + user
+  // rungs): what an explicit "New sandbox" starts with.
+  {
+    id: "sandboxDefaults",
+    parentId: "hardware",
+    label: "Sandbox defaults",
+    icon: Server,
+    description: "What a new sandbox starts with: template, tier, repo.",
+    searchKeywords: [
+      "sandbox",
+      "template",
+      "tier",
+      "auto-stop",
+      "ttl",
+      "git",
+      "repo",
+      "repository",
+      "branch",
+      "clone",
+    ],
+    component: SandboxDefaultsTab,
+    persistence: "server",
+  },
 
   // ── Feedback ──────────────────────────────────────────────────────────────
   {
@@ -833,6 +880,21 @@ export const settingsRegistry: SettingsTabDef[] = [
     searchKeywords: ["bugs", "feature requests", "issues", "report"],
     component: FeedbackTab,
     persistence: "synced",
+  },
+
+  // ── Access requests ───────────────────────────────────────────────────────
+  // Not a setting — the durable inbox of iam.access_requests, reachable from
+  // every settings presentation. Old address /settings/access-requests
+  // redirects here (next.config.js).
+  {
+    id: "accessRequests",
+    parentId: "general",
+    label: "Access requests",
+    icon: UserCheck,
+    description: "Answer asks to open what you own; track the ones you sent.",
+    searchKeywords: ["access", "request", "permission", "share", "ask", "inbox", "grant"],
+    component: AccessRequestsTab,
+    persistence: "server",
   },
 
   // ── Chrome extension ──────────────────────────────────────────────────────

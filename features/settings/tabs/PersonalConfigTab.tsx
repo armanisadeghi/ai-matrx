@@ -69,13 +69,13 @@ export default function PersonalConfigTab() {
       <SettingsSection title="Personal configuration">
         {memberships.length > 1 && organizationId && (
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Organization</span>
+            <span className="shrink-0 text-muted-foreground">Organization</span>
             <Select
               value={organizationId}
               onValueChange={setChosenOrganizationId}
             >
               <SelectTrigger
-                className="h-8 w-64"
+                className="h-8 w-64 min-w-0"
                 aria-label="Organization whose personal configuration to show"
               >
                 <SelectValue />

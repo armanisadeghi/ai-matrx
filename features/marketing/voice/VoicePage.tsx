@@ -54,6 +54,12 @@ export interface VoicePageProps {
   /** The organization the fingerprint is filed in; a person page resolves it on first action. */
   organizationId: string | null;
   resolveOrganization?: () => Promise<string>;
+  /**
+   * Rendered inside a host that already owns the scroll and the header offset
+   * (the settings core: route, window and phone drawer). Drops the page's own
+   * full-height scroll box and shell-header padding.
+   */
+  embedded?: boolean;
 }
 
 type Picked = { source: SourceOption; kind: VoiceSampleKind };
@@ -83,7 +89,7 @@ function toggle(list: string[], item: string): string[] {
 const selectClass =
   "h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
-export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOrganization }: VoicePageProps) {
+export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOrganization, embedded = false }: VoicePageProps) {
   const [rows, setRows] = useState<FingerprintRow[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
@@ -168,8 +174,14 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-textured">
-      <div className="mx-auto w-full max-w-4xl space-y-4 px-3 pb-10 pt-[calc(var(--shell-header-h)+1rem)] sm:px-4">
+    <div className={embedded ? undefined : "h-full overflow-y-auto bg-textured"}>
+      <div
+        className={
+          embedded
+            ? "mx-auto w-full max-w-4xl space-y-4"
+            : "mx-auto w-full max-w-4xl space-y-4 px-3 pb-10 pt-[calc(var(--shell-header-h)+1rem)] sm:px-4"
+        }
+      >
         <header>
           <h1 className="text-base font-semibold text-foreground">{ownerName} · Voice</h1>
           <p className="mt-1 text-sm text-muted-foreground">
