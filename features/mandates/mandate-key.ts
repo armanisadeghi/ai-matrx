@@ -17,16 +17,22 @@
  * of the key instead, or narrow a genuinely-unknown string at the boundary
  * with `isMandateKey` / `assertMandateKey`.
  */
-import type { DynamicMandateKey, MandateKey } from "@ai-matrx/agents/mandates";
-
-export type { DynamicMandateKey, MandateKey };
+import type { DynamicMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
- * What a carrier accepts when a DB-authored key (`app.*` / `shortcut.*`) is
- * legitimate there as well as a declared one. Carriers that only ever run a
- * declared job stay `MandateKey`.
+ * `AnyMandateKey` (what a carrier accepts when a DB-authored `app.*` /
+ * `shortcut.*` key is legitimate as well as a declared one) and
+ * `storedMandateKey` (the typed boundary for a key that came out of the
+ * database — never for a key this repo picked; those go through
+ * `MANDATE_KEYS.<id>`) have ONE definition platform-wide, in the package.
+ * Re-exported here so this module stays the repo's one import site.
  */
-export type AnyMandateKey = MandateKey | DynamicMandateKey;
+export {
+  type AnyMandateKey,
+  type DynamicMandateKey,
+  type MandateKey,
+  storedMandateKey,
+} from "@ai-matrx/agents/mandates";
 
 /**
  * A DB-AUTHORED KEY THE GENERATED UNION CANNOT CARRY — the ONE typed door for
@@ -49,26 +55,6 @@ export function dbAuthoredMandateKey<K extends string>(
   key: K,
 ): DynamicMandateKey {
   return key as unknown as DynamicMandateKey;
-}
-
-/**
- * A KEY THAT CAME OUT OF THE DATABASE — the typed boundary for a `mandate_key`
- * column the platform itself wrote (an agent app's own mandate, a shortcut's,
- * a stored binding row).
- *
- * The distinction that matters: the code did not CHOOSE this key, so there is
- * nothing for the compiler to check it against — the authority is the row. Use
- * this at that one boundary so the value enters the typed world named for what
- * it is, and everything downstream of it stays typed. Never use it on a key
- * this repo picked: that key belongs to `MANDATE_KEYS` and a cast would hide a
- * rename the compiler would otherwise have caught.
- *
- * For a key that crossed a wire and must be PROVEN declared (a URL segment, a
- * saved preference the user could have edited), use the package's `isMandateKey`
- * / `assertMandateKey` instead — they answer, this one only types.
- */
-export function storedMandateKey(value: string): AnyMandateKey {
-  return value as AnyMandateKey;
 }
 
 export interface MandateKeyParts {
