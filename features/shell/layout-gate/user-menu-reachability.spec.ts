@@ -34,8 +34,9 @@
  *
  * The second half of the contract is the panel itself: once a group IS open,
  * the panel must stay inside the viewport (max-height with the safe-area
- * insets subtracted) and SCROLL, so every row an open group adds — including
- * a 48-workspace organization list — can be brought under the mouse.
+ * insets subtracted) and SCROLL, so every row an open group adds can be
+ * brought under the mouse. (The 48-organization list that once lived here is
+ * the account rail's own picker since 2026-09-30.)
  *
  * WHY A REAL BROWSER: jsdom computes no layout and no hit-testing, and this
  * defect is both. The gate builds the account menu out of the REAL class
@@ -63,9 +64,6 @@ import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import postcss from "postcss";
 import tailwind from "@tailwindcss/postcss";
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { OrganizationPicker } from "@ai-matrx/design-system";
 
 import {
   MENU_ITEM_CLASS,
@@ -74,7 +72,6 @@ import {
 import {
   COMMUNICATION_ITEMS,
   QUICK_ACCESS_ITEMS,
-  SETTINGS_ITEMS,
 } from "../components/header/header-right-menu/userMenuItems.constants";
 
 const MENU_GROUP_DIR = path.join(
@@ -93,7 +90,7 @@ const MUTATION = process.env.MATRX_LAYOUT_GATE_MUTATION ?? "";
 /**
  * The gate cannot IMPORT `MenuGroup` — Playwright compiles `.tsx` with its own
  * component-testing JSX factory, so a React render of it dies before a rect is
- * measured (same reason as `user-menu-org-disclosure.spec.ts`). It reads the
+ * measured . It reads the
  * real class strings out of the real file instead, and throws if the component
  * stops having them, so this gate stops running rather than silently measuring
  * a shape that no longer exists.
@@ -123,17 +120,10 @@ function menuGroupClasses(): {
   return { wrapper, label, grid, item, inner };
 }
 
-/** The 48 memberships walk 16's account was in, shaped like the real rows. */
-const ORGANIZATIONS = Array.from({ length: 48 }, (_, index) => ({
-  id: `org-${index}`,
-  name: `Organization Number ${index} With A Fairly Long Workspace Name Inc`,
-  abbreviation: `O${index}`,
-}));
-
 const CHEVRON = `<svg class="mg-chevron w-3 h-3 shrink-0" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg>`;
 const ICON = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /></svg>`;
 
-/** One menu row, exactly as `OverlayMenuItem` / `ThemeToggleMenuItem` render it. */
+/** One menu row, exactly as `OverlayMenuItem` renders it. */
 function row(label: string): string {
   return `<label class="block"><button class="${MENU_ITEM_CLASS}" data-menu-row="${label}">${ICON}${label}</button></label>`;
 }
@@ -180,25 +170,9 @@ const divider = `<div class="h-px my-1 mx-2 bg-[var(--matrx-glass-border-color)]
  * `useResetMenuGroupsOnOpen` unchecks every group when the panel appears.
  */
 function renderShellUserMenu(open: boolean): string {
-  const orgBody = renderToStaticMarkup(
-    React.createElement(OrganizationPicker, {
-      hideHeading: true,
-      itemClassName: MENU_ITEM_CLASS,
-      organizations: ORGANIZATIONS,
-      activeOrganizationId: null,
-      defaultOrganizationId: null,
-      loading: false,
-      loadFailed: false,
-      onSelect: () => {},
-      onSetDefault: () => {},
-    }),
-  );
-
   const panel = [
     `<div class="${USER_MENU_PANEL_CLASS}" data-testid="user-menu-panel">`,
     `<label class="block"><a href="#" class="flex items-center gap-2.5 px-3 py-2 rounded-lg" data-menu-row="Profile"><span class="w-7 h-7 rounded-full shrink-0"></span><span class="flex flex-col min-w-0"><span class="text-base font-medium text-foreground truncate">Admin</span><span class="text-xs text-foreground truncate">admin@admin.com</span></span></a></label>`,
-    divider,
-    group("organization", "Organization", orgBody, open),
     divider,
     group(
       "quick",
@@ -216,16 +190,20 @@ function renderShellUserMenu(open: boolean): string {
       open,
     ),
     divider,
+    // THE BOUND'S STRESS ROWS. The 48-organization list that used to make an
+    // open menu taller than every window moved to the account rail
+    // (2026-09-30); without a menu taller than the window the scroll bound
+    // below proves nothing. 40 rows in a real MenuGroup stand in for it.
     group(
-      "settings",
-      "Settings",
-      [
-        row("Copy short link"),
-        row("Dark Mode"),
-        ...SETTINGS_ITEMS.map((item) => row(item.label)),
-      ].join(""),
+      "stress",
+      "Many rows",
+      Array.from({ length: 40 }, (_, index) => row(`Stress row ${index + 1}`)).join(""),
       open,
     ),
+    divider,
+    // Theme, Media and Preferences moved to the account rail's Settings slot
+    // and the organization to its own slot (2026-09-30); the menu ends here.
+    row("Copy short link"),
     divider,
     row("Sign Out"),
     `</div>`,
@@ -235,7 +213,7 @@ function renderShellUserMenu(open: boolean): string {
     `<div class="shell-root">`,
     `<input type="checkbox" id="shell-user-menu" checked hidden />`,
     `<div class="shell-user-block">`,
-    `<div class="shell-user-block-trigger"><span class="shell-user-block-name"></span></div>`,
+    `<div class="shell-account-rail"></div>`,
     `<label for="shell-user-menu" class="shell-user-menu-backdrop" aria-hidden="true"></label>`,
     `<div class="shell-user-menu-panel" data-testid="menu-scroller">${panel}</div>`,
     `</div></div>`,
@@ -465,7 +443,7 @@ test("an open menu stays inside the window and scrolls to every row it holds", a
   expect(panel!.top).toBeGreaterThanOrEqual(-0.5);
   expect(panel!.bottom).toBeLessThanOrEqual(viewport + 0.5);
 
-  // … and with every group open (48 workspaces included) it must overflow,
+  // … and with every group open (the 40 stress rows included) it must overflow,
   // which is exactly why it has to be a scroller and not a taller box.
   expect(panel!.scrollHeight).toBeGreaterThan(panel!.clientHeight);
 
