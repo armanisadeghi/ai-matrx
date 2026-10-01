@@ -6,8 +6,8 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 103,
-    "live-db": 57,
+    "repo-only": 105,
+    "live-db": 58,
     "clone-db": 3
   },
   "rows": {
@@ -197,14 +197,14 @@
       "label": "Agent addresses (a system agent linked into the user shell)",
       "class": "repo-only",
       "cmd": "pnpm check:agent-links",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "sign-out-scope-a-bare-signout-logs-the-account-out-of-every-": {
       "label": "Sign-out scope (a bare signOut() logs the account out of every device)",
       "class": "repo-only",
       "cmd": "pnpm check:signout-scope",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "no-new-code-reference-to-the-retiring-row-column-access-ladd": {
@@ -397,7 +397,7 @@
       "label": "Unified-data campaign entry points are registered and gated",
       "class": "repo-only",
       "cmd": "pnpm check:campaign-entry-points",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 5 file(s) reached",
       "evidence": []
     },
     "inverses-leave-the-ground-standing": {
@@ -577,6 +577,13 @@
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
+    "one-door-for-an-agent-request-s-context": {
+      "label": "One door for an agent request's context",
+      "class": "repo-only",
+      "cmd": "pnpm check:context-single-door",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
     "one-is-this-run-over-predicate-runisover": {
       "label": "One \"is this run over?\" predicate (runIsOver)",
       "class": "repo-only",
@@ -615,13 +622,17 @@
     "mandate-references-every-mandate-this-build-names-and-every-": {
       "label": "Mandate references (every Mandate this build names, and every bypass)",
       "class": "live-db",
-      "cmd": "pnpm check:mandate-references",
+      "cmd": "timeout 300 pnpm check:mandate-references || echo '[WARN] the mandate reference scan did not complete (uvx or timeout missing, crashed, or still running after 300 s) — this build is UNMEASURED on the fleet board; it never blocks (D23)'",
       "reason": "UNCERTAIN — the resolver could not follow everything; classified live-db (safe side)",
       "evidence": [],
       "uncertain": [
         {
           "file": "(command)",
-          "signal": "unknown binary \"uvx\" — not followed"
+          "signal": "unknown binary \"it\" — not followed"
+        },
+        {
+          "file": "(command)",
+          "signal": "unknown binary \"timeout\" — not followed"
         }
       ]
     },
@@ -1146,7 +1157,7 @@
       "label": "Package logic re-grown outside its package",
       "class": "repo-only",
       "cmd": "pnpm check:package-twins:strict",
-      "reason": "no database access in 8 file(s) reached",
+      "reason": "no database access in 9 file(s) reached",
       "evidence": []
     },
     "a-doc-or-skill-teaches-a-hand-rolled-recipe-the-package-owns": {
@@ -1189,6 +1200,37 @@
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-surface-drift.ts",
       "reason": "no database access in 3 file(s) reached",
+      "evidence": []
+    },
+    "surface-mirror-matches-the-code-values-roles-write-targets-t": {
+      "label": "Surface mirror matches the code (values, roles, write targets, tools)",
+      "class": "live-db",
+      "cmd": "pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check",
+      "reason": "reaches code that can open the live database",
+      "evidence": [
+        {
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
+        },
+        {
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
+        },
+        {
+          "file": "scripts/lib/direct-db.ts",
+          "signal": "direct-db loader (loadDbEnv)"
+        },
+        {
+          "file": "scripts/lib/direct-db.ts",
+          "signal": "pg / postgres client"
+        }
+      ]
+    },
+    "and-its-archive-revive-planner-can-still-fail": {
+      "label": "…and its archive/revive planner can still fail",
+      "class": "repo-only",
+      "cmd": "npx jest scripts/lib/__tests__/surface-sync-check.test.ts --silent",
+      "reason": "no database access in 1 file(s) reached",
       "evidence": []
     },
     "surface-value-blast-radius": {
@@ -1535,14 +1577,14 @@
       "label": "Agent submission never requires typed user_input",
       "class": "repo-only",
       "cmd": "pnpm check:agent-submit-content",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "content-ir-kinds-test-suite": {
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 167 file(s) reached",
+      "reason": "no database access in 178 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {

@@ -383,7 +383,9 @@ async function runSelfTest() {
     })
       .split(source)
       .join(fixture);
-    const childStart = fullSql.indexOf("\n-- Upsert all manifest values");
+    // The package renderer no longer prints a section comment; the child half
+    // starts at the first value upsert.
+    const childStart = fullSql.indexOf("\nINSERT INTO ui.ui_surface_value");
     if (childStart < 0)
       throw new Error("Self-test could not locate emitted child mirror SQL");
     const legacySql = fullSql.slice(childStart);

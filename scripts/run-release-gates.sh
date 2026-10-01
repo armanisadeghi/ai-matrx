@@ -495,6 +495,18 @@ if $STRICT; then
         "A node_modules symlink is tracked or not ignored (ELOOP on every pull)|pnpm check:dependency-dirs-untracked"
         "A repo holds a second worktree or a local branch (Arman 2026-09-20: exactly one of each)|pnpm check:single-worktree"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
+        # THE LIVE MIRROR MATCHES THE CODE (2026-10-01). The server reads each page's
+        # declared values from ui.ui_surface_value; context rules depend on it
+        # matching the manifests exactly. The notes rename (5befb40638) reached code
+        # but never the mirror, and release only ran `--registration-only`, so 229
+        # surfaces drifted silently. The full `--check` reports a value missing from
+        # the mirror, a mirrored value the code removed, an archived value the code
+        # declares, and any differing label / autoContext / inline limit. Read-only,
+        # live DB, ~90 s. ADVISORY in both lanes: the remedy it prints is
+        # `sync-surface-manifests-direct.ts --surface <name>` (archives what the code
+        # removed). The jest row proves the archive/revive planner can still fail.
+        "Surface mirror matches the code (values, roles, write targets, tools)|pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check"
+        "…and its archive/revive planner can still fail|npx jest scripts/lib/__tests__/surface-sync-check.test.ts --silent"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
         # under a consumer, and children shadowing a parent's value. Advisory —
@@ -1120,6 +1132,18 @@ else
         "A node_modules symlink is tracked or not ignored (ELOOP on every pull)|pnpm check:dependency-dirs-untracked"
         "A repo holds a second worktree or a local branch (Arman 2026-09-20: exactly one of each)|pnpm check:single-worktree"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
+        # THE LIVE MIRROR MATCHES THE CODE (2026-10-01). The server reads each page's
+        # declared values from ui.ui_surface_value; context rules depend on it
+        # matching the manifests exactly. The notes rename (5befb40638) reached code
+        # but never the mirror, and release only ran `--registration-only`, so 229
+        # surfaces drifted silently. The full `--check` reports a value missing from
+        # the mirror, a mirrored value the code removed, an archived value the code
+        # declares, and any differing label / autoContext / inline limit. Read-only,
+        # live DB, ~90 s. ADVISORY in both lanes: the remedy it prints is
+        # `sync-surface-manifests-direct.ts --surface <name>` (archives what the code
+        # removed). The jest row proves the archive/revive planner can still fail.
+        "Surface mirror matches the code (values, roles, write targets, tools)|pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check"
+        "…and its archive/revive planner can still fail|npx jest scripts/lib/__tests__/surface-sync-check.test.ts --silent"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
         # under a consumer, and children shadowing a parent's value. Advisory —
