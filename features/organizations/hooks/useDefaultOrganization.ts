@@ -19,8 +19,8 @@
 // Which organization you are working in is restored from this device's own
 // remembered choice (the apex `matrx-active-org` cookie, written only when the
 // person themselves selected one), and on a machine that has never had one, the
-// person picks. Written by the pickers (HeaderChooseOrgButton popover +
-// UserMenuOrgSection) behind the "Keep it at the top" switch.
+// person picks. Written by the pickers (ShellOrgSwitcher, the sidebar account
+// rail's organization slot) behind the "Keep it at the top" switch.
 //
 // Persistence is handled by the userPreferences sync engine: dispatching
 // `setPreference` broadcasts + debounce-upserts the whole preferences blob to

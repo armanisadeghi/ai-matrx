@@ -29,7 +29,11 @@ import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
 import type { Json } from "@/types/database.types";
 import type { MessageRole } from "@/features/agents/types/agent-message-types";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import type {
+  ContextReceiptData,
+  MessagePart,
+} from "@/types/python-generated/stream-events";
+import { setContextReceipt } from "../instance-context/instance-context.slice";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 import { recordTranscriptEvent, shortId } from "./transcript-journal";
 
@@ -85,6 +89,25 @@ export interface ModelContextInputItem {
 }
 
 /**
+ * The server's per-turn context DELIVERY ledger
+ * (`chat.message.model_context.delivery`, aidream
+ * `context_utils._context_delivery`). `receipt` is the context receipt the
+ * gate streamed as `context_receipt` that turn (common-docs context-delivery
+ * RULES.md §5) — the server's account of every value, never the client's
+ * belief. Absent on turns written before receipts existed.
+ */
+export interface ModelContextDelivery {
+  receipt?: ContextReceiptData | null;
+  offered?: string[];
+  inline?: string[];
+  deferred?: string[];
+  dropped_by_policy?: string[];
+  seeds_skipped?: string[];
+  user_overridden?: string[];
+  auto_context_disabled?: boolean;
+}
+
+/**
  * The structured context attached to a turn (user messages only). Supersedes
  * the old, never-populated `metadata.context_manifest`.
  */
@@ -101,6 +124,8 @@ export interface ModelContext {
   agent_block: string | null;
   rendered: string | null;
   total_chars: number;
+  /** What the server delivered that turn — see `ModelContextDelivery`. */
+  delivery?: ModelContextDelivery | null;
 }
 
 /**
@@ -157,6 +182,19 @@ export interface MessageRecord {
   _clientStatus?: "pending" | "streaming" | "complete" | "error";
   /** While a turn is live, points at `activeRequests.byRequestId[_streamRequestId]`. */
   _streamRequestId?: string;
+  /**
+   * User rows only: the request this message was SENT with (set at the
+   * optimistic submit). Links the live `context_receipt` — keyed by request —
+   * to the message that produced it. Rows loaded from the database never
+   * carry it, so an old message can never pick up a newer turn's receipt.
+   */
+  _requestId?: string;
+  /**
+   * User rows only: the `context_receipt` streamed for `_requestId`, kept on
+   * the message so it survives the next turn replacing the conversation's
+   * latest receipt. The persisted `modelContext.delivery.receipt` wins over it.
+   */
+  _liveContextReceipt?: ContextReceiptData;
   /** Inclusive source timeline index owned by this live assistant segment. */
   _streamSlotStart?: number;
   /** Exclusive source timeline index; set when an inbox injection closes this segment. */
@@ -181,6 +219,19 @@ export interface MessageRecord {
  * that replaced it. See
  * `aidream/api/docs/CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md`.
  */
+/**
+ * True when this USER row was sent with `requestId`: the optimistic submit
+ * stamps `_requestId`; a user row the server reserved itself (no optimistic
+ * bubble) carries the request as its `_streamRequestId` anchor.
+ */
+export function sentWithRequest(
+  record: Pick<MessageRecord, "role" | "_requestId" | "_streamRequestId">,
+  requestId: string,
+): boolean {
+  if (record.role !== "user" || !requestId) return false;
+  return (record._requestId ?? record._streamRequestId) === requestId;
+}
+
 function byPositionThenCreatedAt(a: MessageRecord, b: MessageRecord): number {
   if (a.position !== b.position) return a.position - b.position;
   if (a.createdAt < b.createdAt) return -1;
@@ -404,6 +455,8 @@ const messagesSlice = createSlice({
          * conversation-level context (which drifts as scope/working-doc change).
          */
         metadata?: Json;
+        /** The request this message is sent with — see `MessageRecord._requestId`. */
+        requestId?: string;
       }>,
     ) {
       const {
@@ -413,6 +466,7 @@ const messagesSlice = createSlice({
         position,
         agentId = null,
         metadata,
+        requestId,
       } = action.payload;
       const entry = getOrCreate(state, conversationId);
       if (entry.byId[clientTempId]) {
@@ -455,6 +509,7 @@ const messagesSlice = createSlice({
         createdAt: now,
         deletedAt: null,
         _clientStatus: "pending",
+        ...(requestId ? { _requestId: requestId } : {}),
       };
       insertOrderedMessageId(entry, clientTempId);
     },
@@ -503,6 +558,12 @@ const messagesSlice = createSlice({
         const existing = entry.byId[newId];
         if (!existing._streamRequestId && record._streamRequestId) {
           existing._streamRequestId = record._streamRequestId;
+        }
+        if (!existing._requestId && record._requestId) {
+          existing._requestId = record._requestId;
+        }
+        if (!existing._liveContextReceipt && record._liveContextReceipt) {
+          existing._liveContextReceipt = record._liveContextReceipt;
         }
         delete entry.byId[oldId];
         entry.orderedIds = entry.orderedIds.filter((id) => id !== oldId);
@@ -677,6 +738,12 @@ const messagesSlice = createSlice({
             : {}),
           ...(typeof live?._streamSlotEnd === "number"
             ? { _streamSlotEnd: live._streamSlotEnd }
+            : {}),
+          // The live receipt link — the persisted receipt wins once the
+          // hydrated row carries one (selectMessageContextReceipt).
+          ...(live?._requestId ? { _requestId: live._requestId } : {}),
+          ...(live?._liveContextReceipt
+            ? { _liveContextReceipt: live._liveContextReceipt }
             : {}),
         };
         entry.orderedIds.push(msg.id);
@@ -907,6 +974,22 @@ const messagesSlice = createSlice({
 
     builder.addCase(destroyInstance, (state, action) => {
       delete state.byConversationId[action.payload];
+    });
+
+    // The live `context_receipt` is keyed by REQUEST; attach it to the user
+    // message that request sent, so the sent bubble shows what the server
+    // did even after the next turn replaces the conversation's latest receipt.
+    builder.addCase(setContextReceipt, (state, action) => {
+      const { conversationId, requestId, receipt } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (!entry) return;
+      for (const id of entry.orderedIds) {
+        const record = entry.byId[id];
+        if (record?.role === "user" && sentWithRequest(record, requestId)) {
+          record._liveContextReceipt = receipt;
+          return;
+        }
+      }
     });
   },
 });

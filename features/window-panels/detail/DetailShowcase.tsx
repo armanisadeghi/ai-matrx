@@ -49,6 +49,7 @@ import {
 import { detailPageHref } from "@/features/window-panels/detail/DetailHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
+import { InfoHint } from "@/components/official/InfoHint";
 
 type FileRow = { id: string; file_name: string; mime_type: string | null };
 
@@ -161,9 +162,14 @@ export function DetailShowcase() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 py-3 sm:px-4">
         <header className="flex flex-col gap-1">
           {/* One registration per record type yields window, docked and page. Demo uses a real
-              file. Keys in any presentation: Escape closes, [ / ] move through the list,
-              Cmd/Ctrl+Enter saves when a section has an editor. */}
-          <h1 className="text-base font-semibold text-foreground">Detail primitive</h1>
+              file. The keys stay on screen behind the InfoHint. */}
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-base font-semibold text-foreground">Detail primitive</h1>
+            <InfoHint
+              label="Keyboard shortcuts"
+              text="Escape closes, [ and ] move through the list, Cmd/Ctrl+Enter saves a section with an editor."
+            />
+          </div>
         </header>
 
         {/* Setting */}

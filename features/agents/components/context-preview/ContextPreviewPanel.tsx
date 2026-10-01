@@ -51,6 +51,11 @@ import { AttachedContextSection } from "./AttachedContextSection";
 import { ContextCompareView } from "./ContextCompareView";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
+import {
+  MessageContextReceiptTable,
+  receiptSummary,
+} from "@/features/agents/components/context-policies-display/MessageContextReceipt";
+import { isContextReceiptData } from "@/features/agents/redux/execution-system/messages/message-context-receipt";
 
 type View = "resolved" | "compare" | "attached";
 
@@ -404,9 +409,26 @@ function ResolvedBody({
   );
 
   const block = data.injected_block ?? null;
+  const receipt = isContextReceiptData(data.receipt) ? data.receipt : null;
 
   return (
     <>
+      {receipt && (
+        <section className="px-4 pt-3">
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+              Context delivery
+            </h3>
+            <span className="text-[10px] tabular-nums text-muted-foreground">
+              {receiptSummary(receipt)}
+            </span>
+          </div>
+          <div className="mt-1.5 overflow-hidden rounded-md border border-border">
+            <MessageContextReceiptTable receipt={receipt} />
+          </div>
+        </section>
+      )}
+
       <section className="px-4 pt-3">
         <div className="flex items-baseline gap-2">
           <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">

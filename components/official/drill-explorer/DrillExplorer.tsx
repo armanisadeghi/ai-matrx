@@ -70,7 +70,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { DrillExplainButton } from "./DrillExplainButton";
 import { DrillFindings } from "./DrillFindings";
 import { DrillSiblingFindings } from "./DrillSiblingFindings";
-import { openDrillSibling, useDrillSiblings } from "./drillSiblings";
+import { drillSiblingDimensions, drillSiblingMeasures, openDrillSibling, useDrillSiblings } from "./drillSiblings";
 import { DrillRecords } from "./DrillRecords";
 import { DrillSavedViews, type DrillOpenView } from "./DrillSavedViews";
 import { drillSavedViewSurface, readDrillView } from "./savedViews";
@@ -80,10 +80,8 @@ import { DrillExplorerNotes, tipWords, type DrillNoteChip } from "./DrillExplore
 import { clockWords, measureFactWords, momentWords } from "./explorerWords";
 import { useDrillChart } from "./useDrillChart";
 import { drillReconcileChip, useDrillReconcile } from "./useDrillReconcile";
-import { DrillExplorerHeadline, costColumnLabel } from "./DrillExplorerHeadline";
+import { DrillExplorerHeadline } from "./DrillExplorerHeadline";
 import { carriedWords, splitExplorerQuestion, viewQuestionFromAddress, type DrillCarried, type ExplorerQuestion } from "./questionParts";
-import { drillUnitAdds, drillUnitFormatter } from "./measureFormat";
-import { drillDimensionLabelFor } from "./dimensionWords";
 import { autoTimeRef, drillExplorerAutoGrain, withAutoGrain } from "./grain";
 import {
   builtInViewsOf,
@@ -236,27 +234,10 @@ export function DrillExplorer({
   const grainWasChosen = [...asked.by, ...(asked.across ? [asked.across] : [])].some((ref) => timeKeys.has(ref));
 
 
-  const dimensions: MatrxDrillDimension[] = (def?.dimensions ?? []).map((d) => {
-    const dim: MatrxDrillDimension = { key: d.key, label: d.label, kind: d.kind };
-    if (d.cardinality) dim.cardinality = d.cardinality;
-    if (d.grains) dim.grains = d.grains as NonNullable<MatrxDrillDimension["grains"]>;
-    // KEYS NEVER REACH A PERSON (VERIFIER-32 F5): an id reads as the door's label or the resolver's
-    // name, a code as the definition's choice label — never the id or the code itself.
-    const labelFor = drillDimensionLabelFor(d, { names: names[d.key], resolver: resolvers?.[d.key], hostWords: words?.[d.key] });
-    if (labelFor) dim.labelFor = labelFor;
-    return dim;
-  });
-
-  const measures: MatrxDrillMeasure[] = (def?.measures ?? []).map((m) => ({
-    key: m.key,
-    // The column's unit word is the one its cells print (VERIFY-DRILL-WAVE1 F9): the platform's cost
-    // formatter says "points" today, so the column does too. Every other unit is said by its cells.
-    label: m.unit === "usd" ? costColumnLabel(m.label, unit) : m.label,
-    // a ratio, a percentile, a run rate or an average is recomputed per group, never added up
-    additive: m.additive ?? (["count", "sum", "filled", "empty"].includes(m.op) && drillUnitAdds(m.unit)),
-    format: drillUnitFormatter(m.unit, unit),
-    ...(m.unit === "usd" ? { lowerIsBetter: true } : {}),
-  }));
+  // ONE mapping with the siblings (lane DRILL-WIRE): words, record kind (`entity`), choice colours,
+  // and moments — so the answer, the chart and a sibling's findings read a Dimension the same way.
+  const dimensions: MatrxDrillDimension[] = def ? drillSiblingDimensions(def, names, resolvers, words) : [];
+  const measures: MatrxDrillMeasure[] = def ? drillSiblingMeasures(def, unit) : [];
   const hasMoney = (def?.measures ?? []).some((m) => m.unit === "usd");
   const headlineKey = headline?.measure ?? (def?.measures ?? []).find((m) => m.unit === "usd")?.key ?? question.show[0] ?? null;
   const headlineMeasure = measures.find((m) => m.key === headlineKey);
@@ -557,6 +538,7 @@ export function DrillExplorer({
                 rowNoun={rowNoun}
                 emptyLabel={emptyLabel}
                 exportTitle={title}
+                search
                 {...(question.where.length > 0 && headlineKey ? { coverage: { whole: whole?.measures[headlineKey] ?? null, measure: headlineKey } } : {})}
                 {...(headlineKey && knobs.paretoSharePct !== null ? { pareto: { measure: headlineKey, sharePct: knobs.paretoSharePct } } : {})}
                 rowActions={{ label: `${title} group`, location: location ?? title, kind: "drill-group", selectable: true }}

@@ -105,6 +105,8 @@ describe("the delete is DISCOVERABLE, not only in a row menu", () => {
 
   it("says what is lost and that it can be restored", () => {
     expect(archive).toContain("It leaves every list");
+    // platform._cascade_soft_delete takes these down with the job (service.ts).
+    expect(archive).toContain("with its bindings, notes and test cases");
     expect(archive).toContain("restore from Trash.");
   });
 

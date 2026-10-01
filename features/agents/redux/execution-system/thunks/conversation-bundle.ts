@@ -23,9 +23,9 @@ import type { Database } from "@/types/database.types";
 import type {
   MessageRecord,
   ToolOnCall,
-  ModelContext,
   MessageError,
 } from "../messages/messages.slice";
+import { modelContextFromRow } from "../messages/message-context-receipt";
 import type {
   CxUserRequestRecord,
   CxRequestRecord,
@@ -408,7 +408,9 @@ export function messageRowToRecord(row: CxMessageRow): MessageRecord {
     // Per-turn structured columns — copied through verbatim. The RPC already
     // returns parsed JSON; we narrow each to its typed view at the boundary.
     toolsOnCall: (row.tools_on_call as ToolOnCall[] | null) ?? null,
-    modelContext: (row.model_context as ModelContext | null) ?? null,
+    // Keeps `delivery.receipt` — the server's account of the turn's context
+    // that a sent bubble shows on reload (message-context-receipt.ts).
+    modelContext: modelContextFromRow(row.model_context),
     error: (row.error as MessageError | null) ?? null,
     voice: row.voice,
   };

@@ -59,25 +59,21 @@ export function contextPolicyValuePreview(
 }
 
 /**
- * Preview line for a context entry on a message chip / popover row.
+ * Preview line for a context entry on a message chip / popover row — from the
+ * message's snapshot only, never the live conversation value.
  *
  * Historical turns persist deferred context as `size_hint: "0 chars"` (zero
- * inlined — not zero document length). Prefer the live conversation value for
- * char count when the snapshot is a label placeholder or size hint.
+ * inlined — not zero document length), so a size hint is never shown as a size.
  */
 export function contextPolicyEntryPreview(
   entry: { key: string; value: unknown; label?: string },
   type: ContextObjectType,
-  liveValue?: unknown,
 ): string {
   const label = entry.label?.trim();
-  const resolved = resolveContextEntryValue(entry, liveValue);
+  const resolved = resolveContextEntryValue(entry);
 
   const knownPreview = previewKnownContext(entry.key, resolved);
   if (knownPreview) return knownPreview;
-
-  const liveChars = extractCharCount(liveValue);
-  if (liveChars !== null) return formatCharCount(liveChars);
 
   const snapChars = extractCharCount(entry.value);
   if (snapChars !== null) return formatCharCount(snapChars);

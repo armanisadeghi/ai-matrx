@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Columns2, MessagesSquare, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Columns2, Loader2, MessagesSquare, ThumbsDown, ThumbsUp } from "lucide-react";
 
 import { OutputPreview } from "@/features/mandates/admin/bench-output-preview";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ import {
   type LiveCandidateRunPayload,
 } from "../api";
 import { useOpenCandidateSummary } from "../openers";
-import { useTranscriptUnit } from "../transcripts";
+import { findTranscriptUnit, useTranscriptUnit } from "../transcripts";
 import {
   DISPOSITION_WORD,
   RUN_STATUS_WORD,
@@ -550,22 +550,48 @@ function SawButton({
 }) {
   const unit = useTranscriptUnit(conversationId);
   const openWalk = useOpenReviewWalkWindow();
+  const [resolving, setResolving] = useState(false);
+  const [clickFailure, setClickFailure] = useState<string | null>(null);
   const label = side === "live" ? "What the live agent saw" : "What the candidate saw";
+
+  // V2 N4: the button is never dead. A click opens (or focuses) the walk of
+  // THIS pair's conversation — resolved from the conversation id this button
+  // was rendered for at the moment of the click when the lookup has not
+  // answered yet, so a click can never be swallowed while the lookup runs and
+  // can never open a unit read for another pair.
+  const open = async () => {
+    if (!conversationId) return;
+    setClickFailure(null);
+    if (unit.state === "ready") {
+      openWalk({ ...unit.unit, agentId, agentName });
+      return;
+    }
+    setResolving(true);
+    try {
+      const fresh = await findTranscriptUnit(conversationId);
+      if (fresh.state === "ready") openWalk({ ...fresh.unit, agentId, agentName });
+      else if (fresh.state === "error") setClickFailure(fresh.message);
+      else setClickFailure("No transcript you can open.");
+    } finally {
+      setResolving(false);
+    }
+  };
 
   if (!conversationId) {
     return <StateLine>This run left no transcript.</StateLine>;
   }
-  if (unit.state === "error") {
+  const failure = unit.state === "error" ? unit.message : clickFailure;
+  if (failure && failure !== "No transcript you can open.") {
     return (
       <ErrorNotice
         size="inline"
         message="Couldn't look up the transcript."
-        error={unit.message}
+        error={failure}
         calls={["chat.request", "chat.message"]}
       />
     );
   }
-  if (unit.state === "none") {
+  if (unit.state === "none" || failure) {
     return <StateLine>No transcript you can open.</StateLine>;
   }
   return (
@@ -573,14 +599,16 @@ function SawButton({
       size="sm"
       variant="outline"
       className="h-7 w-full gap-1 text-xs"
-      disabled={unit.state === "loading"}
       data-candidate-saw={side}
-      onClick={() => {
-        if (unit.state !== "ready") return;
-        openWalk({ ...unit.unit, agentId, agentName });
-      }}
+      data-conversation-id={conversationId}
+      aria-busy={resolving || undefined}
+      onClick={() => void open()}
     >
-      <MessagesSquare className="h-3.5 w-3.5" />
+      {resolving ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <MessagesSquare className="h-3.5 w-3.5" />
+      )}
       {label}
     </Button>
   );

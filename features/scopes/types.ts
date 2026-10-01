@@ -225,6 +225,8 @@ export interface OrgNode {
   id: string;
   name: string;
   abbreviation: string;
+  /** The organization's own icon — the sidebar's organization slot draws it over the abbreviation. */
+  logo_url?: string | null;
   slug: string;
   /**
    * Classified as a lane's scratch organization in

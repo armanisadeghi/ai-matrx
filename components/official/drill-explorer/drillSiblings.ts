@@ -63,29 +63,47 @@ export function useDrillSiblings(client: RecordsClient | null, siblings: readonl
   });
 }
 
-/** A sibling's Dimensions as the answer primitives read them, with the words its answers named. */
+/**
+ * A definition's Dimensions as the answer primitives read them, with the words its answers named —
+ * the ONE mapping the explorer and its siblings share (lane DRILL-WIRE): a relation names its record
+ * kind (`entity`, so a group row offers that record's doors and its kind's menu) and a choice keeps its
+ * declared chart token (`colorFor`, on the chart series and the share bars).
+ */
 export function drillSiblingDimensions(
   def: DrillDefinition,
   names: Record<string, Record<string, string>>,
   resolvers: Record<string, DrillNameResolver> | undefined,
+  hostWords?: Record<string, (value: string) => string> | undefined,
 ): MatrxDrillDimension[] {
   return def.dimensions.map((d) => {
     const dim: MatrxDrillDimension = { key: d.key, label: d.label, kind: d.kind };
     if (d.cardinality) dim.cardinality = d.cardinality;
     if (d.grains) dim.grains = d.grains as NonNullable<MatrxDrillDimension["grains"]>;
-    const labelFor = drillDimensionLabelFor(d, { names: names[d.key], resolver: resolvers?.[d.key] });
+    // KEYS NEVER REACH A PERSON (VERIFIER-32 F5): an id reads as the door's label or the resolver's
+    // name, a code as the definition's choice label — never the id or the code itself.
+    const labelFor = drillDimensionLabelFor(d, { names: names[d.key], resolver: resolvers?.[d.key], hostWords: hostWords?.[d.key] });
     if (labelFor) dim.labelFor = labelFor;
+    if (d.kind === "relation" && d.relation?.token) dim.entity = d.relation.token;
+    const colors = new Map((d.choices ?? []).flatMap((c) => (c.color ? [[c.value, c.color] as const] : [])));
+    if (colors.size > 0) dim.colorFor = (value) => (value === null ? null : colors.get(value) ?? null);
     return dim;
   });
 }
 
-/** A sibling's Measures, formatted by unit exactly as the explorer formats its own. */
+/**
+ * A definition's Measures, formatted by unit — the ONE mapping the explorer and its siblings share. A
+ * moment (`unit: "time"`, "Last active") is never a share, a change or a Pareto line.
+ */
 export function drillSiblingMeasures(def: DrillDefinition, money: DrillMoneyUnit): MatrxDrillMeasure[] {
   return def.measures.map((m) => ({
     key: m.key,
+    // The column's unit word is the one its cells print (VERIFY-DRILL-WAVE1 F9).
     label: m.unit === "usd" ? costColumnLabel(m.label, money) : m.label,
+    // a ratio, a percentile, a run rate, an average or a moment is recomputed per group, never added up
     additive: m.additive ?? (["count", "sum", "filled", "empty"].includes(m.op) && drillUnitAdds(m.unit)),
     format: drillUnitFormatter(m.unit, money),
+    ...(m.unit === "usd" ? { lowerIsBetter: true } : {}),
+    ...(m.unit === "time" ? { moment: true, additive: false } : {}),
   }));
 }
 

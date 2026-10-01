@@ -4,10 +4,10 @@
  * features/notifications/components/InboxPanel.tsx — THE inbox body.
  *
  * One list, one look, whatever the sender: every row is a delivered in-app
- * notice from `communication.notification`. Two pinned rows sit above the
- * list for the two "things for you" that do not yet arrive as spine events —
- * conversations with unread messages and proposals waiting on this person —
- * each opening its own canonical surface. When those producers emit spine
+ * notice from `communication.notification`. Pinned rows sit above the list
+ * for the "things for you" that do not yet arrive as spine events — proposals
+ * and work waiting on this person — each opening its own canonical surface.
+ * Direct messages are not here: Messages is its own header control. When those producers emit spine
  * events (the follow-on in ../FEATURE.md) the pinned rows go away and their
  * items become ordinary rows here.
  *
@@ -38,13 +38,11 @@ import {
   ExternalLink,
   Inbox as InboxIcon,
   Loader2,
-  MessageSquare,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import AppLink from "@/components/navigation/AppLink";
-import { useOpenMessagesWindow } from "@/features/overlays/openers/messagesWindow";
 import { useOpenApprovalsWindow } from "@/features/overlays/openers/approvalsWindow";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useInboxCounts, useInboxList } from "../useInbox";
@@ -189,7 +187,6 @@ export function InboxPanel({
   const dispatch = useAppDispatch();
   const counts = useInboxCounts();
   const list = useInboxList(true);
-  const openMessages = useOpenMessagesWindow();
   const openApprovals = useOpenApprovalsWindow();
   const [clearing, setClearing] = useState(false);
 
@@ -272,7 +269,6 @@ export function InboxPanel({
   const unreadKnown = counts.notifications !== null;
   const hasUnread = (counts.notifications ?? 0) > 0;
   const pinned =
-    counts.conversations > 0 ||
     (counts.approvals ?? 0) > 0 ||
     counts.workByOrganization.length > 0;
 
@@ -286,7 +282,7 @@ export function InboxPanel({
       data-inbox-panel={variant}
     >
       <div className="flex items-center gap-2 px-3 py-2">
-        <span className="text-sm font-semibold text-foreground">Inbox</span>
+        <span className="text-sm font-semibold text-foreground">Notifications</span>
         {unreadKnown && hasUnread ? (
           <span className="text-xs text-muted-foreground">
             {counts.notifications} unread
@@ -315,17 +311,6 @@ export function InboxPanel({
 
       {pinned ? (
         <div className="border-b border-border px-1 pb-1">
-          {counts.conversations > 0 ? (
-            <PinnedRow
-              icon={<MessageSquare />}
-              label={`${counts.conversations === 1 ? "Conversation" : "Conversations"} with unread messages`}
-              count={counts.conversations}
-              onClick={() => {
-                openMessages();
-                onNavigate?.();
-              }}
-            />
-          ) : null}
           {(counts.approvals ?? 0) > 0 ? (
             <PinnedRow
               icon={<ClipboardCheck />}

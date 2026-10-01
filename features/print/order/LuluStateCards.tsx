@@ -103,7 +103,7 @@ export function UpstreamErrorCard({
 
 /**
  * Signed in, but no active organization — the header's own "Choose org"
- * control (`HeaderChooseOrgButton`) is the persistent nudge; this card is
+ * control (`ShellOrgSwitcher`) is the persistent nudge; this card is
  * the same picker dropped in-place so the fix is one click, not a scavenger
  * hunt, and never a red "error" card with a Retry that would fail the same
  * way again.

@@ -99,7 +99,7 @@ export function MandateStatusControl({
     const ok = await confirm({
       title: `Archive ${name}?`,
       description:
-        "It leaves every list and asking for it is refused. Bindings, notes and test cases are kept; restore from Trash.",
+        "It leaves every list with its bindings, notes and test cases, and asking for it is refused. You can restore from Trash.",
       confirmLabel: "Archive",
       variant: "destructive",
     });

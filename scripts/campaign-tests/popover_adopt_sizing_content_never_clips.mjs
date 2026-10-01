@@ -48,7 +48,7 @@ const SURFACES = [
   { slug: "entity-columns",  label: "Agents list — choose columns",     file: "lib/entity-list/components/EntityColumnPicker.tsx",          was: "w-56",   route: "/agents", aria: "Choose columns", shortContent: true },
   { slug: "column-view",     label: "Data table — column view menu",    file: "features/data-tables/components/ColumnViewMenu.tsx",         was: "w-72",   route: TABLE,     trigger: "Columns",    desktopOnly: true },
   { slug: "table-layout",    label: "Data table — layout menu",         file: "features/data-tables/components/TableLayoutMenu.tsx",        was: "w-72",   route: TABLE,     trigger: "Layout",     desktopOnly: true },
-  { slug: "org-switcher",    label: "Organization switcher",            file: "features/shell/components/header/header-right-menu/HeaderChooseOrgButton.tsx", was: "w-72", route: TABLE, trigger: "Choose org", desktopOnly: true },
+  { slug: "org-switcher",    label: "Organization switcher",            file: "features/shell/components/account-rail/ShellOrgSwitcher.tsx", was: "w-72", route: TABLE, sel: "[data-shell-org-switcher=rail]", desktopOnly: true },
   { slug: "inbox",           label: "Notifications inbox",              file: "features/notifications/components/InboxHeaderButton.tsx",    was: "w-[380px] max-w-[92vw]", route: TABLE, trigger: "99+", desktopOnly: true },
 ];
 

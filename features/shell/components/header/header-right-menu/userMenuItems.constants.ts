@@ -111,18 +111,3 @@ export const COMMUNICATION_ITEMS: OverlayMenuItemConfig[] = [
     requiresAuth: false,
   },
 ];
-
-export const SETTINGS_ITEMS: OverlayMenuItemConfig[] = [
-  {
-    overlayId: "userPreferences",
-    icon: "Settings",
-    label: "Preferences",
-    requiresAuth: false,
-  },
-  {
-    overlayId: "audioControlWindow",
-    icon: "MonitorSpeaker",
-    label: "Media",
-    requiresAuth: false,
-  },
-];

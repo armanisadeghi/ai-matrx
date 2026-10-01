@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { InfoHint } from "@/components/official/InfoHint";
 import { Button } from "@/components/ui/button";
 import { Input, SelectChevron } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -2050,52 +2051,59 @@ function RolesSection({
                   {/* AUTO-RUN — read-only where the manifest PINS it, a real
                       editor where the manifest says `user-choice`. */}
                   {!autoRunIsWritable ? (
-                    <Badge
-                      variant="outline"
-                      className="text-[10px]"
-                      title={`The manifest pins auto-run to "${declaredAutoRun}" for this role. Change the manifest to make it a choice.`}
-                    >
-                      auto-run: {declaredAutoRun} (pinned)
-                    </Badge>
+                    <span className="inline-flex items-center gap-1">
+                      <Badge variant="outline" className="text-[10px]">
+                        auto-run: {declaredAutoRun} (pinned)
+                      </Badge>
+                      <InfoHint
+                        text={`The manifest pins auto-run to "${declaredAutoRun}" for this role. Change the manifest to make it a choice.`}
+                      />
+                    </span>
                   ) : !roleAgentId ? (
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] text-amber-600 dark:text-amber-400"
-                      title="No agent fills this role, so the choice can't be saved; set a default first."
-                    >
-                      auto-run: your choice — no agent in this role
-                    </Badge>
+                    <span className="inline-flex items-center gap-1">
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] text-amber-600 dark:text-amber-400"
+                      >
+                        auto-run: your choice — no agent in this role
+                      </Badge>
+                      <InfoHint text="No agent fills this role, so the choice can't be saved; set a default first." />
+                    </span>
                   ) : (
-                    <label
-                      className={cn(
-                        "inline-flex items-center gap-1.5 rounded border border-border px-1.5 py-0.5 text-[10px]",
-                        !eligibility.eligible && "opacity-60",
-                      )}
-                      title={
-                        eligibility.eligible
-                          ? autoRunOn
-                            ? "Runs when triggered, unless a required variable is unresolved here."
-                            : "Waits for the person to press Run on this surface."
-                          : `Waits for Run — this binding's mapping asks for ${eligibility.blockers.join(", ")}`
-                      }
-                    >
-                      <input
-                        type="checkbox"
-                        className="h-3 w-3 accent-primary"
-                        checked={autoRunOn}
-                        disabled={isBusy || !eligibility.eligible}
-                        onChange={(e) =>
-                          void setRoleAutoRun(
-                            role.name,
-                            roleAgentId,
-                            e.target.checked,
-                          )
+                    <span className="inline-flex items-center gap-1">
+                      <label
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded border border-border px-1.5 py-0.5 text-[10px]",
+                          !eligibility.eligible && "opacity-60",
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-3 w-3 accent-primary"
+                          checked={autoRunOn}
+                          disabled={isBusy || !eligibility.eligible}
+                          onChange={(e) =>
+                            void setRoleAutoRun(
+                              role.name,
+                              roleAgentId,
+                              e.target.checked,
+                            )
+                          }
+                        />
+                        <span className={autoRunOn ? "text-primary" : "text-muted-foreground"}>
+                          auto-run
+                        </span>
+                      </label>
+                      <InfoHint
+                        text={
+                          eligibility.eligible
+                            ? autoRunOn
+                              ? "Runs when triggered, unless a required variable is unresolved here."
+                              : "Waits for the person to press Run on this surface."
+                            : `Waits for Run — this binding's mapping asks for ${eligibility.blockers.join(", ")}`
                         }
                       />
-                      <span className={autoRunOn ? "text-primary" : "text-muted-foreground"}>
-                        auto-run
-                      </span>
-                    </label>
+                    </span>
                   )}
                 </div>
                 {bindingsError && autoRunIsWritable && (

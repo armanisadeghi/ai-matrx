@@ -92,7 +92,7 @@ export function KitAgentsSection({ manifest, sourceAgents }: { manifest: KitMani
                       <span className="rounded bg-muted px-1.5 py-0.5 text-[11.5px] font-medium text-foreground">{variableLabel(b.variable)}</span>
                       <Link2 className="h-3 w-3 text-muted-foreground" />
                       <span className="font-medium text-foreground">{table?.name ?? "—"}</span>
-                      <span className="text-foreground">· {describeBinding(b.binding).toLowerCase()}</span>
+                      <span className="text-foreground">· {describeBinding(b.binding, (k) => table?.fields.find((f) => f.key === k)?.label ?? k).toLowerCase()}</span>
                     </div>
                   );
                 })}

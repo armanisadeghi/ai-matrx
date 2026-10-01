@@ -807,6 +807,8 @@ export const executeInstance = createAsyncThunk<
             content,
             position: nextPosition,
             metadata: userMessageMetadata,
+            // Links this turn's `context_receipt` to this bubble.
+            requestId,
           }),
         );
       }

@@ -8,8 +8,6 @@
  */
 
 import { useMemo, useState } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import type {
   ContextObjectType,
   ContextPolicy,
@@ -45,12 +43,10 @@ export function ContextPolicyChip({
   const typeLabel = CONTEXT_TYPE_TILE_LABEL[type] ?? "Context";
 
   const label = contextEntryLabel(entry, policy?.label);
-  const liveEntry = useAppSelector(
-    selectInstanceContextEntry(conversationId, entry.key),
-  );
+  // The snapshot only — a sent turn never shows today's value.
   const preview = useMemo(
-    () => contextPolicyEntryPreview(entry, type, liveEntry?.value),
-    [entry, type, liveEntry?.value],
+    () => contextPolicyEntryPreview(entry, type),
+    [entry, type],
   );
   const tooltip = preview ? `${label} — ${preview}` : label;
 
@@ -72,6 +68,8 @@ export function ContextPolicyChip({
         agentId={agentId}
         contextKey={entry.key}
         snapshotValue={entry.value}
+        snapshotLabel={entry.label}
+        snapshotType={entry.type}
       />
     </>
   );

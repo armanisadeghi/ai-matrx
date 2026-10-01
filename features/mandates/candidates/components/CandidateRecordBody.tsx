@@ -9,12 +9,13 @@
  *
  * THE HEARTBEAT (V1 D3): an open pair or summary window re-reads its record
  * while work is in progress — a pair still queued or running, a candidate
- * still collecting — and stops once it is terminal (../live.ts).
+ * still collecting — and stops once the candidate is terminal-for-now (ready,
+ * promoted, discarded, cancelled; ../live.ts `candidateStillMoving`).
  */
 
 import { useCallback, useState } from "react";
 import { fetchCandidate, fetchCandidateRun } from "../api";
-import { useCandidatePollMs, useHeartbeat } from "../live";
+import { candidateStillMoving, pairStillMoving, useCandidatePollMs, useHeartbeat } from "../live";
 import { CandidateRunBody, type CandidateRunRow } from "./CandidateRunBody";
 import { CandidateSummaryBody, type CandidateSummaryRow } from "./CandidateSummaryBody";
 
@@ -28,7 +29,10 @@ export default function CandidateRecordBody(props: CandidateRecordBodyProps) {
 
 function LiveRunBody({ row: loaded }: { row: CandidateRunRow }) {
   const [row, setRow] = useState(loaded);
-  const working = row.run.status === "queued" || row.run.status === "running";
+  // V2 N1: the pair keeps re-reading until its CANDIDATE is terminal-for-now,
+  // not merely until this pair finished — its verdict, and the candidate's
+  // status and recommendation shown beside it, land after the pair completes.
+  const working = pairStillMoving(row.run.status) || candidateStillMoving(row.candidate?.status);
   const pollMs = useCandidatePollMs(working);
   const beat = useCallback(async () => {
     const run = await fetchCandidateRun(row.run.id);
@@ -45,8 +49,7 @@ function LiveRunBody({ row: loaded }: { row: CandidateRunRow }) {
 function LiveSummaryBody({ row: loaded }: { row: CandidateSummaryRow }) {
   const [row, setRow] = useState(loaded);
   const working =
-    row.candidate.status === "collecting" ||
-    row.runs.some((run) => run.status === "queued" || run.status === "running");
+    candidateStillMoving(row.candidate.status) || row.runs.some((run) => pairStillMoving(run.status));
   const pollMs = useCandidatePollMs(working);
   const beat = useCallback(async () => {
     const detail = await fetchCandidate(row.candidate.id);

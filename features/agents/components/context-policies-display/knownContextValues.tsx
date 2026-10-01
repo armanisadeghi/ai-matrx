@@ -47,23 +47,16 @@ export function parseContextRecord(
   return null;
 }
 
-/** Prefer snapshot value on historical messages; fall back to live instance context. */
-export function resolveContextEntryValue(
-  entry: { key: string; value: unknown; label?: string },
-  liveValue?: unknown,
-): unknown {
-  const label = entry.label?.trim();
-  const snap = entry.value;
-  const snapIsLabelPlaceholder =
-    typeof snap === "string" && !!label && snap === label;
-
-  if (!snapIsLabelPlaceholder && snap !== undefined && snap !== null) {
-    return snap;
-  }
-  if (liveValue !== undefined && liveValue !== null) {
-    return liveValue;
-  }
-  return snap;
+/** The value a sent message carried — its snapshot, never live instance context. */
+export function resolveContextEntryValue(entry: {
+  key: string;
+  value: unknown;
+  label?: string;
+}): unknown {
+  // The snapshot only. A deferred item's snapshot is its label (no value was
+  // inlined) — that stays the label; borrowing today's live value made a
+  // sent turn show content it never carried.
+  return entry.value;
 }
 
 function str(v: unknown): string | null {

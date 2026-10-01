@@ -17,7 +17,7 @@
 // It stays open after a selection on purpose: "Keep it at the top" only
 // enables once an organization is active. Outside-click / Esc / swipe closes.
 
-import { useState, type ReactElement } from "react";
+import { useState, type ReactElement, type ReactNode } from "react";
 import { Building2 } from "lucide-react";
 import {
   Popover,
@@ -41,6 +41,10 @@ export interface OrganizationPickerPopoverProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   align?: "start" | "center" | "end";
+  /** Desktop only — the sidebar's account rail opens it to the right. */
+  side?: "top" | "right" | "bottom" | "left";
+  /** Drawn above the list, e.g. the page's own organization offer. */
+  header?: ReactNode;
 }
 
 export function OrganizationPickerPopover({
@@ -48,6 +52,8 @@ export function OrganizationPickerPopover({
   open: controlledOpen,
   onOpenChange,
   align = "start",
+  side = "bottom",
+  header,
 }: OrganizationPickerPopoverProps) {
   const isMobile = useIsMobile();
   const [ownOpen, setOwnOpen] = useState(false);
@@ -69,6 +75,7 @@ export function OrganizationPickerPopover({
               <DrawerTitle>Choose an organization</DrawerTitle>
             </DrawerHeader>
             <div className="matrx-touch-targets overflow-y-auto px-2 pb-4">
+              {header}
               <OrganizationPickerPanel />
             </div>
           </DrawerContent>
@@ -83,9 +90,11 @@ export function OrganizationPickerPopover({
       <PopoverContent
         /* sizing: fixed — the picker searches as you type, and a content-sized box would reflow on every keystroke */
         align={align}
+        side={side}
         sideOffset={8}
         className="w-80 p-1"
       >
+        {header}
         <OrganizationPickerPanel />
       </PopoverContent>
     </Popover>

@@ -111,7 +111,7 @@ export function WritePolicyEditor({
 
   return (
     <div className={compact ? "space-y-1.5" : "space-y-3"}>
-      {targets.map((target) => {
+      {targets.map((target, index) => {
         const surfaceDefault = surfaceDefaultFor(target);
         const floored = surfaceDefault === "manual";
         const override = value[target.name];
@@ -221,7 +221,8 @@ export function WritePolicyEditor({
                   },
                 ]}
               />
-              {!compact && (
+              {/* One definition per list, beside the first control. */}
+              {!structured && !compact && index === 0 && (
                 <InfoHint
                   label="Policy options"
                   text="Default follows the surface, Manual refuses agent writes, Ask confirms each write, Auto applies at once."

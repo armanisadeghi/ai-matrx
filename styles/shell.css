@@ -18,7 +18,8 @@
   --shell-marketing-pr: 3.5rem;
   --shell-sidebar-w: 2.75rem;
   --shell-sidebar-w-expanded: 13rem;
-  --shell-user-block-h: 3rem;
+  /* The account rail: three 2rem rows, two 0.125rem gaps, 0.25rem padding top and bottom. */
+  --shell-user-block-h: 6.75rem;
   --shell-dock-h: 3.75rem;
   --shell-dock-bottom: 0.625rem;
   --shell-dock-mx: 0.5rem;
@@ -591,10 +592,11 @@
   display: none;
 }
 
-/* Sidebar footer */
+/* Sidebar footer — the same horizontal padding as the nav, so every footer
+   icon sits in the nav's icon column (it was 0.5rem: 2px off). */
 .shell-sidebar-footer {
   flex-shrink: 0;
-  padding: 0.5rem;
+  padding: 0.25rem 0.375rem;
 }
 
 /* ---------------------------------------------------------------------------
@@ -2679,19 +2681,20 @@ body:has(.shell-root[data-pathname^="/administration"]) {
     opacity var(--shell-duration-fast) var(--shell-ease-smooth);
 }
 
-/* THE profile block — bottom-left, one copy (features/shell/components/
-   user-block/ShellUserBlock.tsx). Fixed, so it survives every route that
-   hides or reshapes the sidebar, and the same width as the sidebar so the
-   avatar sits exactly under the nav rail. */
+/* THE ACCOUNT RAIL — bottom-left, one copy (features/shell/components/
+   user-block/ShellUserBlock.tsx): Settings, Organization, You — three
+   always-visible rows (owner, 2026-09-30). Fixed, so it survives every route
+   that hides or reshapes the sidebar, and the sidebar's width, so each row's
+   icon sits in exactly the nav rail's icon column (x = 12px, the same
+   padding the nav uses). Each row IS a `.shell-nav-item.shell-nav-stable`,
+   so collapsed = icon, expanded = icon + name, with the nav's own reveal. */
 .shell-user-block {
   position: fixed;
   left: 0;
   bottom: 0;
   width: var(--shell-sidebar-w);
-  height: var(--shell-user-block-h);
+  height: calc(var(--shell-user-block-h) + var(--shell-safe-area-bottom, 0px));
   z-index: 41;
-  display: flex;
-  align-items: center;
   padding: 0 0 var(--shell-safe-area-bottom, 0px) 0;
   background: var(--shell-sidebar-bg);
   transition:
@@ -2711,54 +2714,31 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   background: var(--shell-sidebar-bg);
 }
 
-.shell-user-block-trigger {
+.shell-account-rail {
   display: flex;
-  align-items: center;
-  min-width: 0;
-  width: 100%;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.125rem;
+  height: 100%;
+  padding: 0.25rem 0.375rem;
   overflow: hidden;
 }
 
-/* Name + email, revealed only when the rail is expanded (same reveal as
-   .shell-nav-label). A <label> for #shell-user-menu, so it toggles too. */
-.shell-user-block-name {
-  display: flex;
-  flex-direction: column;
+/* The three rows are the same height and the same width as a nav row. */
+.shell-account-rail > .shell-nav-item {
+  flex-shrink: 0;
+  width: 100%;
   min-width: 0;
-  flex: 1;
-  padding-right: 0.5rem;
+}
+
+.shell-account-rail .shell-nav-label {
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+.shell-root[data-pathname^="/administration/launchpad"] .shell-account-rail .shell-nav-label {
   opacity: 0;
-  transform: translateX(-4px);
   pointer-events: none;
-  cursor: pointer;
-  transition:
-    opacity var(--shell-duration-normal) var(--shell-ease-smooth),
-    transform var(--shell-duration-normal) var(--shell-ease-spring);
-}
-.shell-root:not([data-pathname^="/administration/launchpad"])
-  > #shell-sidebar-toggle:checked
-  ~ * .shell-user-block-name,
-.shell-root:not([data-pathname^="/administration/launchpad"])
-  > #shell-sidebar-toggle:checked
-  ~ .shell-user-block-name {
-  opacity: 1;
-  transform: translateX(0);
-  pointer-events: auto;
-}
-.shell-user-block-name-primary {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--shell-nav-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.shell-user-block-name-secondary {
-  font-size: 0.6875rem;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* 🚨 THE SIDEBAR ITSELF STOPS ABOVE THE ACCOUNT BLOCK (page-pass shared
@@ -2782,7 +2762,7 @@ body:has(.shell-root[data-pathname^="/administration"]) {
     padding: 0;
     background: transparent;
   }
-  .shell-user-block-trigger {
+  .shell-account-rail {
     display: none;
   }
 }
@@ -3573,25 +3553,3 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   }
 }
 
-
-/* THE ORGANIZATION SLOT holds its width from the first paint (page-pass shared
-   defects, 2026-09-27): the chip resolves after boot, and a slot that grew then
-   pushed the page title 98px on desktop and 22px on a phone. 44px on a phone
-   (the chip is an icon there), 11rem from sm up; the chip truncates inside it.
-   Absent on /administration/* — the admin seat never acts as itself. */
-.shell-header-org-slot {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: flex-end;
-  width: 2.75rem;
-  overflow: hidden;
-}
-@media (min-width: 640px) {
-  .shell-header-org-slot {
-    width: 11rem;
-  }
-}
-.shell-root[data-pathname^="/administration"] .shell-header-org-slot {
-  display: none;
-}

@@ -307,7 +307,7 @@ export const scopesService = {
               // "which one am I working in" list; the organizations page's
               // own archive disclosure is where those live.
               .select(
-                "id, name, abbreviation, slug, settings, created_by, archived_at",
+                "id, name, abbreviation, logo_url, slug, settings, created_by, archived_at",
               )
               .in("id", orgIds)
           : Promise.resolve({
@@ -315,6 +315,7 @@ export const scopesService = {
                 id: string;
                 name: string;
                 abbreviation: string;
+                logo_url: string | null;
                 slug: string;
                 settings: unknown;
                 created_by: string | null;
@@ -416,6 +417,7 @@ export const scopesService = {
           id: row.id,
           name: row.name,
           abbreviation: row.abbreviation,
+          logo_url: row.logo_url ?? null,
           slug: row.slug,
           // The stored classification, never a guess from the name.
           is_test_fixture:

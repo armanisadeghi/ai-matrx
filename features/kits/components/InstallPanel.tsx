@@ -8,6 +8,7 @@ import { count } from "../format";
 // install" / "Remove what was created".
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   ArrowRight,
   Building2,
@@ -136,14 +137,21 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
     if (done) toast.success(`"${manifest.name}" is installed in ${orgName}.`);
   };
 
+  // Reading what a removal would archive takes a few reads; until the dialog opens the
+  // button shows it is working and refuses a second press — a second press used to
+  // queue a second dialog that reopened after the first removal finished.
+  const [checkingRemoval, setCheckingRemoval] = useState(false);
   const onRemove = async () => {
-    if (!install) return;
+    if (!install || checkingRemoval) return;
+    setCheckingRemoval(true);
     let facts;
     try {
       facts = await api.removalFacts();
     } catch (err) {
       toast.error("Could not check what would be removed", { description: err instanceof Error ? err.message : String(err) });
       return;
+    } finally {
+      setCheckingRemoval(false);
     }
     if (!facts) return;
     // ≤ 140 chars, two sentences: what is archived, then what stops and for how long.
@@ -274,8 +282,19 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
                 </Button>
               )}
               {install && !busy && !api.attached && (
-                <Button variant="ghost" size="sm" className="w-full text-foreground hover:text-destructive" onClick={onRemove}>
-                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-foreground hover:text-destructive"
+                  onClick={onRemove}
+                  disabled={checkingRemoval}
+                  aria-busy={checkingRemoval}
+                >
+                  {checkingRemoval ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                  )}
                   {partial ? "Remove what was created" : `Remove this ${KIT_WORD.oneLower}`}
                 </Button>
               )}

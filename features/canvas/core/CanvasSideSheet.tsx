@@ -34,6 +34,7 @@ import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  selectCanvasHomeOpen,
   selectCurrentItemId,
   setCanvasAvailable,
   toggleCanvas,
@@ -44,9 +45,15 @@ const CanvasSideSheetImpl = dynamic(
   { ssr: false, loading: () => null },
 );
 
+const CanvasHomeSheet = dynamic(
+  () => import("./CanvasHomeSheet").then((m) => m.CanvasHomeSheet),
+  { ssr: false, loading: () => null },
+);
+
 export function CanvasSideSheet() {
   const dispatch = useAppDispatch();
   const currentItemId = useAppSelector(selectCurrentItemId);
+  const homeOpen = useAppSelector(selectCanvasHomeOpen);
 
   // The canvas surface is reachable on this route → mark it available so
   // blocks which gate their "Open in canvas" affordance on availability
@@ -60,7 +67,7 @@ export function CanvasSideSheet() {
   }, [dispatch]);
 
   // Global keyboard shortcut: ⌘\ / Ctrl+\ toggles the canvas if there's
-  // anything to show (the reducer no-ops when no item exists). Ignored when
+  // anything to show (with nothing on it, the reducer opens the canvas home). Ignored when
   // focus is in a text field, so users mid-typing don't get yanked into /
   // out of the canvas accidentally.
   useEffect(() => {
@@ -83,6 +90,10 @@ export function CanvasSideSheet() {
     return () => window.removeEventListener("keydown", onKey);
   }, [dispatch]);
 
-  if (!currentItemId) return null;
-  return <CanvasSideSheetImpl />;
+  return (
+    <>
+      {currentItemId ? <CanvasSideSheetImpl /> : null}
+      {homeOpen ? <CanvasHomeSheet /> : null}
+    </>
+  );
 }

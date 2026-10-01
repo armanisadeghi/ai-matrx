@@ -249,6 +249,7 @@ export function UserMessageChipsDemo() {
             <ContextPolicyChipStrip
               conversationId={DEMO_CONV_SINGLE}
               agentId={null}
+              entries={[DEMO_SINGLE_ENTRY]}
             />
             <p className="text-xs text-foreground whitespace-pre-wrap">
               Can you go ahead and get this working document ready?
@@ -262,6 +263,7 @@ export function UserMessageChipsDemo() {
             <ContextPolicyChipStrip
               conversationId={DEMO_CONV_MULTI}
               agentId={null}
+              entries={DEMO_MULTI_ENTRIES}
             />
             <p className="text-xs text-foreground whitespace-pre-wrap">
               Here is everything attached — open the popover to browse each
@@ -360,6 +362,7 @@ export function UserMessageChipsDemo() {
             <ContextPolicyChipStrip
               conversationId={DEMO_CONV_MULTI}
               agentId={null}
+              entries={DEMO_MULTI_ENTRIES}
             />
             <div className="flex flex-wrap gap-1.5">
               {DEMO_LEGACY_ATTACHMENTS.slice(0, 3).map((spec) => {

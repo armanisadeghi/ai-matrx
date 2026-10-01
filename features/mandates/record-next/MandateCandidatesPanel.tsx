@@ -66,9 +66,20 @@ import {
   useOpenCandidateSummary,
 } from "@/features/mandates/candidates/openers";
 import { announceCandidatesChanged, onCandidatesChanged } from "./useCandidateCount";
-import { useCandidatePollMs, useHeartbeat } from "@/features/mandates/candidates/live";
+import {
+  candidateStillMoving,
+  pairStillMoving,
+  useCandidatePollMs,
+  useHeartbeat,
+} from "@/features/mandates/candidates/live";
 import { CandidateHolderName } from "@/features/mandates/candidates/components/CandidateHolderName";
-import { attemptWord } from "@/features/mandates/candidates/words";
+import {
+  attemptWord,
+  discardConfirmation,
+  promoteConfirmation,
+  putBackConfirmation,
+} from "@/features/mandates/candidates/words";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const VERDICT_TONE: Record<string, string> = {
   better: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
@@ -184,9 +195,10 @@ export function MandateCandidatesPanel({
 
   const changed = useCallback(() => announceCandidatesChanged(mandateKey), [mandateKey]);
 
+  // V2 N1: until every open candidate is terminal-for-now — never "all pairs in".
   const working =
-    (state?.open ?? []).some((c) => c.status === "collecting") ||
-    (runs ?? []).some((run) => run.status === "queued" || run.status === "running");
+    (state?.open ?? []).some((c) => candidateStillMoving(c.status)) ||
+    (runs ?? []).some((run) => pairStillMoving(run.status));
   const pollMs = useCandidatePollMs(working);
   const beat = useCallback(() => {
     if (inFlight.current === 0) setReads((n) => n + 1);
@@ -418,6 +430,7 @@ function DecisionButtons({
   const [busy, setBusy] = useState<string | null>(null);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [versions, setVersions] = useState<LiveCandidatePromoteResult["versions"] | null>(null);
+  const [pending, setPending] = useState<"promote" | "put-back" | "discard" | null>(null);
   // Read once per mount — the Put back window is hours long.
   const [now] = useState(() => Date.now());
 
@@ -442,6 +455,26 @@ function DecisionButtons({
     }
   };
 
+  // V2 N3: every decision asks first, in the summary record's words
+  // (candidates/words.ts) — Promote names what goes live in place of what and
+  // says a Reject / Hold recommendation plainly.
+  const verdicts = candidate.counts.verdicts ?? {};
+  const subject = {
+    candidateName: candidate.holder_name,
+    baselineName: candidate.baseline_holder_name ?? null,
+    recommendation: candidate.recommendation,
+    judged: Object.values(verdicts).reduce((sum, n) => sum + (n ?? 0), 0),
+  };
+  const warns = candidate.recommendation === "reject" || candidate.recommendation === "hold";
+  const asking =
+    pending === "promote"
+      ? promoteConfirmation(subject)
+      : pending === "put-back"
+        ? putBackConfirmation(subject)
+        : pending === "discard"
+          ? discardConfirmation(subject)
+          : null;
+
   const promote = (versionId?: string) =>
     act("promote", async () => {
       const result = await promoteLiveCandidate(dispatch, candidate.id, {
@@ -464,7 +497,8 @@ function DecisionButtons({
             size="sm"
             className="h-7 gap-1 text-xs"
             disabled={busy !== null}
-            onClick={() => void promote()}
+            onClick={() => setPending("promote")}
+            data-candidate-promote
             title="Make it what runs here. Put back stays available for a while."
           >
             {busy === "promote" ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowUpCircle className="h-3 w-3" />}
@@ -477,12 +511,8 @@ function DecisionButtons({
             variant="outline"
             className="h-7 gap-1 text-xs"
             disabled={busy !== null}
-            onClick={() =>
-              void act("put-back", async () => {
-                await putBackLiveCandidate(dispatch, candidate.id);
-                toast.success("Put back — what ran before runs again.");
-              })
-            }
+            onClick={() => setPending("put-back")}
+            data-candidate-put-back
             title={`Restore what ran before, until ${new Date(candidate.put_back_until as string).toLocaleString()}.`}
           >
             {busy === "put-back" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />}
@@ -495,12 +525,8 @@ function DecisionButtons({
             variant="ghost"
             className="h-7 gap-1 text-xs text-muted-foreground"
             disabled={busy !== null}
-            onClick={() =>
-              void act("discard", async () => {
-                await discardLiveCandidate(dispatch, candidate.id);
-                toast.success("Candidate discarded.");
-              })
-            }
+            onClick={() => setPending("discard")}
+            data-candidate-discard
           >
             {busy === "discard" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
             Discard
@@ -529,6 +555,34 @@ function DecisionButtons({
           {refusal} <ErrorAlchemyMenu error={refusal} />
         </p>
       ) : null}
+      <ConfirmDialog
+        open={asking !== null}
+        onOpenChange={(next) => {
+          if (!next) setPending(null);
+        }}
+        title={asking?.title ?? ""}
+        description={asking?.description}
+        confirmLabel={asking?.confirmLabel}
+        variant={pending === "discard" || (pending === "promote" && warns) ? "destructive" : undefined}
+        busy={busy !== null}
+        onConfirm={async () => {
+          const what = pending;
+          if (what === "promote") await promote();
+          if (what === "put-back") {
+            await act("put-back", async () => {
+              await putBackLiveCandidate(dispatch, candidate.id);
+              toast.success("Put back — what ran before runs again.");
+            });
+          }
+          if (what === "discard") {
+            await act("discard", async () => {
+              await discardLiveCandidate(dispatch, candidate.id);
+              toast.success("Candidate discarded.");
+            });
+          }
+          setPending(null);
+        }}
+      />
     </div>
   );
 }

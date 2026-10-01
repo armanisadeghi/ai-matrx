@@ -257,8 +257,7 @@ export function IntelligenceIndicator({
         ) : null}
         {identitiesFailed && keys.length > 0 ? (
           <p className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
-            Couldn&apos;t read these jobs&apos; names, so they&apos;re named from
-            their keys.
+            Couldn&apos;t read job names; showing their keys
             <ErrorAlchemyMenu operation="Read the intelligence job names" />
           </p>
         ) : null}

@@ -13,7 +13,7 @@
   let commits = 0;
   let marking = null;
   const REGIONS = [
-    ["ShellHeader", /^(Header|ShellHeader|HeaderChooseOrgButton|HeaderLeftMenu|HeaderRightMenu|ShellHeaderCenter|UserBlock|HeaderUserBlock)$/],
+    ["ShellHeader", /^(Header|ShellHeader|ShellOrgSwitcher|HeaderLeftMenu|HeaderRightMenu|ShellHeaderCenter|UserBlock|HeaderUserBlock)$/],
   ];
   function nameOf(f) {
     const t = f.type;

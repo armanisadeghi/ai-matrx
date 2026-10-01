@@ -8,16 +8,13 @@ import { LinkMenuItem } from "./LinkMenuItem";
 import { AdminIndicatorMenuItem } from "./AdminIndicatorMenuItem";
 import { CostUnitMenuItem } from "./CostUnitMenuItem";
 import { ErrorInspectorMenuItem } from "./ErrorInspectorMenuItem";
-import { ThemeToggleMenuItem } from "./ThemeToggleMenuItem";
 import { CopyShortLinkMenuItem } from "./CopyShortLinkMenuItem";
 import { SignOutMenuItem } from "./SignOutMenuItem";
 import { UserProfileHeader } from "./UserProfileHeader";
-import UserMenuOrgSection from "./UserMenuOrgSection";
 import { MenuGroup } from "./MenuGroup";
 import {
   QUICK_ACCESS_ITEMS,
   COMMUNICATION_ITEMS,
-  SETTINGS_ITEMS,
 } from "./userMenuItems.constants";
 import { USER_MENU_PANEL_CLASS } from "./menuItemClass";
 
@@ -31,7 +28,7 @@ interface UserMenuPanelProps {
 }
 
 /**
- * Authenticated-only user menu. The `Header` branches on `isAuthenticated`
+ * Authenticated-only user menu: identity, quick access, admin, sign out. The `Header` branches on `isAuthenticated`
  * and routes unauthenticated visitors to `GuestUserMenuPanel`, so this
  * component no longer carries a guest fallback — every reachable code path
  * has a real user.
@@ -46,10 +43,6 @@ export default function UserMenuPanel({
   return (
     <div ref={panelRef} className={USER_MENU_PANEL_CLASS}>
       <UserProfileHeader userData={userData} />
-
-      {divider}
-
-      <UserMenuOrgSection />
 
       {divider}
 
@@ -93,13 +86,9 @@ export default function UserMenuPanel({
 
       {divider}
 
-      <MenuGroup id="settings" icon="Settings" label="Settings">
-        <CopyShortLinkMenuItem />
-        <ThemeToggleMenuItem />
-        {SETTINGS_ITEMS.map((item) => (
-          <OverlayMenuItem key={item.overlayId} {...item} />
-        ))}
-      </MenuGroup>
+      {/* Theme, Media and Preferences live in the rail's Settings slot
+          (ShellSettingsMenu); the organization in its own slot. */}
+      <CopyShortLinkMenuItem />
 
       {divider}
 

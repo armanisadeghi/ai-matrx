@@ -32,7 +32,7 @@ const REGIONS = [
   // RA_REGIONS=A,B adds regions nearest-first (lane RENDER-2: TableToolbar, TableHeader, SheetBodyRow …)
   ...(process.env.RA_REGIONS ? process.env.RA_REGIONS.split(",") : []),
   "Toaster",
-  "HeaderChooseOrgButton",
+  "ShellOrgSwitcher",
   "Header",
   "Sidebar",
   "RouteHeader",

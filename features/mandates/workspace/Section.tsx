@@ -2,6 +2,7 @@
 
 import { Pencil } from "lucide-react";
 import { FieldHelp } from "@/components/official/ConfigurationFields";
+import { InfoHint } from "@/components/official/InfoHint";
 
 // features/mandates/workspace/Section.tsx
 //
@@ -14,18 +15,28 @@ import { FieldHelp } from "@/components/official/ConfigurationFields";
 export function Section({
   title,
   hint,
+  info,
   actions,
   children,
 }: {
   title: string;
   hint?: string;
+  /** One-sentence definition shown behind an info icon beside the title. */
+  info?: string;
   actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        {info ? (
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+            <InfoHint label={`About ${title}`} text={info} />
+          </div>
+        ) : (
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        )}
         {hint ? <span className="text-xs text-foreground">{hint}</span> : null}
         {actions}
       </div>

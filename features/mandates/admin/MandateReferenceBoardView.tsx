@@ -28,6 +28,7 @@ import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { InfoHint } from "@/components/official/InfoHint";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
@@ -602,10 +603,10 @@ export function MandateReferenceBoardView() {
           </section>
 
           <section className="space-y-2" aria-label="Conversion list">
-            <h2 className="text-sm font-semibold">
+            <h2 className="flex items-center gap-1 text-sm font-semibold">
               Conversion list ({board.conversion_count})
+              <InfoHint text="Work that runs outside a mandate today; the list may shrink, never grow" />
             </h2>
-            {/* The conversion list is the ratchet baseline: it may shrink, never grow. */}
             <div className="divide-y divide-border rounded-md border border-border text-sm">
               {board.conversion_list.length > 0 ? (
                 board.conversion_list.map((row, index) => (

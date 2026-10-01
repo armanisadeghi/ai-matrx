@@ -189,6 +189,13 @@ interface CanvasState {
   availabilityKnown: boolean;
   canvasWidth: number; // Width of canvas panel in pixels (persisted)
   renderMode: CanvasRenderMode; // Preferred render mode
+  /**
+   * The canvas HOME is open: the header's Canvas button is never dead
+   * (owner, 2026-09-30 — "permanently there, always available and
+   * clickable"). With nothing on the canvas it opens home, which reaches the
+   * person's saved canvas items and their Board. Opening any item closes it.
+   */
+  homeOpen: boolean;
 }
 
 const initialState: CanvasState = {
@@ -201,6 +208,7 @@ const initialState: CanvasState = {
   availabilityKnown: false,
   canvasWidth: 768, // Default width matches max-w-3xl so content fills perfectly
   renderMode: "auto", // Auto-detect best render mode
+  homeOpen: false,
 };
 
 export const canvasSlice = createSlice({
@@ -242,6 +250,7 @@ export const canvasSlice = createSlice({
           metadata?.messageId ?? metadata?.sourceMessageId;
         state.currentItemId = existingItem.id;
         state.isOpen = true;
+        state.homeOpen = false;
         return;
       }
 
@@ -257,6 +266,7 @@ export const canvasSlice = createSlice({
       state.items.push(newItem);
       state.currentItemId = newItem.id;
       state.isOpen = true;
+      state.homeOpen = false;
     },
 
     // Legacy open — prefer openArtifactInCanvas for materializable types.
@@ -272,6 +282,7 @@ export const canvasSlice = createSlice({
           existingByArtifact.timestamp = Date.now();
           state.currentItemId = existingByArtifact.id;
           state.isOpen = true;
+          state.homeOpen = false;
           return;
         }
       }
@@ -296,6 +307,7 @@ export const canvasSlice = createSlice({
         // Item already exists - just switch to it and reopen
         state.currentItemId = existingItem.id;
         state.isOpen = true;
+        state.homeOpen = false;
         // Update timestamp to mark as recently accessed
         existingItem.timestamp = Date.now();
         return;
@@ -313,6 +325,7 @@ export const canvasSlice = createSlice({
       state.items.push(newItem);
       state.currentItemId = newItem.id;
       state.isOpen = true;
+      state.homeOpen = false;
     },
 
     /**
@@ -364,6 +377,14 @@ export const canvasSlice = createSlice({
     },
 
     // Close canvas but keep history
+    openCanvasHome: (state) => {
+      state.homeOpen = true;
+    },
+
+    closeCanvasHome: (state) => {
+      state.homeOpen = false;
+    },
+
     closeCanvas: (state) => {
       state.isOpen = false;
       // Keep items and currentItemId for reopen
@@ -375,6 +396,10 @@ export const canvasSlice = createSlice({
         state.isOpen = false;
       } else if (state.currentItemId) {
         state.isOpen = true;
+        state.homeOpen = false;
+      } else {
+        // Nothing on the canvas: the shortcut opens / closes its home.
+        state.homeOpen = !state.homeOpen;
       }
     },
 
@@ -397,6 +422,7 @@ export const canvasSlice = createSlice({
         }
         state.currentItemId = action.payload;
         state.isOpen = true;
+        state.homeOpen = false;
       }
     },
 
@@ -420,6 +446,7 @@ export const canvasSlice = createSlice({
       if (!target) return;
       state.secondaryItemId = target;
       state.isOpen = true;
+      state.homeOpen = false;
     },
 
     /** Collapse the split — keeps the top pane, drops the bottom. */
@@ -512,6 +539,8 @@ export const canvasSlice = createSlice({
       }
 
       state.isOpen = true;
+
+      state.homeOpen = false;
     },
 
     // Mark an item as synced to database
@@ -568,6 +597,8 @@ export const canvasSlice = createSlice({
 
 // Actions
 export const {
+  openCanvasHome,
+  closeCanvasHome,
   openCanvas,
   offerCanvasItem,
   openArtifactInCanvas,
@@ -594,6 +625,8 @@ type WithCanvas = { canvas: CanvasState };
 
 export const selectCanvasIsOpen = (state: WithCanvas) =>
   state.canvas?.isOpen ?? false;
+export const selectCanvasHomeOpen = (state: WithCanvas) =>
+  state.canvas?.homeOpen ?? false;
 export const selectCanvasItems = (state: WithCanvas) =>
   state.canvas?.items ?? [];
 export const selectCurrentItemId = (state: WithCanvas) =>

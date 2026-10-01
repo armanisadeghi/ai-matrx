@@ -5,15 +5,17 @@
 // Table UI feedback: /Users/armanisadeghi/code/common-docs/projects/npm-package-extraction/TABLE-UI-ISSUES.md
 // Read and update that checklist before fixing table UI feedback in any host.
 import { JsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
-import { useCallback, type ReactNode } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MatrxDataTableProvider, type MatrxDataTableHost as TableHost, type TableContextMenuBoundaryProps, type TableMenuIconProps, type TableWindowPanelProps } from "@ai-matrx/design-system/data-table/host";
+import { usePathname, useRouter } from "next/navigation";
+import { MatrxDataTableProvider, type MatrxDataTableHost as TableHost, type TableContextMenuBoundaryProps, type TableDoors, type TableMenuIconProps, type TableWindowPanelProps } from "@ai-matrx/design-system/data-table/host";
 import { readMenuTarget } from "@ai-matrx/design-system/data-table/menu-targets";
 import type { MatrxDataTableDensity } from "@ai-matrx/design-system/data-table/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
+import { hostEntityMenu } from "@/features/admin/users/components/admin-user-table-menu";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { toast } from "@/lib/toast";
@@ -114,6 +116,10 @@ function TableStaleNotice({ error, what, onRetry }: TableReadViewProps) {
 }
 // Spread in, so the ports also compile against a package without them (they are ignored there).
 const readPorts = { ReadFailure: TableReadFailure, StaleNotice: TableStaleNotice };
+function tableEntityDoors(token: string, id: string, href?: string | null): TableDoors {
+  const doors = resolveEntityDoors(token, id, href);
+  return { ...(doors.href === null ? {} : { href: doors.href }), peekKind: doors.peekKind, canPeek: doors.canPeek };
+}
 const ports: TableHost = {
   ...readPorts,
   JsonViewer,
@@ -125,10 +131,7 @@ const ports: TableHost = {
   SidePanelSurface,
   WindowPanel: TableWindowPanel,
   ResourcePeek: ResourcePeekHost,
-  resolveEntityDoors: (token, id, href) => {
-    const doors = resolveEntityDoors(token, id, href);
-    return { ...(doors.href === null ? {} : { href: doors.href }), peekKind: doors.peekKind, canPeek: doors.canPeek };
-  },
+  resolveEntityDoors: tableEntityDoors,
   notify: toast,
   rowContextRegistry: { register: registerTableRowContextResolver },
   createDefaultMenuContext: createDefaultTableRowMenuDescriptor,
@@ -141,9 +144,21 @@ export function MatrxDataTableHost({ children }: { children: ReactNode }) {
   const defaultDensity = tableDensityFromKnob(
     useEffectiveKnob(organizationId, userId, TABLE_DENSITY_KNOB_KEY),
   );
-  const densityPorts: TableHost = {
-    ...ports,
-    defaultDensity,
-  };
+  // A RECORD'S OWN MENU (lane DRILL-WIRE): a table naming a person on an administration page offers
+  // the admin user menu (`TableDoors.menu`); every other record keeps its open and preview doors.
+  const pathname = usePathname();
+  const router = useRouter();
+  const densityPorts: TableHost = useMemo(
+    () => ({
+      ...ports,
+      resolveEntityDoors: (token: string, id: string, href?: string | null) => {
+        const doors = tableEntityDoors(token, id, href);
+        const menu = hostEntityMenu(token, id, pathname, (to) => router.push(to));
+        return menu && menu.length > 0 ? { ...doors, menu } : doors;
+      },
+      defaultDensity,
+    }),
+    [defaultDensity, pathname, router],
+  );
   return <MatrxDataTableProvider value={densityPorts}>{children}</MatrxDataTableProvider>;
 }

@@ -30,6 +30,8 @@ node scripts/interface-text/check-interface-text.mjs <changed files>   # no NOVE
 pnpm check:parse
 ```
 
+Do not run `pnpm type-check` per batch — the round owner runs one after all batches land.
+
 ## 3. See it rendered
 
 Pick the highest-traffic page the batch touched (and every page where a primitive changed). Open

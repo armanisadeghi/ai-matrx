@@ -17,14 +17,15 @@ function VariableName({ name }: { name: string }) {
   return <span className="rounded bg-muted px-1.5 py-0.5 text-[11.5px] font-medium text-foreground">{variableLabel(name)}</span>;
 }
 
-export function describeBinding(b: KitBinding): string {
+/** `labelOf` turns a field key into the column's label (a raw key never renders). */
+export function describeBinding(b: KitBinding, labelOf: (key: string) => string): string {
   switch (b.semantic_type) {
     case "collection":
       return `Every row becomes one line${b.limit ? ` (up to ${b.limit})` : ""}`;
     case "reference":
       return "One row, written out in full";
     case "value":
-      return `One value${b.field_key ? ` — the "${b.field_key}" column` : ""}`;
+      return `One value${b.field_key ? ` — the "${labelOf(b.field_key)}" column` : ""}`;
     default:
       return "Read on every run";
   }

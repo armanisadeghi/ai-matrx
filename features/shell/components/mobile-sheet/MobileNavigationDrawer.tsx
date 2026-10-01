@@ -22,6 +22,10 @@ import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
 import MobileSheetNavLink from "./MobileSheetNavLink";
 import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
 import MobileDrawerUserRow from "../user-block/MobileDrawerUserRow";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
+import { ShellSettingsMenu } from "../account-rail/ShellSettingsMenu";
+import { ShellOrgSwitcher } from "../account-rail/ShellOrgSwitcher";
 import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 import {
   findActiveNavChild,
@@ -156,6 +160,7 @@ export default function MobileNavigationDrawer({
   const navPanelActions = useNavPanelActions();
   const pathname = usePathname() ?? "";
   const settingsRoute = isUserSettingsPath(pathname);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   const allItems = [...items, settingsItem];
   const activeGroup = allItems.find(
@@ -269,27 +274,15 @@ export default function MobileNavigationDrawer({
         ),
       )}
 
-      <div className="shell-mobile-section-divider" />
-      {settingsItem.children?.length ? (
-        <GroupButton
-          item={settingsItem}
-          candidates={allItems}
-          onOpen={() => setActiveGroupId(navItemIdentity(settingsItem))}
-        />
-      ) : (
-        <MobileSheetNavLink
-          href={settingsItem.href}
-          iconName={settingsItem.iconName}
-          label={settingsItem.label}
-        />
-      )}
       <AdminMobileMenuItem />
 
-      {/* The person, at the end of the navigation — mobile's bottom-left and
-          the phone's only door to the account menu (Submit Feedback,
-          Preferences, Sign out…). A 2026-09-20 merge dropped it silently;
-          guard: MobileNavigationDrawer.account-row.test.ts. */}
+      {/* THE ACCOUNT RAIL, phone edition — the same three the desktop rail
+          ends in (ShellUserBlock): Settings, the organization, the person.
+          The person row is the phone's only door to the account menu
+          (guard: MobileNavigationDrawer.account-row.test.ts). */}
       <div className="shell-mobile-section-divider" />
+      <ShellSettingsMenu variant="drawer" />
+      {isAuthenticated ? <ShellOrgSwitcher variant="drawer" /> : null}
       <MobileDrawerUserRow />
     </div>
   );

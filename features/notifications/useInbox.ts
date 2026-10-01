@@ -3,9 +3,12 @@
 /**
  * features/notifications/useInbox.ts — the ONE reader behind the shell Inbox.
  *
+ * Direct messages are NOT counted here (owner, 2026-09-30): Messages is its
+ * own header control with its own count (`MessagesHeaderButton`).
+ *
  * Two queries over the notification spine (unread count for the badge, the
- * recent list for the panel) plus the two counts the Inbox pins at the top
- * (conversations with unread messages, proposals waiting on this person), so
+ * recent list for the panel) plus the counts the Inbox pins at the top
+ * (proposals and work waiting on this person), so
  * the bell's number and the panel's rows can never disagree about what is new.
  *
  * FRESHNESS. `communication.notification` is not in the realtime publication
@@ -19,7 +22,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useConversations } from "@ai-matrx/messaging/react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { usePendingApprovalCount } from "@/features/approvals/usePendingApprovalCount";
@@ -47,8 +49,6 @@ const listKey = (userId: string | null) =>
 export interface InboxCounts {
   /** Delivered in-app notices with no read_at. `null` = the read failed. */
   notifications: number | null;
-  /** Conversations carrying unread messages (from the ONE messaging store). */
-  conversations: number;
   /** Proposals waiting on this person. `null` = the count could not be read. */
   approvals: number | null;
   /**
@@ -93,7 +93,6 @@ function useIdleReady(): boolean {
 /** The badge only — cheap enough for the header to mount everywhere. */
 export function useInboxCounts(): InboxCounts {
   const userId = useAppSelector(selectUserId);
-  const { totalUnreadConversations } = useConversations();
   const approvals = usePendingApprovalCount();
   const idleReady = useIdleReady();
   const workWaiting = useQuery({
@@ -123,13 +122,11 @@ export function useInboxCounts(): InboxCounts {
       : workByOrganization.reduce((sum, o) => sum + o.waiting, 0);
   return {
     notifications,
-    conversations: totalUnreadConversations,
     approvals: approvalCount,
     work,
     workByOrganization,
     total:
       (notifications ?? 0) +
-      totalUnreadConversations +
       (approvalCount ?? 0) +
       (work ?? 0),
     partial: notifications === null || approvalCount === null || work === null,

@@ -116,16 +116,12 @@ export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
         </div>
       </nav>
 
-      {/* Footer — admin section + Windows + Settings. Lives OUTSIDE the nav so it
-          is never hidden by the route-menu view switch (e.g. on /chat). */}
+      {/* Footer — admin section + Windows. Lives OUTSIDE the nav so it is never
+          hidden by the route-menu view switch (e.g. on /chat). Settings is the
+          account rail's first slot (ShellUserBlock), below this column. */}
       <div className="shell-sidebar-footer">
         <AdminSidebarSection />
         <SidebarWindowToggleIsland />
-        {settingsItem.children ? (
-          <NavFlyoutGroup item={settingsItem} candidates={activeCandidates} />
-        ) : (
-          <NavItem item={settingsItem} />
-        )}
       </div>
     </aside>
   );

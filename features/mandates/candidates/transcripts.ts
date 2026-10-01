@@ -24,7 +24,7 @@ export type TranscriptUnit =
   | { state: "error"; message: string }
   | { state: "ready"; unit: WalkUnitRef };
 
-async function findUnit(conversationId: string): Promise<TranscriptUnit> {
+export async function findTranscriptUnit(conversationId: string): Promise<TranscriptUnit> {
   const request = await supabase
     .schema("chat")
     .from("request")
@@ -61,7 +61,7 @@ export function useTranscriptUnit(conversationId: string | null | undefined): Tr
   useEffect(() => {
     if (!conversationId) return;
     let cancelled = false;
-    findUnit(conversationId)
+    findTranscriptUnit(conversationId)
       .catch((error: unknown): TranscriptUnit => ({
         state: "error",
         message: error instanceof Error ? error.message : String(error),

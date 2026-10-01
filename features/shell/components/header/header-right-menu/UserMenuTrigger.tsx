@@ -2,10 +2,7 @@
 
 import { User } from "lucide-react";
 import { UserData } from "@/utils/userDataMapper";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectShouldPromptForOrganization } from "@/lib/redux/slices/appContextSlice";
 import { ShellUserAvatarImage } from "./ShellUserAvatarImage";
-import { usePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 
 interface UserMenuTriggerProps {
   userData: UserData;
@@ -17,31 +14,15 @@ export default function UserMenuTrigger({
   userData,
   menuCheckboxId = "shell-user-menu",
 }: UserMenuTriggerProps) {
-  // Soft org enforcement: ring the avatar (primary, never alarm red — no org is a
-  // routine state, page-pass core 5) when no org is selected, nudging
-  // the user to choose one (alongside the in-header HeaderChooseOrgButton). Gated on
-  // the bootstrap-resolved flag so it never flashes red during boot before the
-  // default/personal org has resolved.
-  // The ring is the header nudge's twin: silent on an object page whose object names its
-  // organization (GATES-TAIL, VERIFIER-21 #7).
-  const objectOrganization = usePageObjectOrganization();
-  const promptForOrg =
-    useAppSelector(selectShouldPromptForOrganization) && objectOrganization === null;
-
   return (
     <label
       htmlFor={menuCheckboxId}
       aria-label="User menu"
       className="flex h-11 w-11 items-center justify-center bg-transparent transition-transform active:scale-95 cursor-pointer outline-none"
     >
-      <div
-        className={[
-          "relative flex h-8 w-8 items-center justify-center rounded-full transition-colors overflow-hidden",
-          promptForOrg
-            ? "ring-2 ring-primary ring-offset-1 ring-offset-[var(--shell-header-bg,transparent)]"
-            : "matrx-glass-thin-border",
-        ].join(" ")}
-      >
+      {/* No organization cue here: the organization has its own control
+          (ShellOrgSwitcher), which carries every organization state. */}
+      <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full transition-colors matrx-glass-thin-border">
         {userData?.userMetadata?.avatarUrl ? (
           <ShellUserAvatarImage
             src={userData?.userMetadata.avatarUrl}

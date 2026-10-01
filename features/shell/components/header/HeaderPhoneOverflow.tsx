@@ -11,10 +11,11 @@
  * this ONE button, which opens a bottom sheet holding all four — the same
  * controls, the same states, the same auth gates:
  *
- *   Search  → the ⌘K bar (the dock's Search door, too)
- *   Agents  → the page's agents panel, in this sheet
- *   Canvas  → open / put away; empty = disabled row that says why
- *   Inbox   → the inbox panel, in this sheet; the unread count rides the button
+ *   Search        → the ⌘K bar (the dock's Search door, too)
+ *   Intelligence  → the page's agents panel, in this sheet
+ *   Canvas        → open / put away; empty opens the canvas home
+ *   Messages      → the docked messages sheet; its unread count on the row
+ *   Notifications → the notifications panel, in this sheet
  *
  * The owner's header ruling (2026-09-19: "a consistent set … never hiding
  * things and only disabling when inactive") still holds per device: a phone
@@ -31,6 +32,7 @@ import {
   ChevronRight,
   EllipsisVertical,
   Layers,
+  MessageSquare,
   Search,
 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
@@ -47,11 +49,13 @@ import {
   AGENTS_AUTH_GATE,
   SurfaceAgentsPanelImpl,
 } from "@/features/surfaces/components/chrome/SurfaceAgentsHeaderButton";
-import {
-  CANVAS_EMPTY_TOOLTIP,
-  useCanvasHeaderToggle,
-} from "@/features/canvas/core/CanvasHeaderToggle";
+import { useCanvasHeaderToggle } from "@/features/canvas/core/CanvasHeaderToggle";
 import { INBOX_AUTH_GATE } from "@/features/notifications/components/InboxHeaderButton";
+import {
+  MESSAGES_AUTH_GATE,
+  useToggleMessages,
+  useUnreadConversationCount,
+} from "@/features/messaging/components/shell/MessagesHeaderButton";
 import { InboxPanel } from "@/features/notifications/components/InboxPanel";
 import { useInboxCounts } from "@/features/notifications/useInbox";
 import { cn } from "@/lib/utils";
@@ -112,7 +116,7 @@ function CountBadge({ count }: { count: number }) {
   );
 }
 
-const TRIGGER_LABEL = "Search, agents, canvas and inbox";
+const TRIGGER_LABEL = "Search, intelligence, canvas, messages and notifications";
 
 /**
  * 🚨 THE UNREAD MARK NEVER SITS ON THE ⋮ (page-pass shared defects,
@@ -124,7 +128,7 @@ const TRIGGER_LABEL = "Search, agents, canvas and inbox";
  */
 function OverflowTrigger({ onOpen, unread }: { onOpen: () => void; unread: number }) {
   const label =
-    unread > 0 ? `${TRIGGER_LABEL} — ${unread > 99 ? "99+" : unread} new in the inbox` : TRIGGER_LABEL;
+    unread > 0 ? `${TRIGGER_LABEL} — ${unread > 99 ? "99+" : unread} new` : TRIGGER_LABEL;
   return (
     <>
       <TapTargetButton icon={<EllipsisVertical />} ariaLabel={label} onClick={onOpen} />
@@ -141,7 +145,12 @@ function OverflowTrigger({ onOpen, unread }: { onOpen: () => void; unread: numbe
 
 function SignedInOverflowTrigger({ onOpen }: { onOpen: () => void }) {
   const counts = useInboxCounts();
-  return <OverflowTrigger onOpen={onOpen} unread={counts.total} />;
+  const messages = useUnreadConversationCount();
+  return <OverflowTrigger onOpen={onOpen} unread={counts.total + messages} />;
+}
+
+function MessagesRowTrailing() {
+  return <CountBadge count={useUnreadConversationCount()} />;
 }
 
 function InboxRowTrailing() {
@@ -248,6 +257,7 @@ export function HeaderPhoneOverflow({
   const openSearch = useOpenBarOrGate(isAuthenticated);
   const openAuthGate = useOpenAuthGateDialog();
   const canvas = useCanvasHeaderToggle();
+  const toggleMessages = useToggleMessages();
   const pageActions = usePhonePageActions();
 
   // The persistent node route headers portal their actions into (see
@@ -300,7 +310,7 @@ export function HeaderPhoneOverflow({
     canvas.itemCount === 0 ? "empty" : canvas.isOpen ? "open" : "closed";
 
   const title =
-    view === "agents" ? "Agents" : view === "inbox" ? "Inbox" : "More";
+    view === "agents" ? "Intelligence" : view === "inbox" ? "Notifications" : "More";
 
   return (
     <div className="shell-header-overflow relative shrink-0" data-header-phone-overflow>
@@ -338,7 +348,7 @@ export function HeaderPhoneOverflow({
               />
               <Row
                 icon={<INTELLIGENCE_ICON className="h-5 w-5 text-primary" />}
-                label="Agents for this page"
+                label="Intelligence"
                 onClick={() => {
                   if (!isAuthenticated) {
                     close();
@@ -359,18 +369,29 @@ export function HeaderPhoneOverflow({
                         ? `Open canvas — ${canvas.headlineTitle}`
                         : "Canvas"
                   }
-                  detail={canvasState === "empty" ? CANVAS_EMPTY_TOOLTIP : undefined}
-                  disabled={canvasState === "empty"}
                   onClick={() => {
                     close();
-                    if (canvasState === "open") canvas.putAway();
+                    if (canvas.isOpen) canvas.putAway();
                     else canvas.reopen();
                   }}
                 />
               ) : null}
               <Row
+                icon={<MessageSquare className="h-5 w-5" />}
+                label="Messages"
+                onClick={() => {
+                  close();
+                  if (!isAuthenticated) {
+                    openAuthGate(MESSAGES_AUTH_GATE);
+                    return;
+                  }
+                  toggleMessages();
+                }}
+                trailing={isAuthenticated ? <MessagesRowTrailing /> : undefined}
+              />
+              <Row
                 icon={<Bell className="h-5 w-5" />}
-                label="Inbox"
+                label="Notifications"
                 onClick={() => {
                   if (!isAuthenticated) {
                     close();

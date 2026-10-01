@@ -32,6 +32,11 @@ import {
   UserMessageVariables,
 } from "./FirstTurnVariables";
 import { ContextPolicyChipStrip } from "@/features/agents/components/context-policies-display/ContextPolicyChipStrip";
+import { MessageContextReceipt } from "@/features/agents/components/context-policies-display/MessageContextReceipt";
+import {
+  selectMessageContextMismatches,
+  selectMessageContextReceipt,
+} from "@/features/agents/redux/execution-system/messages/message-context-receipt";
 import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
 import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
 import {
@@ -236,6 +241,15 @@ export function AgentUserMessage({
   //      by execute-instance.thunk. Used ONLY when `modelContext` is entirely
   //      absent (otherwise the authoritative record always wins).
   // Absent both → render no chips (honest).
+  // The server's receipt for this turn wins over both: it is what the server
+  // DID, not what the client sent (RULES.md §5). The snapshot below stays
+  // only for turns written before receipts existed.
+  const contextReceipt = useAppSelector(
+    useMemo(() => selectMessageContextReceipt(conversationId, messageId), [conversationId, messageId]),
+  );
+  const contextMismatches = useAppSelector(
+    useMemo(() => selectMessageContextMismatches(conversationId, messageId), [conversationId, messageId]),
+  );
   const modelContext = record?.modelContext;
   const ambientEntries: InstanceContextEntry[] = (
     modelContext?.items ?? []
@@ -501,7 +515,14 @@ export function AgentUserMessage({
                 Items (13)" strip is the same leak as a tool card, one bubble
                 higher (cold walk 2026-09-16, finding #2's family). Creator mode
                 still shows it. See ../../shared/transcript-audience.tsx. */}
-            {machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (
+            {machineFramesVisible && contextReceipt && (contextReceipt.rows?.length ?? 0) > 0 ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <MessageContextReceipt
+                  receipt={contextReceipt}
+                  mismatches={contextMismatches}
+                />
+              </div>
+            ) : machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (
               <ContextPolicyChipStrip
                 conversationId={conversationId}
                 agentId={agentId}

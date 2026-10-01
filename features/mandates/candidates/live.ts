@@ -85,31 +85,68 @@ export function useHeartbeat(active: boolean, intervalMs: number, beat: () => Pr
   useEffect(() => {
     if (!active) return;
     let stopped = false;
+    let inFlight = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const schedule = () => {
       if (stopped) return;
+      if (timer) clearTimeout(timer);
       timer = setTimeout(tick, intervalMs);
     };
     const tick = async () => {
-      if (stopped) return;
-      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+      timer = null;
+      if (stopped || inFlight) return;
+      if (isHidden()) {
         schedule();
         return;
       }
+      inFlight = true;
       try {
         await beatRef.current();
       } catch (error: unknown) {
         // The screen's own read reports its failure; the beat keeps going.
         console.warn("[mandate candidates] heartbeat read failed:", error);
+      } finally {
+        inFlight = false;
       }
       schedule();
     };
+    // V2 N1: a page that comes back into view reads NOW. A hidden page skips
+    // its beats (and the browser throttles its timers to about one a minute),
+    // so without this a screen showed a stale "Collecting" card for up to a
+    // minute after the person returned to it.
+    const onVisible = () => {
+      if (!isHidden() && !inFlight) void tick();
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisible);
     schedule();
     return () => {
       stopped = true;
       if (timer) clearTimeout(timer);
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisible);
     };
   }, [active, intervalMs]);
+}
+
+function isHidden(): boolean {
+  return typeof document !== "undefined" && document.visibilityState === "hidden";
+}
+
+// ── What keeps a screen re-reading (V2 N1) ───────────────────────────────────
+// A candidate is terminal-for-now once it is ready, promoted, discarded or
+// cancelled. Until then — even when every pair is in, because the judge's
+// verdict and the server's recompute (status, recommendation, its reason) land
+// after the last pair completes — every screen that shows it keeps re-reading.
+// "All pairs in" is never the stop signal: it left a "2 of 2 in · Collecting"
+// card with the previous recommendation on screen.
+
+/** True while the candidate can still change by itself. */
+export function candidateStillMoving(status: string | null | undefined): boolean {
+  return status === "collecting";
+}
+
+/** True while one pair can still change by itself. */
+export function pairStillMoving(status: string | null | undefined): boolean {
+  return status === "queued" || status === "running";
 }
 
 // ── The list cells' shared live read ─────────────────────────────────────────
@@ -166,15 +203,30 @@ function scheduleCells(): void {
   cellTimer = setTimeout(async () => {
     cellTimer = null;
     if (watched.size === 0) return;
-    if (typeof document === "undefined" || document.visibilityState !== "hidden") {
-      try {
-        publishCells(await fetchCandidateCells([...watched.keys()]));
-      } catch (error: unknown) {
-        console.warn("[mandate candidates] list counts not refreshed:", error);
-      }
-    }
+    if (!isHidden()) await readCellsNow();
     scheduleCells();
   }, cellIntervalMs);
+}
+
+let cellReading = false;
+
+async function readCellsNow(): Promise<void> {
+  if (cellReading || watched.size === 0) return;
+  cellReading = true;
+  try {
+    publishCells(await fetchCandidateCells([...watched.keys()]));
+  } catch (error: unknown) {
+    console.warn("[mandate candidates] list counts not refreshed:", error);
+  } finally {
+    cellReading = false;
+  }
+}
+
+// The list cells' timer catches up the moment the page is seen again (V2 N1).
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (!isHidden() && watched.size > 0) void readCellsNow();
+  });
 }
 
 function watchCell(mandateId: string, intervalMs: number): () => void {
@@ -196,7 +248,7 @@ export function useLiveCandidateCell(
   mandateId: string | null,
   listCell: MandateCandidateCell | null | undefined,
 ): MandateCandidateCell | null | undefined {
-  const pollMs = useCandidatePollMs(listCell?.status === "collecting");
+  const pollMs = useCandidatePollMs(candidateStillMoving(listCell?.status));
   const entry = useSyncExternalStore(
     subscribeCells,
     () => (mandateId ? liveCells.get(mandateId) : undefined),
@@ -214,7 +266,7 @@ export function useLiveCandidateCell(
     setSeenAt(cellVersion);
   }
   const live = entry && entry.version > seenAt ? entry.cell : listCell;
-  const collecting = Boolean(mandateId) && live?.status === "collecting";
+  const collecting = Boolean(mandateId) && candidateStillMoving(live?.status);
   useEffect(() => {
     if (!collecting || !mandateId) return;
     return watchCell(mandateId, pollMs);

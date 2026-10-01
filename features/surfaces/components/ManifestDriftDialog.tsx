@@ -297,7 +297,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 tone="rose"
                 // Stale = a removed target, or a sync from a branch whose manifest never merged.
                 description="Stale — read before any global sweep; it hits in-flight work"
-                hint={`"Archive stale rows" hits work still in flight; a later sync restores it. Rows from the last ${RECENT_ROW_WINDOW_HOURS}h need a second confirm.`}
+                hint={`"Archive stale rows" also takes in-flight work (a later sync restores it); rows under ${RECENT_ROW_WINDOW_HOURS}h old need a second confirm.`}
               >
                 {report.dbWriteTargetsNotInManifest.map((d) => (
                   <DriftRow
@@ -784,7 +784,7 @@ function DeleteMirrorRowButton({
           from <code className="font-mono">ui.{table}</code>?
         </p>
         <p className="text-muted-foreground">
-          Only this row goes to Trash; a re-sync restores it.
+          Only this row goes to Trash; a sync that declares it again restores it.
         </p>
         {cascades && (
           <p className="text-destructive flex items-start gap-1">

@@ -26,7 +26,6 @@ import { OutputKindPicker } from "./OutputKindPicker";
 import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import { createMandate, type DraftInput } from "./service";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { InfoHint } from "@/components/official/InfoHint";
 import {
   keyTakenSentence,
   keyUnknownSentence,
@@ -372,12 +371,7 @@ export function NewMandatePage() {
         <Section
           title="Goal"
           hint="what it must achieve"
-          actions={
-            <InfoHint
-              label="About the goal"
-              text="Agents turn this goal into the system prompt and the grading rubric."
-            />
-          }
+          info="Agents turn this goal into the system prompt and the grading rubric."
         >
           <div className="rounded-xl border border-primary/25 bg-card p-4">
             <ProTextarea

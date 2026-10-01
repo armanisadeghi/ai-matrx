@@ -153,3 +153,63 @@ export function sharedInputsLine(
   }
   return { text: "Shared inputs identical", tone: "same" };
 }
+
+// ── THE DECISION CONFIRMATIONS (V2 N3) ───────────────────────────────────────
+// Promote changes what runs for every real run, so it always asks first —
+// naming what goes live in place of what — on every surface that offers it
+// (the Candidates tab and the summary record). A Reject or Hold recommendation
+// is said plainly in the same dialog, never left on the card behind it. Put
+// back and Discard ask in the same shape. One builder per decision so the two
+// surfaces can never word the same choice two ways.
+
+export interface DecisionWords {
+  title: string;
+  description: string;
+  confirmLabel: string;
+}
+
+export interface DecisionSubject {
+  candidateName: string;
+  /** What runs now; null when nothing does. */
+  baselineName: string | null;
+  recommendation: Recommendation | null | undefined;
+  /** Pairs with a judge verdict. */
+  judged: number;
+  /** The job's name, when the surface does not already show it. */
+  mandateName?: string | null;
+}
+
+export function promoteConfirmation(subject: DecisionSubject): DecisionWords {
+  const baseline = subject.baselineName ?? "what runs now";
+  const lead = `${subject.candidateName} replaces ${baseline} for every real run.`;
+  if (subject.recommendation === "reject") {
+    return { title: "Promote a rejected candidate?", description: `${lead} The review said reject.`, confirmLabel: "Promote anyway" };
+  }
+  if (subject.recommendation === "hold") {
+    return { title: "Promote before the review is sure?", description: `${lead} The review said hold.`, confirmLabel: "Promote anyway" };
+  }
+  const evidence =
+    subject.judged === 0
+      ? "No run has been judged yet."
+      : `Based on ${subject.judged} judged run${subject.judged === 1 ? "" : "s"}.`;
+  const title = subject.mandateName ? `Make the candidate live for ${subject.mandateName}?` : "Make the candidate live?";
+  return { title, description: `${lead} ${evidence}`, confirmLabel: "Promote" };
+}
+
+export function putBackConfirmation(subject: Pick<DecisionSubject, "candidateName" | "baselineName">): DecisionWords {
+  const baseline = subject.baselineName ?? "What ran before";
+  return {
+    title: "Put back what ran before?",
+    description: `${baseline} goes live again for every real run, replacing ${subject.candidateName}.`,
+    confirmLabel: "Put back",
+  };
+}
+
+export function discardConfirmation(subject: Pick<DecisionSubject, "baselineName">): DecisionWords {
+  const baseline = subject.baselineName ?? "what runs now";
+  return {
+    title: "Discard this candidate?",
+    description: `Its runs stop now and ${baseline} stays live. The recorded runs are kept.`,
+    confirmLabel: "Discard",
+  };
+}

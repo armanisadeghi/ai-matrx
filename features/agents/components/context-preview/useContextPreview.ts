@@ -24,11 +24,19 @@ import { selectScopeSelectionsContext } from "@/lib/redux/slices/appContextSlice
 import { selectConversationScopeIds } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { extractErrorMessage } from "@/utils/errors";
 import type { components } from "@/types/python-generated/api-types";
+import type { ContextReceiptData } from "@/types/python-generated/stream-events";
 
 export type ContextSelection = components["schemas"]["ContextSelection"];
 
+/**
+ * `receipt` — the context receipt the run path's gate would produce for this
+ * turn (aidream `conversation_context/preview.py`, RULES.md §5). Not yet in
+ * the generated api-types; drop the intersection once they are regenerated.
+ */
 export type ContextPreviewResponse =
-  components["schemas"]["ContextPreviewResponse"];
+  components["schemas"]["ContextPreviewResponse"] & {
+    receipt?: ContextReceiptData | null;
+  };
 
 export type ContextPreviewStatus = "idle" | "loading" | "ready" | "error";
 

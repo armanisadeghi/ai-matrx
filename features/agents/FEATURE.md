@@ -886,6 +886,19 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 
 ## Change log
 
+- `2026-09-30` — **A sent message shows what the server did with its context.** The user
+  bubble's context tile now opens a read-only `ContextRulesTable` built from that turn's
+  `context_receipt` (common-docs context-delivery RULES.md §5): one door,
+  `selectMessageContextReceipt` (`redux/execution-system/messages/message-context-receipt.ts`) —
+  the persisted `model_context.delivery.receipt` first (kept by `messageRowToRecord`), else the
+  live receipt of the request THIS message was sent with (`_requestId` stamped at the optimistic
+  submit; the messages slice copies the receipt onto that row on `setContextReceipt`, so turn 1
+  keeps its own after turn 2 streams). A database-loaded row has no request link, so it never
+  borrows a newer turn's receipt. Turns written before receipts keep the snapshot tiles, which no
+  longer read live values anywhere (`resolveContextEntryValue` / `contextPolicyEntryPreview` lost
+  their live-value parameter). The context preview panel shows the preview's `receipt` the same
+  way. Tests: `messages/__tests__/a-sent-message-shows-its-own-context-receipt.test.ts`,
+  `context-policies-display/__tests__/a-sent-message-context-shows-the-receipt.test.tsx`.
 - `2026-09-17` — **"Save as template" files the template in the organization the
   person is acting in.** All 11 live `agent.template` rows sat in their
   creator's personal organization —

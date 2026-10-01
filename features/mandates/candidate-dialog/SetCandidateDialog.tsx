@@ -142,6 +142,10 @@ function SetCandidateBody({
   const liveRung = followLiveRung
     ? liveRungOf(live.holder?.provenance ?? null, live.holder?.organizationId ?? activeOrgId, userId)
     : null;
+  // V2 D18: until the live holder's rung is known the picker shows no rung at
+  // all (and Start waits) — never the seat's rung for a beat before the read
+  // lands, which painted the wrong level and could be confirmed in that beat.
+  const liveRungPending = followLiveRung && live.loading;
   const initialRung = liveRung ?? seatRung;
   const [picked, setRung] = useState<CandidateRungChoice | null>(null);
   const rung = picked ?? initialRung;
@@ -152,18 +156,10 @@ function SetCandidateBody({
   const [refusal, setRefusal] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // The rungs this seat can name: the one it is viewing, Everyone, the
-  // viewer's own, and the active organization's. The server decides rights.
-  const rungChoices = useMemo(() => {
-    const out: CandidateRungChoice[] = [initialRung, seatRung];
-    const add = (choice: CandidateRungChoice) => {
-      if (!out.some((c) => c.rung === choice.rung)) out.push(choice);
-    };
-    add({ rung: "global", principalId: null });
-    if (activeOrgId) add({ rung: "org", principalId: activeOrgId });
-    if (userId) add({ rung: "user", principalId: userId });
-    return [...out].sort((a, b) => RUNG_ORDER.indexOf(a.rung) - RUNG_ORDER.indexOf(b.rung));
-  }, [initialRung, seatRung, activeOrgId, userId]);
+  const rungChoices = useMemo(
+    () => rungChoicesOf([initialRung, seatRung], activeOrgId, userId),
+    [initialRung, seatRung, activeOrgId, userId],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -264,25 +260,22 @@ function SetCandidateBody({
       <div className="grid gap-x-3 gap-y-2 sm:grid-cols-[9.5rem_minmax(0,1fr)] sm:items-center">
         <span className="text-[12px] font-medium">Applies to</span>
         <Select
-          value={`${rung.rung}:${rung.principalId ?? ""}`}
+          value={liveRungPending ? "" : rungValue(rung)}
           onValueChange={(value) => {
-            const found = rungChoices.find((c) => `${c.rung}:${c.principalId ?? ""}` === value);
+            const found = rungChoices.find((c) => rungValue(c) === value);
             if (found) {
               setRung(found);
               setRefusal(null);
             }
           }}
-          disabled={busy}
+          disabled={busy || liveRungPending}
         >
-          <SelectTrigger className="h-9 w-full max-w-[22rem]" aria-label="Applies to">
-            <SelectValue />
+          <SelectTrigger className="h-9 w-full max-w-[22rem]" aria-label="Applies to" aria-busy={liveRungPending || undefined}>
+            <SelectValue placeholder={liveRungPending ? "Finding the live level…" : undefined} />
           </SelectTrigger>
           <SelectContent>
             {rungChoices.map((choice) => (
-              <SelectItem
-                key={`${choice.rung}:${choice.principalId ?? ""}`}
-                value={`${choice.rung}:${choice.principalId ?? ""}`}
-              >
+              <SelectItem key={rungValue(choice)} value={rungValue(choice)}>
                 {RUNG_LABEL[choice.rung]}
                 {liveRung && sameRung(liveRung, choice) ? " · live" : ""}
               </SelectItem>
@@ -291,8 +284,8 @@ function SetCandidateBody({
         </Select>
 
         <span className="hidden sm:block" />
-        <span className="text-[11px] text-muted-foreground" data-candidate-rung-collects>
-          {RUNG_COLLECTS[rung.rung]}
+        <span className="min-h-4 text-[11px] text-muted-foreground" data-candidate-rung-collects>
+          {liveRungPending ? null : RUNG_COLLECTS[rung.rung]}
         </span>
 
         <label htmlFor="candidate-runs" className="text-[12px] font-medium">
@@ -329,7 +322,7 @@ function SetCandidateBody({
         <Button
           type="button"
           data-testid="set-candidate-confirm"
-          disabled={!holder || busy || Boolean(knownRefusal) || runsInvalid}
+          disabled={!holder || busy || Boolean(knownRefusal) || runsInvalid || liveRungPending}
           onClick={() => void confirm()}
         >
           {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
@@ -342,6 +335,32 @@ function SetCandidateBody({
 
 function sameRung(a: CandidateRungChoice, b: CandidateRungChoice): boolean {
   return a.rung === b.rung && (a.principalId ?? null) === (b.principalId ?? null);
+}
+
+function rungValue(choice: CandidateRungChoice): string {
+  return `${choice.rung}:${choice.principalId ?? ""}`;
+}
+
+/**
+ * The rungs this seat can name: the live one, the one it is viewing, Everyone,
+ * the viewer's own, and the active organization's — each ONCE (V2 D18: the live
+ * rung and the seat's rung were both pushed when they were the same, and two
+ * items with one value rendered "PersonalPersonal"). The server decides rights.
+ */
+export function rungChoicesOf(
+  first: readonly CandidateRungChoice[],
+  activeOrgId: string | null | undefined,
+  userId: string | null | undefined,
+): CandidateRungChoice[] {
+  const out: CandidateRungChoice[] = [];
+  const add = (choice: CandidateRungChoice) => {
+    if (!out.some((c) => c.rung === choice.rung)) out.push(choice);
+  };
+  first.forEach(add);
+  add({ rung: "global", principalId: null });
+  if (activeOrgId) add({ rung: "org", principalId: activeOrgId });
+  if (userId) add({ rung: "user", principalId: userId });
+  return out.sort((a, b) => RUNG_ORDER.indexOf(a.rung) - RUNG_ORDER.indexOf(b.rung));
 }
 
 /** P17 — the honest forecast: which doors ran lately, how many could feed it. */

@@ -255,7 +255,7 @@ function BindingPreviewCard({
 // headless-for-text"). The window renders it through the ONE pipeline, streams
 // live, survives navigation, and the person can keep talking.
 
-function TryItBody({ agent, agentId }: { agent: KitAgent; agentId: string }) {
+function TryItBody({ agent, agentId, agentName }: { agent: KitAgent; agentId: string; agentName: string }) {
   const openRunWindow = useOpenAgentRunWindow();
   const tryIt = agent.try_it ?? {};
   const vars = Object.entries(tryIt.variables ?? {});
@@ -263,7 +263,7 @@ function TryItBody({ agent, agentId }: { agent: KitAgent; agentId: string }) {
   const run = () => {
     openRunWindow({
       initialAgentId: agentId,
-      initialAgentName: agent.name,
+      initialAgentName: agentName,
       ...(tryIt.user_input ? { initialDraftText: tryIt.user_input } : {}),
       ...(vars.length > 0 ? { initialVariableValues: tryIt.variables } : {}),
       initialAutoRun: true,
@@ -294,6 +294,33 @@ function TryItBody({ agent, agentId }: { agent: KitAgent; agentId: string }) {
   );
 }
 
+/** Names of these agent rows, by id (RLS read as the person). */
+function useAgentNames(ids: string[]): Record<string, string> {
+  const key = [...ids].sort().join(",");
+  const [names, setNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!key) return;
+    let cancelled = false;
+    void createClient()
+      .schema("agent")
+      .from("definition")
+      .select("id, name")
+      .in("id", key.split(","))
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.error("[kits] could not read the installed agents' names", error.message);
+          return;
+        }
+        setNames(Object.fromEntries((data ?? []).map((r) => [r.id, r.name])));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [key]);
+  return names;
+}
+
 // ─── the page ───────────────────────────────────────────────────────────────
 
 export function KitInstalled({ kit }: { kit: KitEntry }) {
@@ -315,6 +342,8 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
   const install = selected?.install ?? null;
   // What an install shows and does is in ITS OWN organization.
   const orgId = selected?.organizationId ?? null;
+  // The copies' REAL names ("My Org Chart 3" when the manifest name was taken), read from the rows.
+  const agentNames = useAgentNames(Object.values(install?.steps.agents ?? {}));
   const orgNameOf = (id: string) => organizations.find((o) => o.id === id)?.name ?? "Organization";
   const detailHref = (organizationId: string | null) =>
     `${KIT_ROUTES.detail(m.key)}${organizationId ? `?org_filter=${encodeURIComponent(organizationId)}` : ""}`;
@@ -424,7 +453,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                 <Panel
                   key={a.key}
                   icon={<AGENT_ICON className="h-4 w-4 shrink-0 text-primary" />}
-                  title={a.name}
+                  title={agentNames[id] ?? a.name}
                   aside={
                     <Link href={KIT_ROUTES.agent(id)} className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline">
                       Open agent
@@ -454,7 +483,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                       </div>
                     </>
                   )}
-                  <TryItBody agent={a} agentId={id} />
+                  <TryItBody agent={a} agentId={id} agentName={agentNames[id] ?? a.name} />
                 </Panel>
               );
             })}

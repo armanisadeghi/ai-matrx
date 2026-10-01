@@ -705,9 +705,6 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                   })
                 }
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Be specific about the main purpose and goals
-              </p>
             </div>
             )}
 

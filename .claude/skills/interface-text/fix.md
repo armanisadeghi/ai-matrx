@@ -43,6 +43,11 @@ You were given one batch: files, findings, and the exact replacement for each. Y
 | `truncate` on a line that carries a formatted number | Let number lines wrap — truncation hides the value |
 | A link to another page removed with the prose | Keep it as a plain link, or name the removal in the commit |
 | Text deleted, its container kept (a lone icon row floating at the top of a page) | Remove the wrapper when the text was all it held |
+| Commit list built from `git diff -- <folder>` swept another fixer's uncommitted files into your commit (round 2) | Stage exactly your batch's `files` list by path, nothing derived from the working tree |
+| Shortening dropped one list item or the punctuation its siblings use; cut a joining dash so text runs into a variable | Keep every item and the siblings' punctuation; keep separators around `{values}` |
+| The line left under a heading only repeats the heading | Merge them into one heading |
+| Fixed the empty state in a window but not the identical one on its page | Grep the old text and fix every copy |
+| zsh: a variable holding several paths is passed as ONE argument | Pass `$(git show --name-only --format= <sha>)` or an array |
 | A tooltip as a native `title=` on text | Use `components/official/InfoHint` (hover, keyboard **and** touch); `KpiTile`'s `title` renders through it |
 
 ## Recipes
@@ -61,7 +66,8 @@ You were given one batch: files, findings, and the exact replacement for each. Y
 ```bash
 node scripts/interface-text/check-interface-text.mjs <your files>      # no NOVEL on your lines
 pnpm check:parse                                                        # matrx-frontend
-pnpm tsc --noEmit -p tsconfig.typecheck.json  # only if you changed props/components; use the queue
+# no per-batch type-check: the round owner runs ONE `pnpm type-check` after every batch lands
+# (round 2: ~31 concurrent tsc runs on one Mac killed each other — exit 143)
 ```
 
 Commit only your files by pathspec:

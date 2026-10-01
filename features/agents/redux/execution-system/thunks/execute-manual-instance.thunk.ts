@@ -79,7 +79,7 @@ import {
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
-import type { RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type {
   ChatRequestPayload,
   SystemInstruction,
@@ -654,7 +654,8 @@ export const executeManualInstance = createAsyncThunk<
     try {
       // Saved context rules loaded and no rule write in flight before the
       // snapshot the request is built from (RULES.md §3).
-      await dispatch(ensureContextRulesReady());
+      // This thunk's generics carry no typed dispatch; the store's is the real one.
+      await (dispatch as AppDispatch)(ensureContextRulesReady());
       const state = getState() as RootState;
       const instance = state.conversations.byConversationId[conversationId];
       if (!instance) {

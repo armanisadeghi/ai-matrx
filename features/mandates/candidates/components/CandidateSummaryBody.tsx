@@ -41,6 +41,9 @@ import {
   attemptWord,
   runOutcomeWord,
   skipWord,
+  discardConfirmation,
+  promoteConfirmation,
+  putBackConfirmation,
 } from "../words";
 import { CandidateHolderName } from "./CandidateHolderName";
 import { Chip, NewTabLink, StateLine, detailPageHref } from "./parts";
@@ -241,8 +244,18 @@ function Decisions({
   if (!open && !putBack) return null;
 
   const mandate = mandateDisplayName(storedMandateKey(candidate.mandate_key));
-  const baseline = candidate.baseline_holder_name ?? "what runs now";
   const judged = runs.filter((r) => r.status === "completed" && r.verdict).length;
+  const subject = {
+    candidateName: candidate.holder_name,
+    baselineName: candidate.baseline_holder_name ?? null,
+    recommendation: candidate.recommendation,
+    judged,
+    mandateName: mandate,
+  };
+  const promoteWords = promoteConfirmation(subject);
+  const promoteWarns = candidate.recommendation === "reject" || candidate.recommendation === "hold";
+  const putBackWords = putBackConfirmation(subject);
+  const discardWords = discardConfirmation(subject);
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -312,14 +325,8 @@ function Decisions({
             setVersions(null);
           }
         }}
-        title={versions ? "Which version goes live?" : `Make the candidate live for ${mandate}?`}
-        description={
-          versions
-            ? "The runs used different versions. Pick the one you compared."
-            : `${candidate.holder_name} replaces ${baseline} for every real run. ${
-                judged === 0 ? "No run has been judged yet." : `Based on ${judged} judged run${judged === 1 ? "" : "s"}.`
-              }`
-        }
+        title={versions ? "Which version goes live?" : promoteWords.title}
+        description={versions ? "The runs used different versions. Pick the one you compared." : promoteWords.description}
         content={
           versions ? (
             <div className="space-y-1.5" role="radiogroup" aria-label="Version">
@@ -347,7 +354,8 @@ function Decisions({
             </div>
           ) : undefined
         }
-        confirmLabel="Promote"
+        confirmLabel={versions ? "Promote" : promoteWords.confirmLabel}
+        variant={versions || !promoteWarns ? undefined : "destructive"}
         busy={busy}
         confirmDisabled={versions !== null && !chosenVersion}
         onConfirm={doPromote}
@@ -356,9 +364,9 @@ function Decisions({
       <ConfirmDialog
         open={pending === "discard"}
         onOpenChange={(next) => !next && setPending(null)}
-        title="Discard this candidate?"
-        description={`Its runs stop now and ${baseline} stays live. The recorded runs are kept.`}
-        confirmLabel="Discard"
+        title={discardWords.title}
+        description={discardWords.description}
+        confirmLabel={discardWords.confirmLabel}
         variant="destructive"
         busy={busy}
         onConfirm={() =>
@@ -373,9 +381,9 @@ function Decisions({
       <ConfirmDialog
         open={pending === "put-back"}
         onOpenChange={(next) => !next && setPending(null)}
-        title="Put back what ran before?"
-        description={`${baseline} goes live again for every real run, replacing ${candidate.holder_name}.`}
-        confirmLabel="Put back"
+        title={putBackWords.title}
+        description={putBackWords.description}
+        confirmLabel={putBackWords.confirmLabel}
         busy={busy}
         onConfirm={() =>
           run(async () => {

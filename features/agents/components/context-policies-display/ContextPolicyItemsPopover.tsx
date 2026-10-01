@@ -7,7 +7,7 @@
  * Click → popover list; row click → detail sheet.
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Boxes } from "lucide-react";
 import {
   Popover,
@@ -15,8 +15,6 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import type {
   ContextObjectType,
   ContextPolicy,
@@ -52,16 +50,6 @@ export function ContextPolicyItemsPopover({
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] =
     useState<InstanceContextEntry | null>(null);
-
-  const selectLiveEntries = useMemo(
-    () => selectInstanceContextEntries(conversationId),
-    [conversationId],
-  );
-  const liveEntries = useAppSelector(selectLiveEntries);
-  const liveValueByKey = useMemo(
-    () => new Map(liveEntries.map((e) => [e.key, e.value])),
-    [liveEntries],
-  );
 
   const count = entries.length;
 
@@ -105,11 +93,8 @@ export function ContextPolicyItemsPopover({
                 "Context";
               const label =
                 contextEntryLabel(entry, policy?.label);
-              const preview = contextPolicyEntryPreview(
-                entry,
-                type,
-                liveValueByKey.get(entry.key),
-              );
+              // The snapshot only — a sent turn never shows today's value.
+              const preview = contextPolicyEntryPreview(entry, type);
 
               return (
                 <button
@@ -152,6 +137,8 @@ export function ContextPolicyItemsPopover({
           agentId={agentId}
           contextKey={selectedEntry.key}
           snapshotValue={selectedEntry.value}
+          snapshotLabel={selectedEntry.label}
+          snapshotType={selectedEntry.type}
         />
       )}
     </>

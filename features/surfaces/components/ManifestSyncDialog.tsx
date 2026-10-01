@@ -165,8 +165,8 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
                   {previewStale !== null && ` (${previewStale})`}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Moves rows no manifest declares to Trash, with their agent
-                  choices. A later sync that declares them restores them.
+                  Moves values, roles, write targets and client tools no
+                  manifest declares to Trash; roles take their agent choices.
                 </p>
               </div>
             </label>

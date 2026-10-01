@@ -11,7 +11,7 @@
 //
 // An object page DECLARES the organization its object lives in with
 // `useDeclarePageObjectOrganization`, and the header's one org control
-// (`HeaderChooseOrgButton`) reads the declaration instead of warning:
+// (`ShellOrgSwitcher`) reads the declaration instead of warning:
 //   - the page already names the organization on screen (`shownByPage`) → the header shows
 //     nothing (never the same name twice);
 //   - the object lives in the organization the person is working in → nothing;

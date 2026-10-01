@@ -24,9 +24,11 @@
  *                      EXISTING schedule engine at `/schedules/new`
  *   8. Review        → the exact facts, then Run
  *
- * Execution is `launchAgentExecution` through `useAgentLauncher` — the ONE
- * agent execution path — so the run leaves a canonical conversation with all
- * the normal doors. The run streams in the floating `LiveRunWindow` (never a
+ * Execution is `useAiWorkRun`: the managed `useAgentLauncher` instance from
+ * mount (so every picker above has its slots) and `smartExecute` on Run — the
+ * same path every SmartAgentInput host sends through — so the run leaves a
+ * canonical conversation with all the normal doors. The Context step carries
+ * `ConversationContextChip` (every value the turn carries) and its full view. The run streams in the floating `LiveRunWindow` (never a
  * spinner, never a block at the top of the page that shifts what the user is
  * reading), and the conversation stays reachable at `/chat/<id>`.
  */
@@ -47,7 +49,14 @@ import { Input } from "@ai-matrx/design-system";
 import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAiWorkRun } from "../useAiWorkRun";
+import {
+  ConversationContextChip,
+  useConversationContextChipShown,
+} from "@/features/agents/components/inputs/smart-input/ConversationContextChip";
+import { ContextRulesPanel } from "@/features/agents/components/context-policies-display/ContextRulesPanel";
+import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextPreviewPanel";
+import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { RunSkillPicker } from "@/features/agents/components/inputs/smart-input/RunSkillPicker";
 import { SmartAgentResourcePickerButton } from "@/features/agents/components/inputs/resources/SmartAgentResourcePickerButton";
@@ -180,12 +189,16 @@ function ComposerBody({
   // ── The run's identity. Managed mode mints ONE stable conversation id for
   //    this composer + agent pair, which is what every canonical per-run picker
   //    below binds to. The row itself is created server-side on the first turn.
-  const { conversationId, launchAgent } = useAgentLauncher(agentId, {
-    surfaceKey: `ai-work-composer:${agentId}`,
-    sourceFeature: "chat",
-    apiEndpointMode: "agent",
-    ready: false,
-  });
+  //    The instance exists from mount (see useAiWorkRun) so everything the
+  //    person attaches before Run is still there when the run executes.
+  const { conversationId, send } = useAiWorkRun(agentId);
+  const [contextPanelOpen, setContextPanelOpen] = useState(false);
+  const [contextPanelKey, setContextPanelKey] = useState<string | null>(null);
+  const contextChipShown = useConversationContextChipShown(conversationId ?? "");
+  const openContextPreview = useOpenContextPreviewPanel();
+  const contextPreviewOpen = useAppSelector((state) =>
+    selectIsOverlayOpen(state, "contextPreviewPanel"),
+  );
 
   const organizationId = useAppSelector(selectOrganizationId);
   const [destination, setDestination] = useState<WorkDestinationId>("ai-matrx");
@@ -469,22 +482,15 @@ function ComposerBody({
       instanceId: `ai-work-composer:${conversationId}`,
     });
     try {
-      const result = await launchAgent(agentId, {
-        agentId,
-        conversationId,
-        surfaceKey: `ai-work-composer:${agentId}`,
-        sourceFeature: "chat",
-        apiEndpointMode: "agent",
-        config: { displayMode: "direct", autoRun: true, allowChat: true },
-        runtime: { userInput: requestText.trim() },
-      });
-      handle.update({
-        conversationId: result.conversationId,
-        requestId: result.requestId ?? null,
-        pending: false,
-      });
-      setLaunched(result.conversationId);
-      await attachHomes(result.conversationId);
+      const started = await send(requestText.trim());
+      if (!started) {
+        // A send gate (organization, scope) stopped it and said why.
+        handle.close();
+        return;
+      }
+      handle.update({ conversationId, pending: false });
+      setLaunched(conversationId);
+      await attachHomes(conversationId);
     } catch (error) {
       handle.close();
       console.error("[ai-work/new] launch failed", error);
@@ -702,18 +708,33 @@ function ComposerBody({
       >
         {conversationId ? (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <SmartAgentResourcePickerButton
                 conversationId={conversationId}
                 triggerSize="default"
               />
-              <span className="text-xs text-muted-foreground">
+              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                 Attach files, notes, tasks, pages, and more.
               </span>
+              {contextChipShown ? (
+                <ConversationContextChip
+                  conversationId={conversationId}
+                  onOpenFullView={(key) => {
+                    setContextPanelKey(key ?? null);
+                    setContextPanelOpen(true);
+                  }}
+                />
+              ) : null}
             </div>
             <AttachedDocumentChips conversationId={conversationId} />
             <SmartAgentResourceChips conversationId={conversationId} />
-            <ContextLensBar conversationId={conversationId} />
+            <ContextLensBar
+              conversationId={conversationId}
+              previewOpen={contextPreviewOpen}
+              onOpenPreview={() =>
+                openContextPreview({ conversationId, agentId })
+              }
+            />
           </div>
         ) : null}
       </ComposerSection>
@@ -876,6 +897,18 @@ function ComposerBody({
           </Link>
         )}
       </div>
+      {/* The context chip's full view — mounted once, outside the collapsible
+          Context step, so opening or switching values never remounts it. */}
+      {conversationId ? (
+        <ContextRulesPanel
+          open={contextPanelOpen}
+          onOpenChange={setContextPanelOpen}
+          conversationId={conversationId}
+          agentId={agentId}
+          selectedKey={contextPanelKey}
+          onSelectedKeyChange={setContextPanelKey}
+        />
+      ) : null}
     </div>
   );
 }

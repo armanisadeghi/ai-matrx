@@ -5,24 +5,15 @@
  *
  * TWO targets, both the platform's existing pieces:
  *   - avatar + name open the SAME `UserMenuPanel` the shell header opens
- *     (sign out, theme, Error Inspector, admin items…), through its own
+ *     (sign out, Error Inspector, admin items…), through its own
  *     checkbox `#canvas-user-menu` (styles/shell.css §13c) — never the
  *     shell's `#shell-user-menu`, which still sits on the hidden user block.
- *   - the org half opens a DROP-UP of the person's organizations with their
- *     role, a check on the active one, and Manage organizations. Switching
- *     goes through `useActiveOrganizationPicker().selectOrganization` — the
- *     one sanctioned switch (`chooseActiveOrganization`). Org only: the scope
- *     tree stays in the composer's Scope pill.
+ *   - the org half is THE organization control, `ShellOrgSwitcher` — the
+ *     same one the sidebar's account rail and the phone drawer draw.
  */
 
-import { useState } from "react";
-import { Check, Settings2, User } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger, SelectChevron } from "@ai-matrx/design-system";
-import AppLink from "@/components/navigation/AppLink";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { cn } from "@/lib/utils";
-import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { User } from "lucide-react";
+import { ShellOrgSwitcher } from "@/features/shell/components/account-rail/ShellOrgSwitcher";
 import UserMenuPanel from "@/features/shell/components/header/header-right-menu/UserMenuPanel";
 import { MenuCheckboxIdProvider } from "@/features/shell/components/header/header-right-menu/menuCheckboxId";
 import { ShellUserAvatarImage } from "@/features/shell/components/header/header-right-menu/ShellUserAvatarImage";
@@ -70,114 +61,7 @@ export function CanvasUserRow({ onMenuOpenChange }: { onMenuOpenChange?: (open: 
           </div>
         </div>
       </MenuCheckboxIdProvider>
-      <CanvasOrgDropUp onOpenChange={onMenuOpenChange} />
+      <ShellOrgSwitcher variant="inline" />
     </div>
-  );
-}
-
-function CanvasOrgDropUp({ onOpenChange }: { onOpenChange?: (open: boolean) => void }) {
-  const [open, setOpen] = useState(false);
-  const { activeOrgId, activeOrgName, organizations, loading, loadFailed, selectOrganization } =
-    useActiveOrganizationPicker();
-  // The chip only invites a choice once boot has answered with none.
-  const { organizationState } = useOrganizationRequired();
-
-  // Scratch organizations a test lane made are classified in the data
-  // (`is_test_fixture`) — the canonical picker hides them the same way.
-  const listed = organizations.filter((org) => !org.is_test_fixture || org.id === activeOrgId); // org-filter: write-target the organization switcher keeps the current choice listed; it narrows nothing the person browses
-  // Only a successful read can say how many it hid.
-  const hiddenCount = loadFailed ? 0 : organizations.length - listed.length;
-
-  const setBoth = (next: boolean) => {
-    setOpen(next);
-    onOpenChange?.(next);
-  };
-
-  return (
-    <Popover open={open} onOpenChange={setBoth}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={
-            activeOrgName
-              ? `Organization: ${activeOrgName}`
-              : organizationState === "required"
-                ? "Choose an organization"
-                : "Organization"
-          }
-          className={cn(
-            "flex h-9 max-w-[45%] shrink-0 items-center gap-1 rounded-lg px-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground",
-            open && "bg-accent text-foreground",
-          )}
-        >
-          <span className="min-w-0 truncate">{activeOrgName ?? "No organization"}</span>
-          <SelectChevron size="sm" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent side="top" align="end" sizing="content" className="p-1.5">
-        <p className="px-2.5 pb-1 pt-1.5 text-xs text-muted-foreground">Organization</p>
-        <div className="max-h-72 overflow-y-auto">
-          {loading && listed.length === 0 ? (
-            <div className="space-y-1 px-2 py-1" aria-busy="true" aria-label="Loading your organizations">
-              <div className="h-6 animate-pulse rounded-md bg-muted" />
-              <div className="h-6 animate-pulse rounded-md bg-muted" />
-            </div>
-          ) : null}
-          {loadFailed ? (
-            <ErrorNotice
-              size="inline"
-              className="px-2.5 py-1.5 text-xs"
-              message="Your organizations could not be loaded. Manage organizations below still works."
-              operation="List my organizations"
-            />
-          ) : null}
-          {listed.map((org) => {
-            const active = org.id === activeOrgId;
-            return (
-              <button
-                key={org.id}
-                type="button"
-                // The active organization is where the eye goes first: it is
-                // scrolled into view when the list opens, never below the fold.
-                ref={active ? (el) => el?.scrollIntoView({ block: "nearest" }) : undefined}
-                onClick={() => {
-                  if (!active) selectOrganization(org.id, org.name);
-                  setBoth(false);
-                }}
-                className={cn(
-                  "flex h-9 w-full items-center gap-2 rounded-md px-2.5 text-left text-sm text-foreground hover:bg-accent",
-                  active && "bg-accent/60",
-                )}
-              >
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground text-[9px] font-semibold text-background">
-                  {(org.abbreviation || org.name).slice(0, 2).toUpperCase()}
-                </span>
-                <span className="min-w-0 flex-1 truncate">{org.name}</span>
-                <span className="shrink-0 text-xs capitalize text-muted-foreground">{org.role}</span>
-                {active ? (
-                  <Check className="h-3.5 w-3.5 shrink-0 text-foreground" aria-label="Active" />
-                ) : (
-                  <span className="h-3.5 w-3.5 shrink-0" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-        {!loadFailed && hiddenCount > 0 ? (
-          <p className="px-2.5 pt-1 text-[11px] text-muted-foreground">
-            {hiddenCount} test organization{hiddenCount === 1 ? "" : "s"} not shown — see Manage organizations.
-          </p>
-        ) : null}
-        <div className="mx-1.5 my-1 h-px bg-border" />
-        <AppLink
-          href="/organizations"
-          onClick={() => setBoth(false)}
-          className="flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-sm text-foreground hover:bg-accent"
-        >
-          <Settings2 className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-          Manage organizations
-        </AppLink>
-      </PopoverContent>
-    </Popover>
   );
 }

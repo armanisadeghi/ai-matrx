@@ -10,7 +10,10 @@ import { useCallback, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   closeCanvas,
+  closeCanvasHome,
+  openCanvasHome,
   selectCanvasAvailabilityKnown,
+  selectCanvasHomeOpen,
   selectCanvasIsAvailable,
   selectCanvasIsOpen,
   selectCanvasItems,
@@ -31,6 +34,7 @@ export function useCanvasHeaderToggle() {
   const availabilityKnown = useAppSelector(selectCanvasAvailabilityKnown);
   const items = useAppSelector(selectCanvasItems);
   const currentItemId = useAppSelector(selectCurrentItemId);
+  const homeOpen = useAppSelector(selectCanvasHomeOpen);
 
   const headlineTitle = useMemo(() => {
     if (items.length === 0) return "Canvas";
@@ -40,7 +44,11 @@ export function useCanvasHeaderToggle() {
   }, [items]);
 
   const reopen = useCallback(() => {
-    if (items.length === 0) return;
+    // Nothing on the canvas: its home (saved items, the Board) — never a dead click.
+    if (items.length === 0) {
+      dispatch(openCanvasHome());
+      return;
+    }
     const sorted = [...items].sort((a, b) => b.timestamp - a.timestamp);
     const reopenId = currentItemId ?? sorted[0]!.id;
     dispatch(setCurrentItem(reopenId));
@@ -48,10 +56,11 @@ export function useCanvasHeaderToggle() {
 
   const putAway = useCallback(() => {
     dispatch(closeCanvas());
+    dispatch(closeCanvasHome());
   }, [dispatch]);
 
   return {
-    isOpen,
+    isOpen: isOpen || homeOpen,
     isAvailable,
     availabilityKnown,
     itemCount: items.length,
@@ -73,8 +82,8 @@ const CANVAS_HEADER_SLOT_BOX = {
   height: "var(--matrx-tap-target-size, 2.75rem)",
 } as const;
 
-export const CANVAS_EMPTY_TOOLTIP =
-  "Canvas is empty — open a document, artifact or result in the canvas and it appears here";
+/** The empty canvas opens its home: saved items and the Board. */
+export const CANVAS_EMPTY_TOOLTIP = "Canvas — your saved items and Board";
 
 /**
  * Shell header — the canvas control.
@@ -84,7 +93,7 @@ export const CANVAS_EMPTY_TOOLTIP =
  * it on mount, lowers it on unmount), so the box exists from first paint and
  * never changes size afterwards. Only the control's STATE changes:
  *
- *   itemCount 0        → the button, `disabled`, tooltip says why
+ *   itemCount 0        → the button opens the canvas HOME (saved items, Board)
  *   itemCount > 0 shut → the button opens the canvas (most recent item)
  *   itemCount > 0 open → the button is pressed and puts the canvas away
  *
@@ -122,7 +131,7 @@ export function CanvasShellHeaderToggle({
   // canvas front door, but only after hydration (DeferredIslands), so the
   // server and the first frames saw "unavailable" and the button popped in —
   // shifting the whole header, title included, by 44px. Until availability is
-  // KNOWN the control renders in its empty (disabled) state, which is exactly
+  // KNOWN the control renders in its empty state, which is exactly
   // what it becomes once the empty canvas reports in. It still leaves when a
   // surface explicitly reports the canvas unavailable.
   if (!isAvailable && (availabilityKnown || !reserveUntilKnown)) return null;
@@ -130,7 +139,9 @@ export function CanvasShellHeaderToggle({
   const state = itemCount === 0 ? "empty" : isOpen ? "open" : "closed";
   const ariaLabel =
     state === "empty"
-      ? "Canvas (empty)"
+      ? isOpen
+        ? "Close canvas"
+        : "Open canvas"
       : state === "open"
         ? `Put away canvas — ${headlineTitle}`
         : `Open canvas — ${headlineTitle}`;
@@ -149,14 +160,13 @@ export function CanvasShellHeaderToggle({
       data-canvas-header-slot-state={state}
     >
       <LayersTapButton
-        onClick={state === "open" ? putAway : reopen}
-        disabled={state === "empty"}
+        onClick={isOpen ? putAway : reopen}
         ariaLabel={ariaLabel}
         tooltip={tooltip}
         className={cn(
-          state === "empty" ? "text-muted-foreground" : "text-primary",
-          state === "open" && "bg-primary/10",
-          state !== "empty" && "hover:bg-primary/10",
+          state !== "empty" || isOpen ? "text-primary" : undefined,
+          isOpen && "bg-primary/10",
+          "hover:bg-primary/10",
         )}
       />
       {itemCount > 1 && (

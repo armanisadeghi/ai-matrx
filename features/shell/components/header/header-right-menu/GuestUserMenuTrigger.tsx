@@ -42,7 +42,7 @@ export default function GuestUserMenuTrigger({
     <AppLink
       href={loginHref}
       title="Sign in"
-      className="shell-nav-item shell-tactile-subtle mx-1.5 min-w-0 flex-1"
+      className="shell-nav-item shell-nav-stable shell-tactile-subtle"
     >
       <span className="shell-nav-icon">
         <LogIn size={18} strokeWidth={1.75} aria-hidden="true" />

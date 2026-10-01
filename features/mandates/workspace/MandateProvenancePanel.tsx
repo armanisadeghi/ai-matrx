@@ -99,7 +99,7 @@ export function MandateProvenancePanel({
             unknown — not clean.
           </p>
           <p className="mt-0.5 break-words text-[12.5px] text-muted-foreground">
-            {error ?? "The server returned no provenance report."}
+            {error ?? "No provenance report came back."}
             <ErrorAlchemyMenu error={error} />
           </p>
         </div>

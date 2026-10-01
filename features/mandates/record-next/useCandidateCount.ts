@@ -20,7 +20,7 @@ import {
   type LiveCandidate,
 } from "@/features/mandates/candidate-dialog/api";
 import type { RecordTabCount } from "./record-tabs";
-import { useCandidatePollMs, useHeartbeat } from "@/features/mandates/candidates/live";
+import { candidateStillMoving, useCandidatePollMs, useHeartbeat } from "@/features/mandates/candidates/live";
 
 const CHANGED = "matrx:mandate-candidates-changed";
 
@@ -88,7 +88,7 @@ export function useCandidateCount(mandateKey: AnyMandateKey | null): RecordTabCo
           setCount({
             key: mandateKey,
             count: candidateTabCount(answer?.active),
-            collecting: (answer?.open ?? []).some((c) => c.status === "collecting"),
+            collecting: (answer?.open ?? []).some((c) => candidateStillMoving(c.status)),
           });
         }
       },

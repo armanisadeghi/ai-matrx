@@ -1,10 +1,5 @@
 import HamburgerButton from "./header-left-menu/HamburgerButton";
-import HeaderChooseOrgButton from "./header-right-menu/HeaderChooseOrgButton";
-import { CanvasShellHeaderToggle } from "@/features/canvas/core/CanvasHeaderToggle";
-import { SurfaceAgentsHeaderButton } from "@/features/surfaces/components/chrome/SurfaceAgentsHeaderButton";
-import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
-import { CommandBarHeaderButton } from "@/features/knowledge/command-bar/OpenCommandBarButtons";
-import { HeaderPhoneOverflow } from "./HeaderPhoneOverflow";
+import { HeaderControlSet } from "./HeaderControlSet";
 import { HeaderCrowdingGuard } from "./HeaderCrowdingGuard";
 
 interface HeaderProps {
@@ -12,37 +7,12 @@ interface HeaderProps {
 }
 
 /**
- * THE HEADER RIGHT SET — the same three controls, in the same order, at every
- * breakpoint and in every auth state (owner, 2026-09-19: "a consistent set of
- * things for that top-right section … never hiding things and only disabling
- * when inactive"):
- *
- *   [ route-injected actions ] [ Search ] [ Agents ] [ Canvas ] [ Inbox ]
- *
- * Search opens the ⌘K bar — the phone's way in, where there is no keyboard.
- *
- * Each control owns a fixed 44px slot and is ALWAYS mounted. A control with
- * nothing to do is `disabled` with a tooltip that says why (Canvas with
- * nothing in it); a control a guest cannot use opens the auth gate (Agents,
- * Inbox). Nothing here unmounts on state, so the row never shifts.
- *
- * The one conditional element is the organization control: it names the active
- * organization (and opens the picker), asks "Choose organization" while none is
- * chosen (primary tint, never alarm red), and is absent on /administration/*.
- * Its words yield to the route: when the center cannot fit the route's own
- * controls, `HeaderCrowdingGuard` marks the header crowded and every
- * `data-header-compact-label` in the right set folds to its icon, so the chip
- * can never sit on top of a route's Save (`header-crowding.ts`).
- *
- * ON A PHONE (below 768px) the four fold into ONE control — `HeaderPhoneOverflow`,
- * a bottom sheet holding the same four with the same states — so the page title
- * in the center stays readable (page-pass shared defects, 2026-09-27: titles
- * collapsed to "C." and "Fla…"). The swap is CSS, so the server-rendered row
- * never shifts; the phone always shows that one button.
- *
- * The profile/avatar menu is NOT here any more — it lives bottom-left
- * (`ShellUserBlock`), where the sidebar ends. Guard:
- * `features/shell/__tests__/header-right-set.test.tsx`.
+ * THE HEADER — route content in the center, the route's own actions and then
+ * THE HEADER CONTROL SET on the right (`HeaderControlSet`: Search,
+ * Intelligence, Canvas, Messages, Notifications — owner, 2026-09-30). Nothing
+ * else is built into the header: the organization lives in the sidebar's
+ * account rail (`ShellOrgSwitcher`), the person bottom-left
+ * (`ShellUserBlock`). Guard: `features/shell/__tests__/header-right-set.test.ts`.
  */
 export default function Header({ isAuthenticated }: HeaderProps) {
   return (
@@ -54,23 +24,7 @@ export default function Header({ isAuthenticated }: HeaderProps) {
 
       <div className="shell-header-right" data-header-right-set>
         <div className="shell-header-right-inject" id="shell-header-right" />
-        {/* Renders nothing once an org is active. In header flow on purpose —
-            it replaced a fixed drop-down card that covered route chrome. */}
-        {/* A fixed-width slot from the first paint: the chip fills in after
-            boot (name, "Choose organization", or nothing) without moving the
-            title (page-pass, 2026-09-27: it pushed the title 98px). */}
-        {isAuthenticated && (
-          <div className="shell-header-org-slot">
-            <HeaderChooseOrgButton />
-          </div>
-        )}
-        <div className="shell-header-secondary">
-          <CommandBarHeaderButton isAuthenticated={isAuthenticated} />
-          <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
-          <CanvasShellHeaderToggle reserveUntilKnown />
-          <InboxHeaderButton isAuthenticated={isAuthenticated} />
-        </div>
-        <HeaderPhoneOverflow isAuthenticated={isAuthenticated} />
+        <HeaderControlSet isAuthenticated={isAuthenticated} />
       </div>
     </header>
   );

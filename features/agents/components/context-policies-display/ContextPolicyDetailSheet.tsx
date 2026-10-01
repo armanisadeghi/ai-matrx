@@ -3,12 +3,13 @@
 /**
  * ContextPolicyDetailSheet
  *
- * Right-side sheet that shows the full detail of a single context policy value
- * attached to a request: key, type, label, description, inline policy, and
+ * Right-side sheet that shows the full detail of a single context value a
+ * SENT message carried: key, type, label, description, inline policy, and
  * the value rendered by type (markdown / JSON / link / entity card).
  *
- * Reads the policy definition (if any) from the agent definition keyed by
- * `agentId`, and the live value from `state.instanceContext.byConversationId`.
+ * The value, label and type come from the message's snapshot ONLY — never
+ * from live conversation context (a sent turn showing today's value is the
+ * lie this sheet used to tell). The policy definition is read from the agent.
  */
 
 import { useMemo } from "react";
@@ -17,7 +18,6 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
-import { selectInstanceContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import type {
   ContextObjectType,
   ContextPolicy,
@@ -47,8 +47,12 @@ interface ContextPolicyDetailSheetProps {
   conversationId: string;
   agentId: string | null;
   contextKey: string;
-  /** Frozen value from the message snapshot — required for ambient keys (user, client, …) that never live in `instanceContext`. */
+  /** Frozen value from the message snapshot. */
   snapshotValue?: unknown;
+  /** Frozen label from the message snapshot. */
+  snapshotLabel?: string;
+  /** Frozen type from the message snapshot. */
+  snapshotType?: ContextObjectType;
 }
 
 export function ContextPolicyDetailSheet({
@@ -58,6 +62,8 @@ export function ContextPolicyDetailSheet({
   agentId,
   contextKey,
   snapshotValue,
+  snapshotLabel,
+  snapshotType,
 }: ContextPolicyDetailSheetProps) {
   const policy = useAppSelector((state: RootState): ContextPolicy | undefined => {
     if (!agentId) return undefined;
@@ -65,29 +71,22 @@ export function ContextPolicyDetailSheet({
     return policies?.find((s) => s.key === contextKey);
   });
 
-  const entry = useAppSelector(
-    selectInstanceContextEntry(conversationId, contextKey),
-  );
-
   const displayValue = useMemo(
     () =>
-      resolveContextEntryValue(
-        {
-          key: contextKey,
-          value: snapshotValue,
-          label: entry?.label,
-        },
-        entry?.value,
-      ),
-    [contextKey, snapshotValue, entry?.label, entry?.value],
+      resolveContextEntryValue({
+        key: contextKey,
+        value: snapshotValue,
+        label: snapshotLabel,
+      }),
+    [contextKey, snapshotValue, snapshotLabel],
   );
 
-  const type: ContextObjectType = policy?.type ?? entry?.type ?? "text";
+  const type: ContextObjectType = policy?.type ?? snapshotType ?? "text";
   const Icon = CONTEXT_TYPE_ICON[type] ?? FALLBACK_CONTEXT_ICON;
   const chipClass =
     CONTEXT_TYPE_CHIP_CLASS[type] ?? CONTEXT_TYPE_CHIP_CLASS.text;
 
-  const label = policy?.label?.trim() || entry?.label?.trim() || contextKey;
+  const label = policy?.label?.trim() || snapshotLabel?.trim() || contextKey;
   // Doc-like keys (working document, scratchpad, future doc kinds) route to
   // the EDITABLE documents workspace — never the readonly value dump below.
   const docKind = docKindForContextKey(contextKey);

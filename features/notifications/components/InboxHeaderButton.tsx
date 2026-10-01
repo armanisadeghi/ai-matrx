@@ -6,9 +6,10 @@
  * One of the FOUR fixed header controls (see features/shell/FEATURE.md
  * § The header right set). Always mounted, always the same 44px slot:
  *
- *   signed in  → bell + badge (unread notices + conversations with unread +
- *                proposals waiting), opens the Inbox popover (desktop) or a
- *                bottom drawer (mobile).
+ *   signed in  → bell + badge (unread notices + proposals and work waiting —
+ *                never direct messages, which are `MessagesHeaderButton`'s),
+ *                opens the notifications popover (desktop) or a bottom drawer
+ *                (mobile).
  *   signed out → the same bell; a click opens the auth gate naming the
  *                Inbox. Never hidden, never a dead control.
  *
@@ -52,17 +53,17 @@ function InboxBadge({ count }: { count: number }) {
 
 /** What a guest is told when they reach for the Inbox — one copy for every door. */
 export const INBOX_AUTH_GATE = {
-  featureName: "Inbox",
+  featureName: "Notifications",
   featureDescription:
-    "Every notification, message and approval in one place, delivered the way you choose.",
+    "Every notification and approval in one place, delivered the way you choose.",
 };
 
 function GuestInboxButton() {
   const openAuthGate = useOpenAuthGateDialog();
   return (
     <BellTapButton
-      ariaLabel="Inbox — sign in to see your notifications"
-      tooltip="Inbox (sign in)"
+      ariaLabel="Notifications — sign in to see them"
+      tooltip="Notifications (sign in)"
       onClick={() => openAuthGate(INBOX_AUTH_GATE)}
     />
   );
@@ -76,10 +77,10 @@ function SignedInInboxButton() {
   const Bell = counts.total > 0 ? BellRingTapButton : BellTapButton;
   const label =
     counts.total > 0
-      ? `Inbox (${counts.total} new${counts.partial ? ", some counts unavailable" : ""})`
+      ? `Notifications (${counts.total} new${counts.partial ? ", some counts unavailable" : ""})`
       : counts.partial
-        ? "Inbox (some counts unavailable)"
-        : "Inbox";
+        ? "Notifications (some counts unavailable)"
+        : "Notifications";
 
   // The ARIA popup wiring (aria-haspopup / aria-expanded / onClick) must land
   // on the actual focusable button, never on a plain wrapping <div> — a div
@@ -104,7 +105,7 @@ function SignedInInboxButton() {
         <Drawer open={open} onOpenChange={setOpen}>
           <DrawerContent className="bg-textured pb-safe max-h-[85dvh]">
             <DrawerHeader className="sr-only">
-              <DrawerTitle>Inbox</DrawerTitle>
+              <DrawerTitle>Notifications</DrawerTitle>
             </DrawerHeader>
             {open && (
               <InboxPanel

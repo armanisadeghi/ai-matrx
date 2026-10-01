@@ -10,7 +10,7 @@ import { count, variableLabel } from "../format";
 // Steps: agent → data → details → walkthrough → workflows → review.
 // Edit mode (`editKitKey`) reopens a saved kit's details and walkthrough only.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, ChevronDown, Loader2, Plus, Share2, Trash2 } from "lucide-react";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
@@ -93,6 +93,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
   const orgName = organizations.find((o) => o.id === organizationId)?.name ?? "your organization";
   const openShare = useOpenShareModal();
   const editing = !!editKitKey;
+  const fieldId = useId();
 
   const [step, setStep] = useState<Step>(editing ? "details" : "agent");
   const [agentId, setAgentId] = useState<string | null>(initialAgentId ?? null);
@@ -160,10 +161,10 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
         setIncludeWorkflows(Object.fromEntries(d.workflows.map((w) => [w.id, true])));
         setDetails((cur) => ({
           ...cur,
-          name: cur.name || `${d.agent.name} ${KIT_WORD.one}`,
-          agentName: cur.agentName || d.agent.name,
+          name: cur.name || `${stripCopySuffix(d.agent.name)} ${KIT_WORD.one}`,
+          // A kit copy installed twice is "My Org Chart 2" — the kit carries the base name.
+          agentName: cur.agentName || stripCopySuffix(d.agent.name),
           agentDescription: cur.agentDescription || (d.agent.description ?? ""),
-          category: cur.category || "My organization",
           teaches:
             cur.teaches ||
             d.bindings
@@ -200,7 +201,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
         name: details.name.trim(),
         tagline: details.tagline.trim(),
         description: details.description.trim(),
-        category: details.category.trim() || "My organization",
+        category: details.category.trim() || "General",
         icon: details.icon,
         teaches: details.teaches.split("\n").map((t) => t.trim()).filter(Boolean),
         guide,
@@ -229,11 +230,11 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
       name: details.name.trim(),
       tagline: details.tagline.trim(),
       description: details.description.trim(),
-      category: details.category.trim() || "My organization",
+      category: details.category.trim() || "General",
       icon: details.icon,
       teaches: details.teaches.split("\n").map((t) => t.trim()).filter(Boolean),
       guide,
-      agentName: details.agentName.trim() || detected.agent.name,
+      agentName: details.agentName.trim() || stripCopySuffix(detected.agent.name),
       agentDescription: details.agentDescription.trim(),
       ...(details.tryItInput.trim() ? { tryIt: { user_input: details.tryItInput.trim() } } : {}),
     });
@@ -428,21 +429,21 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
             </div>
           ) : step === "details" ? (
             <div className="grid gap-3">
-              <Field label="Name">
-                <Input value={details.name} onChange={(e) => setDetails({ ...details, name: e.target.value })} />
+              <Field label="Name" htmlFor={`${fieldId}-name`}>
+                <Input id={`${fieldId}-name`} value={details.name} onChange={(e) => setDetails({ ...details, name: e.target.value })} />
               </Field>
-              <Field label="Tagline (one line, for the gallery card)">
-                <Input value={details.tagline} onChange={(e) => setDetails({ ...details, tagline: e.target.value })} />
+              <Field label="Tagline (one line, for the gallery card)" htmlFor={`${fieldId}-tagline`}>
+                <Input id={`${fieldId}-tagline`} value={details.tagline} onChange={(e) => setDetails({ ...details, tagline: e.target.value })} />
               </Field>
-              <Field label="Description">
-                <Textarea rows={3} value={details.description} onChange={(e) => setDetails({ ...details, description: e.target.value })} />
+              <Field label="Description" htmlFor={`${fieldId}-description`}>
+                <Textarea rows={3} id={`${fieldId}-description`} value={details.description} onChange={(e) => setDetails({ ...details, description: e.target.value })} />
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Category">
-                  <Input value={details.category} onChange={(e) => setDetails({ ...details, category: e.target.value })} />
+                <Field label="Category" htmlFor={`${fieldId}-category`}>
+                  <Input id={`${fieldId}-category`} placeholder="e.g. Sales" value={details.category} onChange={(e) => setDetails({ ...details, category: e.target.value })} />
                 </Field>
-                <Field label="The agent copy's name">
-                  <Input value={details.agentName} onChange={(e) => setDetails({ ...details, agentName: e.target.value })} />
+                <Field label="The agent copy's name" htmlFor={`${fieldId}-agent-name`}>
+                  <Input id={`${fieldId}-agent-name`} value={details.agentName} onChange={(e) => setDetails({ ...details, agentName: e.target.value })} />
                 </Field>
               </div>
               <Field label="Icon">
@@ -461,11 +462,11 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                   ))}
                 </div>
               </Field>
-              <Field label="The tricks it teaches (one per line)">
-                <Textarea rows={3} value={details.teaches} onChange={(e) => setDetails({ ...details, teaches: e.target.value })} />
+              <Field label="The tricks it teaches (one per line)" htmlFor={`${fieldId}-teaches`}>
+                <Textarea rows={3} id={`${fieldId}-teaches`} value={details.teaches} onChange={(e) => setDetails({ ...details, teaches: e.target.value })} />
               </Field>
-              <Field label="An example message for “Try it” (optional)">
-                <Input value={details.tryItInput} onChange={(e) => setDetails({ ...details, tryItInput: e.target.value })} />
+              <Field label="An example message for “Try it” (optional)" htmlFor={`${fieldId}-try-it`}>
+                <Input id={`${fieldId}-try-it`} value={details.tryItInput} onChange={(e) => setDetails({ ...details, tryItInput: e.target.value })} />
               </Field>
             </div>
           ) : step === "guide" ? (
@@ -583,10 +584,22 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/** "My Org Chart 3" → "My Org Chart": the number an install adds on a name clash. */
+function stripCopySuffix(name: string): string {
+  return name.replace(/\s+\d+$/, "").trim() || name;
+}
+
+/** A labelled field; `htmlFor` ties the label to its control (screen readers, click-to-focus). */
+function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
   return (
-    <div className="grid gap-1">
-      <span className="text-xs font-medium text-foreground">{label}</span>
+    <div className="grid gap-1" {...(htmlFor ? {} : { role: "group", "aria-label": label })}>
+      {htmlFor ? (
+        <label htmlFor={htmlFor} className="text-xs font-medium text-foreground">
+          {label}
+        </label>
+      ) : (
+        <span className="text-xs font-medium text-foreground">{label}</span>
+      )}
       {children}
     </div>
   );
