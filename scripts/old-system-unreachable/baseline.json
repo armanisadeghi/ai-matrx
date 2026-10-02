@@ -85,5 +85,9 @@
     "matrx-frontend:scripts/safety-net/probes/b_cutover_state.py workbench.udt_structured_lists": "SAFETY-NET: probes the older tables until step two retires them from the corpus (PROGRESS-SWITCH-STEP-TWO B13)",
     "matrx-frontend:utils/permissions/registry.ts workbench.udt_datasets": "SWITCH-STEP-TWO: the sharing registry's dataset / structured_list rows (platform.shareable_resource_registry) and 10 live dataset grants still name these tables; the move retires those rows, then this entry and registry.db-snapshot.json follow (PROGRESS-SWITCH-STEP-TWO \u00a7 2 registry rows)",
     "matrx-frontend:utils/permissions/registry.ts workbench.udt_structured_lists": "SWITCH-STEP-TWO: the sharing registry's dataset / structured_list rows (platform.shareable_resource_registry) and 10 live dataset grants still name these tables; the move retires those rows, then this entry and registry.db-snapshot.json follow (PROGRESS-SWITCH-STEP-TWO \u00a7 2 registry rows)"
+  },
+  "db_doors": {
+    "platform.final_switch_press(text,jsonb)": "FINAL-SWITCH: refuses before it reaches the older tables (already_there: everything is on the new system); its older-table arms leave with the final-switch machinery after the 48 h soak (v6 CENSUS-CLEANUP A3)",
+    "platform.final_switch_undo(text,boolean)": "FINAL-SWITCH: refuses before it reaches the older tables (undo_retired, 2026-10-01 20:08:56Z); it leaves with the final-switch machinery after the 48 h soak (v6 CENSUS-CLEANUP A3)"
   }
 }

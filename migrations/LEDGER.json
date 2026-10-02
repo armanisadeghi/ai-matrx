@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T02:08:40.381Z",
+  "generated_at": "2026-10-02T02:22:48.961Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3859,6 +3859,18 @@
       "filename": "portalbind_the_portal_accept_doors_are_reachable.sql",
       "checksum": "fd7963e8fd91aaf8c7b0597260b24e68f07fa7fb7c3206130d8a7690244f4b36",
       "applied_at": "2026-09-21 22:29:57.273243+00"
+    },
+    "migrations/campaign/postmovedoors_a_the_last_older_doors_answer_from_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "postmovedoors_a_the_last_older_doors_answer_from_the_store.sql",
+      "checksum": "c7453980e8c13e7eaca3729beeb9c9875ab6bedc2a2dd18a506113b823eae11c",
+      "applied_at": "2026-10-02 02:21:59.160657+00"
+    },
+    "migrations/campaign/postmovedoors_b_the_graveyard_takes_no_writes_and_fires_nothing.sql": {
+      "source": "matrx-frontend",
+      "filename": "postmovedoors_b_the_graveyard_takes_no_writes_and_fires_nothing.sql",
+      "checksum": "b2a355fed7cfd9c1e0f57704eedc9635ae5cddf72f1b738f2a42c1bdbb1dfa81",
+      "applied_at": "2026-10-02 02:22:46.876884+00"
     },
     "migrations/campaign/postpress_a_store_off_organization_makes_tables_after_the_press.sql": {
       "source": "matrx-frontend",

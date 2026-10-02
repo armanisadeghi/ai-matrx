@@ -8,8 +8,8 @@
 --     store (1,580 of 1,669 on production). Re-pointed: it answers through the store's own door
 --     custom.scope_table_provision (a scope's table is a store Table born through custom.table_declare), and the
 --     trigger always provisions in the store. custom.scope_table_provision no longer refuses an organization with no
---     Home ("until then its scopes keep their older tables" — there are no older tables now): the Table is born at
---     the top of the organization's store, with no parent, like any Table born there. And
+--     Home ("until then its scopes keep their older tables" — there are no older tables now): the Table gets its own
+--     Home, as custom._options_table_for gives a choice list one (REC-1). And
 --     context.validate_reference_value accepted only the item's own noun: the store writes a scope's table with the
 --     `table` noun, so an item that allows `dataset` (2 of the 5 template-bound items) refused it ("reference type
 --     table is not allowed on item"); after the switch a dataset IS a Table, so either noun satisfies either.
@@ -79,7 +79,7 @@ begin
   -- An item carries no organization of its own; its scope type does (a scope's is the same).
   select st.organization_id into v_org from context.scope_types st where st.id = new.scope_type_id;
   -- POST-MOVE-DOORS: every organization provisions in the record store (the older store is in the graveyard);
-  -- an organization with no Home yet gets the Table at the top of its store (custom.scope_table_provision).
+  -- an organization with no Home yet gets one for the Table (custom.scope_table_provision).
   v_home := custom.organization_home_id(v_org);
   if tg_table_name='scopes' then
     for r in select id from context.context_items
@@ -264,11 +264,17 @@ begin
     return v_table;
   end if;
 
-  -- POST-MOVE-DOORS: after step two there are no older tables to keep, so an organization with no Home yet
-  -- gets its scope table at the top of its store (no parent), like any other Table born there.
   v_home := coalesce(p_home_id, custom.organization_home_id(p_organization_id));
-
   v_label := v_scope.name || ' — ' || v_item.display_name;
+  if v_home is null then
+    -- POST-MOVE-DOORS: after step two there are no older tables to keep. An organization with no Home yet (REC-1:
+    -- a Table has to live somewhere) gets one for this Table, the way custom._options_table_for gives a choice list
+    -- its own Home.
+    insert into custom.record (organization_id, table_id, data)
+    values (p_organization_id, custom.person_kernel_id(), jsonb_build_object('name', v_label || ' Home'))
+    returning id into v_home;
+  end if;
+
   select f.field_name into v_title from workbench.udt_dataset_template_fields f
    where f.template_id = v_tpl.id order by f.field_order limit 1;
   v_table := custom.table_declare(p_organization_id, jsonb_build_object(
@@ -277,8 +283,8 @@ begin
     'label_singular', coalesce(v_item.display_name, 'Row'), 'label_plural', coalesce(v_item.display_name, 'Rows'),
     'title_field', v_title, 'agent_writable', true, 'retention_days', 3650,
     'default_sort', jsonb_build_array(jsonb_build_object('field', v_title, 'direction', 'asc')),
-    'fields', jsonb_build_array(jsonb_build_object('name', v_title)))
-    || case when v_home is not null then jsonb_build_object('parent_id', v_home::text) else '{}'::jsonb end);
+    'parent_id', v_home::text,
+    'fields', jsonb_build_array(jsonb_build_object('name', v_title))));
   for v_f in select * from workbench.udt_dataset_template_fields f where f.template_id = v_tpl.id order by f.field_order loop
     v_n := v_n + 1;
     perform custom.field_declare(p_organization_id, v_table, jsonb_strip_nulls(jsonb_build_object(

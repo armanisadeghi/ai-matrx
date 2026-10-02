@@ -2,6 +2,8 @@
 -- the graveyard's triggers and client grants exactly as they were on production 2026-10-01 before the file (every user
 -- trigger on the nine tables was enabled; `authenticated` held INSERT/SELECT/UPDATE/DELETE on the three test tables;
 -- udt_dataset_row_versions_id_seq granted SELECT to anon and SELECT/UPDATE/USAGE to authenticated).
+-- ground-standing-ok: c — the loop above the drop detaches every _0_graveyard_takes_no_writes trigger (dynamic DROP TRIGGER per
+-- graveyard table) before the function they run is dropped; nothing runs it after the inverse.
 -- lane: POST-MOVE-DOORS
 
 set local lock_timeout = '3s';

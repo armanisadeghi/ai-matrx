@@ -99,6 +99,7 @@
     "check:save-to-table-everywhere": "tsx scripts/check-save-to-table-everywhere.ts",
     "check:save-to-table-everywhere:self-test": "tsx scripts/check-save-to-table-everywhere.ts --self-test",
     "check:old-system-unreachable:self-test": "tsx scripts/check-old-system-unreachable.ts --self-test",
+    "check:old-system-unreachable:db": "tsx scripts/check-old-system-unreachable.ts --db",
     "check:object-pages-read-the-objects-organization:self-test": "tsx scripts/check-object-pages-read-the-objects-organization.ts --self-test",
     "check:trash-doors": "tsx scripts/check-trash-doors.ts",
     "check:trash-answers-fast": "tsx scripts/check-trash-answers-fast.ts",

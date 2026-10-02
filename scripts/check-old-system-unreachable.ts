@@ -38,6 +38,17 @@
  *   pnpm check:old-system-unreachable --json            the census as JSON
  *   pnpm check:old-system-unreachable --write-baseline  shrink the baseline (never grows it)
  *   pnpm check:old-system-unreachable:self-test         proves every direction on planted fixtures
+ *   pnpm check:old-system-unreachable --db [--target production|clone]
+ *                                                       THE DATABASE HALF (lane POST-MOVE-DOORS, 2026-10-01)
+ *
+ * THE DATABASE HALF. Code is not the only caller: a database function a signed-in person can call is a door, and
+ * after step two a door whose body still names one of the six moved tables answers its caller with a raw
+ * "relation workbench.udt_… does not exist" (42P01). `get_structured_list_for_selection` was the one door file c never
+ * turned into its people sentence, and five more of its kind were found the same day. `--db` lists every function
+ * outside the graveyard that a client role (anon / authenticated) may EXECUTE, that is not a trigger or event-trigger
+ * function, and whose code (comments stripped) names one of the six tables — and that does not answer file c's
+ * sentence ("The older tables moved to the archive …"). Each is RED unless `db_doors` in the baseline names it with an
+ * owner; a `db_doors` entry the database no longer shows is STALE. Read only (`begin read only`), one statement.
  */
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -281,6 +292,8 @@ function report(v: Verdict, baseline: Baseline): void {
 function writeBaseline(next: Baseline): void {
   mkdirSync(join(FRONTEND, "scripts/old-system-unreachable"), { recursive: true });
   const sorted = Object.fromEntries(Object.entries(next).sort(([a], [b]) => a.localeCompare(b)));
+  // The database half's owned doors are kept as they are (they are edited by hand, never by --write-baseline).
+  const dbDoors = readDbBaseline();
   writeFileSync(
     BASELINE,
     JSON.stringify(
@@ -288,11 +301,94 @@ function writeBaseline(next: Baseline): void {
         about:
           "check:old-system-unreachable baseline — every place that may still name an older table, door or module, with its owner and why. It only shrinks; a new place is added by hand with its owner (lane OLD-READERS-REMOVAL).",
         entries: sorted,
+        ...(Object.keys(dbDoors).length ? { db_doors: dbDoors } : {}),
       },
       null,
       2,
     ) + "\n",
   );
+}
+
+/** File c's people sentence: a door that answers it is retired, not reachable. */
+export const MOVED_SENTENCE = "The older tables moved to the archive";
+
+/** One database function the census returns. */
+export type DbDoor = { sig: string; rettype: string; clientCallable: boolean; namesMovedTable: boolean; answersMoved: boolean };
+
+/** The read-only census: every function outside the graveyard whose code names a moved table. */
+export const DB_DOORS_SQL = `
+with f as (
+  select p.oid::regprocedure::text as sig, p.prorettype::regtype::text as rettype,
+         (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute')) as client_callable,
+         regexp_replace(regexp_replace(p.prosrc, '--[^\\n]*', '', 'g'), '/\\*.*?\\*/', '', 'g') as code
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname not in ('pg_catalog', 'information_schema', 'graveyard') and n.nspname not like 'pg\\_%' and p.prokind = 'f')
+select sig, rettype, client_callable,
+       code ~ '\\m(${OLD_TABLES.join("|")})\\M' as names_moved_table,
+       position('${MOVED_SENTENCE}' in code) > 0 as answers_moved
+  from f
+ where code ~ '\\m(${OLD_TABLES.join("|")})\\M'`;
+
+/** A never-retired older door: client-callable, not a trigger, names a moved table, does not answer the sentence. */
+export function neverRetired(doors: readonly DbDoor[]): string[] {
+  return doors
+    .filter((d) => d.clientCallable && d.namesMovedTable && !d.answersMoved && d.rettype !== "trigger" && d.rettype !== "event_trigger")
+    .map((d) => d.sig)
+    .sort();
+}
+
+export type DbVerdict = { open: string[]; newDoors: string[]; stale: string[]; ownerless: string[] };
+
+export function judgeDb(doors: readonly DbDoor[], baseline: Baseline): DbVerdict {
+  const open = neverRetired(doors);
+  const present = new Set(open);
+  return {
+    open,
+    newDoors: open.filter((s) => !(s in baseline)),
+    stale: Object.keys(baseline).filter((s) => !present.has(s)).sort(),
+    ownerless: Object.entries(baseline).filter(([, o]) => !/^[A-Z][A-Z0-9-]+: \S/.test(o ?? "")).map(([k]) => k).sort(),
+  };
+}
+
+function readDbBaseline(): Baseline {
+  if (!existsSync(BASELINE)) return {};
+  return ((JSON.parse(readFileSync(BASELINE, "utf8")) as { db_doors?: Baseline }).db_doors ?? {}) as Baseline;
+}
+
+async function mainDb(argv: string[]): Promise<number> {
+  const { openCheckDb } = await import("./lib/check-target");
+  const checkDb = await openCheckDb({ gate: "check:old-system-unreachable", defaultTarget: "production", argv });
+  const client = checkDb.client;
+  let rows: Array<{ sig: string; rettype: string; client_callable: boolean; names_moved_table: boolean; answers_moved: boolean }>;
+  try {
+    await client.query("begin read only");
+    rows = (await client.query(DB_DOORS_SQL)).rows as typeof rows;
+    await client.query("rollback");
+  } finally {
+    await client.end().catch(() => undefined);
+  }
+  const doors: DbDoor[] = rows.map((r) => ({
+    sig: r.sig, rettype: r.rettype, clientCallable: r.client_callable, namesMovedTable: r.names_moved_table, answersMoved: r.answers_moved,
+  }));
+  const baseline = readDbBaseline();
+  const v = judgeDb(doors, baseline);
+  console.log(`OLD DOORS IN THE DATABASE — ${v.open.length} client-callable function(s) still name a moved table without file c's sentence`);
+  for (const s of v.open) console.log(`    ${s}${baseline[s] ? `   [${baseline[s]!.split(":")[0]}]` : ""}`);
+  if (v.newDoors.length) {
+    console.log(`\n✗ ${v.newDoors.length} older door(s) were never retired — answer from the record store, or give the door file c's moved sentence:`);
+    for (const s of v.newDoors) console.log(`    ${s}`);
+  }
+  if (v.stale.length) {
+    console.log(`\n✗ ${v.stale.length} db_doors baseline entr(ies) are retired now — good; remove them from scripts/old-system-unreachable/baseline.json:`);
+    for (const s of v.stale) console.log(`    ${s}`);
+  }
+  if (v.ownerless.length) {
+    console.log(`\n✗ ${v.ownerless.length} db_doors baseline entr(ies) name no owner — write "<OWNER>: <why>" for each:`);
+    for (const s of v.ownerless) console.log(`    ${s}`);
+  }
+  const red = v.newDoors.length || v.stale.length || v.ownerless.length;
+  if (!red) console.log(`\n✓ every older door in the database is retired or owned (${Object.keys(baseline).length} owned).`);
+  return red ? 1 : 0;
 }
 
 function selfTest(): number {
@@ -358,8 +454,27 @@ function selfTest(): number {
     // 8. The press's write list is read from the campaign file.
     const sql = "x\n    -- OLD-WRITE-DOORS-BEGIN\n    'public.udt_bulk_write(uuid, jsonb)',\n    -- OLD-WRITE-DOORS-END\n";
     if (writeDoorsFromCampaign(sql).join() !== "udt_bulk_write") throw new Error("campaign list not read");
+    // 9. THE DATABASE HALF: a client-callable door that names a moved table and does not answer the moved sentence
+    //    is RED (the never-retired door); file c's refusal, a trigger, an event trigger, a server-only function and a
+    //    templates reader are not; an owned baseline entry is GREEN, an owner-less one RED, a retired one STALE.
+    const door = (sig: string, o: Partial<DbDoor> = {}): DbDoor => ({ sig, rettype: "jsonb", clientCallable: true, namesMovedTable: true, answersMoved: false, ...o });
+    const plantedDoors: DbDoor[] = [
+      door("get_structured_list_for_selection(uuid)"),
+      door("get_user_tables()", { answersMoved: true }),
+      door("workbench._moved_older_table_takes_no_writes()", { rettype: "trigger" }),
+      door("platform._ddl_guard()", { rettype: "event_trigger" }),
+      door("platform._final_switch_orphan_lists()", { clientCallable: false }),
+    ];
+    const dbRed = judgeDb(plantedDoors, {});
+    if (dbRed.newDoors.join() !== "get_structured_list_for_selection(uuid)") throw new Error(`db: never-retired door expected RED, got ${dbRed.newDoors}`);
+    const dbOwned = judgeDb(plantedDoors, { "get_structured_list_for_selection(uuid)": "FINAL-SWITCH: planted" });
+    if (dbOwned.newDoors.length || dbOwned.stale.length || dbOwned.ownerless.length) throw new Error("db: an owned door must be GREEN");
+    if (judgeDb(plantedDoors, { "get_structured_list_for_selection(uuid)": "" }).ownerless.length !== 1) throw new Error("db: an owner-less entry must be RED");
+    const retired = judgeDb([door("get_structured_list_for_selection(uuid)", { answersMoved: true })], { "get_structured_list_for_selection(uuid)": "FINAL-SWITCH: planted" });
+    if (retired.stale.join() !== "get_structured_list_for_selection(uuid)" || retired.open.length) throw new Error("db: a retired door's baseline entry must be STALE");
+    if (!DB_DOORS_SQL.includes("udt_structured_list_items") || !DB_DOORS_SQL.includes(MOVED_SENTENCE)) throw new Error("db: the census must name every moved table and the sentence");
     console.log(
-      "✓ self-test: an older door, module, table read, realtime filter, ORM model and the older list maker are RED; a store door, comments, docstrings, the templates table and campaign proofs are not; a glob string hides nothing; line numbers survive block comments; an owned baseline is GREEN, an owner-less entry RED, a removed read STALE; old scope-table web reads RED; the press's list is read from the campaign file",
+      "✓ self-test: an older door, module, table read, realtime filter, ORM model and the older list maker are RED; a store door, comments, docstrings, the templates table and campaign proofs are not; a glob string hides nothing; line numbers survive block comments; an owned baseline is GREEN, an owner-less entry RED, a removed read STALE; old scope-table web reads RED; the press's list is read from the campaign file; a never-retired database door is RED (a refusal, trigger, event trigger and server-only function are not), owned GREEN, retired STALE",
     );
     return 0;
   } catch (e) {
@@ -370,9 +485,10 @@ function selfTest(): number {
   }
 }
 
-function main(): number {
+function main(): number | Promise<number> {
   const argv = process.argv.slice(2);
   if (argv.includes("--self-test")) return selfTest();
+  if (argv.includes("--db")) return mainDb(argv.filter((a) => a !== "--db"));
   const writeDoors = [...writeDoorsFromCampaign(readFileSync(CAMPAIGN, "utf8")), ...EXTRA_WRITE_DOORS];
   const hits = scan(ROOTS, writeDoors, OLD_READ_DOORS, OLD_MODULES);
   const baseline = readBaseline();
@@ -396,4 +512,12 @@ function main(): number {
   return v.newPlaces.length || v.stale.length || v.ownerless.length ? 1 : 0;
 }
 
-process.exitCode = main();
+void Promise.resolve(main()).then(
+  (code) => {
+    process.exitCode = code;
+  },
+  (err: unknown) => {
+    console.error(`✗ ${(err as Error).message}`);
+    process.exitCode = 1;
+  },
+);
