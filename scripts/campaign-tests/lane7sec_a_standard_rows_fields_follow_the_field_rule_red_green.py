@@ -101,17 +101,28 @@ with conn() as c:
     q = cur.fetchone(); assert q == (0, 0), q
     print('clone quarantine ok', q, 'mode', MODE, 'plant', PLANT)
 
-    # The DDL below waits for the registry table behind other sessions' reads on the shared clone.
-    cur.execute("set local lock_timeout = '90s'")
+    # The DDL below needs the registry table for an instant, and the shared clone reads it all the
+    # time: short waits, retried, so this run never queues other lanes behind it for long.
+    cur.execute("set local lock_timeout = '3s'")
+
+    def ddl(sql):
+        import time
+        for attempt in range(60):
+            cur.execute("savepoint ddl")
+            try:
+                cur.execute(sql); cur.execute("release savepoint ddl"); return
+            except psycopg.errors.LockNotAvailable:
+                cur.execute("rollback to savepoint ddl"); time.sleep(5)
+        raise SystemExit('could not take the registry lock on the clone in 60 tries; nothing measured')
     cur.execute("select exists(select 1 from information_schema.columns where table_schema='platform' and table_name='entity_types' and column_name='custom_fields_free_form')")
     r1_live = cur.fetchone()[0]
     if MODE == 'pre':
-        if r1_live: cur.execute(R1_DOWN.read_text())
-        cur.execute(SEC_DOWN.read_text())
+        if r1_live: ddl(R1_DOWN.read_text())
+        ddl(SEC_DOWN.read_text())
     elif MODE == 'r0':
-        if r1_live: cur.execute(R1_DOWN.read_text())
+        if r1_live: ddl(R1_DOWN.read_text())
     elif MODE == 'r1':
-        cur.execute(R1.read_text())
+        ddl(R1.read_text())
     elif MODE != 'current':
         sys.exit(f'unknown mode {MODE}')
 
