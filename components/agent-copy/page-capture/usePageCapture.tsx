@@ -106,6 +106,37 @@ export function getActivePageCapture(_version?: number): PageCapture | null {
   return normalizePageCapture(mergePageCapture(top.get(), merged));
 }
 
+/** What the menu shows before anyone uses it: the kind, the title and the sections read at copy time. */
+export type PageCaptureOutline = Pick<PageCapture, "kind" | "title"> & {
+  loadable: Array<Pick<PageCaptureSection, "id" | "title">>;
+};
+
+/**
+ * The capture's outline WITHOUT building it: no section value is walked into plain JSON. Render
+ * reads this; `getActivePageCapture()` (the whole, normalized capture) is read on use. Building the
+ * whole capture in render froze a 1,636-organization page on every registry change (sec_8f1a9be1…).
+ * `_version` as in `getActivePageCapture`.
+ */
+export function getActivePageCaptureOutline(_version?: number): PageCaptureOutline | null {
+  const top = captures[captures.length - 1];
+  if (!top) return null;
+  const base = top.get();
+  const sections = [
+    ...base.sections,
+    ...contributions.flatMap((c) => {
+      const got = c.get();
+      return Array.isArray(got) ? got : got.sections;
+    }),
+  ];
+  return {
+    kind: base.kind,
+    title: base.title,
+    loadable: sections
+      .filter((s) => typeof s.load === "function")
+      .map((s) => ({ id: s.id, title: s.title })),
+  };
+}
+
 /** Re-render when the registry changes (the control appears/disappears, data lands). */
 export function usePageCaptureVersion(): number {
   return useSyncExternalStore(subscribe, getVersion, getServerVersion);

@@ -13,14 +13,17 @@
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
-  loadableSections,
   pageCaptureGroomer,
   pageCaptureJson,
   pageCaptureMarkdown,
   pageCapturePayload,
   resolvePageCapture,
 } from "./pageCapture";
-import { getActivePageCapture, usePageCaptureVersion } from "./usePageCapture";
+import {
+  getActivePageCapture,
+  getActivePageCaptureOutline,
+  usePageCaptureVersion,
+} from "./usePageCapture";
 
 export function PageCaptureButton({
   size = "sm",
@@ -38,9 +41,10 @@ export function PageCaptureButton({
   ariaLabel?: string;
 }) {
   const version = usePageCaptureVersion();
-  const capture = getActivePageCapture(version);
+  // The outline only: the whole capture is built when a person uses the menu (`live()`).
+  const capture = getActivePageCaptureOutline(version);
   if (!capture) return null;
-  const loadable = loadableSections(capture);
+  const loadable = capture.loadable;
   const live = () => {
     const c = getActivePageCapture();
     if (!c) throw new Error("This page stopped describing itself; reload it and copy again.");
