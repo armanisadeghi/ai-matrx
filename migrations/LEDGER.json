@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T19:13:08.265Z",
+  "generated_at": "2026-10-02T20:03:53.230Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -451,6 +451,30 @@
       "filename": "chairdoors1_e_a_form_keeps_a_drawn_signature_as_a_file.sql",
       "checksum": "d607ee05d10bb1a8d079a29e47bd2c9d4f4691574d5d3fa339d7eeb117524ece",
       "applied_at": "2026-10-02 19:03:49.211551+00"
+    },
+    "migrations/campaign/chairdoors2_a_a_signed_in_person_never_writes_the_workflow_ledgers.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors2_a_a_signed_in_person_never_writes_the_workflow_ledgers.sql",
+      "checksum": "743cf08c4926ec5fdcaef6ef99592f77ad49578421de325bf3547e5a93c52cdd",
+      "applied_at": "2026-10-02 20:03:02.451209+00"
+    },
+    "migrations/campaign/chairdoors2_b_a_workflow_loop_has_two_knobs_and_its_own_stop.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors2_b_a_workflow_loop_has_two_knobs_and_its_own_stop.sql",
+      "checksum": "437bbcb5f4adafe41e62c3ee6c8ea8a857d2d901115f83d7d71b9f1bee2de9e1",
+      "applied_at": "2026-10-02 20:03:32.270565+00"
+    },
+    "migrations/campaign/chairdoors2_c_a_blank_group_sorts_last.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors2_c_a_blank_group_sorts_last.sql",
+      "checksum": "9ff2e737675b209ba6f7c53fe7ae15f5fdd12bad18cee1c1c40ff182559b8566",
+      "applied_at": "2026-10-02 20:03:52.133694+00"
+    },
+    "migrations/campaign/chairdoors2_f_a_table_kept_for_agent_output_waits_behind_show_app_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors2_f_a_table_kept_for_agent_output_waits_behind_show_app_tables.sql",
+      "checksum": "b6694ed8c39ff3bf8c674469a713235a36c510e5f6fccb9500724bc8cd6ea006",
+      "applied_at": "2026-10-02 19:59:40.392611+00"
     },
     "migrations/campaign/chairrc_a_record_changed_carries_its_change.sql": {
       "source": "matrx-frontend",
