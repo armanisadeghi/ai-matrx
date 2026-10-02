@@ -3,7 +3,7 @@
 -- trigger made inert (its function returns at once). The trigger itself stays: DROP TRIGGER takes ACCESS EXCLUSIVE on
 -- content_ir.kind_definition, which every catalog read waits behind (measured: lock timeout on the clone). Refusal rows
 -- the up file resolved stay resolved (they were true closures).
--- based-on: content_ir._kinds_glue_close_undeclared_refusals() 6e5468269058a9762d360573b8a997cbb8f16d2664a7bde7c456f83208896f8c
+-- based-on: content_ir._kinds_glue_close_undeclared_refusals() 10d66a87aa0d50aade5057e50e68d499be9ea6e3f4c0d12767fc154383899426
 -- based-on: content_ir.evaluate_kind_activation(uuid) e0d7ce42277dd328888d5bd7112e079e67fdd66b8e469f342b9f55d161d9a7c3
 -- lane: KINDS-GLUE
 

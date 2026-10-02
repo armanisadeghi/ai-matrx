@@ -284,7 +284,11 @@ as $function$
 declare
     v_disposition text := new.metadata ->> 'disposition';
 begin
-    if v_disposition not in ('record', 'envelope', 'receipt', 'proposal', 'prose') then
+    -- coalesce: `null not in (...)` is NULL, which an IF treats as false — a row declaring NOTHING
+    -- would fall through and close every open refusal for its slug with a NULL note (found by the
+    -- wave-1 verifier, 2026-10-02). A soft-deleted row is not the live kind and closes nothing.
+    if coalesce(v_disposition, '') not in ('record', 'envelope', 'receipt', 'proposal', 'prose')
+       or new.deleted_at is not null then
         return null;
     end if;
     if tg_op = 'UPDATE' and (old.metadata ->> 'disposition') is not distinct from v_disposition then
