@@ -265,6 +265,11 @@ declare
   v_cast   text;
   v_pub    text;
   v_has    jsonb;
+  v_field_orgs uuid[];
+  v_cand   uuid[];
+  v_vis    uuid[];
+  v_perm   text;
+  v_restr  text;
 begin
   if p_token is null or p_token !~ '^[a-z][a-z0-9_.]{0,62}$' then
     raise exception 'There is no table or definition called "%".', coalesce(p_token, '')
@@ -634,13 +639,40 @@ begin
     end loop;
     if coalesce(v_reg.custom_fields_enabled, false) and coalesce((v_has ->> 'custom_fields')::boolean, false)
        and coalesce((v_has ->> 'organization_id')::boolean, false) then
+      -- A row's custom fields are its OWN organization's: the seat's organizations, plus every
+      -- other organization holding fields on this table in which she can read at least one row.
+      -- "Can read" is the table's own SELECT policies, re-asked here (this body is DEFINER, so
+      -- it cannot run as her): the permissive ones ORed, the restrictive ones ANDed, exactly as
+      -- Postgres combines them for role authenticated. Only labels hang on this; every VALUE is
+      -- still read as the seat in platform.drill_rows.
+      v_field_orgs := array(select iam.my_orgs());
+      select coalesce(array_agg(distinct f.organization_id), '{}') into v_cand
+        from custom.record f
+       where f.table_id = custom.field_kernel_id() and f.deleted_at is null
+         and f.data ->> 'table_token' = v_fact and not (f.organization_id = any (v_field_orgs));
+      if cardinality(v_cand) > 0 then
+        select string_agg('(' || pg_get_expr(p.polqual, p.polrelid) || ')', ' or ') filter (where p.polpermissive),
+               string_agg('(' || pg_get_expr(p.polqual, p.polrelid) || ')', ' and ') filter (where not p.polpermissive)
+          into v_perm, v_restr
+          from pg_policy p
+         where p.polrelid = format('%I.%I', v_et.schema_name, v_et.table_name)::regclass
+           and p.polcmd in ('r', '*') and p.polqual is not null
+           and (0::oid = any (p.polroles) or 'authenticated'::regrole::oid = any (p.polroles));
+        if v_perm is not null then
+          execute format('select coalesce(array_agg(distinct t.organization_id), ''{}'') from %I.%I t where t.organization_id = any ($1) and (%s) and (%s)',
+                         v_et.schema_name, v_et.table_name, v_perm, coalesce(v_restr, 'true'))
+            into v_vis using v_cand;
+          v_field_orgs := v_field_orgs || v_vis;
+        end if;
+      end if;
       for v_f in
-        select f.id, f.organization_id, f.data
+        select f.id, f.organization_id, f.data, o.name as org_name
           from custom.record f
+          left join iam.organizations o on o.id = f.organization_id
          where f.table_id = custom.field_kernel_id()
            and f.deleted_at is null
            and f.data ->> 'table_token' = v_fact
-           and f.organization_id in (select iam.my_orgs())
+           and f.organization_id = any (v_field_orgs)
          order by coalesce((f.data ->> 'sort')::numeric, 100), f.data ->> 'label', f.id
       loop
         v_ft := coalesce(v_f.data ->> 'type', 'text');
@@ -662,13 +694,16 @@ begin
                          case when v_cast in ('jsonb', 'text') then '' else '::' || v_cast end)));
         v_apicols := v_apicols || jsonb_build_array(jsonb_strip_nulls(jsonb_build_object(
           'api_name', 'cf:' || v_f.id, 'name', coalesce(v_f.data ->> 'label', v_f.data ->> 'key'), 'type', v_pub,
-          'organization_id', v_f.organization_id, 'custom', true, 'key', v_f.data ->> 'key',
+          'organization_id', v_f.organization_id, 'organization', v_f.org_name, 'custom', true, 'key', v_f.data ->> 'key',
           'writable', v_reg.api_reach = 'read_write', 'indexed', false,
           'required', case when (v_f.data ->> 'required')::boolean then true end,
           'unit', v_f.data ->> 'unit')));
       end loop;
     end if;
     v_def := v_def || jsonb_build_object('api', jsonb_strip_nulls(jsonb_build_object(
+      -- the name a person reads (custom.entity_table's rule: never the bare type word)
+      'label', case when lower(coalesce(nullif(v_et.label, ''), v_et.type)) = lower(v_et.type)
+                    then initcap(replace(v_et.table_name, '_', ' ')) else v_et.label end,
       'reach', coalesce(v_reg.api_reach, 'none'), 'reach_reason', v_reg.api_reach_reason,
       'writable_columns', to_jsonb(v_reg.writable), 'create_via', coalesce(v_reg.create_via, 'refuse'),
       'search_columns', to_jsonb(v_reg.search_columns),
@@ -853,14 +888,26 @@ begin
     if v_scope = 'public' and not coalesce((v_has ->> 'published_to_web')::boolean, false) then
       raise exception '% has no public records, so it has no "public" list.', p_def ->> 'label' using errcode = '22023';
     end if;
+    -- the two discovery lanes, never folded into All: a row published platform-wide (Public),
+    -- and a row of a global-readable system organization (System, iam.system_orgs)
+    v_x := concat_ws(' or ',
+             case when coalesce((v_has ->> 'published_to_web')::boolean, false) then 'coalesce(t.published_to_web, false)' end,
+             case when coalesce((v_has ->> 'organization_id')::boolean, false)
+                  then 'coalesce(t.organization_id in (select so.organization_id from iam.system_orgs so where so.global_readable), false)' end);
     if v_scope = 'all' then
-      -- the canonical All: Mine, My team, My Orgs and Shared — never rows reachable only by being public
-      if coalesce((v_has ->> 'published_to_web')::boolean, false) then
-        v_preds := v_preds || format('(not coalesce(t.published_to_web, false)%s%s or t.%I in (select p.resource_id from iam.permissions p where p.resource_type = ($1->>''tok'') and p.granted_to_user_id = ($1->>''me'')::uuid and p.status <> ''rejected'' and (p.expires_at is null or p.expires_at > now())))',
+      -- the canonical All: Mine ∪ My team ∪ My Orgs ∪ Shared, within her row rules
+      if v_x <> '' then
+        v_preds := v_preds || format('(not (%s)%s%s or t.%I in (select p.resource_id from iam.permissions p where p.resource_type = ($1->>''tok'') and p.granted_to_user_id = ($1->>''me'')::uuid and p.status <> ''rejected'' and (p.expires_at is null or p.expires_at > now())))',
+          v_x,
           case when (v_has ->> 'created_by')::boolean then ' or t.created_by = ($1->>''me'')::uuid' else '' end,
           case when (v_has ->> 'organization_id')::boolean then ' or t.organization_id in (select iam.my_orgs())' else '' end,
           v_fact -> 'pk' ->> 0);
       end if;
+    elsif v_scope = 'system' then
+      if not coalesce((v_has ->> 'organization_id')::boolean, false) then
+        raise exception '% does not belong to organizations, so it has no "system" list.', p_def ->> 'label' using errcode = '22023';
+      end if;
+      v_preds := v_preds || 't.organization_id in (select so.organization_id from iam.system_orgs so where so.global_readable)'::text;
     elsif v_scope = 'mine' then
       v_preds := v_preds || 't.created_by = ($1->>''me'')::uuid'::text;
     elsif v_scope = 'team' then
@@ -869,14 +916,14 @@ begin
       v_preds := v_preds || 't.organization_id in (select iam.my_orgs())'::text;
     elsif v_scope = 'shared' then
       v_preds := v_preds || format('(t.created_by is distinct from ($1->>''me'')::uuid and (t.organization_id is null or t.organization_id not in (select iam.my_orgs()))%s)',
-        case when (v_has ->> 'published_to_web')::boolean then ' and not coalesce(t.published_to_web, false)' else '' end);
+        case when v_x <> '' then format(' and not (%s)', v_x) else '' end);
     elsif v_scope = 'public' then
       v_preds := v_preds || 'coalesce(t.published_to_web, false)'::text;
     elsif v_scope = 'any' then
       null;   -- reading by id: exactly what her row rules let her open, with no list defaults
     else
       raise exception '"%" is not a scope.', q ->> 'scope' using errcode = '22023',
-        hint = 'A list is scoped all, mine, team, orgs, shared or public.';
+        hint = 'A list is scoped all, mine, team, orgs, shared, public or system.';
     end if;
     -- one organization, when she names one; every organization she can read otherwise
     if jsonb_typeof(q -> 'organization') = 'string' then
@@ -1972,12 +2019,14 @@ $function$;
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- DOOR 4. ONE WRITE DOOR FOR A STANDARD ROW, AS THE PERSON. SECURITY INVOKER: one UPDATE that
 -- the table's own update policy, governance guard and custom-field guard all judge.
---   · the row's organization is the row's own; a call that names another is refused;
+--   · the row's organization governs (access is personal: a row shared with her as editor
+--     from another organization is hers to change, as in the app); an organization named by
+--     the call is optional on a change and refused when it is not the row's; a create needs one;
 --   · real columns only where the registry lists them (api_writable_columns; party: none);
 --   · custom values merged atomically inside the UPDATE (two writers to two keys keep both);
 --   · archive / restore set deleted_at; the table's own rule decides who may;
---   · no actor argument: who wrote it comes from the session (the guard stamps it), and any
---     _actor / _on_behalf_of a caller put in the values is dropped before the UPDATE.
+--   · no actor argument: who wrote it comes from the session (the guard stamps it); a key that
+--     starts with _ is the store's own and is refused by name, never dropped in silence.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION custom.entity_row_write(
   p_organization_id uuid, p_token text, p_record_id uuid,
@@ -2003,7 +2052,10 @@ declare
   v_cols   jsonb := coalesce(p_columns, '{}'::jsonb);
   v_custom jsonb := coalesce(p_custom, '{}'::jsonb);
 begin
-  perform custom.assert_entity_door(p_organization_id, 'custom.entity_row_write');
+  -- the client wall is asked of an organization the call names; a change by id needs none
+  if p_organization_id is not null or p_record_id is null then
+    perform custom.assert_entity_door(p_organization_id, 'custom.entity_row_write');
+  end if;
   select * into t from custom.entity_table(p_token);
   perform custom.assert_entity_is_organization_scoped(t.token, t.label, t.has_organization);
   select f.api_reach, f.api_writable_columns, f.create_via into v_reg from platform.api_facts(p_token) f;
@@ -2030,9 +2082,9 @@ begin
     raise exception 'There is no % you can open with that id.', t.label using errcode = '02000';
   end if;
   v_org := (v_row ->> 'organization_id')::uuid;
-  if v_org is distinct from p_organization_id then
+  if p_organization_id is not null and v_org is distinct from p_organization_id then
     raise exception 'This % belongs to another organization, not to the one this call names.', t.label
-      using errcode = '42501', hint = 'Name the organization the record belongs to.';
+      using errcode = '42501', hint = 'Leave the organization out, or name the one the record belongs to.';
   end if;
 
   -- real columns: only the ones the registry lists for the API
@@ -2048,8 +2100,14 @@ begin
   end loop;
 
   -- custom values: a key set to null clears it (and its envelope); the author is the session's
+  select string_agg(format('"%s"', k), ', ' order by k) into v_key
+    from jsonb_object_keys(v_custom) k where left(k, 1) = '_';
+  if v_key is not null then
+    raise exception '% % kept by the store itself, so it cannot be written. Nothing was written.', v_key,
+      case when position(',' in v_key) > 0 then 'are' else 'is' end
+      using errcode = '22023', hint = 'Who changed a value comes from your sign-in; send only the fields you are setting.';
+  end if;
   for v_key in select k from jsonb_object_keys(v_custom) k loop
-    continue when left(v_key, 1) = '_';
     if jsonb_typeof(v_custom -> v_key) = 'null' then
       v_clear := v_clear || v_key;
     else
@@ -2099,9 +2157,12 @@ INSERT INTO platform.client_callable_door
 SELECT 'custom', 'entity_row_write',
        'p_organization_id uuid, p_token text, p_record_id uuid, p_columns jsonb, p_custom jsonb, p_expected_version integer, p_archive boolean',
        'migrations/campaign/lane7w3a_the_table_api_reaches_crm_people.sql (lane 7 STANDARD-TABLES W3a)',
-       'SECURITY INVOKER: one UPDATE as the caller, so the standard table''s own update policy, governance guard and custom-field guard decide; a row the caller may not change writes zero rows and is refused by name. p_organization_id is checked by custom.assert_client_may_reach and must be the row''s own; NULL is refused by name. Real columns only from platform.entity_types.api_writable_columns. No actor argument.',
+       'SECURITY INVOKER: one UPDATE as the caller, so the standard table''s own update policy, governance guard and custom-field guard decide; a row the caller may not change writes zero rows and is refused by name. The row''s own organization governs a change by id; p_organization_id is optional there (checked by custom.assert_client_may_reach when given, and refused when not the row''s) and required on a create. Real columns only from platform.entity_types.api_writable_columns. No actor argument; _-keys refused by name.',
        true,
        array['uuid'::regtype, 'text'::regtype, 'uuid'::regtype, 'jsonb'::regtype, 'jsonb'::regtype, 'integer'::regtype, 'boolean'::regtype]::oid[]
 WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door WHERE schema_name = 'custom' AND function_name = 'entity_row_write');
+UPDATE platform.client_callable_door SET reason = 'SECURITY INVOKER: one UPDATE as the caller, so the standard table''s own update policy, governance guard and custom-field guard decide; a row the caller may not change writes zero rows and is refused by name. The row''s own organization governs a change by id; p_organization_id is optional there (checked by custom.assert_client_may_reach when given, and refused when not the row''s) and required on a create. Real columns only from platform.entity_types.api_writable_columns. No actor argument; _-keys refused by name.'
+ WHERE schema_name = 'custom' AND function_name = 'entity_row_write';
+
 
 GRANT EXECUTE ON FUNCTION custom.entity_row_write(uuid, text, uuid, jsonb, jsonb, integer, boolean) TO authenticated;

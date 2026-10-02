@@ -15,7 +15,6 @@ DROP FUNCTION IF EXISTS custom.entity_row_write(uuid, text, uuid, jsonb, jsonb, 
 DROP FUNCTION IF EXISTS platform.api_tables();
 DROP FUNCTION IF EXISTS platform.api_facts(text);
 DROP FUNCTION IF EXISTS platform.api_reach_census();
-DELETE FROM platform.feature_knob WHERE feature = 'table_api' AND key IN ('exact_count_max', 'statement_timeout_ms');
 
 CREATE OR REPLACE FUNCTION platform._drill_resolve(p_organization_id uuid, p_token text)
  RETURNS jsonb
@@ -1434,6 +1433,9 @@ begin
     || jsonb_build_object('as_of', null);   -- read live from the table: no summary moment
 end
 $function$;
+
+-- the knobs go after their readers are gone (knob_resolve raises on a missing key)
+DELETE FROM platform.feature_knob WHERE feature = 'table_api' AND key IN ('exact_count_max', 'statement_timeout_ms');
 
 ALTER TABLE platform.entity_types
   DROP CONSTRAINT IF EXISTS entity_types_api_reach_word,
