@@ -72,6 +72,7 @@ import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { readDirectiveRecord } from "@/features/matrx-envelope/directiveRecordRow";
+import { explainDirectiveFailure } from "@/features/matrx-envelope/directiveFailureWords";
 
 const DIRECTIVE_ITEM_OVERLAY_ID = "directiveItemWindow" as const;
 
@@ -375,6 +376,9 @@ export const matrxDirectiveHost: DirectiveHost = {
   renderCopy,
   nouns: matrxDirectiveNouns,
   itemKind: matrxDirectiveItemKind,
+  // A failure the app recognises gets its own plain words; the raw server text
+  // stays behind the card's "Details".
+  explainFailure: explainDirectiveFailure,
   reportError: (message: string) =>
     captureError({
       source: "content-ir",
