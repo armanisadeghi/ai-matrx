@@ -293,7 +293,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
                   type="button"
                   onClick={() => handleRemove(variable.name)}
                   title="Remove variable"
-                  aria-label={`Remove variable ${variable.name}`}
+                  aria-label={`Remove variable ${variableRunLabel(variable)}`}
                   className="rounded-sm hover:text-destructive transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <X className="w-3 h-3" />

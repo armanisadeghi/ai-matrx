@@ -18,6 +18,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -112,7 +113,7 @@ export function AgentVariableEditor({
   // Name buffer — local draft for editing; resets when the variable changes.
   // The field shows what the person typed ("Normal Text"); the `{{key}}` the
   // messages use (`normal_text`) is derived from it on blur and kept beside it.
-  const shownName = variable?.label?.trim() || variableName;
+  const shownName = variable?.label?.trim() || humanizeIdentifier(variableName) || variableName;
   const [nameDraftState, setNameDraftState] = useState({
     sourceName: variableName,
     value: shownName,
@@ -183,8 +184,10 @@ export function AgentVariableEditor({
       setNameDraft(shownName);
       return;
     }
-    // The person's own words are the label; a name typed AS the key needs none.
-    const label = typed !== sanitized ? typed : undefined;
+    // The person's own words are the label; a name typed AS the key — or exactly
+    // as the humanizer would say it — needs none (an untouched blur never dirties).
+    const label =
+      typed !== sanitized && typed !== humanizeIdentifier(sanitized) ? typed : undefined;
     if (sanitized === variableName) {
       if (label !== (variable.label?.trim() || undefined)) updateVariable({ label });
       setNameDraft(label ?? variableName);
