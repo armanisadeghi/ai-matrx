@@ -20,6 +20,7 @@
  * (`createCanvasCallbackScope` keeps that bookkeeping).
  */
 
+import { useSyncExternalStore } from "react";
 import { callbackManager } from "@/utils/callbackManager";
 
 export type CanvasCallbackIds<K extends string> = { readonly [P in K]: string };
@@ -49,6 +50,24 @@ export function resolveCanvasCallback(id: unknown): (() => void) | null {
   if (typeof id !== "string" || !id) return null;
   const callback = callbackManager.get<(data?: unknown) => void>(id);
   return callback ? () => callback() : null;
+}
+
+function subscribeToCallbacks(onChange: () => void): () => void {
+  return callbackManager.subscribeToRegistry(onChange);
+}
+
+/**
+ * The live handler behind an id, SUBSCRIBED: the component re-renders the
+ * moment its opener releases the id, so a tab whose editor closed swaps its
+ * buttons for the closed-editor line instead of calling a stale handler.
+ */
+export function useCanvasCallback(id: unknown): (() => void) | null {
+  const live = useSyncExternalStore(
+    subscribeToCallbacks,
+    () => (typeof id === "string" && id ? callbackManager.get<(data?: unknown) => void>(id) : undefined),
+    () => undefined,
+  );
+  return live ? () => live() : null;
 }
 
 /** Drops every handler of one open. */

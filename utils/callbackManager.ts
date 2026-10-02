@@ -19,9 +19,26 @@ interface CallbackEntry<T = any, C extends CallbackContext = CallbackContext> {
 class CallbackManager {
   private callbacks: Map<string, CallbackEntry>;
   private groups: Map<string, Set<string>>;
+  private registryListeners: Set<() => void>;
   constructor() {
     this.callbacks = new Map();
     this.groups = new Map();
+    this.registryListeners = new Set();
+  }
+  /**
+   * Observe the registry itself: `listener` runs after any entry is added or
+   * removed (register, trigger-and-remove, remove, removeGroup). This is what
+   * lets a view that resolves ids with `get` re-render when an id goes away —
+   * the shape `useSyncExternalStore` needs. Returns the unsubscribe.
+   */
+  subscribeToRegistry(listener: () => void): () => void {
+    this.registryListeners.add(listener);
+    return () => {
+      this.registryListeners.delete(listener);
+    };
+  }
+  private notifyRegistry(): void {
+    for (const listener of [...this.registryListeners]) listener();
   }
   /**
    * Original method - maintains backwards compatibility
@@ -29,6 +46,7 @@ class CallbackManager {
   register<T>(callback: Callback<T>): string {
     const callbackId = uuidv4();
     this.callbacks.set(callbackId, { callback });
+    this.notifyRegistry();
     return callbackId;
   }
   /**
@@ -55,6 +73,7 @@ class CallbackManager {
       group.add(callbackId);
       this.groups.set(groupId, group);
     }
+    this.notifyRegistry();
 
     return callbackId;
   }
@@ -106,6 +125,7 @@ class CallbackManager {
       }
 
       this.callbacks.delete(callbackId);
+      this.notifyRegistry();
       this.removeFromGroups(callbackId);
     }
   }
@@ -138,6 +158,7 @@ class CallbackManager {
 
       if (options?.removeAfterTrigger !== false) {
         this.callbacks.delete(callbackId);
+        this.notifyRegistry();
         this.removeFromGroups(callbackId);
       }
     }
@@ -206,6 +227,7 @@ class CallbackManager {
 
     if (options?.removeAfterSuccess !== false) {
       this.callbacks.delete(callbackId);
+      this.notifyRegistry();
       this.groups.delete(groupId);
     }
   }
@@ -251,6 +273,7 @@ class CallbackManager {
    */
   remove(callbackId: string): void {
     this.callbacks.delete(callbackId);
+    this.notifyRegistry();
     this.removeFromGroups(callbackId);
   }
 
@@ -289,6 +312,7 @@ class CallbackManager {
       // this entry is retrieved only via `get<WidgetHandle>()`, never invoked as a Callback.
       callback: handle as unknown as Callback,
     });
+    this.notifyRegistry();
     return callbackId;
   }
   /**
@@ -301,6 +325,7 @@ class CallbackManager {
         this.callbacks.delete(callbackId);
       });
       this.groups.delete(groupId);
+      this.notifyRegistry();
     }
   }
   private removeFromGroups(callbackId: string): void {

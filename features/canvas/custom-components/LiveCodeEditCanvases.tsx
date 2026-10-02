@@ -4,13 +4,13 @@
  * The canvas bodies for the code editor's live surfaces (`code_preview`,
  * `code_edit_error`). Their content data is JSON; the Apply / Discard / Close
  * buttons call back into the editor that opened them through ids registered in
- * `features/canvas/liveCallbacks.ts`. When that editor is gone the ids resolve
- * to nothing, and the body says so in one line instead of drawing buttons that
+ * `features/canvas/liveCallbacks.ts`, subscribed: when that editor releases them
+ * the body re-renders and says so in one line instead of drawing buttons that
  * do nothing.
  */
 
 import { Unplug } from "lucide-react";
-import { resolveCanvasCallback } from "@/features/canvas/liveCallbacks";
+import { useCanvasCallback } from "@/features/canvas/liveCallbacks";
 import type { CodeEdit } from "@/features/code-editor/utils/parseCodeEdits";
 import { CodePreviewCanvas } from "./CodePreviewCanvas";
 import { CodeEditErrorCanvas } from "./CodeEditErrorCanvas";
@@ -55,9 +55,9 @@ function EditorClosed() {
 
 export function LiveCodePreviewCanvas({ data }: { data: CodePreviewCanvasData }) {
   const callbacks = readCallbacks(data);
-  const onApply = resolveCanvasCallback(callbacks.onApply);
-  const onDiscard = resolveCanvasCallback(callbacks.onDiscard);
-  const onCloseModal = resolveCanvasCallback(callbacks.onCloseModal);
+  const onApply = useCanvasCallback(callbacks.onApply);
+  const onDiscard = useCanvasCallback(callbacks.onDiscard);
+  const onCloseModal = useCanvasCallback(callbacks.onCloseModal);
   if (!onApply || !onDiscard) return <EditorClosed />;
   return (
     <CodePreviewCanvas
@@ -74,7 +74,7 @@ export function LiveCodePreviewCanvas({ data }: { data: CodePreviewCanvasData })
 }
 
 export function LiveCodeEditErrorCanvas({ data }: { data: CodeEditErrorCanvasData }) {
-  const onClose = resolveCanvasCallback(readCallbacks(data).onClose);
+  const onClose = useCanvasCallback(readCallbacks(data).onClose);
   if (!onClose) return <EditorClosed />;
   return (
     <CodeEditErrorCanvas

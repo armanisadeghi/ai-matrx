@@ -46,7 +46,11 @@ import {
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { AgentRunner } from "@ai-matrx/chat/agents/components/smart/AgentRunner";
+import type { CanvasItemId } from "@ai-matrx/canvas";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import type { CanvasContent } from "@/features/canvas/canvasContent";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { openArtifactContent } from "@/features/canvas/host/useArtifactCanvas";
 import { createCanvasCallbackScope } from "@/features/canvas/liveCallbacks";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
@@ -102,7 +106,18 @@ export function ContextAwareCodeEditorModal({
 }: ContextAwareCodeEditorModalProps) {
   const dispatch = useAppDispatch();
   const { launchMandate } = useAgentLauncher();
-  const { open: openCanvas, close: closeCanvas } = useCanvas();
+  const { close: closeCanvas } = useCanvas();
+  const canvas = useOptionalCanvas();
+  // Opens one tab whose own buttons may close THAT tab — never the whole
+  // canvas, which can hold the person's other work. The tab's id is known
+  // only after the open, so the close handler reads it late.
+  const openOwnTab = (build: (closeTab: () => void) => CanvasContent) => {
+    let tabId: CanvasItemId | null = null;
+    const closeTab = () => {
+      if (tabId) canvas?.close(tabId);
+    };
+    tabId = openArtifactContent(canvas, build(closeTab));
+  };
   // One registry scope per editor: every preview's Apply / Discard / Close
   // handlers, released together when the editor closes.
   const [callbackScope] = useState(createCanvasCallbackScope);
@@ -269,36 +284,36 @@ export function ContextAwareCodeEditorModal({
       const validation = validateEdits(currentCodeRef.current, parsed.edits);
 
       if (!validation.valid) {
-        openCanvas({
+        openOwnTab((closeTab) => ({
           type: "code_edit_error",
           data: {
             errors: validation.errors,
             warnings: validation.warnings,
             rawResponse: response,
-            callbacks: callbackScope.register({ onClose: () => closeCanvas() }),
+            callbacks: callbackScope.register({ onClose: closeTab }),
           },
           metadata: {
             title: "Code Edit Error",
           },
-        });
+        }));
         return;
       }
 
       const result_apply = applyCodeEdits(currentCodeRef.current, parsed.edits);
 
       if (!result_apply.success) {
-        openCanvas({
+        openOwnTab((closeTab) => ({
           type: "code_edit_error",
           data: {
             errors: result_apply.errors,
             warnings: result_apply.warnings || [],
             rawResponse: response,
-            callbacks: callbackScope.register({ onClose: () => closeCanvas() }),
+            callbacks: callbackScope.register({ onClose: closeTab }),
           },
           metadata: {
             title: "Code Edit Error",
           },
-        });
+        }));
         return;
       }
 
@@ -336,7 +351,7 @@ export function ContextAwareCodeEditorModal({
         </>
       );
 
-      openCanvas({
+      openOwnTab((closeTab) => ({
         type: "code_preview",
         data: {
           originalCode: currentCodeRef.current,
@@ -369,9 +384,7 @@ export function ContextAwareCodeEditorModal({
             currentCodeRef.current = newCode;
             onCodeChange(newCode, nextVersion);
           },
-          onDiscard: () => {
-            closeCanvas();
-          },
+          onDiscard: closeTab,
           onCloseModal: () => {
             onOpenChange(false);
           },
@@ -384,12 +397,11 @@ export function ContextAwareCodeEditorModal({
               ? parsed.explanation
               : undefined,
         },
-      });
+      }));
     },
     [
       language,
-      openCanvas,
-      closeCanvas,
+      openOwnTab,
       callbackScope,
       onCodeChange,
       onOpenChange,

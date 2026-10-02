@@ -15,7 +15,9 @@
  *   b. resolves-by-id  → made `resolveCanvasCallback` return null; Apply was
  *      replaced by the closed-editor line → RED.
  *   c. honest-when-gone → skipped `releaseAll`; the stale Apply button kept
- *      rendering after the editor closed → RED.
+ *      rendering after the editor closed → RED. And with the body resolving
+ *      ids once per render (`resolveCanvasCallback`, no registry
+ *      subscription) the release left the stale buttons on screen → RED.
  */
 
 import React, { act } from "react";
@@ -128,7 +130,7 @@ describe("code-edit canvas tabs carry callback ids, never functions", () => {
 
     expect(onError).not.toHaveBeenCalled();
     expect(id).not.toBeNull();
-    scope.releaseAll();
+    act(() => scope.releaseAll());
   });
 
   it("resolves-by-id: the preview's buttons call the editor's handlers", () => {
@@ -148,7 +150,7 @@ describe("code-edit canvas tabs carry callback ids, never functions", () => {
     expect(onCloseModal).toHaveBeenCalledTimes(1);
     // A handler stays callable: Apply twice is the editor's call, not ours.
     expect(resolveCanvasCallback(data.callbacks.onApply)).not.toBeNull();
-    scope.releaseAll();
+    act(() => scope.releaseAll());
   });
 
   it("honest-when-gone: once the editor closes, the tab says so instead of dead buttons", () => {
@@ -178,15 +180,10 @@ describe("code-edit canvas tabs carry callback ids, never functions", () => {
     expect(errorClose).toHaveBeenCalledTimes(1);
     expect(button("Apply")).not.toBeNull();
 
-    scope.releaseAll();
-    act(() =>
-      root.render(
-        <>
-          <LiveCodePreviewCanvas data={{ ...data }} />
-          <LiveCodeEditErrorCanvas data={{ ...errorData }} />
-        </>,
-      ),
-    );
+    // The editor closes. Nothing re-renders the tab from outside — no new
+    // data, no parent render — so only a subscription to the registry can
+    // swap the buttons for the honest line.
+    act(() => scope.releaseAll());
 
     expect(button("Apply")).toBeNull();
     expect(button("Close")).toBeNull();
