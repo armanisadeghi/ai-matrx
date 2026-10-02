@@ -18,6 +18,8 @@ interface SharedBattleInputProps {
   description?: string;
   showHeading?: boolean;
   surfaceValueAnchors?: SmartAgentInputSurfaceValueAnchors;
+  /** One line under the composer when Submit All needs something from the person. */
+  notice?: string | null;
 }
 
 export function SharedBattleInput({
@@ -26,6 +28,7 @@ export function SharedBattleInput({
   description = "Use Submit All in the toolbar to run every column.",
   showHeading = true,
   surfaceValueAnchors,
+  notice,
 }: SharedBattleInputProps) {
   // The unsent draft belongs to THIS battle: a saved battle keeps its own key,
   // an unsaved one the mode's "new" key. One surface key for every battle let
@@ -55,6 +58,11 @@ export function SharedBattleInput({
         variablesPanelStyle="inline"
         surfaceValueAnchors={surfaceValueAnchors}
       />
+      {notice ? (
+        <p role="status" className="text-[11px] text-amber-600 dark:text-amber-400">
+          {notice}
+        </p>
+      ) : null}
     </div>
   );
 }

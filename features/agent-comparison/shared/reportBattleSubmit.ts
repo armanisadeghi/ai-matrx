@@ -9,6 +9,8 @@ import type { BattleSubmitResult } from "./battlePersistence";
 export function reportBattleSubmit(res: BattleSubmitResult): void {
   // Closing the organization picker means "not now": nothing ran, nothing to say.
   if (res.cancelled) return;
+  // Every column waits for a typed follow-up: the shared composer's line says so.
+  if (res.launched === 0 && res.failed === 0 && (res.needsFollowUp ?? 0) > 0) return;
   const parts: string[] = [];
   if (res.launched > 0) parts.push(`${res.launched} launched`);
   if (res.skipped > 0) parts.push(`${res.skipped} skipped`);

@@ -12,7 +12,7 @@
  */
 
 import { cn } from "@ai-matrx/design-system";
-import type { ContextDeliveredText } from "@host/types/python-generated/stream-events";
+import type { ContextDeliveredText } from "@ai-matrx/agents/context";
 import type { ContextDeliveredFields } from "../../redux/execution-system/context-rules/receipt-check";
 
 export function ContextDeliveredBlock({

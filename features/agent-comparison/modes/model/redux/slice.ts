@@ -12,6 +12,7 @@ const initialState: ModelBattleState = {
   activeSetId: null,
   activeSetName: null,
   isSubmittingAll: false,
+  followUpNeeded: false,
 };
 
 const slice = createSlice({
@@ -103,6 +104,9 @@ const slice = createSlice({
     submitAllFinished(state) {
       state.isSubmittingAll = false;
     },
+    setModelFollowUpNeeded(state, action: PayloadAction<boolean>) {
+      state.followUpNeeded = action.payload;
+    },
 
     setActiveModelSet(
       state,
@@ -123,6 +127,7 @@ const slice = createSlice({
       state.activeSetId = null;
       state.activeSetName = null;
       state.isSubmittingAll = false;
+      state.followUpNeeded = false;
     },
   },
 });
@@ -139,6 +144,7 @@ export const {
   setModelInputConversationId,
   submitAllStarted,
   submitAllFinished,
+  setModelFollowUpNeeded,
   setActiveModelSet,
   resetModel,
 } = slice.actions;

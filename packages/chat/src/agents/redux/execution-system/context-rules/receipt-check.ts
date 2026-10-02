@@ -16,16 +16,65 @@
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import {
   compareReceipt,
+  deliveredFields,
+  type ContextDeliveredText,
   type ContextReceipt,
   type ContextReceiptMismatch,
+  type ContextReceiptRow,
+  type ResolvedContextRow,
 } from "@ai-matrx/agents/context";
 import type {
-  ContextDeliveredText,
+  ContextDeliveredText as WireDeliveredText,
   ContextReceiptData,
+  ContextReceiptRow as WireReceiptRow,
 } from "@host/types/python-generated/stream-events";
 import { setContextReceipt } from "../instance-context/instance-context.slice";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import { toast } from "../../../../host/notify";
+
+/**
+ * THE ONE normalizer of a generated receipt row (the server's OpenAPI shape, where
+ * every defaulted field is optional) to the package's `ContextReceiptRow`. Every
+ * host reader of a receipt row goes through it — never hands a generated field
+ * to a package type directly (the two `ContextDeliveredText` types differ:
+ * the wire's `truncated` is optional, the package's is not).
+ */
+export function toContextReceiptRow(row: WireReceiptRow): ContextReceiptRow {
+  const out: ContextReceiptRow = {
+    key: row.key,
+    label: row.label,
+    surface_key: row.surface_key,
+    origin: row.origin,
+    chars: row.chars ?? null,
+    include: row.include,
+    max_inline_chars: row.max_inline_chars,
+    delivery: row.delivery,
+    decided_by: row.decided_by,
+    user_rule: row.user_rule
+      ? {
+          ...(typeof row.user_rule.include === "boolean" ? { include: row.user_rule.include } : {}),
+          ...(typeof row.user_rule.max_inline_chars === "number"
+            ? { max_inline_chars: row.user_rule.max_inline_chars }
+            : {}),
+        }
+      : null,
+    clamped: row.clamped ?? false,
+    client_sent_excluded: row.client_sent_excluded ?? false,
+    blocked_by: row.blocked_by ?? null,
+    consumed_as: row.consumed_as ?? null,
+    consumed_into: row.consumed_into ?? [],
+  };
+  const delivered = toDeliveredText(row.delivered);
+  if (delivered) out.delivered = delivered;
+  const onRequest = toDeliveredText(row.on_request);
+  if (onRequest) out.on_request = onRequest;
+  return out;
+}
+
+function toDeliveredText(text: WireDeliveredText | null | undefined): ContextDeliveredText | null {
+  if (!text) return null;
+  return { text: text.text, chars: text.chars, truncated: text.truncated ?? false, sha256: text.sha256 };
+}
 
 /** Normalize the generated wire type (optional fields) to the package's receipt. */
 export function toContextReceipt(data: ContextReceiptData): ContextReceipt {
@@ -35,32 +84,7 @@ export function toContextReceipt(data: ContextReceiptData): ContextReceipt {
     cap: data.cap,
     model_reads_context: data.model_reads_context !== false,
     rules_error: data.rules_error ?? null,
-    rows: (data.rows ?? []).map((row) => ({
-      key: row.key,
-      label: row.label,
-      surface_key: row.surface_key,
-      origin: row.origin,
-      chars: row.chars ?? null,
-      include: row.include,
-      max_inline_chars: row.max_inline_chars,
-      delivery: row.delivery,
-      decided_by: row.decided_by,
-      user_rule: row.user_rule
-        ? {
-            ...(typeof row.user_rule.include === "boolean"
-              ? { include: row.user_rule.include }
-              : {}),
-            ...(typeof row.user_rule.max_inline_chars === "number"
-              ? { max_inline_chars: row.user_rule.max_inline_chars }
-              : {}),
-          }
-        : null,
-      clamped: row.clamped ?? false,
-      client_sent_excluded: row.client_sent_excluded ?? false,
-      blocked_by: row.blocked_by ?? null,
-      consumed_as: row.consumed_as ?? null,
-      consumed_into: row.consumed_into ?? [],
-    })),
+    rows: (data.rows ?? []).map(toContextReceiptRow),
   };
 }
 
@@ -165,10 +189,7 @@ export function recordContextReceipt(
  * is present. Absent fields: the value reached no context block (or an older
  * server). Matched by key + surface, then by key, like `applyReceiptToRows`.
  */
-export interface ContextDeliveredFields {
-  delivered?: ContextDeliveredText;
-  onRequest?: ContextDeliveredText;
-}
+export type ContextDeliveredFields = Pick<ResolvedContextRow, "delivered" | "onRequest">;
 
 export function deliveredFieldsFor(
   data: ContextReceiptData | null | undefined,
@@ -180,9 +201,5 @@ export function deliveredFieldsFor(
     (surfaceKey !== undefined
       ? rows.find((r) => r.key === key && r.surface_key === surfaceKey)
       : undefined) ?? rows.find((r) => r.key === key);
-  if (!hit) return {};
-  return {
-    ...(hit.delivered ? { delivered: hit.delivered } : {}),
-    ...(hit.on_request ? { onRequest: hit.on_request } : {}),
-  };
+  return hit ? deliveredFields(toContextReceiptRow(hit)) : {};
 }

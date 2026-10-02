@@ -53,7 +53,9 @@ import {
   setModelColumns,
   submitAllFinished,
   submitAllStarted,
+  setModelFollowUpNeeded,
 } from "./slice";
+import { planBattleFanOut } from "@/features/agent-comparison/shared/battle-follow-up";
 import type { ModelColumn } from "../types";
 import {
   createBattleInputDraft,
@@ -319,7 +321,26 @@ export const submitAllModel = createAsyncThunk<
       return { launched: 0, failed: 0, skipped: columns.length };
     }
 
-    for (const col of columns) {
+    // A column that already ran needs typed text for its follow-up; fresh
+    // columns start from the variables. Held columns never fire, so they never
+    // fail — the shared composer says what to do (battle-follow-up.ts).
+    const plan = planBattleFanOut(
+      state,
+      inputConversationId,
+      columns.map((c) => c.conversationId),
+    );
+    dispatch(setModelFollowUpNeeded(plan.needFollowUp.length > 0));
+    const firing = columns.filter((c) => plan.fire.includes(c.conversationId));
+    if (firing.length === 0) {
+      return {
+        launched: 0,
+        failed: 0,
+        skipped: 0,
+        needsFollowUp: plan.needFollowUp.length,
+      };
+    }
+
+    for (const col of firing) {
       dispatch(
         copyInstanceRequestDraft({
           sourceConversationId: inputConversationId,
@@ -338,7 +359,7 @@ export const submitAllModel = createAsyncThunk<
     }
 
     const results = await Promise.allSettled(
-      columns.map((col) =>
+      firing.map((col) =>
         dispatch(
           smartExecute({
             conversationId: col.conversationId,
@@ -359,6 +380,7 @@ export const submitAllModel = createAsyncThunk<
       launched,
       failed,
       skipped: 0,
+      needsFollowUp: plan.needFollowUp.length,
       persistError: before.error ?? after.error,
     };
   } finally {

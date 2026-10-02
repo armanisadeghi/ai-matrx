@@ -20,7 +20,6 @@ import {
   receiptRowToResolved as packageReceiptRowToResolved,
   type ContextReceiptMismatch,
   type ResolvedContextRow,
-  type SavedContextRule,
 } from "@ai-matrx/agents/context";
 import type {
   ContextReceiptData,
@@ -28,6 +27,7 @@ import type {
 } from "@host/types/python-generated/stream-events";
 import type { Json } from "@host/types/database.types";
 import { contextEntryLabel } from "../../../components/context-policies-display/contextEntryLabel";
+import { toContextReceiptRow } from "../context-rules/receipt-check";
 import {
   sentWithRequest,
   type ModelContext,
@@ -105,14 +105,6 @@ export const selectMessageContextMismatches =
     return live.mismatches && live.mismatches.length > 0 ? live.mismatches : undefined;
   };
 
-function cleanUserRule(rule: ContextReceiptRow["user_rule"]): SavedContextRule | null {
-  if (!rule) return null;
-  const out: SavedContextRule = {};
-  if (typeof rule.include === "boolean") out.include = rule.include;
-  if (typeof rule.max_inline_chars === "number") out.max_inline_chars = rule.max_inline_chars;
-  return out;
-}
-
 /**
  * One receipt row → the row a read-only `ContextRulesTable` renders — the
  * package's `receiptRowToResolved` (`@ai-matrx/agents/context`, which rebuilds
@@ -121,14 +113,7 @@ function cleanUserRule(rule: ContextReceiptRow["user_rule"]): SavedContextRule |
  * key; those are named in words, the way every other surface names them.
  */
 export function receiptRowToResolved(row: ContextReceiptRow): ResolvedContextRow {
-  const base = packageReceiptRowToResolved({
-    ...row,
-    chars: row.chars ?? null,
-    user_rule: cleanUserRule(row.user_rule),
-    clamped: row.clamped ?? false,
-    client_sent_excluded: row.client_sent_excluded ?? false,
-    blocked_by: row.blocked_by ?? null,
-  });
+  const base = packageReceiptRowToResolved(toContextReceiptRow(row));
   return {
     ...base,
     label: contextEntryLabel({ key: row.key, label: row.label }),

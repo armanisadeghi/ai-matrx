@@ -229,6 +229,11 @@ export interface BattleSubmitResult {
   launched: number;
   failed: number;
   skipped: number;
+  /**
+   * Columns that already ran and were held because the shared composer had no
+   * text (an empty follow-up). The shared composer says so; no toast counts them.
+   */
+  needsFollowUp?: number;
   /** The person closed the organization picker; nothing ran. */
   cancelled?: boolean;
   /** The runs happened but the battle could not be saved — shown to the person. */
