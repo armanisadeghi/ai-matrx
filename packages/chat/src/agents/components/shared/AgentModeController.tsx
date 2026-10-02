@@ -29,13 +29,10 @@ import {
   AlertDialogTitle,
 } from "@ai-matrx/design-system";
 import {
-  NAV_ITEM_SELECTED,
-  NAV_ITEM_UNSELECTED,
-} from "@host/features/shell/components/header/navItemClasses";
-import {
   NavItemTooltip,
   NavTooltipProvider,
-} from "@host/features/shell/components/header/NavItemTooltip";
+  useChromeStyles,
+} from "../../../host/chrome";
 
 export type AgentPageMode =
   | "view"
@@ -121,6 +118,10 @@ export function AgentModeController({
   basePath = "/agents",
   currentPath,
 }: AgentModeControllerProps) {
+  const {
+    navItemSelected: NAV_ITEM_SELECTED,
+    navItemUnselected: NAV_ITEM_UNSELECTED,
+  } = useChromeStyles();
   const router = useRouter();
   const pathname = usePathname();
   const [, startTransition] = useTransition();

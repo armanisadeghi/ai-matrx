@@ -41,7 +41,7 @@ function HeaderCenter({ desktop, mobile, children }: ChatHeaderPortalProps) {
   return createElement(Fragment, null, children ?? desktop ?? mobile ?? null);
 }
 
-function HeaderRight({ children }: { children?: ChatHeaderSlotProps["children"] }) {
+function HeaderRight({ children }: { children: ChatHeaderSlotProps["children"] }) {
   return createElement(Fragment, null, children);
 }
 
@@ -91,7 +91,7 @@ function IconButton({
   );
 }
 
-function NavTooltipProvider({ children }: { children?: ChatHeaderSlotProps["children"] }) {
+function NavTooltipProvider({ children }: { children: ChatHeaderSlotProps["children"] }) {
   return createElement(Fragment, null, children);
 }
 

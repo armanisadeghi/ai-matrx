@@ -17,10 +17,15 @@
 //   navigation  → next/navigation + next/link
 //   windows     → the overlay system (`openOverlay` / `closeOverlay`) and
 //                 the window manager; every CHAT_WINDOWS id must be an
-//                 OverlayId (`chatWindowOverlay` fails to compile otherwise)
+//                 OverlayId (`chatWindowOverlay` fails to compile otherwise);
+//                 openers → the app's overlay openers (`useAppWindowOpeners`)
 //   catalog     → the app's one agent catalog (created by AgentCatalogHost,
 //                 read lazily so its archive-knob seed is never pre-empted)
 //   prefs       → package default until P8 maps the preference knobs
+//   chrome      → the app shell (features/shell): header slots, the phone ⋮
+//                 sheet, the nav drawer, canvas chrome, full-screen layers
+//   feedback    → the `submitFeedback` action (the in-app feedback window's path)
+//   routes      → nav-data's Workflow Studio address
 //
 // Inside StoreProvider: every port reads the live store.
 
@@ -29,6 +34,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChatProvider } from "@ai-matrx/chat/host/react";
 import type {
+  ChatChromePort,
   ChatHost,
   ChatIdentity,
   ChatIdentityPort,
@@ -37,6 +43,7 @@ import type {
   ChatOrganization,
   ChatOrgPort,
   ChatWindowId,
+  ChatWindowOpeners,
   ChatWindowsPort,
 } from "@ai-matrx/chat/host";
 import { supabase } from "@/utils/supabase/client";
@@ -72,8 +79,98 @@ import { ensureOrganizationContext } from "@/lib/organization/organization-gate"
 import { toast, recordToast } from "@/lib/toast";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { getAgentCatalog } from "@/lib/agents/catalog";
+import { useOpenAgentAdminFindUsagesWindow } from "@/features/overlays/openers/agentAdminFindUsagesWindow";
+import { useOpenAgentShortcutQuickCreateWindow } from "@/features/overlays/openers/agentAdminShortcutWindow";
+import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
+import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
+import { useOpenAgentCreateAppWindow } from "@/features/overlays/openers/agentCreateAppWindow";
+import { useOpenAgentDataStorageWindow } from "@/features/overlays/openers/agentDataStorageWindow";
+import { useOpenAgentFindUsagesWindow } from "@/features/overlays/openers/agentFindUsagesWindow";
+import { useOpenAgentImportWindow } from "@/features/overlays/openers/agentImportWindow";
+import { useOpenAgentInterfaceVariationsWindow } from "@/features/overlays/openers/agentInterfaceVariationsWindow";
+import { useOpenAgentMemoryWindow } from "@/features/overlays/openers/agentMemoryWindow";
+import { useOpenAgentOptimizerWindow } from "@/features/overlays/openers/agentOptimizerWindow";
+import { useOpenAgentRunHistoryWindow } from "@/features/overlays/openers/agentRunHistoryWindow";
+import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
+import { useOpenAgentSettingsWindow } from "@/features/overlays/openers/agentSettingsWindow";
+import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
+import { useOpenChatDebugWindow } from "@/features/overlays/openers/chatDebugWindow";
+import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextPreviewPanel";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
+import { useOpenLiveIntegrationsWindow } from "@/features/overlays/openers/liveIntegrationsWindow";
+import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
+import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
+import { useOpenPromptPreviewWindow } from "@/features/overlays/openers/promptPreviewWindow";
+import { useOpenQuickChatSheet } from "@/features/overlays/openers/quickChat";
+import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
+import { useOpenSaveKitDialog } from "@/features/overlays/openers/saveKitDialog";
+import { useOpenScraperWindow } from "@/features/overlays/openers/scraperWindow";
+import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
+import { useOpenSurfaceContextInspector } from "@/features/overlays/openers/surfaceContextInspector";
+import { useOpenSurfaceContextWindow } from "@/features/overlays/openers/surfaceContextWindow";
+import { useOpenSystemInstructionWindow } from "@/features/overlays/openers/systemInstructionWindow";
+import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
+import { useOpenTopicalMapWindow } from "@/features/overlays/openers/topicalMapWindow";
+import { useOpenWorkingDocumentPanel } from "@/features/overlays/openers/workingDocumentPanel";
+import { useOpenWorkingDocumentWindow } from "@/features/overlays/openers/workingDocumentWindow";
+import { submitFeedback } from "@/actions/feedback.actions";
+import PageHeaderPortal from "@/features/shell/components/header/PageHeaderPortal";
+import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { HeaderControlSet } from "@/features/shell/components/header/HeaderControlSet";
+import {
+  NavItemTooltip,
+  NavTooltipProvider,
+} from "@/features/shell/components/header/NavItemTooltip";
+import {
+  NAV_ITEM_SELECTED,
+  NAV_ITEM_UNSELECTED,
+} from "@/features/shell/components/header/navItemClasses";
+import { usePhonePageActions } from "@/features/shell/components/header/phone-page-actions";
+import IconButton from "@/features/shell/components/IconButton";
+import {
+  ShellChromeMode,
+  useShellCanvasFullScreen,
+} from "@/features/shell/components/ShellChromeMode";
+import {
+  ROUTE_MENU_ICON_SIZE,
+  ROUTE_MENU_ICON_STROKE_WIDTH,
+  ROUTE_MENU_NAV_ITEM_CLASS,
+} from "@/features/shell/constants/route-menu-style";
+import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
+import {
+  closeShellMobileMenu,
+  openShellMobileMenu,
+} from "@/features/shell/utils/closeShellMobileMenu";
+import { pushFullScreenLayer } from "@/features/shell/canvas-chrome/open-layer";
 
 const DEFAULT_SERVER_URL = "https://server.app.matrxserver.com";
+
+/** The app shell, as the chat package's chrome port (P22). */
+const appChrome: ChatChromePort = {
+  HeaderCenter: PageHeaderPortal,
+  HeaderRight: PageHeaderRightPortal,
+  HeaderActionsSlot,
+  RouteHeader,
+  HeaderControlSet,
+  CanvasChromeMode: ShellChromeMode,
+  IconButton,
+  NavTooltipProvider,
+  NavItemTooltip,
+  usePhonePageActions,
+  useCanvasFullScreen: useShellCanvasFullScreen,
+  openMobileMenu: openShellMobileMenu,
+  closeMobileMenu: closeShellMobileMenu,
+  pushFullScreenLayer,
+  styles: {
+    navItemSelected: NAV_ITEM_SELECTED,
+    navItemUnselected: NAV_ITEM_UNSELECTED,
+    routeMenuNavItem: ROUTE_MENU_NAV_ITEM_CLASS,
+    routeMenuIconSize: ROUTE_MENU_ICON_SIZE,
+    routeMenuIconStrokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
+  },
+};
 
 function toastOptions(options?: ChatNotifyOptions) {
   if (!options) return undefined;
@@ -183,9 +280,50 @@ const appNotify: ChatNotifyPort = {
     void recordToast[level](ref, message, toastOptions(options)),
 };
 
+/** The app's opener for every host window the package opens (P18). */
+function useAppWindowOpeners(): ChatWindowOpeners {
+  return {
+    openAgentAdminFindUsagesWindow: useOpenAgentAdminFindUsagesWindow(),
+    openAgentContentWindow: useOpenAgentContentWindow(),
+    openAgentConvertSystemWindow: useOpenAgentConvertSystemWindow(),
+    openAgentCreateAppWindow: useOpenAgentCreateAppWindow(),
+    openAgentDataStorageWindow: useOpenAgentDataStorageWindow(),
+    openAgentFindUsagesWindow: useOpenAgentFindUsagesWindow(),
+    openAgentImportWindow: useOpenAgentImportWindow(),
+    openAgentInterfaceVariationsWindow: useOpenAgentInterfaceVariationsWindow(),
+    openAgentMemoryWindow: useOpenAgentMemoryWindow(),
+    openAgentOptimizerWindow: useOpenAgentOptimizerWindow(),
+    openAgentRunHistoryWindow: useOpenAgentRunHistoryWindow(),
+    openAgentRunWindow: useOpenAgentRunWindow(),
+    openAgentSettingsWindow: useOpenAgentSettingsWindow(),
+    openAgentShortcutQuickCreateWindow: useOpenAgentShortcutQuickCreateWindow(),
+    openAuthGateDialog: useOpenAuthGateDialog(),
+    openChatDebugWindow: useOpenChatDebugWindow(),
+    openContextPreviewPanel: useOpenContextPreviewPanel(),
+    openDiffViewerWindow: useOpenDiffViewerWindow(),
+    openLiveIntegrationsWindow: useOpenLiveIntegrationsWindow(),
+    openMandateWindow: useOpenMandateWindow(),
+    openNotesWindow: useOpenNotesWindow(),
+    openPromptPreviewWindow: useOpenPromptPreviewWindow(),
+    openQuickChatSheet: useOpenQuickChatSheet(),
+    openRunControlsWindow: useOpenRunControlsWindow(),
+    openSaveKitDialog: useOpenSaveKitDialog(),
+    openScraperWindow: useOpenScraperWindow(),
+    openStructuredListManagerV2Window: useOpenStructuredListManagerV2Window(),
+    openSurfaceContextInspector: useOpenSurfaceContextInspector(),
+    openSurfaceContextWindow: useOpenSurfaceContextWindow(),
+    openSystemInstructionWindow: useOpenSystemInstructionWindow(),
+    openTaskEditorWindow: useOpenTaskEditorWindow(),
+    openTopicalMapWindow: useOpenTopicalMapWindow(),
+    openWorkingDocumentPanel: useOpenWorkingDocumentPanel(),
+    openWorkingDocumentWindow: useOpenWorkingDocumentWindow(),
+  };
+}
+
 export function ChatHostAdapter({ children }: { children: ReactNode }) {
   const store = useAppStore();
   const router = useRouter();
+  const windowOpeners = useAppWindowOpeners();
 
   const identity = reduxIdentity(store);
   const org = reduxOrg(store);
@@ -228,8 +366,11 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
       back: () => router.back(),
       Link,
     },
-    windows: reduxWindows(store),
+    windows: { ...reduxWindows(store), openers: windowOpeners },
     catalog: () => getAgentCatalog(),
+    chrome: appChrome,
+    feedback: { submit: (input) => submitFeedback(input) },
+    routes: { workflowStudio: WORKFLOWS_APP_URL },
   };
 
   return <ChatProvider host={host}>{children}</ChatProvider>;

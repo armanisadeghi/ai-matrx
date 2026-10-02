@@ -13,8 +13,7 @@
 import { useState } from "react";
 import { Share2, Blocks, Camera } from "lucide-react";
 import dynamic from "next/dynamic";
-import PageHeaderPortal from "@host/features/shell/components/header/PageHeaderPortal";
-import IconButton from "@host/features/shell/components/IconButton";
+import { IconButton, PageHeaderPortal } from "../../host/chrome";
 import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectIsAuthenticated,

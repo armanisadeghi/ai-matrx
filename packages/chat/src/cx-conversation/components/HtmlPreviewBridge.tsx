@@ -11,7 +11,7 @@ import { useHtmlPreviewState } from "@host/features/html-pages/hooks/useHtmlPrev
 import HtmlPreviewFullScreenEditor from "@host/features/html-pages/components/HtmlPreviewFullScreenEditor";
 import { fetchArtifactsForMessageThunk } from "@host/lib/redux/thunks/artifactThunks";
 import { selectHtmlPageArtifactForMessage } from "@host/lib/redux/selectors/artifactSelectors";
-import { setActivePageId } from "@host/lib/redux/slices/htmlPagesSlice";
+import { setActivePageId } from "../utils/html-pages-actions";
 import { updateArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
 import { registerArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
 import {

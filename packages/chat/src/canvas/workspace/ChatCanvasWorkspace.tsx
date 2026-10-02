@@ -66,17 +66,20 @@ import {
 import { EntityCommentPopover } from "@host/components/comments/EntityCommentPopover";
 import { ShareButton } from "@host/features/sharing/components/ShareButton";
 import type { ResourceType } from "@host/utils/permissions/types";
-import { HeaderControlSet } from "@host/features/shell/components/header/HeaderControlSet";
+import {
+  HeaderControlSet,
+  openShellMobileMenu,
+  pushFullScreenLayer,
+  ShellChromeMode,
+  useShellCanvasFullScreen,
+} from "../../host/chrome";
 import { selectIsAuthenticated } from "@host/lib/redux/selectors/userSelectors";
 import { ComposerModeSwitch } from "../../agents/components/inputs/smart-input/composer/ComposerModeSwitch";
 import type { ComposerMode } from "../../agents/components/inputs/smart-input/composer/composer-types";
 import { COMPOSER_KNOBS } from "../../agents/components/inputs/smart-input/composer/composer-mode-cookie";
 import type { AttachedContextRailItem } from "../../agents/components/inputs/smart-input/ConversationContextRail";
 import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
-import { ShellChromeMode, useShellCanvasFullScreen } from "@host/features/shell/components/ShellChromeMode";
 import { registerInPlaceChatHost } from "../../agents/components/chat/in-place-chat-host";
-import { openShellMobileMenu } from "@host/features/shell/utils/closeShellMobileMenu";
-import { pushFullScreenLayer } from "@host/features/shell/canvas-chrome/open-layer";
 import { CanvasChatColumn, type CanvasContextEntry } from "./CanvasChatColumn";
 import {
   CanvasPropertiesPanel,

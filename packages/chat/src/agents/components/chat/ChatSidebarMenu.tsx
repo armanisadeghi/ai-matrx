@@ -63,14 +63,9 @@ import {
 } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import {
-  ROUTE_MENU_ICON_SIZE,
-  ROUTE_MENU_ICON_STROKE_WIDTH,
-  ROUTE_MENU_NAV_ITEM_CLASS,
-} from "@host/features/shell/constants/route-menu-style";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { useInPlaceChatHost } from "./in-place-chat-host";
-import { closeShellMobileMenu } from "@host/features/shell/utils/closeShellMobileMenu";
+import { closeShellMobileMenu, useChromeStyles } from "../../../host/chrome";
 
 /** A plain left click on a `/chat/a/<agentId>` link → that agent id (and the click is consumed). */
 function hostedAgentLink(event: React.MouseEvent<HTMLElement>): string | null {
@@ -118,6 +113,11 @@ interface ChatSidebarMenuProps {
 }
 
 export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
+  const {
+    routeMenuNavItem: ROUTE_MENU_NAV_ITEM_CLASS,
+    routeMenuIconSize: ROUTE_MENU_ICON_SIZE,
+    routeMenuIconStrokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
+  } = useChromeStyles();
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();

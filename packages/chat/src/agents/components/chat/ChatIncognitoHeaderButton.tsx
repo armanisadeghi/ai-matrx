@@ -1,7 +1,7 @@
 "use client";
 
 import { GhostTapButton } from "@ai-matrx/tap-target/buttons";
-import PageHeaderRightPortal from "@host/features/shell/components/header/PageHeaderRightPortal";
+import { PageHeaderRightPortal } from "../../../host/chrome";
 import { useChatIncognito } from "./ChatIncognitoProvider";
 
 export function ChatIncognitoHeaderButton() {

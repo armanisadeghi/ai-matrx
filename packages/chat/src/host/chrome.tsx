@@ -28,7 +28,7 @@ export function PageHeaderPortal(props: ChatHeaderPortalProps) {
   return <HeaderCenter {...props} />;
 }
 
-export function PageHeaderRightPortal(props: { children?: ChatHeaderSlotProps["children"] }) {
+export function PageHeaderRightPortal(props: { children: ChatHeaderSlotProps["children"] }) {
   const { HeaderRight } = useChatHost().chrome;
   return <HeaderRight {...props} />;
 }
@@ -58,7 +58,7 @@ export function IconButton(props: ChatIconButtonProps) {
   return <Button {...props} />;
 }
 
-export function NavTooltipProvider(props: { children?: ChatHeaderSlotProps["children"] }) {
+export function NavTooltipProvider(props: { children: ChatHeaderSlotProps["children"] }) {
   const { NavTooltipProvider: Provider } = useChatHost().chrome;
   return <Provider {...props} />;
 }

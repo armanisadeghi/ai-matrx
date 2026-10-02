@@ -19,7 +19,7 @@ import { callApi } from "@host/lib/api/call-api";
 import { useAppDispatch } from "@host/lib/redux/hooks";
 import { toast } from "../host/notify";
 import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
-import { WORKFLOWS_APP_URL } from "@host/features/shell/constants/nav-data";
+import { getChatHost } from "../host/configure";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export interface WorkflowStarterResult {
@@ -45,7 +45,7 @@ function isStarterResult(value: unknown): value is WorkflowStarterResult {
 
 /** The Workflow Studio (the authoring app) address of a workflow. */
 export function workflowStudioHref(studioPath: string): string {
-  return `${WORKFLOWS_APP_URL}${studioPath.startsWith("/") ? "" : "/"}${studioPath}`;
+  return `${getChatHost().routes.workflowStudio}${studioPath.startsWith("/") ? "" : "/"}${studioPath}`;
 }
 
 export function useStartMandateWorkflow(): {

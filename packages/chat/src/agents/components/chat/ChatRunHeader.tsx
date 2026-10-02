@@ -21,7 +21,7 @@ import {
   interceptChatAgentLink,
   stageChatAgentSwitch,
 } from "./begin-fresh-chat";
-import { HeaderActionsSlot } from "@host/features/shell/components/header/HeaderActionsSlot";
+import { HeaderActionsSlot } from "../../../host/chrome";
 
 interface ChatRunHeaderProps {
   /**

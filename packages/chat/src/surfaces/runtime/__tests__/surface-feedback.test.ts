@@ -6,7 +6,7 @@
  * refused before anything is written when the value is bad, filed through the
  * one feedback submit path with the right row shape, and answered with an
  * outcome the agent can trust. Only the manifest registry, toast, error
- * capture, the store read and the submit action are faked; the seam and the
+ * capture, the store read and the host's feedback port are faked; the seam and the
  * runtime registry run for real.
  */
 const mockToastError = jest.fn();
@@ -31,9 +31,6 @@ jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
 jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: mockGetManifest,
 }));
-jest.mock("@host/actions/feedback.actions", () => ({
-  submitFeedback: (...args: unknown[]) => mockSubmitFeedback(...args),
-}));
 jest.mock("@host/lib/redux/store-singleton", () => ({
   getStoreSingleton: () => ({
     getState: () => ({ appContext: { organization_id: mockOrganizationId } }),
@@ -45,6 +42,17 @@ import {
   listAgentWritableTargets,
 } from "../surface-writeback";
 import { registerSurfaceRuntime } from "../SurfaceRuntimeContext";
+import { _resetChatHostForTests, configureChat } from "../../../host/configure";
+import { createFakeDb } from "../../../host/__tests__/fake-db";
+
+// The host's feedback port is the submit path (matrx-frontend wires `submitFeedback`).
+beforeAll(() => {
+  configureChat({
+    db: createFakeDb().db,
+    feedback: { submit: (input) => mockSubmitFeedback(input) },
+  });
+});
+afterAll(() => _resetChatHostForTests());
 
 const PAGE = "matrx-user/education-classes";
 const PANEL = "matrx-user/class-detail";

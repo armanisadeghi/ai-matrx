@@ -13,7 +13,7 @@ import {
   worstSeverityFromCounts,
 } from "@host/features/agents/components/usages/severity";
 import type { DriftSeverity } from "@host/features/agents/redux/usages/usages.types";
-import { HeaderActionsSlot } from "@host/features/shell/components/header/HeaderActionsSlot";
+import { HeaderActionsSlot } from "../../../host/chrome";
 
 const INFO_ONLY = new Set<DriftSeverity>(["info"]);
 

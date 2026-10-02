@@ -27,8 +27,7 @@ import {
 } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { useIsMobile } from "@host/hooks/use-mobile";
-import { usePhonePageActions } from "@host/features/shell/components/header/phone-page-actions";
-import { HeaderActionsSlot } from "@host/features/shell/components/header/HeaderActionsSlot";
+import { HeaderActionsSlot, usePhonePageActions } from "../../../host/chrome";
 import { AgentOptionsMenu } from "./AgentOptionsMenu";
 import { AgentSaveTapButton } from "./AgentSaveTapButton";
 import {

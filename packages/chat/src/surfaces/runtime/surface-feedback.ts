@@ -14,13 +14,14 @@
  * it is `auto` — the person is never interrupted by a card for it.
  *
  * Storage is the central triage table `users.user_feedback`, written through
- * the ONE existing submit path (`submitFeedback`, the same action the in-app
- * feedback window uses), filed in the organization the person is acting in.
+ * the host's feedback port — in matrx-frontend the ONE existing submit path
+ * (`submitFeedback`, the same action the in-app feedback window uses) — filed
+ * in the organization the person is acting in.
  */
 
-import { submitFeedback } from "@host/actions/feedback.actions";
+import { getChatHost } from "../../host/configure";
+import type { ChatFeedbackInput, ChatFeedbackType } from "../../host/contract";
 import { getStoreSingleton } from "@host/lib/redux/store-singleton";
-import type { CreateFeedbackInput, FeedbackType } from "@host/types/feedback.types";
 import type { SurfaceWriteTarget } from "../types";
 import type { SurfaceWriteOutcome } from "./SurfaceRuntimeContext";
 
@@ -113,7 +114,7 @@ export function validateSurfaceFeedback(
 }
 
 /** Triage vocabulary (`users.user_feedback.feedback_type`). */
-export function feedbackTypeForKind(kind: SurfaceFeedbackKind): FeedbackType {
+export function feedbackTypeForKind(kind: SurfaceFeedbackKind): ChatFeedbackType {
   if (kind === "bug") return "bug";
   if (kind === "missing_capability") return "feature";
   return "suggestion";
@@ -128,11 +129,11 @@ export interface SurfaceFeedbackContext {
   agentName?: string;
 }
 
-/** The exact `submitFeedback` input one feedback write files. */
+/** The exact feedback-port input one feedback write files. */
 export function buildSurfaceFeedbackInput(
   value: SurfaceFeedbackValue,
   ctx: SurfaceFeedbackContext,
-): CreateFeedbackInput {
+): ChatFeedbackInput {
   const message = value.message.trim();
   const targetOrValue = value.target_or_value?.trim() || null;
   return {
@@ -171,7 +172,9 @@ export async function saveSurfaceFeedback(
   value: SurfaceFeedbackValue,
   ctx: SurfaceFeedbackContext,
 ): Promise<SurfaceWriteOutcome> {
-  const result = await submitFeedback(buildSurfaceFeedbackInput(value, ctx));
+  const result = await getChatHost().feedback.submit(
+    buildSurfaceFeedbackInput(value, ctx),
+  );
   if (!result.success || !result.data) {
     throw new Error(
       `Saving feedback for ${ctx.surfaceName} failed: ${result.error ?? "no row came back"}.`,

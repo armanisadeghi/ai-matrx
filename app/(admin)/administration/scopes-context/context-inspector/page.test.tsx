@@ -18,7 +18,7 @@ jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(search),
   usePathname: () => "/administration/scopes-context/context-inspector",
 }));
-jest.mock("@host/lib/url-state/addressWithoutNavigating", () => ({
+jest.mock("@/lib/url-state/addressWithoutNavigating", () => ({
   currentPathWithSearch: (s: string) => `/administration/scopes-context/context-inspector?${s}`,
   pushAddressWithoutNavigating: jest.fn(),
   replaceAddressWithoutNavigating: jest.fn(),
@@ -28,15 +28,15 @@ const APPS = "5155b79c-4c54-4694-b644-2e21ea6833b7";
 const MATRX_FRONTEND = "2ba5cb52-9530-4682-a12c-3ededff23c2c";
 // The page capture reads the store's request log and publishes to the admin
 // debug context; both are Redux-backed, so the test hands them a stand-in store.
-jest.mock("@host/lib/redux/hooks", () => {
+jest.mock("@/lib/redux/hooks", () => {
   const store = { getState: () => ({ apiConfig: { recentCalls: [] } }) };
-  return { ...jest.requireActual("@host/lib/redux/hooks"), useAppStore: () => store };
+  return { ...jest.requireActual("@/lib/redux/hooks"), useAppStore: () => store };
 });
-jest.mock("@host/hooks/useDebugContext", () => ({
+jest.mock("@/hooks/useDebugContext", () => ({
   useDebugContext: () => ({ publish: jest.fn(), publishKey: jest.fn(), isActive: false }),
 }));
-jest.mock("@host/features/scopes/components/active-context/quick-pick/engine", () => {
-  const actual = jest.requireActual("@host/features/scopes/components/active-context/quick-pick/engine");
+jest.mock("@/features/scopes/components/active-context/quick-pick/engine", () => {
+  const actual = jest.requireActual("@/features/scopes/components/active-context/quick-pick/engine");
   const org = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
   const type = "5155b79c-4c54-4694-b644-2e21ea6833b7";
   return {
@@ -84,12 +84,12 @@ jest.mock("@host/features/scopes/components/active-context/quick-pick/engine", (
     }),
   };
 });
-jest.mock("@host/features/scopes/components/context-assignment/data", () => ({
+jest.mock("@/features/scopes/components/context-assignment/data", () => ({
   fetchTypeItems: jest.fn(async () => []),
   fetchAssignableProjects: jest.fn(async () => []),
   fetchAssignableTasks: jest.fn(async () => []),
 }));
-jest.mock("@host/features/scopes/service/scopesService", () => ({
+jest.mock("@/features/scopes/service/scopesService", () => ({
   scopesService: {
     listScopeTypesForOrganization: jest.fn(async () => ({ ok: true, data: { types: [] } })),
     listScopesOfType: jest.fn(async () => ({ ok: true, data: { scopes: [] } })),
@@ -108,12 +108,12 @@ jest.mock("@host/features/scopes/service/scopesService", () => ({
     listContextValues: jest.fn(async () => ({ ok: true, data: { values: [] } })),
   },
 }));
-jest.mock("../ContextCompareView", () => ({
+jest.mock("@ai-matrx/chat/agents/components/context-preview/ContextCompareView", () => ({
   ContextCompareView: () => <div data-compare-mock />,
 }));
 
-import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
-import ContextInspectorPage from "@host/app/(admin)/administration/scopes-context/context-inspector/page";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import ContextInspectorPage from "./page";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
