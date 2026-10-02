@@ -1,48 +1,25 @@
--- target: branch,production
--- additive: yes
---   It ADDS two helpers, `custom._fx_datetime_format` and `custom._fx_workday`, and REPLACES
---   three bodies, each declared below with the body it was written against:
---   `custom.formula_node_kinds` lists seven more functions; `custom.formula_eval` works them out;
---   `custom._fxp_type` answers SWITCH's kind from its results. The parser needs no change: it
---   reads a function name as `fx.<name>` from the list. Rules inherit the seven through
---   `custom.rule_node_kinds`, which reads the list where it is kept. No table, column, trigger,
---   policy, grant or row of anybody's data is touched. The inverse is
---   `migrations/inverse/viewsfields_f4_a_formula_speaks_seven_more_airtable_functions_down.sql`.
--- guard: custom/system_enabled
 -- lock: custom
--- based-on: custom.formula_node_kinds() 5ef10203e8eb982a36715cba2b453445ce3ae31f085273d71f93bd6a9fc151c3
--- based-on: custom.formula_eval(uuid, jsonb, jsonb, jsonb) 8ee93bf164be8212b5cfd46f1d29b498ee6342068211dd41c35a0309c545626f
--- based-on: custom._fxp_type(jsonb, jsonb) c5214493965f9ea03062a4cc2eab50bc857c2bc634bdb683337e75f9af19cb22
---
--- LANE 10 VIEWS-AND-FIELDS, sublane F4 — SEVEN MORE OF AIRTABLE'S FORMULA FUNCTIONS.
---
--- Champion: Airtable's formula field reference. Each function takes Airtable's arguments in
--- Airtable's order and answers what Airtable answers:
---   SWITCH(value, match, result, …, otherwise?)  lazy, like IF: only what is needed is worked out
---   FIND(part, text, start?)                     1-based, 0 when absent, case-sensitive
---   SUBSTITUTE(text, old, new, which?)           every occurrence, or only the which-th
---   REGEX_MATCH(text, pattern)                   yes/no; a pattern that is not one is refused by name
---   DATETIME_FORMAT(date, format?)               Airtable's (moment's) tokens, UTC, [literal] text;
---                                                no format = the ISO text the language writes dates as
---   WORKDAY(start, days, holidays?)              skips Saturday, Sunday and each listed date
---                                                (comma-separated ISO dates, as Airtable takes them)
---   ARRAYJOIN(values, separator?)                a many-value column's items, ", " between by default
--- Postgres regular expressions stand in for RE2; the common syntax is the same.
---
--- LOCKS. create function / create or replace function only. Not window-class.
+-- lane: VIEWS-AND-FIELDS
+-- based-on: custom.formula_node_kinds() 7e7db983a6908767a2dbb0dfa0cffabbacea17c92ead785b4147accfcf06fe1d
+-- based-on: custom.formula_eval(uuid, jsonb, jsonb, jsonb) ca3e4a3eb43264c86095217ff20bdf1cbe6a6e365e55a654272605619dfcad61
+-- based-on: custom._fxp_type(jsonb, jsonb) a0887838d72777784413b691317f7e1ebca94567757effc4ae72d79218f5f29b
+-- based-on: custom._fx_datetime_format(timestamp without time zone, text) 63e86a27828cc56b9ac83c770cefbca00d0962e8e9bb778c7844b57f08422f72
+-- based-on: custom._fx_workday(timestamp without time zone, integer, jsonb) 865a962f7497147ffc51b7b254d3c19d113b1b6cf6b70a3e3a74ca49f4c5ecd2
+-- chair-step: the inverse of viewsfields_f4_a_formula_speaks_seven_more_airtable_functions.sql.
+-- It puts back, byte for byte, custom.formula_node_kinds, custom.formula_eval and custom._fxp_type
+-- as the main database held them before (2026-10-02), and drops custom._fx_datetime_format and
+-- custom._fx_workday. What it undoes: SWITCH, FIND, SUBSTITUTE, REGEX_MATCH, DATETIME_FORMAT,
+-- WORKDAY and ARRAYJOIN leave the formula language; a formula column already written with one of
+-- them is refused by name ("There is no function called …") on its next read.
 
 set local statement_timeout = '60s';
 
--- ═════════════════════════════════════════════════════════════════════════════════════════
--- THE VOCABULARY — the 42 rows as they were, and seven more
--- ═════════════════════════════════════════════════════════════════════════════════════════
-
-create or replace function custom.formula_node_kinds()
-returns table(node text, min_args integer, max_args integer, result text, signature text, says text)
-language sql
-immutable
-set search_path to 'pg_catalog'
-as $fn$
+CREATE OR REPLACE FUNCTION custom.formula_node_kinds()
+ RETURNS TABLE(node text, min_args integer, max_args integer, result text, signature text, says text)
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
   -- The older grid's FUNCTION_SPECS (features/data-tables/formulas.ts), and its operators,
   -- as the store's `fx.*` nodes. max_args null = any number.
   select * from (values
@@ -73,14 +50,6 @@ as $fn$
     ('fx.month',       1, 1,    'number',  'MONTH(date)',                     'The month of the date, 1 to 12.'),
     ('fx.day',         1, 1,    'number',  'DAY(date)',                       'The day of the month, 1 to 31.'),
     ('fx.dateadd',     3, 3,    'date',    'DATEADD(date, count, ''days'' | ''months'' | ''years'')', 'The date moved forward by that many units. Use a negative count to go back.'),
-    -- VIEWS-AND-FIELDS F4: seven of Airtable's functions, in Airtable's argument order
-    ('fx.switch',      2, null, 'unknown', 'SWITCH(value, match, result, …, otherwise?)', 'The result beside the first match for the value, else the last value.'),
-    ('fx.find',        2, 3,    'number',  'FIND(part, text, start?)',        'Where the part first starts in the text, from 1; 0 when absent. Case counts.'),
-    ('fx.substitute',  3, 4,    'text',    'SUBSTITUTE(text, old, new, which?)', 'The text with every old part replaced, or only the numbered one.'),
-    ('fx.regex_match', 2, 2,    'boolean', 'REGEX_MATCH(text, pattern)',      'Yes when the text matches the pattern.'),
-    ('fx.datetime_format', 1, 2, 'text',   'DATETIME_FORMAT(date, ''MMM D, YYYY'')', 'The date written in the format given, in UTC.'),
-    ('fx.workday',     2, 3,    'date',    'WORKDAY(start, days, holidays?)', 'The date that many working days on, skipping weekends and the holidays listed.'),
-    ('fx.arrayjoin',   1, 2,    'text',    'ARRAYJOIN(values, separator?)',   'Every value of a list as one piece of text, ", " between them unless told.'),
     -- the operators
     ('fx.add',         2, 2,    'number',  'a + b',  'A sum. An empty value counts as 0.'),
     ('fx.sub',         2, 2,    'number',  'a - b',  'A difference. An empty value counts as 0.'),
@@ -99,142 +68,14 @@ as $fn$
     ('fx.created_time',0, 0,    'date',    'CREATED_TIME()',  'When the record was created.'),
     ('fx.modified_time',0, 0,   'date',    'MODIFIED_TIME()', 'When the record was last changed.')
   ) as t(node, min_args, max_args, result, signature, says)
-$fn$;
+$function$;
 
-
--- ═════════════════════════════════════════════════════════════════════════════════════════
--- DATETIME_FORMAT's tokens and WORKDAY's calendar
--- ═════════════════════════════════════════════════════════════════════════════════════════
-
-create function custom._fx_datetime_format(p_ts timestamp, p_format text)
-returns text
-language plpgsql
-immutable
-set search_path to 'pg_catalog'
-as $fn$
-declare
-  c_tokens constant text[] := array['YYYY', 'MMMM', 'dddd', 'MMM', 'ddd', 'SSS',
-                                    'YY', 'MM', 'DD', 'Do', 'HH', 'hh', 'mm', 'ss',
-                                    'M', 'D', 'H', 'h', 'A', 'a', 'X', 'x', 'Z'];
-  v_out text := '';
-  v_tok text;
-  v_one text;
-  i     integer := 1;
-  j     integer;
-  n     integer := char_length(p_format);
-begin
-  -- Airtable's format specifiers (moment.js tokens), longest first, case-sensitive; text in
-  -- [brackets] is written as it is; every other character is written as it is. Always UTC.
-  while i <= n loop
-    if substr(p_format, i, 1) = '[' then
-      j := strpos(substr(p_format, i + 1), ']');
-      if j > 0 then
-        v_out := v_out || substr(p_format, i + 1, j - 1);
-        i := i + j + 1;
-        continue;
-      end if;
-    end if;
-    v_tok := null;
-    foreach v_one in array c_tokens loop
-      if substr(p_format, i, char_length(v_one)) = v_one then
-        v_tok := v_one;
-        exit;
-      end if;
-    end loop;
-    if v_tok is null then
-      v_out := v_out || substr(p_format, i, 1);
-      i := i + 1;
-      continue;
-    end if;
-    v_out := v_out || case v_tok
-      when 'YYYY' then to_char(p_ts, 'YYYY')
-      when 'YY'   then to_char(p_ts, 'YY')
-      when 'MMMM' then to_char(p_ts, 'FMMonth')
-      when 'MMM'  then to_char(p_ts, 'Mon')
-      when 'MM'   then to_char(p_ts, 'MM')
-      when 'M'    then to_char(p_ts, 'FMMM')
-      when 'DD'   then to_char(p_ts, 'DD')
-      when 'D'    then to_char(p_ts, 'FMDD')
-      when 'Do'   then to_char(p_ts, 'FMDDth')
-      when 'dddd' then to_char(p_ts, 'FMDay')
-      when 'ddd'  then to_char(p_ts, 'Dy')
-      when 'HH'   then to_char(p_ts, 'HH24')
-      when 'H'    then to_char(p_ts, 'FMHH24')
-      when 'hh'   then to_char(p_ts, 'HH12')
-      when 'h'    then to_char(p_ts, 'FMHH12')
-      when 'mm'   then to_char(p_ts, 'MI')
-      when 'ss'   then to_char(p_ts, 'SS')
-      when 'SSS'  then to_char(p_ts, 'MS')
-      when 'A'    then to_char(p_ts, 'AM')
-      when 'a'    then lower(to_char(p_ts, 'AM'))
-      when 'X'    then trunc(extract(epoch from p_ts))::bigint::text
-      when 'x'    then trunc(extract(epoch from p_ts) * 1000)::bigint::text
-      when 'Z'    then '+00:00'
-    end;
-    i := i + char_length(v_tok);
-  end loop;
-  return v_out;
-end
-$fn$;
-
-comment on function custom._fx_datetime_format(timestamp, text) is
-  'VIEWS-AND-FIELDS F4: DATETIME_FORMAT''s writer — Airtable''s format tokens (YYYY YY MMMM MMM MM M DD D Do dddd ddd HH H hh h mm ss SSS A a X x Z) mapped to to_char, [literal] text kept, UTC.';
-
-create function custom._fx_workday(p_start timestamp, p_days integer, p_holidays jsonb)
-returns timestamp
-language plpgsql
-immutable
-set search_path to 'pg_catalog'
-as $fn$
-declare
-  v_hol  date[] := '{}';
-  v_item text;
-  v_d    record;
-  v_at   timestamp := p_start;
-  v_left integer := abs(p_days);
-  v_step interval := case when p_days < 0 then interval '-1 day' else interval '1 day' end;
-begin
-  -- The holidays: Airtable takes one text of comma-separated ISO dates; a list (or its JSON
-  -- text) is read the same way. A date that is not one is refused by name.
-  if not custom._fx_blank(p_holidays) then
-    for v_item in
-      select btrim(x, ' "[]')
-        from unnest(string_to_array(
-               case when jsonb_typeof(p_holidays) = 'array'
-                    then (select string_agg(e #>> '{}', ',') from jsonb_array_elements(p_holidays) e)
-                    else custom._fx_text(p_holidays) end, ',')) x
-    loop
-      continue when v_item = '';
-      select * into v_d from custom._fx_date(to_jsonb(v_item), '`WORKDAY`');
-      v_hol := v_hol || v_d.ts::date;
-    end loop;
-  end if;
-  -- Step a day at a time and count only Monday to Friday that are not holidays. The start
-  -- itself is never counted, so WORKDAY(Friday, 1) is the Monday after.
-  while v_left > 0 loop
-    v_at := v_at + v_step;
-    if extract(isodow from v_at) < 6 and not (v_at::date = any (v_hol)) then
-      v_left := v_left - 1;
-    end if;
-  end loop;
-  return v_at;
-end
-$fn$;
-
-comment on function custom._fx_workday(timestamp, integer, jsonb) is
-  'VIEWS-AND-FIELDS F4: WORKDAY''s calendar — the date p_days working days from p_start (negative goes back), skipping Saturday, Sunday and every listed holiday; the start is never counted.';
-
--- ═════════════════════════════════════════════════════════════════════════════════════════
--- custom.formula_eval — the evaluator, with the seven
--- ═════════════════════════════════════════════════════════════════════════════════════════
-
-create or replace function custom.formula_eval(p_organization_id uuid, p_expr jsonb, p_values jsonb,
-                                    p_context jsonb default '{}'::jsonb)
-returns jsonb
-language plpgsql
-stable
-set search_path to 'pg_catalog'
-as $fn$
+CREATE OR REPLACE FUNCTION custom.formula_eval(p_organization_id uuid, p_expr jsonb, p_values jsonb, p_context jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
 declare
   v_op    text;
   v_args  jsonb;
@@ -254,9 +95,6 @@ declare
   v_u     text;
   v_type  text;
   v_ts    timestamp;
-  v_i     integer;
-  v_k     integer;
-  v_p     integer;
 begin
   if p_expr is null or jsonb_typeof(p_expr) <> 'object' then
     return custom.rule_eval(p_organization_id, p_expr, p_values, coalesce(p_context, '{}'::jsonb));
@@ -329,61 +167,6 @@ begin
       end if;
     end loop;
     return 'false'::jsonb;
-  elsif v_op = 'fx.switch' then
-    -- SWITCH(value, match, result, …, otherwise?) — Airtable's order. Only the value, the
-    -- matches up to the first that holds, and that one result are worked out; a match compares
-    -- exactly as `=` does (numbers as numbers, an empty value matches BLANK()).
-    v_a := coalesce(custom.formula_eval(p_organization_id, v_args -> 0, p_values, p_context), 'null'::jsonb);
-    v_i := 1;
-    while v_i + 1 < v_n loop
-      if custom._fx_cmp(v_a, coalesce(custom.formula_eval(p_organization_id, v_args -> v_i, p_values, p_context),
-                                      'null'::jsonb)) = 0 then
-        return custom.formula_eval(p_organization_id, v_args -> (v_i + 1), p_values, p_context);
-      end if;
-      v_i := v_i + 2;
-    end loop;
-    if v_i < v_n then
-      return custom.formula_eval(p_organization_id, v_args -> v_i, p_values, p_context);
-    end if;
-    return 'null'::jsonb;
-  elsif v_op = 'fx.arrayjoin' then
-    -- ARRAYJOIN(values, separator?) reads a COLUMN's stored list, not its words joined already:
-    -- a many-choice column is each choice's own label, a link each record's own title. Any other
-    -- value is a list when it is one (or JSON text of one), else a list of one. Empty items are
-    -- left out, so a list with a gap never prints ", ,".
-    v_s := case when v_n > 1
-                then custom._fx_text(custom.formula_eval(p_organization_id, v_args -> 1, p_values, p_context))
-                else ', ' end;
-    v_one := v_args -> 0;
-    v_type := null;
-    if jsonb_typeof(v_one) = 'object' and v_one ? 'field' and not (v_one ? 'op') then
-      v_a := custom.rule_eval(p_organization_id, v_one, p_values, coalesce(p_context, '{}'::jsonb));
-      select f.data ->> 'type' into v_type
-        from custom.record f
-       where f.organization_id = p_organization_id and f.id = (v_one ->> 'field')::uuid
-         and f.table_id = custom.field_kernel_id();
-    else
-      v_a := custom.formula_eval(p_organization_id, v_one, p_values, p_context);
-      if jsonb_typeof(v_a) = 'string' and btrim(v_a #>> '{}') like '[%' then
-        begin
-          v_a := (v_a #>> '{}')::jsonb;
-        exception when others then
-          null;   -- text that only starts like a list is one value
-        end;
-      end if;
-    end if;
-    if custom._fx_blank(v_a) then
-      return '""'::jsonb;
-    end if;
-    if jsonb_typeof(v_a) <> 'array' then
-      v_a := jsonb_build_array(v_a);
-    end if;
-    return to_jsonb(coalesce((
-      select string_agg(case when v_type in ('list', 'relation')
-                             then custom.field_words(p_organization_id, (v_one ->> 'field')::uuid, u.x)
-                             else custom._fx_text(u.x) end, v_s order by u.i)
-        from jsonb_array_elements(v_a) with ordinality u(x, i)
-       where not custom._fx_blank(u.x)), ''));
   end if;
 
   -- ── the store's own kinds ───────────────────────────────────────────────────────────────
@@ -485,72 +268,6 @@ begin
                        when 'months' then v_d1.ts + make_interval(months => v_x::integer)
                        else v_d1.ts + make_interval(years => v_x::integer) end;
       return to_jsonb(custom._fx_iso(v_ts, v_d1.date_only));
-    when 'fx.find' then
-      -- FIND(part, text, start?): where the part first starts, counting from 1; 0 when it is not
-      -- there. Upper and lower case differ, as in Airtable. A start of 0 or 1 searches from the
-      -- first character.
-      v_s := custom._fx_text(v_a);
-      v_t := custom._fx_text(v_b);
-      v_x := case when v_n > 2 then greatest(trunc(custom._fx_num(v_vals[3], '`FIND`')), 1) else 1 end;
-      v_x := least(v_x, char_length(v_t) + 1);
-      if v_s = '' then
-        return to_jsonb(v_x);
-      end if;
-      v_k := strpos(substr(v_t, v_x::integer), v_s);
-      return to_jsonb(case when v_k = 0 then 0 else v_k + v_x::integer - 1 end);
-    when 'fx.substitute' then
-      -- SUBSTITUTE(text, old, new, which?): every `old` replaced, or only the which-th one.
-      v_s := custom._fx_text(v_a);
-      v_t := custom._fx_text(v_b);
-      v_u := custom._fx_text(v_vals[3]);
-      if v_t = '' then
-        return to_jsonb(v_s);
-      end if;
-      if v_n < 4 then
-        return to_jsonb(replace(v_s, v_t, v_u));
-      end if;
-      v_x := trunc(custom._fx_num(v_vals[4], '`SUBSTITUTE`'));
-      if v_x < 1 then
-        raise exception '`SUBSTITUTE` counts which one to replace from 1, but was given %.', custom._fx_num_text(v_x)
-          using errcode = '22023';
-      end if;
-      v_i := 0;   -- characters already passed
-      v_k := 0;   -- occurrences seen
-      loop
-        v_p := strpos(substr(v_s, v_i + 1), v_t);
-        exit when v_p = 0;
-        v_i := v_i + v_p;
-        v_k := v_k + 1;
-        if v_k = v_x then
-          return to_jsonb(left(v_s, v_i - 1) || v_u || substr(v_s, v_i + char_length(v_t)));
-        end if;
-        v_i := v_i + char_length(v_t) - 1;
-      end loop;
-      return to_jsonb(v_s);
-    when 'fx.regex_match' then
-      -- REGEX_MATCH(text, pattern). A pattern that is not a regular expression is refused by
-      -- name, never with the database's own message.
-      begin
-        return to_jsonb(custom._fx_text(v_a) ~ custom._fx_text(v_b));
-      exception when invalid_regular_expression then
-        raise exception '`REGEX_MATCH` cannot read the pattern "%".', custom._fx_text(v_b)
-          using errcode = '22023';
-      end;
-    when 'fx.datetime_format' then
-      select * into v_d1 from custom._fx_date(v_a, '`DATETIME_FORMAT`');
-      if v_n < 2 or btrim(custom._fx_text(v_b)) = '' then
-        return to_jsonb(custom._fx_iso(v_d1.ts, v_d1.date_only));
-      end if;
-      return to_jsonb(custom._fx_datetime_format(v_d1.ts, custom._fx_text(v_b)));
-    when 'fx.workday' then
-      select * into v_d1 from custom._fx_date(v_a, '`WORKDAY`');
-      v_x := trunc(custom._fx_num(v_b, '`WORKDAY`'));
-      if abs(v_x) > 36500 then
-        raise exception '`WORKDAY` moves at most 36500 working days, but was given %.', custom._fx_num_text(v_x)
-          using errcode = '22023';
-      end if;
-      return to_jsonb(custom._fx_iso(
-        custom._fx_workday(v_d1.ts, v_x::integer, case when v_n > 2 then v_vals[3] end), v_d1.date_only));
     when 'fx.add' then
       return to_jsonb(custom._fx_num(v_a, '`+`') + custom._fx_num(v_b, '`+`'));
     when 'fx.sub' then
@@ -578,18 +295,14 @@ begin
         using errcode = '22023', hint = 'That is a defect in custom.formula_eval, not in the formula.';
   end case;
 end
-$fn$;
+$function$;
 
--- ═════════════════════════════════════════════════════════════════════════════════════════
--- custom._fxp_type — SWITCH answers the kind its results share
--- ═════════════════════════════════════════════════════════════════════════════════════════
-
-create or replace function custom._fxp_type(p_node jsonb, p_fields jsonb)
-returns text
-language plpgsql
-immutable
-set search_path to 'pg_catalog'
-as $fn$
+CREATE OR REPLACE FUNCTION custom._fxp_type(p_node jsonb, p_fields jsonb)
+ RETURNS text
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
 declare
   v_op   text := p_node ->> 'op';
   v_f    jsonb;
@@ -616,17 +329,6 @@ begin
     v_b := custom._fxp_type(p_node -> 'args' -> 2, p_fields);
     return case when v_a = v_b then v_a when v_a = 'unknown' then v_b when v_b = 'unknown' then v_a else 'unknown' end;
   end if;
-  if v_op = 'fx.switch' then
-    -- The results sit at 2, 4, 6 … and the otherwise is the last value when the count after the
-    -- first is odd. One kind across all of them is the answer; `unknown` defers, as IF's does.
-    return coalesce((
-      select case when count(distinct r.t) = 1 then min(r.t) else 'unknown' end
-        from (select custom._fxp_type(a.e, p_fields) as t
-                from jsonb_array_elements(p_node -> 'args') with ordinality a(e, i)
-               where (a.i > 1 and a.i % 2 = 1)
-                  or (a.i = jsonb_array_length(p_node -> 'args') and a.i > 1 and a.i % 2 = 0)) r
-       where r.t <> 'unknown'), 'unknown');
-  end if;
   if v_op in ('fx.min', 'fx.max') then
     if jsonb_array_length(p_node -> 'args') > 0
        and not exists (select 1 from jsonb_array_elements(p_node -> 'args') a
@@ -637,4 +339,7 @@ begin
   end if;
   return coalesce((select k.result from custom.formula_node_kinds() k where k.node = v_op), 'unknown');
 end
-$fn$;
+$function$;
+
+drop function custom._fx_datetime_format(timestamp, text);
+drop function custom._fx_workday(timestamp, integer, jsonb);

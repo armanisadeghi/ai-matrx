@@ -159,7 +159,9 @@ const STORE_ONLY: { text: string; expect: (r: Row) => Outcome; type?: string }[]
   { text: 'SWITCH({Species}, "Dog", 15, "Cat", 12)', type: "number",
     expect: (r) => ok(r.species === "Dog" ? 15 : r.species === "Cat" ? 12 : null) },
   { text: 'SWITCH({Deposit taken}, BLANK(), "Take deposit", 0, "Waived", "On file")', type: "text",
-    expect: (r) => ok(r.deposit === null || r.deposit === undefined ? "Take deposit" : r.deposit === 0 ? "Waived" : "On file") },
+    // A match compares as `=` does, and there an empty value matches 0 (as in Airtable), so a
+    // deposit of 0 meets BLANK() first and "Waived" is never reached: SWITCH order matters.
+    expect: (r) => ok(r.deposit === null || r.deposit === undefined || r.deposit === 0 ? "Take deposit" : "On file") },
   { text: 'FIND("-", {Owner phone})', type: "number", expect: (r) => ok(str(r.owner_phone).indexOf("-") + 1) },
   { text: 'FIND("5", {Owner phone}, 4)', type: "number", expect: (r) => ok(str(r.owner_phone).indexOf("5", 3) + 1) },
   { text: 'FIND("dog", {Patient})', expect: (r) => ok(str(r.patient).indexOf("dog") + 1) },
