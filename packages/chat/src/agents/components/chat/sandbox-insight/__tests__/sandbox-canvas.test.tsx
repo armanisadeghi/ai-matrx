@@ -21,7 +21,7 @@
  *      was gone on reopen → RED.
  */
 
-import React, { act } from "react";
+import React, { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
@@ -33,7 +33,7 @@ import {
   type CanvasState,
   type CanvasStoreBinding,
 } from "@ai-matrx/canvas";
-import { CanvasProvider } from "@ai-matrx/canvas/react";
+import { CanvasProvider, useCanvas } from "@ai-matrx/canvas/react";
 import {
   NON_PERSISTABLE_CANVAS_TYPES,
   isPersistableCanvasType,
@@ -108,6 +108,14 @@ interface CanvasApi {
  * The real canvas (standalone store, real controller) with the real sandbox
  * opener hook mounted under it. Steps run in order, each inside act().
  */
+/** Stands in for the shell's canvas column being on screen (it registers the
+ *  presentation that makes the canvas available). */
+function PresentedColumn() {
+  const canvas = useCanvas();
+  useEffect(() => canvas.registerPresentation(), [canvas]);
+  return null;
+}
+
 function drive(steps: Array<(api: CanvasApi, store: CanvasStoreBinding) => void>): CanvasState {
   const store = createCanvasStore();
   const api: { current: CanvasApi | null } = { current: null };
@@ -129,6 +137,7 @@ function drive(steps: Array<(api: CanvasApi, store: CanvasStoreBinding) => void>
   act(() => {
     root.render(
       <CanvasProvider store={store} persistence={null} hotkeys={false}>
+        <PresentedColumn />
         <Probe />
       </CanvasProvider>,
     );

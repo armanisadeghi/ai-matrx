@@ -1,6 +1,6 @@
-import { act } from "react";
+import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { CanvasProvider } from "@ai-matrx/canvas/react";
+import { CanvasProvider, useCanvas } from "@ai-matrx/canvas/react";
 
 import { CanvasUnavailableBoundary } from "./CanvasUnavailableBoundary";
 import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
@@ -9,6 +9,14 @@ Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
   configurable: true,
   value: true,
 });
+
+/** Stands in for the shell's canvas column being on screen (it registers the
+ *  presentation that makes the canvas available). */
+function PresentedColumn() {
+  const canvas = useCanvas();
+  useEffect(() => canvas.registerPresentation(), [canvas]);
+  return null;
+}
 
 function Probe({ id }: { id: string }) {
   const { isCanvasAvailable } = useCanvasOpenGuard();
@@ -37,6 +45,7 @@ describe("CanvasUnavailableBoundary", () => {
     act(() => {
       root.render(
         <CanvasProvider persistence={null} hotkeys={false}>
+          <PresentedColumn />
           <Probe id="outside" />
           <CanvasUnavailableBoundary>
             <Probe id="inside" />
@@ -51,6 +60,7 @@ describe("CanvasUnavailableBoundary", () => {
   it("restores availability once the immersive viewer is gone", () => {
     const tree = (immersive: boolean) => (
       <CanvasProvider persistence={null} hotkeys={false}>
+          <PresentedColumn />
         {immersive ? (
           <CanvasUnavailableBoundary>
             <Probe id="probe" />

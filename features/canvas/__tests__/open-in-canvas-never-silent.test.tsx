@@ -29,11 +29,11 @@
  *      tab opened silently → RED.
  */
 
-import React, { act } from "react";
+import React, { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 
 import { createCanvasStore, selectCanvasActiveItem, type CanvasStoreBinding } from "@ai-matrx/canvas";
-import { CanvasProvider } from "@ai-matrx/canvas/react";
+import { CanvasProvider, useCanvas as useCanvasController } from "@ai-matrx/canvas/react";
 import type { CanvasContent } from "@/features/canvas/canvasContent";
 import { contentOf, readArtifactItemData } from "@/features/canvas/host/artifactItem";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
@@ -53,6 +53,14 @@ jest.mock("@/lib/toast", () => ({
 
 type Store = CanvasStoreBinding;
 
+/** Stands in for the shell's canvas column being on screen (it registers the
+ *  presentation that makes the canvas available). */
+function PresentedColumn() {
+  const canvas = useCanvasController();
+  useEffect(() => canvas.registerPresentation(), [canvas]);
+  return null;
+}
+
 /** Mount a component that exposes `useCanvas().open` to the test. */
 /** `store === null` mounts with NO canvas provider: a route with no canvas. */
 function mountOpener(store: Store | null) {
@@ -71,6 +79,7 @@ function mountOpener(store: Store | null) {
     root.render(
       store ? (
         <CanvasProvider store={store} persistence={null} hotkeys={false}>
+          <PresentedColumn />
           <Probe />
         </CanvasProvider>
       ) : (

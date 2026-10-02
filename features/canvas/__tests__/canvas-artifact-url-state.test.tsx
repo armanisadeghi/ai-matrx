@@ -46,7 +46,7 @@
  * real `CanvasUnavailableBoundary` around the page, lifted later.
  */
 
-import React, { act } from "react";
+import React, { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import {
   canvasActions,
@@ -54,7 +54,7 @@ import {
   selectCanvasActiveItem,
   type CanvasStoreBinding,
 } from "@ai-matrx/canvas";
-import { CanvasProvider } from "@ai-matrx/canvas/react";
+import { CanvasProvider, useCanvas as useCanvasController } from "@ai-matrx/canvas/react";
 
 import {
   CANVAS_ARTIFACT_URL_PARAM,
@@ -123,6 +123,14 @@ interface Harness {
   unmount: () => void;
 }
 
+/** Stands in for the shell's canvas column being on screen (it registers the
+ *  presentation that makes the canvas available). */
+function PresentedColumn() {
+  const canvas = useCanvasController();
+  useEffect(() => canvas.registerPresentation(), [canvas]);
+  return null;
+}
+
 /** Mount the hook exactly as `/artifacts` mounts it, plus a click opener. */
 function mount(store: Store, { available = true } = {}): Harness {
   const container = document.createElement("div");
@@ -141,6 +149,7 @@ function mount(store: Store, { available = true } = {}): Harness {
   const render = (isAvailable: boolean) =>
     root.render(
       <CanvasProvider store={store} persistence={null} hotkeys={false}>
+        <PresentedColumn />
         {isAvailable ? (
           <Probe />
         ) : (
