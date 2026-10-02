@@ -33,6 +33,34 @@ export interface RecordMenuRows {
 
 const registry = new Map<string, () => RecordMenuRows>();
 
+/**
+ * A record's rows are pulled at open, but its NAME can change while a menu is
+ * open or mounted (the note auto-labels from its first words 3 s after typing;
+ * a person renames it). The owner calls `recordMenuChanged()` when what it
+ * registers changes, and an open menu re-reads the heading (G6B review,
+ * 2026-10-02: "Note: New Note" after the note was renamed).
+ */
+let revision = 0;
+const listeners = new Set<() => void>();
+
+/** The owner of registered rows says they changed (its record was renamed). */
+export function recordMenuChanged(): void {
+  revision += 1;
+  for (const listener of listeners) listener();
+}
+
+/** For `useSyncExternalStore`: re-render when any registered record changes. */
+export function subscribeRecordMenus(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function recordMenusRevision(): number {
+  return revision;
+}
+
 /** Register the rows a record contributes; returns the unregister. Read at every open, so always current. */
 export function registerRecordMenu(key: string, get: () => RecordMenuRows): () => void {
   registry.set(key, get);

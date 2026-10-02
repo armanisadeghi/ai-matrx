@@ -17,7 +17,7 @@
 // needs is dispatched through the OverlayController, so the shell carries zero
 // modal code. See `FEATURE.md` and the `code-splitting` skill.
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { Slot } from "@radix-ui/react-slot";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -58,7 +58,7 @@ import { MenuPresenceProvider, RegistryMenuSourceProvider, contentSourceKey } fr
 import { useOptionalWidgetHandle } from "@ai-matrx/chat/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
 import { resolveTableRowMenuDescriptor } from "./table-row-context-registry";
-import { resolveRecordMenu } from "./record-menu-registry";
+import { recordMenusRevision, resolveRecordMenu, subscribeRecordMenus } from "./record-menu-registry";
 import { joinExtraSections } from "./utils/join-extra-sections";
 import { CONTEXT_REGION_TRIGGER_ATTRS } from "./region-trigger-attrs";
 
@@ -318,6 +318,15 @@ export function ContextMenuV3({
   // delegation). State, not a ref — it's written only at right-click (which
   // re-renders to open the menu anyway), and the lazy MenuContent must read it
   // during render to build the effective scope (a ref read in render is banned).
+  /** The element the menu was opened on — its record's NAME is read live. */
+  const [openTarget, setOpenTarget] = useState<HTMLElement | null>(null);
+  // Bumps when a registered record's rows change (a rename) — an argument of
+  // the heading read below, so it is re-read.
+  const recordRevision = useSyncExternalStore(
+    subscribeRecordMenus,
+    recordMenusRevision,
+    recordMenusRevision,
+  );
   const [resolvedContext, setResolvedContext] =
     useState<ResolvedContextMenuContext | null>(null);
   const [resolvedExtraSections, setResolvedExtraSections] =
@@ -473,13 +482,11 @@ export function ContextMenuV3({
     const answered =
       rowMenu?.context ?? (resolveContextOnOpen ? resolveContextOnOpen(target) : null);
     // A record the content belongs to names the header when the target
-    // names nothing itself (record-menu-registry.ts `heading`).
-    const recordHeading = resolveRecordMenu(target)?.heading ?? null;
-    setResolvedContext(
-      recordHeading && !readContextMenuHeading(answered)
-        ? { ...((answered as Record<string, unknown> | null) ?? {}), [CONTEXT_MENU_HEADING_KEY]: recordHeading }
-        : answered,
-    );
+    // names nothing itself (record-menu-registry.ts `heading`) — read at
+    // RENDER from this target (`recordHeadingAt`), so a rename while the menu
+    // is open or mounted reaches the header.
+    setOpenTarget(target);
+    setResolvedContext(answered);
     const surfaceSections = resolveExtraSectionsOnOpen?.(target);
     // Several owners, one menu: joined so a row id is drawn once (utils/join-extra-sections.ts).
     const ownSections = joinExtraSections(rowMenu?.extraSections, surfaceSections);
@@ -730,7 +737,9 @@ export function ContextMenuV3({
       ? () => ({ ...(getApplicationScope?.() ?? {}), ...getEffectiveContextData() })
       : getApplicationScope,
     contextData: getEffectiveContextData(),
-    heading: readContextMenuHeading(resolvedContext),
+    heading:
+      readContextMenuHeading(resolvedContext) ??
+      recordHeadingAt(openTarget, recordRevision),
     contentSource,
     entity: effectiveEntity,
     excludedRichActions,
@@ -944,6 +953,20 @@ export function ContextMenuV3({
       </RegistryMenuSourceProvider>
     </MenuPresenceProvider>
   );
+}
+
+/**
+ * The name of the record whose content holds `target`, read NOW from its
+ * registered rows. `_revision` is the registry's change counter: passing it
+ * makes every caller (and the React Compiler's memo) re-read after a rename.
+ */
+function recordHeadingAt(
+  target: HTMLElement | null,
+  _revision: number,
+): ContextMenuHeading | null {
+  return readContextMenuHeading({
+    [CONTEXT_MENU_HEADING_KEY]: resolveRecordMenu(target)?.heading ?? null,
+  });
 }
 
 /** The header name a `resolveContextOnOpen` answer gave, when it is well-formed. */

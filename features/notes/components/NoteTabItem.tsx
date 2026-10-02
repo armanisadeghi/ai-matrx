@@ -73,7 +73,7 @@ import { cn } from "@/lib/utils";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
-import { openRecordMenu, registerRecordMenu, type RecordMenuRows } from "@/features/context-menu-v3/record-menu-registry";
+import { openRecordMenu, recordMenuChanged, registerRecordMenu, type RecordMenuRows } from "@/features/context-menu-v3/record-menu-registry";
 import { noteActionsSection, openNotePrintStudio } from "./note-actions/noteActionSet";
 import { noteTabRecordMenuKey } from "./noteRecordMenu";
 import { MoveNoteDialog } from "./MoveNoteDialog";
@@ -574,6 +574,11 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
     () => registerRecordMenu(recordMenuKey, () => recordRows.current),
     [recordMenuKey],
   );
+  // A rename (typed, or the auto-label from the first words) reaches a menu
+  // that is open or mounted on this note's content (G6B review, 2026-10-02).
+  useEffect(() => {
+    recordMenuChanged();
+  }, [label]);
   const openNoteMenu = (anchor: HTMLElement): boolean =>
     isActive && openRecordMenu(recordMenuKey, anchor);
 
