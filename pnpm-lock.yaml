@@ -37,7 +37,7 @@ importers:
         version: 0.41.1(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/alchemy':
         specifier: latest
-        version: 0.8.57(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+        version: 0.8.59(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/associations':
         specifier: latest
         version: 0.13.136(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -58,7 +58,7 @@ importers:
         version: 0.19.27
       '@ai-matrx/content-ir-react':
         specifier: latest
-        version: 0.20.1(react@19.3.0)
+        version: 0.20.2(react@19.3.0)
       '@ai-matrx/data':
         specifier: latest
         version: 0.18.37(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(react@19.3.0)
@@ -67,7 +67,7 @@ importers:
         version: 0.54.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/desktop-protocol':
         specifier: latest
-        version: 0.7.0(react@19.3.0)
+        version: 0.11.0(react@19.3.0)
       '@ai-matrx/detail':
         specifier: latest
         version: 0.1.67(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -1028,8 +1028,8 @@ packages:
       react-native-svg:
         optional: true
 
-  '@ai-matrx/alchemy@0.8.57':
-    resolution: {integrity: sha512-FMMzB1Ljag8U1QJsiE209xNfe7szoC5D+j2kBmOpxsGFz5baKpUAtyrF8jpMx9Cr/WAFxfERXawW1Dry2/12Aw==}
+  '@ai-matrx/alchemy@0.8.59':
+    resolution: {integrity: sha512-/IvCLuyS19tO2cmyxL1oUxARXvENj9Q8RAh4/dJqB80jCtncE2mrhzZ4QEbS1vFAbw6uQABLeOaHhinyhWoOCA==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -1083,8 +1083,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/content-ir-react@0.20.1':
-    resolution: {integrity: sha512-YbunCz6TLmKjkOFrGkfsWZACOPBfsSxBfp8sNLPHhw5cArho/Qa3PcDIgxJkzipZ5fsfISZd+/NrxhZL+WwTJg==}
+  '@ai-matrx/content-ir-react@0.20.2':
+    resolution: {integrity: sha512-vsq2lppSVrwCnhwpSPovmjOf6c1gNkYSzULSgaS1kkmlrjRpCh8uCIu2LbBUPrYlDodHtepDQKkfBbL0uLYzLw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=19.0.0'
@@ -1114,8 +1114,8 @@ packages:
       recharts:
         optional: true
 
-  '@ai-matrx/desktop-protocol@0.7.0':
-    resolution: {integrity: sha512-+U+LNZx77+HtVqvjxUmpGLMU+Tb1BlPHO2i9eAvQ3qfHU22qt1H2MiemrtC92+uZWk1Q1DcPA/8O8RD00UrNHg==}
+  '@ai-matrx/desktop-protocol@0.11.0':
+    resolution: {integrity: sha512-5vr7nvYO2K1I4v3p1wLTNdKj2wsF/eejncRFby9Lp0CxaRd8MRF7frxBSoLBKaXp+Vm2J0k6YlSdqWm5F0uY8g==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -11777,7 +11777,7 @@ snapshots:
       - react-dom
       - recharts
 
-  '@ai-matrx/alchemy@0.8.57(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
+  '@ai-matrx/alchemy@0.8.59(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
     dependencies:
       '@ai-matrx/design-system': 0.54.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/kit': 0.22.0(react@19.3.0)
@@ -11833,7 +11833,7 @@ snapshots:
       - '@types/react-dom'
       - recharts
 
-  '@ai-matrx/content-ir-react@0.20.1(react@19.3.0)':
+  '@ai-matrx/content-ir-react@0.20.2(react@19.3.0)':
     dependencies:
       '@ai-matrx/content-ir': 0.19.27
       '@ai-matrx/kit': 0.22.0(react@19.3.0)
@@ -11898,7 +11898,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/desktop-protocol@0.7.0(react@19.3.0)':
+  '@ai-matrx/desktop-protocol@0.11.0(react@19.3.0)':
     dependencies:
       '@ai-matrx/realtime': 0.8.7(react@19.3.0)
       zod: 4.6.5
@@ -12044,7 +12044,7 @@ snapshots:
 
   '@ai-matrx/records-ui@0.93.142(@dnd-kit/core@6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@dnd-kit/sortable@10.0.0(@dnd-kit/core@6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0))(@dnd-kit/utilities@3.2.2(react@19.3.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
     dependencies:
-      '@ai-matrx/alchemy': 0.8.57(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+      '@ai-matrx/alchemy': 0.8.59(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/content-ir': 0.19.27
       '@ai-matrx/design-system': 0.54.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/kit': 0.22.0(react@19.3.0)
