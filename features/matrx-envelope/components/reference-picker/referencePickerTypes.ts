@@ -87,3 +87,20 @@ export const INLINE_CREATE_REFERENCE_TYPES: ReadonlySet<string> = new Set([
   "task",
   "project",
 ]);
+
+/**
+ * The types a PERSON is offered — every reference-pickable type minus:
+ *   - a component type (`is_component`: a child row of another record, e.g. a
+ *     study plan block) — a registry fact;
+ *   - the organization's `platform.reference_picker.hidden_types` knob
+ *     (machinery a non-technical expert never links to) — an opinion.
+ * Order is preserved. Pure, so the guard can prove it without React.
+ */
+export function visibleReferenceTypeTokens(
+  tokens: readonly string[],
+  hidden: readonly string[],
+  isComponent: (token: string) => boolean,
+): string[] {
+  const hiddenSet = new Set(hidden);
+  return tokens.filter((t) => !hiddenSet.has(t) && !isComponent(t));
+}

@@ -11,7 +11,7 @@
  * the same bytes the chat chip renderer already understands.
  *
  * Reuses, never forks: `ReferenceTypeAdder` (record search / file window / url
- * form), the entity registry for labels + icons, `matrxDirectiveNouns` for
+ * form), the entity registry for labels + icons, `referenceTypeGroups` for
  * families, `buildDirectiveFence` for the wire. The overlay shell around this
  * body lives in `features/overlays/components/ReferencePickerOverlay.tsx`.
  */
@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import { isEntityTypeToken } from "@ai-matrx/associations";
+import { ENTITY_TYPE_METADATA, isEntityTypeToken } from "@ai-matrx/associations";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import {
   listableTokens,
@@ -43,7 +43,7 @@ import {
 } from "@/features/scopes/registry/entityRegistry";
 import { referenceTypeLabel } from "@/features/scopes/utils/referenceCell";
 import { createEntityRow } from "@/features/scopes/service/entityRows";
-import { matrxDirectiveNouns } from "@/features/matrx-envelope/directiveHost";
+import { referenceTypeGroup } from "@/features/scopes/utils/referenceTypeGroups";
 import { CATALOG_ALIASES } from "@/features/matrx-envelope/catalog-nouns.generated";
 import { buildDirectiveFence } from "@ai-matrx/agents/envelope";
 import type { ReferenceItem } from "@ai-matrx/agents/envelope";
@@ -67,11 +67,15 @@ import { SchemaFieldsForm } from "@/features/directive-catalog/components/Schema
 import {
   FRIENDLY_REFERENCE_TYPE_LABELS,
   INLINE_CREATE_REFERENCE_TYPES,
+  visibleReferenceTypeTokens,
   wireItems,
   type ReferenceDelivery,
   type ReferencePick,
 } from "./referencePickerTypes";
-import { useCommonReferenceTypes } from "./useCommonReferenceTypes";
+import {
+  useCommonReferenceTypes,
+  useHiddenReferenceTypes,
+} from "./useCommonReferenceTypes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // THE one canonical file picker — lazy, WindowPanel never enters a boot bundle.
@@ -100,27 +104,24 @@ interface TypeOption {
 function typeOption(token: string): TypeOption {
   const label =
     FRIENDLY_REFERENCE_TYPE_LABELS[token] ?? referenceTypeLabel(token);
-  if (token === "file") {
-    return { token, label, family: "Files & links", Icon: FileIcon };
-  }
-  if (token === "url") {
-    return { token, label, family: "Files & links", Icon: LinkIcon };
-  }
+  // The group is the ONE grouping every type chooser shares (admin chooser
+  // bucket → schema display name), never the catalogue's `family`, which is
+  // empty for most types and left ~90 of 116 under "Other".
+  const family = referenceTypeGroup(token);
+  if (token === "file") return { token, label, family, Icon: FileIcon };
+  if (token === "url") return { token, label, family, Icon: LinkIcon };
   const info = tryGetEntityInfo(token);
-  const family = matrxDirectiveNouns(token)?.family ?? "Other";
-  return {
-    token,
-    label,
-    family: family || "Other",
-    Icon: info?.Icon ?? FileIcon,
-  };
+  return { token, label, family, Icon: info?.Icon ?? FileIcon };
 }
 
-/** Every type the user may reference: file + url + the DB-driven pickable set. */
+/** Every type that may be referenced: file + url + the DB-driven pickable set. */
 function allTypeOptions(): TypeOption[] {
   const tokens = [...new Set<string>(["file", "url", ...listableTokens()])];
   return tokens.map(typeOption);
 }
+
+const isComponentType = (token: string): boolean =>
+  isEntityTypeToken(token) && ENTITY_TYPE_METADATA[token].isComponent;
 
 /**
  * The curated tier, resolved against what is actually pickable. A token the
@@ -271,10 +272,24 @@ export function ReferencePickerBody({
     loading: commonLoading,
     error: commonError,
   } = useCommonReferenceTypes();
+  const { tokens: hiddenTokens, loading: hiddenLoading } =
+    useHiddenReferenceTypes();
+  // The common tier resolves against EVERY type, so an organization that puts
+  // a hidden type in its shortcut tier still gets it.
   const common = useMemo(
     () => commonTypeOptions(all, commonTokens),
     [all, commonTokens],
   );
+  const visible = useMemo(() => {
+    const keep = new Set(
+      visibleReferenceTypeTokens(
+        all.map((o) => o.token),
+        hiddenTokens,
+        isComponentType,
+      ),
+    );
+    return all.filter((o) => keep.has(o.token));
+  }, [all, hiddenTokens]);
 
   const [activeType, setActiveType] = useState<TypeOption | null>(null);
   const [delivery, setDelivery] = useState<ReferenceDelivery>(mode);
@@ -309,9 +324,9 @@ export function ReferencePickerBody({
   if (!activeType) {
     return (
       <TypeStep
-        all={all}
+        all={visible}
         common={common}
-        commonLoading={commonLoading}
+        commonLoading={commonLoading || hiddenLoading}
         commonUnavailable={Boolean(commonError)}
         onChoose={(option) => {
           setDirectiveClass("reference");

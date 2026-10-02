@@ -22,11 +22,9 @@ import {
 } from "@/features/scopes/utils/referenceCell";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
-  ENTITY_TYPE_METADATA,
-  REFERENCE_CATEGORY_DISPLAY,
-  SCHEMA_DISPLAY,
-  isEntityTypeToken,
-} from "@ai-matrx/associations";
+  referenceTypeGroupKey,
+  referenceTypeGroupLabel,
+} from "@/features/scopes/utils/referenceTypeGroups";
 import { ReferenceValuePicker } from "@/features/scopes/components/reference/ReferenceValuePicker";
 
 export interface ReferenceConfigOrgScopeType {
@@ -34,34 +32,12 @@ export interface ReferenceConfigOrgScopeType {
   label_singular: string;
 }
 
-/**
- * The two synthetic reference types with no `platform.entity_types` row
- * (`url` has no Matrx-owned id; `scope` candidates come from the scope tree).
- * They form the always-first "Basics" bucket.
- */
-const BASICS_BUCKET = "__basics__";
-const SYNTHETIC_TYPES = new Set(["url", "scope"]);
 const GROUP_SELECT_NONE = "__group_none__";
 
-// Buckets: an admin-assigned reference category wins (prefixed keys keep the
-// two namespaces from colliding); otherwise the type's schema.
-function bucketForType(t: string): string {
-  if (SYNTHETIC_TYPES.has(t) || !isEntityTypeToken(t)) return BASICS_BUCKET;
-  const meta = ENTITY_TYPE_METADATA[t];
-  const cat = meta.referenceCategory;
-  if (cat && REFERENCE_CATEGORY_DISPLAY[cat]?.isActive) return `cat:${cat}`;
-  return `schema:${meta.schema}`;
-}
-
-function bucketLabel(bucket: string): string {
-  if (bucket === BASICS_BUCKET) return "Basics";
-  if (bucket.startsWith("cat:")) {
-    const slug = bucket.slice(4);
-    return REFERENCE_CATEGORY_DISPLAY[slug]?.label ?? slug;
-  }
-  const schema = bucket.slice("schema:".length);
-  return SCHEMA_DISPLAY[schema]?.label ?? schema;
-}
+// Buckets come from the ONE grouping every type chooser shares (admin chooser
+// bucket → schema display name → Title Cased schema): `referenceTypeGroups`.
+const bucketForType = referenceTypeGroupKey;
+const bucketLabel = referenceTypeGroupLabel;
 
 function TypeIcon({ type, className }: { type: string; className?: string }) {
   if (type === "url") return <Link2 className={className} />;
