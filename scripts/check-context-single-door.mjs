@@ -47,6 +47,8 @@ const ALLOWED = {
 
 /** The request builders: each sends the door's `context` AND its `context_withheld`. */
 const REQUEST_BUILDERS = [
+  "packages/chat/src/agents/redux/execution-system/utils/continuation-body.ts":
+    "lists the door-built request fields a continuation copies (context_withheld included)",
   "packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
   "packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
   "packages/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts",

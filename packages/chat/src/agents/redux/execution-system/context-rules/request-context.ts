@@ -47,7 +47,7 @@ import {
   isFirstTurn,
 } from "../../../ui-first-tools/redux/build-ambient-context";
 import { selectSavedContextRuleRows } from "./context-rules.thunks";
-import { toContextReceipt } from "./receipt-check";
+import { deliveredFieldsFor, toContextReceipt } from "./receipt-check";
 import { resolveClientSurface } from "../utils/build-tool-injection";
 import { surfaceWritesNoteSource } from "../utils/surface-writes-note";
 
@@ -561,7 +561,12 @@ export const selectDisplayContextRows =
       const label = row.fromReceipt ? receiptLabel(row) : undefined;
       return label && label !== row.label ? { ...row, label } : row;
     });
-    const out = [...filled, ...serverAdded];
+    // WHAT THE MODEL READ (RULES.md §5 `delivered`): every row the receipt
+    // carries it for shows the server's rendering, never the client's copy.
+    const out = [...filled, ...serverAdded].map((row) => {
+      const fields = deliveredFieldsFor(receipt, row.key, row.surfaceKey);
+      return Object.keys(fields).length > 0 ? { ...row, ...fields } : row;
+    });
     displayMemo.set(conversationId, { rows, receipt, expected, saved, out });
     return out;
   };
