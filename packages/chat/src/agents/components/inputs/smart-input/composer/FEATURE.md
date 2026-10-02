@@ -146,6 +146,12 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
   into the request (`context-rules/request-context.ts` → `buildContextWire`), a change saves the person's rule
   (`saveContextRule` → `users.user_surface_state`, read by the server every turn), and the server's
   `context_receipt` is compared with what was shown (amber on any difference). Full view: `ContextRulesPanel`.
+- **ONE row above the textarea** (Arman, 2026-10-01): LEFT = attachments (`SmartAgentResourceChips` +
+  `AttachedDocumentChips`, `inline`) and the rail's pills, scrolling sideways; RIGHT = the value-group chip, pinned
+  (`ml-auto`). Composers pass `withAttachments` to the rail and mount no separate attachment row. The row shows only
+  while it holds a `[data-rail-entry]`. **The chip's text is the group's real name or nothing** (`valueGroupName`) —
+  never "Context"; the sent-message badge is a `ValueCountPill` ("5 sent"). Guard:
+  `__tests__/value-group-chip-never-says-context.test.ts`.
   Contract: common-docs `systems/scopes-context/context-delivery/RULES.md`.
 - **No border lines** on headers or between panels — the design has none.
 - **Hidden, never faked** (brief Q5). Not shown because no capability exists yet: Manual (no approval
@@ -163,6 +169,8 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 ---
 
 ## Change Log
+
+- **2026-10-01** — Attachments and the value-group chip share one row (attachments left, chip far right); the chip and the sent-message badge never show the word "Context". Needs `@ai-matrx/agents` ≥ 0.29.0 for the compact face.
 
 - **2026-10-01** — Phone sheet: Attach tab content is a render function; a pick (note, file, chat) calls `showIndex` through `RunControlsTabPanel` `onPicked`, returning to Chat options instead of closing the sheet (PB-08). Needs `@ai-matrx/design-system` > 0.50.0. Guard: `smart-input/__tests__/sheet-attach-returns-to-index.test.tsx`.
 
