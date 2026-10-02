@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T18:47:13.861Z",
+  "generated_at": "2026-10-02T18:48:46.120Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -6535,6 +6535,18 @@
       "filename": "visionreach_w2_formula_columns_are_measured_as_they_are_read.sql",
       "checksum": "b639c92d2f0bb3d38fea8158ec30e7325e174bf120054e93c6ae6bb5d230dcb2",
       "applied_at": "2026-10-02 17:35:43.576453+00"
+    },
+    "migrations/campaign/visionreach_w3_formula_columns_filter_bucket_window.sql": {
+      "source": "matrx-frontend",
+      "filename": "visionreach_w3_formula_columns_filter_bucket_window.sql",
+      "checksum": "6b66e3d04e715d2b50bd9a1c708aa7b6776ca3e15498e90e617d8f864c7c8fed",
+      "applied_at": "2026-10-02 18:48:23.789399+00"
+    },
+    "migrations/campaign/visionreach_w3_formula_planned_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "visionreach_w3_formula_planned_once.sql",
+      "checksum": "128a22dfe40be0bf5c49f3bb9f076eb1c8bf652072074045f868506718549038",
+      "applied_at": "2026-10-02 18:48:44.947742+00"
     },
     "migrations/campaign/visionreach_w3_query_doors_mask_fields.sql": {
       "source": "matrx-frontend",
