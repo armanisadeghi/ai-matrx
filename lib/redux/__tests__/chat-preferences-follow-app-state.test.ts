@@ -6,7 +6,8 @@
  * control shows for someone who switched it off, a run goes to the wrong desktop engine.
  *
  * Break it: drop `readAppChatPreferences` from `withAppChatHost` (lib/redux/chat-host-from-app.ts)
- * — every read below stays at the platform default and the first expectation after a dispatch fails.
+ * — every read below stays at the platform default and the first expectation after a dispatch fails;
+ * drop the `chatPreferenceWritten` translation there — the package's writes never reach the app.
  */
 
 import { configureStore } from "@reduxjs/toolkit";
@@ -26,9 +27,12 @@ import {
   selectShowCreatorPanel,
 } from "@ai-matrx/chat/host/prefs";
 import {
-  createWebPrefs,
-  DEFAULT_CHAT_PREFERENCES,
-} from "@ai-matrx/chat/host/defaults/prefs";
+  selectPreferredScratchpadId,
+  setPreference as packageSetPreference,
+  toggleShowCreatorPanel as packageToggleShowCreatorPanel,
+} from "@ai-matrx/chat/host/prefs";
+import { DEFAULT_CHAT_PREFERENCES } from "@ai-matrx/chat/host/defaults/prefs";
+import { createChatStore } from "@ai-matrx/chat/store/create-chat-store";
 
 const PRIYA_ID = "5f0c1e7a-3b52-4b8e-9a41-2d6f8c0e9b13";
 const DESK_ENGINE = "mbp-priya-harbor-light";
@@ -90,21 +94,26 @@ describe("chatHost.preferences follows this app's preference slices in the same 
   });
 });
 
-describe("a bare host keeps the person's preferences itself", () => {
-  it("a write through the default port changes its preferences and survives a fresh port", () => {
-    window.localStorage.clear();
-    const prefs = createWebPrefs();
-    expect(prefs.preferences!()).toEqual(DEFAULT_CHAT_PREFERENCES);
-    let notified = 0;
-    prefs.subscribePreferences!(() => notified++);
-    prefs.write!({
-      kind: "preference",
-      module: "prompts",
-      preference: "restoreUnsentDrafts",
-      value: false,
-    });
-    expect(prefs.preferences!().restoreUnsentDrafts).toBe(false);
-    expect(notified).toBe(1);
-    expect(createWebPrefs().preferences!().restoreUnsentDrafts).toBe(false);
+describe("a package preference write lands where the preferences are kept", () => {
+  it("in this app's store, it becomes the app's own action in the same reduction", () => {
+    const store = makeAppStore();
+    store.dispatch(
+      packageSetPreference({ module: "prompts", preference: "restoreUnsentDrafts", value: false }),
+    );
+    expect(store.getState().userPreferences.prompts.restoreUnsentDrafts).toBe(false);
+    expect(selectRestoreUnsentDrafts(store.getState())).toBe(false);
+
+    store.dispatch(packageToggleShowCreatorPanel());
+    expect(store.getState().creatorDebug.showCreatorPanel).toBe(true);
+    expect(selectShowCreatorPanel(store.getState())).toBe(true);
+  });
+
+  it("in a private store (a host that keeps none), the package keeps it", () => {
+    const store = createChatStore();
+    store.dispatch(
+      packageSetPreference({ module: "scratchpad", preference: "activeId", value: "sp-41c2" }),
+    );
+    expect(selectPreferredScratchpadId(store.getState())).toBe("sp-41c2");
+    expect(selectRestoreUnsentDrafts(store.getState())).toBe(DEFAULT_CHAT_PREFERENCES.restoreUnsentDrafts);
   });
 });

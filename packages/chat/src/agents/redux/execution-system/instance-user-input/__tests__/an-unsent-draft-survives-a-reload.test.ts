@@ -21,6 +21,7 @@
  * case 1; deleting the generation check in the thunk fails case 4.
  */
 
+import { DEFAULT_CHAT_PREFERENCES } from "../../../../../host/defaults/prefs";
 import { configureStore } from "@reduxjs/toolkit";
 import instanceUserInputReducer, {
   clearUserInput,
@@ -67,7 +68,16 @@ function makeStore(restoreUnsentDrafts: boolean | undefined = true) {
   return configureStore({
     reducer: {
       instanceUserInput: instanceUserInputReducer,
-      userPreferences: (state = { prompts: { restoreUnsentDrafts } }) => state,
+      // The knob as the package reads it (P8): `chatHost.preferences`. A stored blob with no
+      // value for it (undefined) reads ON, as the host's reader maps it.
+      chatHost: (
+        state = {
+          preferences: {
+            ...DEFAULT_CHAT_PREFERENCES,
+            restoreUnsentDrafts: restoreUnsentDrafts !== false,
+          },
+        },
+      ) => state,
     },
     middleware: (getDefault) =>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

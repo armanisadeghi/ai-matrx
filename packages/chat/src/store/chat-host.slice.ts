@@ -11,10 +11,11 @@ import type {
   ChatIdentity,
   ChatOrganization,
   ChatPreferences,
+  ChatPreferenceWrite,
   ResolvedChatHost,
 } from "../host/contract";
 import { SIGNED_OUT_IDENTITY } from "../host/defaults/identity";
-import { DEFAULT_CHAT_PREFERENCES } from "../host/defaults/prefs";
+import { applyPreferenceWrite, DEFAULT_CHAT_PREFERENCES } from "../host/defaults/prefs";
 import { DEFAULT_CHAT_SERVER_URL } from "../host/defaults/server";
 
 export interface ChatHostState {
@@ -48,10 +49,19 @@ const chatHostSlice = createSlice({
     chatHostSynced(_state, action: PayloadAction<ChatHostSnapshot>) {
       return { synced: true, ...action.payload };
     },
+    /**
+     * A preference write (P8). Applied here for a host that does not keep
+     * preferences; a host that does (matrx-frontend) turns this action into its
+     * own before its reducers run, so this case never sees it there.
+     */
+    chatPreferenceWritten(state, action: PayloadAction<ChatPreferenceWrite>) {
+      const next = applyPreferenceWrite(state.preferences as ChatPreferences, action.payload);
+      if (next !== state.preferences) state.preferences = next;
+    },
   },
 });
 
-export const { chatHostSynced } = chatHostSlice.actions;
+export const { chatHostSynced, chatPreferenceWritten } = chatHostSlice.actions;
 export const chatHostReducer = chatHostSlice.reducer;
 
 // ── Reading the ports ────────────────────────────────────────────────────────
@@ -63,13 +73,15 @@ export const chatHostReducer = chatHostSlice.reducer;
 export function readChatHostSnapshot(
   host: ResolvedChatHost,
   prefs: Readonly<Record<string, string | null>>,
+  /** What the store holds now — kept when the host does not keep preferences itself. */
+  currentPreferences: ChatPreferences = DEFAULT_CHAT_PREFERENCES,
 ): ChatHostSnapshot {
   return {
     identity: host.identity.current(),
     org: host.org.active(),
     server: { baseUrl: host.server.baseUrl() },
     prefs,
-    preferences: host.prefs.preferences?.() ?? DEFAULT_CHAT_PREFERENCES,
+    preferences: host.prefs.preferences?.() ?? currentPreferences,
   };
 }
 

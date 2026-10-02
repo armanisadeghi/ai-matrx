@@ -18,11 +18,11 @@ import {
   chatKnobs,
   selectIsDebugMode,
   selectIsSuperAdminDebugger,
-  writeChatPreference,
+  preferenceWritten,
   type KnobRef,
   type KnobScope,
 } from "./prefs";
-import { useAppSelector } from "../store/hooks";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 
 function usePrefsPort(): ChatPrefsPort | null {
   const host = useMaybeChatHost();
@@ -51,6 +51,7 @@ export function useSessionKnob(ref: KnobRef): unknown {
  * mode on; the namespace is cleared on unmount.
  */
 export function useDebugContext(namespace: string) {
+  const dispatch = useAppDispatch();
   const isAdmin = useAppSelector(selectIsSuperAdminDebugger);
   const isDebugMode = useAppSelector(selectIsDebugMode);
   const namespaceRef = useRef(namespace);
@@ -60,7 +61,7 @@ export function useDebugContext(namespace: string) {
     namespaceRef.current = namespace;
     return () => {
       if (isAdmin) {
-        writeChatPreference({ kind: "debug-namespace-cleared", namespace: namespaceRef.current });
+        dispatch(preferenceWritten({ kind: "debug-namespace-cleared", namespace: namespaceRef.current }));
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,17 +74,17 @@ export function useDebugContext(namespace: string) {
       for (const [key, value] of Object.entries(data)) {
         namespaced[`${namespace}:${key}`] = value;
       }
-      writeChatPreference({ kind: "debug-data", data: namespaced });
+      dispatch(preferenceWritten({ kind: "debug-data", data: namespaced }));
     },
-    [isAdmin, isDebugMode, namespace],
+    [isAdmin, isDebugMode, namespace, dispatch],
   );
 
   const publishKey = useCallback(
     (key: string, value: unknown) => {
       if (!isAdmin || !isDebugMode) return;
-      writeChatPreference({ kind: "debug-data", data: { [`${namespace}:${key}`]: value } });
+      dispatch(preferenceWritten({ kind: "debug-data", data: { [`${namespace}:${key}`]: value } }));
     },
-    [isAdmin, isDebugMode, namespace],
+    [isAdmin, isDebugMode, namespace, dispatch],
   );
 
   // Whether debug publishing is active — gate expensive state collection on it.

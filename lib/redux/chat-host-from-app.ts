@@ -12,8 +12,17 @@
 // null outside the admin section (`selectAdminLevel`), so admin power reaches the package only
 // where this app grants it.
 
-import type { ChatIdentity, ChatOrganization, ChatPreferences } from "@ai-matrx/chat/host";
-import type { ChatHostState } from "@ai-matrx/chat/store/chat-host.slice";
+import type {
+  ChatIdentity,
+  ChatOrganization,
+  ChatPreferences,
+  ChatPreferenceWrite,
+} from "@ai-matrx/chat/host";
+import {
+  chatPreferenceWritten,
+  type ChatHostState,
+} from "@ai-matrx/chat/store/chat-host.slice";
+import { DEFAULT_CHAT_PREFERENCES } from "@ai-matrx/chat/host/defaults/prefs";
 import {
   selectAdminLevel,
   selectIsAuthenticated,
@@ -27,7 +36,17 @@ import {
   selectOrganizationName,
 } from "@/lib/redux/slices/appContextSlice";
 import { selectIsSuperAdminDebugger } from "@/lib/redux/selectors/userSelectors";
-import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
+import {
+  clearDebugNamespace,
+  selectIsDebugMode,
+  toggleDebugMode,
+  updateDebugData,
+} from "@/lib/redux/preferences/adminDebugSlice";
+import {
+  setIsCreator,
+  toggleShowCreatorPanel,
+} from "@/lib/redux/preferences/creatorDebugSlice";
+import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { RootState } from "@/lib/redux/rootReducer";
 
 export function readAppChatIdentity(state: RootState): ChatIdentity {
@@ -52,22 +71,49 @@ export function readAppChatOrg(state: RootState): ChatOrganization | null {
  * an unchanged slice reads as unchanged.
  */
 export function readAppChatPreferences(state: RootState): ChatPreferences {
-  const user = state.userPreferences;
+  // Optional reads throughout: a store built from part of this app's reducers (a test harness, a
+  // preloaded partial slice) reads the platform default for what it lacks, never throws.
+  const d = DEFAULT_CHAT_PREFERENCES;
+  const user = state.userPreferences as Partial<RootState["userPreferences"]> | undefined;
+  const creator = state.creatorDebug as Partial<RootState["creatorDebug"]> | undefined;
+  const admin = state.adminPreferences as Partial<RootState["adminPreferences"]> | undefined;
   return {
-    loaded: Boolean(user._meta?.loadedPreferences),
-    superAdminDebugger: selectIsSuperAdminDebugger(state),
+    loaded: Boolean(user?._meta?.loadedPreferences),
+    superAdminDebugger: state.userAuth?.adminLevel === "super_admin",
     debugMode: selectIsDebugMode(state),
-    showCreatorPanel: state.creatorDebug.showCreatorPanel,
-    creatorSettings: state.creatorDebug.settings,
-    desktopTargetInstanceId: state.adminPreferences.desktopTargetInstanceId,
-    directiveApplyPolicy: user.assistant.directiveApplyPolicy,
-    restoreUnsentDrafts: user.prompts?.restoreUnsentDrafts !== false,
-    sandboxBySurface: user.coding.activeAgentSandboxBySurface,
-    sandboxCanvasAutoOpen: user.coding.sandboxCanvasAutoOpen !== false,
-    conversationLanes: user.conversationFilters?.lanes,
-    conversationSurfaces: user.conversationFilters?.surfaces,
-    activeScratchpadId: user.scratchpad.activeId,
+    showCreatorPanel: creator?.showCreatorPanel ?? d.showCreatorPanel,
+    creatorSettings: creator?.settings ?? d.creatorSettings,
+    desktopTargetInstanceId: admin?.desktopTargetInstanceId ?? d.desktopTargetInstanceId,
+    directiveApplyPolicy: user?.assistant?.directiveApplyPolicy ?? d.directiveApplyPolicy,
+    restoreUnsentDrafts: user?.prompts?.restoreUnsentDrafts !== false,
+    sandboxBySurface: user?.coding?.activeAgentSandboxBySurface ?? d.sandboxBySurface,
+    sandboxCanvasAutoOpen: user?.coding?.sandboxCanvasAutoOpen !== false,
+    conversationLanes: user?.conversationFilters?.lanes,
+    conversationSurfaces: user?.conversationFilters?.surfaces,
+    activeScratchpadId: user?.scratchpad?.activeId ?? d.activeScratchpadId,
   };
+}
+
+/** The package's preference write, as this app's own action (P8). */
+export function appActionForPreferenceWrite(change: ChatPreferenceWrite): { type: string } {
+  switch (change.kind) {
+    case "preference":
+      return setPreference({
+        module: change.module as Parameters<typeof setPreference>[0]["module"],
+        preference: change.preference,
+        value: change.value,
+      });
+    case "creator-ownership":
+      return setIsCreator(change.isCreator);
+    case "creator-panel-toggled":
+      return toggleShowCreatorPanel();
+    case "debug-mode-toggled":
+      return toggleDebugMode();
+    case "debug-data":
+      return updateDebugData({ ...change.data });
+    case "debug-namespace-cleared":
+      return clearDebugNamespace(change.namespace);
+  }
 }
 
 /** Field by field, by reference. */
@@ -115,12 +161,16 @@ type WithChatHost = AppChatSources & { chatHost: ChatHostState };
 
 /**
  * Wrap the app's root reducer: after every action, `chatHost.identity` / `chatHost.org` /
- * `chatHost.preferences` equal this app's state. Returns the same state object when nothing they read changed. The wrapper
+ * `chatHost.preferences` equal this app's state. A package preference write (`chatPreferenceWritten`)
+ * is turned into this app's own action BEFORE the reducers run, so it lands in this app's slice. Returns the same state object when nothing they read changed. The wrapper
  * keeps the reducer's own type (so `RootState` never depends on this module).
  */
 export function withAppChatHost<R extends (state: never, action: never) => unknown>(reducer: R): R {
   let lastSources: AppChatSources | null = null;
-  const wrapped = (state: WithChatHost | undefined, action: unknown): WithChatHost => {
+  const wrapped = (state: WithChatHost | undefined, incoming: unknown): WithChatHost => {
+    const action = chatPreferenceWritten.match(incoming as { type: string })
+      ? appActionForPreferenceWrite((incoming as ReturnType<typeof chatPreferenceWritten>).payload)
+      : incoming;
     const next = (reducer as unknown as (s: unknown, a: unknown) => WithChatHost)(state, action);
     if (
       lastSources &&

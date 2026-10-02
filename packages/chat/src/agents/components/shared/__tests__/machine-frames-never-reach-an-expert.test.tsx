@@ -43,7 +43,7 @@ let creatorPanelOn = false;
 
 jest.mock("../../../../store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
-    selector({ creatorDebug: { showCreatorPanel: creatorPanelOn } }),
+    selector({ chatHost: { preferences: { showCreatorPanel: creatorPanelOn } } }),
 }));
 
 import {

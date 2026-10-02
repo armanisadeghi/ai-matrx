@@ -29,7 +29,11 @@ function readChatHost(store: Store): ChatHostState | undefined {
 /** Write the ports into `chatHost` now when this store was never synced. */
 export function syncChatHostIfUnsynced(store: Store, host: ResolvedChatHost): void {
   if (readChatHost(store)?.synced) return;
-  store.dispatch(chatHostSynced(readChatHostSnapshot(host, readChatHostPrefs(host))));
+  store.dispatch(
+    chatHostSynced(
+      readChatHostSnapshot(host, readChatHostPrefs(host), readChatHost(store)?.preferences),
+    ),
+  );
 }
 
 /** Keep `chatHost` equal to the ports. Returns the unsubscribe. */
@@ -40,7 +44,7 @@ export function followChatHost(store: Store, host: ResolvedChatHost): () => void
     if (changedPrefKey !== undefined) {
       prefs = { ...prefs, [changedPrefKey]: host.prefs.get(changedPrefKey) };
     }
-    const next = readChatHostSnapshot(host, prefs);
+    const next = readChatHostSnapshot(host, prefs, current?.preferences);
     if (!chatHostMatches(current, next)) store.dispatch(chatHostSynced(next));
   };
   sync();

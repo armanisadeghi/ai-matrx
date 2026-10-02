@@ -70,6 +70,10 @@ jest.mock("../../../../store/hooks", () => {
 });
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
 jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
+// Host modules this screen pulls in still publish through the app's own hook.
+jest.mock("@host/hooks/useDebugContext", () => ({
+  useDebugContext: () => ({ publish: jest.fn(), publishKey: jest.fn(), isActive: false }),
+}));
 jest.mock("../../../../host/prefs-react", () => ({
   ...jest.requireActual("../../../../host/prefs-react"),
   useDebugContext: () => ({ publish: jest.fn(), publishKey: jest.fn(), isActive: false }),

@@ -12,6 +12,7 @@
  * It does NOT prove a private store runs a turn — that is P24g.
  */
 
+import { readAppChatPreferences } from "@/lib/redux/chat-host-from-app";
 import type { ConfigureStoreOptions, Middleware } from "@reduxjs/toolkit";
 
 const captured: { options: ConfigureStoreOptions | null } = { options: null };
@@ -130,10 +131,14 @@ describe("chat slices mount under the same keys", () => {
     const state = store.getState() as unknown as Record<string, unknown>;
     for (const key of ALL_CHAT_KEYS) {
       const reducer = (chatReducers as Record<string, (s: unknown, a: { type: string }) => unknown>)[key];
-      expect({ key, state: state[key] }).toEqual({
-        key,
-        state: reducer(undefined, { type: "@@chat-p2/probe" }),
-      });
+      const initial = reducer(undefined, { type: "@@chat-p2/probe" }) as Record<string, unknown>;
+      // chatHost.preferences is this app's preferences from the first reduction (P8), not the
+      // package default (this app's preferences have not loaded yet; the default says loaded).
+      const expected =
+        key === "chatHost"
+          ? { ...initial, preferences: readAppChatPreferences(state as never) }
+          : initial;
+      expect({ key, state: state[key] }).toEqual({ key, state: expected });
     }
   });
 });

@@ -17,8 +17,9 @@
  *     (and matrx-frontend's root reducer keeps equal to its own preference
  *     slices in the same reduction). A store with no `chatHost` reads the
  *     platform defaults — debug off, nothing bound.
- *   - Writes go to the port (`prefs.write`); the host applies them to its own
- *     store, and `preferences()` reflects them before the write returns.
+ *   - Writes are store actions (`chatPreferenceWritten`): the `chatHost`
+ *     reducer applies them, and matrx-frontend's root reducer turns them into
+ *     its own preference actions in the same reduction.
  *   - Knobs go to the port's settings register (`prefs.knobs`).
  *
  * Debug flags are tooling, never power: `superAdminDebugger` is true on every
@@ -42,6 +43,7 @@ import type {
 import { getChatHost, isChatHostConfigured } from "./configure";
 import { announceOnce } from "./errors";
 import { createUnhostedKnobs, DEFAULT_CHAT_PREFERENCES } from "./defaults/prefs";
+import { chatPreferenceWritten } from "../store/chat-host.slice";
 
 // ── Types the call sites imported from the app ──────────────────────────────
 
@@ -74,20 +76,21 @@ export function chatKnobs(prefs: ChatPrefsPort | null = configuredPrefs()): Chat
   return prefs?.knobs ?? UNHOSTED_KNOBS;
 }
 
-/** Apply one change through the prefs port. With no host, or a host that keeps none, it is refused — said once. */
-export function writeChatPreference(change: ChatPreferenceWrite): void {
+/**
+ * One preference change, as the store action that carries it. Where the host
+ * keeps no preferences (no `preferences()`), the package keeps the change for
+ * this session only — said once.
+ */
+export function preferenceWritten(change: ChatPreferenceWrite) {
   const prefs = configuredPrefs();
-  if (prefs?.write) {
-    prefs.write(change);
-    return;
+  if (prefs && !prefs.preferences && change.kind !== "debug-data") {
+    announceOnce(
+      "prefs-session-only",
+      "This chat host keeps no preferences, so a changed preference lasts for this session only. " +
+        "Pass a `prefs` port with `preferences()` to keep them.",
+    );
   }
-  announceOnce(
-    `prefs-write-refused:${change.kind}`,
-    prefs
-      ? "This chat host keeps no preferences, so a change was not kept. Pass a `prefs` port with `write`."
-      : "A preference changed before a chat host was configured, so it was not kept. " +
-          "Wrap the app in <ChatProvider host={{ db }}>.",
-  );
+  return chatPreferenceWritten(change);
 }
 
 // ── Selectors (any store that mounts `chatHost`) ─────────────────────────────
@@ -145,32 +148,26 @@ export const selectConversationSurfaceFilters = (
 export const selectPreferredScratchpadId = (state: unknown): string | null =>
   selectChatPreferences(state).activeScratchpadId;
 
-// ── Writes (dispatchable: `dispatch(setPreference(...))`) ───────────────────
-
-type PreferenceThunk = () => void;
+// ── Writes (`dispatch(setPreference(...))` — plain actions) ────────────────
 
 /** `module.preference = value` in the person's stored preferences. */
-export function setPreference(payload: {
-  module: string;
-  preference: string;
-  value: unknown;
-}): PreferenceThunk {
-  return () => writeChatPreference({ kind: "preference", ...payload });
+export function setPreference(payload: { module: string; preference: string; value: unknown }) {
+  return preferenceWritten({ kind: "preference", ...payload });
 }
 
 /** Whether the person owns the agent in context (creator authority — never a UI toggle). */
-export function setIsCreator(isCreator: boolean): PreferenceThunk {
-  return () => writeChatPreference({ kind: "creator-ownership", isCreator });
+export function setIsCreator(isCreator: boolean) {
+  return preferenceWritten({ kind: "creator-ownership", isCreator });
 }
 
 /** Flip the inline creator run panel. */
-export function toggleShowCreatorPanel(): PreferenceThunk {
-  return () => writeChatPreference({ kind: "creator-panel-toggled" });
+export function toggleShowCreatorPanel() {
+  return preferenceWritten({ kind: "creator-panel-toggled" });
 }
 
 /** Flip the admin debug-mode switch. */
-export function toggleDebugMode(): PreferenceThunk {
-  return () => writeChatPreference({ kind: "debug-mode-toggled" });
+export function toggleDebugMode() {
+  return preferenceWritten({ kind: "debug-mode-toggled" });
 }
 
 // ── The settings register, outside React ────────────────────────────────────

@@ -28,7 +28,8 @@
 //                 preferences: userPreferences / adminPreferences / creatorDebug /
 //                 adminDebug + the super-admin debugger flag, read by
 //                 lib/redux/chat-host-from-app (the same reading the root
-//                 reducer uses); writes dispatch the app's own actions;
+//                 reducer uses); writes are package actions the root
+//                 reducer turns into the app's own in the same reduction;
 //                 knobs → lib/scoped-config (the settings register);
 //                 SettingDoor → features/settings doors
 //   chrome      → the app shell (features/shell): header slots, the phone ⋮
@@ -50,7 +51,6 @@ import type {
   ChatHost,
   ChatKnobsPort,
   ChatPreferences,
-  ChatPreferenceWrite,
   ChatPrefsPort,
   ChatSettingDoorProps,
   ChatIdentity,
@@ -76,16 +76,6 @@ import {
   sameChatPreferences,
 } from "@/lib/redux/chat-host-from-app";
 import { createWebPrefs } from "@ai-matrx/chat/host";
-import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
-import {
-  setIsCreator,
-  toggleShowCreatorPanel,
-} from "@/lib/redux/preferences/creatorDebugSlice";
-import {
-  clearDebugNamespace,
-  toggleDebugMode,
-  updateDebugData,
-} from "@/lib/redux/preferences/adminDebugSlice";
 import {
   getSessionKnob,
   useSessionKnob,
@@ -268,41 +258,11 @@ function AppSettingDoor({ setting, ...rest }: ChatSettingDoorProps) {
   }
 }
 
-/** One preference change, as this app's own action (P8). */
-function writeAppPreference(store: AppStore, change: ChatPreferenceWrite): void {
-  switch (change.kind) {
-    case "preference":
-      store.dispatch(
-        setPreference({
-          module: change.module as Parameters<
-            typeof setPreference
-          >[0]["module"],
-          preference: change.preference,
-          value: change.value,
-        }),
-      );
-      return;
-    case "creator-ownership":
-      store.dispatch(setIsCreator(change.isCreator));
-      return;
-    case "creator-panel-toggled":
-      store.dispatch(toggleShowCreatorPanel());
-      return;
-    case "debug-mode-toggled":
-      store.dispatch(toggleDebugMode());
-      return;
-    case "debug-data":
-      store.dispatch(updateDebugData({ ...change.data }));
-      return;
-    case "debug-namespace-cleared":
-      store.dispatch(clearDebugNamespace(change.namespace));
-      return;
-  }
-}
-
 /**
  * Strings: the package's own localStorage store (as before P8). Preferences:
  * this app's preference slices, read the way the root reducer reads them.
+ * Writes are store actions the root reducer turns into this app's own
+ * (lib/redux/chat-host-from-app `withAppChatHost`).
  */
 const appStringPrefs = createWebPrefs();
 
@@ -316,7 +276,6 @@ function reduxPrefs(store: AppStore): ChatPrefsPort {
       return (last = next);
     },
     subscribePreferences: (listener) => store.subscribe(listener),
-    write: (change) => writeAppPreference(store, change),
     knobs: appKnobs,
     SettingDoor: AppSettingDoor,
   };

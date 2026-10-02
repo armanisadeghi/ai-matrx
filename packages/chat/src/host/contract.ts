@@ -338,7 +338,13 @@ export interface ChatPreferences {
   activeScratchpadId: string | null;
 }
 
-/** One change the package asks the host to make to the person's preferences or debug state. */
+/**
+ * One change to the person's preferences or debug state. It travels as a store
+ * action (`chatPreferenceWritten`): the package's `chatHost` reducer applies it
+ * to `chatHost.preferences`, and a host that keeps its own preference state
+ * (matrx-frontend's root reducer) turns it into its own action in the same
+ * reduction — so a write works in every store, with or without a provider.
+ */
 export type ChatPreferenceWrite =
   /** A stored preference: `module.preference = value` (matrx-frontend's `setPreference`). */
   | { kind: "preference"; module: string; preference: string; value: unknown }
@@ -430,14 +436,14 @@ export interface ChatPrefsPort {
   /** Every stored key and value, for the `chatHost` slice's first-render snapshot. Optional. */
   snapshot?(): Readonly<Record<string, string>>;
   /**
-   * The typed preferences and debug flags. Returns the SAME object until one
-   * changes. Absent: `DEFAULT_CHAT_PREFERENCES`, and writes are refused, said once.
+   * The typed preferences and debug flags, when the host keeps them. Returns the
+   * SAME object until one changes. Absent: the package keeps them itself in
+   * `chatHost.preferences` — `DEFAULT_CHAT_PREFERENCES`, changed by writes, for
+   * this session only (said once on the first write).
    */
   preferences?(): ChatPreferences;
   /** Called whenever `preferences()` may have changed. */
   subscribePreferences?(listener: () => void): () => void;
-  /** Apply one change; `preferences()` reflects it before this returns. */
-  write?(change: ChatPreferenceWrite): void;
   /** The settings register. Absent: no register (see `ChatKnobsPort`). */
   knobs?: ChatKnobsPort;
   /** The host control that governs a setting. Absent: no door is drawn. */

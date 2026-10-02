@@ -4,6 +4,7 @@
  * slice; a notification that changes nothing dispatches nothing; unsubscribing stops following.
  */
 
+import { DEFAULT_CHAT_PREFERENCES } from "../../host/defaults/prefs";
 import { createChatStore } from "../create-chat-store";
 import { followChatHost } from "../chat-host-sync";
 import { initialChatHostState, selectChatHostOrgId, selectChatHostPref } from "../chat-host.slice";
@@ -32,6 +33,7 @@ describe("chatHost slice follows identity and org", () => {
       org: null,
       server: { baseUrl: "https://server.app.matrxserver.com" },
       prefs: { "composer.density": "compact" },
+      preferences: DEFAULT_CHAT_PREFERENCES,
     });
 
     ports.setIdentity(PRIYA);

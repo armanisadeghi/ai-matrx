@@ -10,6 +10,7 @@
  * readers together.
  */
 
+import { DEFAULT_CHAT_PREFERENCES } from "../../host/defaults/prefs";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -76,6 +77,7 @@ describe("chatHost is synced before the first render", () => {
       org: HARBOR_LIGHT,
       server: { baseUrl: "https://server.app.matrxserver.com" },
       prefs: { "composer.density": "compact" },
+      preferences: DEFAULT_CHAT_PREFERENCES,
     });
     if (store) expect(stores[0]).toBe(store);
     // Read through the chat store context — never the react-redux fallback.
