@@ -37,9 +37,21 @@ function builder() {
 jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema: () => ({ from: () => builder() }) },
 }));
+jest.mock("@/features/organizations/service/membershipsService", () => ({
+  membershipsService: { forUser: jest.fn() },
+}));
 
 import { configureStore } from "@reduxjs/toolkit";
 import tasksReducer, { fetchTask, selectTaskById } from "./tasksSlice";
+import projectsReducer, {
+  fetchProject,
+  selectProjectById,
+} from "./projectsSlice";
+import organizationsReducer, {
+  fetchOrg,
+  hydrateOrgsFromContext,
+  selectOrgById,
+} from "./organizationsSlice";
 
 const MISSING_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -89,5 +101,84 @@ describe("fetchTask — a task the viewer cannot see", () => {
     expect(selectTaskById(store.getState(), MISSING_ID)).toBeDefined();
     await store.dispatch(fetchTask(MISSING_ID));
     expect(selectTaskById(store.getState(), MISSING_ID)).toBeUndefined();
+  });
+});
+
+// The same class one level up: a project or organization id from a URL, a
+// task's project_id or a cached selection can name a row the viewer cannot
+// see. Same contract as fetchTask.
+describe("fetchProject / fetchOrg — a row the viewer cannot see", () => {
+  beforeEach(() => {
+    terminalCalls.length = 0;
+  });
+
+  function store() {
+    return configureStore({
+      reducer: { projects: projectsReducer, organizations: organizationsReducer },
+    });
+  }
+
+  it("fetchProject never asks for exactly one row and settles as a miss", async () => {
+    const s = store();
+    const action = await s.dispatch(fetchProject(MISSING_ID));
+    expect(terminalCalls).not.toContain("single");
+    expect(action.type).toBe("projects/fetchOne/fulfilled");
+    expect(action.payload).toEqual({ status: "missing", id: MISSING_ID });
+    expect(s.getState().projects.error).toBeNull();
+  });
+
+  it("fetchProject drops a cached thin row the server no longer returns", async () => {
+    const s = store();
+    s.dispatch({
+      type: "projects/fetchByOrg/fulfilled",
+      payload: {
+        projects: [
+          {
+            id: MISSING_ID,
+            name: "Gone",
+            slug: "gone",
+            description: null,
+            organization_id: "org",
+            settings: {},
+            open_task_count: 0,
+            total_task_count: 0,
+            scope_tags: [],
+          },
+        ],
+      },
+    });
+    expect(selectProjectById(s.getState(), MISSING_ID)).toBeDefined();
+    await s.dispatch(fetchProject(MISSING_ID));
+    expect(selectProjectById(s.getState(), MISSING_ID)).toBeUndefined();
+  });
+
+  it("fetchOrg never asks for exactly one row and settles as a miss", async () => {
+    const s = store();
+    const action = await s.dispatch(fetchOrg(MISSING_ID));
+    expect(terminalCalls).not.toContain("single");
+    expect(action.type).toBe("organizations/fetchOne/fulfilled");
+    expect(action.payload).toEqual({ status: "missing", id: MISSING_ID });
+    expect(s.getState().organizations.error).toBeNull();
+  });
+
+  it("fetchOrg drops a cached thin row the server no longer returns", async () => {
+    const s = store();
+    s.dispatch(
+      hydrateOrgsFromContext([
+        {
+          id: MISSING_ID,
+          name: "Gone",
+          slug: "gone",
+          role: "member",
+          scope_types: [],
+          scopes: [],
+          projects: [],
+          tasks: [],
+        },
+      ]),
+    );
+    expect(selectOrgById(s.getState(), MISSING_ID)).toBeDefined();
+    await s.dispatch(fetchOrg(MISSING_ID));
+    expect(selectOrgById(s.getState(), MISSING_ID)).toBeUndefined();
   });
 });

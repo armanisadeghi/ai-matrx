@@ -52,17 +52,23 @@ const initialState = projectsAdapter.getInitialState<ProjectsExtraState>({
 
 // ─── Thunks ────────────────────────────────────────────────────────────────
 
+/** Outcome of a single-project read; `missing` is an answer, not a fault. */
+export type FetchProjectResult =
+  | { status: "skipped" }
+  | { status: "missing"; id: string }
+  | { status: "loaded"; project: ProjectRecord };
+
 /**
  * Fetch a single project at "full-data" level.
  * Skips if the project already has full data that is not stale.
  */
-export const fetchProject = createAsyncThunk(
+export const fetchProject = createAsyncThunk<FetchProjectResult, string>(
   "projects/fetchOne",
-  async (projectId: string, { getState }) => {
+  async (projectId, { getState }) => {
     const state = getState() as StateWithProjects;
     const meta = state.projects.meta[projectId];
     if (meta && meta.level === "full-data" && !isStale(meta)) {
-      return null; // already fresh full-data
+      return { status: "skipped" }; // already fresh full-data
     }
 
     const { data, error } = await workspaceDb(supabase)
@@ -72,17 +78,23 @@ export const fetchProject = createAsyncThunk(
       )
       .is("deleted_at", null)
       .eq("id", projectId)
-      .single();
+      // A trashed / unseen / unknown project is a legitimate miss, never a
+      // 406 PGRST116 capture (same class as fetchTask).
+      .maybeSingle();
     if (error) throw error;
+    if (!data) return { status: "missing", id: projectId };
     return {
-      ...(data as Omit<
-        ProjectRecord,
-        "open_task_count" | "total_task_count" | "scope_tags"
-      >),
-      open_task_count: 0,
-      total_task_count: 0,
-      scope_tags: [],
-    } as ProjectRecord;
+      status: "loaded",
+      project: {
+        ...(data as Omit<
+          ProjectRecord,
+          "open_task_count" | "total_task_count" | "scope_tags"
+        >),
+        open_task_count: 0,
+        total_task_count: 0,
+        scope_tags: [],
+      } as ProjectRecord,
+    };
   },
 );
 
@@ -306,9 +318,16 @@ const projectsSlice = createSlice({
       })
       .addCase(fetchProject.fulfilled, (state, action) => {
         state.loading = false;
-        if (!action.payload) return; // skipped
-        projectsAdapter.upsertOne(state, action.payload);
-        state.meta[action.payload.id] = {
+        const result = action.payload;
+        if (result.status === "skipped") return;
+        if (result.status === "missing") {
+          // The server no longer returns it — a cached thin row is stale.
+          projectsAdapter.removeOne(state, result.id);
+          delete state.meta[result.id];
+          return;
+        }
+        projectsAdapter.upsertOne(state, result.project);
+        state.meta[result.project.id] = {
           level: "full-data",
           fetchedAt: Date.now(),
         };

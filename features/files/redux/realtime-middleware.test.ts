@@ -56,3 +56,62 @@ it("closes the first identity before a same-turn replacement", async () => {
   invoke(detachCloudFilesRealtime());
   expect(stopB).toHaveBeenCalledTimes(1);
 });
+
+describe("background backfill while the tab is hidden", () => {
+  let visibility: DocumentVisibilityState = "visible";
+  beforeAll(() =>
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => visibility,
+    }),
+  );
+  const setVisibility = (next: DocumentVisibilityState) => {
+    visibility = next;
+    document.dispatchEvent(new Event("visibilitychange"));
+  };
+  afterEach(() => setVisibility("visible"));
+
+  it("defers the whole-tree reconcile until the tab is visible again", async () => {
+    const reconcile = jest.requireMock("./thunks").reconcileTree as jest.Mock;
+    reconcile.mockReset();
+    const loaded = jest.requireMock("./thunks").loadUserFileTree.fulfilled;
+    loaded.match = (a: { type: string }) => a.type === "tree-loaded";
+    subscribe.mockReturnValue(jest.fn());
+    const { invoke } = setup();
+    invoke(attachCloudFilesRealtime("a"));
+    await Promise.resolve();
+    await Promise.resolve();
+    invoke({ type: "tree-loaded" }); // the initial snapshot resolved
+    const spec = subscribe.mock.calls[0][0]() as { onBackfill: () => void };
+
+    setVisibility("hidden");
+    spec.onBackfill();
+    spec.onBackfill();
+    expect(reconcile).not.toHaveBeenCalled();
+
+    setVisibility("visible");
+    expect(reconcile).toHaveBeenCalledTimes(1);
+    expect(reconcile).toHaveBeenCalledWith({ userId: "a" });
+    invoke(detachCloudFilesRealtime());
+  });
+
+  it("drops a deferred reconcile when the channel is torn down", async () => {
+    const reconcile = jest.requireMock("./thunks").reconcileTree as jest.Mock;
+    reconcile.mockReset();
+    subscribe.mockReturnValue(jest.fn());
+    const { invoke } = setup();
+    // Past the reconcile cooldown, so only the teardown can stop it.
+    const now = jest.spyOn(Date, "now").mockReturnValue(Date.now() + 3_600_000);
+    invoke(attachCloudFilesRealtime("b"));
+    await Promise.resolve();
+    await Promise.resolve();
+    invoke({ type: "tree-loaded" });
+    const spec = subscribe.mock.calls.at(-1)![0]() as { onBackfill: () => void };
+    setVisibility("hidden");
+    spec.onBackfill();
+    invoke(detachCloudFilesRealtime());
+    setVisibility("visible");
+    expect(reconcile).not.toHaveBeenCalled();
+    now.mockRestore();
+  });
+});

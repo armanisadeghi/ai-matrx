@@ -65,17 +65,23 @@ const initialState = orgsAdapter.getInitialState<OrgsExtraState>({
 
 // ─── Thunks ────────────────────────────────────────────────────────────────
 
+/** Outcome of a single-organization read; `missing` is an answer, not a fault. */
+export type FetchOrgResult =
+  | { status: "skipped" }
+  | { status: "missing"; id: string }
+  | { status: "loaded"; org: OrgRecord };
+
 /**
  * Fetch a single org at "full-data" level.
  * Skips if the org already has full data that is not stale.
  */
-export const fetchOrg = createAsyncThunk(
+export const fetchOrg = createAsyncThunk<FetchOrgResult, string>(
   "organizations/fetchOne",
-  async (orgId: string, { getState }) => {
+  async (orgId, { getState }) => {
     const state = getState() as StateWithOrgs;
     const meta = state.organizations.meta[orgId];
     if (meta && meta.level === "full-data" && !isStale(meta)) {
-      return null; // already fresh full-data
+      return { status: "skipped" }; // already fresh full-data
     }
 
     const { data, error } = await supabase
@@ -84,8 +90,11 @@ export const fetchOrg = createAsyncThunk(
         "id, name, abbreviation, slug, description, logo_url, settings, created_at",
       )
       .eq("id", orgId)
-      .single();
+      // An archived / unseen / unknown organization is a legitimate miss,
+      // never a 406 PGRST116 capture (same class as fetchTask).
+      .maybeSingle();
     if (error) throw error;
+    if (!data) return { status: "missing", id: orgId };
 
     // Also get the user's role in this org — canonical membership read.
     requireUserId();
@@ -96,9 +105,12 @@ export const fetchOrg = createAsyncThunk(
       : "member";
 
     return {
-      ...(data as Omit<OrgRecord, "role">),
-      role,
-    } as OrgRecord;
+      status: "loaded",
+      org: {
+        ...(data as Omit<OrgRecord, "role">),
+        role,
+      } as OrgRecord,
+    };
   },
 );
 
@@ -201,9 +213,16 @@ const organizationsSlice = createSlice({
       })
       .addCase(fetchOrg.fulfilled, (state, action) => {
         state.loading = false;
-        if (!action.payload) return; // skipped (already fresh)
-        orgsAdapter.upsertOne(state, action.payload);
-        state.meta[action.payload.id] = {
+        const result = action.payload;
+        if (result.status === "skipped") return;
+        if (result.status === "missing") {
+          // The server no longer returns it — a cached thin row is stale.
+          orgsAdapter.removeOne(state, result.id);
+          delete state.meta[result.id];
+          return;
+        }
+        orgsAdapter.upsertOne(state, result.org);
+        state.meta[result.org.id] = {
           level: "full-data",
           fetchedAt: Date.now(),
         };

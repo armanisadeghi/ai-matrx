@@ -41,6 +41,14 @@ variables-vs-Context-Policies rules and the teardown plan were centralized into 
 
 ## Change Log
 
+- 2026-10-01 — **A single-record read that misses is an answer, not an error.** `fetchTask`,
+  `fetchProject` and `fetchOrg` read with `.maybeSingle()` (was `.single()`, which turned every
+  deep link to a trashed / unseen / unknown row into a 406 PGRST116 red-tier capture — 3x live on
+  `/tasks?task=…`). Each now fulfils a discriminated result — `skipped` | `missing` (+ `id`) |
+  `loaded` (+ `task` / `project` / `org`) — and a `missing` drops any stale cached row from the
+  slice. `hierarchyService.resolveAncestors` project/org reads moved to `.maybeSingle()` too.
+  Guard: `redux/tasksSlice.fetchTask.test.ts` (7 tests, all failing on the old `.single()` reads).
+
 - 2026-09-25 — **The hierarchy-selection family is gone** (`components/hierarchy-selection/`:
   `HierarchyCascade`, `HierarchyPills`, `HierarchyTree`, `useHierarchySelection`,
   `useReduxBridge`, `types`). Every caller now uses the canonical scope selection family —

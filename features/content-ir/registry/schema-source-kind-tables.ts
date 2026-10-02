@@ -29,6 +29,32 @@ async function getSupabase() {
   return supabase;
 }
 
+/**
+ * THE SIGNED-OUT PROJECTION. A guest reads `content_ir.kind_definition` as
+ * `anon`, which DD-230 bounds to a declared column list
+ * (`lib/security/public-exposure.ts#ANON_COLUMN_SURFACE`) — `metadata` is NOT
+ * in it. PostgREST refuses the WHOLE request when one selected column is not
+ * granted, so a registry read that names `metadata` answered every guest
+ * `42501 permission denied for table kind_definition` and no kind rendered
+ * (live 2026-10-01, /demos/spatial). Signed out, the registry asks only for
+ * granted columns; the declared loading slug (in `metadata`) is simply null
+ * and the loading layer derives one. Guard: kind-tables-signed-out.test.ts.
+ *
+ * `getSession()` waits for auth to initialize, so a signed-in tab that is
+ * still hydrating never takes the guest projection.
+ */
+async function isSignedIn(
+  supabase: Awaited<ReturnType<typeof getSupabase>>,
+): Promise<boolean> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session != null;
+  } catch {
+    // Cannot tell → ask for the full row; a refusal stays loud downstream.
+    return true;
+  }
+}
+
 type KindDefinitionRow =
   Database["content_ir"]["Tables"]["kind_definition"]["Row"];
 type KindEdgeRow = Database["content_ir"]["Tables"]["kind_edge"]["Row"];
@@ -445,7 +471,10 @@ export async function listKindCatalogFromTables(): Promise<
   KindCatalogLiteEntry[]
 > {
   const supabase = await getSupabase();
-  type CatalogRow = { id: string; kind: string; loading_component: string | null };
+  type CatalogRow = { id: string; kind: string; loading_component?: string | null };
+  const catalogSelect = (await isSignedIn(supabase))
+    ? "id, kind, loading_component:metadata->>loading_component"
+    : "id, kind";
   let rows: CatalogRow[];
   try {
     rows = await readAllRows<CatalogRow>(
@@ -457,10 +486,7 @@ export async function listKindCatalogFromTables(): Promise<
           // `as "*"` sidesteps supabase-js's type-level parser, which blows
           // TS2589 on the `->>`-alias column; the trailing cast supplies the
           // real row type.
-          .select(
-            "id, kind, loading_component:metadata->>loading_component" as "*",
-            { count: "exact" },
-          )
+          .select(catalogSelect as "*", { count: "exact" })
           .is("deleted_at", null)
           .order("id", { ascending: true })
           .range(from, to) as unknown as PromiseLike<{
@@ -505,10 +531,15 @@ export async function getKindSchemaAndMetaBySlugFromTables(
   // kind for every user who could see both rows. The DB now prevents the
   // duplicate; this stays defensive-and-loud so a future one degrades to "the
   // first row renders" instead of an exception.
+  const signedIn = await isSignedIn(supabase);
   const { data: defs, error: defErr } = await supabase
     .schema("content_ir")
     .from("kind_definition")
-    .select("id, kind, label, data, metadata, emitted_json_schema")
+    .select(
+      (signedIn
+        ? "id, kind, label, data, metadata, emitted_json_schema"
+        : "id, kind, label, data, emitted_json_schema") as "id, kind, label, data, metadata, emitted_json_schema",
+    )
     .eq("kind", kind)
     .is("deleted_at", null)
     .order("created_at", { ascending: true })
