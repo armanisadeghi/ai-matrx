@@ -494,7 +494,8 @@ function ProposalRow({
           <span className="font-medium">{ACTION_WORD[item.action]}:</span> {item.title}
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">{item.reason}</p>
-        {changes.length > 0 ? (
+        {/* Once decided or already done, current == proposed: the diff says nothing. */}
+        {changes.length > 0 && !decision && !settledByStore ? (
           <dl className="mt-1 space-y-1">
             {changes.map((c) => (
               <div key={c.name} className="flex min-w-0 gap-2 text-xs">
