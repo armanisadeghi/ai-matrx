@@ -20,6 +20,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import type { ContextMenuExtraItem, ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import { surfaceLevelPlace } from "@ai-matrx/chat/agents/redux/execution-system/context-rules/context-hierarchy";
 import { useLiveSurfaceScope } from "@ai-matrx/chat/surfaces/runtime/useLiveSurfaceScope";
 import { useAvailableHere } from "@ai-matrx/chat/surfaces/runtime/available-here";
 import { locateSurfaceValueOnPage } from "@ai-matrx/chat/surfaces/utils/locate-on-page";
@@ -319,8 +320,9 @@ export default function SurfaceContextWindow({
       titleNode={
         <div className="flex min-w-0 items-center gap-1.5">
           <Braces className="h-4 w-4 shrink-0 text-primary" />
+          {/* The same path the composer's value list heads this page with. */}
           <span className="truncate text-sm font-semibold">
-            {friendlySurfaceName} Context
+            {surfaceName ? surfaceLevelPlace(surfaceName).path.join(" › ") : friendlySurfaceName}
           </span>
         </div>
       }
