@@ -9,10 +9,9 @@
  *   Search — tap targets rendered touching, no padding or space between them;
  *   nothing else built into the header.
  *
- * Source-text half of the law (the rendered halves are
- * `features/canvas/__tests__/canvas-header-slot-reserved.test.tsx`,
- * `features/shell/components/header/HeaderPhoneOverflow.test.tsx` and the
- * Playwright gate `features/shell/layout-gate/canvas-one-presentation.spec.ts`):
+ * Source-text half of the law (the rendered half is
+ * `features/shell/components/header/HeaderPhoneOverflow.test.tsx`, which runs
+ * the Canvas row on the real `@ai-matrx/canvas` controller):
  *
  *   1. `HeaderControlSet.tsx` mounts Search → Intelligence → Canvas →
  *      Messages → Notifications, each unconditionally, in a wrapper with no
@@ -23,9 +22,15 @@
  *   3. A guest gets the same buttons — Intelligence, Messages and
  *      Notifications each carry an auth-gate branch rather than a hidden one.
  *
+ * The Canvas control is the package's own `<CanvasToggle />` from
+ * `@ai-matrx/canvas/react` — never a host-built twin (the retired
+ * `CanvasShellHeaderToggle` / `CanvasPanePutAwayToggle`).
+ *
  * PROVEN FAILING BEFORE PASSING: wrap `<MessagesHeaderButton …/>` in
  * `{isAuthenticated && …}` → case 1 RED; put `HeaderChooseOrgButton` back in
- * `Header.tsx` → case 2 RED; add `gap-1` to the set's wrapper → case 1 RED.
+ * `Header.tsx` → case 2 RED; add `gap-1` to the set's wrapper → case 1 RED; import `CanvasToggle` from
+ * anywhere but `@ai-matrx/canvas/react` → the toggle case RED (planted
+ * 2026-10-01).
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -55,6 +60,15 @@ describe("the header right set", () => {
       expect(line).toBeDefined();
       expect(line).not.toMatch(/&&\s*</);
     }
+  });
+
+  it("the Canvas control is the package's CanvasToggle, never a host twin", () => {
+    expect(set).toMatch(/import\s*\{[^}]*\bCanvasToggle\b[^}]*\}\s*from\s*"@ai-matrx\/canvas\/react"/);
+    for (const text of [header, set]) {
+      expect(text).not.toContain("CanvasShellHeaderToggle");
+      expect(text).not.toContain("CanvasPanePutAwayToggle");
+    }
+    expect(read("components/matrx/PublicHeader.tsx")).toContain("<CanvasToggle");
   });
 
   it("renders the set touching — no gap, padding or margin on its wrapper", () => {

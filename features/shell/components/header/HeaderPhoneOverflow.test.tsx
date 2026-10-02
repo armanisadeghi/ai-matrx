@@ -11,18 +11,29 @@
  *      Notifications inside `.shell-header-secondary` and mounts the overflow
  *      beside them; shell.css hides the one and shows the other below 768px.
  *   2. The sheet holds all five; an empty canvas is an ENABLED row (it opens
- *      the canvas home — owner, 2026-09-30: "always available and
- *      clickable"); a guest reaching for Intelligence, Messages or
- *      Notifications gets the auth gate, never a dead row.
+ *      the canvas — owner, 2026-09-30: "always available and clickable");
+ *      a guest reaching for Intelligence, Messages or Notifications gets the
+ *      auth gate, never a dead row.
+ *
+ * The Canvas row runs on the REAL `@ai-matrx/canvas` controller: a standalone
+ * `createCanvasStore()` under `CanvasProvider`, read through the real
+ * `useCanvasHeaderToggle`. Rows are asserted by what they DO to that store.
+ * (The old "route with no canvas" / "availability unknown" cases are gone:
+ * the package's canvas column is mounted wherever a header is, so the hook
+ * has no unavailable state left to pin.)
  *
  * PROVEN FAILING BEFORE PASSING: against the pre-fix header, case 1 is RED
- * (no `.shell-header-secondary`, no overflow, no media rule).
+ * (no `.shell-header-secondary`, no overflow, no media rule). Planted
+ * 2026-10-01: `reopen: () => canvas.hide()` in `useCanvasHeaderToggle` → both
+ * "opens the canvas" cases RED (2 failed).
  */
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { canvasActions, createCanvasStore, type CanvasStoreBinding } from "@ai-matrx/canvas";
+import { CanvasProvider } from "@ai-matrx/canvas/react";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -31,9 +42,7 @@ const read = (file: string) => readFileSync(path.join(REPO, file), "utf8");
 
 const openBar = jest.fn();
 const openAuthGate = jest.fn();
-let canvasState = { isOpen: false, homeOnly: false, isAvailable: true, availabilityKnown: true, itemCount: 0, headlineTitle: "Canvas" };
-const reopen = jest.fn();
-const putAway = jest.fn();
+let canvasStore: CanvasStoreBinding = createCanvasStore();
 
 jest.mock("@/features/knowledge/command-bar/OpenCommandBarButtons", () => ({
   useOpenBarOrGate: () => openBar,
@@ -44,9 +53,6 @@ jest.mock("@/features/overlays/openers/authGate", () => ({
 jest.mock("@ai-matrx/chat/surfaces/components/chrome/SurfaceAgentsHeaderButton", () => ({
   AGENTS_AUTH_GATE: { featureName: "Agents", featureDescription: "x" },
   SurfaceAgentsPanelImpl: () => <div data-testid="agents-panel">agents</div>,
-}));
-jest.mock("@/features/canvas/core/CanvasHeaderToggle", () => ({
-  useCanvasHeaderToggle: () => ({ ...canvasState, reopen, putAway }),
 }));
 jest.mock("@/features/notifications/components/InboxHeaderButton", () => ({
   INBOX_AUTH_GATE: { featureName: "Inbox", featureDescription: "x" },
@@ -77,9 +83,11 @@ function mount(isAuthenticated: boolean) {
   root = createRoot(host);
   act(() => {
     root.render(
-      <TooltipProvider>
-        <HeaderPhoneOverflow isAuthenticated={isAuthenticated} />
-      </TooltipProvider>,
+      <CanvasProvider store={canvasStore} persistence={null} hotkeys={false}>
+        <TooltipProvider>
+          <HeaderPhoneOverflow isAuthenticated={isAuthenticated} />
+        </TooltipProvider>
+      </CanvasProvider>,
     );
   });
 }
@@ -105,8 +113,15 @@ afterEach(() => {
   act(() => root?.unmount());
   document.body.innerHTML = "";
   jest.clearAllMocks();
-  canvasState = { isOpen: false, homeOnly: false, isAvailable: true, availabilityKnown: true, itemCount: 0, headlineTitle: "Canvas" };
+  canvasStore = createCanvasStore();
 });
+
+/** Two real tabs on the canvas; the active one is titled `hello.py`. */
+function seedTwoTabs(open: boolean) {
+  canvasStore.dispatch(canvasActions.open({ kind: "code", key: "a", title: "notes.md" }));
+  canvasStore.dispatch(canvasActions.open({ kind: "code", key: "b", title: "hello.py" }));
+  canvasStore.dispatch(canvasActions.setOpen(open));
+}
 
 describe("the header right set on a phone — source", () => {
   it("wraps the five in .shell-header-secondary and mounts the overflow beside them", () => {
@@ -135,7 +150,7 @@ describe("the header right set on a phone — source", () => {
 });
 
 describe("HeaderPhoneOverflow — the same four, the same states", () => {
-  it("holds all five; an empty canvas is a live row that opens the canvas home", () => {
+  it("holds all five; an empty canvas is a live row that opens the canvas", () => {
     mount(true);
     openSheet();
     expect(row("Search")).toBeDefined();
@@ -144,8 +159,9 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
     expect(row("Notifications")).toBeDefined();
     const canvas = row("Canvas");
     expect(canvas?.disabled).toBe(false);
+    expect(canvasStore.getState().isOpen).toBe(false);
     click(canvas);
-    expect(reopen).toHaveBeenCalled();
+    expect(canvasStore.getState().isOpen).toBe(true);
   });
 
   it("Messages toggles the docked messages sheet", () => {
@@ -155,26 +171,20 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
     expect(toggleMessages).toHaveBeenCalled();
   });
 
-  it("leaves the canvas row out where the route has no canvas", () => {
-    canvasState = { ...canvasState, isAvailable: false };
-    mount(true);
-    openSheet();
-    expect(row("Canvas")).toBeUndefined();
-  });
-
-  it("keeps the canvas row while availability is still unknown (the desktop slot's reservation)", () => {
-    canvasState = { ...canvasState, isAvailable: false, availabilityKnown: false };
-    mount(true);
-    openSheet();
-    expect(row("Canvas")).toBeDefined();
-  });
-
-  it("a canvas with items opens from the sheet", () => {
-    canvasState = { ...canvasState, itemCount: 2, headlineTitle: "hello.py" };
+  it("a put-away canvas with tabs names its active tab and opens from the sheet", () => {
+    seedTwoTabs(false);
     mount(true);
     openSheet();
     click(row("Open canvas — hello.py"));
-    expect(reopen).toHaveBeenCalled();
+    expect(canvasStore.getState().isOpen).toBe(true);
+  });
+
+  it("an open canvas is put away from the sheet", () => {
+    seedTwoTabs(true);
+    mount(true);
+    openSheet();
+    click(row("Put away canvas — hello.py"));
+    expect(canvasStore.getState().isOpen).toBe(false);
   });
 
   it("Search opens the bar", () => {

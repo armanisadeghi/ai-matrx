@@ -9,47 +9,66 @@
  * notice fired — because the tool result never made an open-in-canvas request
  * at all.
  *
- * Everything under test runs for real: the real registry reader, the real
- * decision function, the real `canvasSlice` reducer, the real tool-card
- * renderer, the real snapshot→markdown reader, the real switcher rule.
+ * Everything under test runs for real, on the canvas as it is now built
+ * (`@ai-matrx/canvas`): a Redux store holding `canvasHost: canvasReducer`,
+ * bound by the app's ONE binding `CanvasHostProvider` (which registers every
+ * artifact kind), the real openers (`useCanvasOpeners`, `useOpenDocumentCanvas`),
+ * the real tool-card renderer, the real tab strip (`CanvasPaneView`) with the
+ * artifact kind's own header action and lazily loaded body (`CanvasBody`), the
+ * real registry reader, decision function and snapshot→markdown reader.
+ *
+ * Retired with the old canvas slice (2026-10-01): the "switcher appears with
+ * two items" rule (`shouldShowCanvasSwitcher`) and `CanvasNavigation`. The
+ * package's pane always draws a tab per item, so "is the second item
+ * reachable?" is now pinned by clicking its real tab.
  *
  * Proven failing before passing — re-run these mutations to re-prove:
  *   a. made `readToolResultCanvasOffer` return null for the nested `create`
  *      shape (the parser bug that shipped) → no offer, no card action → RED.
  *   b. dropped the `canvasHasOtherContent` guard in
  *      `decideToolResultCanvasAction` → a document hijacked the sandbox → RED.
- *   c. restored `itemCount > 2` in `shouldShowCanvasSwitcher` → two items, no
- *      switcher → RED.
+ *   c. made `useCanvasOpeners().offer` open WITHOUT `quiet` → the offer took
+ *      the screen and stole the sandbox's tab → 3 RED.
  *   d1. removed `case "udt_document"` from `CanvasBody` → the pane rendered
- *       "Unsupported content type: udt_document" → RED.
+ *       "Unsupported content type: udt_document" → 2 RED (direct + the tab's
+ *       lazily loaded body).
  *   d2. reverted `canvasTypeHasSource` to refuse every NON_PERSISTABLE type →
- *       the document's Source tab vanished → RED.
+ *       the document tab's "Show source" action vanished → RED.
  *   d3. made `univerDocToMarkdown` return "" → the pane could show a title but
  *       never the document's content → RED.
- *
- * Measured 2026-09-15: a=2 failed, b=1, c=1, d1=1, d2=1, d3=1, all 23 green
- * with every mutation reverted.
+ * c, d1, d2 re-measured on this rebuild (2026-10-02); a, b, d3 guard pure
+ * functions whose tests did not change.
  */
 
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { configureStore } from "@reduxjs/toolkit";
 
 import {
-  canvasSlice,
-  offerCanvasItem,
-  openCanvas,
-  selectCanvasItems,
+  selectCanvasActiveItem,
   selectCanvasIsOpen,
-  setCanvasAvailable,
+  type CanvasItem,
+  type CanvasState,
+} from "@ai-matrx/canvas";
+import {
+  CanvasPaneView,
+  getCanvasKind,
+  useCanvas,
+} from "@ai-matrx/canvas/react";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { CanvasHostProvider } from "@/features/canvas/host/CanvasHostProvider";
+import { useCanvasOpeners, type CanvasOpeners } from "@/features/canvas/host/canvasSources";
+import { contentOf, readArtifactItemData } from "@/features/canvas/host/artifactItem";
+import { CanvasBody } from "@/features/canvas/core/CanvasBody";
+import {
+  getDefaultTitle,
   isPersistableCanvasType,
   type CanvasContent,
-} from "@/features/canvas/redux/canvasSlice";
-import { CanvasBody } from "@/features/canvas/core/CanvasBody";
-import { getDefaultTitle } from "@/features/canvas/canvasContent";
+} from "@/features/canvas/canvasContent";
 import { canvasTypeHasSource } from "@/features/canvas/core/canvasSource";
-import { shouldShowCanvasSwitcher } from "@/features/canvas/core/canvasSwitcher";
 import {
   readToolResultCanvasOffer,
   registeredToolResultCanvasKeys,
@@ -62,10 +81,36 @@ import { buildDocumentCanvasContent } from "@/features/data-tables/hooks/useOpen
 import { univerDocToMarkdown } from "@/features/data-tables/univer-doc-to-markdown";
 import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
 import { DocumentInline } from "@ai-matrx/chat/tool-call-visualization/renderers/document/DocumentInline";
-import { CanvasNavigation } from "@/features/canvas/core/CanvasNavigation";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
+
+// jsdom has no ResizeObserver; the artifact view's scroll fade observes its
+// box. A no-op observer is the jsdom stand-in, not a behaviour under test.
+class NoopResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+(globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= NoopResizeObserver;
+
+// The two LEAF editors are network-bound (a live pty, the Univer editor
+// fetching its snapshot). They are the boundary: everything above them —
+// the kind, the lazily loaded artifact view, CanvasBody's switch — is real,
+// and the stubs print the pointer CanvasBody handed them.
+jest.mock("@/features/data-tables/components/DocumentCanvasBody", () => ({
+  DocumentCanvasBody: ({ documentId }: { documentId: string }) => (
+    <div data-testid="document-canvas-body">{documentId}</div>
+  ),
+}));
+jest.mock(
+  "@ai-matrx/chat/agents/components/chat/sandbox-insight/SandboxCanvasBody",
+  () => ({
+    SandboxCanvasBody: ({ sandboxRowId }: { sandboxRowId: string }) => (
+      <div data-testid="sandbox-canvas-body">{sandboxRowId}</div>
+    ),
+  }),
+);
 
 const toastError = jest.fn();
 jest.mock("@/lib/toast", () => ({
@@ -87,13 +132,30 @@ const CREATE_RESULT = {
   saved: true,
 };
 
+const SANDBOX: CanvasContent = {
+  type: "sandbox",
+  data: { sandboxRowId: "box-1" },
+  metadata: { title: "Sandbox", sourceMessageId: "sandbox:box-1" },
+};
+
+/** The app's real store shape — `canvasHost` included — from the app's own
+ *  root reducer, so every body a tab draws reads the slices it reads live. */
 function makeStore() {
   return configureStore({
-    reducer: { canvas: canvasSlice.reducer },
+    reducer: createSlimRootReducer(),
     middleware: (getDefault) =>
       getDefault({ serializableCheck: false, immutableCheck: false }),
   });
 }
+
+type Store = ReturnType<typeof makeStore>;
+
+const canvasOf = (store: Store): CanvasState => store.getState().canvasHost;
+const itemsOf = (store: Store): CanvasItem[] => Object.values(canvasOf(store).items);
+const contentOfItem = (item: CanvasItem | null | undefined): CanvasContent | null => {
+  const data = item ? readArtifactItemData(item.data) : null;
+  return data ? contentOf(data) : null;
+};
 
 function entryWith(result: unknown): ToolLifecycleEntry {
   return {
@@ -115,12 +177,19 @@ function entryWith(result: unknown): ToolLifecycleEntry {
   } as unknown as ToolLifecycleEntry;
 }
 
-function mount(store: ReturnType<typeof makeStore>, node: React.ReactNode) {
+/** `withCanvas: false` mounts with NO canvas provider: a route with no canvas. */
+function mount(store: Store, node: React.ReactNode, withCanvas = true) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
   act(() => {
-    root.render(<Provider store={store}>{node}</Provider>);
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <Provider store={store}>
+          {withCanvas ? <CanvasHostProvider>{node}</CanvasHostProvider> : node}
+        </Provider>
+      </QueryClientProvider>,
+    );
   });
   return {
     container,
@@ -139,7 +208,35 @@ function findCanvasButton(container: HTMLElement): HTMLButtonElement | null {
   );
 }
 
-beforeEach(() => toastError.mockClear());
+/** Exposes the real headless openers (what ToolResultCanvasOpener calls). */
+function mountOpeners(store: Store) {
+  const api: { openers: CanvasOpeners | null } = { openers: null };
+  function Probe() {
+    api.openers = useCanvasOpeners();
+    return null;
+  }
+  const mounted = mount(store, <Probe />);
+  return { openers: api.openers!, unmount: mounted.unmount };
+}
+
+/** The focused pane's real tab strip + bodies. */
+function PaneProbe() {
+  const canvas = useCanvas();
+  return (
+    <TooltipProvider>
+      <CanvasPaneView paneId={canvas.getState().focusedPaneId} />
+    </TooltipProvider>
+  );
+}
+
+function tabs(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>('[role="tab"]'));
+}
+
+beforeEach(() => {
+  toastError.mockClear();
+  window.localStorage.clear();
+});
 
 // ── (a) a document tool result dispatches an offer and renders the card ─────
 
@@ -190,28 +287,31 @@ describe("a document tool result reaches the canvas", () => {
     ).toBeNull();
   });
 
-  it("an offer lands in the switcher WITHOUT taking the screen", () => {
+  it("an offer lands on the canvas as a tab WITHOUT taking the screen", () => {
     const store = makeStore();
+    const { openers, unmount } = mountOpeners(store);
     const offer = readToolResultCanvasOffer("document", CREATE_RESULT, {})!;
     act(() => {
-      store.dispatch(offerCanvasItem(offer.content));
+      expect(openers.offer(offer.content)).toBe(true);
     });
-    const state = store.getState();
-    expect(selectCanvasItems(state)).toHaveLength(1);
-    expect(selectCanvasItems(state)[0].content.type).toBe("udt_document");
+    const items = itemsOf(store);
+    expect(items).toHaveLength(1);
+    expect(items[0].kind).toBe("udt_document");
+    // By POINTER: the tab carries the document id, never a copy of the body.
+    expect(contentOfItem(items[0])?.data).toEqual({ documentId: DOC_ID });
     // Offered, not opened: nothing at all changed on screen.
-    expect(selectCanvasIsOpen(state)).toBe(false);
+    expect(selectCanvasIsOpen(canvasOf(store))).toBe(false);
 
-    // Offering the same record again is ONE pane, never two.
+    // Offering the same record again is ONE tab, never two.
     act(() => {
-      store.dispatch(offerCanvasItem(offer.content));
+      openers.offer(offer.content);
     });
-    expect(selectCanvasItems(store.getState())).toHaveLength(1);
+    expect(itemsOf(store)).toHaveLength(1);
+    unmount();
   });
 
   it("renders a card in the thread whose canvas action opens THAT document", () => {
-    const store = makeStore();
-    store.dispatch(setCanvasAvailable(true)); // the ONE canvas surface, as on every route
+    const store = makeStore(); // under the ONE canvas provider, as on every route
     const { container, unmount } = mount(
       store,
       <DocumentInline entry={entryWith(CREATE_RESULT)} />,
@@ -223,26 +323,31 @@ describe("a document tool result reaches the canvas", () => {
 
     act(() => button!.click());
 
-    const items = selectCanvasItems(store.getState());
-    expect(selectCanvasIsOpen(store.getState())).toBe(true);
+    const items = itemsOf(store);
+    expect(selectCanvasIsOpen(canvasOf(store))).toBe(true);
     expect(items).toHaveLength(1);
-    expect(items[0].content.type).toBe("udt_document");
-    expect(items[0].content.data).toEqual({ documentId: DOC_ID });
-    expect(items[0].content.metadata?.title).toBe("Canvas Switcher Probe");
+    expect(items[0].kind).toBe("udt_document");
+    expect(items[0].title).toBe("Canvas Switcher Probe");
+    expect(selectCanvasActiveItem(canvasOf(store))?.id).toBe(items[0].id);
+    const content = contentOfItem(items[0]);
+    expect(content?.type).toBe("udt_document");
+    expect(content?.data).toEqual({ documentId: DOC_ID });
+    expect(content?.metadata?.title).toBe("Canvas Switcher Probe");
     expect(toastError).not.toHaveBeenCalled();
 
     unmount();
   });
 
   it("announces a drop instead of doing nothing when no canvas is reachable", () => {
-    const store = makeStore(); // no dock, no sheet — no canvas surface at all
+    const store = makeStore();
     const { container, unmount } = mount(
       store,
       <DocumentInline entry={entryWith(CREATE_RESULT)} />,
+      false, // no canvas provider — no canvas surface at all
     );
     act(() => findCanvasButton(container)!.click());
 
-    expect(selectCanvasItems(store.getState())).toHaveLength(0);
+    expect(itemsOf(store)).toHaveLength(0);
     expect(toastError).toHaveBeenCalledTimes(1);
     expect(String(toastError.mock.calls[0][0])).toContain(
       "Canvas Switcher Probe",
@@ -355,111 +460,72 @@ describe("the canvas is never hijacked", () => {
     expect(canvasHoldsOtherContent([], second)).toBe(false);
   });
 
-  it("the reducer itself refuses to steal a pane the user is reading", () => {
+  it("the canvas itself refuses to steal a tab the user is reading", () => {
     const store = makeStore();
-    const sandbox: CanvasContent = {
-      type: "sandbox",
-      data: { sandboxRowId: "box-1" },
-      metadata: { title: "Sandbox", sourceMessageId: "sandbox:box-1" },
-    };
+    const { openers, unmount } = mountOpeners(store);
     act(() => {
-      store.dispatch(openCanvas(sandbox));
-      store.dispatch(
-        offerCanvasItem(
-          buildDocumentCanvasContent({ documentId: DOC_ID, title: "Doc" }),
-        ),
+      openers.open(SANDBOX);
+      openers.offer(
+        buildDocumentCanvasContent({ documentId: DOC_ID, title: "Doc" }),
       );
     });
-    const state = store.getState();
-    const current = selectCanvasItems(state).find(
-      (i) => i.id === state.canvas.currentItemId,
-    );
-    expect(current?.content.type).toBe("sandbox");
-    expect(selectCanvasItems(state)).toHaveLength(2);
+    const active = selectCanvasActiveItem(canvasOf(store));
+    expect(contentOfItem(active)?.type).toBe("sandbox");
+    expect(itemsOf(store)).toHaveLength(2);
+    unmount();
   });
 });
 
-// ── (c) switcher visible with 2 items ──────────────────────────────────────
+// ── (c) the offered document is one click away ─────────────────────────────
 
-describe("the switcher", () => {
-  it("appears with two items and not with one", () => {
-    expect(
-      shouldShowCanvasSwitcher({
-        paneRole: "single",
-        itemCount: 1,
-        isSplit: false,
-      }),
-    ).toBe(false);
-    expect(
-      shouldShowCanvasSwitcher({
-        paneRole: "single",
-        itemCount: 2,
-        isSplit: false,
-      }),
-    ).toBe(true);
-    expect(
-      shouldShowCanvasSwitcher({
-        paneRole: "bottom",
-        itemCount: 2,
-        isSplit: false,
-      }),
-    ).toBe(false);
-    expect(
-      shouldShowCanvasSwitcher({
-        paneRole: "single",
-        itemCount: 2,
-        isSplit: true,
-      }),
-    ).toBe(false);
-  });
-
-  it("renders a real, clickable control that switches items", () => {
+describe("the tab strip", () => {
+  it("draws a real, clickable tab per item that switches to the document", async () => {
     const store = makeStore();
+    const { openers, unmount: unmountOpeners } = mountOpeners(store);
     act(() => {
-      store.dispatch(
-        openCanvas({
-          type: "sandbox",
-          data: { sandboxRowId: "box-1" },
-          metadata: { title: "Sandbox", sourceMessageId: "sandbox:box-1" },
+      openers.open(SANDBOX);
+      openers.offer(
+        buildDocumentCanvasContent({
+          documentId: DOC_ID,
+          title: "Canvas Switcher Probe",
         }),
       );
-      store.dispatch(
-        offerCanvasItem(
-          buildDocumentCanvasContent({
-            documentId: DOC_ID,
-            title: "Canvas Switcher Probe",
-          }),
-        ),
-      );
     });
-    const items = selectCanvasItems(store.getState());
-    expect(items).toHaveLength(2);
+    unmountOpeners();
 
-    const navigated: string[] = [];
-    const { container, unmount } = mount(
-      store,
-      <CanvasNavigation
-        items={items}
-        currentItemId={items[0].id}
-        onNavigate={(id) => navigated.push(id)}
-        onRemove={() => {}}
-      />,
+    const { container, unmount } = mount(store, <PaneProbe />);
+    const strip = tabs(container);
+    expect(strip.map((t) => t.textContent)).toEqual([
+      "Sandbox",
+      "Canvas Switcher Probe",
+    ]);
+    expect(strip[0].getAttribute("aria-selected")).toBe("true");
+    expect(strip[1].getAttribute("aria-selected")).toBe("false");
+
+    await act(async () => {
+      strip[1].click();
+    });
+    expect(contentOfItem(selectCanvasActiveItem(canvasOf(store)))?.type).toBe(
+      "udt_document",
     );
+    expect(tabs(container)[1].getAttribute("aria-selected")).toBe("true");
 
-    const switcher = container.querySelector("[data-canvas-switcher]");
-    expect(switcher).not.toBeNull();
-    // It says WHERE you are out of HOW MANY — the control the reviewer could
-    // not find at 1280x720.
-    expect(switcher!.textContent).toContain("1/2");
-
-    const buttons = Array.from(
-      switcher!.querySelectorAll<HTMLButtonElement>("button"),
+    // The tab's body is the artifact kind's lazily loaded view → CanvasBody.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    const body = container.querySelector<HTMLElement>(
+      '.mxc-item[data-kind="udt_document"]',
     );
-    const next = buttons[buttons.length - 1];
-    expect(next.disabled).toBe(false);
-    act(() => next.click());
-    expect(navigated).toEqual([items[1].id]);
-
+    expect(body).not.toBeNull();
+    expect(body!.hidden).toBe(false);
+    expect(body!.querySelector('[aria-busy="true"]')).toBeNull(); // loaded
+    expect(body!.querySelector('[role="alert"]')).toBeNull(); // and rendered
+    expect(body!.textContent).not.toContain("Unsupported content type");
+    // CanvasBody routed the tab to the document editor, BY POINTER.
+    expect(
+      body!.querySelector('[data-testid="document-canvas-body"]')?.textContent,
+    ).toBe(DOC_ID);
     unmount();
   });
 });
@@ -467,20 +533,50 @@ describe("the switcher", () => {
 // ── (d) the udt_document pane renders title + content from a fixture row ────
 
 describe("the udt_document canvas type", () => {
-  it("is a registered type with its own title, and never persists a copy", () => {
+  it("is a registered kind with its own title, and never persists a copy", () => {
     expect(getDefaultTitle("udt_document")).toBe("Document");
+    // CanvasHostProvider registered it at import: a tab, never an unknown kind.
+    const kind = getCanvasKind("udt_document");
+    expect(kind?.label).toBe("Document");
+    // A pointer to a durable row comes back after a reload.
+    expect(kind?.restore).toBe(true);
     // The editor owns its own append-only snapshot history; a canvas_items row
     // would freeze a stale copy beside the live one.
     expect(isPersistableCanvasType("udt_document")).toBe(false);
   });
 
-  it("still OFFERS a Source tab — unlike the live panes", () => {
+  it("still OFFERS a Source view — unlike the live panes", async () => {
     // A document is a pointer to a DURABLE authored record, so its markdown is
     // exactly what a person means by "Source".
     expect(canvasTypeHasSource("udt_document")).toBe(true);
     // The genuinely live surfaces have no source of their own.
     expect(canvasTypeHasSource("sandbox")).toBe(false);
     expect(canvasTypeHasSource("cloud_browser")).toBe(false);
+
+    // …and the real tab header shows it: the artifact kind's own action.
+    const store = makeStore();
+    const { openers, unmount: unmountOpeners } = mountOpeners(store);
+    act(() => {
+      openers.open(SANDBOX);
+    });
+    unmountOpeners();
+    const { container, unmount } = mount(store, <PaneProbe />);
+    const sourceButton = () =>
+      container.querySelector<HTMLButtonElement>('button[aria-label="Show source"]');
+    expect(sourceButton()).toBeNull(); // the sandbox has none
+
+    await act(async () => {
+      openers.open(
+        buildDocumentCanvasContent({ documentId: DOC_ID, title: "Probe" }),
+      );
+    });
+    expect(sourceButton()).not.toBeNull();
+    await act(async () => {
+      sourceButton()!.click();
+    });
+    const active = selectCanvasActiveItem(canvasOf(store));
+    expect(active ? readArtifactItemData(active.data)?.view : null).toBe("source");
+    unmount();
   });
 
   it("has a real case in the CanvasBody switch — never 'Unsupported'", () => {
