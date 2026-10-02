@@ -3,7 +3,7 @@
 /**
  * `/work/new` — compose and launch work.
  *
- * Answers one question in eight plain-language steps: *what do I want done, by
+ * Answers one question in seven plain-language steps: *what do I want done, by
  * whom, with what knowledge, and where should the result live?*
  *
  * THE INVENTORY LAW — this surface builds no execution, no picker, and no
@@ -11,24 +11,25 @@
  *   1. Destination   → `destinationAvailability` over the live capability
  *                      reads (the bridge verdict for the hosted sandbox, the
  *                      Matrx Local engine for the user's own Mac)
- *   2. Request       → the run's user input
+ *   2. Request       → the run's user input; above its textarea sits the ONE
+ *                      composer row — `SmartAgentResourcePickerButton`
+ *                      (a stored file becomes a durable file→conversation edge
+ *                      the backend injects at call time), `ContextLensBar`
+ *                      for the active scopes, and `ConversationContextRail`
+ *                      (`withAttachments`: attachments LEFT, the value chip
+ *                      pinned RIGHT, its full view owned by the rail)
  *   3. Expert system → `AgentListDropdown` (the canonical agent picker)
  *   4. Skills        → `RunSkillPicker` (the canonical per-run skill picker)
- *   5. Context       → `SmartAgentResourcePickerButton` + `useAttachResource`
- *                      (a stored file becomes a durable file→conversation edge
- *                      the backend injects at call time) and `ContextLensBar`
- *                      for the active scopes
- *   6. Home          → `UniversalAssociationPicker`, applied as canonical
+ *   5. Home          → `UniversalAssociationPicker`, applied as canonical
  *                      `conversation → project|task|war_room` edges at launch
- *   7. Timing        → run now, save as a reusable request, or hand off to the
+ *   6. Timing        → run now, save as a reusable request, or hand off to the
  *                      EXISTING schedule engine at `/schedules/new`
- *   8. Review        → the exact facts, then Run
+ *   7. Review        → the exact facts, then Run
  *
  * Execution is `useAiWorkRun`: the managed `useAgentLauncher` instance from
  * mount (so every picker above has its slots) and `smartExecute` on Run — the
  * same path every SmartAgentInput host sends through — so the run leaves a
- * canonical conversation with all the normal doors. The Context step carries
- * `ConversationContextChip` (every value the turn carries) and its full view. The run streams in the floating `LiveRunWindow` (never a
+ * canonical conversation with all the normal doors. The run streams in the floating `LiveRunWindow` (never a
  * spinner, never a block at the top of the page that shifts what the user is
  * reading), and the conversation stays reachable at `/chat/<id>`.
  */
@@ -50,18 +51,12 @@ import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAiWorkRun } from "../useAiWorkRun";
-import {
-  ConversationContextChip,
-  useConversationContextChipShown,
-} from "@ai-matrx/chat/agents/components/inputs/smart-input/ConversationContextChip";
-import { ContextRulesPanel } from "@ai-matrx/chat/agents/components/context-policies-display/ContextRulesPanel";
+import { ConversationContextRail } from "@ai-matrx/chat/agents/components/inputs/smart-input/ConversationContextRail";
 import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextPreviewPanel";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { RunSkillPicker } from "@ai-matrx/chat/agents/components/inputs/smart-input/RunSkillPicker";
 import { SmartAgentResourcePickerButton } from "@ai-matrx/chat/agents/components/inputs/resources/SmartAgentResourcePickerButton";
-import { SmartAgentResourceChips } from "@ai-matrx/chat/agents/components/inputs/resources/SmartAgentResourceChips";
-import { AttachedDocumentChips } from "@ai-matrx/chat/agents/components/inputs/resources/AttachedDocumentChips";
 import { ContextLensBar } from "@/features/scopes/components/active-context/ContextLensBar";
 import { selectBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
@@ -192,9 +187,6 @@ function ComposerBody({
   //    The instance exists from mount (see useAiWorkRun) so everything the
   //    person attaches before Run is still there when the run executes.
   const { conversationId, send } = useAiWorkRun(agentId);
-  const [contextPanelOpen, setContextPanelOpen] = useState(false);
-  const [contextPanelKey, setContextPanelKey] = useState<string | null>(null);
-  const contextChipShown = useConversationContextChipShown(conversationId ?? "");
   const openContextPreview = useOpenContextPreviewPanel();
   const contextPreviewOpen = useAppSelector((state) =>
     selectIsOverlayOpen(state, "contextPreviewPanel"),
@@ -646,6 +638,28 @@ function ComposerBody({
         open={openStep === 2}
         onToggle={() => toggle(2)}
       >
+        {conversationId ? (
+          <div className="mb-2 flex min-w-0 items-center gap-1.5">
+            <SmartAgentResourcePickerButton
+              conversationId={conversationId}
+              triggerSize="default"
+            />
+            <ContextLensBar
+              conversationId={conversationId}
+              previewOpen={contextPreviewOpen}
+              onOpenPreview={() =>
+                openContextPreview({ conversationId, agentId })
+              }
+            />
+            <div className="min-w-0 flex-1">
+              <ConversationContextRail
+                conversationId={conversationId}
+                withAttachments
+                className="pb-0"
+              />
+            </div>
+          </div>
+        ) : null}
         <Textarea
           value={requestText}
           onChange={(event) => setRequestText(event.target.value)}
@@ -701,62 +715,22 @@ function ComposerBody({
 
       <ComposerSection
         step={5}
-        title="Context"
-        question="What should it read?"
-        open={openStep === 5}
-        onToggle={() => toggle(5)}
-      >
-        {conversationId ? (
-          <div className="flex flex-col gap-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <SmartAgentResourcePickerButton
-                conversationId={conversationId}
-                triggerSize="default"
-              />
-              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                Attach files, notes, tasks, pages, and more.
-              </span>
-              {contextChipShown ? (
-                <ConversationContextChip
-                  conversationId={conversationId}
-                  onOpenFullView={(key) => {
-                    setContextPanelKey(key ?? null);
-                    setContextPanelOpen(true);
-                  }}
-                />
-              ) : null}
-            </div>
-            <AttachedDocumentChips conversationId={conversationId} />
-            <SmartAgentResourceChips conversationId={conversationId} />
-            <ContextLensBar
-              conversationId={conversationId}
-              previewOpen={contextPreviewOpen}
-              onOpenPreview={() =>
-                openContextPreview({ conversationId, agentId })
-              }
-            />
-          </div>
-        ) : null}
-      </ComposerSection>
-
-      <ComposerSection
-        step={6}
         title="Home"
         question="Where should the result live?"
         answer={homes.length > 0 ? `${homes.length} linked` : undefined}
         complete={homes.length > 0}
-        open={openStep === 6}
-        onToggle={() => toggle(6)}
+        open={openStep === 5}
+        onToggle={() => toggle(5)}
       >
         <HomeStep homes={homes} onChange={setHomes} />
       </ComposerSection>
 
       <ComposerSection
-        step={7}
+        step={6}
         title="Timing"
         question="Run it now, save it, or schedule it."
-        open={openStep === 7}
-        onToggle={() => toggle(7)}
+        open={openStep === 6}
+        onToggle={() => toggle(6)}
       >
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
@@ -818,11 +792,11 @@ function ComposerBody({
       </ComposerSection>
 
       <ComposerSection
-        step={8}
+        step={7}
         title="Review and run"
         question="Check what will happen."
-        open={openStep === 8}
-        onToggle={() => toggle(8)}
+        open={openStep === 7}
+        onToggle={() => toggle(7)}
       >
         <dl className="grid grid-cols-[9rem_1fr] gap-x-3 gap-y-1.5 text-xs">
           <dt className="text-muted-foreground">Destination</dt>
@@ -897,18 +871,6 @@ function ComposerBody({
           </Link>
         )}
       </div>
-      {/* The context chip's full view — mounted once, outside the collapsible
-          Context step, so opening or switching values never remounts it. */}
-      {conversationId ? (
-        <ContextRulesPanel
-          open={contextPanelOpen}
-          onOpenChange={setContextPanelOpen}
-          conversationId={conversationId}
-          agentId={agentId}
-          selectedKey={contextPanelKey}
-          onSelectedKeyChange={setContextPanelKey}
-        />
-      ) : null}
     </div>
   );
 }
