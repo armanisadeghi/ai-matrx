@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * features/marketing/strategy/components/StrategyBriefWorkspace.tsx
  *
@@ -89,7 +90,7 @@ const FOOTPRINT_LABEL: Record<string, string> = {
   online: "online only",
 };
 function footprintLabel(token: string): string {
-  return FOOTPRINT_LABEL[token] ?? token.replace(/_/g, " ");
+  return FOOTPRINT_LABEL[token] ?? (humanizeIdentifier(token) || token);
 }
 
 function asList(value: unknown): string[] {

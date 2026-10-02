@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/masterwork/sorting/cases.ts
 //
 // THE FOUR DOORS a pile of cases comes in through, as pure functions.
@@ -196,7 +197,7 @@ export function casesFromRecords(
   return dedupe(
     records.map((record) => ({
       text: record.title,
-      note: record.token.replace(/_/g, " "),
+      note: humanizeIdentifier(record.token) || record.token,
     })),
   );
 }

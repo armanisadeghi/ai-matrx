@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/masterwork/capture-plan/CapturePlanPage.tsx
 //
 // THE CAPTURE PLAN — the whole program on one screen.
@@ -832,7 +833,7 @@ function whenReady(session: PlanSession): string {
 }
 
 function methodName(key: string): string {
-  return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return humanizeIdentifier(key) || key;
 }
 
 function countNew(mark: OpenSessionMark, rulebook: Rulebook): number {

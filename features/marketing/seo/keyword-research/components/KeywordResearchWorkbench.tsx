@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Keyword Research workbench — the user-facing surface over the seo keyword
  * plane. Top bar runs the LSI research agent for a primary keyword (server
@@ -116,7 +117,7 @@ function monthlyPoints(market: KeywordMarketRow | null): MonthlySearchPoint[] {
 
 function TrajectoryBadge({ value }: { value: string | null }) {
   if (!value) return <span className="text-muted-foreground">—</span>;
-  const label = value.replace(/_/g, " ");
+  const label = humanizeIdentifier(value) || value;
   const emphasis =
     value === "exploding" || value === "growing"
       ? "text-primary border-primary/40"

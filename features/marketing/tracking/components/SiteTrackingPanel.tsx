@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * THE site tracking panel (google-native PLAN §4.10 Plane A) — the ONE component behind every
  * place a site's Google Tag Manager tracking is shown: the site's Integrations settings section
@@ -97,7 +98,7 @@ const VERDICT_WORD: Record<TrackingVerdict, string> = {
 };
 
 function CheckRow({ check }: { check: TrackingCheck }) {
-  const label = CHECK_LABELS[check.id] ?? check.id.replace(/_/g, " ");
+  const label = CHECK_LABELS[check.id] ?? (humanizeIdentifier(check.id) || check.id);
   return (
     <li
       className={cn("space-y-1 rounded-md border p-2.5", VERDICT_TONE[check.verdict])}

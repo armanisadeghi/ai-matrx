@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Reference picker — the user-grade "pick a thing, get its reference" contract.
  *
@@ -81,10 +82,7 @@ export const FRIENDLY_REFERENCE_TYPE_LABELS: Readonly<Record<string, string>> =
 export function referenceTypeDisplayLabel(type: string): string {
   const token = (CATALOG_ALIASES as Record<string, string>)[type] ?? type;
   const known = referenceTypeLabel(token);
-  const fromToken = token
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
+  const fromToken = humanizeIdentifier(token) || token;
   const catalog = CATALOG_NOUN_DISPLAY[token]?.label?.trim() ?? "";
   const raw =
     FRIENDLY_REFERENCE_TYPE_LABELS[token] ?? (known !== fromToken ? known : catalog || known);

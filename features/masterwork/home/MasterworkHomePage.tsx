@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/masterwork/home/MasterworkHomePage.tsx
 //
 // The Masterwork HOME — the signed-in landing at /masterwork (Arman
@@ -60,8 +61,7 @@ function when(iso: string): string {
 function operationLabel(operation: string): string {
   const known = OPERATION_LABELS[operation];
   if (known) return known;
-  const words = operation.replace(/_/g, " ").trim();
-  return words ? words.charAt(0).toUpperCase() + words.slice(1) : operation;
+  return humanizeIdentifier(operation) || operation;
 }
 
 /** What the system was doing, in the Expert's words. */

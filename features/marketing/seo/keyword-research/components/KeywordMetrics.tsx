@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * KeywordMetrics — THE shared presentation primitives for keyword volume data.
  *
@@ -179,7 +180,7 @@ export function KeywordIntentChip({
         className,
       )}
     >
-      {intentClass.replace(/_/g, " ")}
+      {humanizeIdentifier(intentClass) || intentClass}
     </span>
   );
 }

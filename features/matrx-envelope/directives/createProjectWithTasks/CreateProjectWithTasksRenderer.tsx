@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -125,7 +126,7 @@ function ResolvedTaskRow({
         ) : null}
         {task.status ? (
           <span className="mt-1 inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            {task.status.replace(/_/g, " ")}
+            {humanizeIdentifier(task.status) || task.status}
           </span>
         ) : null}
       </div>

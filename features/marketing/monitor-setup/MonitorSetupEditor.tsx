@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * The tracker editor — ONE editor for both monitor lenses (coverage: who writes
  * about us; opportunity: news we can join). BRIEFS-STRATEGY-AND-ORG-CHART §5.1,
@@ -1665,7 +1666,7 @@ function MonitorSetupEditorBody({
                       </a>{" "}
                       <span className="text-muted-foreground">
                         {m.domain}
-                        {m.verdict ? ` · ${m.verdict.replace(/_/g, " ")}` : ""}
+                        {m.verdict ? ` · ${humanizeIdentifier(m.verdict) || m.verdict}` : ""}
                         {m.is_competitor ? " · about a competitor" : ""}
                       </span>
                     </li>
