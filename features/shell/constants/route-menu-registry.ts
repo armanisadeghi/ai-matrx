@@ -38,6 +38,20 @@ export interface RouteMenuEntry {
    * 2026-09-30: the normal menu by default, chat history only on a flip).
    */
   defaultView?: "main" | "route";
+  /**
+   * THE DOMAIN PANEL (owner, 2026-10-01: the icon strip never changes; a
+   * domain's own menu sits BESIDE it, never in its place). On a desktop the
+   * main menu stays as the icon strip and this family's menu fills a panel
+   * next to it — no flip. The sidebar toggle opens and closes the panel.
+   * Phones keep the drawer's flip until the drawer is rebuilt the same way.
+   */
+  layout?: "panel";
+}
+
+/** Whether this pathname shows its domain menu as a panel beside the strip. */
+export function isDomainPanelPath(pathname: string): boolean {
+  const entry = routeMenuRegistry.find((e) => e.pathPattern.test(pathname));
+  return entry?.layout === "panel";
 }
 
 /** The side a matched family opens on — one rule for the desktop slot, the phone drawer and SSR. */
@@ -99,6 +113,7 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     pathPattern: /^\/marketing(?:\/|$)/,
     iconName: "TrendingUp",
     label: "Marketing",
+    layout: "panel",
     importFn: () =>
       import("@/features/marketing/components/shell/MarketingSidebarMenu"),
   },

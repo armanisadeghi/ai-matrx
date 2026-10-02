@@ -86,6 +86,8 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 
 ## Change log
 
+- `2026-10-01` — Claude: THE DOMAIN PANEL. A route-menu entry with `layout: "panel"` keeps the main menu as the icon strip and puts its own menu beside it on desktop (no flip); the sidebar toggle opens/closes the panel. `.shell-root[data-domain-panel]` (AppShell + NavActiveSync) redefines `--shell-sidebar-w-expanded` as strip + panel so every width rule follows. Pilot: Marketing. Phones keep the drawer flip for now.
+
 - `2026-09-19` — Cursor: group highlight is ownership-only. A flyout shortcut into another module (AI Work → `/chat/new`) no longer lights the parent beside the real owner; Agents declares `/agent-connections` as its alternate namespace.
 
 - `2026-09-15` — Codex: unified active-route ownership and the blue selected treatment across desktop groups, flyout children, mobile drill-ins, Administration, and alternate module sidebars; added explicit alternate namespaces for Knowledge's `/rag/*` routes; kept the Admin Launchpad launcher neutral.

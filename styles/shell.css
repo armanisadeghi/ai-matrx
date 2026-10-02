@@ -1089,6 +1089,76 @@ button.shell-nav-flyout-item {
   }
 }
 
+/* THE DOMAIN PANEL (owner, 2026-10-01). On a family whose route menu is a
+   panel (`layout: "panel"` in route-menu-registry), the main menu stays the
+   icon strip and the domain's own menu sits beside it — never in its place.
+   The checkbox now means "panel open": the expanded width is redefined as
+   strip + panel, so the grid, the sidebar, the account rail and every rule
+   that reads --shell-sidebar-w-expanded follow without a second copy. The
+   strip keeps its collapsed look whatever the checkbox says. */
+@media (min-width: 1024px) {
+  .shell-root[data-domain-panel] {
+    --shell-domain-panel-w: 15rem;
+    --shell-sidebar-w-expanded: calc(var(--shell-sidebar-w) + var(--shell-domain-panel-w));
+  }
+
+  .shell-root[data-domain-panel] .shell-sidebar-nav {
+    display: grid;
+    grid-template-columns: var(--shell-sidebar-w) var(--shell-domain-panel-w);
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .shell-root[data-domain-panel] .shell-sidebar-switch {
+    display: none;
+  }
+
+  .shell-root[data-domain-panel] .shell-sidebar-nav .shell-sidebar-main-nav,
+  .shell-root[data-domain-panel] .shell-sidebar-nav .shell-sidebar-route-nav {
+    display: flex;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+
+  .shell-root[data-domain-panel] .shell-sidebar-main-nav {
+    padding: 0.25rem 0.375rem;
+  }
+
+  .shell-root[data-domain-panel] .shell-sidebar-route-nav {
+    padding: 0.25rem 0.5rem;
+    border-left: 1px solid var(--shell-sidebar-border-expanded);
+  }
+
+  /* The strip: collapsed whatever the checkbox says. */
+  .shell-root[data-domain-panel] > #shell-sidebar-toggle ~ * :is(.shell-sidebar-main-nav, .shell-sidebar-footer) .shell-nav-item {
+    justify-content: flex-start;
+    padding: 0.15rem 0.375rem;
+    gap: 0;
+  }
+
+  .shell-root[data-domain-panel] > #shell-sidebar-toggle ~ * :is(.shell-sidebar-main-nav, .shell-sidebar-footer) :is(.shell-nav-label, .shell-nav-external) {
+    width: 0;
+    min-width: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .shell-root[data-domain-panel] > #shell-sidebar-toggle ~ * :is(.shell-sidebar-main-nav, .shell-sidebar-footer) :is(.shell-nav-badge-expanded, .shell-nav-group-disclosure, .shell-nav-flyout-caret, .shell-env-details) {
+    display: none;
+  }
+
+  .shell-root[data-domain-panel] > #shell-sidebar-toggle ~ * :is(.shell-sidebar-main-nav, .shell-sidebar-footer) .shell-nav-badge-collapsed {
+    display: flex;
+  }
+
+  .shell-root[data-domain-panel] .shell-sidebar-footer {
+    width: var(--shell-sidebar-w);
+  }
+}
+
 .shell-sidebar-settings-home {
   display: none;
   min-width: 0;

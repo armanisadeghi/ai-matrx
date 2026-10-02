@@ -27,6 +27,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
+import { isDomainPanelPath } from "@/features/shell/constants/route-menu-registry";
 
 function syncNav() {
   const pathname = window.location.pathname;
@@ -39,6 +40,7 @@ function syncNav() {
   } else {
     root.removeAttribute("data-settings-route");
   }
+  root.toggleAttribute("data-domain-panel", isDomainPanelPath(pathname));
 }
 
 export default function NavActiveSync() {

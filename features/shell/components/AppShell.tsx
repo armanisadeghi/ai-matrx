@@ -33,6 +33,7 @@ import type { BaseReduxState } from "@/types/reduxTypes";
 import { FORCE_EXCLUDE_SIDEMENU } from "@/features/shell/build-flags.js";
 import { SettingsRouteProvider } from "@/features/settings/route-shell/SettingsRouteProvider";
 import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
+import { isDomainPanelPath } from "@/features/shell/constants/route-menu-registry";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -65,6 +66,7 @@ export default function AppShell({
           data-pathname={pathname}
           {...shellChromeAttributes(pathname, isAuthenticated)}
           {...(settingsRoute ? { "data-settings-route": "" } : {})}
+          {...(isDomainPanelPath(pathname) ? { "data-domain-panel": "" } : {})}
           {...(FORCE_EXCLUDE_SIDEMENU ? { "data-no-sidebar": "" } : {})}
         >
           <input

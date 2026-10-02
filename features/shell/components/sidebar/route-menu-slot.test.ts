@@ -1,4 +1,4 @@
-import { routeMenuDefaultView, routeMenuRegistry } from "@/features/shell/constants/route-menu-registry";
+import { isDomainPanelPath, routeMenuDefaultView, routeMenuRegistry } from "@/features/shell/constants/route-menu-registry";
 import { resolveSidebarView } from "./RouteMenuSlot";
 
 const MARKETING = "^\\/marketing(?:\\/|$)";
@@ -138,5 +138,14 @@ describe("the first paint of a Large Route is already its route view", () => {
     expect(sidebar).not.toContain('data-sidebar-view="main"');
     const slot = fs.readFileSync(path.join(__dirname, "RouteMenuSlot.tsx"), "utf8");
     expect(slot).toContain("resolveSidebarView(manual, matchKey, !!match, routeMenuDefaultView(match))");
+  });
+});
+
+describe("the domain panel", () => {
+  it("shows Marketing's menu beside the strip, and only on its own family", () => {
+    expect(isDomainPanelPath("/marketing")).toBe(true);
+    expect(isDomainPanelPath("/marketing/brands/b1")).toBe(true);
+    expect(isDomainPanelPath("/notes")).toBe(false);
+    expect(isDomainPanelPath("/chat")).toBe(false);
   });
 });
