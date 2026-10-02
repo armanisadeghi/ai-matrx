@@ -80,8 +80,7 @@ import { primeAudioOutput } from "@/features/audio/unlock";
 import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
 import { useOpenListenSummaryWindow } from "@/features/overlays/openers/listenSummaryWindow";
 import { LISTENING_HOME_SURFACE } from "@/features/audio/service/listeningConfig";
-import { insertTextAtCursor } from "@/utils/editor-text-insertion";
-import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
+import { hasEditorInsertTarget, insertIntoEditor, ownParagraph } from "../utils/insert-into-editor";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { resolveActions } from "@/features/rich-document/actions/provider";
 import { registryMenuActions } from "@/features/rich-document/variants/shared/menuStructure";
@@ -944,27 +943,17 @@ export function useContextMenuActions(
     }
   };
 
+  // Every insert the menu makes goes through ONE function; which target is
+  // live (editor id, textarea, rich caret) is decided when the insert runs.
+  const insertTargets = { editorId, getTextarea, insertAtCaret, onTextReplace };
+
   const handleContentBlockInsert = (
     entry: Extract<AgentMenuEntry, { entryType: "content_block" }>,
   ) => {
     // The template passes through VERBATIM — placeholders like {{variable}}
     // must reach the editor/clipboard unmangled.
     const template = entry.template;
-    if (editorId && insertTextAtCursor(editorId, template)) {
-      onContentInserted?.();
-      return;
-    }
-    if (!editorId && getTextarea) {
-      const textarea = getTextarea();
-      if (
-        textarea &&
-        insertTextAtTextareaCursor(textarea, template, onTextReplace)
-      ) {
-        onContentInserted?.();
-        return;
-      }
-    }
-    if (insertAtCaret?.(template)) {
+    if (insertIntoEditor(insertTargets, template)) {
       onContentInserted?.();
       return;
     }
@@ -1018,9 +1007,7 @@ export function useContextMenuActions(
   // editable surface gets it inserted at the caret on its own paragraph, any
   // other surface (or a "Copy" choice inside the picker) gets it on the
   // clipboard — never a silent no-op.
-  const canInsertReference =
-    isEditable &&
-    (Boolean(editorId) || Boolean(getTextarea) || Boolean(insertAtCaret));
+  const canInsertReference = isEditable && hasEditorInsertTarget(insertTargets);
   const copyReference = (pick: ReferencePick) => {
     void navigator.clipboard.writeText(pick.fence).then(
       () =>
@@ -1037,28 +1024,13 @@ export function useContextMenuActions(
     );
   };
   const insertReference = (pick: ReferencePick) => {
-    if (editorId && insertTextAtCursor(editorId, `\n${pick.fence}\n`)) {
-      onContentInserted?.();
-      return;
-    }
-    const textarea = editorId ? null : getTextarea?.();
-    if (textarea) {
-      const before = textarea.value.slice(0, textarea.selectionStart);
-      const after = textarea.value.slice(textarea.selectionEnd);
-      const lead = before.length === 0 || before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
-      const tail = after.length === 0 || after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
-      if (
-        insertTextAtTextareaCursor(
-          textarea,
-          `${lead}${pick.fence}${tail}`,
-          onTextReplace,
-        )
-      ) {
-        onContentInserted?.();
-        return;
-      }
-    }
-    if (!editorId && !getTextarea && insertAtCaret?.(`\n\n${pick.fence}\n\n`)) {
+    // Own paragraph everywhere: a fence must start and end on its own line.
+    const inserted = insertIntoEditor(insertTargets, {
+      editor: `\n${pick.fence}\n`,
+      textarea: (field) => ownParagraph(pick.fence, field),
+      caret: `\n\n${pick.fence}\n\n`,
+    });
+    if (inserted) {
       onContentInserted?.();
       return;
     }
