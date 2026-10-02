@@ -127,7 +127,9 @@ function OrganizationRow({
             {org.name}
           </a>
           {org.archived && (
-            <span className="text-xs text-muted-foreground">(archived)</span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              (archived)
+            </span>
           )}
         </div>
       </td>
@@ -299,13 +301,13 @@ function OrganizationTable({ orgs }: { orgs: FinalSwitchOrganization[] }) {
     >
       <table className="w-full min-w-[900px] table-fixed break-words text-left text-sm">
         <colgroup>
-          <col className="w-[18%]" />
-          <col className="w-[14%]" />
-          <col className="w-[9%]" />
-          <col className="w-[20%]" />
-          <col className="w-[20%]" />
+          <col className="w-[24%]" />
           <col className="w-[13%]" />
-          <col className="w-[6%]" />
+          <col className="w-[8%]" />
+          <col className="w-[19%]" />
+          <col className="w-[19%]" />
+          <col className="w-[12%]" />
+          <col className="w-[5%]" />
         </colgroup>
         <thead className="bg-muted/50 text-xs text-muted-foreground">
           <tr>
