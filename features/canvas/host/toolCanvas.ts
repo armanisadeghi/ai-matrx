@@ -11,8 +11,14 @@
  * the same conversation back).
  */
 
-import { canvasItemId, type CanvasController, type CanvasItemId, type CanvasJson } from "@ai-matrx/canvas";
-import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import {
+  canvasItemId,
+  type CanvasController,
+  type CanvasItemId,
+  type CanvasJson,
+  type CanvasState,
+} from "@ai-matrx/canvas";
+import { useOptionalCanvas, useOptionalCanvasState } from "@ai-matrx/canvas/react";
 import { openCanvasItem } from "./openCanvasItem";
 
 export interface ToolOpenInput {
@@ -41,6 +47,23 @@ export function openToolInCanvas(canvas: CanvasController | null, input: ToolOpe
   });
 }
 
+type CanvasRecord = { readonly [key: string]: CanvasJson | undefined };
+
+function isCanvasRecord(data: CanvasJson | undefined | null): data is CanvasRecord {
+  return typeof data === "object" && data !== null && !Array.isArray(data);
+}
+
+/** A tab's data as a record ({} when it is not one) — kinds read their fields through this. */
+export function canvasRecord(data: CanvasJson | undefined | null): CanvasRecord {
+  return isCanvasRecord(data) ? data : {};
+}
+
+/** A non-empty string field of a tab's data, or null. */
+export function canvasText(data: CanvasJson | undefined | null, field: string): string | null {
+  const value = canvasRecord(data)[field];
+  return typeof value === "string" && value ? value : null;
+}
+
 /** A handle with `close()`, the shape every overlay opener returned. */
 export interface ToolTabHandle {
   close: () => void;
@@ -60,10 +83,16 @@ export function useToolOpener<TOptions>(build: (options: TOptions) => ToolOpenIn
   return (options: TOptions): ToolTabHandle => toolTabHandle(canvas, openToolInCanvas(canvas, build(options)));
 }
 
+function holdsKind(state: CanvasState, kind: string): boolean {
+  return state.isOpen && Object.values(state.items).some((item) => item.kind === kind);
+}
+
 /** True when the canvas is showing and holds at least one tab of `kind`. */
 export function canvasHoldsKind(canvas: CanvasController | null, kind: string): boolean {
-  if (!canvas) return false;
-  const state = canvas.getState();
-  if (!state.isOpen) return false;
-  return Object.values(state.items).some((item) => item.kind === kind);
+  return canvas ? holdsKind(canvas.getState(), kind) : false;
+}
+
+/** `canvasHoldsKind` as a subscription — re-renders only when the answer changes. */
+export function useCanvasHoldsKind(kind: string): boolean {
+  return useOptionalCanvasState((state) => holdsKind(state, kind), false);
 }

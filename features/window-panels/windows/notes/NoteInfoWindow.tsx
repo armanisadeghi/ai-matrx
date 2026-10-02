@@ -37,7 +37,7 @@ import {
   selectNoteContent,
   selectFolderReferences,
 } from "@/features/notes/redux/selectors";
-import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
+import { useOpenNoteKnowledgePanel } from "@/features/notes/canvas/noteKnowledgeKind";
 import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 
 export interface NoteInfoWindowProps {

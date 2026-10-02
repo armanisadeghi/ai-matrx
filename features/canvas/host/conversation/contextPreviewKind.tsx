@@ -9,8 +9,8 @@
 
 import { ScanEye } from "lucide-react";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
-import type { CanvasController, CanvasJson } from "@ai-matrx/canvas";
-import { canvasHoldsKind, useToolOpener } from "@/features/canvas/host/toolCanvas";
+import type { CanvasJson } from "@ai-matrx/canvas";
+import { canvasText, useToolOpener, type ToolOpenInput } from "@/features/canvas/host/toolCanvas";
 
 export const CONTEXT_PREVIEW_KIND = "context-preview";
 const TITLE = "Agent context";
@@ -23,9 +23,10 @@ export interface ContextPreviewTabData {
 }
 
 export function readContextPreviewTab(data: CanvasJson | undefined | null): ContextPreviewTabData {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return {};
-  const text = (value: CanvasJson | undefined) => (typeof value === "string" && value ? value : undefined);
-  return { conversationId: text(data.conversationId), agentId: text(data.agentId) };
+  return {
+    conversationId: canvasText(data, "conversationId") ?? undefined,
+    agentId: canvasText(data, "agentId") ?? undefined,
+  };
 }
 
 export const contextPreviewKind = defineCanvasKind<CanvasJson>({
@@ -43,18 +44,19 @@ export interface OpenContextPreviewOptions {
   agentId?: string;
 }
 
-/** Opens "what the agent receives" in the canvas (or focuses that conversation's tab). */
-export function useOpenContextPreview() {
-  return useToolOpener((options: OpenContextPreviewOptions = {}) => ({
+/** The open request for a context preview tab (also used by the chat host's windows port). */
+export function contextPreviewOpenInput(options: OpenContextPreviewOptions = {}): ToolOpenInput {
+  return {
     kind: CONTEXT_PREVIEW_KIND,
     key: options.conversationId ?? NEW_CHAT_KEY,
     title: TITLE,
     data: { conversationId: options.conversationId ?? null, agentId: options.agentId ?? null },
     replaceData: true,
-  }));
+  };
 }
 
-/** True while the canvas is showing a context preview tab. */
-export function canvasShowsContextPreview(canvas: CanvasController | null): boolean {
-  return canvasHoldsKind(canvas, CONTEXT_PREVIEW_KIND);
+/** Opens "what the agent receives" in the canvas (or focuses that conversation's tab). */
+export function useOpenContextPreview() {
+  const open = useToolOpener(contextPreviewOpenInput);
+  return (options: OpenContextPreviewOptions = {}) => open(options);
 }

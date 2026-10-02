@@ -1,8 +1,8 @@
 import type { OverlayId } from "@/features/overlays/catalogue";
+import type { QuickToolKind } from "@/features/canvas/host/toolKinds";
 import type { MenuIconKey } from "./menuIconRegistry";
 
-export interface OverlayMenuItemConfig {
-  overlayId: OverlayId;
+interface MenuItemConfigBase {
   icon: MenuIconKey;
   label: string;
   className?: string;
@@ -22,9 +22,21 @@ export interface OverlayMenuItemConfig {
   guestDescription?: string;
 }
 
-export const QUICK_ACCESS_ITEMS: OverlayMenuItemConfig[] = [
+/** A menu row that opens a window or dialog. */
+export interface OverlayMenuItemConfig extends MenuItemConfigBase {
+  overlayId: OverlayId;
+}
+
+/** A menu row that opens a tool as a canvas tab. */
+export interface CanvasToolMenuItemConfig extends MenuItemConfigBase {
+  canvasTool: QuickToolKind;
+}
+
+export type QuickAccessItemConfig = OverlayMenuItemConfig | CanvasToolMenuItemConfig;
+
+export const QUICK_ACCESS_ITEMS: QuickAccessItemConfig[] = [
   {
-    overlayId: "scratchpadPanel",
+    canvasTool: "global-scratchpad",
     icon: "NotebookPen",
     label: "Scratchpad",
     requiresAuth: true,
@@ -32,7 +44,7 @@ export const QUICK_ACCESS_ITEMS: OverlayMenuItemConfig[] = [
       "Your always-there notepad. Scribble anywhere; agents can read it for context but never touch it.",
   },
   {
-    overlayId: "quickNotes",
+    canvasTool: "quick-notes",
     icon: "StickyNote",
     label: "Quick Note",
     requiresAuth: true,
@@ -40,7 +52,7 @@ export const QUICK_ACCESS_ITEMS: OverlayMenuItemConfig[] = [
       "Capture a thought from anywhere, search every note instantly, pull into chat or agents on demand.",
   },
   {
-    overlayId: "quickTasks",
+    canvasTool: "quick-tasks",
     icon: "CheckSquare",
     label: "Quick Task",
     requiresAuth: true,
@@ -48,15 +60,15 @@ export const QUICK_ACCESS_ITEMS: OverlayMenuItemConfig[] = [
       "Capture work, assign it to yourself or an agent, watch it run. Tasks become workflows your team owns.",
   },
   {
-    overlayId: "quickChat",
+    canvasTool: "quick-chat",
     icon: "MessageSquare",
     label: "Quick Chat",
     requiresAuth: true,
     guestDescription:
-      "Pop-over chat from any page. Inherits the context you're working in, saves to your history.",
+      "Chat beside any page. Inherits the context you're working in, saves to your history.",
   },
   {
-    overlayId: "quickScribe",
+    canvasTool: "quick-scribe",
     icon: "Mic",
     label: "Quick Scribe",
     requiresAuth: true,
@@ -64,7 +76,7 @@ export const QUICK_ACCESS_ITEMS: OverlayMenuItemConfig[] = [
       "Capture voice from anywhere — it transcribes and cleans on the fly and auto-attaches to the project you're in.",
   },
   {
-    overlayId: "quickData",
+    canvasTool: "quick-data",
     icon: "Database",
     label: "Quick Data",
     requiresAuth: true,

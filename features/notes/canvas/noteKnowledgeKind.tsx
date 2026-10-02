@@ -9,14 +9,14 @@
 import { Database } from "lucide-react";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
-import { useToolOpener } from "@/features/canvas/host/toolCanvas";
+import { canvasText, useToolOpener } from "@/features/canvas/host/toolCanvas";
 
 export const NOTE_KNOWLEDGE_KIND = "note-knowledge";
 const TITLE = "Knowledge base";
 
 export function readNoteKnowledgeTab(data: CanvasJson | undefined | null): { noteId: string } | null {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  return typeof data.noteId === "string" && data.noteId ? { noteId: data.noteId } : null;
+  const noteId = canvasText(data, "noteId");
+  return noteId ? { noteId } : null;
 }
 
 export const noteKnowledgeKind = defineCanvasKind<CanvasJson>({

@@ -41,5 +41,6 @@ export const scratchpadKind = defineCanvasKind<null>({
 
 /** Opens the scratchpad in the canvas (or focuses its tab). */
 export function useOpenScratchpad() {
-  return useToolOpener(() => ({ kind: SCRATCHPAD_KIND, key: "default", title: SCRATCHPAD_TITLE, data: null }));
+  const open = useToolOpener((_: null) => ({ kind: SCRATCHPAD_KIND, key: "default", title: SCRATCHPAD_TITLE, data: null }));
+  return () => open(null);
 }

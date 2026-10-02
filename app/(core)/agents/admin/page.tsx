@@ -82,12 +82,6 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      overlayId: "scratchpadPanel",
-      description:
-        "Global scratchpad — the user's always-there notepad (pool + one active) in a right side panel, opened from Quick Actions on any page. Active scratchpad auto-attaches read-only to every conversation's agent context when non-empty.",
-      status: "Live",
-    },
-    {
       overlayId: "agentFindUsagesWindow",
       description:
         "Find Usages — every place an agent is used (own + org-managed in detail, others aggregated), drift red flags first, one-click + bulk remediation.",
@@ -108,6 +102,13 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
   ],
 
   components: [
+    {
+      name: "scratchpadKind",
+      filePath: "features/quick-actions/canvas/scratchpadKind.tsx",
+      description:
+        "Global scratchpad — the user's always-there notepad (pool + one active) as a canvas tab, opened from Quick Access on any page. The active scratchpad reaches a conversation's agent context only when that conversation opts in and it is non-empty.",
+      tier: "internal",
+    },
     {
       name: "AgentSamplesLauncher",
       filePath: "features/agents/components/samples/AgentSamplesLauncher.tsx",

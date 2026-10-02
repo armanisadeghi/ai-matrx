@@ -12,9 +12,7 @@
 import { CHAT_WINDOWS, type ChatWindowId } from "../../../host/windows";
 import type { ResultDisplayMode } from "../../utils/run-ui-utils";
 
-export const DISPLAY_MODE_TO_OVERLAY_ID: Partial<
-  Record<ResultDisplayMode, ChatWindowId>
-> = {
+const SHELL_WINDOWS = {
   "modal-full": CHAT_WINDOWS.agentFullModal,
   "modal-compact": CHAT_WINDOWS.agentCompactModal,
   "chat-bubble": CHAT_WINDOWS.agentChatBubble,
@@ -26,4 +24,11 @@ export const DISPLAY_MODE_TO_OVERLAY_ID: Partial<
   "floating-chat": CHAT_WINDOWS.agentFloatingChat,
   "chat-collapsible": CHAT_WINDOWS.agentChatCollapsible,
   "chat-assistant": CHAT_WINDOWS.agentChatAssistant,
-};
+} as const satisfies Partial<Record<ResultDisplayMode, ChatWindowId>>;
+
+/** The windows a result shell can be — a host maps each onto a window of its own. */
+export type ResultShellWindowId = (typeof SHELL_WINDOWS)[keyof typeof SHELL_WINDOWS];
+
+export const DISPLAY_MODE_TO_OVERLAY_ID: Partial<
+  Record<ResultDisplayMode, ResultShellWindowId>
+> = SHELL_WINDOWS;

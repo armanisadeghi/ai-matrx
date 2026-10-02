@@ -9,14 +9,13 @@
 import { Mic } from "lucide-react";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
-import { useToolOpener } from "@/features/canvas/host/toolCanvas";
+import { canvasText, useToolOpener } from "@/features/canvas/host/toolCanvas";
 
 export const QUICK_SCRIBE_KIND = "quick-scribe";
 const TITLE = "Quick Scribe";
 
 export function readScribeSessionId(data: CanvasJson | undefined | null): string | undefined {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return undefined;
-  return typeof data.sessionId === "string" && data.sessionId ? data.sessionId : undefined;
+  return canvasText(data, "sessionId") ?? undefined;
 }
 
 export const quickScribeKind = defineCanvasKind<CanvasJson>({
@@ -35,10 +34,11 @@ export interface OpenQuickScribeOptions {
 
 /** Opens Quick Scribe in the canvas (or focuses the running capture). */
 export function useOpenQuickScribe() {
-  return useToolOpener((options: OpenQuickScribeOptions = {}) => ({
+  const open = useToolOpener((options: OpenQuickScribeOptions) => ({
     kind: QUICK_SCRIBE_KIND,
     key: "default",
     title: TITLE,
     data: { sessionId: options.sessionId ?? null },
   }));
+  return (options: OpenQuickScribeOptions = {}) => open(options);
 }

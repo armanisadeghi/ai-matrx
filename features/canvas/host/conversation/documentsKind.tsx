@@ -9,7 +9,7 @@
 import { FileText } from "lucide-react";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
-import { useToolOpener } from "@/features/canvas/host/toolCanvas";
+import { canvasRecord, canvasText, useToolOpener } from "@/features/canvas/host/toolCanvas";
 
 export const CONVERSATION_DOCUMENTS_KIND = "conversation-documents";
 const TITLE = "Documents";
@@ -20,9 +20,9 @@ export interface DocumentsTabData {
 }
 
 export function readDocumentsTab(data: CanvasJson | undefined | null): DocumentsTabData | null {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  if (typeof data.conversationId !== "string" || !data.conversationId) return null;
-  return { conversationId: data.conversationId, initialKind: data.initialKind === "scratch" ? "scratch" : "working" };
+  const conversationId = canvasText(data, "conversationId");
+  if (!conversationId) return null;
+  return { conversationId, initialKind: canvasRecord(data).initialKind === "scratch" ? "scratch" : "working" };
 }
 
 export const documentsKind = defineCanvasKind<CanvasJson>({

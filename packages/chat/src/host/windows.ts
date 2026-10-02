@@ -7,8 +7,9 @@
  * `no-bare-overlay-id` guard fails a literal anywhere in the package. The host
  * hosts them through the `windows` port: matrx-frontend's adapter maps each id
  * onto its overlay catalogue (a compile-time check there refuses an id the
- * catalogue does not know), so `?panels=` restore keeps going through the
- * app's own window manager.
+ * catalogue does not know) or onto a canvas tab (Quick Chat, the context
+ * preview), so `?panels=` restore keeps going through the app's own window
+ * manager.
  *
  * `openOverlay` / `closeOverlay` keep the call shape the package always used —
  * `dispatch(openOverlay({ overlayId, instanceId, data }))` — but resolve to the

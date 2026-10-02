@@ -14,7 +14,7 @@ import { ExternalLink, MessageSquare, MessageSquarePlus, PanelLeft } from "lucid
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { defineCanvasKind, type CanvasKindProps, type CanvasMenuItem } from "@ai-matrx/canvas/react";
 import type { CanvasController, CanvasItemId, CanvasJson } from "@ai-matrx/canvas";
-import { canvasHoldsKind, useToolOpener } from "@/features/canvas/host/toolCanvas";
+import { canvasRecord, canvasText, useToolOpener, type ToolOpenInput } from "@/features/canvas/host/toolCanvas";
 
 export const QUICK_CHAT_KIND = "quick-chat";
 const TITLE = "Quick Chat";
@@ -30,25 +30,35 @@ export interface QuickChatTabData {
 }
 
 export function readQuickChatData(data: CanvasJson | undefined | null): QuickChatTabData {
-  const record = data && typeof data === "object" && !Array.isArray(data) ? data : {};
-  const text = (value: CanvasJson | undefined) => (typeof value === "string" && value ? value : null);
+  const record = canvasRecord(data);
   return {
-    conversationId: text(record.conversationId),
-    agentId: text(record.agentId),
+    conversationId: canvasText(data, "conversationId"),
+    agentId: canvasText(data, "agentId"),
     history: record.history === true,
     newChat: typeof record.newChat === "number" ? record.newChat : 0,
   };
 }
 
-function freshData(conversationId: string | null): QuickChatTabData {
+export function freshQuickChatData(conversationId: string | null): QuickChatTabData {
   return { conversationId, agentId: null, history: false, newChat: 0 };
 }
 
 /** Writes the tab's data from its latest state, never a stale render's copy. */
-export function patchQuickChatData(canvas: CanvasController, itemId: CanvasItemId, patch: Partial<QuickChatTabData>) {
+export function patchQuickChatData(
+  canvas: CanvasController,
+  itemId: CanvasItemId,
+  patch: { conversationId?: string | null; agentId?: string | null; history?: boolean; newChat?: number },
+) {
   const current = readQuickChatData(canvas.getState().items[itemId]?.data);
   const next = { ...current, ...patch };
-  if (Object.keys(patch).every((key) => current[key] === next[key])) return;
+  if (
+    current.conversationId === next.conversationId &&
+    current.agentId === next.agentId &&
+    current.history === next.history &&
+    current.newChat === next.newChat
+  ) {
+    return;
+  }
   canvas.update(itemId, { data: next });
 }
 
@@ -90,7 +100,7 @@ export const quickChatKind = defineCanvasKind<QuickChatTabData>({
   load: () => import("./QuickChatCanvasView"),
   restore: true,
   keepAlive: true,
-  launcher: { key: "default", data: freshData(null), title: TITLE },
+  launcher: { key: "default", data: freshQuickChatData(null), title: TITLE },
   HeaderAction: QuickChatHeaderAction,
   menuItems: quickChatMenu,
 });
@@ -102,17 +112,18 @@ export interface OpenQuickChatOptions {
   title?: string;
 }
 
-/** Opens Quick Chat in the canvas (or focuses the tab that already shows it). */
-export function useOpenQuickChat() {
-  return useToolOpener((options: OpenQuickChatOptions = {}) => ({
+/** The open request for a Quick Chat tab (also used by the chat host's windows port). */
+export function quickChatOpenInput(options: OpenQuickChatOptions = {}): ToolOpenInput {
+  return {
     kind: QUICK_CHAT_KIND,
     key: options.initialConversationId ?? "default",
     title: options.title ?? TITLE,
-    data: freshData(options.initialConversationId ?? null),
-  }));
+    data: freshQuickChatData(options.initialConversationId ?? null),
+  };
 }
 
-/** True while the canvas is showing a Quick Chat tab. */
-export function canvasShowsQuickChat(canvas: CanvasController | null): boolean {
-  return canvasHoldsKind(canvas, QUICK_CHAT_KIND);
+/** Opens Quick Chat in the canvas (or focuses the tab that already shows it). */
+export function useOpenQuickChat() {
+  const open = useToolOpener(quickChatOpenInput);
+  return (options: OpenQuickChatOptions = {}) => open(options);
 }

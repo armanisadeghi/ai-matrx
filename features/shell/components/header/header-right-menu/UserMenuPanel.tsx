@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { UserData } from "@/utils/userDataMapper";
 import { useResetMenuGroupsOnOpen } from "./useResetMenuGroupsOnOpen";
 import { OverlayMenuItem } from "./OverlayMenuItem";
+import { CanvasToolMenuItem } from "./CanvasToolMenuItem";
 import { LinkMenuItem } from "./LinkMenuItem";
 import { AdminIndicatorMenuItem } from "./AdminIndicatorMenuItem";
 import { CostUnitMenuItem } from "./CostUnitMenuItem";
@@ -50,9 +51,13 @@ export default function UserMenuPanel({
       {divider}
 
       <MenuGroup id="quick" icon="Rocket" label="Quick Access">
-        {QUICK_ACCESS_ITEMS.map((item) => (
-          <OverlayMenuItem key={item.overlayId} {...item} />
-        ))}
+        {QUICK_ACCESS_ITEMS.map((item) =>
+          "canvasTool" in item ? (
+            <CanvasToolMenuItem key={item.canvasTool} {...item} />
+          ) : (
+            <OverlayMenuItem key={item.overlayId} {...item} />
+          ),
+        )}
       </MenuGroup>
 
       {divider}

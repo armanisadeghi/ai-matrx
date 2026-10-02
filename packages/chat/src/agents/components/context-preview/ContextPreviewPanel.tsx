@@ -8,13 +8,13 @@
  * tiered variables, binding fill). Attached view — the client-side entries
  * published for this conversation's turns.
  *
- * Rendered inside the non-blocking `contextPreviewPanel` overlay. Design
+ * Rendered as the host's context preview window (a canvas tab in matrx-frontend). Design
  * rules for this surface: content is FOREGROUND, not dimmed (muted is for
  * true hints only); primary accents mark the live/interactive bits; the
  * injected block and values AUTO-GROW (the panel scrolls — no nested scroll
  * areas); everything copyable gets a hover `InlineCopyButton`.
  *
- * Registered surface: `matrx-user/context-preview` (overlay
+ * Registered surface: `matrx-user/context-preview` (chat window
  * `contextPreviewPanel`) — the panel mounts `<SurfaceRuntimeProvider>` and
  * emits its full declared scope via `createContextPreviewScope`; while open,
  * its (deeper) provider wins over the page's.

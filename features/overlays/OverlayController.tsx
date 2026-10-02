@@ -16,7 +16,7 @@
 import { isValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 import { isPreparedResourceIdentity } from "@ai-matrx/chat/agents/components/chat/usePreparedResourceSeed";
 import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { isMandateKey } from "@ai-matrx/agents/mandates";
 import type { ReactNode } from "react";
 import { lazyOverlay } from "@/features/overlays/boundary/lazyOverlay";
@@ -31,7 +31,6 @@ import {
   selectOpenInstances,
   type FullScreenEditorMode,
 } from "@/lib/redux/slices/overlaySlice";
-import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { readDetailOverlayData } from "@/features/window-panels/detail/detailOverlayData";
 import { useCloseOverlaysOnNavigation } from "@/features/overlays/useCloseOverlaysOnNavigation";
 import { isWalkUnitKind } from "@/features/review-walk/address";
@@ -994,22 +993,8 @@ const ProjectsWindow = lazyOverlay(
     import("@/features/window-panels/windows/context-scopes/ProjectsWindow"),
   { ssr: false },
 );
-const QuickChatSheet = lazyOverlay(
-  () =>
-    import("@ai-matrx/chat/quick-actions/components/QuickChatSheet").then((m) => ({
-      default: m.QuickChatSheet,
-    })),
-  { ssr: false },
-);
 const ChatHistoryWindow = lazyOverlay(
   () => import("@ai-matrx/chat/window-panels/windows/agents/ChatHistoryWindow"),
-  { ssr: false },
-);
-const QuickDataSheet = lazyOverlay(
-  () =>
-    import("@/features/quick-actions/components/QuickDataSheet").then((m) => ({
-      default: m.QuickDataSheet,
-    })),
   { ssr: false },
 );
 const QuickDataWindow = lazyOverlay(
@@ -1029,60 +1014,11 @@ const SetContextValueWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/scopes/SetContextValueWindow"),
   { ssr: false },
 );
-const QuickNotesSheet = lazyOverlay(
-  () =>
-    import("@/features/notes/actions/QuickNotesSheet").then((m) => ({
-      default: m.QuickNotesSheet,
-    })),
-  { ssr: false },
-);
-const DocumentsWorkspace = lazyOverlay(
-  () =>
-    import("@ai-matrx/chat/agents/components/working-document/documents-workspace/DocumentsWorkspace").then(
-      (m) => ({ default: m.DocumentsWorkspace }),
-    ),
-  { ssr: false },
-);
-const ContextPreviewPanel = lazyOverlay(
-  () =>
-    import("@ai-matrx/chat/agents/components/context-preview/ContextPreviewPanel").then(
-      (m) => ({ default: m.ContextPreviewPanel }),
-    ),
-  { ssr: false },
-);
-const ScratchpadQuickPanel = lazyOverlay(
-  () =>
-    import("@ai-matrx/chat/agents/components/working-document/ScratchpadQuickPanel").then(
-      (m) => ({ default: m.ScratchpadQuickPanel }),
-    ),
-  { ssr: false },
-);
-const NoteKnowledgePanel = lazyOverlay(
-  () =>
-    import("@/features/notes/components/NoteKnowledgePanel").then((m) => ({
-      default: m.NoteKnowledgePanel,
-    })),
-  { ssr: false },
-);
-const QuickScribeSheet = lazyOverlay(
-  () =>
-    import("@/features/transcript-studio/components/QuickScribeSheet").then(
-      (m) => ({ default: m.QuickScribeSheet }),
-    ),
-  { ssr: false },
-);
 const GlobalSuggestionsDrawer = lazyOverlay(
   () =>
     import("@/features/kg-suggestions/components/GlobalSuggestionsDrawer").then(
       (m) => ({ default: m.GlobalSuggestionsDrawer }),
     ),
-  { ssr: false },
-);
-const QuickTasksSheet = lazyOverlay(
-  () =>
-    import("@/features/tasks/components/QuickTasksSheet").then((m) => ({
-      default: m.QuickTasksSheet,
-    })),
   { ssr: false },
 );
 const QuickTasksWindow = lazyOverlay(
@@ -1623,7 +1559,6 @@ export default function OverlayController() {
     projectsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "projectsWindow"),
     ),
-    quickChat: useAppSelector((s) => selectIsOverlayOpen(s, "quickChat")),
     quickChatHistory: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickChatHistory"),
     ),
@@ -1669,10 +1604,6 @@ export default function OverlayController() {
     socialCardAnalyzerWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "socialCardAnalyzerWindow"),
     ),
-    quickChatWindow: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "quickChatWindow"),
-    ),
-    quickData: useAppSelector((s) => selectIsOverlayOpen(s, "quickData")),
     quickDataWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickDataWindow"),
     ),
@@ -1688,21 +1619,6 @@ export default function OverlayController() {
     kgSuggestionsDrawer: useAppSelector((s) =>
       selectIsOverlayOpen(s, "kgSuggestionsDrawer"),
     ),
-    quickNotes: useAppSelector((s) => selectIsOverlayOpen(s, "quickNotes")),
-    workingDocumentPanel: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "workingDocumentPanel"),
-    ),
-    contextPreviewPanel: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "contextPreviewPanel"),
-    ),
-    scratchpadPanel: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "scratchpadPanel"),
-    ),
-    noteKnowledgePanel: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "noteKnowledgePanel"),
-    ),
-    quickScribe: useAppSelector((s) => selectIsOverlayOpen(s, "quickScribe")),
-    quickTasks: useAppSelector((s) => selectIsOverlayOpen(s, "quickTasks")),
     quickTasksWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickTasksWindow"),
     ),
@@ -2096,17 +2012,8 @@ export default function OverlayController() {
     projectsWindow: useAppSelector((s) =>
       selectOverlayData(s, "projectsWindow"),
     ) as Record<string, unknown> | null,
-    quickChat: useAppSelector((s) =>
-      selectOverlayData(s, "quickChat"),
-    ) as Record<string, unknown> | null,
     quickChatHistory: useAppSelector((s) =>
       selectOverlayData(s, "quickChatHistory"),
-    ) as Record<string, unknown> | null,
-    quickChatWindow: useAppSelector((s) =>
-      selectOverlayData(s, "quickChatWindow"),
-    ) as Record<string, unknown> | null,
-    quickData: useAppSelector((s) =>
-      selectOverlayData(s, "quickData"),
     ) as Record<string, unknown> | null,
     quickDataWindow: useAppSelector((s) =>
       selectOverlayData(s, "quickDataWindow"),
@@ -2161,21 +2068,6 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     setContextValueWindow: useAppSelector((s) =>
       selectOverlayData(s, "setContextValueWindow"),
-    ) as Record<string, unknown> | null,
-    quickNotes: useAppSelector((s) =>
-      selectOverlayData(s, "quickNotes"),
-    ) as Record<string, unknown> | null,
-    workingDocumentPanel: useAppSelector((s) =>
-      selectOverlayData(s, "workingDocumentPanel"),
-    ) as Record<string, unknown> | null,
-    contextPreviewPanel: useAppSelector((s) =>
-      selectOverlayData(s, "contextPreviewPanel"),
-    ) as Record<string, unknown> | null,
-    noteKnowledgePanel: useAppSelector((s) =>
-      selectOverlayData(s, "noteKnowledgePanel"),
-    ) as Record<string, unknown> | null,
-    quickScribe: useAppSelector((s) =>
-      selectOverlayData(s, "quickScribe"),
     ) as Record<string, unknown> | null,
     quickTasksWindow: useAppSelector((s) =>
       selectOverlayData(s, "quickTasksWindow"),
@@ -4991,7 +4883,6 @@ export default function OverlayController() {
         );
       })()}
 
-
       {/* researchContextPreviewWindow */}
       {(() => {
         const isOpen = isOpenById.researchContextPreviewWindow;
@@ -6598,33 +6489,6 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* quickChat */}
-      {(() => {
-        const isOpen = isOpenById.quickChat;
-        const data = dataById.quickChat as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        return (
-          <SidePanelSurface
-            title={typeof data?.title === "string" ? data.title : "Quick Chat"}
-            onClose={() => dispatch(closeOverlay({ overlayId: "quickChat" }))}
-            storageKey="quick-chat"
-            defaultWidth={520}
-          >
-            <QuickChatSheet
-              className={
-                typeof data?.className === "string" ? data.className : undefined
-              }
-              initialConversationId={
-                typeof data?.initialConversationId === "string"
-                  ? data.initialConversationId
-                  : undefined
-              }
-            />
-          </SidePanelSurface>
-        );
-      })()}
-
       {/* TODO: review prop wiring for quickChatHistory */}
       {/* quickChatHistory */}
       {(() => {
@@ -6647,58 +6511,6 @@ export default function OverlayController() {
               data?.initialGroupBy as never
             } /* TODO: review — GroupBy is a non-exported local type */
           />
-        );
-      })()}
-
-      {/* quickChatWindow */}
-      {(() => {
-        const isOpen = isOpenById.quickChatWindow;
-        const data = dataById.quickChatWindow as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        return (
-          <SidePanelSurface
-            title="Quick Chat"
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "quickChatWindow" }))
-            }
-            storageKey="quick-chat"
-            defaultWidth={520}
-          >
-            <QuickChatSheet
-              className={
-                typeof data?.className === "string" ? data.className : undefined
-              }
-            />
-          </SidePanelSurface>
-        );
-      })()}
-
-      {/* quickData */}
-      {(() => {
-        const isOpen = isOpenById.quickData;
-        const data = dataById.quickData as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        return (
-          <SidePanelSurface
-            title="Quick Data"
-            onClose={() => dispatch(closeOverlay({ overlayId: "quickData" }))}
-            storageKey="quick-data"
-            defaultWidth={680}
-            maxWidth={1100}
-          >
-            <QuickDataSheet
-              className={
-                typeof data?.className === "string" ? data.className : undefined
-              }
-              initialTableId={
-                typeof data?.initialTableId === "string"
-                  ? data.initialTableId
-                  : null
-              }
-            />
-          </SidePanelSurface>
         );
       })()}
 
@@ -6976,191 +6788,6 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "kgSuggestionsDrawer" }))
             }
           />
-        );
-      })()}
-
-      {/* quickNotes */}
-      {(() => {
-        const isOpen = isOpenById.quickNotes;
-        const data = dataById.quickNotes as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        return (
-          <SidePanelSurface
-            title="Quick Note"
-            onClose={() => dispatch(closeOverlay({ overlayId: "quickNotes" }))}
-            storageKey="quick-note"
-            defaultWidth={560}
-          >
-            <QuickNotesSheet
-              className={
-                typeof data?.className === "string" ? data.className : undefined
-              }
-            />
-          </SidePanelSurface>
-        );
-      })()}
-
-      {/* workingDocumentPanel — the agent-edited working document, opened in a
-          resizable right sidebar from a chat tool's ArtifactResultBar. */}
-      {(() => {
-        const isOpen = isOpenById.workingDocumentPanel;
-        const data = dataById.workingDocumentPanel as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        const conversationId =
-          typeof data?.conversationId === "string" ? data.conversationId : null;
-        if (!conversationId) return null;
-        const initialKind =
-          data?.initialKind === "scratch" ? "scratch" : "working";
-        // Container title is "Documents" — NOT the doc title. The workspace's tab
-        // strip already names each doc (Working document / Scratchpad); repeating
-        // it here would be a redundant nested heading.
-        return (
-          <SidePanelSurface
-            title="Documents"
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "workingDocumentPanel" }))
-            }
-            storageKey="working-document-panel"
-            defaultWidth={620}
-            maxWidth={1000}
-          >
-            <DocumentsWorkspace
-              conversationId={conversationId}
-              initialKind={initialKind}
-              defaultRailOpen
-              className="h-full"
-            />
-          </SidePanelSurface>
-        );
-      })()}
-
-      {/* contextPreviewPanel — "what the agent receives": server-resolved
-          context (exact injected block + variables) + this turn's client-side
-          attachments, in a resizable non-blocking right sidebar. Opened from
-          the ContextLensBar's "Context" segment above the composer. */}
-      {(() => {
-        const isOpen = isOpenById.contextPreviewPanel;
-        if (!isOpen) return null;
-        const data = dataById.contextPreviewPanel as
-          Record<string, unknown> | null | undefined;
-        const conversationId =
-          typeof data?.conversationId === "string"
-            ? data.conversationId
-            : undefined;
-        const agentId =
-          typeof data?.agentId === "string" ? data.agentId : undefined;
-        return (
-          <SidePanelSurface
-            title="What the agent receives"
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "contextPreviewPanel" }))
-            }
-            storageKey="context-preview-panel"
-            defaultWidth={520}
-            maxWidth={960}
-          >
-            <ContextPreviewPanel
-              conversationId={conversationId}
-              agentId={agentId}
-            />
-          </SidePanelSurface>
-        );
-      })()}
-
-      {/* scratchpadPanel — the user's GLOBAL scratchpad (active + pool
-          switcher) in a resizable right sidebar, opened from Quick Actions on
-          any page. No data payload: the panel resolves the active scratchpad
-          from userPreferences itself. */}
-      {(() => {
-        const isOpen = isOpenById.scratchpadPanel;
-        if (!isOpen) return null;
-        return (
-          <SidePanelSurface
-            title="Scratchpad"
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "scratchpadPanel" }))
-            }
-            storageKey="scratchpad-panel"
-            defaultWidth={520}
-            maxWidth={900}
-          >
-            <ScratchpadQuickPanel className="h-full" />
-          </SidePanelSurface>
-        );
-      })()}
-
-      {/* noteKnowledgePanel — a note's Knowledge / knowledge-base surface (index,
-          status, re-index, chunks + test search) in a resizable right sidebar. */}
-      {(() => {
-        const isOpen = isOpenById.noteKnowledgePanel;
-        const data = dataById.noteKnowledgePanel as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        const noteId = typeof data?.noteId === "string" ? data.noteId : null;
-        if (!noteId) return null;
-        const title =
-          typeof data?.title === "string" && data.title
-            ? `Knowledge base — ${data.title}`
-            : "Knowledge base";
-        return (
-          <SidePanelSurface
-            title={title}
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "noteKnowledgePanel" }))
-            }
-            storageKey="note-knowledge-panel"
-            defaultWidth={640}
-            maxWidth={1000}
-          >
-            <NoteKnowledgePanel noteId={noteId} />
-          </SidePanelSurface>
-        );
-      })()}
-
-      {/* quickScribe */}
-      {(() => {
-        const isOpen = isOpenById.quickScribe;
-        const data = dataById.quickScribe as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        return (
-          <SidePanelSurface
-            title="Quick Scribe"
-            onClose={() => dispatch(closeOverlay({ overlayId: "quickScribe" }))}
-            storageKey="quick-scribe"
-            defaultWidth={560}
-          >
-            <QuickScribeSheet
-              sessionId={
-                typeof data?.sessionId === "string" ? data.sessionId : undefined
-              }
-            />
-          </SidePanelSurface>
-        );
-      })()}
-
-      {/* quickTasks — reads its pre-populate data internally, but does NOT
-          self-gate on isOpen (it relied on the legacy OverlaySurface gate).
-          Gate it here like every other overlay or it renders the full tasks
-          sheet on every route, including public ones. */}
-      {(() => {
-        const isOpen = isOpenById.quickTasks;
-        if (!isOpen) return null;
-        return (
-          <SidePanelSurface
-            title="Quick Task"
-            onClose={() => dispatch(closeOverlay({ overlayId: "quickTasks" }))}
-            storageKey="quick-task"
-            defaultWidth={560}
-          >
-            <QuickTasksSheet
-              onClose={() =>
-                dispatch(closeOverlay({ overlayId: "quickTasks" }))
-              }
-            />
-          </SidePanelSurface>
         );
       })()}
 

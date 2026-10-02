@@ -814,11 +814,6 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
-  noteKnowledgePanel: {
-    label: "Note Knowledge",
-    instanceMode: "singleton",
-    isWindow: false,
-  },
   notesWindow: {
     label: "Notes Window",
     instanceMode: "multi",
@@ -844,25 +839,10 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
-  quickChat: {
-    label: "Quick Chat",
-    instanceMode: "singleton",
-    isWindow: false,
-  },
   quickChatHistory: {
     label: "Quick Chat History",
     instanceMode: "singleton",
     isWindow: true,
-  },
-  quickChatWindow: {
-    label: "Quick Chat Window",
-    instanceMode: "singleton",
-    isWindow: false,
-  },
-  quickData: {
-    label: "Quick Data",
-    instanceMode: "singleton",
-    isWindow: false,
   },
   quickDataWindow: {
     label: "Quick Data Window",
@@ -878,21 +858,6 @@ export const OVERLAY_CATALOGUE = {
     label: "Quick Note Save Window",
     instanceMode: "singleton",
     isWindow: true,
-  },
-  quickNotes: {
-    label: "Quick Notes",
-    instanceMode: "singleton",
-    isWindow: false,
-  },
-  quickScribe: {
-    label: "Quick Scribe",
-    instanceMode: "singleton",
-    isWindow: false,
-  },
-  quickTasks: {
-    label: "Quick Tasks",
-    instanceMode: "singleton",
-    isWindow: false,
   },
   quickTasksWindow: {
     label: "Quick Tasks Window",
@@ -953,11 +918,6 @@ export const OVERLAY_CATALOGUE = {
     label: "Scope Editor",
     instanceMode: "singleton",
     isWindow: true,
-  },
-  scratchpadPanel: {
-    label: "Scratchpad",
-    instanceMode: "singleton",
-    isWindow: false,
   },
   scraperWindow: {
     label: "Scraper Window",
@@ -1054,16 +1014,6 @@ export const OVERLAY_CATALOGUE = {
     label: "Working Document Window",
     instanceMode: "multi",
     isWindow: true,
-  },
-  workingDocumentPanel: {
-    label: "Working Document",
-    instanceMode: "singleton",
-    isWindow: false,
-  },
-  contextPreviewPanel: {
-    label: "Agent Context Preview",
-    instanceMode: "singleton",
-    isWindow: false,
   },
   smartCodeEditorWindow: {
     label: "Smart Code Editor Window",

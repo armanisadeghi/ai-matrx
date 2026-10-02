@@ -36,7 +36,7 @@ import { selectFolderReferences } from "../../redux/selectors";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { FolderReference } from "../../types";
 import { useToastManager } from "@/hooks/useToastManager";
-import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
+import { useOpenNoteKnowledgePanel } from "@/features/notes/canvas/noteKnowledgeKind";
 import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 

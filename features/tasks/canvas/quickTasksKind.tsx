@@ -9,7 +9,7 @@
 import { CheckSquare, ExternalLink } from "lucide-react";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
-import { useToolOpener } from "@/features/canvas/host/toolCanvas";
+import { canvasRecord, canvasText, useToolOpener } from "@/features/canvas/host/toolCanvas";
 
 export const QUICK_TASKS_KIND = "quick-tasks";
 const TITLE = "Quick Tasks";
@@ -21,11 +21,13 @@ export interface QuickTaskPrefill {
 }
 
 export function readQuickTaskPrefill(data: CanvasJson | undefined | null): QuickTaskPrefill | null {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const raw = data.prePopulate;
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const text = (value: CanvasJson | undefined) => (typeof value === "string" ? value : undefined);
-  return { title: text(raw.title), description: text(raw.description), metadataInfo: text(raw.metadataInfo) };
+  const raw = canvasRecord(data).prePopulate;
+  if (!raw || typeof raw !== "object") return null;
+  return {
+    title: canvasText(raw, "title") ?? undefined,
+    description: canvasText(raw, "description") ?? undefined,
+    metadataInfo: canvasText(raw, "metadataInfo") ?? undefined,
+  };
 }
 
 export const quickTasksKind = defineCanvasKind<CanvasJson>({
@@ -53,7 +55,7 @@ export interface OpenQuickTasksOptions {
 
 /** Opens Quick Tasks in the canvas (or focuses its tab), optionally pre-filling a task. */
 export function useOpenQuickTasks() {
-  return useToolOpener((options: OpenQuickTasksOptions = {}) => {
+  const open = useToolOpener((options: OpenQuickTasksOptions) => {
     const prefill = options.prePopulate;
     const prePopulate: CanvasJson = prefill
       ? {
@@ -70,4 +72,5 @@ export function useOpenQuickTasks() {
       replaceData: Boolean(prefill),
     };
   });
+  return (options: OpenQuickTasksOptions = {}) => open(options);
 }

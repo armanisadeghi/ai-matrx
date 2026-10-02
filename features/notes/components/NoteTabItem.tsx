@@ -66,7 +66,7 @@ import { useNoteEditorMode } from "../hooks/usePreferredDefaultEditorMode";
 import { saveNote, copyNote, moveNoteToFolder, moveNoteToNewFolder } from "../redux/thunks";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
-import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
+import { useOpenNoteKnowledgePanel } from "@/features/notes/canvas/noteKnowledgeKind";
 import { useNoteIngestStatus } from "../hooks/useNoteIngestStatus";
 import { useNoteDelete } from "../hooks/useNoteDelete";
 import { cn } from "@/lib/utils";

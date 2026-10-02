@@ -39,7 +39,7 @@ jest.mock("@/lib/redux/slices/userSlice", () => ({
   selectIsSuperAdminDebugger: () => false,
 }));
 jest.mock("@/components/matrx/Tooltip", () => ({ SimpleTooltip: ({ children }: { children: React.ReactNode }) => children }));
-jest.mock("@/features/overlays/openers/noteKnowledgePanel", () => ({
+jest.mock("@/features/notes/canvas/noteKnowledgeKind", () => ({
   useOpenNoteKnowledgePanel: () => jest.fn(),
 }));
 jest.mock("@/features/audio/service/useSpeech", () => ({

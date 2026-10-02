@@ -20,8 +20,10 @@
 //   navigation  → next/navigation + next/link
 //   windows     → the overlay system (`openOverlay` / `closeOverlay`) and
 //                 the window manager; every CHAT_WINDOWS id must be an
-//                 OverlayId (`chatWindowOverlay` fails to compile otherwise);
-//                 openers → the app's overlay openers (`useAppWindowOpeners`)
+//                 OverlayId (`chatWindowOverlay` fails to compile otherwise)
+//                 or a canvas-hosted tool (`CANVAS_HOSTED_WINDOWS`: Quick Chat,
+//                 the context preview); openers → the app's overlay and
+//                 canvas openers (`useAppWindowOpeners`)
 //   catalog     → the app's one agent catalog (created by AgentCatalogHost,
 //                 read lazily so its archive-knob seed is never pre-empted)
 //   prefs       → strings: the package's localStorage default (unchanged);
@@ -117,13 +119,11 @@ import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindo
 import { useOpenAgentSettingsWindow } from "@/features/overlays/openers/agentSettingsWindow";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
 import { useOpenChatDebugWindow } from "@/features/overlays/openers/chatDebugWindow";
-import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextPreviewPanel";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useOpenLiveIntegrationsWindow } from "@/features/overlays/openers/liveIntegrationsWindow";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 import { useOpenPromptPreviewWindow } from "@/features/overlays/openers/promptPreviewWindow";
-import { useOpenQuickChatSheet } from "@/features/overlays/openers/quickChat";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
 import { useOpenSaveKitDialog } from "@/features/overlays/openers/saveKitDialog";
 import { useOpenScraperWindow } from "@/features/overlays/openers/scraperWindow";
@@ -133,7 +133,6 @@ import { useOpenSurfaceContextWindow } from "@/features/overlays/openers/surface
 import { useOpenSystemInstructionWindow } from "@/features/overlays/openers/systemInstructionWindow";
 import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { useOpenTopicalMapWindow } from "@/features/overlays/openers/topicalMapWindow";
-import { useOpenWorkingDocumentPanel } from "@/features/overlays/openers/workingDocumentPanel";
 import { useOpenWorkingDocumentWindow } from "@/features/overlays/openers/workingDocumentWindow";
 import { submitFeedback } from "@/actions/feedback.actions";
 import PageHeaderPortal from "@/features/shell/components/header/PageHeaderPortal";
@@ -167,6 +166,22 @@ import {
 } from "@/features/shell/utils/closeShellMobileMenu";
 import { pushFullScreenLayer } from "@/features/shell/canvas-chrome/open-layer";
 import { appChatCanvasPort } from "@/features/canvas/host/chatCanvasPort";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { canvasItemId, type CanvasController } from "@ai-matrx/canvas";
+import { canvasHoldsKind, openToolInCanvas, type ToolOpenInput } from "@/features/canvas/host/toolCanvas";
+import {
+  QUICK_CHAT_KIND,
+  quickChatOpenInput,
+  useOpenQuickChat,
+  type OpenQuickChatOptions,
+} from "@/features/quick-actions/canvas/quickChatKind";
+import {
+  CONTEXT_PREVIEW_KIND,
+  contextPreviewOpenInput,
+  useOpenContextPreview,
+  type OpenContextPreviewOptions,
+} from "@/features/canvas/host/conversation/contextPreviewKind";
+import { useOpenConversationDocuments } from "@/features/canvas/host/conversation/documentsKind";
 
 const DEFAULT_SERVER_URL = "https://server.app.matrxserver.com";
 
@@ -281,25 +296,61 @@ function reduxPrefs(store: AppStore): ChatPrefsPort {
   };
 }
 
-/** The package's window ids are this app's overlay ids — checked at compile time. */
-function chatWindowOverlay(id: ChatWindowId): OverlayId {
+/**
+ * Package windows this app shows as canvas tabs, not overlays. Each maps to
+ * its canvas kind and the open request built from the window's payload.
+ */
+const CANVAS_HOSTED_WINDOWS = {
+  quickChat: {
+    kind: QUICK_CHAT_KIND,
+    input: (data: unknown) => quickChatOpenInput(data as OpenQuickChatOptions | undefined),
+  },
+  contextPreviewPanel: {
+    kind: CONTEXT_PREVIEW_KIND,
+    input: (data: unknown) => contextPreviewOpenInput(data as OpenContextPreviewOptions | undefined),
+  },
+} as const satisfies Partial<Record<ChatWindowId, { kind: string; input: (data: unknown) => ToolOpenInput }>>;
+
+type CanvasHostedWindow = keyof typeof CANVAS_HOSTED_WINDOWS;
+
+function isCanvasHosted(id: ChatWindowId): id is CanvasHostedWindow {
+  return Object.prototype.hasOwnProperty.call(CANVAS_HOSTED_WINDOWS, id);
+}
+
+/** Every other package window id is this app's overlay id — checked at compile time. */
+function chatWindowOverlay(id: Exclude<ChatWindowId, CanvasHostedWindow>): OverlayId {
   return id;
 }
 
-function reduxWindows(store: AppStore): ChatWindowsPort {
+function reduxWindows(store: AppStore, canvas: CanvasController | null): ChatWindowsPort {
   return {
     open(id, data, instanceId) {
+      if (isCanvasHosted(id)) {
+        openToolInCanvas(canvas, CANVAS_HOSTED_WINDOWS[id].input(data));
+        return;
+      }
       store.dispatch(
         openOverlay({ overlayId: chatWindowOverlay(id), instanceId, data }),
       );
     },
     close(id, instanceId) {
+      if (isCanvasHosted(id)) {
+        if (!canvas) return;
+        const kind = CANVAS_HOSTED_WINDOWS[id].kind;
+        for (const item of Object.values(canvas.getState().items)) {
+          if (item.kind === kind && (!instanceId || item.id === canvasItemId(kind, instanceId))) canvas.close(item.id);
+        }
+        return;
+      }
       store.dispatch(
         closeOverlay({ overlayId: chatWindowOverlay(id), instanceId }),
       );
     },
+    // Canvas state lives in this same store, so `subscribe` below covers both.
     isOpen: (id, instanceId) =>
-      selectIsOverlayOpen(store.getState(), id, instanceId),
+      isCanvasHosted(id)
+        ? canvasHoldsKind(canvas, CANVAS_HOSTED_WINDOWS[id].kind)
+        : selectIsOverlayOpen(store.getState(), chatWindowOverlay(id), instanceId),
     managedWindowKeys: () =>
       selectAllWindows(store.getState()).map((entry) => entry.id),
     bringToFront(key) {
@@ -347,13 +398,13 @@ function useAppWindowOpeners(): ChatWindowOpeners {
     openAgentShortcutQuickCreateWindow: useOpenAgentShortcutQuickCreateWindow(),
     openAuthGateDialog: useOpenAuthGateDialog(),
     openChatDebugWindow: useOpenChatDebugWindow(),
-    openContextPreviewPanel: useOpenContextPreviewPanel(),
+    openContextPreviewPanel: useOpenContextPreview(),
     openDiffViewerWindow: useOpenDiffViewerWindow(),
     openLiveIntegrationsWindow: useOpenLiveIntegrationsWindow(),
     openMandateWindow: useOpenMandateWindow(),
     openNotesWindow: useOpenNotesWindow(),
     openPromptPreviewWindow: useOpenPromptPreviewWindow(),
-    openQuickChatSheet: useOpenQuickChatSheet(),
+    openQuickChatSheet: useOpenQuickChat(),
     openRunControlsWindow: useOpenRunControlsWindow(),
     openSaveKitDialog: useOpenSaveKitDialog(),
     openScraperWindow: useOpenScraperWindow(),
@@ -363,7 +414,7 @@ function useAppWindowOpeners(): ChatWindowOpeners {
     openSystemInstructionWindow: useOpenSystemInstructionWindow(),
     openTaskEditorWindow: useOpenTaskEditorWindow(),
     openTopicalMapWindow: useOpenTopicalMapWindow(),
-    openWorkingDocumentPanel: useOpenWorkingDocumentPanel(),
+    openWorkingDocumentPanel: useOpenConversationDocuments(),
     openWorkingDocumentWindow: useOpenWorkingDocumentWindow(),
   };
 }
@@ -372,6 +423,7 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
   const store = useAppStore();
   const router = useRouter();
   const windowOpeners = useAppWindowOpeners();
+  const canvas = useOptionalCanvas();
 
   const identity = reduxIdentity(store);
   const org = reduxOrg(store);
@@ -402,7 +454,7 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
       back: () => router.back(),
       Link,
     },
-    windows: { ...reduxWindows(store), openers: windowOpeners },
+    windows: { ...reduxWindows(store, canvas), openers: windowOpeners },
     catalog: () => getAgentCatalog(),
     chrome: appChrome,
     feedback: { submit: (input) => submitFeedback(input) },

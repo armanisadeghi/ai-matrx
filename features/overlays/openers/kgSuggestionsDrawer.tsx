@@ -11,7 +11,7 @@
  *   unmount to close.
  *
  * The drawer takes no input data — it always lists the caller's pending
- * suggestions. Follow the quickNotes opener as the template.
+ * suggestions.
  */
 
 import { useCallback, useEffect } from "react";

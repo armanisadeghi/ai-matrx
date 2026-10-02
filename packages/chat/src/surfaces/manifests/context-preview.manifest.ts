@@ -1,7 +1,7 @@
 /**
  * Surface manifest — Context Preview panel (`matrx-user/context-preview`).
  *
- * OVERLAY SURFACE (`contextPreviewPanel`): the non-blocking right sidebar
+ * LAYER SURFACE (chat window `contextPreviewPanel`, shown as a canvas tab)
  * showing "what the agent receives, for real" — the SERVER-RESOLVED answer
  * from `POST /ai/context/preview` (injected context block, tiered variables
  * with provenance, agent variable/slot binding fill) plus the client-side

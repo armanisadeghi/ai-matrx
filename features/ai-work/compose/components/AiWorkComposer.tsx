@@ -52,8 +52,11 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAiWorkRun } from "../useAiWorkRun";
 import { ConversationContextRail } from "@ai-matrx/chat/agents/components/inputs/smart-input/ConversationContextRail";
-import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextPreviewPanel";
-import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
+import {
+  CONTEXT_PREVIEW_KIND,
+  useOpenContextPreview,
+} from "@/features/canvas/host/conversation/contextPreviewKind";
+import { useCanvasHoldsKind } from "@/features/canvas/host/toolCanvas";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { RunSkillPicker } from "@ai-matrx/chat/agents/components/inputs/smart-input/RunSkillPicker";
 import { SmartAgentResourcePickerButton } from "@ai-matrx/chat/agents/components/inputs/resources/SmartAgentResourcePickerButton";
@@ -187,10 +190,8 @@ function ComposerBody({
   //    The instance exists from mount (see useAiWorkRun) so everything the
   //    person attaches before Run is still there when the run executes.
   const { conversationId, send } = useAiWorkRun(agentId);
-  const openContextPreview = useOpenContextPreviewPanel();
-  const contextPreviewOpen = useAppSelector((state) =>
-    selectIsOverlayOpen(state, "contextPreviewPanel"),
-  );
+  const openContextPreview = useOpenContextPreview();
+  const contextPreviewOpen = useCanvasHoldsKind(CONTEXT_PREVIEW_KIND);
 
   const organizationId = useAppSelector(selectOrganizationId);
   const [destination, setDestination] = useState<WorkDestinationId>("ai-matrx");

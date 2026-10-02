@@ -12,7 +12,6 @@ import {
 } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { useSidePanelSurface } from "@host/features/overlays/surfaces/SidePanelSurface";
 import { useAgentLauncher } from "../../agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "../../agents/components/shared/AgentConversationColumn";
 import { ChatHistorySidebar } from "../../agents/components/chat/ChatHistorySidebar";
@@ -29,7 +28,7 @@ import type { ConversationListItem } from "../../agents/redux/conversation-list/
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
 import { WorkspaceGate } from "@host/features/organizations/components/WorkspaceGate";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useComposerMode } from "../../agents/components/inputs/smart-input/composer/useComposerMode";
 import { useCompactInputMaxHeight } from "../../agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 
@@ -110,7 +109,8 @@ function loadedSurfaceKey(conversationId: string): string {
  * still LAUNCHED with `surfaceName: null` either way — the stamp is applied
  * after, so flipping the toggle never mints a new conversation.
  *
- * Rendered as bare content — surrounding chrome (the side panel header / the
+ * Rendered as bare content — surrounding chrome (the canvas tab header, which
+ * also carries the history / new-chat controls with `chrome="host"`, or the
  * Utilities Hub tab) is supplied by the consumer.
  *
  * The starting agent is the `chat.default_new_chat` MANDATE (same as `/chat/new`):
@@ -220,16 +220,6 @@ function QuickChatSheetBody({
 
   const loadAbortRef = useRef<AbortController | null>(null);
   const activeSurfaceKeyRef = useRef<string | null>(null);
-
-  // Opening the history sidebar should GROW the panel (push its left edge into
-  // the page) rather than eat the chat's width — when there's room. The width
-  // boost is released when the sidebar closes or the panel unmounts.
-  const surface = useSidePanelSurface();
-  const HISTORY_WIDTH = 256;
-  useEffect(() => {
-    surface?.requestWidthBoost(showHistory ? HISTORY_WIDTH : 0);
-    return () => surface?.requestWidthBoost(0);
-  }, [showHistory, surface]);
 
   // Bring a remembered conversation back through the canonical reopen
   // sequence (hydrate + pending tool prompts + server-operation reconnect).

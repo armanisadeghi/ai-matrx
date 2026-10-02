@@ -10,6 +10,11 @@ import {
 } from "@/features/overlays/openers/agentRunWindow";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { resolveMandate } from "@ai-matrx/chat/mandates/service";
+import { useOpenQuickChat } from "@/features/quick-actions/canvas/quickChatKind";
+import { useOpenQuickData } from "@/features/quick-actions/canvas/quickDataKind";
+import { useOpenScratchpad } from "@/features/quick-actions/canvas/scratchpadKind";
+import { useOpenQuickNotes } from "@/features/notes/canvas/quickNotesKind";
+import { useOpenQuickTasks } from "@/features/tasks/canvas/quickTasksKind";
 
 export type OpenChatWindowOptions = Pick<
   OpenAgentRunWindowOptions,
@@ -17,10 +22,8 @@ export type OpenChatWindowOptions = Pick<
 >;
 
 /**
- * Hook for opening quick action sheets via Redux
- *
- * This allows quick actions to be triggered from anywhere in the app
- * without needing to render the sheets in every component.
+ * Hook for opening the quick tools from anywhere in the app. Chat, Notes,
+ * Tasks, Data and the Scratchpad open as canvas tabs; the rest are windows.
  *
  * @example
  * const { openQuickNotes, openQuickTasks } = useQuickActions();
@@ -31,26 +34,15 @@ export function useQuickActions() {
   const dispatch = useAppDispatch();
   const openAgentRunWindow = useOpenAgentRunWindow();
 
-  const openQuickNotes = useCallback(
-    (data?: any) => {
-      dispatch(openOverlay({ overlayId: "quickNotes", data }));
-    },
-    [dispatch],
-  );
+  const openQuickNotesTab = useOpenQuickNotes();
+  const openQuickTasksTab = useOpenQuickTasks();
+  const openQuickChatTab = useOpenQuickChat();
+  const openQuickDataTab = useOpenQuickData();
+  const openScratchpadTab = useOpenScratchpad();
 
-  const openQuickTasks = useCallback(
-    (data?: any) => {
-      dispatch(openOverlay({ overlayId: "quickTasks", data }));
-    },
-    [dispatch],
-  );
-
-  const openQuickChat = useCallback(
-    (data?: any) => {
-      dispatch(openOverlay({ overlayId: "quickChat", data }));
-    },
-    [dispatch],
-  );
+  const openQuickNotes = () => void openQuickNotesTab();
+  const openQuickTasks = () => void openQuickTasksTab({});
+  const openQuickChat = () => void openQuickChatTab({});
 
   /**
    * Opens the floating Chat window panel (`agentRunWindow`) with the same
@@ -85,12 +77,7 @@ export function useQuickActions() {
     [openAgentRunWindow],
   );
 
-  const openQuickData = useCallback(
-    (data?: any) => {
-      dispatch(openOverlay({ overlayId: "quickData", data }));
-    },
-    [dispatch],
-  );
+  const openQuickData = () => void openQuickDataTab({});
 
   const openQuickFiles = useCallback(
     (data?: any) => {
@@ -120,9 +107,7 @@ export function useQuickActions() {
   }, [dispatch]);
 
   /** The user's global scratchpad — one click from any page. */
-  const openScratchpad = useCallback(() => {
-    dispatch(openOverlay({ overlayId: "scratchpadPanel" }));
-  }, [dispatch]);
+  const openScratchpad = () => void openScratchpadTab();
 
   return {
     openScratchpad,
