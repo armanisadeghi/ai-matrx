@@ -6,6 +6,13 @@ import {
 } from "../smart-execute.thunk";
 import { claimSubmit, releaseSubmitClaim } from "../submit-claims";
 
+// A user page: no admin seat (what the host's admin lane answers off /administration).
+jest.mock("../../../../../host/server/admin-lane", () => ({
+  adminLaneOrganizationId: () => null,
+  adminLaneHeadersFor: () => ({}),
+}));
+
+
 jest.mock("../../../../../host/notify", () => ({
   toast: { info: jest.fn() },
 }));
