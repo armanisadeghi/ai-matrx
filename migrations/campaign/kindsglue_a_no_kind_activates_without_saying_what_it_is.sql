@@ -23,6 +23,7 @@
 -- reads; no DROP TRIGGER, whose ACCESS EXCLUSIVE would block reads); the sweep updates ops.system_error rows of kind 'kinds' only.
 -- based-on: content_ir.evaluate_kind_activation(uuid) 8f2f40886b8d7572fd9356e92078fb4a34c64cba367319b16e2a2763e9f73725
 -- lane: KINDS-GLUE
+-- chair-step: the one REVOKE closes EXECUTE on this file's own new trigger function (content_ir._kinds_glue_close_undeclared_refusals) to public/anon/authenticated — a trigger body must never be callable directly; nothing existing loses a grant.
 -- INVERSE: migrations/inverse/kindsglue_a_no_kind_activates_without_saying_what_it_is_down.sql
 
 CREATE OR REPLACE FUNCTION content_ir.evaluate_kind_activation(p_kind_definition_id uuid)

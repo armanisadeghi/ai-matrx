@@ -21,7 +21,7 @@ import type { RootState } from "@/lib/redux/rootReducer";
 export const CHAT_DOCUMENTS_LAUNCHER_KIND = "chat-documents";
 const TITLE = "This chat's documents";
 
-/** The chat route's surfaces register their focus under `chat:<agentId>`. */
+/** The chat route's page surface and its focus are keyed `chat:<agentId>`. */
 const CHAT_SURFACE_PREFIX = "chat:";
 
 /** The conversation the chat route is showing, or null off a chat route. */
@@ -29,8 +29,13 @@ export function resolveChatConversation(pathname: string, state: RootState): str
   if (!pathname.startsWith("/chat")) return null;
   const fromRoute = parseChatPath(pathname).activeConversationId;
   if (fromRoute) return fromRoute;
-  const surfaceKey = selectLastFocusedSurfaceKey(state);
-  if (!surfaceKey?.startsWith(CHAT_SURFACE_PREFIX)) return null;
+  // `/chat/new` and `/chat/a/<agent>`: the conversation the MOUNTED chat page
+  // reserved. A chat page registers itself as a `chat:<agentId>` surface while
+  // it is on screen; the most recently focused one wins when several are.
+  const mounted = Object.keys(state.surfaces?.byKey ?? {}).filter((key) => key.startsWith(CHAT_SURFACE_PREFIX));
+  const last = selectLastFocusedSurfaceKey(state);
+  const surfaceKey = last && mounted.includes(last) ? last : mounted[0];
+  if (!surfaceKey) return null;
   return state.conversationFocus?.bySurface[surfaceKey]?.input ?? null;
 }
 

@@ -20,7 +20,6 @@
 
 import { useEffect, useRef } from "react";
 import { BellRingTapButton, BellTapButton } from "@ai-matrx/tap-target/buttons";
-import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
@@ -115,11 +114,12 @@ function SignedInInboxButton() {
 
   const Bell = counts.badge > 0 ? BellRingTapButton : BellTapButton;
   return (
-    <div className="relative shrink-0" data-inbox-header-button data-pressed={isVisible ? "" : undefined}>
+    <div className="relative shrink-0" data-inbox-header-button>
       <Bell
         ariaLabel={label}
         tooltip={label}
-        className={cn(isVisible && "bg-accent", (counts.badge > 0 || isVisible) && "text-primary")}
+        className={counts.badge > 0 ? "text-primary" : undefined}
+        pressed={isVisible}
         onClick={toggle}
       />
       <InboxBadge count={counts.badge} dot={dot} />

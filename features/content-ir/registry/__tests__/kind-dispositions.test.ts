@@ -47,10 +47,11 @@ describe("the disposition set is ONE list", () => {
   it("equals the registry backstop trigger's set", () => {
     const sql = readFileSync(BACKSTOP, "utf8");
     const body = sql.slice(sql.indexOf("create or replace function"));
-    const match = /not in \(([^)]*)\)/.exec(body);
-    expect(match).not.toBeNull();
-    const db = [...match![1]!.matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
-    expect([...KIND_DISPOSITIONS]).toEqual(db);
+    const sets = [...body.matchAll(/in \(('record'[^)]*)\)/g)].map((m) =>
+      [...m[1]!.matchAll(/'([A-Za-z_]+)'/g)].map((w) => w[1]),
+    );
+    expect(sets.length).toBeGreaterThan(0);
+    for (const db of sets) expect(db).toEqual([...KIND_DISPOSITIONS]);
   });
 
   it("refuses a missing or unknown disposition in a plain sentence", () => {
