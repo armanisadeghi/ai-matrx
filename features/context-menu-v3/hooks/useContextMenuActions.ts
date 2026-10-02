@@ -1038,7 +1038,7 @@ export function useContextMenuActions(
     }
     toast({
       title: "Copied instead",
-      description: "The editor could not take the insert, so the reference is on your clipboard.",
+      description: "Couldn't insert here. Paste it where you want it.",
     });
     copyReference(pick);
   };

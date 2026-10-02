@@ -10,6 +10,7 @@
 import type { DirectiveClass } from "@ai-matrx/content-ir";
 import { GENERIC_PARTY_WORDS } from "@/features/crm/party-words";
 import { referenceTypeLabel } from "@/features/scopes/utils/referenceCell";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { titleCaseGroupLabel } from "@/features/scopes/utils/referenceTypeGroups";
 import {
   CATALOG_ALIASES,
@@ -52,13 +53,18 @@ export interface ReferencePick {
  * (G6B review).
  * Everything else falls through to `referenceTypeLabel`.
  */
-export const FRIENDLY_REFERENCE_TYPE_LABELS: Readonly<Record<string, string>> = {
-  conversation: "Chat",
-  udt_document: "Document",
-  dataset: "Table",
-  url: "Web link",
-  party: GENERIC_PARTY_WORDS.singular,
+const FRIENDLY_REFERENCE_TYPE_WORDS: Readonly<Record<string, { singular: string; plural: string }>> = {
+  conversation: { singular: "Chat", plural: "Chats" },
+  udt_document: { singular: "Document", plural: "Documents" },
+  dataset: { singular: "Table", plural: "Tables" },
+  url: { singular: "Web link", plural: "Web links" },
+  party: GENERIC_PARTY_WORDS,
 };
+
+export const FRIENDLY_REFERENCE_TYPE_LABELS: Readonly<Record<string, string>> =
+  Object.fromEntries(
+    Object.entries(FRIENDLY_REFERENCE_TYPE_WORDS).map(([token, words]) => [token, words.singular]),
+  );
 
 /**
  * THE name of a record type, everywhere a person sees one: the type chooser,
@@ -86,6 +92,26 @@ export function referenceTypeDisplayLabel(type: string): string {
     .split(/\s+/)
     .map((word) => (word.includes("-") ? word : titleCaseGroupLabel(word)))
     .join(" ");
+}
+
+/**
+ * THE plural of a record type ("Search chats…", "No chats available", "Show
+ * more chats"), from the same rule as `referenceTypeDisplayLabel` — one type,
+ * one name, singular or plural (G8B review, 2026-10-02: the Chat search said
+ * "Search conversations…"). The product word's own plural first; then, when
+ * the display label IS the registry's singular, the registry's plural;
+ * otherwise the display label plus "s".
+ */
+export function referenceTypeDisplayPlural(type: string): string {
+  const token = (CATALOG_ALIASES as Record<string, string>)[type] ?? type;
+  const friendly = FRIENDLY_REFERENCE_TYPE_WORDS[token];
+  if (friendly) return friendly.plural;
+  const display = referenceTypeDisplayLabel(token);
+  const registryPlural = tryGetEntityInfo(token)?.labelPlural?.trim();
+  if (registryPlural && display.toLowerCase() === referenceTypeLabel(token).toLowerCase()) {
+    return registryPlural;
+  }
+  return /s$/i.test(display) ? display : `${display}s`;
 }
 
 /**

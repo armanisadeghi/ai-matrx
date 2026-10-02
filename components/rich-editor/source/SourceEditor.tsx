@@ -324,12 +324,13 @@ export function SourceEditor({
     },
     insertText: (text, where) => {
       const v = view.current;
-      if (!v) return;
+      if (!v) return false;
       const { from, to } = v.state.selection.main;
       // The caret's line edge, never inside a word (utils/text-insertion).
       const at = blockBoundary(v.state.doc.toString(), from, to, where);
       const insert = where === "before" ? `${text}\n\n` : `\n\n${text}`;
       v.dispatch({ changes: { from: at, insert } });
+      return true;
     },
     flush: () => view.current?.state.doc.toString() ?? initialText,
     scrollToHeading: (_slug, offset) => {

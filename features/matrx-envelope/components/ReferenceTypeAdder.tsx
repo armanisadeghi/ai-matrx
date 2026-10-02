@@ -39,12 +39,16 @@ import type { KindScope } from "@/features/scopes/service/kindInventory";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
+  collidingRowIds,
   composeRecordSecondaryLine,
+  createdLabel,
+  fetchRecordCreatedAt,
   fetchRecordFacts,
   type RecordFact,
 } from "@/features/scopes/service/recordFacts";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { ReferenceItem } from "@ai-matrx/agents/envelope";
+import { referenceTypeDisplayPlural } from "@/features/matrx-envelope/components/reference-picker/referencePickerTypes";
 import {
   isEntityTypeToken,
   type EntityTypeToken,
@@ -247,7 +251,7 @@ function ScopeTypeAdder({
             event.preventDefault();
             candidateRefs.current[0]?.focus();
           }}
-          placeholder="Search scopes…"
+          placeholder={`Search ${referenceTypeDisplayPlural("scope").toLowerCase()}…`}
           className="h-8 pl-8 text-sm"
           style={{ fontSize: "16px" }}
         />
@@ -292,7 +296,7 @@ function ScopeTypeAdder({
             }
             className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            <span className="truncate text-foreground">{c.name}</span>
+            <span className="line-clamp-2 min-w-0 break-words text-foreground">{c.name}</span>
             <span className="shrink-0 text-[10px] uppercase text-muted-foreground">
               {c.typeLabel}
             </span>
@@ -356,7 +360,7 @@ function RecentRecordSearch({
   onPickMany,
   onRetry,
 }: RecordSearchProps) {
-  const info = getEntityInfo(token);
+  const plural = referenceTypeDisplayPlural(token);
   const list = useKindItems(token, EVERY_RECORD_I_CAN_SEE, query);
   const facts = useRecordFacts(
     token,
@@ -364,7 +368,10 @@ function RecentRecordSearch({
   );
   const organizationName = useOrganizationNames();
   const now = Date.now();
-  const rows = recordRows(list.items, facts, organizationName, now);
+  const firstPass = recordRows(list.items, facts, organizationName, now);
+  // Rows that still read the same get the next fact: when each was created.
+  const created = useRecordCreatedAt(token, collidingRowIds(firstPass));
+  const rows = recordRows(list.items, facts, organizationName, now, created);
   return (
     <CandidateSearch
       token={token}
@@ -387,7 +394,7 @@ function RecentRecordSearch({
             {list.loadingMore ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : null}
-            Show more {info.labelPlural.toLowerCase()}
+            Show more {plural.toLowerCase()}
           </button>
         ) : null
       }
@@ -399,12 +406,17 @@ function RecentRecordSearch({
  * Each row's secondary line: the organization (only when the rows span more
  * than one — a single-organization list repeats nothing), one fact that tells
  * same-named records apart, and when it changed. ≤60 characters.
+ *
+ * Rows whose title AND line still collide trade the edit date (the same for
+ * all of them) for when each was created — with the time when two share a
+ * day (G8B review). `created` holds `created_at` for those rows only.
  */
 export function recordRows(
   items: ReadonlyArray<{ id: string; title: string; updatedAt: string | null }>,
   facts: ReadonlyMap<string, RecordFact>,
   organizationName: (id: string) => string | null,
   now: number,
+  created: ReadonlyMap<string, string> = new Map(),
 ): Array<{ id: string; title: string; secondary: string | null }> {
   const organizations = new Set(
     items
@@ -412,21 +424,63 @@ export function recordRows(
       .filter((id): id is string => Boolean(id)),
   );
   const spansOrganizations = organizations.size > 1;
-  return items.map((item) => {
+  const parts = (item: (typeof items)[number]) => {
     const fact = facts.get(item.id);
     return {
-      id: item.id,
-      title: item.title,
-      secondary: composeRecordSecondaryLine({
-        organization:
-          spansOrganizations && fact?.organizationId
-            ? organizationName(fact.organizationId)
-            : null,
-        fact: withoutTitle(fact?.fact ?? null, item.title),
-        edited: candidateSecondaryLine(item.updatedAt, now),
-      }),
+      organization:
+        spansOrganizations && fact?.organizationId
+          ? organizationName(fact.organizationId)
+          : null,
+      fact: withoutTitle(fact?.fact ?? null, item.title),
+      edited: candidateSecondaryLine(item.updatedAt, now),
+    };
+  };
+  const rows = items.map((item) => ({
+    id: item.id,
+    title: item.title,
+    secondary: composeRecordSecondaryLine(parts(item)),
+  }));
+  const colliding = new Set(collidingRowIds(rows));
+  if (colliding.size === 0 || created.size === 0) return rows;
+  // A day shared by two colliding rows needs the time to tell them apart.
+  const dayOf = (iso: string) => iso.slice(0, 10);
+  const daysSeen = new Map<string, number>();
+  for (const id of colliding) {
+    const iso = created.get(id);
+    if (iso) daysSeen.set(dayOf(iso), (daysSeen.get(dayOf(iso)) ?? 0) + 1);
+  }
+  return rows.map((row, index) => {
+    const iso = colliding.has(row.id) ? created.get(row.id) : undefined;
+    if (!iso) return row;
+    const label = createdLabel(iso, (daysSeen.get(dayOf(iso)) ?? 0) > 1, now);
+    if (!label) return row;
+    return {
+      ...row,
+      secondary: composeRecordSecondaryLine({ ...parts(items[index]!), edited: label }),
     };
   });
+}
+
+/** When the colliding rows were created; re-read when that set changes. */
+function useRecordCreatedAt(
+  token: string,
+  ids: string[],
+): ReadonlyMap<string, string> {
+  const idsKey = ids.join(",");
+  const [created, setCreated] = useState<ReadonlyMap<string, string>>(
+    () => new Map(),
+  );
+  useEffect(() => {
+    if (!idsKey) return;
+    let cancelled = false;
+    void fetchRecordCreatedAt(token, idsKey.split(",")).then((next) => {
+      if (!cancelled) setCreated(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, idsKey]);
+  return created;
 }
 
 /** A note's first words usually repeat its title; never say it twice. */
@@ -553,6 +607,7 @@ function CandidateSearch({
   const [activeIndex, setActiveIndex] = useState(0);
   const candidateRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const info = getEntityInfo(token);
+  const plural = referenceTypeDisplayPlural(token);
 
   return (
     <div className="space-y-2">
@@ -570,7 +625,7 @@ function CandidateSearch({
             event.preventDefault();
             candidateRefs.current[0]?.focus();
           }}
-          placeholder={`Search ${info.labelPlural.toLowerCase()}…`}
+          placeholder={`Search ${plural.toLowerCase()}…`}
           className="h-8 pl-8 text-sm"
           style={{ fontSize: "16px" }}
         />
@@ -580,13 +635,13 @@ function CandidateSearch({
       </div>
       <div
         role="listbox"
-        aria-label={`${info.labelPlural} results`}
+        aria-label={`${plural} results`}
         className="max-h-56 space-y-0.5 overflow-y-auto"
       >
         {error ? (
           <ReadFailure
             error={error}
-            what={info.labelPlural.toLowerCase()}
+            what={plural.toLowerCase()}
             className="m-0"
             onRetry={onRetry}
           />
@@ -595,7 +650,7 @@ function CandidateSearch({
           <p className="px-1 py-2 text-xs text-muted-foreground">
             {query.trim()
               ? "No matches."
-              : `No ${info.labelPlural.toLowerCase()} available.`}
+              : `No ${plural.toLowerCase()} available.`}
           </p>
         )}
         {rows.map((c, index) => (
@@ -627,7 +682,9 @@ function CandidateSearch({
           >
             <info.Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span className="flex min-w-0 flex-col">
-              <span className="truncate text-foreground">{c.title}</span>
+              {/* Two lines, never one: the suffix that tells two records
+                  apart ("(checkout)") sits at the END of the title. */}
+              <span className="line-clamp-2 break-words text-foreground">{c.title}</span>
               {c.secondary ? (
                 <span className="truncate text-xs text-muted-foreground">
                   {c.secondary}

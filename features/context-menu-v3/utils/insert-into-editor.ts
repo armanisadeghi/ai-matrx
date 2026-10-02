@@ -66,23 +66,43 @@ export function insertIntoEditor(
   const placement = shaped.placement ?? "inline";
 
   if (editorId) {
-    if (placement === "block") moveEditorCaretToLineEnd(editorId);
-    if (insertTextAtCursor(editorId, shaped.editor)) return "editor";
+    const took = attempt("editor", () => {
+      if (placement === "block") moveEditorCaretToLineEnd(editorId);
+      return insertTextAtCursor(editorId, shaped.editor);
+    });
+    if (took) return "editor";
   }
 
   const field = editorId ? null : (getTextarea?.() ?? null);
   if (field) {
-    if (placement === "block" && field.selectionStart === field.selectionEnd) {
-      const at = blockBoundary(field.value, field.selectionStart, field.selectionEnd);
-      field.setSelectionRange(at, at);
-    }
-    if (insertTextAtTextareaCursor(field, shaped.textarea(field), onTextReplace)) {
-      return "textarea";
-    }
+    const took = attempt("textarea", () => {
+      if (placement === "block" && field.selectionStart === field.selectionEnd) {
+        const at = blockBoundary(field.value, field.selectionStart, field.selectionEnd);
+        field.setSelectionRange(at, at);
+      }
+      return insertTextAtTextareaCursor(field, shaped.textarea(field), onTextReplace);
+    });
+    if (took) return "textarea";
   }
 
-  if (insertAtCaret?.(shaped.caret, placement)) return "caret";
+  if (insertAtCaret && attempt("caret", () => insertAtCaret(shaped.caret, placement))) return "caret";
   return null;
+}
+
+/**
+ * A target that THROWS is a target that did not take the text — never an
+ * exception that escapes into the caller. A rich editor's insert once threw
+ * `TransformError` up through the reference picker's pick handler: the dialog
+ * stayed open and nothing happened (G8B review, 2026-10-02). Now the next
+ * target is tried, and with none left the caller copies and says so.
+ */
+function attempt(target: EditorInsertTarget, insert: () => boolean): boolean {
+  try {
+    return insert();
+  } catch (error) {
+    console.error(`[ContextMenuV3] ${target} insert failed`, error);
+    return false;
+  }
 }
 
 /**

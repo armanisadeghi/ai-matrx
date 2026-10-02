@@ -15,7 +15,8 @@ export function insertAtRichCaret(
   placement: "inline" | "block" = "inline",
 ): boolean {
   if (!rich) return false;
-  if (placement === "block") rich.insertText(text, "after");
-  else rich.replaceSelection(text);
+  // A block reports whether it landed; the caller announces a refusal.
+  if (placement === "block") return rich.insertText(text, "after");
+  rich.replaceSelection(text);
   return true;
 }

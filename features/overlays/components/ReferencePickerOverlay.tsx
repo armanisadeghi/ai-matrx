@@ -22,6 +22,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { toast } from "@/lib/toast";
 import {
   disposeReferencePickerCallbackGroup,
   getReferencePickerCallbackGroup,
@@ -39,7 +40,20 @@ export interface ReferencePickerOverlayProps {
   mode: ReferenceDelivery;
 }
 
-const TITLE = "Add a reference";
+/**
+ * The title names what the pick DOES: a read-only surface copies (G8B review,
+ * 2026-10-02: copy mode still said "Add a reference").
+ */
+export const REFERENCE_PICKER_TEXT: Readonly<Record<ReferenceDelivery, { title: string; description: string }>> = {
+  insert: {
+    title: "Add a reference",
+    description: "Link to something, or insert a button that acts on it.",
+  },
+  copy: {
+    title: "Copy a reference",
+    description: "Copy a link to something, or a button that acts on it.",
+  },
+};
 
 /**
  * A FIXED size, never one that follows the content (G6B review, 2026-10-02):
@@ -51,8 +65,6 @@ const TITLE = "Add a reference";
  */
 export const REFERENCE_PICKER_DIALOG_SIZE = "h-[min(600px,80dvh)] sm:max-w-[520px]";
 export const REFERENCE_PICKER_SHEET_SIZE = "h-[85dvh] max-h-[85dvh]";
-const DESCRIPTION =
-  "Link to something, or insert a button that acts on it.";
 
 export default function ReferencePickerOverlay({
   isOpen,
@@ -68,9 +80,17 @@ export default function ReferencePickerOverlay({
   if (!isOpen) return null;
 
   const group = getReferencePickerCallbackGroup(callbackGroupId);
+  const { title, description } = REFERENCE_PICKER_TEXT[mode];
 
+  // The dialog always closes on a pick. A pick handler that throws used to
+  // leave it open with nothing inserted and nothing said (G8B review).
   const handlePicked = (pick: ReferencePick) => {
-    group?.onPicked(pick);
+    try {
+      group?.onPicked(pick);
+    } catch (error) {
+      console.error("[ReferencePicker] pick handler failed", error);
+      toast.error("Couldn't add the reference", { description: "Try again, or pick Copy instead." });
+    }
     onClose();
   };
   const handleCancel = () => {
@@ -87,8 +107,8 @@ export default function ReferencePickerOverlay({
       <Drawer open onOpenChange={(open) => !open && handleCancel()}>
         <DrawerContent className={`${REFERENCE_PICKER_SHEET_SIZE} pb-safe`}>
           <DrawerHeader className="text-left">
-            <DrawerTitle>{TITLE}</DrawerTitle>
-            <DrawerDescription>{DESCRIPTION}</DrawerDescription>
+            <DrawerTitle>{title}</DrawerTitle>
+            <DrawerDescription>{description}</DrawerDescription>
           </DrawerHeader>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4">
             {body}
@@ -102,8 +122,8 @@ export default function ReferencePickerOverlay({
     <Dialog open onOpenChange={(open) => !open && handleCancel()}>
       <DialogContent className={`flex flex-col ${REFERENCE_PICKER_DIALOG_SIZE}`}>
         <DialogHeader>
-          <DialogTitle>{TITLE}</DialogTitle>
-          <DialogDescription>{DESCRIPTION}</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{body}</div>
       </DialogContent>

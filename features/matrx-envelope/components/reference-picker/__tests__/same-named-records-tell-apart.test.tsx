@@ -36,8 +36,11 @@ const invoiceFacts = new Map<string, RecordFact>(
   invoices.map((r, i) => [r.id, { organizationId: i < 4 ? ORG_A : ORG_B, fact: null }]),
 );
 
-const items = { current: invoices };
+const items: { current: Array<{ id: string; title: string; updatedAt: string | null }> } = {
+  current: invoices,
+};
 const facts = { current: invoiceFacts as Map<string, RecordFact> };
+const createdAt = { current: new Map<string, string>() };
 
 jest.mock("@/features/scopes/hooks/useKindItems", () => ({
   useKindItems: () => ({
@@ -54,7 +57,11 @@ jest.mock("@/features/scopes/hooks/useKindItems", () => ({
 
 jest.mock("@/features/scopes/service/recordFacts", () => {
   const actual = jest.requireActual("@/features/scopes/service/recordFacts");
-  return { ...actual, fetchRecordFacts: jest.fn(async () => facts.current) };
+  return {
+    ...actual,
+    fetchRecordFacts: jest.fn(async () => facts.current),
+    fetchRecordCreatedAt: jest.fn(async () => createdAt.current),
+  };
 });
 
 jest.mock("@/features/organizations/hooks", () => ({
@@ -88,14 +95,16 @@ jest.mock("@/features/scopes/hooks/useUniversalEntitySearch", () => ({
 let container: HTMLDivElement;
 let root: Root;
 
-async function renderPicker(token: "note" | "conversation") {
+async function renderPicker(token: "note" | "conversation" | "task") {
   await act(async () => {
     root.render(<RecordReferencePicker token={token} onPickMany={() => undefined} />);
   });
-  // Let the facts read resolve.
-  await act(async () => {
-    await Promise.resolve();
-  });
+  // Let the facts read resolve, then the created-at read for colliding rows.
+  for (let i = 0; i < 3; i += 1) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
   return [...container.querySelectorAll('[role="option"]')].map((r) => r.textContent ?? "");
 }
 
@@ -166,5 +175,59 @@ describe("same-named records in the record search", () => {
       NOW,
     );
     expect(out[0]!.secondary).toBeNull();
+  });
+
+  // G8B review (2026-10-02, nightly clone): a dozen "Leave request — Tomas
+  // Iversen / Oak Street Studio · Completed · Edited 2 days ago" rows were
+  // still identical. Rows whose title AND line collide name when each was
+  // created — with the time when two share a day — never a raw id.
+  it("rows that still collide are told apart by when each was created", async () => {
+    const title = "Leave request — Tomas Iversen";
+    items.current = [31, 32, 33].map((n) => ({ id: id(n), title, updatedAt: "2026-09-30T12:00:00Z" }));
+    facts.current = new Map(items.current.map((r) => [r.id, { organizationId: ORG_A, fact: "Completed" }]));
+    createdAt.current = new Map([
+      [id(31), "2026-08-28T04:05:20Z"],
+      [id(32), "2026-08-28T06:17:23Z"],
+      [id(33), "2026-08-20T09:00:00Z"],
+    ]);
+    const rows = await renderPicker("task");
+    expect(rows).toHaveLength(3);
+    expect(new Set(rows).size).toBe(3);
+    for (const r of rows) {
+      expect(r).toContain("Created ");
+      expect(r).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/);
+    }
+    createdAt.current = new Map();
+  });
+
+  it("a collided line still fits its 60-character slot", () => {
+    const rows = [41, 42].map((n) => ({ id: id(n), title: "Same", updatedAt: "2026-09-30T12:00:00Z" }));
+    const out = recordRows(
+      rows,
+      new Map(rows.map((r, i) => [r.id, { organizationId: i ? ORG_B : ORG_A, fact: "Completed" }])),
+      (org) => (org === ORG_A ? "Oak Street Studio" : "Oak Street Studio West Annex"),
+      NOW,
+      new Map([
+        [id(41), "2026-08-28T04:05:20Z"],
+        [id(42), "2026-08-28T06:17:23Z"],
+      ]),
+    );
+    for (const row of out) expect(row.secondary!.length).toBeLessThanOrEqual(60);
+  });
+
+  it("a title wraps to two lines instead of cutting off its last words", async () => {
+    items.current = [{ id: id(51), title: "Clean the treatment room before the patient (checkout)", updatedAt: null }];
+    facts.current = new Map();
+    await renderPicker("task");
+    const title = container.querySelector('[role="option"] span span');
+    expect(title?.className).toContain("line-clamp-2");
+    expect(title?.className).not.toContain("truncate");
+  });
+
+  it("the search names the type by its one display name (Chat → \"Search chats…\")", async () => {
+    items.current = [];
+    await renderPicker("conversation");
+    const input = container.querySelector("input");
+    expect(input?.getAttribute("placeholder")).toBe("Search chats…");
   });
 });

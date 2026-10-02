@@ -179,3 +179,75 @@ export function composeRecordSecondaryLine(parts: {
     ? shortened
     : `${shortened.slice(0, SECONDARY_LINE_MAX - 1)}…`;
 }
+
+// ── The next fact, only where rows still collide ────────────────────────────
+//
+// G8B review (2026-10-02, nightly clone): a dozen "Leave request — Tomas
+// Iversen / Oak Street Studio · Completed · Edited 2 days ago" rows were still
+// identical — same title, same organization, same status, same edit day. When
+// the title AND the secondary line collide, the line's date becomes WHEN THE
+// RECORD WAS CREATED (with the time when two share a day). Never a raw id.
+// `created_at` is part of the platform base contract; it is read in its own
+// small query, only for colliding rows, so a table without it costs nothing.
+
+/** Ids of rows whose title and secondary line equal another row's. */
+export function collidingRowIds(
+  rows: ReadonlyArray<{ id: string; title: string; secondary: string | null }>,
+): string[] {
+  const groups = new Map<string, string[]>();
+  for (const row of rows) {
+    const key = `${row.title.trim().toLowerCase()}\u0000${row.secondary ?? ""}`;
+    const ids = groups.get(key) ?? [];
+    ids.push(row.id);
+    groups.set(key, ids);
+  }
+  return [...groups.values()].filter((ids) => ids.length > 1).flat();
+}
+
+/** "Created Aug 28" — or "Created Aug 28, 4:05 AM" when the day alone is not enough. */
+export function createdLabel(iso: string, withTime: boolean, now: number): string | null {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return null;
+  const sameYear = at.getFullYear() === new Date(now).getFullYear();
+  const day = at.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+  if (!withTime) return `Created ${day}`;
+  const time = at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  return `Created ${day}, ${time}`;
+}
+
+/** `created_at` for the given rows, keyed by id. Never throws. */
+export async function fetchRecordCreatedAt(
+  token: string,
+  ids: readonly string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const info = tryGetEntityInfo(token);
+  if (!info || ids.length === 0) return out;
+  const db = (
+    info.schema && info.schema !== "public"
+      ? supabase.schema(info.schema as "files")
+      : supabase
+  ) as typeof supabase;
+  const { data, error } = await db
+    .from(info.table as never)
+    .select("id, created_at")
+    .in("id" as never, ids as never);
+  if (error) {
+    console.warn(
+      `[recordFacts] Could not read when ${token} rows were created ` +
+        `(${info.schema}.${info.table}: ${error.message}). Same-named rows keep their edit date. ` +
+        `Remedy: make created_at readable on ${info.schema}.${info.table}.`,
+    );
+    return out;
+  }
+  for (const row of (data ?? []) as unknown as Row[]) {
+    const id = asText(row.id);
+    const created = asText(row.created_at);
+    if (id && created) out.set(id, created);
+  }
+  return out;
+}

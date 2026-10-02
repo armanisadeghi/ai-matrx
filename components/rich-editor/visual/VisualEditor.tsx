@@ -51,7 +51,8 @@ export interface EditorViewHandle {
   selectedText: () => string;
   /** Replace the selection with literal text (markdown typed by an AI stays markdown). */
   replaceSelection: (text: string) => void;
-  insertText: (text: string, where: "before" | "after") => void;
+  /** Insert a block before / after the selection; false when it could not. */
+  insertText: (text: string, where: "before" | "after") => boolean;
   /** Flush pending text now (before a save or a view switch). */
   flush: () => string;
   scrollToHeading: (slug: string, offset: number) => void;
@@ -234,12 +235,20 @@ export function VisualEditor({
       }).run();
     },
     insertText: (text, where) => {
-      if (!editor) return;
-      // Between blocks, never inside a word (core/block-insert.ts).
-      editor.commands.command(({ tr }) => {
-        insertMarkdownBlock(tr, editor.state.schema, text, where);
-        return true;
-      });
+      if (!editor) return false;
+      // Between blocks, never inside a word (core/block-insert.ts). A refusal
+      // is reported to the caller, which announces it — never a silent no-op.
+      let inserted = false;
+      try {
+        editor.commands.command(({ tr }) => {
+          inserted = insertMarkdownBlock(tr, editor.state.schema, text, where);
+          return inserted;
+        });
+      } catch (error) {
+        console.error("[RichEditor] block insert failed", error);
+        inserted = false;
+      }
+      return inserted;
     },
     flush: () => {
       if (!editor) return lastReported.current;

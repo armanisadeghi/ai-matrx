@@ -95,8 +95,8 @@ export interface RichEditorController {
   selectedText: () => string;
   /** Put text at the caret, replacing the selection (markdown stays markdown). */
   replaceSelection: (text: string) => void;
-  /** Insert a new block before / after the selection. */
-  insertText: (text: string, where: "before" | "after") => void;
+  /** Insert a new block before / after the selection; false when it could not. */
+  insertText: (text: string, where: "before" | "after") => boolean;
   /**
    * Replace the WHOLE text (the context menu's full-content `onTextReplace`
    * contract: Cut / Paste / an AI result's Replace / an agent's
@@ -503,7 +503,7 @@ export default function RichEditorImpl({
       focus: () => handle.current?.focus(),
       selectedText: () => handle.current?.selectedText() ?? "",
       replaceSelection: (text) => handle.current?.replaceSelection(text),
-      insertText: (text, where) => handle.current?.insertText(text, where),
+      insertText: (text, where) => handle.current?.insertText(text, where) ?? false,
       setText,
       flush,
       openFind: (withReplace = false) => setFindMode(withReplace ? "replace" : "find"),

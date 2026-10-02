@@ -68,6 +68,19 @@ describe("every editor that offers Insert inserts", () => {
     expect(hasEditorInsertTarget({})).toBe(false);
   });
 
+  // G8B review (2026-10-02): the rich editor's block insert THREW, the throw
+  // escaped the picker's pick handler, the dialog stayed open and nothing
+  // happened. A throwing target is a target that did not take the text.
+  it("a target that throws is a refusal → null, so the caller copies and says so", () => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    const insertAtCaret = jest.fn(() => {
+      throw new Error("Inserted content deeper than insertion position");
+    });
+    const targets = { getTextarea: () => null, insertAtCaret };
+    expect(() => insertIntoEditor(targets, { editor: FENCE, textarea: () => FENCE, caret: FENCE, placement: "block" })).not.toThrow();
+    expect(insertIntoEditor(targets, { editor: FENCE, textarea: () => FENCE, caret: FENCE, placement: "block" })).toBeNull();
+  });
+
   it("ownParagraph adds blank lines only where the neighbours lack them", () => {
     expect(ownParagraph("X", textarea("", 0))).toBe("X");
     expect(ownParagraph("X", textarea("a\n\nb", 3))).toBe("X\n\n");

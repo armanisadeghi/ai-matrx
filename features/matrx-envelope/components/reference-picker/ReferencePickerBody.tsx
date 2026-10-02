@@ -26,7 +26,7 @@ import {
   Plus,
 } from "lucide-react";
 import type { DirectiveClass } from "@ai-matrx/content-ir";
-import { Input, Skeleton } from "@ai-matrx/design-system";
+import { Input, Popover, PopoverContent, PopoverTrigger, Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -654,7 +654,7 @@ function WriteStep({
   );
 }
 
-function ActionRow({
+export function ActionRow({
   token,
   directiveClass,
   onChange,
@@ -682,27 +682,34 @@ function ActionRow({
     label: ACTION_LABEL[directiveClass] ?? LINK_ACTION.label,
   };
 
+  // The list opens in a popover, never inline (G8B review, 2026-10-02):
+  // inline, it pushed the record list ~140px down the moment the actions
+  // loaded. Floating, nothing under it moves; while loading it holds the
+  // height of the rows it is waiting for.
   return (
-    <div className="rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs">
-      <div className="flex items-center gap-2">
-        <span className="text-muted-foreground">Action:</span>
-        <span className="font-medium text-foreground">{current.label}</span>
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="ml-auto text-muted-foreground hover:text-foreground"
+    <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs">
+      <span className="text-muted-foreground">Action:</span>
+      <span className="font-medium text-foreground">{current.label}</span>
+      <Popover open={expanded} onOpenChange={setExpanded}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="ml-auto text-muted-foreground hover:text-foreground"
+          >
+            Change…
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="end"
+          className="w-72 max-w-[calc(100vw-2rem)] space-y-0.5 p-1 text-xs"
         >
-          {expanded ? "Hide" : "Change…"}
-        </button>
-      </div>
-      {expanded && (
-        <div className="mt-1.5 space-y-0.5">
-          {loading && (
-            <p className="flex items-center gap-1.5 text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" /> Loading actions…
+          {loading &&
+            [0, 1, 2].map((n) => <Skeleton key={n} className="h-9 w-full rounded" />)}
+          {error && (
+            <p className="px-1.5 py-1 text-amber-700 dark:text-amber-300">
+              {error} <ErrorAlchemyMenu error={error} />
             </p>
           )}
-          {error && <p className="text-amber-700 dark:text-amber-300">{error} <ErrorAlchemyMenu error={error} /></p>}
           {options?.map((o) => (
             <button
               key={o.directiveClass}
@@ -727,12 +734,12 @@ function ActionRow({
             </button>
           ))}
           {options && options.length === 1 && !loading && !error && (
-            <p className="text-muted-foreground">
+            <p className="px-1.5 py-1 text-muted-foreground">
               Linking is the only action available for this type.
             </p>
           )}
-        </div>
-      )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
