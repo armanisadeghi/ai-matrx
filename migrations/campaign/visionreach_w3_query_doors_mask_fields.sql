@@ -1,4 +1,3 @@
--- draft: VISION-REACH clone proof pending
 -- target: branch,production
 -- additive: yes
 --   It ADDS two helpers, `custom.mask_history_data(jsonb, jsonb)` and
