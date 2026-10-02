@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useId, useState } from "react";
-import { Eye, FileText, Printer } from "lucide-react";
+import { FileText, Globe, Printer } from "lucide-react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -107,7 +107,7 @@ const REPORT_ACTIONS: RichDocumentActionsProp = {
   extra: [
     promoted("print", "Print or save as PDF", Printer, 0),
     promoted("download-html", "Download as an HTML page", FileText, 1),
-    promoted("html-preview", "Publish as a web page", Eye, 2),
+    promoted("html-preview", "Publish as a web page", Globe, 2),
   ],
 };
 

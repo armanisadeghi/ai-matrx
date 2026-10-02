@@ -516,7 +516,16 @@ export function battleMarkdown(
     if (scores && c.metrics && c.metrics.rounds > 0) {
       const m = c.metrics;
       out.push(
-        `**Run:** ${m.total_tokens ?? "—"} tokens, ${formatCost(m.cost_usd, { rate: currentPointsRate(), unit: currentCostUnit() })}, ${m.server_seconds != null ? `${m.server_seconds.toFixed(1)}s` : "—"}`,
+        // Only measured numbers: a missing one is left out, never printed as "—".
+        `**Run:** ${[
+          m.total_tokens != null ? `${m.total_tokens} tokens` : null,
+          m.cost_usd != null
+            ? formatCost(m.cost_usd, { rate: currentPointsRate(), unit: currentCostUnit() })
+            : null,
+          m.server_seconds != null ? `${m.server_seconds.toFixed(1)}s` : null,
+        ]
+          .filter(Boolean)
+          .join(", ")}`,
       );
     }
     if (c.error) out.push(`**Error:** ${c.error}`);

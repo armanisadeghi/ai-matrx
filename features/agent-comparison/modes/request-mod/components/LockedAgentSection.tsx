@@ -136,6 +136,7 @@ export function LockedAgentSection() {
                 triggerSlot={
                   <button
                     type="button"
+                    title={agentName ? `Agent: ${agentName} · click to change` : "Pick the agent to test"}
                     className={cn(
                       "inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium w-full",
                       "border border-border bg-background hover:bg-muted/50 transition-colors",
@@ -152,7 +153,7 @@ export function LockedAgentSection() {
                 }
               />
             </div>
-            <div className="w-[200px] shrink-0">
+            <div className="w-[200px] shrink-0" title="Which saved version of the agent to run">
               <SearchableSelect
                 options={versionOptions}
                 value={

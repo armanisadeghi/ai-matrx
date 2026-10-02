@@ -752,7 +752,7 @@ function ResponseUsageStrip({ requestId }: { requestId: string }) {
         icon={<Timer className="w-3 h-3" />}
         label="Server"
         primary={fmtMs(stats.serverDurationMs)}
-        tooltip="How long the run took, start to finish"
+        tooltip="Run time as measured on our side"
         accent="text-sky-500"
       />
       </div>

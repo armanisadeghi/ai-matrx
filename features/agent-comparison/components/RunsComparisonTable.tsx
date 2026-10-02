@@ -872,12 +872,18 @@ export function runsComparisonMarkdown(
   if (stats.length === 0) return "";
   const out: string[] = [];
   for (const section of sections) {
+    // A published report carries only measured rows: a row with no value in
+    // any column (no ratings yet, a metric this run did not record) is noise.
+    const rows = section.rows.filter((row) =>
+      stats.some((s) => row.pick(s) != null),
+    );
+    if (rows.length === 0) continue;
     out.push(`### ${section.title}`);
     out.push(
       `| Metric | ${stats.map((s) => mdCell(s.agentName)).join(" | ")} |`,
     );
     out.push(`|---|${stats.map(() => "---:").join("|")}|`);
-    for (const row of section.rows) {
+    for (const row of rows) {
       const highlights = computeRowHighlights(row, stats);
       const cells = stats.map((s) => {
         const text = mdCell(row.format(row.pick(s), costUnit));

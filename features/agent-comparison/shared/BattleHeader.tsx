@@ -108,6 +108,8 @@ export function BattleHeader({
   return (
     <>
       <RouteHeader
+        // On a phone RouteHeader moves the mode switcher into the ⋮ sheet and
+        // gives the title the row (platform rule, 2026-09-27).
         left={
           <span
             className="text-sm font-medium truncate"
@@ -127,8 +129,11 @@ export function BattleHeader({
       <div
         role="toolbar"
         aria-label="Battle actions"
-        className="flex items-center gap-0.5 h-9 px-2 border-b border-border shrink-0 overflow-x-auto"
+        className="flex items-center h-9 px-2 border-b border-border shrink-0 min-w-0"
       >
+        {/* Only the secondary actions scroll; Blind test and Run stay pinned
+            on screen at every width (a phone included). */}
+        <div className="flex items-center gap-0.5 min-w-0 overflow-x-auto scrollbar-none">
         {grouped.map((list, gi) => (
           <Fragment key={gi}>
             {gi > 0 && (
@@ -140,7 +145,8 @@ export function BattleHeader({
           </Fragment>
         ))}
         {extra}
-        <div className="ml-auto flex items-center gap-1.5 shrink-0 pl-2">
+        </div>
+        <div className="ml-auto flex items-center gap-1.5 shrink-0 pl-2 border-l border-border">
           {hasSubmit && <BlindControls compact />}
           {hasSubmit && (
             <Button
@@ -181,13 +187,14 @@ function BattleActionButton({ action }: { action: BattleAction }) {
       aria-label={action.label}
       className={cn(
         "inline-flex items-center gap-1 h-7 rounded-md text-xs shrink-0 transition-colors",
-        short ? "px-2" : "w-7 justify-center",
+        short ? "px-2 max-sm:w-7 max-sm:px-0 max-sm:justify-center" : "w-7 justify-center",
         "text-muted-foreground hover:text-foreground hover:bg-muted",
         action.destructive && "hover:text-destructive",
       )}
     >
       <LucideIcon name={action.icon} size={14} />
-      {short && <span className="whitespace-nowrap">{short}</span>}
+      {/* Icon-only on a phone, so the whole bar fits beside Run. */}
+      {short && <span className="whitespace-nowrap max-sm:hidden">{short}</span>}
     </button>
   );
 }

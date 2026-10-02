@@ -243,7 +243,10 @@ export function ModelColumnHeader({
             agent default
           </span>
         )}
-        <div className="flex-1 min-w-0">
+        <div
+          className="flex-1 min-w-0"
+          title="The model this column runs · click to change"
+        >
           <ModelListDropdown
             value={displayModel}
             onValueChange={handleModelChange}

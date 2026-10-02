@@ -122,12 +122,17 @@ export const selectActiveBattleColumns = createSelector(
           modelRegistry,
           instanceModelOverrides: modelOverrides,
         } as RootState;
+        // Two columns on the same model get "(2)", "(3)"… so a table or a
+        // report can tell them apart.
+        const seen = new Map<string, number>();
         return lockedColumns(
           {
-            columns: model.columns.map((c) => ({
-              ...c,
-              label: selectModelColumnTitle(naming, c),
-            })),
+            columns: model.columns.map((c) => {
+              const title = selectModelColumnTitle(naming, c);
+              const n = (seen.get(title) ?? 0) + 1;
+              seen.set(title, n);
+              return { ...c, label: n > 1 ? `${title} (${n})` : title };
+            }),
           },
           model.locked.agentId,
           model.locked.agentVersion,
