@@ -442,7 +442,16 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
       // The person's preferred model for building agents
       // (`agents.model_prefs.agent_authoring_default_model`, org → user →
       // device) rides as the run's explicit model; null = the builder's own.
-      const authoringModel = await resolvePreferredAuthoringModel();
+      const authoringChoice = await resolvePreferredAuthoringModel();
+      // The class chosen with the model rides beside it as `offering_id`.
+      const authoringOverrides = authoringChoice
+        ? {
+            model: authoringChoice.modelId,
+            ...(authoringChoice.offeringId
+              ? { offering_id: authoringChoice.offeringId }
+              : {}),
+          }
+        : null;
       if (mandate) {
         // THE MANDATE DOOR: the job's contract is the brief's offered values;
         // the person's guidance — and only that — is user_input.
@@ -466,7 +475,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
           config: {
             autoRun: true,
             displayMode: "direct",
-            ...(authoringModel ? { llmOverrides: { model: authoringModel } } : {}),
+            ...(authoringOverrides ? { llmOverrides: authoringOverrides } : {}),
           },
           onConversationCreated: (id) => setConversationId(id),
         });
@@ -477,7 +486,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
         runtime: { userInput: userInput || undefined },
         jsonExtraction: GENERATOR_SHORTCUT.temporaryConfigs?.jsonExtraction,
         sourceFeature: "agent-generator",
-        ...(authoringModel ? { config: { llmOverrides: { model: authoringModel } } } : {}),
+        ...(authoringOverrides ? { config: { llmOverrides: authoringOverrides } } : {}),
         onConversationCreated: (id) => setConversationId(id),
       });
     } catch (err) {

@@ -64,9 +64,15 @@ export function DecisionPlayground() {
       if (!active) return;
       setDefaultApplied(true);
       const fallback = firstDecisionModelId(catalog.models);
-      const initial = preferred ?? fallback;
+      const initial = preferred?.modelId ?? fallback;
       if (initial) {
-        setModel((current) => current ?? initial);
+        setModel((current) => {
+          if (current) return current;
+          // The preferred model's class loads with it; the fallback runs
+          // its own preferred class.
+          if (preferred?.offeringId) setOfferingId(preferred.offeringId);
+          return initial;
+        });
       } else {
         setDefaultUnavailable(true);
       }
