@@ -7,7 +7,7 @@
  *
  * TWO GENERATIONS OF DOOR, ONE READER.
  *   triage (migration `notifications_inbox_triage.sql`):
- *     inbox_notifications(p_state, p_limit, p_before, p_unread_only, p_org_id)
+ *     inbox_notifications(p_state, p_limit, p_before, p_before_id, p_unread_only, p_org_id)
  *     my_inbox_summary() · mark_inbox_seen() · set_notifications_state(ids, action, until)
  *     my_inbox_organizations()
  *   pre-triage (2026-09-19): my_notifications · my_notification_unread_count ·
@@ -109,8 +109,9 @@ function toRows(data: unknown, door: string): InboxNotification[] {
 export interface FetchInboxArgs {
   state?: InboxState;
   limit?: number;
-  /** Keyset cursor — rows whose sort time is strictly before this ISO timestamp. */
+  /** Keyset cursor — rows before (sort time, id). */
   before?: string | null;
+  beforeId?: string | null;
   unreadOnly?: boolean;
   /** The page's organization filter — null is All organizations. Never the active org. */
   orgId?: string | null;
@@ -130,6 +131,7 @@ export async function fetchInbox(args: FetchInboxArgs = {}): Promise<InboxPage> 
     p_state: state,
     p_limit: limit,
     p_before: args.before ?? null,
+    p_before_id: args.beforeId ?? null,
     p_unread_only: args.unreadOnly ?? false,
     p_org_id: args.orgId ?? null,
   });

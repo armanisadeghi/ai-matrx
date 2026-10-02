@@ -4,6 +4,7 @@
 -- removed outright — no other writer sets it today, so an organization admin's later edit of it
 -- would be lost too.
 
+drop function if exists communication.inbox_notifications(text, integer, timestamptz, uuid, boolean, uuid);
 drop function if exists communication.inbox_notifications(text, integer, timestamptz, boolean, uuid);
 drop function if exists communication.my_inbox_summary();
 drop function if exists communication.mark_inbox_seen();

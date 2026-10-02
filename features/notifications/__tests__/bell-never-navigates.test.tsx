@@ -169,42 +169,100 @@ async function flush() {
   for (let i = 0; i < 8; i++) await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 }
 
-it("no click anywhere in the bell moves the page", async () => {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+/** Every element that can act: buttons, links, tabs, and the items of every open menu. */
+function actionable(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>('button, a[href], [role="menuitem"], [role="tab"]'));
+}
+
+function keyOf(el: HTMLElement): string {
+  return `${el.tagName}|${el.getAttribute("role") ?? ""}|${el.getAttribute("aria-label") ?? ""}|${el.textContent?.trim().slice(0, 60) ?? ""}`;
+}
+
+async function openMenu(trigger: HTMLElement) {
+  // Radix opens a menu on pointerdown/keydown, never on a synthetic click.
   await act(async () => {
-    root.render(
-      <QueryClientProvider client={client}>
-        <Bell variant="compact" onNavigate={() => undefined} />
-      </QueryClientProvider>,
-    );
+    trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
   });
   await flush();
-  const clickables = Array.from(container.querySelectorAll<HTMLElement>("button, a[href]"));
-  expect(clickables.length).toBeGreaterThan(6);
-  for (const el of clickables) {
-    if (!el.isConnected) continue;
-    await act(async () => { el.click(); });
+}
+
+it("no click anywhere in the bell moves the page — rows, tabs, every menu item, sources, footer", async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const render = async () => {
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={client}>
+          <Bell variant="compact" onNavigate={() => undefined} />
+        </QueryClientProvider>,
+      );
+    });
     await flush();
+  };
+  await render();
+
+  const clicked = new Set<string>();
+  // Re-query after every click: a tab or an expand reveals new controls.
+  for (let guard = 0; guard < 400; guard++) {
+    const next = actionable().find((el) => el.isConnected && !clicked.has(keyOf(el)));
+    if (!next) break;
+    clicked.add(keyOf(next));
+    if (next.getAttribute("aria-haspopup") === "menu") {
+      await openMenu(next);
+      // Click each item of this menu, re-opening it before each.
+      const items = Array.from(document.querySelectorAll<HTMLElement>('[role="menuitem"]')).map(keyOf);
+      for (const item of items) {
+        if (clicked.has(item)) continue;
+        clicked.add(item);
+        if (!next.isConnected) break;
+        if (!document.querySelector('[role="menu"]')) await openMenu(next);
+        const el = Array.from(document.querySelectorAll<HTMLElement>('[role="menuitem"]')).find((m) => keyOf(m) === item);
+        if (!el) continue;
+        await act(async () => { el.click(); });
+        await flush();
+      }
+      await act(async () => {
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      });
+      await flush();
+      continue;
+    }
+    await act(async () => { next.click(); });
+    await flush();
+    // A control that closed the panel (it opened a window) — bring the bell back.
+    if (!container.querySelector("[data-inbox-panel]")) await render();
   }
+
+  expect(clicked.size).toBeGreaterThan(20);
+  // The menus were really exercised, not skipped.
+  expect([...clicked].some((k) => k.includes("Mark all read"))).toBe(true);
+  expect([...clicked].some((k) => k.includes("Turn off this type"))).toBe(true);
+  expect([...clicked].some((k) => k.includes("Tomorrow"))).toBe(true);
   expect({ routerCalls, sameTabAnchors }).toEqual({ routerCalls: [], sameTabAnchors: [] });
   // Something DID open: windows were dispatched and new tabs were asked for.
-  expect(dispatched.length + (window.open as jest.Mock).mock.calls.length).toBeGreaterThan(0);
+  expect(dispatched.length).toBeGreaterThan(0);
+  expect((window.open as jest.Mock).mock.calls.length).toBeGreaterThan(0);
 });
 
-it("no file in the bell's tree can reach the router or a same-tab link", () => {
-  const files = [
-    "components/BellPanel.tsx",
-    "components/NoticeRow.tsx",
-    "components/PlacesStrip.tsx",
-    "components/InboxHeaderButton.tsx",
-    "openNotice.ts",
-    "sources/registry.tsx",
-  ];
+it("no file of the feature (outside the /notifications page host) can reach the router, a same-tab link or the location", () => {
+  const { readdirSync, statSync } = jest.requireActual<typeof import("node:fs")>("node:fs");
+  const root = join(__dirname, "..");
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) return name === "__tests__" ? [] : walk(full);
+      return /\.(ts|tsx)$/.test(name) ? [full] : [];
+    });
+  // The page host owns ONLY its own address (?org_filter=), by design.
+  const files = walk(root).filter((f) => !f.endsWith("components/InboxPage.tsx"));
+  expect(files.length).toBeGreaterThan(10);
   const offenders = files.flatMap((file) => {
-    const src = readFileSync(join(__dirname, "..", file), "utf8");
-    return [/\buseRouter\b/, /from "next\/link"/, /AppLink/, /router\.(push|replace)/]
+    const src = readFileSync(file, "utf8")
+      .split("\n")
+      .filter((line) => !/^\s*(\*|\/\/)/.test(line))
+      .join("\n");
+    return [/\buseRouter\b/, /from "next\/link"/, /AppLink/, /router\.(push|replace|back)/, /location\.(assign|replace|href\s*=)/]
       .filter((pattern) => pattern.test(src))
-      .map((pattern) => `${file}: ${pattern}`);
+      .map((pattern) => `${file.slice(root.length + 1)}: ${pattern}`);
   });
   expect(offenders).toEqual([]);
 });

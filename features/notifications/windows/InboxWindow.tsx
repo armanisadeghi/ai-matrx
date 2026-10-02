@@ -35,6 +35,8 @@ export function InboxWindow({
       onClose={onClose}
     >
       <InboxWorkspace
+        // A second open asking for another view ("+ N more", "See Done") lands on it.
+        key={isInboxTab(initialTab) ? initialTab : "inbox"}
         mode="window"
         initialTab={isInboxTab(initialTab) ? initialTab : "inbox"}
         orgFilter={orgFilter}

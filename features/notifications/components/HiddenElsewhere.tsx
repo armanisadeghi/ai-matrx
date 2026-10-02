@@ -49,10 +49,23 @@ interface HiddenItem {
   restore: () => Promise<unknown>;
 }
 
-async function loadHidden(userId: string): Promise<HiddenItem[]> {
+interface HiddenAnswer {
+  items: HiddenItem[];
+  /** A part could not be read — said on screen, never shown as "nothing hidden". */
+  failed: boolean;
+}
+
+async function loadHidden(userId: string): Promise<HiddenAnswer> {
+  let failed = false;
+  const softly = <T,>(promise: Promise<T>): Promise<T | null> =>
+    promise.catch((error: unknown) => {
+      console.error("[Inbox] A hidden-items read failed:", error);
+      failed = true;
+      return null;
+    });
   const now = Date.now();
   const [assists, silenced, taskStates] = await Promise.all([
-    queryAssists(userId, {
+    softly(queryAssists(userId, {
       statuses: ["pending"],
       sourceKey: null,
       sourceKind: null,
@@ -69,8 +82,8 @@ async function loadHidden(userId: string): Promise<HiddenItem[]> {
       sortAscending: false,
       page: 1,
       pageSize: 100,
-    }).catch(() => null),
-    listMySourceSuppressions(userId).catch(() => null),
+    })),
+    softly(listMySourceSuppressions(userId)),
     listMyTaskUserStates(),
   ]);
 
@@ -105,11 +118,15 @@ async function loadHidden(userId: string): Promise<HiddenItem[]> {
     (t) => t.dismissed_at !== null || (t.snoozed_until !== null && Date.parse(t.snoozed_until) > now),
   );
   if (hiddenTasks.length) {
-    const { data } = await workspaceDb(supabase)
+    const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select("id, title")
       .is("deleted_at", null)
       .in("id", hiddenTasks.map((t) => t.task_id));
+    if (error) {
+      console.error("[Inbox] Hidden task titles failed:", error.message);
+      failed = true;
+    }
     const titles = new Map((data ?? []).map((t) => [t.id as string, (t.title as string | null) ?? "Untitled task"]));
     for (const t of hiddenTasks) {
       const title = titles.get(t.task_id);
@@ -126,7 +143,7 @@ async function loadHidden(userId: string): Promise<HiddenItem[]> {
       });
     }
   }
-  return items;
+  return { items, failed };
 }
 
 export function HiddenElsewhere() {
@@ -141,7 +158,8 @@ export function HiddenElsewhere() {
     staleTime: 15_000,
   });
   const workSnoozed = (work.data ?? []).reduce((sum, o) => sum + o.snoozed, 0);
-  const items = hidden.data ?? [];
+  const items = hidden.data?.items ?? [];
+  const partlyUnread = hidden.isError || Boolean(hidden.data?.failed);
 
   const restore = (item: HiddenItem) =>
     item
@@ -153,15 +171,15 @@ export function HiddenElsewhere() {
       .then(() => queryClient.invalidateQueries({ queryKey: ["inbox"] }));
 
   if (hidden.isLoading) return null;
-  if (items.length === 0 && workSnoozed === 0 && !hidden.isError) return null;
+  if (items.length === 0 && workSnoozed === 0 && !partlyUnread) return null;
 
   return (
     <section aria-label="Hidden elsewhere" className="mt-2">
       <div className="flex h-7 items-center px-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         Elsewhere
       </div>
-      {hidden.isError ? (
-        <div className="px-3 py-2 text-xs text-destructive">Some hidden items couldn&apos;t load.</div>
+      {partlyUnread ? (
+        <div className="px-3 py-2 text-xs text-destructive">Some hidden items couldn&apos;t load here.</div>
       ) : null}
       <ul className="px-1">
         {workSnoozed > 0 ? (

@@ -216,7 +216,8 @@ export function useInboxCounts(): InboxCounts {
     if (next.approvals !== seenSources.approvals || next.work !== seenSources.work) {
       writeSeenSourceCounts(userId, next);
     }
-    if (!s || s.unseenNeedsYou + s.unseenDirect + s.unseenUpdates === 0) return;
+    // Without the triage doors there is no "seen": the badge is unread notices.
+    if (!s || !summary.data?.triage || s.unseenNeedsYou + s.unseenDirect + s.unseenUpdates === 0) return;
     // Optimistic: the badge clears the moment the bell opens.
     queryClient.setQueryData(summaryKey(userId), (prev: typeof summary.data) =>
       prev
@@ -243,12 +244,18 @@ export function useInboxCounts(): InboxCounts {
     workSnoozed,
     badge,
     updatesDot: (s?.unseenUpdates ?? 0) > 0,
-    partial: summary.isError || approvalCount === null || work === null,
+    // Only a failed read is "unavailable" — still loading is not (RESEARCH.md T5).
+    partial: summary.isError || workWaiting.isError,
     markSeen,
   };
 }
 
 // ── THE FEED ──────────────────────────────────────────────────────────────
+
+export interface InboxCursor {
+  at: string;
+  id: string;
+}
 
 export interface InboxFeedArgs {
   state: InboxState;
@@ -291,11 +298,16 @@ export function useInboxFeed({
         orgId,
         unreadOnly,
         limit: INBOX_PAGE_SIZE,
-        before: pageParam,
+        before: pageParam?.at ?? null,
+        beforeId: pageParam?.id ?? null,
       }),
-    initialPageParam: null as string | null,
-    getNextPageParam: (last: InboxPage) =>
-      last.rows.length >= INBOX_PAGE_SIZE ? last.rows[last.rows.length - 1].sort_at : undefined,
+    initialPageParam: null as InboxCursor | null,
+    // (sort time, id): rows sharing a time are never skipped at a page boundary.
+    getNextPageParam: (last: InboxPage): InboxCursor | undefined => {
+      if (last.rows.length < INBOX_PAGE_SIZE) return undefined;
+      const tail = last.rows[last.rows.length - 1];
+      return { at: tail.sort_at, id: tail.id };
+    },
     enabled: enabled && userId !== null,
     refetchInterval: INBOX_POLL_INTERVAL_MS,
     refetchOnWindowFocus: true,
@@ -404,14 +416,15 @@ export interface InboxActions {
   markAllRead: () => Promise<void>;
 }
 
-export function useInboxActions(): InboxActions {
+/** `triage`: whether the triage doors are on this database (unread, Done, snooze). */
+export function useInboxActions(triage = true): InboxActions {
   const userId = useAppSelector(selectUserId);
   const queryClient = useQueryClient();
   const last = useRef<LastAction | null>(null);
   const [canUndo, setCanUndo] = useState(false);
 
   const applyOptimistic = (ids: Set<string>, action: TriageAction, until?: Date, perRow?: Map<string, string | null>) => {
-    queryClient.setQueriesData<InfiniteData<InboxPage, string | null>>(
+    queryClient.setQueriesData<InfiniteData<InboxPage, InboxCursor | null>>(
       { queryKey: feedPrefix(userId) },
       (data) =>
         data
@@ -457,30 +470,11 @@ export function useInboxActions(): InboxActions {
     }
   };
 
-  const act: InboxActions["act"] = async (rows, action, options = {}) => {
-    const ids = rows.map((row) => row.id);
-    if (ids.length === 0) return;
-    const previousUntil = new Map(rows.map((row) => [row.id, row.snoozed_until] as const));
-    try {
-      await run(ids, action, options.until);
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "That didn't save.");
-      return;
+  const undoRecord = async (prev: LastAction) => {
+    if (last.current === prev) {
+      last.current = null;
+      setCanUndo(false);
     }
-    last.current = { ids, action, until: options.until, previousUntil };
-    setCanUndo(true);
-    if (options.quiet) return;
-    const noun = ids.length === 1 ? "" : ` · ${ids.length}`;
-    toast(`${PAST[action]}${noun}`, {
-      action: { label: "Undo", onClick: () => void undo() },
-    });
-  };
-
-  const undo = async () => {
-    const prev = last.current;
-    if (!prev) return;
-    last.current = null;
-    setCanUndo(false);
     const inverse = INVERSE[prev.action];
     try {
       if (inverse === "snooze") {
@@ -492,6 +486,37 @@ export function useInboxActions(): InboxActions {
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Undo didn't save.");
     }
+  };
+
+  const act: InboxActions["act"] = async (rows, action, options = {}) => {
+    const ids = rows.map((row) => row.id);
+    if (ids.length === 0) return;
+    const previousUntil = new Map(rows.map((row) => [row.id, row.snoozed_until] as const));
+    try {
+      await run(ids, action, options.until);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "That didn't save.");
+      return;
+    }
+    // A quiet action (opening a row marks it read) is never what Z or a toast undoes.
+    if (options.quiet) return;
+    // Read cannot be undone where the unread door is absent — no Undo is offered then.
+    const undoable = triage || action !== "read";
+    const record: LastAction = { ids, action, until: options.until, previousUntil };
+    if (undoable) {
+      last.current = record;
+      setCanUndo(true);
+    }
+    const noun = ids.length === 1 ? "" : ` · ${ids.length}`;
+    toast(
+      `${PAST[action]}${noun}`,
+      undoable ? { action: { label: "Undo", onClick: () => void undoRecord(record) } } : undefined,
+    );
+  };
+
+  const undo = async () => {
+    const prev = last.current;
+    if (prev) await undoRecord(prev);
   };
 
   const markAllRead = async () => {

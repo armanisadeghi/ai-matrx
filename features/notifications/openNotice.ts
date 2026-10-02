@@ -20,7 +20,13 @@
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { classifyNoticeLink, newTabHref, panelsParamOf } from "./openNoticeLink";
+import {
+  classifyNoticeLink,
+  isInternalLink,
+  isSafeExternalLink,
+  newTabHref,
+  panelsParamOf,
+} from "./openNoticeLink";
 import type { InboxNotification } from "./types";
 
 /** Routes whose page is itself a window this app can open in place. */
@@ -39,6 +45,7 @@ export function routeWindowFor(link: string) {
 }
 
 export function openInNewTab(link: string): void {
+  if (!isInternalLink(link) && !isSafeExternalLink(link)) return;
   window.open(newTabHref(link), "_blank", "noopener,noreferrer");
 }
 

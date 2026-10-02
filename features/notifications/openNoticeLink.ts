@@ -32,7 +32,13 @@ export type NoticeLinkKind =
   | "route";
 
 export function isInternalLink(link: string): boolean {
-  return link.startsWith("/") && !link.startsWith("//");
+  // "//host" and "/\host" are other origins in a browser's eyes, never ours.
+  return link.startsWith("/") && !link.startsWith("//") && !link.startsWith("/\\");
+}
+
+/** Only web links leave the app; `javascript:`, `data:` and the like open nothing. */
+export function isSafeExternalLink(link: string): boolean {
+  return /^https?:\/\//i.test(link);
 }
 
 /** The raw `?panels=` value of an internal link, or null when it has none. */
@@ -48,7 +54,7 @@ export function panelsParamOf(link: string): string | null {
 
 export function classifyNoticeLink(link: string | null): NoticeLinkKind {
   if (link === null || link === "") return "none";
-  if (!isInternalLink(link)) return "external";
+  if (!isInternalLink(link)) return isSafeExternalLink(link) ? "external" : "none";
   return panelsParamOf(link) ? "panels" : "route";
 }
 

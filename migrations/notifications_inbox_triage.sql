@@ -16,7 +16,7 @@
 --     `notification_event_override.config_patch` (not read by these doors yet; named follow-up).
 --   * five signed-in doors (SECURITY DEFINER, auth.uid() resolved inside, anon holds no EXECUTE,
 --     each declared in platform.client_callable_door before its GRANT):
---       communication.inbox_notifications(p_state, p_limit, p_before, p_unread_only, p_org_id)
+--       communication.inbox_notifications(p_state, p_limit, p_before, p_before_id, p_unread_only, p_org_id)
 --       communication.my_inbox_summary()
 --       communication.mark_inbox_seen()
 --       communication.set_notifications_state(p_ids, p_action, p_until)
@@ -44,12 +44,19 @@ comment on column communication.notification.done_at is
 comment on column communication.notification.snoozed_until is
   'Hidden from the Inbox until this time; after it the notice is back, unread, sorted at this time.';
 
+-- A notice already read was seen: it never counts as new on the day this lands.
+update communication.notification n
+   set seen_at = n.read_at
+ where n.channel = 'in_app'
+   and n.read_at is not null
+   and n.seen_at is null;
+
 create index if not exists notification_inbox_recipient_idx
   on communication.notification (recipient_user_id, created_at desc)
   where channel = 'in_app' and status = 'succeeded';
 
 -- ── THE BUCKET DEFAULTS (a knob with a default; organizations override) ──────
--- The same three rules the client mirrors in features/notifications/buckets.ts for rows read
+-- The same three rules the client mirrors in features/notifications/presentation.ts for rows read
 -- through the pre-triage door.
 update communication.notification_event_type et
    set config = coalesce(et.config, '{}'::jsonb) || jsonb_build_object('bucket',
@@ -69,6 +76,7 @@ create or replace function communication.inbox_notifications(
   p_state text default 'inbox',
   p_limit integer default 50,
   p_before timestamptz default null,
+  p_before_id uuid default null,
   p_unread_only boolean default false,
   p_org_id uuid default null
 )
@@ -119,7 +127,10 @@ as $function$
       on et.event_key = m.event_key and et.deleted_at is null
     left join iam.organizations o on o.id = m.organization_id
     left join users.profiles p on p.id = m.created_by
-   where p_before is null or m.s_at < p_before
+   -- Keyset on (sort time, id): rows sharing a time are never skipped at a page edge.
+   where p_before is null
+      or m.s_at < p_before
+      or (p_before_id is not null and m.s_at = p_before and m.id < p_before_id)
    order by m.s_at desc, m.id desc
    limit greatest(1, least(coalesce(p_limit, 50), 200));
 $function$;
@@ -149,9 +160,10 @@ as $function$
        and n.deleted_at is null
   )
   select
-    (count(*) filter (where in_inbox and seen_at is null and bucket = 'needs_you'))::integer,
-    (count(*) filter (where in_inbox and seen_at is null and bucket = 'direct'))::integer,
-    (count(*) filter (where in_inbox and seen_at is null and bucket = 'updates'))::integer,
+    -- New = never seen here AND not already read anywhere (e.g. from the email).
+    (count(*) filter (where in_inbox and seen_at is null and read_at is null and bucket = 'needs_you'))::integer,
+    (count(*) filter (where in_inbox and seen_at is null and read_at is null and bucket = 'direct'))::integer,
+    (count(*) filter (where in_inbox and seen_at is null and read_at is null and bucket = 'updates'))::integer,
     (count(*) filter (where in_inbox and read_at is null))::integer,
     (count(*) filter (where in_inbox))::integer,
     (count(*) filter (where done_at is null and snoozed_until > now()))::integer,
@@ -265,29 +277,38 @@ $function$;
 -- ── WHO MAY CALL THESE, IN DATA (before the GRANT) ────────────────────────
 insert into platform.client_callable_door (
   schema_name, function_name, identity_args, identity_argtypes,
-  reason, declared_by, gate_predicate, signed_in_callers, anonymous_callers
+  reason, declared_by, gate_predicate, signed_in_callers, anonymous_callers, argument_rules
 )
 select v.schema_name, v.function_name, v.identity_args, v.identity_argtypes,
        'Signed-in door for the shell Inbox: the caller is resolved inside the body by auth.uid() and only rows with recipient_user_id = caller are visible/updated. Reads/writes the in_app channel of communication.notification only; p_org_id only narrows the caller''s own rows.',
-       'notifications_inbox_triage.sql', 'auth.uid()', true, false
+       'notifications_inbox_triage.sql', 'auth.uid()', true, false, v.argument_rules
   from (values
     ('communication', 'inbox_notifications',
-     'p_state text, p_limit integer, p_before timestamp with time zone, p_unread_only boolean, p_org_id uuid',
-     array['text','integer','timestamptz','boolean','uuid']::regtype[]::oid[]),
-    ('communication', 'my_inbox_summary', '', array[]::oid[]),
-    ('communication', 'mark_inbox_seen', '', array[]::oid[]),
+     'p_state text, p_limit integer, p_before timestamp with time zone, p_before_id uuid, p_unread_only boolean, p_org_id uuid',
+     array['text','integer','timestamptz','uuid','boolean','uuid']::regtype[]::oid[],
+     jsonb_build_object('version', 1, 'arguments', jsonb_build_object(
+       'p_before_id', jsonb_build_object('type', 'uuid', 'optional', true, 'position', 4,
+         'foreign', jsonb_build_object('bounded', true, 'note', 'A paging cursor compared only against the caller''s own rows; a foreign id selects nothing.')),
+       'p_org_id', jsonb_build_object('type', 'uuid', 'optional', true, 'position', 6,
+         'null_rule', jsonb_build_object('means', 'every organization the caller''s notices come from'),
+         'foreign', jsonb_build_object('bounded', true, 'note', 'Only narrows rows already limited to recipient_user_id = auth.uid(); a foreign organization returns nothing.'))))),
+    ('communication', 'my_inbox_summary', '', array[]::oid[], null::jsonb),
+    ('communication', 'mark_inbox_seen', '', array[]::oid[], null::jsonb),
     ('communication', 'set_notifications_state',
      'p_ids uuid[], p_action text, p_until timestamp with time zone',
-     array['uuid[]','text','timestamptz']::regtype[]::oid[]),
-    ('communication', 'my_inbox_organizations', '', array[]::oid[])
-  ) as v(schema_name, function_name, identity_args, identity_argtypes)
+     array['uuid[]','text','timestamptz']::regtype[]::oid[],
+     jsonb_build_object('version', 1, 'arguments', jsonb_build_object(
+       'p_ids', jsonb_build_object('type', 'uuid[]', 'optional', false, 'position', 1,
+         'foreign', jsonb_build_object('bounded', true, 'note', 'The update matches only rows whose recipient_user_id = auth.uid(); a foreign id changes nothing.'))))),
+    ('communication', 'my_inbox_organizations', '', array[]::oid[], null::jsonb)
+  ) as v(schema_name, function_name, identity_args, identity_argtypes, argument_rules)
  where not exists (
    select 1 from platform.client_callable_door d
     where d.schema_name = v.schema_name and d.function_name = v.function_name
  );
 
 
-grant execute on function communication.inbox_notifications(text, integer, timestamptz, boolean, uuid) to authenticated;
+grant execute on function communication.inbox_notifications(text, integer, timestamptz, uuid, boolean, uuid) to authenticated;
 grant execute on function communication.my_inbox_summary() to authenticated;
 grant execute on function communication.mark_inbox_seen() to authenticated;
 grant execute on function communication.set_notifications_state(uuid[], text, timestamptz) to authenticated;

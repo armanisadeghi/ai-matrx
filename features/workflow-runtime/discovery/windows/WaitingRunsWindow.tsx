@@ -4,7 +4,8 @@
  * The "waiting on you" runs as a window — the same list as `/workflows/waiting`.
  *
  * It WRAPS the canonical component (`../components/WaitingInbox`), which never
- * answers anything itself: each row opens its run, where the question lives.
+ * answers anything itself: each row opens its run — in a NEW TAB here, because a
+ * window over a page never moves that page.
  * Opened from the bell's All places strip (notifications ruling 3).
  *
  * Rendered only behind the lazy overlay boundary (`OverlayController`).
@@ -28,7 +29,7 @@ export function WaitingRunsWindow({ onClose }: { onClose?: () => void }) {
       onClose={onClose}
     >
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <WaitingInbox />
+        <WaitingInbox openRunsInNewTab />
       </div>
     </WindowPanel>
   );

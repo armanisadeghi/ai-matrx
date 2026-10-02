@@ -177,6 +177,29 @@ export function NoticeRow({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
+        {density === "sheet" && triage && !done ? (
+          <>
+            {/* The phone has no hover row: Done and Snooze live here (and on the swipe). */}
+            <DropdownMenuItem onSelect={() => handlers.onDone(group)}>
+              <Check className="mr-2 h-4 w-4" />
+              Done
+            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Clock className="mr-2 h-4 w-4" />
+                Snooze
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-44">
+                {snoozeChoices().map((choice) => (
+                  <DropdownMenuItem key={choice.key} onSelect={() => handlers.onSnooze(group, choice.until)}>
+                    {choice.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
         {unread || triage ? (
           // Mark unread needs the triage door; absent until it is on this database.
           <DropdownMenuItem onSelect={() => handlers.onToggleRead(group)}>
@@ -301,6 +324,7 @@ export function NoticeRow({
         <button
           type="button"
           onClick={() => handlers.onOpen(group)}
+          data-notice-open
           aria-label={`${unread ? "Unread: " : ""}${title}`}
           className="flex h-full min-w-0 flex-1 items-center gap-2.5 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >

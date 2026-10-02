@@ -133,7 +133,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
   const feed = useInboxFeed({ state: TAB_STATE[tab], orgId: orgFilter, unreadOnly });
   // The Inbox view's rows feed the Needs-you count on every view (same cache when on it).
   const inboxFeed = useInboxFeed({ state: "inbox", orgId: orgFilter, unreadOnly });
-  const actions = useInboxActions();
+  const actions = useInboxActions(feed.triage);
   const handlers = useNoticeHandlers(actions);
   const triage = feed.triage && counts.triage;
 
@@ -144,9 +144,10 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
     markSeen();
   }, [approvalsCount, workCount, markSeen]);
 
-  // A view that does not exist on this database falls back to the Inbox.
+  // Done needs the triage door; without it the Done view falls back to the Inbox.
+  // Snoozed stays: what was hidden in the other systems is listed there either way.
   useEffect(() => {
-    if (!triage && (tab === "snoozed" || tab === "done")) setTab("inbox");
+    if (!triage && tab === "done") setTab("inbox");
   }, [triage, tab]);
 
   const all = groupNotices(feed.rows);
@@ -256,6 +257,11 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
     if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return;
     const key = event.key;
     const lower = key.toLowerCase();
+    // Enter / Space on a focused control belong to that control, never to the cursor row.
+    const control = (event.target as HTMLElement | null)?.closest?.(
+      'button, a, [role="menuitem"], [role="tab"], [role="checkbox"]',
+    );
+    if ((key === "Enter" || key === " " || lower === "o") && control && !control.matches("[data-notice-open]")) return;
     if (key === "?") {
       setHelpOpen(true);
     } else if (lower === "j" || key === "ArrowDown") {
@@ -309,7 +315,9 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
     if (t === "snoozed") return summary.snoozed + hiddenElsewhere || null;
     return null;
   };
-  const tabs: InboxTab[] = triage ? ["inbox", "needs_you", "updates", "snoozed", "done"] : ["inbox", "needs_you", "updates"];
+  const tabs: InboxTab[] = triage
+    ? ["inbox", "needs_you", "updates", "snoozed", "done"]
+    : ["inbox", "needs_you", "updates", "snoozed"];
 
   const tabButton = (t: InboxTab, layout: "rail" | "strip") => {
     const n = tabCount(t);

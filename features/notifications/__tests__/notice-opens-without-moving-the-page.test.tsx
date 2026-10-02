@@ -107,3 +107,10 @@ it("opens an external link in a new tab and a link-less notice nowhere", () => {
   expect(open?.(notice(null))).toBe("none");
   expect(windowOpen).toHaveBeenCalledTimes(1);
 });
+
+it("opens nothing for a link that is not the web or ours (javascript:, data:, /\\host)", () => {
+  expect(open?.(notice("javascript:alert(1)"))).toBe("none");
+  expect(open?.(notice("data:text/html,x"))).toBe("none");
+  expect(open?.(notice("/\\evil.example"))).toBe("none");
+  expect(windowOpen).not.toHaveBeenCalled();
+});

@@ -31,7 +31,7 @@ import {
 import { useWaitingRuns } from "../useWaitingRuns";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-function WaitingRowCard({ row }: { row: WaitingRunRow }) {
+function WaitingRowCard({ row, newTab }: { row: WaitingRunRow; newTab: boolean }) {
   const summary = waitingSummary(row);
   const overdue = isOverdue(row);
   const href = waitingRunHref(row);
@@ -55,6 +55,7 @@ function WaitingRowCard({ row }: { row: WaitingRunRow }) {
       <div className="min-w-0 flex-1">
         <Link
           href={href}
+          {...(newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
           className="block truncate text-sm font-medium text-foreground hover:underline"
           title={row.prompt ?? summary}
         >
@@ -100,6 +101,7 @@ function WaitingRowCard({ row }: { row: WaitingRunRow }) {
 
       <Link
         href={href}
+        {...(newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         className="shrink-0 rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-accent"
       >
         {waitingAction(row)}
@@ -108,7 +110,11 @@ function WaitingRowCard({ row }: { row: WaitingRunRow }) {
   );
 }
 
-export function WaitingInbox() {
+/**
+ * `openRunsInNewTab`: hosts that float over another page (the bell's window)
+ * open a run in a new tab, so the page underneath never moves.
+ */
+export function WaitingInbox({ openRunsInNewTab = false }: { openRunsInNewTab?: boolean } = {}) {
   const { rows, loading, error } = useWaitingRuns();
 
 
@@ -153,7 +159,7 @@ export function WaitingInbox() {
   return (
     <ul className="space-y-2 p-3" data-waiting-count={rows.length}>
       {rows.map((row) => (
-        <WaitingRowCard key={row.runId} row={row} />
+        <WaitingRowCard key={row.runId} row={row} newTab={openRunsInNewTab} />
       ))}
     </ul>
   );
