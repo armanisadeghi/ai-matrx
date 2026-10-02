@@ -1132,6 +1132,22 @@ const ApprovalsWindow = lazyOverlay(
   () => import("@/features/approvals/windows/ApprovalsWindow"),
   { ssr: false },
 );
+const NotificationsInboxWindow = lazyOverlay(
+  () => import("@/features/notifications/windows/InboxWindow"),
+  { ssr: false },
+);
+const AssistsWindow = lazyOverlay(
+  () => import("@/features/assists/windows/AssistsWindow"),
+  { ssr: false },
+);
+const WorkInboxWindow = lazyOverlay(
+  () => import("@/features/unified-data/windows/WorkInboxWindow"),
+  { ssr: false },
+);
+const WaitingRunsWindow = lazyOverlay(
+  () => import("@/features/workflow-runtime/discovery/windows/WaitingRunsWindow"),
+  { ssr: false },
+);
 const SourceReviewWindow = lazyOverlay(
   () =>
     import("@/features/resource-manager/source-input/review/SourceReviewWindow"),
@@ -1702,6 +1718,18 @@ export default function OverlayController() {
     ),
     approvalsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "approvalsWindow"),
+    ),
+    notificationsInboxWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "notificationsInboxWindow"),
+    ),
+    assistsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "assistsWindow"),
+    ),
+    workInboxWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "workInboxWindow"),
+    ),
+    waitingRunsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "waitingRunsWindow"),
     ),
     sourceReviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "sourceReviewWindow"),
@@ -7420,6 +7448,42 @@ export default function OverlayController() {
         <ApprovalsWindow
           onClose={() =>
             dispatch(closeOverlay({ overlayId: "approvalsWindow" }))
+          }
+        />
+      ) : null}
+
+      {/* notificationsInboxWindow — a notice source's canonical list, wrapped (notifications ruling 3) */}
+      {isOpenById.notificationsInboxWindow ? (
+        <NotificationsInboxWindow
+          onClose={() =>
+            dispatch(closeOverlay({ overlayId: "notificationsInboxWindow" }))
+          }
+        />
+      ) : null}
+
+      {/* assistsWindow — a notice source's canonical list, wrapped (notifications ruling 3) */}
+      {isOpenById.assistsWindow ? (
+        <AssistsWindow
+          onClose={() =>
+            dispatch(closeOverlay({ overlayId: "assistsWindow" }))
+          }
+        />
+      ) : null}
+
+      {/* workInboxWindow — a notice source's canonical list, wrapped (notifications ruling 3) */}
+      {isOpenById.workInboxWindow ? (
+        <WorkInboxWindow
+          onClose={() =>
+            dispatch(closeOverlay({ overlayId: "workInboxWindow" }))
+          }
+        />
+      ) : null}
+
+      {/* waitingRunsWindow — a notice source's canonical list, wrapped (notifications ruling 3) */}
+      {isOpenById.waitingRunsWindow ? (
+        <WaitingRunsWindow
+          onClose={() =>
+            dispatch(closeOverlay({ overlayId: "waitingRunsWindow" }))
           }
         />
       ) : null}

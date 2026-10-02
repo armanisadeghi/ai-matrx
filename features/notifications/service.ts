@@ -1,35 +1,40 @@
 /**
  * features/notifications/service.ts — the Inbox's reads and writes.
  *
- * THE HOME OF EVERY NOTICE IS `communication.notification`. This module reads
- * the recipient's own in-app rows through three signed-in doors applied on
- * 2026-09-19 (each resolves `auth.uid()` inside its body and is declared in
- * `platform.client_callable_door`):
+ * THE HOME OF EVERY NOTICE IS `communication.notification`. Reads/writes go
+ * React → Supabase directly (CLAUDE.md § Data flow), through signed-in doors that
+ * resolve `auth.uid()` inside their bodies.
  *
- *   communication.my_notifications(p_limit, p_before, p_unread_only)
- *   communication.my_notification_unread_count()
- *   communication.mark_my_notifications_read()
+ * TWO GENERATIONS OF DOOR, ONE READER.
+ *   triage (migration `notifications_inbox_triage.sql`):
+ *     inbox_notifications(p_state, p_limit, p_before, p_unread_only, p_org_id)
+ *     my_inbox_summary() · mark_inbox_seen() · set_notifications_state(ids, action, until)
+ *     my_inbox_organizations()
+ *   pre-triage (2026-09-19): my_notifications · my_notification_unread_count ·
+ *     mark_my_notifications_read · mark_notification_read
  *
- * plus the pre-existing `communication.mark_notification_read(id, channel)`
- * for a single row. Doors, not table policies: the recipient RLS arm on the
- * table is routed to the DB-rules owner (notification-system HANDOFF,
- * 2026-08-26), and a door does not decertify the table.
+ * The triage doors are applied on the nightly clone and wait for the owner before
+ * they reach the main database. Until they do, every read here falls back to the
+ * pre-triage door and SAYS SO (`triage: false` on the answer): the UI then offers
+ * no Done, no Snooze and no Done/Snoozed tabs — an absent control, never one that
+ * pretends (Law 4). The fallback fires only on "no such function" (PGRST202 /
+ * 42883); any other error is an error.
  *
- * The three new doors are not yet in `types/database.types.ts` — that file
- * regenerates from the live database with `pnpm db-types`, which this session
- * could not run (no Supabase access token in the sandbox). Until then the
- * calls use the same `as never` seam the HR doors use
- * (`features/hr/settings/service.ts`) and this module asserts the row shape at
- * the boundary. Regenerating the types and deleting the seam is the named
- * follow-up in `./FEATURE.md`.
- *
- * Reads/writes go React → Supabase directly (CLAUDE.md § Data flow).
+ * None of these doors is in `types/database.types.ts` yet (it regenerates from the
+ * main database), so the calls use the house `as never` seam and every answer is
+ * checked at the boundary.
  */
 
 import type { PostgrestError } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
-import type { InboxNotification } from "./types";
+import { bucketFor, isNoticeBucket } from "./presentation";
+import type {
+  InboxNotification,
+  InboxState,
+  InboxSummary,
+  TriageAction,
+} from "./types";
 
 const IN_APP_CHANNEL = "in_app";
 
@@ -40,82 +45,246 @@ function communication() {
 /** What an RPC not yet in the generated types answers with — asserted below. */
 type UntypedRpcResult = { data: unknown; error: PostgrestError | null };
 
-function isInboxNotification(value: unknown): value is InboxNotification {
-  if (typeof value !== "object" || value === null) return false;
+async function rpc(name: string, args: Record<string, unknown>): Promise<UntypedRpcResult> {
+  return (await communication().rpc(name as never, args as never)) as UntypedRpcResult;
+}
+
+/** The door is not on this database (yet) — the only error that may fall back. */
+export function isMissingDoor(error: PostgrestError | null): boolean {
+  if (!error) return false;
+  return error.code === "PGRST202" || error.code === "42883";
+}
+
+function str(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+/** Narrow one door row; either generation. Throws when the contract is broken. */
+function toNotification(value: unknown): InboxNotification {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("a notice row was not an object");
+  }
   const row = value as Record<string, unknown>;
-  return (
-    typeof row.id === "string" &&
-    typeof row.event_key === "string" &&
-    typeof row.created_at === "string"
+  const id = str(row.id);
+  const eventKey = str(row.event_key);
+  const createdAt = str(row.created_at);
+  if (!id || !eventKey || !createdAt) {
+    throw new Error(
+      "a notice row came back without id/event_key/created_at — the door's RETURNS TABLE and features/notifications/types.ts disagree.",
+    );
+  }
+  return {
+    id,
+    event_key: eventKey,
+    event_label: str(row.event_label),
+    bucket: isNoticeBucket(row.event_bucket) ? row.event_bucket : bucketFor(eventKey),
+    subject: str(row.subject),
+    body: str(row.body),
+    deep_link: str(row.deep_link),
+    target_kind: str(row.target_kind),
+    target_id: str(row.target_id),
+    organization_id: str(row.organization_id),
+    organization_name: str(row.organization_name),
+    actor_id: str(row.actor_id),
+    actor_name: str(row.actor_name),
+    actor_avatar: str(row.actor_avatar),
+    created_at: createdAt,
+    sort_at: str(row.sort_at) ?? createdAt,
+    seen_at: str(row.seen_at),
+    read_at: str(row.read_at),
+    done_at: str(row.done_at),
+    snoozed_until: str(row.snoozed_until),
+    acted_at: str(row.acted_at),
+    outcome: str(row.outcome),
+  };
+}
+
+function toRows(data: unknown, door: string): InboxNotification[] {
+  if (!Array.isArray(data)) {
+    throw new Error(`communication.${door} returned ${typeof data}; expected rows.`);
+  }
+  return data.map(toNotification);
+}
+
+export interface FetchInboxArgs {
+  state?: InboxState;
+  limit?: number;
+  /** Keyset cursor — rows whose sort time is strictly before this ISO timestamp. */
+  before?: string | null;
+  unreadOnly?: boolean;
+  /** The page's organization filter — null is All organizations. Never the active org. */
+  orgId?: string | null;
+}
+
+export interface InboxPage {
+  rows: InboxNotification[];
+  /** False when the triage doors are not on this database: Done/Snooze are absent. */
+  triage: boolean;
+}
+
+/** The recipient's in-app notices for one view, newest first. */
+export async function fetchInbox(args: FetchInboxArgs = {}): Promise<InboxPage> {
+  const state = args.state ?? "inbox";
+  const limit = args.limit ?? 50;
+  const { data, error } = await rpc("inbox_notifications", {
+    p_state: state,
+    p_limit: limit,
+    p_before: args.before ?? null,
+    p_unread_only: args.unreadOnly ?? false,
+    p_org_id: args.orgId ?? null,
+  });
+  if (!error) {
+    try {
+      return { rows: toRows(data, "inbox_notifications"), triage: true };
+    } catch (cause) {
+      throw operationFailed("load your notifications", cause);
+    }
+  }
+  if (!isMissingDoor(error)) throw operationFailed("load your notifications", error);
+
+  // PRE-TRIAGE DOOR. It has no Done or Snoozed rows to give and no organization
+  // filter, so those views answer empty-and-unavailable, never a wrong list.
+  if (state !== "inbox") return { rows: [], triage: false };
+  const legacy = await rpc("my_notifications", {
+    p_limit: limit,
+    p_before: args.before ?? null,
+    p_unread_only: args.unreadOnly ?? false,
+  });
+  if (legacy.error) throw operationFailed("load your notifications", legacy.error);
+  try {
+    const rows = toRows(legacy.data, "my_notifications");
+    return {
+      rows: args.orgId ? rows.filter((row) => row.organization_id === args.orgId) : rows,
+      triage: false,
+    };
+  } catch (cause) {
+    throw operationFailed("load your notifications", cause);
+  }
+}
+
+export interface SummaryAnswer {
+  summary: InboxSummary;
+  triage: boolean;
+}
+
+function int(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+/** The badge (unseen needs-you + for-you), the updates dot, and the tab counts. */
+export async function fetchInboxSummary(): Promise<SummaryAnswer> {
+  const { data, error } = await rpc("my_inbox_summary", {});
+  if (!error) {
+    const row = Array.isArray(data) ? data[0] : data;
+    if (typeof row !== "object" || row === null) {
+      throw operationFailed(
+        "count your notifications",
+        new Error("communication.my_inbox_summary returned no row."),
+      );
+    }
+    const r = row as Record<string, unknown>;
+    return {
+      triage: true,
+      summary: {
+        unseenNeedsYou: int(r.unseen_needs_you),
+        unseenDirect: int(r.unseen_direct),
+        unseenUpdates: int(r.unseen_updates),
+        unread: int(r.unread),
+        inbox: int(r.inbox),
+        snoozed: int(r.snoozed),
+        done: int(r.done),
+      },
+    };
+  }
+  if (!isMissingDoor(error)) throw operationFailed("count your notifications", error);
+
+  // PRE-TRIAGE: there is no "seen", so the badge counts unread notices. Honest
+  // about what it is, and it still clears when they are read.
+  const legacy = await rpc("my_notification_unread_count", {});
+  if (legacy.error) throw operationFailed("count your notifications", legacy.error);
+  const unread = int(legacy.data);
+  return {
+    triage: false,
+    summary: {
+      unseenNeedsYou: 0,
+      unseenDirect: unread,
+      unseenUpdates: 0,
+      unread,
+      inbox: unread,
+      snoozed: 0,
+      done: 0,
+    },
+  };
+}
+
+/** Opening the bell or the inbox: everything shown leaves the badge. */
+export async function markInboxSeen(): Promise<number> {
+  const { data, error } = await rpc("mark_inbox_seen", {});
+  if (error) {
+    if (isMissingDoor(error)) return 0;
+    throw operationFailed("clear the notification badge", error);
+  }
+  return int(data);
+}
+
+/** Done / undone / read / unread / snooze / unsnooze for up to 500 notices. */
+export async function setNoticesState(
+  ids: readonly string[],
+  action: TriageAction,
+  until?: Date,
+): Promise<number> {
+  if (ids.length === 0) return 0;
+  const { data, error } = await rpc("set_notifications_state", {
+    p_ids: ids,
+    p_action: action,
+    p_until: until ? until.toISOString() : null,
+  });
+  if (!error) return int(data);
+  if (isMissingDoor(error) && action === "read") {
+    // Read is the one triage action the pre-triage doors can do.
+    let changed = 0;
+    for (const id of ids) {
+      if (await markNotificationRead(id)) changed += 1;
+    }
+    return changed;
+  }
+  throw operationFailed(
+    action === "done"
+      ? "mark it done"
+      : action === "snooze"
+        ? "snooze it"
+        : `mark it ${action}`,
+    error,
   );
 }
 
-export interface FetchMyNotificationsArgs {
-  limit?: number;
-  /** Keyset cursor — rows created strictly before this ISO timestamp. */
-  before?: string | null;
-  unreadOnly?: boolean;
+export interface InboxOrganization {
+  id: string;
+  name: string;
+  notices: number;
 }
 
-/** The recipient's delivered in-app notices, newest first. */
-export async function fetchMyNotifications(
-  args: FetchMyNotificationsArgs = {},
-): Promise<InboxNotification[]> {
-  const { data, error } = (await communication().rpc(
-    "my_notifications" as never,
-    {
-      p_limit: args.limit ?? 50,
-      p_before: args.before ?? null,
-      p_unread_only: args.unreadOnly ?? false,
-    } as never,
-  )) as UntypedRpcResult;
-  if (error) throw operationFailed("load your notifications", error);
-  if (!Array.isArray(data)) {
-    throw operationFailed(
-      "load your notifications",
-      new Error(
-        `communication.my_notifications returned ${typeof data}; expected rows.`,
-      ),
-    );
+/** The organizations the person's notices come from — the filter's choices. */
+export async function fetchInboxOrganizations(): Promise<InboxOrganization[] | null> {
+  const { data, error } = await rpc("my_inbox_organizations", {});
+  if (error) {
+    if (isMissingDoor(error)) return null;
+    throw operationFailed("list your notices' organizations", error);
   }
-  const rows: InboxNotification[] = [];
-  for (const row of data) {
-    if (!isInboxNotification(row)) {
-      throw operationFailed(
-        "load your notifications",
-        new Error(
-          "communication.my_notifications returned a row without id/event_key/created_at — the door's RETURNS TABLE and features/notifications/types.ts disagree.",
-        ),
-      );
-    }
-    rows.push(row);
-  }
-  return rows;
-}
-
-/** The badge number: delivered in-app notices with no `read_at`. */
-export async function fetchMyUnreadNotificationCount(): Promise<number> {
-  const { data, error } = (await communication().rpc(
-    "my_notification_unread_count" as never,
-    {} as never,
-  )) as UntypedRpcResult;
-  if (error) throw operationFailed("count your unread notifications", error);
-  if (typeof data !== "number") {
-    throw operationFailed(
-      "count your unread notifications",
-      new Error(
-        `communication.my_notification_unread_count returned ${typeof data}; expected a number.`,
-      ),
-    );
-  }
-  return data;
+  if (!Array.isArray(data)) return [];
+  return data.flatMap((value) => {
+    const row = value as Record<string, unknown>;
+    const id = str(row.organization_id);
+    if (!id) return [];
+    return [{ id, name: str(row.organization_name) ?? "Organization", notices: int(row.notices) }];
+  });
 }
 
 /**
  * WHAT WAITS ON THIS PERSON IN THE RECORD STORE, per organization — `custom.inbox_counts`, the
  * SAME predicate the inbox screen (`custom.work_inbox`) lists with and the reminder tick reminds
- * from (lane S5-PRIME-2). Every organization the person belongs to: what waits on a person is
- * theirs, not the selected organization's. An organization with nothing is not listed.
+ * from (lane S5-PRIME-2). Every organization the person belongs to. An organization with nothing
+ * is not listed.
  */
 export interface WorkWaiting {
   organization_id: string;
@@ -147,7 +316,7 @@ export async function fetchMyWorkWaiting(): Promise<WorkWaiting[]> {
   return data;
 }
 
-/** Stamp one notice read (the person opened it). Returns whether a row changed. */
+/** Stamp one notice read (pre-triage door). Returns whether a row changed. */
 export async function markNotificationRead(id: string): Promise<boolean> {
   const { data, error } = await communication().rpc("mark_notification_read", {
     p_notification_id: id,
@@ -159,10 +328,7 @@ export async function markNotificationRead(id: string): Promise<boolean> {
 
 /** Stamp every unread in-app notice read. Returns how many rows changed. */
 export async function markAllMyNotificationsRead(): Promise<number> {
-  const { data, error } = (await communication().rpc(
-    "mark_my_notifications_read" as never,
-    {} as never,
-  )) as UntypedRpcResult;
+  const { data, error } = await rpc("mark_my_notifications_read", {});
   if (error) throw operationFailed("mark your notifications read", error);
-  return typeof data === "number" ? data : 0;
+  return int(data);
 }

@@ -12,6 +12,7 @@ import { MeetingSurface } from "./MeetingSurface";
 let mockMeetHost: object | null = { participant: { identity: "member-1" } };
 let mockActiveOrganizationId: string | null = null;
 let mockOrganizations: Record<string, object> = {};
+let mockStoredPasses: Record<string, string> = {};
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/features/meet/lib/meetBaseUrl", () => ({
@@ -34,6 +35,11 @@ jest.mock("@ai-matrx/meet/react", () => ({
   MeetingRoom: () => <div data-testid="member-room" />,
   useMeetHost: () => mockMeetHost,
   useMeetSnapshot: () => null,
+  createWebRoomTokenStorage: () => ({
+    read: (room: string) => mockStoredPasses[room] ?? null,
+    write: () => undefined,
+    remove: () => undefined,
+  }),
 }));
 jest.mock("@/features/meet/components/board/MeetingBoard", () => ({
   MeetingBoard: () => <div data-testid="meeting-board" />,
@@ -172,7 +178,7 @@ describe("MeetingSurface authentication hydration", () => {
     surface.unmount();
   });
 
-  it("a person OUTSIDE the meeting's organization with no active organization still gets the canonical picker (server admission needs one of theirs)", async () => {
+  it("🚨 a person OUTSIDE the meeting's organization with no active organization is never stopped at the door — the guest lane, no organization prompt (Arman, 2026-10-01)", async () => {
     jest.useFakeTimers();
     mockMeetHost = null;
     const surface = await renderSurface(true, {
@@ -185,9 +191,60 @@ describe("MeetingSurface authentication hydration", () => {
       jest.advanceTimersByTime(8000);
     });
 
-    expect(surface.container.querySelector('[data-testid="organization-recovery"]')).not.toBeNull();
-    expect(surface.container.textContent).not.toContain("reload this link");
+    expect(surface.container.querySelector('[data-testid="organization-recovery"]')).toBeNull();
+    expect(surface.container.querySelector('[data-testid="guest-provider"]')).not.toBeNull();
+    // Already signed in: no "create an account" offer.
+    expect(surface.container.textContent).not.toContain("Create free account");
     surface.unmount();
     jest.useRealTimers();
+  });
+
+  it("a guest looking at a finished meeting is OFFERED a free account that comes back to claim — the record still renders", async () => {
+    const surface = await renderSurface(false, { ...guestAuth, authReady: true });
+
+    const link = surface.container.querySelector('a[href^="/sign-up"]');
+    expect(link).not.toBeNull();
+    const href = decodeURIComponent(link!.getAttribute("href") ?? "");
+    expect(href).toContain("/meet/meeting-1?claim=1");
+    expect(surface.container.querySelector('[data-testid="member-room"]')).not.toBeNull();
+    surface.unmount();
+  });
+
+  it("back from sign-up with ?claim=1, the kept guest pass is presented ONCE with the new session", async () => {
+    const request = jest.fn(
+      async () => new Response(JSON.stringify({ claimed: true, access: "full" }), { status: 200 }),
+    );
+    mockActiveOrganizationId = "org-mine";
+    mockMeetHost = { identity: { organizationId: "org-mine" }, api: { request } };
+    mockStoredPasses = {
+      "room-1": JSON.stringify({ token: "a.guest.pass", identity: "guest:d3v1c3" }),
+    };
+    window.history.replaceState(null, "", "/meet/meeting-1?claim=1");
+    const surface = await renderSurface(true, { ...guestAuth, id: "member-1", authReady: true });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(request).toHaveBeenCalledTimes(1);
+    const call = (request.mock.calls[0] as unknown as [Record<string, unknown>])[0];
+    expect(call.path).toBe("/api/v1/meet/claim");
+    expect(call.requireAuth).toBe(true);
+    expect(call.headers).toEqual({ "x-meet-room-token": "a.guest.pass" });
+    expect(call.body).toEqual({ meeting_id: "meeting-1" });
+    expect(window.location.search).toBe("");
+    surface.unmount();
+    mockStoredPasses = {};
+  });
+
+  it("without ?claim=1 a kept pass is never claimed by whoever signs in", async () => {
+    const request = jest.fn();
+    mockActiveOrganizationId = "org-mine";
+    mockMeetHost = { identity: { organizationId: "org-mine" }, api: { request } };
+    mockStoredPasses = { "room-1": JSON.stringify({ token: "a.guest.pass", identity: "guest:x" }) };
+    window.history.replaceState(null, "", "/meet/meeting-1");
+    const surface = await renderSurface(true, { ...guestAuth, id: "member-1", authReady: true });
+    expect(request).not.toHaveBeenCalled();
+    surface.unmount();
+    mockStoredPasses = {};
   });
 });

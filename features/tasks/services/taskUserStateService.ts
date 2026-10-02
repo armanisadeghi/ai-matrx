@@ -77,6 +77,11 @@ export function unsnoozeTask(taskId: string) {
   return upsertState(taskId, { snoozed_until: null });
 }
 
+/** Put a dismissed task back in the attention views (the bell's Snoozed view, "Turn back on"). */
+export function undismissTask(taskId: string) {
+  return upsertState(taskId, { dismissed_at: null });
+}
+
 export function acknowledgeTask(taskId: string) {
   return upsertState(taskId, { acknowledged_at: new Date().toISOString() });
 }

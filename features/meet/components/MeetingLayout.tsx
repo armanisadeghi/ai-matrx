@@ -90,6 +90,7 @@ export function MeetingLayout({
   meeting,
   headerControls,
   preJoinControls,
+  endedControls,
 }: {
   roomName: RoomName;
   meetingId: string;
@@ -103,6 +104,8 @@ export function MeetingLayout({
    * meeting's record.
    */
   preJoinControls?: ReactNode;
+  /** Drawn in the top-right corner over an ENDED meeting's record. */
+  endedControls?: ReactNode;
 }) {
   const snapshot = useMeetSnapshot();
   const [layout, setLayout] = useMeetingLayoutPreference();
@@ -135,6 +138,11 @@ export function MeetingLayout({
       {!inRoom && !ended && preJoinControls !== undefined ? (
         <div className="absolute right-3 top-3 z-10 flex items-center gap-2 pt-[env(safe-area-inset-top)]">
           {preJoinControls}
+        </div>
+      ) : null}
+      {ended && endedControls !== undefined ? (
+        <div className="absolute right-3 top-3 z-10 flex items-center gap-2 pt-[env(safe-area-inset-top)]">
+          {endedControls}
         </div>
       ) : null}
       {inRoom && (

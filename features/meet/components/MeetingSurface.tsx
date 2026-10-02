@@ -38,7 +38,6 @@ import {
   selectIsAuthenticated,
 } from "@/lib/redux/selectors/userSelectors";
 import { MeetingLayout } from "@/features/meet/components/MeetingLayout";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { selectOrganizations } from "@/features/scopes/redux/selectors/tree";
 import { useMeetMemberIdentity } from "@/providers/MeetHost";
@@ -48,6 +47,10 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { MeetingInviteButton } from "@/features/meet/components/invite/MeetingInviteButton";
 import { PreJoinRsvp } from "@/features/meet/components/manage/PreJoinRsvp";
+import {
+  KeepNotesPrompt,
+  useGuestClaimOnArrival,
+} from "@/features/meet/components/KeepNotes";
 
 // The meeting's AI jobs (live notes, answers, the wrap-up), disclosed IN the
 // room through the package's `headerControls` slot (@ai-matrx/meet 0.7.0).
@@ -203,15 +206,11 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
         </Centered>
       );
     }
-    return (
-      <Centered>
-        <OrganizationRequiredNotice
-          compact
-          what="This meeting"
-          description="Meetings belong to one organization. Choose the organization you are working in below; this page stays open and prepares the meeting as soon as the active organization is available."
-        />
-      </Centered>
-    );
+    // 🚨 YOU DO NOT NEED AN ORGANIZATION TO JOIN A MEETING (Arman, 2026-10-01).
+    // A signed-in person outside the meeting's organization with no active
+    // organization yet is never stopped at the door: they join through the
+    // guest lane — the same rules every link-holder has — instead of a prompt.
+    return <GuestRoom meeting={meeting} slug={meeting.slug} offerAccount={false} />;
   }
 
   return <MemberRoomBody meeting={meeting} />;
@@ -233,6 +232,9 @@ function MeetingScopedMemberRoom({ meeting }: { meeting: MeetingRecord }) {
 }
 
 function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
+  // Back from "Create free account" with `?claim=1`: the guest's attendance
+  // joins the new account, then the record re-reads as theirs.
+  const claimGeneration = useGuestClaimOnArrival(meeting);
   return (
     <div className="h-dvh w-full">
       {/* NO CONSENT BANNER HERE. `<MeetingRoom>` renders the package's own
@@ -246,6 +248,7 @@ function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
       {/* Room or Board — the viewer's choice while connected; everything
           before and after the room is still `<MeetingRoom>` (MeetingLayout). */}
       <MeetingLayout
+        key={claimGeneration}
         roomName={meeting.roomName}
         meetingId={meeting.id}
         slug={meeting.slug}
@@ -288,7 +291,16 @@ function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
  * The name is asked for BEFORE the provider mounts because `guestName` is part
  * of the provider's identity — changing it later would rebuild every channel.
  */
-function GuestRoom({ meeting, slug }: { meeting: MeetingRecord; slug: string }) {
+function GuestRoom({
+  meeting,
+  slug,
+  offerAccount = true,
+}: {
+  meeting: MeetingRecord;
+  slug: string;
+  /** False when the person is already signed in (no active org yet). */
+  offerAccount?: boolean;
+}) {
   const store = useAppStore();
   const [typedName, setTypedName] = useState("");
   // 🚨 AN ENDED MEETING NEVER ASKS FOR A NAME (MRI-D2). There is no room to
@@ -314,9 +326,7 @@ function GuestRoom({ meeting, slug }: { meeting: MeetingRecord; slug: string }) 
       <Centered>
         <h1 className="text-base font-semibold">{meeting.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {meeting.lobbyEnabled
-            ? "You are joining as a guest. No account needed. The host must admit you from the waiting room."
-            : "You are joining as a guest. No account needed."}
+          {meeting.lobbyEnabled ? "No account needed · the host lets you in" : "No account needed"}
         </p>
         <form
           className="mt-4 space-y-3"
@@ -368,6 +378,8 @@ function GuestRoom({ meeting, slug }: { meeting: MeetingRecord; slug: string }) 
           // the panel shows them the link, the invitation and the calendar.
           headerControls={<MeetingInviteButton meeting={meeting} signedIn={false} />}
           preJoinControls={<MeetingInviteButton meeting={meeting} signedIn={false} />}
+          // After the meeting: an offer to keep the notes, never a gate.
+          endedControls={offerAccount ? <KeepNotesPrompt slug={slug} /> : undefined}
         />
       </div>
     </MeetProvider>

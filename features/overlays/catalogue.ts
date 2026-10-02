@@ -46,6 +46,31 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  // THE notifications inbox as a window — the /notifications workspace, wrapped
+  // (the bell's "Open inbox"; the bell never moves the page — ruling 4, 2026-10-01).
+  notificationsInboxWindow: {
+    label: "Inbox",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  // Every assist in every state (the /assists manager, wrapped) — a notice source.
+  assistsWindow: {
+    label: "Assists",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  // The record store's ActionInbox across every organization — a notice source.
+  workInboxWindow: {
+    label: "In your tables",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  // Workflow runs held for this person (/workflows/waiting, wrapped) — a notice source.
+  waitingRunsWindow: {
+    label: "Workflows waiting on you",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   adminIndicator: {
     label: "Admin Indicator",
     instanceMode: "singleton",

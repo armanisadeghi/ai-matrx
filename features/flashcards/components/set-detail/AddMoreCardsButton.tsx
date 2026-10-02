@@ -128,8 +128,13 @@ export function AddMoreCardsButton({
   deckOrganizationId,
   existingCards,
   onAdded,
+  label = "Add more cards",
+  variant = "outline",
 }: {
   setId: string;
+  /** The trigger's words; the deck page's action bar uses "Add". */
+  label?: string;
+  variant?: "outline" | "default";
   /** The deck's name — what the new cards' sections are titled after. */
   deckName?: string;
   /** The deck's OWN organization — new cards, the agent run and lineage file under it, never the active org. */
@@ -178,7 +183,7 @@ export function AddMoreCardsButton({
     <>
       <Button
         type="button"
-        variant="outline"
+        variant={variant}
         size="sm"
         onClick={() => {
           if (stopped && !stopped.whileSaving) openRedo(false);
@@ -193,7 +198,7 @@ export function AddMoreCardsButton({
         className="gap-1.5"
       >
         <Plus className="h-3.5 w-3.5" />
-        Add more cards
+        {label}
       </Button>
       {open ? (
         <AddMoreCardsDialog

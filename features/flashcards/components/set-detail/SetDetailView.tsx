@@ -25,7 +25,9 @@ import {
   Wand,
   Pencil,
   Expand,
-  History,
+  TrendingUp,
+  Settings2,
+  ArrowRight,
   Download,
   ChevronDown,
   GraduationCap,
@@ -46,6 +48,13 @@ import {
   MessagesSquare,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { MergeCardsDialog } from "./MergeCardsDialog";
 import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -170,41 +179,46 @@ import {
   filterEducationCollection,
 } from "@/features/education/components/EducationCollectionSearch";
 
-/** Phase 1B — the extra study modes on the spine, alongside classic Study. */
-const OTHER_STUDY_MODES = [
+const EDU_BASE = "/education/flashcards";
+
+/** Every way to study a deck besides classic Study — the Study button's menu
+ *  on desktop, the "More ways" sheet on a phone. Fast Fire lives here too. */
+const STUDY_MODES = [
+  {
+    key: "fastfire",
+    label: "Fast Fire",
+    description: "Rapid recall against the clock",
+    icon: Zap,
+    href: (setId: string) => `/education/fastfire?set=${setId}`,
+  },
   {
     key: "learn",
     label: "Learn",
     description: "Adaptive reshuffle toward weak cards",
     icon: GraduationCap,
-    path: "learn",
+    href: (setId: string) => `${EDU_BASE}/${setId}/learn`,
   },
   {
     key: "test",
     label: "Test",
     description: "Multiple-choice quiz",
     icon: ListChecks,
-    path: "test",
+    href: (setId: string) => `${EDU_BASE}/${setId}/test`,
   },
   {
     key: "match",
     label: "Match",
     description: "Timed pairing game",
     icon: Grid3x3,
-    path: "match",
+    href: (setId: string) => `${EDU_BASE}/${setId}/match`,
   },
   {
     key: "write",
     label: "Write",
     description: "Type the answer from memory",
     icon: PenLine,
-    path: "write",
+    href: (setId: string) => `${EDU_BASE}/${setId}/write`,
   },
-] as const;
-
-/** Voice/audio study modes that live on their own education routes (built
- *  surfaces that were previously unreachable from a deck — THE DOOR LAW). */
-const VOICE_STUDY_MODES = [
   {
     key: "practice-oral",
     label: "Oral practice",
@@ -221,7 +235,178 @@ const VOICE_STUDY_MODES = [
   },
 ] as const;
 
-const EDU_BASE = "/education/flashcards";
+/** A quiet icon-only deck tool with its name in a tooltip. `asTrigger`
+ *  makes it the trigger of the DropdownMenu it sits in. */
+function IconAction({
+  label,
+  children,
+  onClick,
+  disabled,
+  asTrigger = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  asTrigger?: boolean;
+}) {
+  const button = (
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+      className="h-9 w-9 text-muted-foreground hover:text-foreground"
+    >
+      {children}
+    </Button>
+  );
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {asTrigger ? (
+            <DropdownMenuTrigger asChild>{button}</DropdownMenuTrigger>
+          ) : (
+            button
+          )}
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{label}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+const POWER_UP_TONE = {
+  enrich: {
+    tile: "bg-chart-4/15 text-chart-4",
+    glow: "from-chart-4/10",
+  },
+  illustrate: {
+    tile: "bg-chart-2/15 text-chart-2",
+    glow: "from-chart-2/10",
+  },
+  convert: {
+    tile: "bg-chart-6/15 text-chart-6",
+    glow: "from-chart-6/10",
+  },
+} as const;
+
+/** One of the deck's AI upgrades, drawn as a tile worth clicking. */
+function PowerUpTile({
+  tone,
+  icon: Icon,
+  title,
+  hint,
+  badge,
+  busy = false,
+  disabled = false,
+  onClick,
+  meter,
+}: {
+  tone: keyof typeof POWER_UP_TONE;
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  hint: string;
+  badge?: string;
+  busy?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  meter?: React.ReactNode;
+}) {
+  const t = POWER_UP_TONE[tone];
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "group relative flex items-start gap-3 overflow-hidden rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-all",
+        "hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "disabled:pointer-events-none disabled:opacity-70",
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-0 bg-gradient-to-br to-transparent opacity-0 transition-opacity group-hover:opacity-100",
+          t.glow,
+        )}
+      />
+      <span
+        className={cn(
+          "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+          t.tile,
+        )}
+      >
+        {busy ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <Icon className="h-5 w-5" />
+        )}
+      </span>
+      <span className="relative min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-foreground">{title}</span>
+          {badge && (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+              {badge}
+            </span>
+          )}
+        </span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">{hint}</span>
+        {meter && <span className="mt-1 block">{meter}</span>}
+      </span>
+      <ArrowRight className="relative mt-1 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
+    </button>
+  );
+}
+
+/** The deck's audio jobs, as menu items (the Audio icon's menu). */
+function DeckAudioMenuItems({
+  cards,
+  hasOverview,
+  onStart,
+}: {
+  cards: CardWithDetails[];
+  hasOverview: boolean;
+  onStart: (job: keyof DeckAudioRunSignals) => void;
+}) {
+  return (
+    <>
+      <DropdownMenuItem className="gap-2" onClick={() => onStart("generate")}>
+        <Volume2 className="h-4 w-4 text-muted-foreground" />
+        {hasOverview ? "Regenerate audio overview" : "Generate audio overview"}
+      </DropdownMenuItem>
+      {(
+        [
+          ["spoken_front", "card audio", Mic],
+          ["helper", "instant help", HelpCircle],
+        ] as const
+      ).map(([lane, noun, Icon]) => {
+        const { ready, total } = deckAudioCoverage(cards, lane);
+        const done = ready >= total;
+        return (
+          <DropdownMenuItem
+            key={lane}
+            className="gap-2"
+            disabled={done}
+            onClick={() => onStart(lane)}
+          >
+            <Icon className="h-4 w-4 text-muted-foreground" />
+            {done
+              ? `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ready`
+              : ready > 0
+                ? `Prepare ${noun} (${ready}/${total} done)`
+                : `Prepare ${noun}`}
+          </DropdownMenuItem>
+        );
+      })}
+    </>
+  );
+}
+
 const SURFACE_NAME = "matrx-user/education-flashcard-set";
 
 /** A compact, non-flipping front/back peek for one card with detail badges. */
@@ -434,6 +619,7 @@ export function SetDetailView({
   const [generateOpen, setGenerateOpen] = useState(false);
   const [studyModesOpen, setStudyModesOpen] = useState(false);
   const [deckToolsOpen, setDeckToolsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [cardSearch, setCardSearch] = useState("");
   // WP3 gap 5 — card merge selection.
   const [selecting, setSelecting] = useState(false);
@@ -841,200 +1027,221 @@ export function SetDetailView({
           />
         ) : (
           <>
-            {/* Header */}
-            <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-3">
-              {/* ONE TITLE (page-pass 2026-09-28): the deck's name is the
-                  shell header's title. A second copy here as a body <h1>
-                  scrolled under the glass header and drew as two overlapping
-                  lines on a phone in dark mode. */}
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <BookOpen className="h-3.5 w-3.5" />
-                      {data.cards.length}{" "}
-                      {data.cards.length === 1 ? "card" : "cards"}
-                    </span>
-                    {data.set.topic ? (
-                      <>
-                        <span className="text-border">|</span>
-                        <span>{data.set.topic}</span>
-                      </>
-                    ) : null}
-                    {data.set.difficulty ? (
-                      <>
-                        <span className="text-border">|</span>
-                        <span className="capitalize">
-                          {data.set.difficulty}
-                        </span>
-                      </>
-                    ) : null}
-                  </div>
-                  {data.set.description ? (
-                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                      {data.set.description}
-                    </p>
-                  ) : null}
-                  {canEdit && (
-                    // Who can see it + its class: one row, not two stacked.
-                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-                      <DeckRowAccess
-                        setId={setId}
-                        value={data.set}
-                        onChange={(v) =>
-                          setData((prev) =>
-                            prev ? { ...prev, set: { ...prev.set, ...v } } : prev,
-                          )
-                        }
-                      />
-                      <ClassPicker entityType="fc_set" entityId={setId} organizationId={data.set.organization_id} />
-                    </div>
-                  )}
-                  {viewOnly && (
-                    <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">
-                      <BookOpen className="h-3.5 w-3.5" />
-                      Shared with you — view only. Make a copy to edit or track
-                      your own progress.
-                    </div>
-                  )}
-                  {data.set.published_to_web && (
-                    <div className="mt-2">
-                      <a
-                        href={`/p/e/fc_set/${setId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-                      >
-                        <Expand className="h-3.5 w-3.5" />
-                        View public page
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-              {/* Action row — the hub: every path you can take with this set.
-                  Study / Fast Fire are live; Edit graduates the view→edit split
-                  (ROUTING.md); Enhance is the agentic-expansion placeholder. */}
-              <div className="hidden flex-wrap items-center gap-2 md:flex">
-                {/* EMPTY DECK (page-pass 2026-09-28): every card action was
-                    drawn greyed with no reason. With no cards the row offers
-                    what makes cards; the rest appear once there are some. */}
-                {deckEmpty && canEdit && (
-                  <Button size="sm" onClick={() => setGenerateOpen(true)}>
-                    <Wand className="mr-1.5 h-4 w-4" />
-                    Generate cards
-                  </Button>
-                )}
-                {!deckEmpty && (<>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    navigate("study", `${EDU_BASE}/${setId}/study`)
-                  }
-                  disabled={isPending || data.cards.length === 0}
-                  className={cn(
-                    "rounded-r-none",
-                    pendingAction === "study" && "opacity-70",
-                  )}
-                >
-                  <Play className="mr-1.5 h-4 w-4" />
-                  Study
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                  size="sm"
-                      disabled={isPending || data.cards.length === 0}
-                      className="-ml-2 rounded-l-none px-2"
-                      aria-label="Other study modes"
-                    >
-                      <ChevronDown className="h-4 w-4" />
+            {/* ACTION BAR (redesign 2026-10-01). One line: how to study on
+                the left, the deck's tools as quiet icons on the right, and
+                Add as the one primary write. The card-count line and the
+                visibility / class row left the page — they live in Deck
+                settings (the More menu). History is "Progress". */}
+            <div className="hidden items-center justify-between gap-3 md:flex">
+              <div className="flex items-center gap-2">
+                {deckEmpty ? (
+                  canEdit && (
+                    <Button className="h-10 px-5" onClick={() => setGenerateOpen(true)}>
+                      <Wand className="mr-1.5 h-4 w-4" />
+                      Generate cards
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    {OTHER_STUDY_MODES.map((m) => (
-                      <DropdownMenuItem
-                        key={m.key}
+                  )
+                ) : (
+                  <>
+                    <div className="inline-flex rounded-lg shadow-sm">
+                      <Button
                         onClick={() =>
-                          navigate(m.key, `${EDU_BASE}/${setId}/${m.path}`)
+                          navigate("study", `${EDU_BASE}/${setId}/study`)
                         }
+                        disabled={isPending}
+                        className="h-10 rounded-r-none px-5 font-semibold"
                       >
-                        <m.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <div className="flex flex-col">
-                          <span>{m.label}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {m.description}
-                          </span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                    {VOICE_STUDY_MODES.map((m) => (
-                      <DropdownMenuItem
-                        key={m.key}
-                        onClick={() => navigate(m.key, m.href(setId))}
-                      >
-                        <m.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <div className="flex flex-col">
-                          <span>{m.label}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {m.description}
-                          </span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <FlashcardStudyWindowDevTrigger
-                  setId={setId}
-                  title={data.set.name}
-                  disabled={data.cards.length === 0}
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    navigate("fastfire", `/education/fastfire?set=${setId}`)
-                  }
-                  disabled={isPending || data.cards.length === 0}
-                  className={cn(pendingAction === "fastfire" && "opacity-70")}
-                >
-                  <Zap className="mr-1.5 h-4 w-4" />
-                  Fast Fire
-                </Button>
-                {/* History is its own button on desktop. It was folded into
-                    the Study menu on 2026-09-28 to fit one line at 1280, and
-                    verify-6 (2026-10-01) read that as "History is gone" a
-                    second time (4f050ab276 had restored it). Guard:
-                    __tests__/deck-desktop-actions.test.ts. */}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  data-deck-action="history"
-                  onClick={() =>
-                    navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
-                  }
-                  disabled={isPending}
-                  className={cn(pendingAction === "sessions" && "opacity-70")}
-                >
-                  <History className="mr-1.5 h-4 w-4" />
-                  History
-                </Button>
-                </>)}
+                        {pendingAction === "study" ? (
+                          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Play className="mr-1.5 h-4 w-4 fill-current" />
+                        )}
+                        Study
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            disabled={isPending}
+                            className="h-10 rounded-l-none border-l border-primary-foreground/20 px-2.5"
+                            aria-label="More ways to study"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-72 p-1.5">
+                          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                            More ways to study
+                          </DropdownMenuLabel>
+                          {STUDY_MODES.map((m) => (
+                            <DropdownMenuItem
+                              key={m.key}
+                              className="gap-3 py-2"
+                              onClick={() => navigate(m.key, m.href(setId))}
+                            >
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                                <m.icon className="h-4 w-4" />
+                              </span>
+                              <span className="flex min-w-0 flex-col">
+                                <span className="font-medium">{m.label}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {m.description}
+                                </span>
+                              </span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <FlashcardStudyWindowDevTrigger
+                      setId={setId}
+                      title={data.set.name}
+                    />
+                    <Button
+                      variant="ghost"
+                      className="h-10"
+                      data-deck-action="progress"
+                      onClick={() =>
+                        navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
+                      }
+                      disabled={isPending}
+                    >
+                      {pendingAction === "sessions" ? (
+                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      ) : (
+                        <TrendingUp className="mr-1.5 h-4 w-4" />
+                      )}
+                      Progress
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1">
                 {canEdit && (
-                  <Button
-                  size="sm"
-                    variant="outline"
+                  <IconAction
+                    label="Edit deck"
                     onClick={() =>
                       navigate("edit", `${EDU_BASE}/${setId}/edit`)
                     }
                     disabled={isPending}
-                    className={cn(pendingAction === "edit" && "opacity-70")}
                   >
-                    <Pencil className="mr-1.5 h-4 w-4" />
-                    Edit
-                  </Button>
+                    {pendingAction === "edit" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Pencil className="h-4 w-4" />
+                    )}
+                  </IconAction>
                 )}
-                {(access.isOwner || access.level === "admin") && <ShareButton resourceType="fc_set" resourceId={setId} resourceName={data.set.name} organizationId={data.set.organization_id} showStatus={false} size="sm" />}
+                {(access.isOwner || access.level === "admin") && (
+                  <ShareButton
+                    resourceType="fc_set"
+                    resourceId={setId}
+                    resourceName={data.set.name}
+                    organizationId={data.set.organization_id}
+                    showStatus={false}
+                    size="icon"
+                    variant="ghost"
+                    className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                  />
+                )}
+                {!deckEmpty && (
+                  <DropdownMenu>
+                    <IconAction label="Audio" asTrigger>
+                      <Volume2 className="h-4 w-4" />
+                    </IconAction>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <DeckAudioMenuItems
+                        cards={data.cards}
+                        hasOverview={!!data.set.audio_overview_file_id}
+                        onStart={startAudioJob}
+                      />
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                {!deckEmpty && (
+                  <CopyButtons
+                    size="sm"
+                    triggerVariant="transparent"
+                    label={`Deck: ${data.set.name}`}
+                    human={() => serializeDeck(data.set, data.cards).markdown}
+                    json={() => ({ set: data.set, cards: data.cards })}
+                    agent={() => ({
+                      kind: "flashcard-deck",
+                      location: `AI Matrx — Flashcards — ${EDU_BASE}/${setId}`,
+                      description:
+                        "A flashcard deck as the learner sees it: every card's front and back.",
+                      data: {
+                        name: data.set.name,
+                        topic: data.set.topic,
+                        difficulty: data.set.difficulty,
+                        cards: data.cards.map((c, i) => {
+                          const faces = studyFaces(c);
+                          return {
+                            n: i + 1,
+                            kind: asCardKind(c.card_kind),
+                            front: faces ? faces.front : c.front,
+                            back: faces ? faces.back : c.back,
+                          };
+                        }),
+                      },
+                      summary: serializeDeck(data.set, data.cards).markdown,
+                      attributes: { cards: data.cards.length },
+                    })}
+                    export={{
+                      items: [
+                        { id: "print", label: "Print", onSelect: handlePrint },
+                        ...(["csv", "anki", "md", "json"] as const).map(
+                          (format) => ({
+                            id: format,
+                            label: DECK_EXPORT_FILE[format].label,
+                            onSelect: () => exportDeck(format),
+                          }),
+                        ),
+                      ],
+                    }}
+                  />
+                )}
+                <DropdownMenu>
+                  <IconAction label="More" asTrigger>
+                    <Ellipsis className="h-4 w-4" />
+                  </IconAction>
+                  <DropdownMenuContent align="end" className="w-60">
+                    {canEdit && (
+                      <DropdownMenuItem
+                        className="gap-2"
+                        onClick={() => setSettingsOpen(true)}
+                      >
+                        <Settings2 className="h-4 w-4 text-muted-foreground" />
+                        Deck settings
+                      </DropdownMenuItem>
+                    )}
+                    {data.set.published_to_web && (
+                      <DropdownMenuItem asChild className="gap-2">
+                        <a
+                          href={`/p/e/fc_set/${setId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Expand className="h-4 w-4 text-muted-foreground" />
+                          View public page
+                        </a>
+                      </DropdownMenuItem>
+                    )}
+                    {!deckEmpty && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <OfflineDeckMenuItems setId={setId} />
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild className="gap-2">
+                      <Link href="/print">
+                        <Printer className="h-4 w-4 text-muted-foreground" />
+                        More printing
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {viewOnly && (
                   <DuplicateToEditButton
                     resourceType="fc_set"
@@ -1046,206 +1253,39 @@ export function SetDetailView({
                   />
                 )}
                 {canEdit && (
-                  <AddMoreCardsButton
-                    setId={setId}
-                    existingCards={data.cards.map((c) => ({ front: c.front, back: c.back }))}
-                    deckName={data.set.name}
-                    deckOrganizationId={data.set.organization_id}
-                    onAdded={() => {
-                      setReloadKey((k) => k + 1);
-                      setLineageKey((k) => k + 1);
-                    }}
-                  />
-                )}
-                {/* Desktop keeps every deck action on the page. Deck tools is
-                    the PHONE's sheet only — on 2026-09-27 it was applied to
-                    every width and desktop lost History, Export, Print,
-                    offline, Enrich, Illustrate and Convert behind one button. */}
-                {!deckEmpty && (<>
-                {/* Export, Print and Download for offline are one menu
-                    (page-pass 2026-09-27): every one still one click away on
-                    desktop, in one button instead of three. */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                  size="sm"
-                      variant="outline"
-                      disabled={data.cards.length === 0}
-                    >
-                      <Download className="mr-1.5 h-4 w-4" />
-                      Export
-                      <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-64">
-                    <DropdownMenuItem onClick={handlePrint} className="gap-2">
-                      <Printer className="h-4 w-4 text-muted-foreground" />
-                      Print
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    {/* Keeps THIS deck studiable here with no connection
-                        (a file export is below). */}
-                    <OfflineDeckMenuItems
+                  <div className="ml-2">
+                    <AddMoreCardsButton
+                      label="Add"
+                      variant="default"
                       setId={setId}
-                      disabled={data.cards.length === 0}
+                      existingCards={data.cards.map((c) => ({ front: c.front, back: c.back }))}
+                      deckName={data.set.name}
+                      deckOrganizationId={data.set.organization_id}
+                      onAdded={() => {
+                        setReloadKey((k) => k + 1);
+                        setLineageKey((k) => k + 1);
+                      }}
                     />
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                      Download as a file
-                    </DropdownMenuLabel>
-                    {(["csv", "anki", "md", "json"] as const).map((format) => (
-                      <DropdownMenuItem
-                        key={format}
-                        onClick={() => exportDeck(format)}
-                        className="gap-2"
-                      >
-                        <Download className="h-4 w-4 text-muted-foreground" />
-                        {DECK_EXPORT_FILE[format].label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                {canEdit && (
-                  <div className="flex flex-col items-start gap-0.5">
-                    <Button
-                  size="sm"
-                      variant="outline"
-                      onClick={() => void runBulkEnrich()}
-                      disabled={
-                        data.cards.length === 0 ||
-                        enrichGuard.isChecking ||
-                        bulkRun.phase === "running"
-                      }
-                      title="Add explanations, examples and memory tricks to every card in this deck — read them while studying under &quot;More on this card&quot;"
-                    >
-                      {bulkRun.phase === "running" ? (
-                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Lightbulb className="mr-1.5 h-4 w-4" />
-                      )}
-                      {bulkEnrichActionLabel(enrichPlan).replace(" all cards", "")}
-                    </Button>
-                    {/* Limit shown BEFORE the action (TRUST mandate). */}
-                    <EntitlementMeter capability="education.card_enrichment" />
                   </div>
-                )}
-                {canEdit && (
-                  <div className="flex flex-col items-start gap-0.5">
-                    <Button
-                  size="sm"
-                      variant="outline"
-                      disabled={
-                        data.cards.length === 0 ||
-                        illustrate.isChecking ||
-                        illustrateRun.phase === "starting" ||
-                        illustrateRun.phase === "running"
-                      }
-                      onClick={() => void illustrate.guard(runIllustrate)}
-                      title="An agent finds an expert image on the open web for each card's front, judges the source, and attaches only what clears the bar"
-                    >
-                      {illustrateRun.phase === "starting" ||
-                      illustrateRun.phase === "running" ? (
-                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Images className="mr-1.5 h-4 w-4" />
-                      )}
-                      Illustrate
-                    </Button>
-                    {/* Limits BEFORE the cap — never ambush a batch mid-run. */}
-                    <EntitlementMeter capability="education.card_image_source" />
-                  </div>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setConvertOpen(true)}
-                  disabled={data.cards.length === 0}
-                >
-                  <Boxes className="mr-1.5 h-4 w-4" />
-                  Convert
-                </Button>
-                </>)}
-                {/* The deck's audio jobs — one menu in the same row (they
-                    were their own row of three buttons). */}
-                {data.cards.length > 0 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                  size="sm" variant="outline">
-                        <Volume2 className="mr-1.5 h-4 w-4" />
-                        Audio
-                        <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64">
-                      <DropdownMenuItem
-                        className="gap-2"
-                        onClick={() => startAudioJob("generate")}
-                      >
-                        <Volume2 className="h-4 w-4 text-muted-foreground" />
-                        {data.set.audio_overview_file_id
-                          ? "Regenerate audio overview"
-                          : "Generate audio overview"}
-                      </DropdownMenuItem>
-                      {(
-                        [
-                          ["spoken_front", "card audio", Mic],
-                          ["helper", "instant help", HelpCircle],
-                        ] as const
-                      ).map(([lane, noun, Icon]) => {
-                        const { ready, total } = deckAudioCoverage(data.cards, lane);
-                        const done = ready >= total;
-                        return (
-                          <DropdownMenuItem
-                            key={lane}
-                            className="gap-2"
-                            disabled={done}
-                            onClick={() => startAudioJob(lane)}
-                          >
-                            <Icon className="h-4 w-4 text-muted-foreground" />
-                            {done
-                              ? `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ready`
-                              : ready > 0
-                                ? `Prepare ${noun} (${ready}/${total} done)`
-                                : `Prepare ${noun}`}
-                          </DropdownMenuItem>
-                        );
-                      })}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 )}
               </div>
             </div>
 
-            {!deckEmpty && (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1 sm:[&>*:first-child]:flex-none">
-                <EducationCollectionSearch
-                  value={cardSearch}
-                  onValueChange={setCardSearch}
-                  label="cards in this deck"
-                />
-                {/* Desktop: selection starts beside the card search (the
-                    phone opens it from Deck tools). */}
-                {canEdit && !isPhone && !selecting && data.cards.length > 0 && (
-                  <Button variant="outline" onClick={() => setSelecting(true)}>
-                    <MousePointerClick className="mr-1.5 h-4 w-4" />
-                    Select cards
-                  </Button>
-                )}
+            {data.set.description ? (
+              <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+                {data.set.description}
+              </p>
+            ) : null}
+            {viewOnly && (
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">
+                <BookOpen className="h-3.5 w-3.5" />
+                View only — make a copy to edit
               </div>
-              {cardSearch.trim() && (
-                <span className="text-xs text-muted-foreground">
-                  {filteredCards.length} of {data.cards.length} cards match
-                </span>
-              )}
-            </div>
             )}
 
-            {/* Mobile is a study launchpad, not a desktop action matrix squeezed
-                into one column. The two fastest paths stay visible; every
-                secondary capability remains reachable in a stable bottom sheet. */}
-            <div className="mt-4 space-y-2 md:hidden">
+            {/* Phone: a study launchpad. Study is the one big action; every
+                other way to study is one sheet, every deck tool another. */}
+            <div className="mt-2 space-y-2 md:hidden">
               {deckEmpty && canEdit && (
                 <Button
                   size="lg"
@@ -1257,52 +1297,50 @@ export function SetDetailView({
                 </Button>
               )}
               {!deckEmpty && (
-              <div className="grid grid-cols-2 gap-2">
                 <Button
                   size="lg"
-                  className="h-12"
+                  className="h-12 w-full text-base font-semibold"
                   onClick={() =>
                     navigate("study", `${EDU_BASE}/${setId}/study`)
                   }
-                  disabled={isPending || data.cards.length === 0}
+                  disabled={isPending}
                 >
-                  <Play className="mr-2 h-5 w-5" />
+                  <Play className="mr-2 h-5 w-5 fill-current" />
                   Study
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-12"
-                  onClick={() =>
-                    navigate("fastfire", `/education/fastfire?set=${setId}`)
-                  }
-                  disabled={isPending || data.cards.length === 0}
-                >
-                  <Zap className="mr-2 h-5 w-5" />
-                  Fast Fire
-                </Button>
-              </div>
               )}
               <div className="grid grid-cols-2 gap-2">
                 {!deckEmpty && (
-                <Button
-                  variant="outline"
-                  className="h-11"
-                  onClick={() => setStudyModesOpen(true)}
-                >
-                  <GraduationCap className="mr-2 h-4 w-4" />
-                  Study modes
-                </Button>
+                  <Button
+                    variant="outline"
+                    className="h-11"
+                    onClick={() => setStudyModesOpen(true)}
+                  >
+                    <GraduationCap className="mr-2 h-4 w-4" />
+                    More ways
+                  </Button>
                 )}
                 <Button
                   variant="outline"
-                  className="h-11"
+                  className={cn("h-11", deckEmpty && "col-span-2")}
                   onClick={() => setDeckToolsOpen(true)}
                 >
                   <Ellipsis className="mr-2 h-4 w-4" />
                   Deck tools
                 </Button>
               </div>
+              {canEdit && (
+                <AddMoreCardsButton
+                  setId={setId}
+                  existingCards={data.cards.map((c) => ({ front: c.front, back: c.back }))}
+                  deckName={data.set.name}
+                  deckOrganizationId={data.set.organization_id}
+                  onAdded={() => {
+                    setReloadKey((k) => k + 1);
+                    setLineageKey((k) => k + 1);
+                  }}
+                />
+              )}
               {viewOnly && (
                 <DuplicateToEditButton
                   resourceType="fc_set"
@@ -1315,46 +1353,83 @@ export function SetDetailView({
               )}
             </div>
 
-            {/* Forward lineage — the material this deck was made from, and the
-                rest of the kit that came out of the same upload. Beside it, the
-                way to get MORE out of that same material: a generated deck used
-                to be a dead end at whatever size the generator chose. */}
-            <div className="mt-3 space-y-2">
+            {/* Deck mastery — where you stand across the whole deck. */}
+            {!deckEmpty && (
+              <div className="mt-5 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+                <DeckMasteryBar
+                  masteries={data.cards.map((c) => masteryByCard[c.id])}
+                />
+              </div>
+            )}
+
+            {/* Power-ups — the deck's AI upgrades, shown off as what they
+                are rather than two more outline buttons in a row. */}
+            {!deckEmpty && (
+              <div
+                className={cn(
+                  "mt-3 grid grid-cols-1 gap-3",
+                  canEdit ? "sm:grid-cols-3" : "sm:grid-cols-1",
+                )}
+              >
+                {canEdit && (
+                  <PowerUpTile
+                    tone="enrich"
+                    icon={Lightbulb}
+                    title="Enrich"
+                    hint="Explanations, examples and memory tricks"
+                    badge={
+                      enrichPlan.todo.length > 0
+                        ? `${enrichPlan.todo.length} ${enrichPlan.todo.length === 1 ? "card" : "cards"}`
+                        : "All done"
+                    }
+                    busy={bulkRun.phase === "running"}
+                    disabled={enrichGuard.isChecking || bulkRun.phase === "running"}
+                    onClick={() => void runBulkEnrich()}
+                    meter={<EntitlementMeter capability="education.card_enrichment" />}
+                  />
+                )}
+                {canEdit && (
+                  <PowerUpTile
+                    tone="illustrate"
+                    icon={Images}
+                    title="Illustrate"
+                    hint="An expert image on the front of every card"
+                    busy={
+                      illustrateRun.phase === "starting" ||
+                      illustrateRun.phase === "running"
+                    }
+                    disabled={
+                      illustrate.isChecking ||
+                      illustrateRun.phase === "starting" ||
+                      illustrateRun.phase === "running"
+                    }
+                    onClick={() => void illustrate.guard(runIllustrate)}
+                    meter={<EntitlementMeter capability="education.card_image_source" />}
+                  />
+                )}
+                <PowerUpTile
+                  tone="convert"
+                  icon={Boxes}
+                  title="Convert"
+                  hint="Turn this deck into a quiz, notes and more"
+                  onClick={() => setConvertOpen(true)}
+                />
+              </div>
+            )}
+
+            {/* Lineage — what this deck was made from, and what was made
+                from it. */}
+            <div className="mt-3 flex flex-wrap items-center gap-2 empty:hidden">
               <MadeFromSource entityType="fc_set" entityId={setId} />
               <MadeInChatLink metadata={data.set.metadata} />
-              {/* Phone only: on desktop it sits in the action row. */}
-              <div className="md:hidden">
-              <AddMoreCardsButton
-                setId={setId}
-                existingCards={data.cards.map((c) => ({ front: c.front, back: c.back }))}
-                    deckName={data.set.name}
-                deckOrganizationId={data.set.organization_id}
-                onAdded={() => {
-                  setReloadKey((k) => k + 1);
-                  setLineageKey((k) => k + 1);
-                }}
-              />
-              </div>
             </div>
-
-            {/* Reverse lineage — study artifacts made from this deck. */}
-            <div className="mt-3">
+            <div className="mt-2 empty:hidden">
               <GeneratedFromChips
                 entityType="fc_set"
                 entityId={setId}
                 refreshKey={lineageKey}
               />
             </div>
-
-            {/* Deck mastery — Brainscape's retention hook: where you stand
-                across the whole deck, in the shared mastery vocabulary. */}
-            {data.cards.length > 0 && (
-              <div className="mt-4 rounded-xl border border-border bg-card p-3 sm:p-4">
-                <DeckMasteryBar
-                  masteries={data.cards.map((c) => masteryByCard[c.id])}
-                />
-              </div>
-            )}
 
             {/* Audio overview (Phase 7 — podcast-from-deck). On a phone the
                 page shows only the player and running jobs (the buttons live
@@ -1416,8 +1491,35 @@ export function SetDetailView({
                       states exactly what each action will do. */}
                   {/* Desktop keeps "Select cards" on the page; the phone
                       opens selection from Deck tools. */}
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="flex items-baseline gap-2 text-sm font-semibold text-foreground">
+                      Cards
+                      <span className="font-normal tabular-nums text-muted-foreground">
+                        {cardSearch.trim()
+                          ? `${filteredCards.length} of ${data.cards.length}`
+                          : data.cards.length}
+                      </span>
+                    </h2>
+                    <div className="flex w-full items-center gap-2 sm:w-auto [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1 sm:[&>*:first-child]:w-64 sm:[&>*:first-child]:flex-none">
+                      <EducationCollectionSearch
+                        value={cardSearch}
+                        onValueChange={setCardSearch}
+                        label="cards in this deck"
+                      />
+                      {canEdit && !selecting && (
+                        <Button
+                          variant="ghost"
+                          className="shrink-0 text-muted-foreground"
+                          onClick={() => setSelecting(true)}
+                        >
+                          <MousePointerClick className="mr-1.5 h-4 w-4" />
+                          Select
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   {canEdit && selecting && (
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
                       {selecting ? (
                         <>
                           <span className="text-xs text-muted-foreground">
@@ -1569,31 +1671,13 @@ export function SetDetailView({
             <Drawer open={studyModesOpen} onOpenChange={setStudyModesOpen}>
               <DrawerContent className="max-h-[85dvh]">
                 <DrawerHeader>
-                  <DrawerTitle>Choose how to study</DrawerTitle>
+                  <DrawerTitle>More ways to study</DrawerTitle>
                   <DrawerDescription>
-                    Pick the practice style that fits this session.
+                    Pick the practice style for this session.
                   </DrawerDescription>
                 </DrawerHeader>
                 <div className="grid gap-2 overflow-y-auto px-4 pb-safe">
-                  {OTHER_STUDY_MODES.map((mode) => (
-                    <Button
-                      key={mode.key}
-                      variant="ghost"
-                      className="h-auto min-h-14 justify-start px-3 py-2 text-left"
-                      onClick={() =>
-                        navigate(mode.key, `${EDU_BASE}/${setId}/${mode.path}`)
-                      }
-                    >
-                      <mode.icon className="mr-3 h-5 w-5 shrink-0 text-primary" />
-                      <span className="min-w-0">
-                        <span className="block font-medium">{mode.label}</span>
-                        <span className="block whitespace-normal text-xs font-normal text-muted-foreground">
-                          {mode.description}
-                        </span>
-                      </span>
-                    </Button>
-                  ))}
-                  {VOICE_STUDY_MODES.map((mode) => (
+                  {STUDY_MODES.map((mode) => (
                     <Button
                       key={mode.key}
                       variant="ghost"
@@ -1645,8 +1729,30 @@ export function SetDetailView({
                           navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
                         }
                       >
-                        <History className="mr-2 h-4 w-4" /> History
+                        <TrendingUp className="mr-2 h-4 w-4" /> Progress
                       </Button>
+                      {canEdit && (
+                        <Button
+                          variant="outline"
+                          className="h-11 justify-start"
+                          onClick={() => {
+                            setDeckToolsOpen(false);
+                            setSettingsOpen(true);
+                          }}
+                        >
+                          <Settings2 className="mr-2 h-4 w-4" /> Deck settings
+                        </Button>
+                      )}
+                      {(access.isOwner || access.level === "admin") && (
+                        <ShareButton
+                          resourceType="fc_set"
+                          resourceId={setId}
+                          resourceName={data.set.name}
+                          organizationId={data.set.organization_id}
+                          showStatus={false}
+                          className="h-11 justify-start"
+                        />
+                      )}
                       {/* An empty deck has nothing to keep offline or
                           print: those appear with its first card. */}
                       {!deckEmpty && (
@@ -1769,71 +1875,48 @@ export function SetDetailView({
                     </section>
                   )}
 
-                  {!deckEmpty && (
-                  <section className="space-y-2">
-                    <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Improve and reuse
-                    </h2>
-                    <div className="grid gap-2">
-                      {canEdit && (
-                        <Button
-                          variant="outline"
-                          className="h-11 justify-start"
-                          onClick={() => {
-                            setDeckToolsOpen(false);
-                            void runBulkEnrich();
-                          }}
-                          disabled={
-                            data.cards.length === 0 ||
-                            bulkRun.phase === "running"
-                          }
-                        >
-                          <Lightbulb className="mr-2 h-4 w-4" />{" "}
-                          {bulkEnrichActionLabel(enrichPlan)}
-                        </Button>
-                      )}
-                      {canEdit && (
-                        <EntitlementMeter capability="education.card_enrichment" />
-                      )}
-                      {canEdit && (
-                        <Button
-                          variant="outline"
-                          className="h-11 justify-start"
-                          disabled={
-                            data.cards.length === 0 ||
-                            illustrate.isChecking ||
-                            illustrateRun.phase === "starting" ||
-                            illustrateRun.phase === "running"
-                          }
-                          onClick={() => {
-                            setDeckToolsOpen(false);
-                            void illustrate.guard(runIllustrate);
-                          }}
-                        >
-                          <Images className="mr-2 h-4 w-4" /> Illustrate this deck
-                        </Button>
-                      )}
-                      {canEdit && (
-                        <EntitlementMeter capability="education.card_image_source" />
-                      )}
-                      <Button
-                        variant="outline"
-                        className="h-11 justify-start"
-                        onClick={() => {
-                          setDeckToolsOpen(false);
-                          setConvertOpen(true);
-                        }}
-                        disabled={data.cards.length === 0}
-                      >
-                        <Boxes className="mr-2 h-4 w-4" /> Convert to another
-                        study aid
-                      </Button>
-                    </div>
-                  </section>
-                  )}
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* Deck settings — who sees the deck and its class. These were a
+                permanent row above the actions; they are set once, so they
+                live one click away instead. */}
+            {canEdit && (
+              <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Deck settings</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Who can see it
+                      </p>
+                      <DeckRowAccess
+                        setId={setId}
+                        value={data.set}
+                        onChange={(v) =>
+                          setData((prev) =>
+                            prev ? { ...prev, set: { ...prev.set, ...v } } : prev,
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Class
+                      </p>
+                      <ClassPicker
+                        entityType="fc_set"
+                        entityId={setId}
+                        organizationId={data.set.organization_id}
+                      />
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
 
             {/* Per-card "make this deeper", opened from a specific card tile —
                 never a modal list of the whole deck to scroll and pick from.
