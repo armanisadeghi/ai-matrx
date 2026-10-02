@@ -9,11 +9,13 @@ import {
   describeUnset,
   describeValue,
   inTab,
-  modalityOfTranslator,
+  modalityOf,
   tabCounts,
   visibleSlice,
 } from "../model";
 import type { TranslationBundle, TranslationCellRow } from "../types";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 const API_GROQ = "11111111-1111-1111-1111-111111111111";
 const API_IMG = "22222222-2222-2222-2222-222222222222";
@@ -53,9 +55,9 @@ function bundle(cells: TranslationCellRow[], compiled: TranslationBundle["compil
       { id: API_IMG, name: "openai_image", display_name: "Openai Image", translator_key: "openai_image" },
     ],
     offerings: [
-      { id: OFF_A, api_id: API_GROQ, model_id: "m1", provider_model_id: "llama", setting_profile_id: null, model_name: "Llama" },
-      { id: OFF_B, api_id: API_GROQ, model_id: "m2", provider_model_id: "qwen", setting_profile_id: null, model_name: "Qwen" },
-      { id: OFF_I, api_id: API_IMG, model_id: "m3", provider_model_id: "gpt-image", setting_profile_id: null, model_name: "GPT Image" },
+      { id: OFF_A, api_id: API_GROQ, model_id: "m1", provider_model_id: "llama", setting_profile_id: null, model_name: "Llama", capabilities: { input: ["text"], output: ["text"], interaction: "turn" } },
+      { id: OFF_B, api_id: API_GROQ, model_id: "m2", provider_model_id: "qwen", setting_profile_id: null, model_name: "Qwen", capabilities: { input: ["text"], output: ["text"], interaction: "turn" } },
+      { id: OFF_I, api_id: API_IMG, model_id: "m3", provider_model_id: "gpt-image", setting_profile_id: null, model_name: "GPT Image", capabilities: { input: ["text", "image"], output: ["image"], interaction: "turn" } },
     ],
     settings: [
       { key: "temperature", value_type: "number", canonical_min: 0, canonical_max: 2, canonical_values: null, default_value: null, value_positions: null, family: "Randomness" },
@@ -102,18 +104,52 @@ describe("describeValue / describeUnset / describeOff", () => {
   });
 });
 
-describe("modalityOfTranslator mirrors the server's modality_of", () => {
-  it.each([
-    ["groq_chat", "text"],
-    ["google_interactions", "text"],
-    ["openai_image", "image"],
-    ["xai_video", "video"],
-    ["groq_stt", "audio"],
-    ["openai_realtime", "audio"],
-    ["google_embeddings", "embedding"],
-    ["extraction_gliner", "other"],
-  ])("%s → %s", (key, mod) => {
-    expect(modalityOfTranslator(key)).toBe(mod);
+type ModalityCase = {
+  name: string;
+  capabilities: { input?: string[]; output?: string[]; interaction?: string } | null;
+  profile_modality: string | null;
+  expected: string;
+};
+const CASES_FILE = path.join(__dirname, "modality_rule_cases.json");
+const SERVER_CASES_FILE = path.resolve(
+  __dirname,
+  "../../../../../aidream/aidream/testing/fixtures/modality_rule_cases.json",
+);
+const CASES = (JSON.parse(fs.readFileSync(CASES_FILE, "utf8")) as { cases: ModalityCase[] }).cases;
+
+describe("modalityOf is the server's modality_of (shared cases, F-c)", () => {
+  it.each(CASES.map((c) => [c.name, c] as const))("%s", (_name, c) => {
+    expect(modalityOf(c.capabilities, c.profile_modality)).toBe(c.expected);
+  });
+
+  it("runs the same cases file the server runs", () => {
+    if (!fs.existsSync(SERVER_CASES_FILE)) return; // no aidream checkout beside this one
+    expect(fs.readFileSync(CASES_FILE, "utf8")).toBe(fs.readFileSync(SERVER_CASES_FILE, "utf8"));
+  });
+});
+
+describe("a TTS listing on a chat API is audio, not text (F-c)", () => {
+  it("is never MISSING the text keys its chat neighbours declare", () => {
+    const API_EL = "33333333-3333-3333-3333-333333333333";
+    const OFF_T = "aaaaaaaa-0000-0000-0000-000000000009";
+    const b: TranslationBundle = {
+      cells: [cell({ id: "t", setting_key: "temperature", layer_owner_id: API_EL })],
+      compiled: [
+        { offering_id: OFF_A, setting_key: "temperature", cell_id: "t", layer: "api", state: "inherited" },
+      ],
+      profiles: [],
+      apis: [{ id: API_EL, name: "elevenlabs_chat", display_name: null, translator_key: "elevenlabs_chat" }],
+      offerings: [
+        { id: OFF_A, api_id: API_EL, model_id: "m1", provider_model_id: "llama", setting_profile_id: null, model_name: "Llama", capabilities: { input: ["text"], output: ["text"] } },
+        { id: OFF_T, api_id: API_EL, model_id: "m9", provider_model_id: "eleven_v3", setting_profile_id: null, model_name: "Eleven v3", capabilities: { input: ["text"], output: ["audio"] } },
+      ],
+      settings: [
+        { key: "temperature", value_type: "number", canonical_min: 0, canonical_max: 2, canonical_values: null, default_value: null, value_positions: null, family: "randomness" },
+      ],
+    };
+    const grid = buildGrid(b);
+    const gc = grid.rows.find((r) => r.key === "temperature")?.cells.get(`api:${API_EL}`);
+    expect(gc?.missing.map((m) => m.id) ?? []).not.toContain(OFF_T);
   });
 });
 

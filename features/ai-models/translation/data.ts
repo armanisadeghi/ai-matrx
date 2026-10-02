@@ -16,6 +16,7 @@ import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import type { ControlRule } from "../types";
 import type {
+  ModelCapabilities,
   CompiledRow,
   SettingProfileRow,
   TranslationApi,
@@ -109,11 +110,12 @@ async function readOfferings(): Promise<TranslationOffering[]> {
       model_id: string;
       provider_model_id: string | null;
       setting_profile_id: string | null;
+      capabilities_override: Record<string, unknown> | null;
     }>(
       ({ from, to }) =>
         ai()
           .from("offering")
-          .select("id, api_id, model_id, provider_model_id, setting_profile_id", {
+          .select("id, api_id, model_id, provider_model_id, setting_profile_id, capabilities_override", {
             count: "exact",
           })
           .eq("is_available", true)
@@ -122,11 +124,16 @@ async function readOfferings(): Promise<TranslationOffering[]> {
           .range(from, to),
       { label: "ai.offering" },
     ),
-    readAllRows<{ id: string; name: string | null; common_name: string | null }>(
+    readAllRows<{
+      id: string;
+      name: string | null;
+      common_name: string | null;
+      capabilities: Record<string, unknown> | null;
+    }>(
       ({ from, to }) =>
         ai()
           .from("model_definition")
-          .select("id, name, common_name", { count: "exact" })
+          .select("id, name, common_name, capabilities", { count: "exact" })
           .is("deleted_at", null)
           .order("id", { ascending: true })
           .range(from, to),
@@ -134,10 +141,30 @@ async function readOfferings(): Promise<TranslationOffering[]> {
     ),
   ]);
   const nameById = new Map(models.map((m) => [m.id, m.common_name || m.name || m.id]));
-  return offerings.map((o) => ({
+  const capsById = new Map(models.map((m) => [m.id, m.capabilities]));
+  return offerings.map(({ capabilities_override, ...o }) => ({
     ...o,
     model_name: nameById.get(o.model_id) ?? o.provider_model_id ?? o.id,
+    capabilities: listingCapabilities(capsById.get(o.model_id), capabilities_override),
   }));
+}
+
+/** The model's declared capabilities, the listing's override winning key by key. */
+function listingCapabilities(
+  model: Record<string, unknown> | null | undefined,
+  override: Record<string, unknown> | null,
+): ModelCapabilities | null {
+  const merged: Record<string, unknown> = { ...(model ?? {}) };
+  for (const key of ["input", "output", "interaction"] as const) {
+    if (override && key in override) merged[key] = override[key];
+  }
+  const words = (v: unknown) => (Array.isArray(v) ? v.map(String) : null);
+  if (!model && !override) return null;
+  return {
+    input: words(merged.input),
+    output: words(merged.output),
+    interaction: typeof merged.interaction === "string" ? merged.interaction : null,
+  };
 }
 
 async function readSettings(): Promise<TranslationSetting[]> {

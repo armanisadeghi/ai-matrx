@@ -1,0 +1,19 @@
+{
+  "about": "Settings-translation F-c: the ONE modality rule. aidream settings_grid.modality_of and matrx-frontend translation/model.ts modalityOf both run every case; the two copies of this file must stay byte-identical.",
+  "cases": [
+    {"name": "chat model", "capabilities": {"input": ["text", "image"], "output": ["text"], "interaction": "turn"}, "profile_modality": null, "expected": "text"},
+    {"name": "ElevenLabs TTS on a chat translator", "capabilities": {"input": ["text"], "output": ["audio"], "interaction": "turn"}, "profile_modality": null, "expected": "audio"},
+    {"name": "music model that also writes text", "capabilities": {"input": ["text", "image"], "output": ["audio", "text"], "interaction": "turn"}, "profile_modality": null, "expected": "audio"},
+    {"name": "image model that also writes text", "capabilities": {"input": ["text", "image"], "output": ["image", "text"], "interaction": "turn"}, "profile_modality": null, "expected": "image"},
+    {"name": "video model", "capabilities": {"input": ["text", "image"], "output": ["video"], "interaction": "turn"}, "profile_modality": null, "expected": "video"},
+    {"name": "embedding model", "capabilities": {"input": ["text"], "output": ["embedding"], "interaction": "embedding"}, "profile_modality": null, "expected": "embedding"},
+    {"name": "speech to text", "capabilities": {"input": ["audio"], "output": ["text"], "interaction": "single"}, "profile_modality": null, "expected": "transcription"},
+    {"name": "streaming speech to text", "capabilities": {"input": ["audio"], "output": ["text"], "interaction": "realtime"}, "profile_modality": null, "expected": "transcription"},
+    {"name": "realtime voice model", "capabilities": {"input": ["text", "audio"], "output": ["text", "audio"], "interaction": "realtime"}, "profile_modality": null, "expected": "realtime"},
+    {"name": "text-only realtime", "capabilities": {"input": ["text"], "output": ["text"], "interaction": "realtime"}, "profile_modality": null, "expected": "realtime"},
+    {"name": "entity extraction", "capabilities": {"input": ["text"], "output": ["entities"], "interaction": "extraction"}, "profile_modality": null, "expected": "entities"},
+    {"name": "nothing declared", "capabilities": {}, "profile_modality": null, "expected": "other"},
+    {"name": "missing capabilities", "capabilities": null, "profile_modality": null, "expected": "other"},
+    {"name": "settings profile wins over the model", "capabilities": {"input": ["text"], "output": ["text"], "interaction": "turn"}, "profile_modality": "audio", "expected": "audio"}
+  ]
+}

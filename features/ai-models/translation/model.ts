@@ -10,14 +10,16 @@
  * "Missing" mirrors the T1 completeness guard (aidream
  * aidream/testing/settings_grid.py): a key is relevant to a modality when ANY
  * available offering of that modality declares a rule for it (data, never a
- * hand list), `object`-typed settings are never probed, and the modality of an
- * API comes from its translator key suffix (`modality_of`).
+ * hand list), `object`-typed settings are never probed, and the modality of a
+ * listing comes from the catalog's truth (`modalityOf` — profile modality, else the
+ * model's declared capabilities), never from a translator key suffix.
  */
 
 import type { ControlRule } from "../types";
 import type {
   CellState,
   CompiledRow,
+  ModelCapabilities,
   TranslationApi,
   TranslationBundle,
   TranslationCellRow,
@@ -45,23 +47,44 @@ export const MODALITY_LABEL: Record<Modality, string> = {
   other: "Other",
 };
 
-/** Mirror of aidream `modality_of` (settings_grid.py), folded to the grid's groups. */
-export function modalityOfTranslator(translatorKey: string): Modality {
-  const suffix = String(translatorKey).split("_").pop() ?? "";
-  const server: Record<string, string> = {
-    chat: "text",
-    interactions: "text",
-    image: "image",
-    video: "video",
-    embeddings: "embedding",
-    stt: "audio",
-    realtime: "realtime",
-    live: "realtime",
-  };
-  return foldModality(server[suffix] ?? suffix);
+/**
+ * THE modality rule — a byte-for-byte mirror of aidream `modality_of`
+ * (aidream/testing/settings_grid.py, settings-translation F-c). Both run the
+ * shared cases in `__tests__/modality_rule_cases.json`. Returns the SERVER's
+ * word (relevance is keyed on it); `foldModality` groups it for display.
+ *
+ *   1. the settings profile's `modality` when the listing has one;
+ *   2. else the model's declared capabilities (listing override wins):
+ *      audio in, text out only (no text in) → "transcription";
+ *      interaction "realtime" → "realtime"; first output among
+ *      video/image/audio/embedding → it; text output → "text"; any other
+ *      declared output → that word; nothing declared → "other".
+ */
+const OUTPUT_PRECEDENCE = ["video", "image", "audio", "embedding"] as const;
+
+export function modalityOf(
+  capabilities: ModelCapabilities | null | undefined,
+  profileModality?: string | null,
+): string {
+  if (profileModality) return String(profileModality);
+  const caps = capabilities ?? {};
+  const output = (caps.output ?? []).map(String);
+  const input = (caps.input ?? []).map(String);
+  if (
+    output.length > 0 &&
+    output.every((o) => o === "text") &&
+    input.includes("audio") &&
+    !input.includes("text")
+  ) {
+    return "transcription";
+  }
+  if (caps.interaction === "realtime") return "realtime";
+  for (const word of OUTPUT_PRECEDENCE) if (output.includes(word)) return word;
+  if (output.includes("text")) return "text";
+  return output.length > 0 ? [...output].sort()[0] : "other";
 }
 
-/** The server's modality words → the grid's groups (realtime is audio here). */
+/** The server's modality words → the grid's groups (realtime and speech to text are audio here). */
 export function foldModality(raw: string): Modality {
   switch (raw) {
     case "text":
@@ -71,10 +94,34 @@ export function foldModality(raw: string): Modality {
     case "embedding":
       return raw;
     case "realtime":
+    case "transcription":
       return "audio";
     default:
       return "other";
   }
+}
+
+/**
+ * An API column holds listings that may make different things (a chat API can
+ * carry a TTS model): it is grouped under its most common member modality,
+ * ties broken by display order. No members = "other".
+ */
+function dominantModality(serverWords: string[]): Modality {
+  const counts = new Map<Modality, number>();
+  for (const w of serverWords) {
+    const m = foldModality(w);
+    counts.set(m, (counts.get(m) ?? 0) + 1);
+  }
+  let best: Modality = "other";
+  let bestCount = 0;
+  for (const m of MODALITY_ORDER) {
+    const c = counts.get(m) ?? 0;
+    if (c > bestCount) {
+      best = m;
+      bestCount = c;
+    }
+  }
+  return best;
 }
 
 // ── Wire description ────────────────────────────────────────────────────────
@@ -287,8 +334,16 @@ function consumedKeys(rule: ControlRule | undefined): string[] {
 export function buildGrid(bundle: TranslationBundle): GridModel {
   const settingByKey = new Map(bundle.settings.map((s) => [s.key, s]));
   const cellById = new Map(bundle.cells.map((c) => [c.id, c]));
-  const apiModality = new Map(
-    bundle.apis.map((a) => [a.id, modalityOfTranslator(a.translator_key)]),
+  // Each listing's modality, from the catalog's truth (the server's word).
+  const profileModality = new Map(bundle.profiles.map((p) => [p.id, p.modality]));
+  const offeringModality = new Map(
+    bundle.offerings.map((o) => [
+      o.id,
+      modalityOf(
+        o.capabilities,
+        o.setting_profile_id ? profileModality.get(o.setting_profile_id) : null,
+      ),
+    ]),
   );
 
   // Own-layer cells, addressed by (layer owner, key).
@@ -342,7 +397,7 @@ export function buildGrid(bundle: TranslationBundle): GridModel {
       ownerId: api.id,
       apiId: api.id,
       label: apiLabel(api),
-      modality: apiModality.get(api.id) ?? "other",
+      modality: dominantModality(members.map((m) => offeringModality.get(m.id) ?? "other")),
       members,
     });
   }
@@ -354,9 +409,9 @@ export function buildGrid(bundle: TranslationBundle): GridModel {
   );
 
   // Keys relevant to each modality (T1: any available offering of it declares one).
-  const relevant = new Map<Modality, Set<string>>();
+  const relevant = new Map<string, Set<string>>();
   for (const o of bundle.offerings) {
-    const mod = apiModality.get(o.api_id) ?? "other";
+    const mod = offeringModality.get(o.id) ?? "other";
     const set = relevant.get(mod) ?? new Set<string>();
     for (const k of declaredByOffering.get(o.id) ?? []) if (settingByKey.has(k)) set.add(k);
     relevant.set(mod, set);
@@ -388,7 +443,8 @@ export function buildGrid(bundle: TranslationBundle): GridModel {
         if (c.layer === "api" && c.layer_owner_id === column.apiId) keys.add(c.setting_key);
       }
     }
-    for (const k of relevant.get(column.modality) ?? []) keys.add(k);
+    const memberModalities = new Set(column.members.map((m) => offeringModality.get(m.id) ?? "other"));
+    for (const mod of memberModalities) for (const k of relevant.get(mod) ?? []) keys.add(k);
 
     for (const key of keys) {
       const setting = settingByKey.get(key);
@@ -405,7 +461,8 @@ export function buildGrid(bundle: TranslationBundle): GridModel {
         if (cell && compiled?.cell_id === cell.id) covers.push(m);
         const declared = declaredByOffering.get(m.id)?.has(key) ?? false;
         const probed = setting !== undefined && setting.value_type !== "object";
-        if (!declared && probed && (relevant.get(column.modality)?.has(key) ?? false)) missing.push(m);
+        const memberRelevant = relevant.get(offeringModality.get(m.id) ?? "other");
+        if (!declared && probed && (memberRelevant?.has(key) ?? false)) missing.push(m);
       }
       const status: CellStatus | null = cell
         ? cell.state

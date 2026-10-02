@@ -71,6 +71,13 @@ export type TranslationApi = {
   translator_key: string;
 };
 
+/** The slice of `ai.model_definition.capabilities` the modality rule reads. */
+export type ModelCapabilities = {
+  input?: string[] | null;
+  output?: string[] | null;
+  interaction?: string | null;
+};
+
 export type TranslationOffering = {
   id: string;
   api_id: string;
@@ -78,6 +85,8 @@ export type TranslationOffering = {
   provider_model_id: string | null;
   setting_profile_id: string | null;
   model_name: string;
+  /** The model's declared capabilities with the listing's override applied. */
+  capabilities: ModelCapabilities | null;
 };
 
 export type TranslationSetting = {
