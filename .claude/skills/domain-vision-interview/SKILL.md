@@ -29,7 +29,7 @@ an internal docs-system skill: a short conversation with Arman about one Domain.
 
 ## Before the interview
 
-1. Confirm the target: one Domain (or one major Feature) from `meta/registry.yaml`. One
+1. Confirm the target: one Domain (or one major Feature) from `policies/domain-tree.md`. One
    interview covers ONE node — never a menu of domains in one sitting.
 2. Do the homework HE shouldn't have to do: read the node's existing docs and skim its code
    anchors so your questions are informed. Collect any existing verbatim Arman quotes about
@@ -62,10 +62,3 @@ an internal docs-system skill: a short conversation with Arman about one Domain.
    vision. Surface the go-live set prominently; that is the whole point.
 4. Commit + push; end with the mandatory question: any (more) modifications to
    the skill or the core system?
-
-# Changelog
-
-- 2026-09-10 — Step 3 now points to the `grilling` skill for question preparation and delivery
-  (kept shallow: both bars in round 1, no spec-depth branches).
-- 2026-08-20 — Created per Arman's ruling in the docs-system overhaul session (third
-  sitting).

@@ -37,17 +37,15 @@ first step of every scheduled run), plus these on-demand spin-offs.
 
 *"I wanna make sure that we don't mess any of that stuff up. I want these documents to stay
 nice, clean, up to date, accurate consistently."* The scheduled DAILY run is not free-roaming:
-it works a rotation over the registry so the whole corpus is deep-reviewed on a cycle.
+it works a rotation over the DB registry (`platform.taxonomy_node`) so the whole corpus is deep-reviewed on a cycle.
 
 1. **Pick the next node(s)** from the DB (project `brsgrqvjdzwihsvnfqkf`):
    `select slug, docs_path, last_reviewed_at from platform.taxonomy_node
     where docs_path is not null order by last_reviewed_at asc nulls first limit 2;`
    Flagged nodes (a contradiction reported anywhere, a `review_notes` flag) jump the queue.
-2. **Run the full pass below on that node's doc kit** — every claim in its STATE/HANDOFF
+2. **Run the full pass below on that node's docs** — every claim in them
    verified against live code/DB, duplicates collapsed, staleness fixed, vision untouched.
-3. **Stamp it:** `update platform.taxonomy_node set last_reviewed_at = now(),
-   review_notes = '<one line: verdict + anything flagged>' where slug = '<slug>';`
-   An un-stamped review didn't happen.
+3. **Advance the rotation (a DB field, not a doc):** `update platform.taxonomy_node set last_reviewed_at = now() where slug = '<slug>';`
 4. **Cycle math:** ~45 doc-homed nodes at 2/day ≈ a full corpus pass every ~3 weeks. The
    docs-steward monitors staleness daily — any node past 45 days unreviewed is an alarm.
 
@@ -63,12 +61,13 @@ convergence runs.
 1. **Census the subject.** Grep the subject's terms across common-docs AND every repo it
    touches (docs, FEATURE.md files, handoffs); follow one ring of links. List every doc
    that makes claims about the subject.
-2. **Elect the one home.** Per the Feature Registry: the owning node's doc (STATE.md /
-   the specific kit file) is the survivor. If the registry has no node, propose one
-   (`status: proposed`) — dedupe is how missing nodes get discovered.
+2. **Elect the one home.** The owning node's doc in the
+   [domain tree](/policies/domain-tree.md) is the survivor. If the tree has no feature for it,
+   add one where its domain clearly holds it, or propose the change to Arman in chat —
+   dedupe is how missing features get discovered.
 3. **Classify every disagreement** before touching anything:
    - **Fact vs fact** → reality arbitrates: verify against live code, the live DB, git,
-     the deployed state. The wrong doc is corrected, with a changelog line. "Claimed built"
+     the deployed state. The wrong doc is corrected. "Claimed built"
      and "claimed finished" are ALWAYS probed, never trusted — both false-done and
      false-pending are common.
    - **Doc vs vision (Arman's words)** → vision wins by default. If the code itself has
@@ -81,19 +80,14 @@ convergence runs.
    line or is deleted (git keeps history). Never leave two copies "for safety" — that is
    the disease. Repoint every inbound reference in every repo.
 5. **Record.** The commit message names what was merged and what was corrected (with the
-   evidence); the survivor carries no changelog. Registry updated if the node changed.
+   evidence). The domain tree and `platform.taxonomy_node` updated if the node changed.
    Escalations filed.
 
 ## Rules of evidence
 
 - A doc's own "verified ✓" is not evidence; a code comment is not evidence. Artifacts and
   behavior only: the file is wired, the RPC is live, the route renders, the rows exist.
-- Verification date stamps go on what YOU verified, dated today — never inherited.
 - Anything genuinely unverifiable (needs a deploy, a paid run, a human login) is marked
   UNVERIFIABLE with what would prove it — never guessed.
 - Arman's verbatim words are never merged away, trimmed, or paraphrased — they move intact
   to the survivor's vision section with source and date.
-
-# Changelog
-
-- 2026-08-20 — Created per Arman's ruling in the docs-system overhaul session.

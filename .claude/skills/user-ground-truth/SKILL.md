@@ -126,8 +126,3 @@ audit finds what its briefer does not know, or it is not an audit:
 
 The output for him is a page he can act on — what he will see, doing what he described — not
 the judge's transcript.
-
-## Changelog
-- 2026-09-16 — Created after the Agent Change Impact failure: the owner's dictated vision was
-  paraphrased at the first hop and four days of work landed where he does not look. Script,
-  summarization instruction (his, verbatim) and the judge's concept banked here.

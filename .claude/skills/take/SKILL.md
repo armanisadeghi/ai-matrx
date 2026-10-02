@@ -19,9 +19,8 @@ timestamp: 2026-09-10T00:00:00Z
 
 1. **The register first** — [`operations/unassigned-handoffs.md`](/operations/unassigned-handoffs.md)
    (Domains, Features, Sub-features, Programs, Tails; match the row name loosely, the Node slug exactly).
-2. No row? **The Feature Registry** — `platform.taxonomy_node` (DB, project
-   `brsgrqvjdzwihsvnfqkf`) / [`meta/registry.yaml`](/meta/registry.yaml): the node's
-   `docs_path` is its doc kit.
+2. No row? **The domain tree** — [`/policies/domain-tree.md`](/policies/domain-tree.md),
+   mirrored in `platform.taxonomy_node`: the node's `docs_path` is its doc home.
 3. Neither resolves cleanly, or two rows both match → ask ONE closed question with your
    recommendation, then go. Never guess between two features.
 
@@ -79,8 +78,8 @@ Masterwork build followed the thin version — nobody reached across, noticed, o
 7. **Never lose work.** *"Unpushed work is lost forever."* Dedicated branch, commit at
    every good stopping point, **push after every commit**, draft PR early, push before
    running long. Close the release gap before ending (workspace law).
-8. **Groom the docs — don't grow them. Do NOT create new doc files.** The node kit IS the
-   doc set: update STATE.md, groom HANDOFF.md (rewrite, never append; it shrinks as work
+8. **Groom the docs — don't grow them. Do NOT create new doc files.** The node's existing docs
+   ARE the doc set: update STATE.md, groom HANDOFF.md (rewrite, never append; it shrinks as work
    completes; ≤150 lines; done work collapses to one line pointing at code — *"we don't
    care how we got here, only that we're here and it's done"*). Spend the words on what's
    ahead. Full rules: the `handoffs` skill.
@@ -142,33 +141,8 @@ remembers nothing of this conversation and reads none of the documentation — e
   (same commit) — a live handoff with no owner is an orphan by law. **Scope finished** →
   delete the handoff (delete-when-done), update STATE.md, and if the whole feature is done,
   its row and docs go too (`low-hanging-fruit` closure standard: closure is total).
-- **You deep-verified the node's docs on the way through** → stamp the rotation:
-  `update platform.taxonomy_node set last_reviewed_at = now(), review_notes = '<line>'
-   where slug = '<slug>';`
 - Disagreeing docs found mid-take → spin off `/dedupe-and-verify <subject>`, don't burn
   your context. Multiple sessions/agents working your subject (or its plans scattered
   across many hands) → the `item-register` skill: one self-contained register, every
   perspective on it; recruiting the other live sessions is confirm-with-Arman-first. New taxonomy discoveries → `proposed` registry rows, never improvised
   homes. Every common-docs edit: index/log/lint per the bundle rules.
-
-# Changelog
-
-- 2026-09-10 — Contract rule 2 points to the `grilling` skill for interview mechanics.
-- 2026-08-25 — Register lookup now names all five staffed categories explicitly: Domain,
-  Feature, Sub-feature, Program, and Tail.
-- 2026-08-24 — Item-register trigger added: a take that finds multiple sessions/agents on
-  one subject routes through the `item-register` skill (confirm-first session recruiting).
-- 2026-08-24 — THE VISION SWEEP added (Arman's ruling after the Steward failure): the node
-  kit is the starting point, never the boundary; the richest vision treatment of your
-  subject governs wherever it lives; a cross-node vision gap stops the build and goes to
-  him; pointer lines get left in both kits.
-- 2026-08-21 — Contract rule 8 added: every response ends with one of three explicit
-  closes (done + anything else? · next, I'm doing X · requirements met, could go further
-  on X) — never a fuzzy ending.
-- 2026-08-21 — Added the check-in contract (Arman's spoken rules, condensed): cold-open
-  groundwork with no jargon/doc references, the two question shapes, UI = clickable URL
-  never a file list, done = self-verified on all three form factors, deployment silence
-  with the one-hour escalation exception, and the explicit-fate rule for undone work.
-- 2026-08-21 — Created from Arman's Feature Task Assignment prompt (his rules preserved
-  verbatim) and wired to the Feature Registry system: register-row claim law, node doc
-  kit, attention board, rotation stamp, review-queue registration, closure standard.

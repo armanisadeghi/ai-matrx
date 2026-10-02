@@ -11,7 +11,7 @@ timestamp: 2026-09-10T00:00:00Z
 **Resolve yourself, and say what you did:**
 
 - **Fact vs fact** → reality arbitrates. Query the live DB, read the live code, check the deployed
-  state. The doc that loses is corrected with the evidence in its changelog.
+  state. The doc that loses is corrected.
 - **Stale vs current at equal provenance** → the verified-against-reality one wins.
 - **Vocabulary drift** → [`/systems/platform/vocabulary/FEATURE.md`](/systems/platform/vocabulary/FEATURE.md) wins, always.
 - **An owner doc's claim about BUILD STATE being out of date** → correct the build state; his

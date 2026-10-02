@@ -36,36 +36,33 @@ committing — other machines and cloud sessions read from the remote.
 skill is distributed as a real committed file in each repo (see § Shared skills), so it works
 offline; only editing/syncing them needs the bundle.
 
-**Subjects are governed by the Feature Registry** (`policies/feature-registry.md` +
-`meta/registry.yaml`, ruled 2026-08-20): every capability is a node — Domain → Feature →
-Sub-feature — anchored to real code, no orphans, ONE doc home per node. Find (or propose)
-the node BEFORE deciding where a doc goes.
+**Subjects are placed by the one domain tree** (`policies/domain-tree.md`, Arman 2026-10-01;
+placement rules in `policies/feature-registry.md`): every capability is a node — Domain →
+Feature → Sub-feature — no orphans, ONE doc home per node. Find the node BEFORE deciding where
+a doc goes; propose tree changes to Arman in chat.
 
 **Layout — seven fixed root branches** (the enumerated vocabulary lives in
 `policies/document-types.md` § The bundle's root branches, and every repo's docs guard enforces
 that exact set — a pointer into anything else fails the gate):
-- `systems/` — registry-node homes (target shape `systems/<domain>/<feature>/`), each holding
-  the node doc kit: `VISION.md` (Arman's words), `STATE.md` (the ONE verified truth + pending
-  list — absorbs the old SOR FEATURE.md), `DECISIONS.md` (rulings ledger), `HANDOFF.md` (the
-  work order — cross-repo work orders live HERE, ruled 2026-08-20), plus satellites.
+- `systems/` — node homes (`systems/<domain>/<feature>/`) with as many files as the feature
+  needs: `VISION.md` holds Arman's words; cross-repo work orders live here (ruled 2026-08-20).
 - `projects/<project>/` — time-bounded CROSS-FEATURE campaigns declaring `touches:` (registry
   slugs); every project doc carries a `Status:` line; finished → `projects/archive/`.
-- `policies/` — platform doctrine, including the **Feature Registry policy** and the
+- `policies/` — platform doctrine, including the **domain tree** and the
   **document-types taxonomy and authority ladder** (`policies/document-types.md` — VISION >
   POLICY > STATE > repo local-mechanics docs > guides; plans/handoffs/history have no
   authority). Read both before creating any doc.
 - `operations/` — live shared **registers**: the lists, boards, and rosters that agents in more
-  than one repo write to (the unassigned-handoff list, the attention board, the doc-migration
-  board). A register cannot live in a repo — see rule 2 below.
+  than one repo write to (the unassigned-handoff list, the attention board). A register cannot live in a repo — see rule 2 below.
 - `inbox/` — Arman's protected dump lane: lint-exempt, **agent deletion forbidden**, triaged
   daily by the docs-steward per `inbox/README.md`. Agents never file their own material here.
-- `meta/` — the bundle's machinery (OKF spec, `registry.yaml`, lint + sync scripts). `skills/`
+- `meta/` — the bundle's machinery (OKF spec, lint + sync scripts). `skills/`
   stays at root (symlink-stable). Adding another branch means editing the policy AND every
   repo's guard in the same change. No loose root `.md` besides README/index/log.
 
 **Filing test:** node truth → the node's home in `systems/`. Cross-feature work →
 `projects/`. Doctrine → `policies/`. Shared register → `operations/`. Raw Arman input →
-`inbox/` (his lane, not yours). Finished → archive now, same session. Genuinely repo-local
+`inbox/` (his lane, not yours). Finished → deleted; git holds it. Genuinely repo-local
 mechanics → that repo; **everything with meaning is centralized here** (Arman's
 centralization ruling, 2026-08-20 — repo FEATURE.md files hold local mechanics only).
 
@@ -83,7 +80,7 @@ symlink to it — edit the repo copy, never a detached copy.
      FEATURE.md/context-docs system. NOT here.
    - Two or more repos must agree on it (a shared DB, a wire protocol, a security model, a
      rendering contract) → here, one doc, with a **"Repositories" section up top naming every
-     repo it touches and what each one's role is** (see `systems/website-platform/cms/STATE.md` — that section is
+     repo it touches and what each one's role is** (see `systems/publish/cms/STATE.md` — that section is
      mandatory, it IS the cure for single-repo thinking).
    - Execution plans / project briefs for work inside ONE repo → that repo, linking here for
      the system-of-record. Briefs are temporary; the doc here is durable. **This is not a
@@ -100,9 +97,8 @@ symlink to it — edit the repo copy, never a detached copy.
    Creating a new doc here without planting its pointers in every touched repo is an unfinished
    job — the doc nobody is routed to doesn't exist.
 4. **Same truth discipline as everywhere else.** A doc here is a promise it is currently true:
-   verify claims against live code and live DBs before trusting OR editing; stamp the
-   verification date at the top; changelog substantive edits; a superseded doc gets a loud
-   pointer to its replacement, never silent deletion.
+   verify claims against live code and live DBs before trusting OR editing; a superseded doc
+   gets a loud pointer to its replacement, never silent deletion.
 5. **Full-document review on every edit.** Editing one section means re-reading the whole doc for
    anything your change invalidates — same standard as the repos' context-docs skill.
 6. **Commit in the common-docs repo itself.** Small commits, imperative subject, and if repo
@@ -110,7 +106,7 @@ symlink to it — edit the repo copy, never a detached copy.
    committing — other sessions work here too.
 7. **Found a duplicate?** You own it (find-it-own-it): pick the most complete/current copy, merge
    any unique truth from the others into the common-docs doc, replace every other copy with a
-   pointer line, and note the merge in the doc's changelog. Never leave two copies "for safety."
+   pointer line. Never leave two copies "for safety."
 
 ## Shared skills — the ONE exception to "zero mirrors", and why
 
@@ -161,7 +157,7 @@ standard; the same setup is planned for every user sandbox). Every edit here kee
    `# Section` headings + `* [Title](url) - description` bullets; no frontmatter except the
    bundle-root index, which carries exactly `okf_version: "0.1"`. There is no `log.md`: history
    is git (the four laws, `/policies/document-types.md`).
-3. **Links between concepts are bundle-relative** (`/systems/website-platform/cms/STATE.md`) — stable under moves.
+3. **Links between concepts are bundle-relative** (`/systems/publish/cms/STATE.md`) — stable under moves.
    Broken links are tolerated by consumers (§5.3) but the linter warns; fix or justify.
 4. **After ANY .md create/move/edit:** update the affected `index.md` entries and run `python3 meta/scripts/okf_lint.py` — it must print CONFORMANT
    (exit 0) before you commit. The linter hard-fails only on the three §9 conformance rules and
@@ -178,13 +174,13 @@ keep using plain absolute filesystem paths.
 propose) the subject's registry node → node truth goes INTO the node's `STATE.md` (create the
 kit file if the node home lacks it; a brand-new node gets `status: proposed` in the registry)
 — never a new parallel doc beside an existing STATE; cross-feature work → `projects/<project>/`
-with a `touches:` list. Every truth doc carries: verification-date line, Repositories table
-(repo | role), the truth, changelog → commit → plant pointer lines in every touched repo →
-commit those. (Unmigrated node homes still carry a legacy `FEATURE.md` — edit THAT in place
-rather than creating a competing STATE.md; the doc-migration board owns the rename.)
+with a `touches:` list. Every truth doc carries: Repositories table
+(repo | role), the truth → commit → plant pointer lines in every touched repo →
+commit those. (A node home that carries a `FEATURE.md` — edit THAT in place rather than creating a
+competing STATE.md.)
 
 **Editing an existing doc:** read it whole → verify the claims you're building on against live
-code/DB → edit in place (merge, don't append addenda) → bump the verification date + changelog →
+code/DB → edit in place (merge, don't append addenda) →
 commit → check the pointers still resolve (a renamed doc orphans its pointers).
 
 **Working a cross-repo feature (not editing docs):** read the common-docs doc FIRST, note every

@@ -26,16 +26,15 @@ that gap is exactly why this skill exists (Arman, 2026-08-21).
   use archived evidence for historical comparisons instead.
 - **Verify against live state, never against a brief.** Audit briefs go stale and get
   re-issued: the 8-finding "Canonical Architecture Drift Audit" brief is from 2026-08-15 and
-  was fully adjudicated the same day
-  ([archive](/projects/archive/db-changeover-2026-08/architecture-drift-audit-2026-08-15.md)).
+  was fully adjudicated the same day.
   If a finding doesn't reproduce live, say so — that is a result, not a failure.
-- Canon = [db-rules FEATURE.md](/systems/platform/db-rules/FEATURE.md); operating doctrine =
+- Canon = [db-rules FEATURE.md](/systems/architecture/database/FEATURE.md); operating doctrine =
   [database-changeover-doctrine](/policies/database-changeover-doctrine.md) (measurement
   traps §4: certified-vs-all universes, `is_component` vs `rls_variant`, cached certify,
   counts are not work lists).
 - The sentinels below measure the whole database on purpose. When one of them surfaces a specific
   table, say which kind of table it is before reporting it —
-  [canonical-first triage](/policies/canonical-first-triage.md): graveyard is never mentioned, and a
+  [canonical-first triage](/policies/canonical-first-triage.md): deprecated is never mentioned, and a
   problem on a certified or foundation table outranks the same problem on an uncertified one.
 
 ## 1. Measure (read-only, via Supabase MCP)
@@ -106,17 +105,3 @@ schedule. **DONE 2026-08-21: variant-contract reclassification** — `iam.verify
 concept for base columns; FAILs 799→445, certified 242→281, 42 tables fixed / 0 regressed, and
 the `seo`+`runtime` families are FAIL-free. **Read §6d-3 before reading any base-column finding.** Next run: verify those landed, then groom
 this list down.
-
-## Changelog
-
-
-- **2026-08-21 (per-variant contract)** — base-column findings are now variant-derived
-  (db-rules §6d-3). A `component`/`ledger` FAIL for a missing actor column or mutation stamp is
-  no longer possible; if you see one, the gate regressed. Two honest findings this run are
-  column REMOVALS (stray `visibility` on two components), which stay filed, never dropped here.
-- **2026-08-21 (evening)** — First wave verified; all six rulings recorded (NO NULL ORG ·
-  variants-not-exemptions · batch user-visible · daily drift check); baseline artifact
-  republished at a fresh URL after the original was deleted.
-- **2026-08-21** — Created from Arman's directive after the 08-15 brief was re-issued
-  cold: refreshing the numbers must always end in chips fired + a decision list, and the
-  standing artifact is updated in place, never recreated.

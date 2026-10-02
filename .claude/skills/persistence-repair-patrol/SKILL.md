@@ -318,8 +318,3 @@ do not create an attention signal merely to announce that no attention is needed
 Ordinary bugs, unfinished verification, deployment lag, tooling failures, and other
 engineering work are not blockers and must remain owned and repaired by agents. Do
 not relabel them as Arman involvement because a run ended or the next action is hard.
-
-## Changelog
-
-Dated change record and the run friction behind each rule → [changelog.md](changelog.md).
-Read it when a friction review revises this skill or when tracing why a rule exists.

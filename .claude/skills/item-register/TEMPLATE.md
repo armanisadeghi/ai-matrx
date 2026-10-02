@@ -72,8 +72,7 @@ looked at it.
 **Vision.** <The intended outcome, present tense, ≤3 sentences. Merges the original
 direction with every subsequently agreed change into one statement; any prior decision is
 spelled out in full — no references to conversations.>
-**Current.** <Factual assessment vs. the vision, ≤3 sentences, explicit gaps, verified
-counts with their verification date.>
+**Current.** <Factual assessment vs. the vision, ≤3 sentences, explicit gaps.>
 **Status.** <vocabulary value> — <one clause of why, if not obvious>.
 **Owner.** <who> · **Priority.** <P0–P3>
 **Sources.** <commits, migrations, tables, files, docs — or "unsourced beyond this item;
@@ -90,12 +89,4 @@ this item IS the record.">
 
 ---
 
-## Changelog
-- <date> — <author> — Register created per the item-register skill from <sources>;
-  <source doc> archived in place with a pointer.
 ```
-
-# Changelog
-
-- 2026-08-24 — Created alongside the item-register skill, distilled from the Keyword
-  Intelligence register's proven structure.

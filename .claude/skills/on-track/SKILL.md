@@ -84,7 +84,3 @@ the page; the judges' and planner's reports are linked for anyone who wants them
 Briefing the judges with what you think is wrong · a judge that never opens the product ·
 summarizing the summary instead of his words · running it on a clock instead of at his ask or a
 decision point · sending him the reports instead of the page.
-
-## Changelog
-- 2026-09-16 — Created at the owner's ask after the Agent Change Impact failure, as the run-it-all
-  form of `user-ground-truth`.

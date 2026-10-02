@@ -177,10 +177,3 @@ gates: output_kind_ok true · 14 tests green
 - ✅ A field with zero consumers, proven, may be dropped — say so explicitly.
 - ✅ "This one cannot be converted honestly yet" is a successful outcome when the evidence
   says so. Blocked-with-evidence beats converted-and-lying.
-
-## Changelog
-
-- 2026-08-25 — Created after the `quiz_set` trust-stripping finding (feedback `499a460f`)
-  proved a kind binding can silently delete an agent's grounding evidence. Written to
-  Arman's Q2 ruling: strict guidelines + batches of 10–15 + downstream proof, so the
-  48-shape backlog can proceed without his per-shape approval.

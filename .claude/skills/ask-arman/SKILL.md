@@ -146,11 +146,3 @@ re-record a paraphrase.
 Ending a turn on an unfiled question · a row with an empty homework line · "blocked on Arman"
 with a reversible default available · a fork with no recommendation · any code, id, path, or
 section number in his sentence · re-asking anything dated in a `DECISIONS.md` · asking a fact.
-
-## Changelog
-- 2026-09-16 — Gate 0b: a question whose answer changes nothing the user will see never reaches him.
-
-- **2026-09-12 (in-app Question Desk)** — noted under § The row that the desk mirrors researched
-  rows into the in-app Question Desk (the `question_desk` MCP tool): the ledger row stays the
-  filing contract, the tool is where Arman answers. See
-  [`/systems/platform/question-desk/STATE.md`](/systems/platform/question-desk/STATE.md).

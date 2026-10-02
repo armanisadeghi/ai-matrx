@@ -142,7 +142,7 @@ the failure list: the replication agent appends it to [open-gaps.md](open-gaps.m
   valuable sentence of the session, and it becomes a rule on the kind. And **plumbing never enters
   his table** — a missing credential, a codegen failure, a 403 endpoint goes in a developer list at
   the bottom of your report. Routing agent-doable work to him is itself a defect.
-- **Content IR alignment binds you** (`systems/content-ir-system/UNIFICATION.md`): one system;
+- **Content IR alignment binds you** (`systems/architecture/content-ir/UNIFICATION.md`): one system;
   XML/markdown/fence arrival surfaces stay first-class; frozen block-type values never change;
   kinds-as-JSON is the internal form, never a forced wire format. Names per `NOMENCLATURE.md` +
   lexicon (short snake_case noun, no provider prefix, no hashes, no node names).

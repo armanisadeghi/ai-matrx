@@ -109,7 +109,7 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    lock query once read a column named `status` instead of `outcome`, always read "not held",
    and a lane applied to the branch twice with no lease held at all; nothing stopped it).
    Freeze contracts before fan-out so lanes can't collide; after the freeze a change is an
-   amendment (changelog + register note + type regeneration), never a silent edit. **STEP ZERO
+   amendment (register note + type regeneration), never a silent edit. **STEP ZERO
    before any lane scouts for unclaimed work: query `agent.review_queue` for the reviewable
    thing by name — never trust a fresh checkout's git state alone.** Confirmed 2026-09-12: a
    freshly cloned repo can come down materially behind `origin/main` through the session's git
@@ -229,31 +229,3 @@ Each gate's exit is checkable; a campaign that skips a gate is the failure mode 
   delete-and-restart ceremony, one-ticket-per-session, and human approval gates on every path —
   each contradicts done-means-done or near-zero owner involvement. Their clarity mechanisms were
   taken; their model of who owns correctness was not.
-
-**Changelog**
-- 2026-09-16 — [Reality is the referee](/policies/reality-is-the-referee.md) folded in: discovery
-  is briefed to return the unknown (the coordinator withholds what it knows as the test), the
-  coordinator meets reality before modeling it, the register holds decisions and checkable facts
-  only, verifiers carry the owner's words never the builder's frame. Learned from the Agent Change
-  Impact campaign (`projects/agent-change-impact/`), which followed every step here and delivered
-  nothing where the owner looks.
-- 2026-09-13 (law alignment) — questions to the owner now route through the `ask-arman` gate and
-  the Question Ledger, one complex question per round in the five-part shape (law 10, Arman
-  2026-09-10/12) — "batched" wording removed from §6, gate 3, and Part 4; gate 1 names the champion
-  per discipline (law 9); gate 3 carries "ask the boss, never the user". Conformance to rulings
-  already proven in `grilling`/`ask-arman` evals — no new mechanism, no new proof run.
-- 2026-09-10 (benchmark rewrite) — Part 3 lifecycle with gate exit criteria added (from the HR
-  execution plan that worked); adopted from the two benchmark frameworks: the closed four-item stop
-  list ("rulings, not stalls"), the exhaustive rulings-at-close report, the post-compaction resume
-  rule, waiting discipline and provenance-only cleanup, register-as-index with fog and out-of-scope
-  lanes, the builder-floor/verifier-bar split, the anti-self-answer clause, fail-fast before
-  fan-out, the ratchet; the verification battery named; rejected mechanisms recorded with reasons.
-  Proof: `evals.md`.
-- 2026-09-10 (skill-benchmark adoptions) — method skills wired: `diagnose`, `forcing-function-tests`,
-  `subagent-dispatch`, reviewer-finding adjudication, retro, `grilling`, `plan-attack`.
-- 2026-09-10 — status-integrity carry-forward rule (§8); medium default effort; Opus/Terra default
-  worker; law 7 (the model ladder) at Arman's ruling.
-- 2026-08-30 — Six laws promoted to every repo `CLAUDE.md` at the owner's order; this doc remains
-  the full body.
-- 2026-08-30 — Created; distilled from the HR-domain campaign at the owner's request, with the
-  five launch moves quoted from the founding transcript.

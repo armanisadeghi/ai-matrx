@@ -81,7 +81,7 @@ Updates). Hard constraints, all of them:
    Current / Updates: any contributor, touching only their item, appending one Update line
    (`date — author — change`).
 7. **Every claim sourced or marked unsourced** — commits, migrations, tables, files, or an
-   explicit "this item IS the record." Verified counts carry their verification date.
+   explicit "this item IS the record."
 8. **`## Not yet specified`** holds in-scope work you can see coming but cannot yet state
    as a precise item. The test is whether you can *phrase the question* sharply now, not
    whether you can answer it: sharp but blocked → an item; fuzzy → this section, never
@@ -105,8 +105,6 @@ register, then for each item you have standing on:
   must answer. No line = only one agent has looked.
 - A contest CAN settle without Arman: if a later ruling or verified fact resolves it, the
   conceding agent says so explicitly ("I CONCEDE — …") and marks SETTLED.
-- End the pass with one changelog line ("<author> review pass complete — next agent may
-  edit") so passes don't interleave.
 
 Correcting your own past position is normal and recorded, never silently overwritten
 (e.g. "self-correction: that ask is WITHDRAWN — it contradicts KI-046").
@@ -132,7 +130,7 @@ Deliberation is scaffolding; once a decision is made, the history is not the del
 1. For every settled area: **delete the deliberation** — the back-and-forth, options
    considered, who-said-what, "we originally thought X but then."
 2. **Replace it with the fact** — plain declarative text ("The law." / "The rule."), one to
-   three sentences, no hedging, no attribution. Git and the changelog hold the history.
+   three sentences, no hedging, no attribution. Git holds the history.
 3. Never preserve context "just in case," and never overcomplicate the replacement.
 4. **The document must get materially shorter.** If it didn't shrink, the pass wasn't done.
 5. Collapse-revealed follow-up work (stale names in UI/code, behavior contradicting the new
@@ -180,17 +178,3 @@ the bundle's lifecycle rules (`docs-steward`), and its pointer lines get re-poin
 Register edits follow the bundle laws: full-document read before editing, index.md
 updated, `python3 meta/scripts/okf_lint.py` CONFORMANT, commit and push before ending —
 other contributors read only the remote.
-
-# Changelog
-
-- 2026-09-10 — Phase 1 rule 8: a `## Not yet specified` section for suspected-but-unsharp work
-  (adapted from the "fog of war" idea in Matt Pocock's wayfinder), so it is neither lost nor
-  pre-sliced into fake items.
-- 2026-09-10 — Build mode is gated on the open items passing `plan-attack` (a zero-authorship
-  hole-poking review) first.
-- 2026-08-24 — Created from Arman's three instruction prompts to the Keyword Intelligence
-  register crew (gap-analysis categories; the self-contained register brief; the
-  collapse-to-law instruction) plus the mechanisms that emerged in that register's three
-  review passes: consensus marking, serialized passes, concession protocol, ruling
-  cascades, build mode. Recruit-other-sessions flow added per Arman (confirm-first, report
-  unreachable). Wired as a take-system trigger.

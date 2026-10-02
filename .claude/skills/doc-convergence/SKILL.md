@@ -105,8 +105,8 @@ claims. Rules of evidence:
 Two structures are law: the register's rows (each staffed Feature/Program keeps its own handoff —
 the row's link target) and the handoffs-skill format. Within that:
 
-1. **One cluster STATE doc** — placement per the Feature Registry (ruled 2026-08-20): the
-   owning node's home per `common-docs/meta/registry.yaml` (target shape
+1. **One cluster STATE doc** — placement per the one domain tree
+   (`common-docs/policies/domain-tree.md`): the owning node's home (target shape
    `systems/<domain>/<feature>/STATE.md`; a genuinely cross-feature cluster converges in its
    `projects/<slug>/` campaign dir with a `touches:` list). **STATE.md now ABSORBS any
    in-bundle `systems/*/FEATURE.md` for the same node** — merge it in and delete the

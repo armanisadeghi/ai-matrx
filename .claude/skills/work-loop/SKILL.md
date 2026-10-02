@@ -16,7 +16,7 @@ timestamp: 2026-08-30T00:00:00Z
 # Work Loop
 
 Canonical contract:
-`/Users/armanisadeghi/code/common-docs/systems/improvement/work-loop/STATE.md`.
+`/Users/armanisadeghi/code/common-docs/systems/architecture/work-loop/STATE.md`.
 
 ## Coordinator
 

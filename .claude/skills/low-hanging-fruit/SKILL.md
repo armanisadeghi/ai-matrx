@@ -39,11 +39,9 @@ after verification, not doc claims):
    is ≤3 small items is a mislabeled Tail; verify, then collapse per the tail law and close.
 3. **STATE.md pending lists** — items marked pending that a probe shows already shipped
    (false-pendings are free fruit: closing them costs one verification).
-4. **The migration board** (`operations/doc-migration.md`) — Wave 1 rows are mostly
-   mechanical single-session closures.
-5. **The attention board's Table B** (`operations/attention.md`) — aging work is often aging
+4. **The attention board's Table B** (`operations/attention.md`) — aging work is often aging
    precisely because it is 90% done and boring.
-6. **`projects/` dirs with no Status or a stale one** — many are finished-but-unarchived;
+5. **`projects/` dirs with no Status or a stale one** — many are finished-but-unarchived;
    archiving IS closure.
 
 ## The law of the run
@@ -70,7 +68,3 @@ after verification, not doc claims):
   written word.
 - Never mark done what you did not verify shipped. A false closure is worse than an open item.
 - Scheduling: runs on the cadence Arman approves by name and interval — never self-scheduled.
-
-# Changelog
-
-- 2026-08-20 — Created per Arman's ruling in the docs-system overhaul session.

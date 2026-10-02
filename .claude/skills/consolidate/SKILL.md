@@ -46,7 +46,6 @@ consolidated. **Not this skill:** the topic-cluster ceremony that ends in an Arm
 
 - **Any two sources disagree (Step 3.6)** → [conflicts.md](conflicts.md).
 - **Writing the final report (Step 8)** → [report.md](report.md).
-- **Revising this skill, or tracing why a rule exists** → [changelog.md](changelog.md).
 
 ## Step 1 — Resolve the node, exactly
 
@@ -55,7 +54,7 @@ consolidated. **Not this skill:** the topic-cluster ceremony that ends in an Arm
 1. **The DB registry** — `platform.taxonomy_node` in the one platform DB, addressed only by URL
    (`https://db.matrxserver.com`; never by project ref):
    `select slug, level, status, docs_path, parent_id from platform.taxonomy_node where slug ilike '%<name>%';`
-   The DB wins over [`meta/registry.yaml`](/meta/registry.yaml) on any disagreement.
+   The one tree is [`/policies/domain-tree.md`](/policies/domain-tree.md); the DB row mirrors it.
 2. No `docs_path`? The node's home is `systems/<domain>/<feature>/` — create it.
 3. No node at all? Insert one with `status='proposed'` (agents never flip status) and continue.
 4. Two rows match and **neither is an exact slug match** → ask ONE closed question with your
@@ -230,8 +229,8 @@ The node's home holds the kit — [`cross-repo-docs`](/skills/cross-repo-docs/SK
   `VISION MISSING` — do not invent one. 🚨 **You never rewrite, trim, or "fix" existing VISION
   content** — you only merge new verbatim quotes into it.
 - **`STATE.md`** — the ONE verified truth: what it is, verified current state, the pending list.
-  Merge in place; never append addenda. Carries a verification-date line, a **Repositories table
-  (repo | role)** naming every repo the node touches, and a changelog.
+  Merge in place; never append addenda. Carries a **Repositories table (repo | role)** naming
+  every repo the node touches.
 - **`DECISIONS.md`** — settled rulings with dates, so they are never re-asked.
 - **`HANDOFF.md`** — forward work only, groomed not grown. **The test is "no closed items and no
   restated STATE", not a line count** — compressing a true backlog into 150 lines by writing dense
@@ -354,17 +353,10 @@ on disk still holds the old copies — out of scope, but say so if you find one.
 
 ## Step 7 — Bookkeeping, then ship
 
-- **Registry:** set `docs_path` if it was null; stamp the review —
-  `update platform.taxonomy_node set last_reviewed_at = now(), review_notes = '<one line: consolidated, what moved>' where slug = '<slug>';`
-  Mirror any new node into [`meta/registry.yaml`](/meta/registry.yaml). An unstamped run didn't happen.
-- **Board:** add your node's row + result to [`operations/doc-migration.md`](/operations/doc-migration.md) Wave 3.
+- **Registry:** set `docs_path` if it was null; a new feature goes into [`/policies/domain-tree.md`](/policies/domain-tree.md) in the same commit.
 - **Bundle conformance:** every new/moved file gets frontmatter with a non-empty `type`, and an entry
   in the affected `index.md`. Run
   `python3 meta/scripts/okf_lint.py` — it must print CONFORMANT (exit 0) before you commit.
-- **Board:** add your row to § Consolidate runs on
-  [`operations/doc-migration.md`](/operations/doc-migration.md). **Key the row by your NODE SLUG,
-  never by an integer** — concurrent runs claimed the number 66 twice in wave 2 and concatenated
-  one row onto another. Re-reading the section first does not prevent that race; a slug key does.
 - **Ship — the shared-checkout protocol. Read this before your first `git` command.** Dozens of
   other sessions work these same trees, and **they will not follow your rules.** Every run in both
   waves had work swept into an unrelated agent's commit. Know exactly what the protocol does and
@@ -420,10 +412,5 @@ Seven required sections, with owner-doc conflicts, wrong claims, and protected-l
       reference repointed; pointer lines planted in surviving repo docs.
 - [ ] All three proof-gate checks ran after the deletions: the deleted-path grep came back empty,
       every in-lane survivor is justified, the broad sweep is grouped. Counts taken from git.
-- [ ] Registry stamped, migration board row added, `okf_lint.py` CONFORMANT, every touched repo
+- [ ] Registry updated, migration board row added, `okf_lint.py` CONFORMANT, every touched repo
       committed AND pushed.
-
-# Changelog
-
-Version history (v1–v5) and the wave evidence behind each rule → [changelog.md](changelog.md).
-Read it when revising this skill or tracing why a rule exists.
