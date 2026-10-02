@@ -317,6 +317,57 @@ There are 23,975 Lucide icon elements.
 
 **Page gutters.** 38 route files open with a literal `p-6`/`p-8`/`px-6`/`px-8` page padding and no phone value. On 375px that is 48–64px of a 375px width spent on side padding before any card adds its own.
 
+### 2.5c Packages that ship their own UI system — missed by the first pass
+
+*Added 2026-10-02.* The owner reported the meeting lobby (`/meet/<slug>`), and **this audit's first pass had missed it.** The census scanned only matrx-frontend's own files. But much of what users see is rendered by `@ai-matrx/*` packages from `aidream/apps/shared/*`, and some of those never adopted the design system at all.
+
+| Package | Own stylesheet | Own tokens | Raw controls in TSX | Design-system primitives | Where users see it |
+|---|---|---|---|---|---|
+| **meet** | 2,296 lines CSS, 437 `mx-meet__*` classes, 73 hex/rgb | 61 `--mx-meet-*` | 69 `<button>`, 7 `<select>`, 21 `<input>` | **0** (only `ErrorBox`) | `/meet/[slug]`, `/meetings`, `/meetings/[id]`, `/rsvp/[secret]` |
+| **messaging** | 990 lines, 67 hex/rgb | 62 `--mx-msg-*` | 16 `<button>`, 21 inline styles | **0** | `/messages`, `/messages/[id]`, `/messages/admin` |
+| **chat** | 1,698 lines | 64 `--mx-chat-*` | 27 `<button>` | 1 `Button` | chat surfaces |
+| capture, media, print, detail | no stylesheet | — | 41 / 16 / 7 / 15 raw buttons; capture has 36 hex/rgb in TSX | partial | capture, media and print flows |
+| records-ui, diff, associations, alchemy | — | — | low | mostly design-system | — |
+
+**meet's stylesheet restates the design system:**
+- Buttons: `.mx-meet__primary` / `__send` (999px pills), `__chip`, `__link`.
+- Fields: `.mx-meet__input` / `__select`, with their own radius and focus ring.
+- Checkbox: `.mx-meet__toggle` wraps a native checkbox.
+- Segmented control: `.mx-meet__pills`.
+- Banners: seven kinds.
+- Badge: `.mx-meet__badge`.
+
+Only the dark video stage is defensibly its own.
+
+**The lobby, specifically** (`aidream/apps/shared/meet/src/react/components.tsx`, `PreJoinBody`). Two causes:
+1. **Layout.** The settings column was `minmax(280px, 0.8fr)` (`styles.css:592`). On the owner's 2560px Studio Display that is about 1,000px, so every dropdown ran ~1,000px wide and Join sat at the far edge. Measured on the preview: 739px dropdowns at 1920px.
+2. **Components.** Every control was native and restyled by the package's own CSS: device `<select>`s, `<input type=checkbox>`, pill buttons, a blue `__consent` banner, a 999px "Join now".
+
+**Fixed in `@ai-matrx/meet` 0.7.76:**
+- Design-system `Select`, `Checkbox` + `Label`, `SegmentedControl`, `Button` and `Alert`.
+- A 300–400px column centred inside 1,200px.
+- A guard test, proven red on 0.7.75.
+
+The rest of meet (polls, Q&A, in-room panels, `collab.tsx`) is still bespoke and is a plan step.
+
+**Lesson for the method.** The census must also walk every package's `src/` that renders in the app, and static scanning must be paired with a runtime sweep.
+
+### 2.5d Runtime sweep, 2026-10-02 (rendered pages at 375px and desktop)
+
+These come from real browser measurements: overflow, collapsed columns, nested surfaces, mismatched row heights, and native controls.
+
+| Route | Finding | Severity |
+|---|---|---|
+| `/free/data-truncator` (phone) | Three side-by-side panes squeeze to ~112px each: one letter per line, a button collapsed to 16×110px. Fixed `w-[30%]`/`w-[38%]` with no stacking (`components/official-candidate/json-truncator/JsonTruncator.tsx` ~2435) | broken |
+| `/free/uuid/generator` (phone) | Large empty body, controls pinned to the bottom with a 4px gutter, both selects blank, an input past the 375px edge (`app/(public)/free/uuid/generator/page.tsx`) | broken |
+| `/` (phone) | 4px side gutter; CTAs run edge to edge, while `/pricing` uses 16px | inconsistent |
+| `/organizations` (phone) | 36 nested surfaces; names truncate | inconsistent |
+| `/agents/all` (phone) | Toolbar runs off the right edge | inconsistent |
+| `/free/character-counter` | One native `<select>` among styled controls (`features/text-counter/CharacterCounter.tsx`) | inconsistent |
+| Public header | The "assists" chip is 28px beside a 20px button in the same row | inconsistent |
+
+The admin routes could not be swept from the local preview: `/administration` redirects to the production manage host. The core-route sweep's results are appended when it completes.
+
 ### 2.6 Where the drift lives
 
 **Highest override rate** (directories with ≥150 primitive call sites):

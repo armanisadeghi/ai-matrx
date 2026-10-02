@@ -338,6 +338,16 @@ Each step lists its scope, files, regression risk, effort, and the exit criteria
 - **Dead files** (51 in `components/matrx`, 20 in `components/ui`, `styles/dynamic*.ts`, the ThemeSwitchers) are **presented to the owner as a list to name dead**, never deleted on an agent's say-so.
 - **Exit per feature:** its row in the status doc reads green on raw-button, spinner, tabs and arbitrary-value counts.
 
+### Step 7b — Packages that ship their own UI system (high visibility, medium risk, 1–2 sessions each)
+- **Scope.** In order: meet, messaging, chat, then capture, media, print and detail. Each one's raw controls move to design-system primitives, and its stylesheet shrinks to what is truly its own (the meet video stage, the chat transcript layout). Its private `--mx-*` colour tokens map onto the design-system roles.
+- **Started 2026-10-02:** the meet pre-join lobby (`@ai-matrx/meet` 0.7.76).
+- **Rules** (the Same-Session Law):
+  - each change is made in the package, released, and adopted in matrx-frontend in the same session;
+  - each adds a guard test proven red first, like the lobby's "renders design-system controls, never native ones".
+- **Census and checks extend to packages.** `scripts/ui-drift/census.cjs` gains the `aidream/apps/shared/*/src` roots, and the `ui-drift` findings check watches them too.
+- **Runtime sweep.** The rendered-page measurement used on 2026-10-02 (overflow, collapsed columns, nested surfaces, mismatched row heights, native controls; at 375px and desktop) becomes a script the in-app check runner runs on a schedule against the clone. That's the only way to see cross-file nesting and layout collapse.
+- **Exit per package:** zero native `<select>`/`<input type=checkbox>`/styled `<button>` in its TSX, and its CSS has no rule that restates a design-system primitive.
+
 ### Step 8 — Colour, layering, elevation (low visibility, low risk, 1–2 sessions)
 - **Scope:** §2.10.
 
