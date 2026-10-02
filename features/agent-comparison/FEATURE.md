@@ -234,6 +234,17 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-10-02 — **The page's work is on the page.** `BattleHeader` now draws two pieces: the route
+  header (name, mode switcher, copy/export) and an in-page action bar with every action as a small
+  labelled or icon-only button (short word from `ICON_DEFAULTS`, full name as the tooltip), Blind test
+  and **Run** (was "Submit all" in the header behind a "…" menu). Model columns are named after their
+  model, read live (`modes/model/columnTitle.ts`; only a name the person typed is kept) — the stored
+  copy read "Model 3" whenever the model list had not loaded the pick; the runs table, exports and AI
+  copy get the same name through `selectActiveBattleColumns`. Agent pickers are a fixed 300px, not
+  full width. Usage tiles size by the column (container query: 2×2 until four fit) and put the unit
+  under the number. The runs comparison window is a report: setup, request, answers and every metric
+  table (`runsComparisonMarkdown`) handed to the RichDocument actions — Print, Download HTML and
+  Publish as buttons, every other export in its menu.
 - 2026-09-27 — **A saved battle keeps its identical request.** Every locked mode saves the shared
   composer's complete request (`readBattleInputDraft().request`) and a reopen restores it
   (`hydrateBattleInputDraft({ request })`); Request Mod saves each column's own. Saves that could not

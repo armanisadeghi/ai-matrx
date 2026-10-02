@@ -6,6 +6,22 @@ import type { ModelColumn as ModelColumnType } from "../types";
 
 let mockState: {
   agentComparison: { blind: { active: boolean; order: string[] } };
+  instanceModelOverrides: unknown;
+  modelRegistry: unknown;
+};
+// The column is named after its model, read live — its stored label is stale
+// on purpose ("Model 1"), as it was when a picked model had not loaded yet.
+const MODEL_STATE = {
+  instanceModelOverrides: {
+    byConversationId: {
+      "conversation-claude": {
+        overrides: { model: "model-claude" },
+        removals: [],
+        baseSettings: {},
+      },
+    },
+  },
+  modelRegistry: { entities: { "model-claude": { name: "Claude Sonnet" } } },
 };
 let boundColumnProps: { hideCreatorPanel?: boolean } | null = null;
 
@@ -46,7 +62,7 @@ import { ModelColumn } from "./ModelColumn";
 const column: ModelColumnType = {
   columnId: "column-claude",
   conversationId: "conversation-claude",
-  label: "Claude Sonnet",
+  label: "Model 1",
   collapsed: true,
 };
 
@@ -69,6 +85,7 @@ describe("ModelColumn collapsed blind label", () => {
   it("uses the anonymous label for the collapsed text and expansion tooltip before reveal", () => {
     mockState = {
       agentComparison: { blind: { active: true, order: [column.columnId] } },
+      ...MODEL_STATE,
     };
 
     act(() =>
@@ -85,6 +102,7 @@ describe("ModelColumn collapsed blind label", () => {
   it("restores the model label and tooltip after blind reveal", () => {
     mockState = {
       agentComparison: { blind: { active: false, order: [column.columnId] } },
+      ...MODEL_STATE,
     };
 
     act(() =>
@@ -100,6 +118,7 @@ describe("ModelColumn collapsed blind label", () => {
   it("hides creator debug only during an active blind run", () => {
     mockState = {
       agentComparison: { blind: { active: true, order: [column.columnId] } },
+      ...MODEL_STATE,
     };
     act(() =>
       root.render(
@@ -113,6 +132,7 @@ describe("ModelColumn collapsed blind label", () => {
 
     mockState = {
       agentComparison: { blind: { active: false, order: [column.columnId] } },
+      ...MODEL_STATE,
     };
     act(() =>
       root.render(

@@ -830,33 +830,75 @@ const selectRunsComparisonColumnStats = createSelector(
   },
 );
 
+/** Column identities and metric sections exactly as the table shows them (blind masking included). */
+const selectVisibleRunsComparison = createSelector(
+  [selectRunsComparisonColumnStats, selectBlindActive, selectBlindOrder],
+  (
+    rawStats,
+    blindActive,
+    blindOrder,
+  ): { stats: ColumnStats[]; sections: MetricSection[] } => {
+    // During a blind test, anonymize the column identity (agent name +
+    // version both leak which model ran) and show ONLY the user's own
+    // evaluation rows — every metric section (tokens, cost, timing, …)
+    // is a giveaway. The masks lift on Reveal.
+    const stats = blindActive
+      ? rawStats.map((s) => ({
+          ...s,
+          agentId: null,
+          agentName: blindAnonLabel(s.columnId, blindOrder),
+          versionLabel: "—",
+        }))
+      : rawStats;
+    const sections = blindActive
+      ? SECTIONS.filter((sec) => sec.title === "Your evaluation")
+      : SECTIONS;
+    return { stats, sections };
+  },
+);
+
+const mdCell = (text: string) => text.replace(/\|/g, "\\|").replace(/\n/g, " ");
+
+/**
+ * The runs comparison as Markdown tables — what Print, the HTML page and a
+ * published report carry. The best value in each row is bold, as the table
+ * shows it in green.
+ */
+export function runsComparisonMarkdown(
+  state: RootState,
+  costUnit: CostUnit,
+): string {
+  const { stats, sections } = selectVisibleRunsComparison(state);
+  if (stats.length === 0) return "";
+  const out: string[] = [];
+  for (const section of sections) {
+    out.push(`### ${section.title}`);
+    out.push(
+      `| Metric | ${stats.map((s) => mdCell(s.agentName)).join(" | ")} |`,
+    );
+    out.push(`|---|${stats.map(() => "---:").join("|")}|`);
+    for (const row of section.rows) {
+      const highlights = computeRowHighlights(row, stats);
+      const cells = stats.map((s) => {
+        const text = mdCell(row.format(row.pick(s), costUnit));
+        return highlights[s.columnId] === "best" ? `**${text}**` : text;
+      });
+      out.push(`| ${mdCell(row.label)} | ${cells.join(" | ")} |`);
+    }
+    out.push("");
+  }
+  return out.join("\n");
+}
+
 // =============================================================================
 // Component
 // =============================================================================
 
 export function RunsComparisonTable() {
-  const rawStats = useAppSelector(selectRunsComparisonColumnStats);
+  const { stats, sections } = useAppSelector(selectVisibleRunsComparison);
   const blindActive = useAppSelector(selectBlindActive);
-  const blindOrder = useAppSelector(selectBlindOrder);
 
-  if (rawStats.length === 0) return null;
-
-  // During a blind test, anonymize the column identity (agent name +
-  // version both leak which model ran) and show ONLY the user's own
-  // evaluation rows — every metric section (tokens, cost, timing, …)
-  // is a giveaway. The masks lift on Reveal.
-  const stats = blindActive
-    ? rawStats.map((s) => ({
-        ...s,
-        agentId: null,
-        agentName: blindAnonLabel(s.columnId, blindOrder),
-        versionLabel: "—",
-      }))
-    : rawStats;
-
-  const sections = blindActive
-    ? SECTIONS.filter((sec) => sec.title === "Your evaluation")
-    : SECTIONS;
+  if (stats.length === 0) return null;
 
   return (
     <div className="space-y-3 p-3">

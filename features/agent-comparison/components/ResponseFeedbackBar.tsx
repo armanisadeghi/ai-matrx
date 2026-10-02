@@ -718,7 +718,10 @@ function ResponseUsageStrip({ requestId }: { requestId: string }) {
   if (!stats || stats.tokensTotal == null) return null;
 
   return (
-    <div className="px-3 py-2 border-b border-border/60 bg-background/60 grid grid-cols-2 sm:grid-cols-4 gap-2">
+    // Sized by the COLUMN, not the window: five columns side by side are each
+    // narrow on a wide screen, so the tiles go 2×2 until four fit untruncated.
+    <div className="@container px-3 py-2 border-b border-border/60 bg-background/60">
+      <div className="grid grid-cols-2 @[30rem]:grid-cols-4 gap-2">
       <UsageTile
         icon={<Coins className="w-3 h-3" />}
         label="Tokens"
@@ -749,9 +752,10 @@ function ResponseUsageStrip({ requestId }: { requestId: string }) {
         icon={<Timer className="w-3 h-3" />}
         label="Server"
         primary={fmtMs(stats.serverDurationMs)}
-        tooltip="Time the server spent on this run"
+        tooltip="How long the run took, start to finish"
         accent="text-sky-500"
       />
+      </div>
     </div>
   );
 }

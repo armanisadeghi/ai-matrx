@@ -13,6 +13,7 @@
  * order entirely, so its runs table showed another mode's columns or none.
  */
 
+import { selectModelColumnTitle } from "../modes/model/columnTitle";
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { BattleModeId } from "./battleRoutes";
@@ -58,6 +59,9 @@ const selectTools = (s: RootState) => s.agentComparisonTools;
 const selectRequestMod = (s: RootState) => s.agentComparisonRequestMod;
 const selectVariations = (s: RootState) => s.agentComparisonVariations;
 const selectConversation = (s: RootState) => s.agentComparisonConversation;
+// A Model column is named after its model, read live (modes/model/columnTitle).
+const selectModelRegistry = (s: RootState) => s.modelRegistry;
+const selectModelOverrides = (s: RootState) => s.instanceModelOverrides;
 
 interface LockedColumnSource {
   columns: { columnId: string; conversationId: string; label: string; paused?: boolean }[];
@@ -93,6 +97,8 @@ export const selectActiveBattleColumns = createSelector(
     selectRequestMod,
     selectVariations,
     selectConversation,
+    selectModelRegistry,
+    selectModelOverrides,
   ],
   (
     mounted,
@@ -105,12 +111,29 @@ export const selectActiveBattleColumns = createSelector(
     rm,
     variations,
     conversation,
+    modelRegistry,
+    modelOverrides,
   ): BattleColumnDescriptor[] => {
     switch (mounted) {
       case "settings":
         return lockedColumns(settings, settings.locked.agentId, settings.locked.agentVersion, "settings");
-      case "model":
-        return lockedColumns(model, model.locked.agentId, model.locked.agentVersion, "model");
+      case "model": {
+        const naming = {
+          modelRegistry,
+          instanceModelOverrides: modelOverrides,
+        } as RootState;
+        return lockedColumns(
+          {
+            columns: model.columns.map((c) => ({
+              ...c,
+              label: selectModelColumnTitle(naming, c),
+            })),
+          },
+          model.locked.agentId,
+          model.locked.agentVersion,
+          "model",
+        );
+      }
       case "tuning":
         return lockedColumns(tuning, tuning.locked.sourceAgentId, tuning.locked.agentVersion, "tuning");
       case "system-prompt":

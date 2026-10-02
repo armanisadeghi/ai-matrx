@@ -24,7 +24,8 @@ export function columnModelId(
   state: RootState,
   conversationId: string,
 ): string | null {
-  const entry = state.instanceModelOverrides.byConversationId[conversationId];
+  const entry =
+    state.instanceModelOverrides?.byConversationId?.[conversationId];
   const picked = entry?.overrides?.model;
   if (typeof picked === "string" && picked) return picked;
   const base = entry?.baseSettings?.model;
