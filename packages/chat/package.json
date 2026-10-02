@@ -4,6 +4,8 @@
   "private": true,
   "description": "AI Matrx chat: running agents, chat, tool calls, streaming, context management (moved from matrx-frontend, R1/R2).",
   "exports": {
+    "./host": "./src/host/index.ts",
+    "./host/react": "./src/host/react.tsx",
     "./*": "./src/*"
   }
 }
