@@ -4500,45 +4500,40 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
-         * @description Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         * Sandbox-shape call to the user's Matrx 2 desktop, through the device relay.
+         * @description Forward one sandbox-shape call to the user's desktop through the relay.
          *
-         *     Registered below as 5 separate single-method APIRoutes — see the loop at
-         *     the bottom of this file for why we don't use ``api_route(methods=[…])``.
+         *     Registered below as single-method APIRoutes — see the loop at the bottom of this file.
          */
         get: operations["proxy_to_local_pc_GET"];
         /**
-         * Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
-         * @description Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         * Sandbox-shape call to the user's Matrx 2 desktop, through the device relay.
+         * @description Forward one sandbox-shape call to the user's desktop through the relay.
          *
-         *     Registered below as 5 separate single-method APIRoutes — see the loop at
-         *     the bottom of this file for why we don't use ``api_route(methods=[…])``.
+         *     Registered below as single-method APIRoutes — see the loop at the bottom of this file.
          */
         put: operations["proxy_to_local_pc_PUT"];
         /**
-         * Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
-         * @description Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         * Sandbox-shape call to the user's Matrx 2 desktop, through the device relay.
+         * @description Forward one sandbox-shape call to the user's desktop through the relay.
          *
-         *     Registered below as 5 separate single-method APIRoutes — see the loop at
-         *     the bottom of this file for why we don't use ``api_route(methods=[…])``.
+         *     Registered below as single-method APIRoutes — see the loop at the bottom of this file.
          */
         post: operations["proxy_to_local_pc_POST"];
         /**
-         * Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
-         * @description Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         * Sandbox-shape call to the user's Matrx 2 desktop, through the device relay.
+         * @description Forward one sandbox-shape call to the user's desktop through the relay.
          *
-         *     Registered below as 5 separate single-method APIRoutes — see the loop at
-         *     the bottom of this file for why we don't use ``api_route(methods=[…])``.
+         *     Registered below as single-method APIRoutes — see the loop at the bottom of this file.
          */
         delete: operations["proxy_to_local_pc_DELETE"];
         options?: never;
         head?: never;
         /**
-         * Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
-         * @description Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         * Sandbox-shape call to the user's Matrx 2 desktop, through the device relay.
+         * @description Forward one sandbox-shape call to the user's desktop through the relay.
          *
-         *     Registered below as 5 separate single-method APIRoutes — see the loop at
-         *     the bottom of this file for why we don't use ``api_route(methods=[…])``.
+         *     Registered below as single-method APIRoutes — see the loop at the bottom of this file.
          */
         patch: operations["proxy_to_local_pc_PATCH"];
         trace?: never;
@@ -121524,6 +121519,11 @@ export interface components {
              * @default true
              */
             skip_existing?: boolean;
+            /**
+             * Exclude Card Ids
+             * @default []
+             */
+            exclude_card_ids?: string[];
         };
         /** SetPolicyRequest */
         SetPolicyRequest: {

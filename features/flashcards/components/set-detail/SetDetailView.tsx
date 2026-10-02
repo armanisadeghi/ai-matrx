@@ -774,8 +774,20 @@ export function SetDetailView({
   // first click confirms and sources ONE trial card; the window then shows its
   // picture and offers the rest, which confirms the count again. Stop is live
   // the whole time.
+  // Cards this session's runs already settled (attached, rejected, or found
+  // nothing) are never offered again — a rejected picture is not re-bought.
+  const judgedInRun = new Set(
+    illustrateRun.cards
+      .filter((c) => c.status === "completed" || c.status === "failed")
+      .map((c) => c.cardId),
+  );
+  const rejectedInRun = illustrateRun.cards
+    .filter((c) => c.review === "rejected")
+    .map((c) => c.cardId);
   const cardsWithoutImage = data
-    ? data.cards.filter((c) => !getCardImages(c).front).length
+    ? data.cards.filter(
+        (c) => !getCardImages(c).front && !judgedInRun.has(c.id),
+      ).length
     : 0;
 
   const runIllustrate = async (mode: "trial" | "rest") => {
@@ -802,7 +814,9 @@ export function SetDetailView({
     const outcome = await startIllustrate(
       setId,
       "front",
-      mode === "trial" ? { limit: 1 } : {},
+      mode === "trial"
+        ? { limit: 1, excludeCardIds: rejectedInRun }
+        : { excludeCardIds: rejectedInRun },
     );
     // Whatever landed is already in the DB — refetch so badges and thumbnails
     // on the deck below match what the review pass is showing.
@@ -1730,6 +1744,9 @@ export function SetDetailView({
                 run={illustrateRun}
                 setName={data.set.name}
                 onClose={() => {
+                  // Closing mid-run stops it — a hidden run would keep buying
+                  // images nobody is watching.
+                  stopIllustrate();
                   setIllustrateOpen(false);
                   resetIllustrate();
                 }}

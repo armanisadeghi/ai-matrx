@@ -10,8 +10,8 @@
  *
  *   1. WHILE RUNNING — every settled card shows its picture the moment it
  *      lands (review can start right away), the rest wait below, and Stop
- *      ends the spend at the next card (aidream `/ai/cancel/{request_id}` —
- *      closing the window does NOT stop the server).
+ *      ends the spend now (it aborts the stream; aidream's source-set cancels on
+ *      disconnect). Closing the window mid-run stops it too.
  *   2. AFTER THE RUN — the same review rows: the picture, the sourcing
  *      agent's own trust reasoning, and Keep / Reject per card, plus
  *      "Illustrate N more" when cards are left (a run starts as ONE trial
@@ -266,7 +266,7 @@ export function IllustrateSetWindow({
 
   let status: string;
   if (run.phase === "starting") status = "Starting…";
-  else if (run.phase === "stopping") status = "Stopping after this card…";
+  else if (run.phase === "stopping") status = "Stopping…";
   else if (live) status = `${settled.length} of ${total} cards`;
   else if (run.phase === "stopped")
     status = `Stopped · ${attachedCards.length} of ${settled.length} got an image`;
@@ -293,7 +293,7 @@ export function IllustrateSetWindow({
               className="h-7 text-xs"
               disabled={run.phase === "stopping"}
               onClick={onStop}
-              title="Finish the current card and source nothing after it"
+              title="Stop now — no more cards are searched"
             >
               {run.phase === "stopping" ? (
                 <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />

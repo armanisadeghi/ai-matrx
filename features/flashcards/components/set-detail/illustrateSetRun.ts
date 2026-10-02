@@ -60,9 +60,8 @@ export interface IllustrateCardState {
 
 export interface IllustrateRunState {
   /**
-   * `stopping` = Stop was pressed: the server finishes the card in hand (its
-   * spend is already committed) and sources nothing after it; `stopped` = the
-   * stream ended after a Stop, so the cards still `waiting` were never run.
+   * `stopping` = Stop was pressed and the stream is being cut; `stopped` = it
+   * ended after a Stop, so the cards still `waiting` were never run.
    */
   phase:
     | "idle"
@@ -260,21 +259,32 @@ export function reduceIllustrateRun(
 export function useIllustrateSetRun() {
   const dispatch = useAppDispatch();
   const [run, setRun] = useState<IllustrateRunState>(IDLE_RUN);
-  // The live stream's server request id — what Stop cancels. A closed window
-  // or aborted fetch does NOT stop the server (streams detach on disconnect
-  // by design), so Stop must name the request.
+  // Stop aborts the stream: aidream's source-set cancels on disconnect, and the
+  // disconnect reaches the very server process running the batch. The
+  // /ai/cancel call is a second, best-effort signal (it only reaches the
+  // process it lands on).
+  const abortRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef<string | null>(null);
   const stopRequestedRef = useRef(false);
 
   /**
    * `limit` caps the cards sourced this run (the server counts it after
    * skipping cards that already have a picture) — `1` is "try one card first".
+   * `excludeCardIds` are cards the person already judged (a rejected picture),
+   * never re-sourced and re-billed.
    */
   const start = async (
     setId: string,
     face: IllustrateFace,
-    options: { limit?: number } = {},
+    options: { limit?: number; excludeCardIds?: string[] } = {},
   ) => {
+    // One run at a time: a second batch would plan the same unreached cards
+    // and pay for them twice.
+    if (abortRef.current) {
+      return { attached: 0, refused: false, failed: false, stopped: false };
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
     requestIdRef.current = null;
     stopRequestedRef.current = false;
     setRun((prev) => ({
@@ -299,13 +309,15 @@ export function useIllustrateSetRun() {
           face,
           skip_existing: true,
           ...(options.limit ? { limit: options.limit } : {}),
+          ...(options.excludeCardIds?.length
+            ? { exclude_card_ids: options.excludeCardIds }
+            : {}),
         },
         stream: true,
         outputKind: "image",
+        signal: controller.signal,
         onStreamStart: (requestId) => {
           requestIdRef.current = requestId;
-          // Stop pressed before the headers landed — cancel now.
-          if (stopRequestedRef.current && requestId) void sendCancel(requestId);
         },
         onStreamEvent: (event) => {
           const parsed = parseIllustrateEvent(
@@ -324,7 +336,9 @@ export function useIllustrateSetRun() {
         },
       }),
     );
-    if (res.error) {
+    abortRef.current = null;
+    const stopped = stopRequestedRef.current;
+    if (res.error && !stopped) {
       setRun((prev) => ({
         ...prev,
         phase: "error",
@@ -333,43 +347,37 @@ export function useIllustrateSetRun() {
       return { attached: 0, refused: false, failed: true, stopped: false };
     }
     if (refused) return { attached: 0, refused: true, failed: false, stopped: false };
-    const stopped = stopRequestedRef.current;
     setRun((prev) => ({
       ...prev,
       phase: stopped ? "stopped" : "done",
+      // The card in hand when Stop landed was cancelled with the stream.
+      cards: stopped
+        ? prev.cards.map((c) =>
+            c.status === "running" ? { ...c, status: "waiting" as const } : c,
+          )
+        : prev.cards,
       attachedCount: attached,
     }));
     return { attached, refused: false, failed: false, stopped };
   };
 
-  const sendCancel = async (requestId: string) => {
-    const res = await dispatch(
-      callApi({
-        path: "/ai/cancel/{request_id}",
-        method: "POST",
-        pathParams: { request_id: requestId },
-      }),
-    );
-    if (res.error) {
-      // Never pretend it stopped: go back to running and say why.
-      stopRequestedRef.current = false;
-      setRun((prev) => ({
-        ...prev,
-        phase: "running",
-        message: "Stop didn't reach the server. Press Stop again.",
-      }));
-    }
-  };
-
-  /**
-   * Stop the run: the card being sourced finishes (its spend is committed),
-   * nothing after it is sourced, and the stream ends on its own.
-   */
+  /** Stop the run now: the stream is cut and nothing more is sourced. */
   const stop = () => {
-    if (stopRequestedRef.current) return;
+    const controller = abortRef.current;
+    if (!controller || stopRequestedRef.current) return;
     stopRequestedRef.current = true;
-    setRun((prev) => ({ ...prev, phase: "stopping", message: undefined }));
-    if (requestIdRef.current) void sendCancel(requestIdRef.current);
+    setRun((prev) => ({ ...prev, phase: "stopping" }));
+    const requestId = requestIdRef.current;
+    if (requestId) {
+      void dispatch(
+        callApi({
+          path: "/ai/cancel/{request_id}",
+          method: "POST",
+          pathParams: { request_id: requestId },
+        }),
+      );
+    }
+    controller.abort();
   };
 
   /** Record the human's keep/reject verdict on one card's row. */

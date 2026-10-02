@@ -11597,8 +11597,8 @@
         "tags": [
           "Local Proxy"
         ],
-        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
-        "description": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).\n\nRegistered below as 5 separate single-method APIRoutes — see the loop at\nthe bottom of this file for why we don't use ``api_route(methods=[…])``.",
+        "summary": "Sandbox-shape call to the user's Matrx 2 desktop, through the device relay.",
+        "description": "Forward one sandbox-shape call to the user's desktop through the relay.\n\nRegistered below as single-method APIRoutes — see the loop at the bottom of this file.",
         "operationId": "proxy_to_local_pc_GET",
         "parameters": [
           {
@@ -11645,8 +11645,8 @@
         "tags": [
           "Local Proxy"
         ],
-        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
-        "description": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).\n\nRegistered below as 5 separate single-method APIRoutes — see the loop at\nthe bottom of this file for why we don't use ``api_route(methods=[…])``.",
+        "summary": "Sandbox-shape call to the user's Matrx 2 desktop, through the device relay.",
+        "description": "Forward one sandbox-shape call to the user's desktop through the relay.\n\nRegistered below as single-method APIRoutes — see the loop at the bottom of this file.",
         "operationId": "proxy_to_local_pc_POST",
         "parameters": [
           {
@@ -11693,8 +11693,8 @@
         "tags": [
           "Local Proxy"
         ],
-        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
-        "description": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).\n\nRegistered below as 5 separate single-method APIRoutes — see the loop at\nthe bottom of this file for why we don't use ``api_route(methods=[…])``.",
+        "summary": "Sandbox-shape call to the user's Matrx 2 desktop, through the device relay.",
+        "description": "Forward one sandbox-shape call to the user's desktop through the relay.\n\nRegistered below as single-method APIRoutes — see the loop at the bottom of this file.",
         "operationId": "proxy_to_local_pc_PUT",
         "parameters": [
           {
@@ -11741,8 +11741,8 @@
         "tags": [
           "Local Proxy"
         ],
-        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
-        "description": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).\n\nRegistered below as 5 separate single-method APIRoutes — see the loop at\nthe bottom of this file for why we don't use ``api_route(methods=[…])``.",
+        "summary": "Sandbox-shape call to the user's Matrx 2 desktop, through the device relay.",
+        "description": "Forward one sandbox-shape call to the user's desktop through the relay.\n\nRegistered below as single-method APIRoutes — see the loop at the bottom of this file.",
         "operationId": "proxy_to_local_pc_DELETE",
         "parameters": [
           {
@@ -11789,8 +11789,8 @@
         "tags": [
           "Local Proxy"
         ],
-        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
-        "description": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).\n\nRegistered below as 5 separate single-method APIRoutes — see the loop at\nthe bottom of this file for why we don't use ``api_route(methods=[…])``.",
+        "summary": "Sandbox-shape call to the user's Matrx 2 desktop, through the device relay.",
+        "description": "Forward one sandbox-shape call to the user's desktop through the relay.\n\nRegistered below as single-method APIRoutes — see the loop at the bottom of this file.",
         "operationId": "proxy_to_local_pc_PATCH",
         "parameters": [
           {
@@ -280251,6 +280251,14 @@
             "type": "boolean",
             "title": "Skip Existing",
             "default": true
+          },
+          "exclude_card_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Exclude Card Ids",
+            "default": []
           }
         },
         "type": "object",
