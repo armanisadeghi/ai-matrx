@@ -3,51 +3,53 @@
 /**
  * features/notifications/components/InboxHeaderButton.tsx — the shell bell.
  *
- * One of the FOUR fixed header controls (see features/shell/FEATURE.md
- * § The header right set). Always mounted, always the same 44px slot:
+ * One of the fixed header controls (features/shell/FEATURE.md § The header right
+ * set). Always mounted, always the same 44px slot:
  *
- *   signed in  → bell + badge (unread notices + proposals and work waiting —
- *                never direct messages, which are `MessagesHeaderButton`'s),
- *                opens the notifications popover (desktop) or a bottom drawer
- *                (mobile).
- *   signed out → the same bell; a click opens the auth gate naming the
- *                Inbox. Never hidden, never a dead control.
+ *   signed in  → bell + badge, opens a fixed 400px popover (desktop) or a
+ *                full-height sheet (phone) holding `BellPanel`.
+ *   signed out → the same bell; a click opens the auth gate. Never hidden.
  *
- * The badge reads the ONE inbox reader (`useInboxCounts`); a `partial` count
- * (one of its parts could not be read) shows the number it has and says so in
- * the label rather than printing a confident wrong total.
+ * THE BADGE (owner ruling 1, 2026-10-01) counts only what is NEW and needs you or
+ * is addressed to you, and clears when the bell opens. Updates you only watch add
+ * a dot, never a number. A part that could not be read shows a neutral dot and
+ * says so in the label — never a confident wrong sum.
  *
- * Idle cost = one tap-target + three cheap hooks; the panel body only mounts
- * while open.
+ * `G` then `N` anywhere (outside a text field) opens the inbox window.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BellRingTapButton, BellTapButton } from "@ai-matrx/tap-target/buttons";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
 import { useInboxCounts } from "../useInbox";
-import { InboxPanel } from "./InboxPanel";
+import { BellPanel } from "./BellPanel";
 
-function InboxBadge({ count }: { count: number }) {
-  if (count <= 0) return null;
+function InboxBadge({ count, dot }: { count: number; dot: "updates" | "unknown" | null }) {
+  if (count > 0) {
+    return (
+      <span
+        className="pointer-events-none absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold leading-none text-primary-foreground"
+        aria-hidden
+      >
+        {count > 99 ? "99+" : count}
+      </span>
+    );
+  }
+  if (!dot) return null;
   return (
     <span
-      className="pointer-events-none absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold leading-none text-primary-foreground"
+      className={
+        dot === "updates"
+          ? "pointer-events-none absolute right-2 top-2 h-2 w-2 rounded-full bg-primary"
+          : "pointer-events-none absolute right-2 top-2 h-2 w-2 rounded-full bg-muted-foreground"
+      }
       aria-hidden
-    >
-      {count > 99 ? "99+" : count}
-    </span>
+    />
   );
 }
 
@@ -69,30 +71,59 @@ function GuestInboxButton() {
   );
 }
 
+function isTyping(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  const tag = el.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+}
+
+/** `G` then `N` — go to the inbox from anywhere (GitHub, Atlassian). */
+function useGoToInboxShortcut() {
+  const dispatch = useAppDispatch();
+  const pendingG = useRef(0);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return;
+      const key = event.key.toLowerCase();
+      if (key === "g") {
+        pendingG.current = Date.now();
+        return;
+      }
+      if (key === "n" && Date.now() - pendingG.current < 1200) {
+        pendingG.current = 0;
+        dispatch(openOverlay({ overlayId: "notificationsInboxWindow" }));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dispatch]);
+}
+
 function SignedInInboxButton() {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
   const counts = useInboxCounts();
+  useGoToInboxShortcut();
 
-  const Bell = counts.total > 0 ? BellRingTapButton : BellTapButton;
+  const dot = counts.updatesDot ? "updates" : counts.partial ? "unknown" : null;
   const label =
-    counts.total > 0
-      ? `Notifications (${counts.total} new${counts.partial ? ", some counts unavailable" : ""})`
-      : counts.partial
-        ? "Notifications (some counts unavailable)"
-        : "Notifications";
+    counts.badge > 0
+      ? `Notifications, ${counts.badge} new${counts.partial ? " (some counts unavailable)" : ""}`
+      : counts.updatesDot
+        ? "Notifications, new updates"
+        : counts.partial
+          ? "Notifications (some counts unavailable)"
+          : "Notifications";
 
-  // The ARIA popup wiring (aria-haspopup / aria-expanded / onClick) must land
-  // on the actual focusable button, never on a plain wrapping <div> — a div
-  // with those attributes but no interactive role fails
-  // aria-allowed-attr and leaves a keyboard/screen-reader user with no
-  // "has popup" affordance on the control they actually land on. The
-  // positioning wrapper below carries only the badge, not the ARIA state.
+  const Bell = counts.badge > 0 ? BellRingTapButton : BellTapButton;
+  // The ARIA popup wiring must land on the focusable button itself, never on
+  // the positioning wrapper (aria-allowed-attr).
   const trigger = (
     <Bell
       ariaLabel={label}
       tooltip={label}
-      className={counts.total > 0 ? "text-primary" : undefined}
+      className={counts.badge > 0 ? "text-primary" : undefined}
       onClick={isMobile ? () => setOpen(true) : undefined}
     />
   );
@@ -101,19 +132,15 @@ function SignedInInboxButton() {
     return (
       <div className="relative shrink-0" data-inbox-header-button>
         {trigger}
-        <InboxBadge count={counts.total} />
+        <InboxBadge count={counts.badge} dot={dot} />
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="bg-textured pb-safe max-h-[85dvh]">
+          <DrawerContent className="bg-textured h-dvh max-h-dvh rounded-none">
             <DrawerHeader className="sr-only">
               <DrawerTitle>Notifications</DrawerTitle>
             </DrawerHeader>
-            {open && (
-              <InboxPanel
-                variant="compact"
-                onNavigate={() => setOpen(false)}
-                className="max-h-[80dvh]"
-              />
-            )}
+            {open ? (
+              <BellPanel variant="sheet" onNavigate={() => setOpen(false)} className="min-h-0 flex-1" />
+            ) : null}
           </DrawerContent>
         </Drawer>
       </div>
@@ -125,26 +152,20 @@ function SignedInInboxButton() {
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>{trigger}</PopoverTrigger>
         <PopoverContent
-          sizing="content"
+          sizing="fixed"
           align="end"
           side="bottom"
-          className="p-0 bg-textured"
+          className="w-[400px] max-w-[calc(100vw-2rem)] overflow-hidden p-0 bg-textured"
         >
-          {open && (
-            <InboxPanel variant="compact" onNavigate={() => setOpen(false)} />
-          )}
+          {open ? <BellPanel variant="compact" onNavigate={() => setOpen(false)} /> : null}
         </PopoverContent>
       </Popover>
-      <InboxBadge count={counts.total} />
+      <InboxBadge count={counts.badge} dot={dot} />
     </div>
   );
 }
 
-export function InboxHeaderButton({
-  isAuthenticated,
-}: {
-  isAuthenticated: boolean;
-}) {
+export function InboxHeaderButton({ isAuthenticated }: { isAuthenticated: boolean }) {
   return isAuthenticated ? <SignedInInboxButton /> : <GuestInboxButton />;
 }
 

@@ -51,11 +51,11 @@ jest.mock("@/features/canvas/core/CanvasHeaderToggle", () => ({
 jest.mock("@/features/notifications/components/InboxHeaderButton", () => ({
   INBOX_AUTH_GATE: { featureName: "Inbox", featureDescription: "x" },
 }));
-jest.mock("@/features/notifications/components/InboxPanel", () => ({
-  InboxPanel: () => <div data-testid="inbox-panel">inbox</div>,
+jest.mock("@/features/notifications/components/BellPanel", () => ({
+  BellPanel: () => <div data-testid="inbox-panel">inbox</div>,
 }));
 jest.mock("@/features/notifications/useInbox", () => ({
-  useInboxCounts: () => ({ total: 3, partial: false }),
+  useInboxCounts: () => ({ badge: 3, partial: false }),
 }));
 const toggleMessages = jest.fn();
 jest.mock("@/features/messaging/components/shell/MessagesHeaderButton", () => ({

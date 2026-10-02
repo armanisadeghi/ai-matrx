@@ -1798,6 +1798,9 @@ export default function OverlayController() {
     ),
   };
 
+  const notificationsInboxData = useAppSelector((s) =>
+    selectOverlayData(s, "notificationsInboxWindow"),
+  ) as { initialTab?: string } | null | undefined;
   const dataById = {
     sourceReviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "sourceReviewWindow"),
@@ -7458,6 +7461,7 @@ export default function OverlayController() {
           onClose={() =>
             dispatch(closeOverlay({ overlayId: "notificationsInboxWindow" }))
           }
+          initialTab={notificationsInboxData?.initialTab}
         />
       ) : null}
 

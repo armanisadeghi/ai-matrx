@@ -1,0 +1,210 @@
+/**
+ * @jest-environment jsdom
+ *
+ * OWNER RULING 4 (2026-10-01) — THE BELL NEVER MOVES THE PAGE.
+ * common-docs/projects/notifications-ui-redo/RESEARCH.md §0a, §3.9.
+ *
+ * Use case: a person is half-way through a form and opens the bell. Whatever they
+ * click in it — a notice of any link kind, a source in All places, the footer —
+ * opens a window over the form or a new tab. The router is never asked to move,
+ * and no same-tab link is followed.
+ *
+ * The test renders the bell's body with one notice of EVERY link kind and clicks
+ * every button and link it finds. It fails on any `router.push` / `router.replace`
+ * / `router.back`, and on any click of an anchor that is not `target="_blank"`.
+ * Red against the pre-2026-10-01 panel (InboxPanel); see FEATURE.md change log.
+ *
+ * A static half refuses `next/navigation`'s router, `next/link` and `AppLink` in
+ * every file of the bell's tree.
+ */
+import React, { act } from "react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { createRoot, type Root } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+jest.mock("server-only", () => ({}));
+
+const routerCalls: string[] = [];
+const router = {
+  push: (href: string) => routerCalls.push(`push ${href}`),
+  replace: (href: string) => routerCalls.push(`replace ${href}`),
+  back: () => routerCalls.push("back"),
+  forward: () => routerCalls.push("forward"),
+  refresh: () => undefined,
+  prefetch: () => undefined,
+};
+jest.mock("next/navigation", () => ({
+  useRouter: () => router,
+  usePathname: () => "/form-in-progress",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+const dispatched: unknown[] = [];
+const dispatch = (action: unknown) => {
+  dispatched.push(action);
+  return action;
+};
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppDispatch: () => dispatch,
+  useAppSelector: () => "user-1",
+}));
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
+
+function notice(id: string, deep_link: string | null, extra: Record<string, unknown> = {}) {
+  const at = new Date(Date.now() - Number(id.replace(/\D/g, "") || 1) * 60_000).toISOString();
+  return {
+    id,
+    event_key: "hr.workflow.step_assigned",
+    event_label: "Approval step assigned",
+    bucket: "needs_you",
+    subject: null,
+    body: "Please look",
+    deep_link,
+    target_kind: null,
+    target_id: null,
+    organization_id: null,
+    organization_name: null,
+    actor_id: null,
+    actor_name: null,
+    actor_avatar: null,
+    created_at: at,
+    sort_at: at,
+    seen_at: null,
+    delivered_at: null,
+    read_at: null,
+    done_at: null,
+    snoozed_until: null,
+    acted_at: null,
+    outcome: null,
+    ...extra,
+  };
+}
+
+const ROWS = [
+  notice("n1", "/hr/tasks/abc?org=1"),
+  notice("n2", "/somewhere?panels=no_such_window:x"),
+  notice("n3", "https://example.com/x"),
+  notice("n4", null),
+  notice("n5", "/notifications", { bucket: "direct", event_key: "agent.work_completed" }),
+  notice("n6", "/data-v2/t1", { bucket: "updates", event_key: "records.changed", target_kind: "custom.record", target_id: "r1" }),
+];
+
+const noop = () => Promise.resolve();
+jest.mock("../useInbox", () => ({
+  // today's panel
+  useInboxList: () => ({ rows: ROWS, error: null, isLoading: false, refetch: () => undefined, markRead: noop, markAllRead: () => Promise.resolve(0) }),
+  // both
+  useInboxCounts: () => ({
+    notifications: 3,
+    approvals: 2,
+    work: 4,
+    workByOrganization: [{ organization_id: "o1", organization_name: "Acme", waiting: 4, snoozed: 1, overdue: 0 }],
+    workSnoozed: 1,
+    summary: { unseenNeedsYou: 1, unseenDirect: 1, unseenUpdates: 1, unread: 3, inbox: 6, snoozed: 1, done: 2 },
+    triage: true,
+    badge: 2,
+    updatesDot: true,
+    total: 9,
+    partial: false,
+    markSeen: () => undefined,
+  }),
+  // the redesigned bell
+  useInboxFeed: () => ({ rows: ROWS, triage: true, isLoading: false, error: null, refetch: () => undefined, hasMore: false, loadMore: () => undefined, loadingMore: false }),
+  useInboxActions: () => ({ act: noop, undo: noop, canUndo: false, markAllRead: noop }),
+  useWorkWaiting: () => ({ data: [{ organization_id: "o1", organization_name: "Acme", waiting: 4, snoozed: 1, overdue: 0 }], isLoading: false, isError: false }),
+  belongsIn: () => true,
+}));
+jest.mock("@/features/approvals/usePendingApprovalCount", () => ({ usePendingApprovalCount: () => ({ count: 2, unknown: false }) }));
+jest.mock("@/features/workflow-runtime/discovery/useWaitingRuns", () => ({ useWaitingRuns: () => ({ rows: [{}], loading: false, error: null, refresh: () => undefined }) }));
+jest.mock("@/features/assists/service", () => ({ queryAssists: () => Promise.resolve({ rows: [], total: 3, unreadable: 0 }) }));
+jest.mock("@/features/tasks/services/taskUserStateService", () => ({ listMyTaskUserStates: () => Promise.resolve([]) }));
+jest.mock("@/features/overlays/openers/messagesWindow", () => ({ useOpenMessagesWindow: () => () => undefined }));
+jest.mock("@/features/overlays/openers/approvalsWindow", () => ({ useOpenApprovalsWindow: () => () => undefined }));
+jest.mock("../components/NotificationBody", () => ({ NotificationBody: ({ body }: { body: string }) => <span>{body}</span> }));
+jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
+jest.mock("@/components/navigation/AppLink", () => ({
+  __esModule: true,
+  default: ({ children, href, onClick }: { children: React.ReactNode; href: string; onClick?: () => void }) => (
+    <a href={href} onClick={onClick}>{children}</a>
+  ),
+}));
+jest.mock("@/lib/toast", () => ({ toast: Object.assign(() => undefined, { error: () => undefined, success: () => undefined }) }));
+jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({ captureError: () => "captured" }));
+jest.mock("@/features/settings/notification-preferences", () => ({ setNotificationPreference: () => Promise.resolve() }));
+jest.mock("@/features/window-panels/url-sync/initUrlHydration", () => ({ initUrlHydration: () => undefined }));
+
+import { BellPanel as Bell } from "../components/BellPanel";
+
+let container: HTMLDivElement;
+let root: Root;
+const sameTabAnchors: string[] = [];
+const onDocClick = (event: MouseEvent) => {
+  const anchor = (event.target as HTMLElement | null)?.closest?.("a");
+  if (anchor && anchor.getAttribute("target") !== "_blank") sameTabAnchors.push(anchor.getAttribute("href") ?? "");
+  if (anchor) event.preventDefault();
+};
+
+beforeEach(() => {
+  routerCalls.length = 0;
+  dispatched.length = 0;
+  sameTabAnchors.length = 0;
+  jest.spyOn(window, "open").mockImplementation(() => null);
+  jest.spyOn(console, "error").mockImplementation(() => undefined);
+  jest.spyOn(console, "warn").mockImplementation(() => undefined);
+  document.addEventListener("click", onDocClick, true);
+  container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container);
+});
+afterEach(() => {
+  act(() => root.unmount());
+  container.remove();
+  document.removeEventListener("click", onDocClick, true);
+  jest.restoreAllMocks();
+});
+
+async function flush() {
+  for (let i = 0; i < 8; i++) await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+}
+
+it("no click anywhere in the bell moves the page", async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  await act(async () => {
+    root.render(
+      <QueryClientProvider client={client}>
+        <Bell variant="compact" onNavigate={() => undefined} />
+      </QueryClientProvider>,
+    );
+  });
+  await flush();
+  const clickables = Array.from(container.querySelectorAll<HTMLElement>("button, a[href]"));
+  expect(clickables.length).toBeGreaterThan(6);
+  for (const el of clickables) {
+    if (!el.isConnected) continue;
+    await act(async () => { el.click(); });
+    await flush();
+  }
+  expect({ routerCalls, sameTabAnchors }).toEqual({ routerCalls: [], sameTabAnchors: [] });
+  // Something DID open: windows were dispatched and new tabs were asked for.
+  expect(dispatched.length + (window.open as jest.Mock).mock.calls.length).toBeGreaterThan(0);
+});
+
+it("no file in the bell's tree can reach the router or a same-tab link", () => {
+  const files = [
+    "components/BellPanel.tsx",
+    "components/NoticeRow.tsx",
+    "components/PlacesStrip.tsx",
+    "components/InboxHeaderButton.tsx",
+    "openNotice.ts",
+    "sources/registry.tsx",
+  ];
+  const offenders = files.flatMap((file) => {
+    const src = readFileSync(join(__dirname, "..", file), "utf8");
+    return [/\buseRouter\b/, /from "next\/link"/, /AppLink/, /router\.(push|replace)/]
+      .filter((pattern) => pattern.test(src))
+      .map((pattern) => `${file}: ${pattern}`);
+  });
+  expect(offenders).toEqual([]);
+});

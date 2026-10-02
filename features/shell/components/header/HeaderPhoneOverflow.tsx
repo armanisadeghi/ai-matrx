@@ -15,7 +15,8 @@
  *   Intelligence  → the page's agents panel, in this sheet
  *   Canvas        → open / put away; empty opens the canvas home
  *   Messages      → the docked messages sheet; its unread count on the row
- *   Notifications → the notifications panel, in this sheet
+ *   Notifications → the bell's panel, full height (notifications ruling 4: it
+ *                   opens windows or new tabs only, never moves the page)
  *
  * The owner's header ruling (2026-09-19: "a consistent set … never hiding
  * things and only disabling when inactive") still holds per device: a phone
@@ -56,7 +57,7 @@ import {
   useToggleMessages,
   useUnreadConversationCount,
 } from "@/features/messaging/components/shell/MessagesHeaderButton";
-import { InboxPanel } from "@/features/notifications/components/InboxPanel";
+import { BellPanel } from "@/features/notifications/components/BellPanel";
 import { useInboxCounts } from "@/features/notifications/useInbox";
 import { cn } from "@/lib/utils";
 import {
@@ -146,7 +147,7 @@ function OverflowTrigger({ onOpen, unread }: { onOpen: () => void; unread: numbe
 function SignedInOverflowTrigger({ onOpen }: { onOpen: () => void }) {
   const counts = useInboxCounts();
   const messages = useUnreadConversationCount();
-  return <OverflowTrigger onOpen={onOpen} unread={counts.total + messages} />;
+  return <OverflowTrigger onOpen={onOpen} unread={counts.badge + messages} />;
 }
 
 function MessagesRowTrailing() {
@@ -157,7 +158,7 @@ function InboxRowTrailing() {
   const counts = useInboxCounts();
   return (
     <>
-      <CountBadge count={counts.total} />
+      <CountBadge count={counts.badge} />
       <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
     </>
   );
@@ -321,7 +322,13 @@ export function HeaderPhoneOverflow({
         <OverflowTrigger onOpen={() => setOpen(true)} unread={0} />
       )}
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-textured pb-safe max-h-[85dvh]">
+        <DrawerContent
+          className={
+            view === "inbox"
+              ? "bg-textured h-dvh max-h-dvh rounded-none"
+              : "bg-textured pb-safe max-h-[85dvh]"
+          }
+        >
           <DrawerHeader className={view === "menu" ? "sr-only" : "flex flex-row items-center gap-1 px-2 py-1 text-left"}>
             {view !== "menu" ? (
               <TapTargetButton
@@ -413,11 +420,7 @@ export function HeaderPhoneOverflow({
               <SurfaceAgentsPanelImpl onRequestClose={close} />
             </div>
           ) : (
-            <InboxPanel
-              variant="compact"
-              onNavigate={close}
-              className="max-h-[75dvh]"
-            />
+            <BellPanel variant="sheet" onNavigate={close} className="min-h-0 flex-1" />
           )}
         </DrawerContent>
       </Drawer>
