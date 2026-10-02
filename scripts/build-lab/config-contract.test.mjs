@@ -26,11 +26,9 @@ test("production builds explicitly retain the measured nonpersistent Turbopack m
   };
   const experimental = property(declaration.initializer, "experimental");
   assert.ok(ts.isObjectLiteralExpression(experimental));
-  // Persistent build caching is accepted for the demos profile ONLY (measured on
-  // ai-matrx-demos, 2026-10-02). Any wider enablement needs its own acceptance.
   assert.equal(
-    property(experimental, "turbopackFileSystemCacheForBuild").getText(source),
-    'MATRX_PROFILE === "demos"',
-    "Re-enabling persistent build caching beyond the demos profile requires a new measured memory acceptance",
+    property(experimental, "turbopackFileSystemCacheForBuild").kind,
+    ts.SyntaxKind.FalseKeyword,
+    "Re-enabling persistent build caching requires a new measured memory acceptance",
   );
 });
