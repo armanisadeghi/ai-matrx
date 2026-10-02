@@ -131,6 +131,8 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
 
   const counts = useInboxCounts();
   const feed = useInboxFeed({ state: TAB_STATE[tab], orgId: orgFilter, unreadOnly });
+  // The Inbox view's rows feed the Needs-you count on every view (same cache when on it).
+  const inboxFeed = useInboxFeed({ state: "inbox", orgId: orgFilter, unreadOnly });
   const actions = useInboxActions();
   const handlers = useNoticeHandlers(actions);
   const triage = feed.triage && counts.triage;
@@ -302,7 +304,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
   const tabCount = (t: InboxTab): number | null => {
     if (!summary) return null;
     if (t === "inbox") return summary.unread || null;
-    if (t === "needs_you") return all.filter((g) => g.bucket === "needs_you").length || null;
+    if (t === "needs_you") return groupNotices(inboxFeed.rows).filter((g) => g.bucket === "needs_you").length || null;
     if (t === "updates") return null;
     if (t === "snoozed") return summary.snoozed + hiddenElsewhere || null;
     return null;
@@ -507,7 +509,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
           </div>
         ) : (
           <div className="flex h-11 shrink-0 items-center gap-1.5 border-b border-border px-2">
-            <div className="relative min-w-0 flex-1">
+            <div className="relative min-w-[6.5rem] flex-1">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
@@ -544,7 +546,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
               Unread
             </Button>
             {triage ? (
-              <EntityOrgFilter orgId={orgFilter} onChange={onOrgFilterChange} />
+              <EntityOrgFilter orgId={orgFilter} onChange={onOrgFilterChange} className="max-w-[9.5rem] shrink-0" />
             ) : null}
             <Button type="button" variant="ghost" size="sm" className="hidden h-8 w-8 p-0 @2xl:inline-flex" onClick={() => setHelpOpen(true)} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
               <Keyboard className="h-4 w-4" />

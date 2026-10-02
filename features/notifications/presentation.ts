@@ -148,6 +148,16 @@ export function shortTime(iso: string, now: Date = new Date()): string {
   });
 }
 
+/** A FUTURE moment, short: "10:12 PM" today, otherwise "Oct 3". */
+export function untilTime(iso: string, now: Date = new Date()): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const sameDay = date.toDateString() === now.toDateString();
+  return sameDay
+    ? date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+    : date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 export function fullTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";

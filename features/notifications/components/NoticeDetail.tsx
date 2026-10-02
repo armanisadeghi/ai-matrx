@@ -71,7 +71,7 @@ export function NoticeDetail({
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border px-2">
         {onBack ? (
-          <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onBack} aria-label="Back to list">
+          <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 @2xl:hidden" onClick={onBack} aria-label="Back to list">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         ) : null}

@@ -80,8 +80,9 @@ function openTab(path: string) {
 // ── per-source state hooks ─────────────────────────────────────────────────
 
 function useApprovalsState(): SourceState {
+  // `unknown` covers both "still reading" and "could not read"; neither shows a number.
   const { count, unknown } = usePendingApprovalCount();
-  return { count: unknown ? null : count, hidden: null, loading: false, error: unknown };
+  return { count: unknown ? null : count, hidden: null, loading: false, error: false };
 }
 
 function useWorkState(): SourceState {

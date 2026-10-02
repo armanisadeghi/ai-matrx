@@ -48,6 +48,7 @@ import {
   plainPreview,
   shortTime,
   snoozeChoices,
+  untilTime,
 } from "../presentation";
 import type { InboxNotification } from "../types";
 
@@ -138,6 +139,10 @@ export function NoticeRow({
   // ── swipe (phone sheet) ────────────────────────────────────────────────
   const start = useRef<{ x: number; y: number } | null>(null);
   const [dx, setDx] = useState(0);
+  // An open menu keeps the hover actions on screen (its trigger must not vanish).
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [snoozeMenuOpen, setSnoozeMenuOpen] = useState(false);
+  const pinned = menuOpen || snoozeMenuOpen;
   const swipe = density === "sheet";
   const onTouchStart = (e: React.TouchEvent) => {
     if (!swipe) return;
@@ -162,7 +167,7 @@ export function NoticeRow({
     "flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--matrx-glass-bg-hover)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   const menu = (
-    <DropdownMenu>
+    <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger asChild>
         <button type="button" className={iconButton} aria-label="More actions" title="More actions">
           <MoreHorizontal className="h-4 w-4" />
@@ -201,7 +206,7 @@ export function NoticeRow({
   );
 
   const snoozeMenu = triage && !done ? (
-    <DropdownMenu>
+    <DropdownMenu open={snoozeMenuOpen} onOpenChange={setSnoozeMenuOpen}>
       <DropdownMenuTrigger asChild>
         <button type="button" className={iconButton} aria-label="Snooze" title="Snooze (H)">
           <Clock className="h-4 w-4" />
@@ -230,9 +235,7 @@ export function NoticeRow({
     </button>
   ) : null;
 
-  const timeLabel = snoozed
-    ? `Until ${shortTime(row.snoozed_until as string).replace(/^now$/, "soon")}`
-    : shortTime(row.sort_at);
+  const timeLabel = snoozed ? untilTime(row.snoozed_until as string) : shortTime(row.sort_at);
 
   return (
     <div data-notice-group={group.key} data-notice-id={row.id} className="relative">
@@ -325,32 +328,37 @@ export function NoticeRow({
             className={cn(
               "shrink-0 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-[var(--matrx-glass-bg-hover)]",
               density === "sheet" ? "h-11" : "h-7 group-hover/row:hidden group-focus-within/row:hidden",
+              pinned && density !== "sheet" ? "hidden" : undefined,
             )}
           >
             Review
           </button>
         ) : null}
 
-        <span className="relative flex shrink-0 items-center">
+        <span
+          className={cn(
+            "min-w-12 shrink-0 whitespace-nowrap text-right text-[11px] tabular-nums text-muted-foreground",
+            density === "sheet" ? undefined : "group-hover/row:hidden group-focus-within/row:hidden",
+            pinned && density !== "sheet" ? "hidden" : undefined,
+          )}
+          title={fullTime(snoozed ? (row.snoozed_until as string) : row.sort_at)}
+        >
+          {timeLabel}
+        </span>
+        {density !== "sheet" ? (
           <span
             className={cn(
-              "w-12 text-right text-[11px] tabular-nums text-muted-foreground",
-              density === "sheet" ? undefined : "group-hover/row:invisible group-focus-within/row:invisible",
+              "shrink-0 items-center gap-0.5 group-hover/row:flex group-focus-within/row:flex",
+              pinned ? "flex" : "hidden",
             )}
-            title={fullTime(snoozed ? (row.snoozed_until as string) : row.sort_at)}
           >
-            {timeLabel}
+            {doneButton}
+            {snoozeMenu}
+            {menu}
           </span>
-          {density !== "sheet" ? (
-            <span className="absolute right-0 hidden items-center gap-0.5 group-hover/row:flex group-focus-within/row:flex">
-              {doneButton}
-              {snoozeMenu}
-              {menu}
-            </span>
-          ) : (
-            <span className="ml-1">{menu}</span>
-          )}
-        </span>
+        ) : (
+          <span className="shrink-0">{menu}</span>
+        )}
 
         {many && onToggleExpand ? (
           <button
