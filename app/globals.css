@@ -2640,3 +2640,23 @@ html[data-full-screen-layer] [data-sonner-toaster][data-y-position="top"] {
 .matrx-alchemy-menu.matrx-alchemy-palette {
   z-index: 1000000000 !important;
 }
+
+/* A formula is one unit (2026-10-01): KaTeX inherited `overflow-wrap:
+   anywhere` from rich-content's inline wrapper and, in a narrow cell (the
+   flashcard deck's table view), broke NH₄⁺ into one glyph per line. Text
+   around it still wraps; the formula itself never splits internally. */
+.katex {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+/* …and a container that forces wrapping onto EVERY descendant (the data
+   table's cell sets `* { white-space: normal; overflow-wrap: anywhere }`)
+   must not reach inside a formula's line box: H⁺ put the + on its own line. */
+.katex .base,
+.katex .base *,
+.katex .katex-base,
+.katex .katex-base * {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}

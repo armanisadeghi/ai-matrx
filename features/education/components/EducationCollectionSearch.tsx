@@ -1,7 +1,7 @@
 "use client";
 
-import { SearchX } from "lucide-react";
-import { SearchInput } from "@/components/official/SearchInput";
+import { Search, SearchX, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 type SearchTerm = string | null | undefined;
@@ -44,23 +44,49 @@ export function filterEducationCollection<TRow>(
   );
 }
 
+/**
+ * The collection search box — drawn exactly like the list pages' toolbar
+ * search (lib/entity-list EntityListToolbar): one bordered card-surface box,
+ * icon inside, one clear button. 16px text on touch screens (no iOS zoom).
+ */
 export function EducationCollectionSearch({
   value,
   onValueChange,
   label,
+  className,
 }: {
   value: string;
   onValueChange: (value: string) => void;
   label: string;
+  className?: string;
 }) {
   return (
-    <SearchInput
-      value={value}
-      onValueChange={onValueChange}
-      placeholder={`Search ${label}`}
-      aria-label={`Search ${label}`}
-      className="w-full sm:w-64"
-    />
+    <div
+      className={cn(
+        "flex h-11 w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-2.5 focus-within:border-ring sm:w-64 lg:h-9",
+        className,
+      )}
+    >
+      <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <input
+        type="search"
+        value={value}
+        onChange={(e) => onValueChange(e.target.value)}
+        placeholder={`Search ${label}`}
+        aria-label={`Search ${label}`}
+        className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground lg:text-sm [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
+      />
+      {value && (
+        <button
+          type="button"
+          aria-label="Clear search"
+          onClick={() => onValueChange("")}
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground lg:h-7 lg:w-7"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+    </div>
   );
 }
 

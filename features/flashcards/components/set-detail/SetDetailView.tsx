@@ -13,7 +13,8 @@ import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useEffect, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import {
   Play,
   Layers,
@@ -22,7 +23,6 @@ import {
   Volume2,
   Image as ImageIcon,
   Zap,
-
   Pencil,
   Expand,
   TrendingUp,
@@ -56,6 +56,14 @@ import {
 } from "@/components/ui/tooltip";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import {
+  asDeckView,
+  DeckCardList,
+  DeckCardTable,
+  DeckFlashcardGrid,
+  DeckViewToggle,
+  type DeckView,
+} from "./DeckCardViews";
 import { MergeCardsDialog } from "./MergeCardsDialog";
 import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -449,6 +457,14 @@ function CardPeek({
   const faces = kind === CARD_KIND.matching ? null : studyFaces(card);
   const interactive = selectable || !!onOpen;
   const activate = () => {
+  const studied = (mastery?.attempt_count ?? 0) > 0;
+  const hasBadges =
+    kind === CARD_KIND.cloze ||
+    kind === CARD_KIND.matching ||
+    layerCount > 0 ||
+    hasAudio ||
+    !!(images.front || images.back);
+  const showHeader = selectable || studied || hasBadges;
     if (selectable) onToggleSelected?.();
     else onOpen?.();
   };
@@ -456,7 +472,7 @@ function CardPeek({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-xl border bg-card p-4 shadow-sm",
+        "group/peek relative flex flex-col rounded-xl border bg-card p-4 shadow-sm",
         interactive &&
           "cursor-pointer transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
         selected
@@ -485,21 +501,38 @@ function CardPeek({
           : `Open card ${index + 1}`
       }
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5">
-          {selectable && (
-            <Checkbox
-              checked={selected}
-              aria-label={`Select card ${index + 1} to merge`}
-              className="h-3.5 w-3.5"
-            />
-          )}
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-            Card {index + 1}
+      {/* No card number and no "New" pill (2026-10-01): the tile shows
+          mastery only once the card has been studied, and only the badges
+          that say something. */}
+      {onEnhance && !selectable && (
+        <button
+          type="button"
+          title="Make THIS card deeper"
+          aria-label={`Make card ${index + 1} deeper`}
+          className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-all hover:bg-muted hover:text-primary sm:h-7 sm:w-7 sm:opacity-0 sm:group-hover/peek:opacity-100 sm:focus-visible:opacity-100"
+          onClick={(event) => {
+            event.stopPropagation();
+            onEnhance();
+          }}
+        >
+          <Lightbulb className="h-3.5 w-3.5" />
+        </button>
+      )}
+      {showHeader && (
+      <div className="mb-1.5 flex min-h-5 items-center justify-between gap-2 pr-7">
+        {(selectable || studied) && (
+          <span className="flex items-center gap-1.5">
+            {selectable && (
+              <Checkbox
+                checked={selected}
+                aria-label={`Select card ${index + 1} to merge`}
+                className="h-4 w-4"
+              />
+            )}
+            {studied && <MasteryTierPill mastery={mastery} />}
           </span>
-          <MasteryTierPill mastery={mastery} />
-        </span>
-        <div className="flex items-center gap-1">
+        )}
+        <div className="ml-auto flex items-center gap-1">
           {kind === CARD_KIND.cloze && (
             <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary">
               <Scissors className="h-3 w-3" />
@@ -537,24 +570,11 @@ function CardPeek({
               <ImageIcon className="h-3 w-3" />
             </span>
           )}
-          {onEnhance && !selectable && (
-            <button
-              type="button"
-              title="Make THIS card deeper"
-              aria-label={`Make card ${index + 1} deeper`}
-              className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
-              onClick={(event) => {
-                event.stopPropagation();
-                onEnhance();
-              }}
-            >
-              <Lightbulb className="h-3 w-3" />
-            </button>
-          )}
         </div>
       </div>
       {kind === CARD_KIND.matching ? (
-        <div className="mt-1.5 space-y-0.5">
+      )}
+        <div className="space-y-0.5 pr-6">
           {card.front.trim() && (
             <div className="text-sm font-medium text-foreground">
               <CardFaceContent
@@ -577,7 +597,7 @@ function CardPeek({
         </div>
       ) : (
         <>
-          <div className="mt-1.5 flex items-start gap-2 text-sm font-medium text-foreground">
+          <div className="flex items-start gap-2 pr-6 text-sm font-medium text-foreground">
             {images.front && (
               <FlashcardFaceImage image={images.front} size="thumb" />
             )}
@@ -623,6 +643,16 @@ export function SetDetailView({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cardSearch, setCardSearch] = useState("");
   // WP3 gap 5 — card merge selection.
+  // The card view rides the URL so a reload or a shared link keeps it.
+  const searchParams = useSearchParams();
+  const view = asDeckView(searchParams.get("view"));
+  const changeView = (next: DeckView) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "overview") params.delete("view");
+    else params.set("view", next);
+    const qs = params.toString();
+    replaceAddressWithoutNavigating(qs ? `?${qs}` : window.location.pathname);
+  };
   const [selecting, setSelecting] = useState(false);
   // Phone-only layout choices (Deck tools sheet, audio status-only) key off
   // this; desktop always shows the whole deck toolset on the page.
@@ -1037,6 +1067,9 @@ export function SetDetailView({
               <div className="flex items-center gap-2">
                 {deckEmpty ? (
                   canEdit && (
+  /** The chat this deck was made in, when it was made in one. */
+  const chatHref = data ? madeInChatHref(data.set.metadata) : null;
+
                     <Button className="h-10 px-5" onClick={() => setGenerateOpen(true)}>
                       <AGENT_ICON className="mr-1.5 h-4 w-4" />
                       Generate cards
@@ -1147,6 +1180,14 @@ export function SetDetailView({
                 )}
                 {!deckEmpty && (
                   <DropdownMenu>
+                    {chatHref && (
+                      <Button asChild variant="ghost" className="h-10">
+                        <Link href={chatHref}>
+                          <MessagesSquare className="mr-1.5 h-4 w-4" />
+                          See chat
+                        </Link>
+                      </Button>
+                    )}
                     <IconAction label="Audio" asTrigger>
                       <Volume2 className="h-4 w-4" />
                     </IconAction>
@@ -1424,7 +1465,6 @@ export function SetDetailView({
                 from it. */}
             <div className="mt-3 flex flex-wrap items-center gap-2 empty:hidden">
               <MadeFromSource entityType="fc_set" entityId={setId} />
-              <MadeInChatLink metadata={data.set.metadata} />
             </div>
             <div className="mt-2 empty:hidden">
               <GeneratedFromChips
@@ -1503,17 +1543,14 @@ export function SetDetailView({
                           : data.cards.length}
                       </span>
                     </h2>
-                    <div className="flex w-full items-center gap-2 sm:w-auto [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1 sm:[&>*:first-child]:w-64 sm:[&>*:first-child]:flex-none">
-                      <EducationCollectionSearch
-                        value={cardSearch}
-                        onValueChange={setCardSearch}
-                        label="cards in this deck"
-                      />
                       {canEdit && !selecting && (
                         <Button
                           variant="ghost"
-                          className="shrink-0 text-muted-foreground"
-                          onClick={() => setSelecting(true)}
+                          className="-ml-1 h-11 shrink-0 px-2.5 text-muted-foreground lg:h-8"
+                          onClick={() => {
+                            changeView("overview");
+                            setSelecting(true);
+                          }}
                         >
                           <MousePointerClick className="mr-1.5 h-4 w-4" />
                           Select
@@ -1557,7 +1594,15 @@ export function SetDetailView({
                             <Merge className="mr-1.5 h-3.5 w-3.5" />
                             Merge{" "}
                             {selectedIds.size >= 2 ? selectedIds.size : ""}
+                    <div className="ml-auto flex items-center gap-2 sm:order-last sm:ml-0">
+                      <DeckViewToggle view={view} onChange={changeView} />
                           </Button>
+                    <EducationCollectionSearch
+                      value={cardSearch}
+                      onValueChange={setCardSearch}
+                      label="cards in this deck"
+                      className="order-last basis-full sm:order-none sm:ml-auto sm:basis-auto"
+                    />
                           <Button
                             size="sm"
                             variant="ghost"
@@ -1626,6 +1671,20 @@ export function SetDetailView({
 
             {/* "Make this deeper" — per-card enrich (detail layers) + deepen
                 (atomic sub-cards) via the live enrichCard/expandCard agents. */}
+                  ) : view === "fronts" || view === "backs" ? (
+                    <DeckFlashcardGrid
+                      items={filteredCards}
+                      face={view === "backs" ? "back" : "front"}
+                    />
+                  ) : view === "list" ? (
+                    <DeckCardList items={filteredCards} onOpen={openCard} />
+                  ) : view === "table" ? (
+                    <DeckCardTable
+                      items={filteredCards}
+                      deckName={data.set.name}
+                      masteryByCard={masteryByCard}
+                      onOpen={openCard}
+                    />
             {/* Per-set image run — live progress, then the review pass.
                 Floats beside the deck so the page never shifts. */}
             {illustrateOpen && (
@@ -1799,6 +1858,17 @@ export function SetDetailView({
                     </h2>
                     <div className="grid grid-cols-2 gap-2">
                       {(["csv", "anki", "md", "json"] as const).map(
+                      {chatHref && (
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="h-11 justify-start"
+                        >
+                          <Link href={chatHref}>
+                            <MessagesSquare className="mr-2 h-4 w-4" /> See chat
+                          </Link>
+                        </Button>
+                      )}
                         (format) => (
                           <Button
                             key={format}
@@ -1997,9 +2067,9 @@ export function SetDetailView({
  * The way back to the chat a deck was born in. Chat-emitted flashcard sets are
  * saved here by the canvas flashcards adapter (`generation: chat_render_block`)
  * and stamped with their conversation; the chat block links forward with
- * "Open in Flashcards", this links back.
+ * "Open in Flashcards", the deck's "See chat" button links back.
  */
-function MadeInChatLink({ metadata }: { metadata: unknown }) {
+function madeInChatHref(metadata: unknown): string | null {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return null;
   }
@@ -2007,14 +2077,5 @@ function MadeInChatLink({ metadata }: { metadata: unknown }) {
   const conversationId = meta.conversation_id;
   if (meta.generation !== "chat_render_block") return null;
   if (typeof conversationId !== "string" || !conversationId) return null;
-  return (
-    <Link
-      href={`/chat/${conversationId}`}
-      data-tap-target
-      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted"
-    >
-      <MessagesSquare className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      Made in chat — open the conversation
-    </Link>
-  );
+  return `/chat/${conversationId}`;
 }
