@@ -13,7 +13,7 @@
 // here, which is what the unified data ramp screen sets, once, for everybody.
 // The per-person `custom.code_paths_enabled` half is gone (lane NAV-FIX).
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ActionInbox, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
@@ -43,15 +43,15 @@ import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { openPath } from "@/lib/deep-link/openPath";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
-import { DataHomeRoute } from "@/features/unified-data/home/DataHomeRoute";
+import { DataHomeRoute, type DataHomeMaking } from "@/features/unified-data/home/DataHomeRoute";
 
 // THE ONE SWITCH BETWEEN TWO DATA HOMES (lane DATA-HOME-3A): the knob `custom.data_home_shell`
 // (default off = this page, unchanged) or `?home=new|old` for one visit. Copy mode until Arman's flip.
 export default function DataHomeRoutePage() {
-  return <DataHomeRoute old={<UnifiedDataPage />} />;
+  return <DataHomeRoute old={(making) => <UnifiedDataPage making={making} />} />;
 }
 
-function UnifiedDataPage() {
+function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   // org-filter: write-target the active organization is where New table lands (and the settings rung for the home's knobs); no read here narrows by it
@@ -134,8 +134,8 @@ function UnifiedDataPage() {
    * supabase clients on one page and two ideas of who is signed in.
    */
   const dataSource = useMemo(() => recordsDataSource(createClient()), []);
-  /** How many times the header's New table / Start from an example was pressed. */
-  const [makeAsked, setMakeAsked] = useState({ create: 0, examples: 0 });
+  /** How many times the header's New table / Start from an example was pressed (the route owns it). */
+  const makeAsked = making.asked;
 
   const goBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
@@ -157,11 +157,11 @@ function UnifiedDataPage() {
           {...(organizationState === "ready" && storeOn && active.organizationId
             ? {
                 actions: [
-                  { icon: "Plus", label: "New table", onPress: () => setMakeAsked((n) => ({ ...n, create: n.create + 1 })) },
+                  { icon: "Plus", label: "New table", onPress: () => making.ask("create") },
                   {
                     icon: "LayoutTemplate",
                     label: "Start from an example",
-                    onPress: () => setMakeAsked((n) => ({ ...n, examples: n.examples + 1 })),
+                    onPress: () => making.ask("examples"),
                   },
                 ],
               }

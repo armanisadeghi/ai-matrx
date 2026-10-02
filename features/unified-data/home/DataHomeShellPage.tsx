@@ -13,7 +13,7 @@
 // switch and its notices, 13 making a table in the ACTIVE organization, 15 the inbox, 16 the mount
 // ports. The list, lanes, organization filter, kinds and row facts are DataHomeList's.
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ActionInbox, RecordsMount, TablesHome, personActor, recordsDataSource } from "@ai-matrx/records-ui";
@@ -43,10 +43,12 @@ import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { DataHomeList } from "./DataHomeList";
 import { DataHomeArchive } from "./DataHomeArchive";
 import { MountWhenNear } from "./MountWhenNear";
+import type { DataHomeMaking } from "./DataHomeRoute";
 
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
 
-export function DataHomeShellPage() {
+/** `making` is the route's: a press made on the old home before the swap still opens here. */
+export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   // org-filter: write-target — the active organization is where New table lands; no read narrows by it.
@@ -86,7 +88,7 @@ export function DataHomeShellPage() {
   }, [organizationId]);
 
   const dataSource = useMemo(() => recordsDataSource(createClient()), []);
-  const [makeAsked, setMakeAsked] = useState({ create: 0, examples: 0 });
+  const makeAsked = making.asked;
 
   // Shared-only: the sentence speaks to a member of the ONE organization the filter names, never
   // to its owner or admins (UI-FIX-19).
@@ -108,11 +110,11 @@ export function DataHomeShellPage() {
           {...(organizationState === "ready" && storeOn && active.organizationId
             ? {
                 actions: [
-                  { icon: "Plus", label: "New table", onPress: () => setMakeAsked((n) => ({ ...n, create: n.create + 1 })) },
+                  { icon: "Plus", label: "New table", onPress: () => making.ask("create") },
                   {
                     icon: "LayoutTemplate",
                     label: "Start from an example",
-                    onPress: () => setMakeAsked((n) => ({ ...n, examples: n.examples + 1 })),
+                    onPress: () => making.ask("examples"),
                   },
                 ],
               }
