@@ -233,7 +233,7 @@ export function CanvasFlashcardsView({
 
   const current = cards[currentIndex];
 
-  if (isMobile && !deckOpen) {
+  if (isMobile && deckOpen) {
     return (
       <div className={cn("flex flex-col", className)}>
         {debugStrip}
