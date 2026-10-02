@@ -130,7 +130,8 @@ import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreference
 import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
 import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
-import overlayReducer from "@host/lib/redux/slices/overlaySlice";
+import { configureRecordingWindows, type RecordingWindows } from "../../../../../host/__tests__/recording-windows";
+import { CHAT_WINDOWS } from "../../../../../host/windows";
 import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { storedMandateKey } from "@host/features/mandates/mandate-key";
 
@@ -191,7 +192,6 @@ function makeStore() {
       userPreferences: userPreferencesReducer,
       editorState: editorStateReducer,
       appContext: selectedAppContextReducer,
-      overlay: overlayReducer,
     },
   });
 }
@@ -237,6 +237,12 @@ async function launchAndSettle(
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+// Windows open through the chat host's windows port (P18); record them.
+let windows: RecordingWindows;
+beforeEach(() => {
+  windows = configureRecordingWindows();
+});
+
 describe("autoRun is a UI control — it never decides whether a run happens", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -254,11 +260,12 @@ describe("autoRun is a UI control — it never decides whether a run happens", (
 
     // The whole point: the interface is up, waiting for the human. autoRun
     // deferring the SEND must never suppress the RENDER.
-    const overlay = store.getState().overlay as {
-      instances?: Record<string, unknown>;
-      byId?: Record<string, unknown>;
-    };
-    expect(JSON.stringify(overlay)).toContain(conversationId);
+    expect(windows.opened).toContainEqual(
+      expect.objectContaining({
+        id: CHAT_WINDOWS.agentFlexiblePanel,
+        instanceId: conversationId,
+      }),
+    );
   });
 
   it("HEADLESS + autoRun:false — ignores autoRun and runs anyway", async () => {

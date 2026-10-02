@@ -36,6 +36,11 @@ export function ChatProvider({ host, children }: ChatProviderProps) {
   );
 }
 
+/** The host from the nearest <ChatProvider>, or null outside one. */
+export function useMaybeChatHost(): ResolvedChatHost | null {
+  return useContext(ChatHostContext);
+}
+
 /** The host from the nearest <ChatProvider>. Throws the named, remedied error outside one. */
 export function useChatHost(): ResolvedChatHost {
   const host = useContext(ChatHostContext);

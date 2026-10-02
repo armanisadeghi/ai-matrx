@@ -45,6 +45,7 @@ import type {
   Scope as AgentConnectionsScope,
 } from "@/features/agent-connections/types";
 import type { OverlayId } from "@/features/overlays/catalogue";
+import type { ChatWindowId } from "@ai-matrx/chat/host";
 import type { AttachableResource } from "@/features/connectors/attachable-resources";
 import type { CloudFilesWindowTab } from "@/features/files/components/surfaces/WindowPanelShell";
 import type { CreatorHubTabId } from "@/features/overlays/openers/creatorHub";
@@ -3103,7 +3104,7 @@ export default function OverlayController() {
                 : ""
             }
             downstreamOverlayId={
-              data?.downstreamOverlayId as OverlayId | undefined
+              data?.downstreamOverlayId as ChatWindowId | undefined
             }
           />
         );

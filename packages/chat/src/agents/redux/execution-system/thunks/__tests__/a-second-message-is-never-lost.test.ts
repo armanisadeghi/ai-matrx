@@ -135,7 +135,7 @@ import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreference
 import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
 import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
-import overlayReducer from "@host/lib/redux/slices/overlaySlice";
+import { configureRecordingWindows } from "../../../../../host/__tests__/recording-windows";
 import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { smartExecute } from "../smart-execute.thunk";
 
@@ -196,7 +196,6 @@ function makeStore(conversationId: string) {
       userPreferences: userPreferencesReducer,
       editorState: editorStateReducer,
       appContext: testAppContextReducer,
-      overlay: overlayReducer,
     },
     middleware: (getDefault) =>
       getDefault({ serializableCheck: false, immutableCheck: false }),
@@ -254,6 +253,11 @@ function queueCards(store: TestStore, conversationId: string) {
       .byConversationId[conversationId] ?? []
   );
 }
+
+// Windows open through the chat host's windows port (P18).
+beforeEach(() => {
+  configureRecordingWindows();
+});
 
 describe("a second message typed while the first is being sent is never lost", () => {
   let consoleError: jest.SpyInstance;

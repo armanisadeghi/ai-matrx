@@ -104,7 +104,7 @@ import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreference
 import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
 import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
-import overlayReducer from "@host/lib/redux/slices/overlaySlice";
+import { configureRecordingWindows } from "../../../../../host/__tests__/recording-windows";
 import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { storedMandateKey } from "@host/features/mandates/mandate-key";
 
@@ -172,7 +172,6 @@ function makeStore(organizationId: string | null = "org-selected-for-test") {
         state: ReturnType<typeof appContextReducer> = initialAppContext,
         action: UnknownAction,
       ) => selectedAppContextReducer(state, action),
-      overlay: overlayReducer,
     },
   });
 }
@@ -202,6 +201,11 @@ async function launch(
     } as Parameters<typeof launchAgentExecution>[0]),
   ).unwrap();
 }
+
+// Windows open through the chat host's windows port (P18).
+beforeEach(() => {
+  configureRecordingWindows();
+});
 
 describe("launchAgentExecution mandateKey — no organization selected is HELD AND SET", () => {
   test("the launch asks the person, then resolves in the organization they chose", async () => {

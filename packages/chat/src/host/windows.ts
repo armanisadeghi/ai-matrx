@@ -15,7 +15,9 @@
  * windows port, so the package never imports the host's overlay slice.
  */
 
-import { getChatHost } from "./configure";
+import type { ChatWindowsPort } from "./contract";
+import { getChatHost, isChatHostConfigured } from "./configure";
+import { createUnhostedWindows } from "./defaults/windows";
 
 export const CHAT_WINDOWS = {
   // Result shells (one per display mode — see display-mode-overlay.ts).
@@ -82,13 +84,28 @@ export interface ChatWindowClosePayload {
 /** What `openOverlay`/`closeOverlay` return: a thunk the store's thunk middleware runs. */
 export type ChatWindowThunk = () => void;
 
+/**
+ * Stand-in for code that runs with no chat host configured (a bare render, a
+ * test): opens nothing and says so once per window id on the console.
+ */
+const UNHOSTED_WINDOWS: ChatWindowsPort = createUnhostedWindows(() => ({
+  capture: () => {
+    /* no host, so no diagnostics sink; the console line already said it */
+  },
+}));
+
+/** The configured host's windows port, or the announcing stand-in when there is none. */
+export function chatWindowsPort(): ChatWindowsPort {
+  return isChatHostConfigured() ? getChatHost().windows : UNHOSTED_WINDOWS;
+}
+
 /** `dispatch(openOverlay({ overlayId, instanceId, data }))` — opens through the windows port. */
 export function openOverlay(payload: ChatWindowOpenPayload): ChatWindowThunk {
   return () =>
-    getChatHost().windows.open(payload.overlayId, payload.data, payload.instanceId);
+    chatWindowsPort().open(payload.overlayId, payload.data, payload.instanceId);
 }
 
 /** `dispatch(closeOverlay({ overlayId, instanceId }))` — closes through the windows port. */
 export function closeOverlay(payload: ChatWindowClosePayload): ChatWindowThunk {
-  return () => getChatHost().windows.close(payload.overlayId, payload.instanceId);
+  return () => chatWindowsPort().close(payload.overlayId, payload.instanceId);
 }

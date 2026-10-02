@@ -1,13 +1,13 @@
 "use client";
 
 import { AgentGateBody } from "@ai-matrx/chat/agents/components/agent-widgets/execution-gates/AgentGateInput";
-import type { OverlayId } from "@/features/overlays/catalogue";
+import type { ChatWindowId } from "@ai-matrx/chat/host";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 interface AgentGateWindowProps {
   instanceId: string;
   conversationId: string;
-  downstreamOverlayId?: OverlayId;
+  downstreamOverlayId?: ChatWindowId;
   isOpen: boolean;
   onClose: () => void;
 }

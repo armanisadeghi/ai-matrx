@@ -9,8 +9,8 @@
 
 import { useSyncExternalStore } from "react";
 import type { ChatWindowsPort } from "./contract";
-import { useChatHost } from "./react";
-import type { ChatWindowId } from "./windows";
+import { useMaybeChatHost } from "./react";
+import { chatWindowsPort, type ChatWindowId } from "./windows";
 
 function noSubscription(): () => void {
   return () => {};
@@ -21,9 +21,12 @@ function subscribeTo(windows: ChatWindowsPort) {
     windows.subscribe ? windows.subscribe(listener) : noSubscription();
 }
 
-/** The windows port of the nearest chat host. */
+/**
+ * The windows port of the nearest chat host; outside a <ChatProvider>, the
+ * configured host's, else the stand-in that opens nothing and says so.
+ */
 export function useChatWindows(): ChatWindowsPort {
-  return useChatHost().windows;
+  return useMaybeChatHost()?.windows ?? chatWindowsPort();
 }
 
 /** True while that window instance is open in the host. */
