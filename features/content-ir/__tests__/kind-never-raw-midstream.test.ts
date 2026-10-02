@@ -40,6 +40,14 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/thunks/process-stream";
 import type { RootState } from "@/lib/redux/store";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
+import { appChatServerApi } from "@/lib/api/chat-server-api";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest(appChatServerApi);
+});
+
 
 type Upsert = { requestId: string; block: RenderBlockPayload };
 
