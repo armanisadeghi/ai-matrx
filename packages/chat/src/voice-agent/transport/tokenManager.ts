@@ -13,7 +13,7 @@
 //     orchestrator hook is responsible for showing the user a banner.
 
 import { mintCredential } from "../../host/server/broker";
-import { BackendApiError } from "@host/lib/api/errors";
+import { BackendApiError } from "@ai-matrx/agents/matrx";
 import { TOKEN_REFRESH_SKEW_SECONDS, TOKEN_TTL_SECONDS } from "../constants";
 import type { VoiceAgentTokenResponse } from "../types";
 

@@ -11,14 +11,8 @@
 //   - AI_API_VERSION_DEFAULT — THE app-wide flag (deliberately a code-level
 //     constant, not an env var, so the value is grep-able and a full revert
 //     is a one-line diff; the admin sidebar toggle overrides it per-browser).
-//   - aiVersionPathOverrides — glue for this app's resolveEndpointPath
-//     template registry.
 
-import {
-  toV2Path,
-  V2_COVERED_AI_PATH_TEMPLATES,
-  type MatrxAiApiVersion,
-} from "@ai-matrx/agents/matrx";
+import type { MatrxAiApiVersion } from "@ai-matrx/agents/matrx";
 
 export {
   applyAiApiVersion,
@@ -46,19 +40,7 @@ export const AI_API_VERSION_DEFAULT: AiApiVersion = "v2";
 
 /**
  * The exact-match `pathOverrides` map to hand `resolveEndpointPath` — keyed on
- * the canonical templates, valued at their `/v2` siblings. Empty for v1.
- *
- * This is how every call that flows through the endpoint-override registry
- * (callApi, execute-instance, execute-manual, prompt-preview) picks up v2 for
- * the covered surfaces — and ONLY the covered surfaces — automatically.
+ * the canonical templates, valued at their `/v2` siblings. Empty for v1. Moved
+ * into `@ai-matrx/agents/matrx` (P9); re-exported here.
  */
-export function aiVersionPathOverrides(
-  version: AiApiVersion,
-): Record<string, string> {
-  if (version !== "v2") return {};
-  const map: Record<string, string> = {};
-  for (const template of V2_COVERED_AI_PATH_TEMPLATES) {
-    map[template] = toV2Path(template);
-  }
-  return map;
-}
+export { aiVersionPathOverrides } from "@ai-matrx/agents/matrx";

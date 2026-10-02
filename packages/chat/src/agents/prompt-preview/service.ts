@@ -11,8 +11,8 @@
 
 import type { ChatRootState } from "../../store/root-state";
 import { selectEndpointOverrideConfig } from "../../host/server/api-config";
-import { resolveEndpointPath } from "@host/lib/api/resolve-endpoint-path";
-import { ENDPOINTS } from "@host/lib/api/endpoints";
+import { resolveEndpointPath } from "@ai-matrx/agents/matrx";
+import { ENDPOINTS } from "@ai-matrx/agents/matrx";
 import { resolveBackendForConversation } from "../redux/execution-system/thunks/resolve-base-url";
 import { assembleManualRequest } from "../redux/execution-system/thunks/execute-manual-instance.thunk";
 import type { PromptPreview } from "./types";

@@ -18,7 +18,7 @@ import type { CompletionStats } from "../../../types/instance.types";
 import type { ClientMetrics } from "../../../types/request.types";
 import type { ToolLifecycleStatus } from "../../../types/request.types";
 import { parseNdjsonStream } from "../../../../host/server/stream-parser";
-import { isStreamTransportLost, StreamTransportError } from "@host/lib/api/errors";
+import { isStreamTransportLost, StreamTransportError } from "@ai-matrx/agents/matrx";
 import { monitorStream } from "@ai-matrx/data/net";
 import { mintClientTempId } from "@ai-matrx/kit/ids";
 import { withPerformedScript } from "../../../speech-script/types";

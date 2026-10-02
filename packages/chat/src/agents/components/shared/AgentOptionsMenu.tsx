@@ -81,7 +81,7 @@ import {
   isAdminSystemAgentsContext,
 } from "./agent-route-context";
 import { useAgentLifecycleActions } from "../../lifecycle/useAgentLifecycleActions";
-import { getUserMessage } from "@host/lib/api/errors";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { selectIsSuperAdmin } from "../../../host/identity";
 import { selectOrganizationId, isOrganizationSelectionCancelled } from "../../../host/org";
 

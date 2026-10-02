@@ -39,7 +39,7 @@ jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: (props: { content?: string }) => <div data-markdown-stream>{props.content}</div>,
 }));
-jest.mock("@host/lib/api/run-wait", () => ({
+jest.mock("../../../host/server/run-wait", () => ({
   resolveRunWait: jest.fn(async () => ({ firstResponseMs: 120_000 })),
 }));
 jest.mock("../../../host/server/organization-admission", () => ({

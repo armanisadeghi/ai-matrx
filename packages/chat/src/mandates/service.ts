@@ -61,7 +61,7 @@ import { isJsonObject } from "@host/types/json";
 import { recordUnavailable } from "../host/diagnostics";
 import type { FeLlmParams } from "../agents/types/agent-api-types";
 import { apiGet, buildPath } from "../host/server/typed-client";
-import { BackendApiError } from "@host/lib/api/errors";
+import { BackendApiError } from "@ai-matrx/agents/matrx";
 import {
   peekSelectedOrganizationId,
   waitForOrganizationAdmission,

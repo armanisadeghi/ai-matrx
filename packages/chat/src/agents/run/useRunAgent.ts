@@ -56,7 +56,7 @@ import {
   type LLMParamsBody,
 } from "../../host/server/call-api";
 import { createMatrxTransport } from "../../host/server/matrx-transport";
-import { applyDesktopTargetToRequestBody } from "@host/lib/api/desktop-target-request";
+import { applyDesktopTargetToRequestBody } from "@ai-matrx/agents/matrx";
 import type { components } from "@host/types/python-generated/api-types";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import { selectDesktopTargetInstanceId } from "../../host/prefs";

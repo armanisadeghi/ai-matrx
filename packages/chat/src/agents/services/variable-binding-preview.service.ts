@@ -19,7 +19,7 @@
  */
 
 import { postJson } from "../../host/server/python-client";
-import { BackendApiError } from "@host/lib/api/errors";
+import { BackendApiError } from "@ai-matrx/agents/matrx";
 import type { CustomDataBinding } from "../types/agent-definition.types";
 
 export type VariableBindingPreview =

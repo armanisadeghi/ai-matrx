@@ -30,6 +30,13 @@ if (typeof g.TextDecoder !== "function") g.TextDecoder = NodeTextDecoder;
 
 import { processStream } from "../process-stream";
 import type { ChatRootState } from "../../../../../store/root-state";
+import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest({});
+});
+
 
 jest.useFakeTimers();
 

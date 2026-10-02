@@ -52,7 +52,7 @@ import {
   setApiVersion,
   setPathOverride,
 } from "../../../host/server/api-config";
-import { ENDPOINTS } from "@host/lib/api/endpoints";
+import { ENDPOINTS } from "@ai-matrx/agents/matrx";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../types/instance.types";
 import { parseRequestOverrides } from "../../redux/execution-system/utils/request-overrides";
 import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";

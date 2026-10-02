@@ -51,7 +51,7 @@ import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { selectAllAgents } from "../../redux/agent-definition/selectors";
 import { fetchAgentsList } from "../../redux/agent-definition/thunks";
 import { callApi } from "../../../host/server/call-api";
-import { resolveRunWait } from "@host/lib/api/run-wait";
+import { resolveRunWait } from "../../../host/server/run-wait";
 import { peekSelectedOrganizationId } from "../../../host/server/organization-admission";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { components } from "@host/types/python-generated/api-types";

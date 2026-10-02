@@ -64,10 +64,10 @@ import {
   isRecordUnavailableError,
   recordUnavailable,
 } from "../../../../host/diagnostics";
-import { isV2Path, toV1FallbackUrl } from "@host/lib/api/ai-api-version";
-import { isStreamTransportLost } from "@host/lib/api/errors";
+import { isV2Path, toV1FallbackUrl } from "@ai-matrx/agents/matrx";
+import { isStreamTransportLost } from "@ai-matrx/agents/matrx";
 import type { JsonExtractionConfig } from "./process-stream";
-import { logApiTarget } from "@host/lib/api/log-api-target";
+import { logApiTarget } from "@ai-matrx/agents/matrx";
 import {
   registerAbortController,
   ownsAbortController,

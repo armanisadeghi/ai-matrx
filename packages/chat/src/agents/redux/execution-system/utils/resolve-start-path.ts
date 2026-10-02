@@ -22,7 +22,7 @@
 import {
   resolveEndpointPath,
   type EndpointOverrideConfig,
-} from "@host/lib/api/resolve-endpoint-path";
+} from "@ai-matrx/agents/matrx";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export const AGENT_START_PATH_TEMPLATE = "/ai/agents/{agent_id}" as const;

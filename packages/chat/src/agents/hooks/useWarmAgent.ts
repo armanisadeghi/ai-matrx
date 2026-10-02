@@ -15,7 +15,7 @@
 import { useEffect } from "react";
 import { useAppSelector } from "../../store/hooks";
 import { selectResolvedBaseUrl } from "../../host/server/api-config";
-import { warmAgent } from "@host/lib/api/warm-helpers";
+import { warmAgent } from "@ai-matrx/agents/matrx";
 
 interface UseWarmAgentOptions {
   /** Pass true when the id is an agx_version id rather than an agent.definition id. */

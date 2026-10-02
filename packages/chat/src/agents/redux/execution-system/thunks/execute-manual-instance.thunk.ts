@@ -146,7 +146,7 @@ import {
   selectTaskId,
 } from "@host/lib/redux/slices/appContextSlice";
 import { requireExecutionOrganizationId } from "../utils/required-organization";
-import { resolveEndpointPath } from "@host/lib/api/resolve-endpoint-path";
+import { resolveEndpointPath } from "@ai-matrx/agents/matrx";
 import {
   createRequest,
   setRequestStatus,
@@ -158,7 +158,7 @@ import {
   shouldCreateOptimisticUserMessage,
 } from "../messages/messages.slice";
 import { processStream } from "./process-stream";
-import { ENDPOINTS } from "@host/lib/api/endpoints";
+import { ENDPOINTS } from "@ai-matrx/agents/matrx";
 import {
   registerAbortController,
   unregisterAbortController,
@@ -173,7 +173,7 @@ import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 import { toast } from "../../../../host/notify";
 import { resilientFetch } from "@ai-matrx/data/net";
-import { logApiTarget } from "@host/lib/api/log-api-target";
+import { logApiTarget } from "@ai-matrx/agents/matrx";
 import { toNetError } from "@ai-matrx/data/net";
 import {
   RUN_STREAM_LIFETIME_BACKSTOP_MS,
@@ -182,7 +182,7 @@ import {
   runOutputKindFromModalities,
   runWaitTimeoutMessage,
   type RunOutputKind,
-} from "@host/lib/api/run-wait";
+} from "../../../../host/server/run-wait";
 import { selectModelById } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
 import { payloadSafetyStore } from "@ai-matrx/kit/payload-safety";

@@ -17,7 +17,7 @@ import {
   selectRequestGenerationJob,
   selectRequestStartedAt,
 } from "../../redux/execution-system/active-requests/active-requests.selectors";
-import { runJobLabel } from "@host/lib/api/run-wait";
+import { runJobLabel } from "../../../host/server/run-wait";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export function RunJobWorkingLine({

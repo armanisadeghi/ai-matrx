@@ -12,7 +12,9 @@
  */
 
 import {
+  BackendApiError,
   MatrxApiError,
+  StreamTransportError,
   applyOrganizationContextHeader,
   cancelAgentRun,
   createMatrxTransport as createPackageTransport,
@@ -474,9 +476,29 @@ export function createDefaultServerApi(host: () => ServerHostView) {
     parseNdjsonStream: (response: Response, signal?: AbortSignal) => {
       const requestId = response.headers.get("X-Request-ID");
       const conversationId = response.headers.get("X-Conversation-ID");
+      // Same contract as matrx-frontend's lib/api/stream-parser: a body that
+      // breaks mid-run is a TRANSPORT loss (the run may still finish and is
+      // reattachable), never a failed run; an abort ends quietly.
       async function* events(): AsyncGenerator<MatrxStreamEnvelope, void, undefined> {
-        if (!response.body) return;
-        yield* readMatrxNdjsonStream(response.body, signal ? { signal } : {});
+        if (!response.body) {
+          throw new BackendApiError({
+            code: "internal_error",
+            detail: "Response has no body",
+            userMessage: "No response received from server",
+          });
+        }
+        try {
+          yield* readMatrxNdjsonStream(response.body, signal ? { signal } : {});
+        } catch (error) {
+          if (signal?.aborted || (error instanceof Error && error.name === "AbortError")) return;
+          throw error instanceof BackendApiError
+            ? error
+            : new StreamTransportError({
+                detail: error instanceof Error ? error.message : "The response stream ended unexpectedly.",
+                details: error,
+                ...(requestId ? { requestId } : {}),
+              });
+        }
       }
       return { events: events(), requestId, conversationId };
     },

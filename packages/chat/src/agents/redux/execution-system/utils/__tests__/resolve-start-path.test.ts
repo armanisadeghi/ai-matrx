@@ -8,7 +8,7 @@
  * `/ai/agents/{id}`, these fail.
  */
 
-import { aiVersionPathOverrides } from "@host/lib/api/ai-api-version";
+import { aiVersionPathOverrides } from "@ai-matrx/agents/matrx";
 import { resolveStartPath } from "../resolve-start-path";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 

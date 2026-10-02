@@ -145,36 +145,9 @@ export type LLMParamsKey = keyof LLMParams;
 // ERROR TYPES (frontend-only — no Python counterpart)
 // ============================================================================
 
-/**
- * Standardized error shape returned by all backend endpoints.
- * Matches the Python `APIError` Pydantic model.
- */
-export interface BackendApiErrorData {
-  /** Machine-readable error code (e.g. "auth_required", "validation_error") */
-  error: string;
-  /** Developer-facing detail for debugging */
-  message: string;
-  /** Safe to display directly in the UI */
-  user_message: string;
-  /** Extra info (validation errors, etc.) */
-  details: unknown | null;
-  /** Unique request ID for support/debugging */
-  request_id: string;
-}
-
-/** Common backend error codes */
-export type BackendErrorCode =
-  | "auth_required"
-  | "token_required"
-  | "admin_required"
-  | "validation_error"
-  | "not_found"
-  | "internal_error"
-  | "agent_error"
-  /** The stream socket died mid-run; the server run may still be completing
-   *  and is reattachable. See `StreamTransportError` in `lib/api/errors.ts`. */
-  | "stream_transport_lost"
-  | (string & {});
+// The server error shape and its codes live with the error model in
+// `@ai-matrx/agents/matrx` (P9); re-exported here.
+export type { BackendApiErrorData, BackendErrorCode } from "@ai-matrx/agents/matrx";
 
 // ============================================================================
 // CONTEXT / SCOPE TYPES

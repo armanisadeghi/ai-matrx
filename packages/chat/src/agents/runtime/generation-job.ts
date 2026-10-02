@@ -15,7 +15,7 @@ import {
 import { setRequestGenerationJob } from "../redux/execution-system/active-requests/active-requests.slice";
 import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
 import { selectCurrentSettings } from "../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { isJobOutputKind, runOutputKindFromModalities } from "@host/lib/api/run-wait";
+import { isJobOutputKind, runOutputKindFromModalities } from "../../host/server/run-wait";
 import type { RequestGenerationJob } from "../types/request.types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 

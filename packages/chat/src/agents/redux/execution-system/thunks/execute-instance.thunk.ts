@@ -87,7 +87,7 @@ import {
   resolveBackendForConversation,
   warmLocalEngineForConversation,
 } from "./resolve-base-url";
-import { resolveEndpointPath } from "@host/lib/api/resolve-endpoint-path";
+import { resolveEndpointPath } from "@ai-matrx/agents/matrx";
 import { resolveStartPath } from "../utils/resolve-start-path";
 import { selectEndpointOverrideConfig } from "../../../../host/server/api-config";
 import { selectDesktopTargetInstanceId, selectDirectiveApplyPolicy } from "../../../../host/prefs";

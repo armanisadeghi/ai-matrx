@@ -10,7 +10,7 @@ import {
   type DuplicateOutcomeState,
 } from "../components/shared/AgentDuplicateOutcomeDialog";
 import { isAdminSystemAgentsContext } from "../components/shared/agent-route-context";
-import { getUserMessage } from "@host/lib/api/errors";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { isOrganizationSelectionCancelled } from "../../host/org";
 
 interface UseAgentDuplicateFlowOptions {
