@@ -8,6 +8,7 @@
 
 import type { ComponentType } from "react";
 import * as S from "./specimens";
+import * as OC from "./one-control";
 
 export interface DecisionOption {
   id: string;
@@ -27,17 +28,57 @@ export interface Decision {
 
 export const DECISIONS: Decision[] = [
   {
-    id: "D1",
-    title: "Toolbar height",
-    question: "Which height do all toolbar controls share?",
+    id: "D0",
+    title: "One control system",
+    question: "Every control, the same object as a tap button?",
     wide: true,
     options: [
-      { id: "a", label: "Today, mixed", stat: "as shipped", Specimen: S.ToolbarCurrent },
-      { id: "b", label: "28px, the tap capsule", stat: "1,440 sites", Specimen: S.Toolbar28 },
-      { id: "c", label: "32px, the tap pill", stat: "2,695 sites", Specimen: S.Toolbar32 },
-      { id: "d", label: "36px, today's default", stat: "113 sites", Specimen: S.Toolbar36 },
+      { id: "a", label: "Today, mixed", stat: "as shipped", Specimen: OC.OneToday },
+      { id: "b", label: "One system at 32px", stat: "today's tap pill", Specimen: OC.OneAt32 },
+      { id: "c", label: "One system at 28px", stat: "recommended", Specimen: OC.OneAt28 },
     ],
   },
+  {
+    id: "D0b",
+    title: "Field shape",
+    question: "Search and select fields at 28px",
+    wide: true,
+    options: [
+      { id: "a", label: "Capsule, like tap", stat: "recommended", Specimen: OC.FieldCapsule },
+      { id: "b", label: "8px corners", Specimen: OC.FieldRounded },
+    ],
+  },
+  {
+    id: "D0c",
+    title: "Control text",
+    question: "Label size inside every control",
+    wide: true,
+    options: [
+      { id: "a", label: "13px, tap label", stat: "recommended", Specimen: OC.Label13 },
+      { id: "b", label: "12px", Specimen: OC.Label12 },
+    ],
+  },
+  {
+    id: "D0d",
+    title: "Icon size at 28px",
+    question: "Glyph inside every control",
+    wide: true,
+    options: [
+      { id: "a", label: "16px, tap glyph", stat: "recommended", Specimen: OC.Icon16At28 },
+      { id: "b", label: "14px", Specimen: OC.Icon14At28 },
+    ],
+  },
+  {
+    id: "D0e",
+    title: "Page density",
+    question: "The same screen, today vs the dense defaults",
+    wide: true,
+    options: [
+      { id: "a", label: "Today's defaults", stat: "as shipped", Specimen: OC.DensityToday },
+      { id: "b", label: "Dense defaults", stat: "recommended", Specimen: OC.DensityDense },
+    ],
+  },
+
   {
     id: "D1b",
     title: "Touch screens",
@@ -48,38 +89,9 @@ export const DECISIONS: Decision[] = [
       { id: "b", label: "Invisible 44px hit area", stat: "tap system", Specimen: S.TouchHitArea },
     ],
   },
-  {
-    id: "D1c",
-    title: "Size scale",
-    question: "How many heights does the one scale have?",
-    wide: true,
-    options: [
-      { id: "a", label: "Five: 24 · 28 · 32 · 36 · 40", Specimen: S.Rungs5 },
-      { id: "b", label: "Three: 28 · 32 · 36", Specimen: S.Rungs3 },
-      { id: "c", label: "Two: 28 · 36", Specimen: S.Rungs2 },
-    ],
-  },
-  {
-    id: "D2",
-    title: "Form field height",
-    question: "How tall is a standard form row?",
-    wide: true,
-    options: [
-      { id: "a", label: "40px input, 36px rest", stat: "992 sites", Specimen: S.FieldInput },
-      { id: "b", label: "All 36px", Specimen: S.FieldBasicInput },
-      { id: "c", label: "All 32px", stat: "410 inputs", Specimen: S.Field32 },
-    ],
-  },
-  {
-    id: "D3",
-    title: "Icon size in small buttons",
-    question: "How big is an icon inside a small button?",
-    options: [
-      { id: "a", label: "16px (today)", stat: "3,613 ignored", Specimen: S.Icon16 },
-      { id: "b", label: "14px", stat: "1,521 sites", Specimen: S.Icon14 },
-      { id: "c", label: "12px", stat: "603 sites", Specimen: S.Icon12 },
-    ],
-  },
+
+
+
   {
     id: "D4",
     title: "Micro text size",
@@ -128,17 +140,7 @@ export const DECISIONS: Decision[] = [
       { id: "b", label: "Ghost destructive", stat: "222 sites", Specimen: S.DestructiveGhost },
     ],
   },
-  {
-    id: "D7",
-    title: "Icon button",
-    question: "Which icon-only button is canonical?",
-    options: [
-      { id: "a", label: "size=icon (36)", stat: "as shipped", Specimen: S.IconBtnDefault },
-      { id: "b", label: "size=icon-sm (28)", stat: "7 + 179 sites", Specimen: S.IconBtnSm },
-      { id: "c", label: "h-6 w-6 p-0 (24)", stat: "173 sites", Specimen: S.IconBtn24 },
-      { id: "d", label: "Official IconButton", stat: "25 importers", Specimen: S.IconBtnOfficial },
-    ],
-  },
+
   {
     id: "D8",
     title: "Tabs style",

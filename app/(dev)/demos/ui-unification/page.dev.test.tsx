@@ -48,18 +48,18 @@ describe("UiUnificationPage", () => {
   it("persists a pick across a remount and clears it", () => {
     mount();
     const firstRadio = () =>
-      container.querySelector<HTMLButtonElement>('section#D1 [role="radio"]')!;
+      container.querySelector<HTMLButtonElement>('section#D0 [role="radio"]')!;
     act(() => firstRadio().click());
     expect(firstRadio().getAttribute("aria-checked")).toBe("true");
     const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY)!);
-    expect(stored.D1.winner).toBe("a");
+    expect(stored.D0.winner).toBe("a");
     unmount();
 
     mount();
     expect(firstRadio().getAttribute("aria-checked")).toBe("true");
     expect(container.textContent).toContain(`1 of ${DECISIONS.length} decided`);
     const clear = Array.from(
-      container.querySelectorAll<HTMLButtonElement>("section#D1 button"),
+      container.querySelectorAll<HTMLButtonElement>("section#D0 button"),
     ).find((b) => b.textContent === "Clear")!;
     act(() => clear.click());
     expect(firstRadio().getAttribute("aria-checked")).toBe("false");

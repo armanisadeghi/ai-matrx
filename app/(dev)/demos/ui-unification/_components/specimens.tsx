@@ -12,15 +12,12 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  BasicInput,
   Input,
   SegmentedControl,
   Skeleton,
 } from "@ai-matrx/design-system";
 import {
   Copy,
-  Download,
-  Filter,
   FolderOpen,
   Loader2,
   MoreHorizontal,
@@ -30,13 +27,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -54,16 +44,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import IconButton from "@/components/official/IconButton";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import EmptyStateCard from "@/components/official/cards/EmptyStateCard";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
-  ArrowDownUpTapButton,
-  FilterTapButton,
   MoreHorizontalTapButton,
-  SettingsTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import { toast } from "@/lib/toast";
 import { useToast } from "@/components/ui/use-toast";
@@ -133,121 +118,7 @@ function MeasuredRow({ children }: { children: ReactNode }) {
   );
 }
 
-function StatusSelect({
-  size,
-  className,
-}: {
-  size?: "sm" | "default" | "lg";
-  className?: string;
-}) {
-  return (
-    <Select defaultValue="open">
-      <SelectTrigger size={size} className={cn("w-28", className)}>
-        <SelectValue placeholder="Status" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="open">Open</SelectItem>
-        <SelectItem value="closed">Closed</SelectItem>
-      </SelectContent>
-    </Select>
-  );
-}
 
-function ScopeTabs({
-  listClassName,
-  triggerClassName,
-}: {
-  listClassName?: string;
-  triggerClassName?: string;
-}) {
-  return (
-    <Tabs defaultValue="all">
-      <TabsList className={listClassName}>
-        <TabsTrigger value="all" className={triggerClassName}>
-          All
-        </TabsTrigger>
-        <TabsTrigger value="mine" className={triggerClassName}>
-          Mine
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
-  );
-}
-
-/* ------------------------------ D1 ------------------------------ */
-/* Every row ends with the tap-target pair the shell already ships, so the   */
-/* question is visible: do the text controls line up with the 32px pill and  */
-/* the 28px capsule the tap system ruled on 2026-10-01?                      */
-
-// Tap buttons space themselves: their wrapper carries no gap (the tap
-// guard paints a red box when one does — it caught this board doing it).
-function TapPair() {
-  return (
-    <div className="flex items-center">
-      <TapTargetButtonGroup>
-        <FilterTapButton variant="group" ariaLabel="Filter" />
-        <ArrowDownUpTapButton variant="group" ariaLabel="Sort" />
-      </TapTargetButtonGroup>
-      <SettingsTapButton variant="transparent" ariaLabel="Settings" />
-    </div>
-  );
-}
-
-export function ToolbarCurrent() {
-  return (
-    <MeasuredRow>
-      <Button>
-        <Plus /> New
-      </Button>
-      <Input placeholder="Search" className="w-36" />
-      <StatusSelect />
-      <ScopeTabs />
-      <TapPair />
-    </MeasuredRow>
-  );
-}
-
-export function Toolbar28() {
-  return (
-    <MeasuredRow>
-      <Button size="sm" className="h-7 px-2.5">
-        <Plus /> New
-      </Button>
-      <Input placeholder="Search" className="h-7 w-36 text-xs" />
-      <StatusSelect size="sm" />
-      <ScopeTabs listClassName="h-7" triggerClassName="py-0.5 text-xs" />
-      <TapPair />
-    </MeasuredRow>
-  );
-}
-
-export function Toolbar32() {
-  return (
-    <MeasuredRow>
-      <Button size="sm">
-        <Plus /> New
-      </Button>
-      <Input placeholder="Search" className="h-8 w-36" />
-      <StatusSelect className="h-8" />
-      <ScopeTabs listClassName="h-8" triggerClassName="py-1" />
-      <TapPair />
-    </MeasuredRow>
-  );
-}
-
-export function Toolbar36() {
-  return (
-    <MeasuredRow>
-      <Button>
-        <Plus /> New
-      </Button>
-      <Input placeholder="Search" className="h-9 w-36" />
-      <StatusSelect />
-      <ScopeTabs listClassName="h-9" />
-      <TapPair />
-    </MeasuredRow>
-  );
-}
 
 /* ------------------------------ D1b ----------------------------- */
 /* What a phone does to the row. Today Button grows its LAYOUT to 44px on a */
@@ -284,88 +155,6 @@ export function TouchHitArea() {
     </MeasuredRow>
   );
 }
-
-/* ------------------------------ D1c ----------------------------- */
-/* How many rungs the one scale has. Literal class strings per rung so the  */
-/* Tailwind compiler sees them.                                              */
-
-const RUNG: Record<number, string> = {
-  24: "h-6 px-2 text-xs",
-  28: "h-7 px-2.5 text-xs",
-  32: "h-8 px-3 text-xs",
-  36: "h-9 px-4",
-  40: "h-10 px-4",
-};
-
-function Ladder({ rungs }: { rungs: number[] }) {
-  return (
-    <MeasuredRow>
-      {rungs.map((h) => (
-        <Button key={h} size="sm" variant="outline" className={RUNG[h]}>
-          {h}
-        </Button>
-      ))}
-    </MeasuredRow>
-  );
-}
-
-export const Rungs5 = () => <Ladder rungs={[24, 28, 32, 36, 40]} />;
-export const Rungs3 = () => <Ladder rungs={[28, 32, 36]} />;
-export const Rungs2 = () => <Ladder rungs={[28, 36]} />;
-
-/* ------------------------------ D2 ------------------------------ */
-
-export function FieldInput() {
-  return (
-    <MeasuredRow>
-      <Input placeholder="Project name" className="w-40" />
-      <StatusSelect />
-      <Button>Save</Button>
-    </MeasuredRow>
-  );
-}
-
-export function FieldBasicInput() {
-  return (
-    <MeasuredRow>
-      <BasicInput placeholder="Project name" className="w-40" />
-      <StatusSelect />
-      <Button>Save</Button>
-    </MeasuredRow>
-  );
-}
-
-export function Field32() {
-  return (
-    <MeasuredRow>
-      <Input placeholder="Project name" className="h-8 w-40" />
-      <StatusSelect className="h-8" />
-      <Button size="sm">Save</Button>
-    </MeasuredRow>
-  );
-}
-
-/* ------------------------------ D3 ------------------------------ */
-
-function IconLabelButtons({ className }: { className?: string }) {
-  return (
-    <MeasuredRow>
-      <Button size="sm" variant="outline" className={className}>
-        <Plus className="h-3.5 w-3.5" /> Add
-      </Button>
-      <Button size="sm" variant="outline" className={className}>
-        <Filter className="h-3.5 w-3.5" /> Filter
-      </Button>
-      <Button size="sm" variant="outline" className={className}>
-        <Download className="h-3.5 w-3.5" /> Export
-      </Button>
-    </MeasuredRow>
-  );
-}
-
-export const Icon16 = () => <IconLabelButtons />;
-export const Icon14 = () => <IconLabelButtons className="[&_svg]:size-3.5" />;
-export const Icon12 = () => <IconLabelButtons className="[&_svg]:size-3" />;
 
 /* ------------------------------ D4 ------------------------------ */
 
@@ -555,70 +344,6 @@ export const DestructiveGhost = () => (
     }
   />
 );
-
-/* ------------------------------ D7 ------------------------------ */
-
-const ICON_SET = [
-  { Icon: Settings, label: "Settings" },
-  { Icon: Pencil, label: "Edit" },
-  { Icon: Trash2, label: "Delete" },
-];
-
-export function IconBtnDefault() {
-  return (
-    <MeasuredRow>
-      {ICON_SET.map(({ Icon, label }) => (
-        <Button key={label} size="icon" variant="outline" aria-label={label}>
-          <Icon />
-        </Button>
-      ))}
-    </MeasuredRow>
-  );
-}
-
-export function IconBtnSm() {
-  return (
-    <MeasuredRow>
-      {ICON_SET.map(({ Icon, label }) => (
-        <Button key={label} size="icon-sm" variant="outline" aria-label={label}>
-          <Icon />
-        </Button>
-      ))}
-    </MeasuredRow>
-  );
-}
-
-export function IconBtn24() {
-  return (
-    <MeasuredRow>
-      {ICON_SET.map(({ Icon, label }) => (
-        <Button
-          key={label}
-          variant="outline"
-          className="h-6 w-6 p-0"
-          aria-label={label}
-        >
-          <Icon />
-        </Button>
-      ))}
-    </MeasuredRow>
-  );
-}
-
-export function IconBtnOfficial() {
-  return (
-    <MeasuredRow>
-      {ICON_SET.map(({ Icon, label }) => (
-        <IconButton
-          key={label}
-          icon={Icon}
-          tooltip={label}
-          variant="outline"
-        />
-      ))}
-    </MeasuredRow>
-  );
-}
 
 /* ------------------------------ D8 ------------------------------ */
 

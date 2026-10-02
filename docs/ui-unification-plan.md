@@ -64,11 +64,58 @@ This plan generalises that system to every control rather than inventing a new o
 
 ---
 
+## 1b. THE ONE CONTROL — the standard (owner direction, 2026-10-02)
+
+> "We are trying to make things uniform and also dense … we need to unify this system with the tap target buttons … visually they need to look identical … tighter and smaller, not bigger and bulkier … a default that can only be overridden if someone goes way out of their way."
+
+**This section supersedes §2.1's size ladder.** The ladder (`2xs`…`xl` rungs to choose from) is exactly the menu an AI agent fills with slop. There is no ladder.
+
+**1. One control, built from the tap geometry.** Every interactive control is the same object as a tap button:
+- text button, field, select, tabs, segmented toggle, and the round and wide tap buttons themselves;
+- **one visible height:** `--matrx-tap-wide-size`;
+- **one half-gap of spacing carried on each side** (the tap box's own spacing), so containers add **no gap** and any mix of controls sits exactly one gap apart;
+- **one capsule shape, one 13px/500 label, one 16px glyph.**
+
+Proven on `/demos/ui-unification` D0. Today's row measures 32 / 40 / 36px tall and 8 / 11px apart; the unified row measures one height and 6px apart, with the real tap buttons inside it and no guard violations.
+
+**2. The default, recommended for the owner's pick (board D0–D0e):**
+
+| Token | Today | New default |
+|---|---|---|
+| Control height (`--matrx-tap-wide-size` = pill) | 32px | **28px** |
+| Tap box (footprint) | 38px | **34px** (pill + the same 6px gap) |
+| Group pill (`-sm`) | 28px | **24px** (capsule − 4) |
+| Label | 13px/500 | 13px/500 |
+| Glyph | 16px | 16px |
+| Field shape | rounded-md, 40px | capsule, 28px |
+| Touch | Button grows its layout to 44px | invisible 44px hit area (tap model), layout unchanged |
+
+Dense page defaults, from the D0e sample at the same content: page side gutter 12px, list row 36px with a 13px title and an 11px meta line, sections separated by hairlines. Same content: **556px tall → 268px**.
+
+**3. Agents get no choice.**
+- **Tap sizes move in one place only.** The tap tokens stay the only geometry, and the change lands in `design-system/src/tap-target.css` (the guard already refuses any other scope).
+- **`Button`, `Input`, `Select`, `Tabs`, `SegmentedControl` and `Badge` lose their `size` prop.** A codemod deletes every `size=` and every height, padding or text-size class at the call sites. There is nothing left to pick, and the locked geometry layer (§2.9) ignores anything an agent adds.
+- **Variants stay tone-only:** primary, neutral, quiet and destructive. Tone is meaning, not size.
+- **The exception is a different component, never a prop.** The rare big, custom control (a marketing hero, an onboarding call-to-action) is `<FeatureButton>` from one folder (`components/official/feature/`). Using it requires a `// ui-exception: <reason>` comment on the line; the `ui-drift` findings check reports every use, so it lands on the central findings page. Reaching it means deliberately leaving the default.
+- **Icon-only buttons are tap buttons.** `size="icon"` and the 10 `IconButton` copies all go; their call sites become pre-composed `*TapButton`s.
+
+**4. Order of work** (replaces Steps 1–2 for controls):
+1. **Package (design-system):**
+   - tap tokens to 28 / 34 / 24;
+   - Button, Input, Select, Tabs and SegmentedControl rebuilt on the tap geometry: capsule, half-gap margin, `::before` hit slop on coarse pointers, `size` removed;
+   - the tap geometry test extended to assert every control's height equals `--matrx-tap-wide-size`.
+2. **Codemod in matrx-frontend:** strip size props and size/padding/text classes on those primitives; replace icon-only Buttons and IconButtons with tap buttons.
+3. **Lock** (§2.9) and the findings check (§2.12).
+
+Visible effect: every toolbar and form row in the app becomes 28px and evenly spaced at once. That is the point.
+
 ## 2. Mechanism per drift category
 
 Mechanism key: **A** = close the component · **B** = add the missing variant · **C** = enforce mechanically · **D** = instruct.
 
 ### 2.1 Control sizing (Button, Input, Select, Tabs, SegmentedControl, Badge) — B, then A + C
+
+*Superseded by §1b (one size, no ladder). Kept for the evidence it carries.*
 
 **B. The shared scale.** The owner chooses this on the board; it is not decided here. The board offers:
 - **D1, toolbar height:** today's mixed row, 28px, 32px or 36px. Every option is rendered next to the shipped tap-target pair, so its alignment with the 32px pill and 28px capsule is visible.
