@@ -976,6 +976,47 @@ export function invalidateReferenceLabel(id: string): void {
   for (const listener of referenceLabelListeners) listener();
 }
 
+/**
+ * ONE READ PER RECORD NAME, shared by every label that names it. Two labels
+ * naming the same record (a confirm dialog's title AND its sentence; a card row
+ * AND its tally) each read it on their own, so one showed the name while the
+ * other still showed "Task 31fc9198" (LANE-C, 2026-10-02). Keyed by
+ * type + ref + version, so an `invalidateReferenceLabel` bump is a fresh read.
+ * In-flight reads are shared; a real name is remembered for LABEL_FRESH_MS (a
+ * label mounted later still re-reads, as before; a miss is never remembered).
+ */
+const LABEL_FRESH_MS = 30_000;
+const resolvedLabelsAt = new Map<string, { value: string; at: number }>();
+const resolvingLabels = new Map<string, Promise<unknown>>();
+const resolvedLabels = {
+  get(key: string): string | undefined {
+    const hit = resolvedLabelsAt.get(key);
+    if (!hit) return undefined;
+    if (Date.now() - hit.at > LABEL_FRESH_MS) {
+      resolvedLabelsAt.delete(key);
+      return undefined;
+    }
+    return hit.value;
+  },
+  set(key: string, value: string): void {
+    resolvedLabelsAt.set(key, { value, at: Date.now() });
+  },
+};
+
+function readLabelOnce(key: string, read: () => Promise<unknown>): Promise<unknown> {
+  const pending = resolvingLabels.get(key);
+  if (pending) return pending;
+  const started = Promise.resolve()
+    .then(read)
+    .then((v) => {
+      if (typeof v === "string" && v.length > 0) resolvedLabels.set(key, v);
+      return v;
+    })
+    .finally(() => resolvingLabels.delete(key));
+  resolvingLabels.set(key, started);
+  return started;
+}
+
 function subscribeReferenceLabels(listener: () => void): () => void {
   referenceLabelListeners.add(listener);
   return () => referenceLabelListeners.delete(listener);
@@ -989,9 +1030,6 @@ export function useResolvedReferenceLabel(
   const resolver = getReferenceResolver(type);
   const fallback = referenceFallbackLabel(item, type);
 
-  const [value, setValue] = useState<string | undefined>(undefined);
-  const [status, setStatus] = useState<ReferenceResolutionStatus>("idle");
-  const lastKey = useRef<string | null>(null);
   const refKey = JSON.stringify(ref);
   const recordId = typeof ref.id === "string" ? ref.id : "";
   const version = useSyncExternalStore(
@@ -999,6 +1037,11 @@ export function useResolvedReferenceLabel(
     () => referenceLabelVersions.get(recordId) ?? 0,
     () => 0,
   );
+  // A name another label already read is shown on the FIRST paint.
+  const known = resolvedLabels.get(`${type}:${refKey}:${version}`);
+  const [value, setValue] = useState<string | undefined>(known);
+  const [status, setStatus] = useState<ReferenceResolutionStatus>(known ? "ready" : "idle");
+  const lastKey = useRef<string | null>(null);
 
   useEffect(() => {
     if (!resolver) {
@@ -1014,10 +1057,15 @@ export function useResolvedReferenceLabel(
     lastKey.current = key;
 
     let cancelled = false;
+    const cached = resolvedLabels.get(key);
+    if (cached) {
+      setValue(cached);
+      setStatus("ready");
+      return undefined;
+    }
     setStatus((prev) => (reread && prev === "ready" ? "ready" : "loading"));
 
-    Promise.resolve()
-      .then(() => resolver.resolveValue(supabase, ref))
+    readLabelOnce(key, () => resolver.resolveValue(supabase, ref))
       .then((v) => {
         if (cancelled) return;
         if (typeof v === "string" && v.length > 0) {
