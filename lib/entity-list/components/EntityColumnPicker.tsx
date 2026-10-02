@@ -57,7 +57,7 @@ export function EntityColumnPicker<TRow>({
           type="button"
           aria-label="Choose columns"
           title="Choose columns"
-          className="inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground lg:h-9 lg:min-w-0"
+          className="inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-border bg-card px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <Columns3 className="h-3.5 w-3.5" />
           {/* Named below lg (page-pass 2026-09-27: three bare icons on a phone). */}

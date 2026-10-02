@@ -97,7 +97,7 @@ const LANE_NARROWS: ReadonlySet<ListScopeKind> = new Set([
 ]);
 
 const TAB_BASE =
-  "inline-flex h-11 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors whitespace-nowrap lg:h-7 lg:gap-1.5 lg:px-2.5";
+  "inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors whitespace-nowrap";
 const TAB_ACTIVE = "bg-primary text-primary-foreground";
 const TAB_IDLE = "text-muted-foreground hover:bg-muted hover:text-foreground";
 
@@ -242,7 +242,7 @@ export function EntityScopeTabs({
           onChange(at === -1 ? makeScope(v as ListScopeKind) : makeScope(v.slice(0, at) as ListScopeKind, v.slice(at + 1)));
         }}
       >
-        <SelectTrigger aria-label="List scope" className="h-11 w-auto min-w-0 max-w-full gap-1.5 text-xs sm:hidden">
+        <SelectTrigger aria-label="List scope" className="h-7 w-auto min-w-0 max-w-full gap-1.5 text-xs sm:hidden">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -283,7 +283,11 @@ export function EntityScopeTabs({
       // "which one is Mine?" to guesswork); a row too wide for the screen
       // scrolls sideways instead of dropping its words.
       className={cn(
-        "inline-flex max-w-full min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0",
+        // The padding (cancelled by the negative margin) holds each tab's
+        // touch ring INSIDE this scroll box (.matrx-tap-ring, app/globals.css,
+        // which keeps a tablist's rings to the tab's own width): without it the
+        // ring overflowed, the strip scrolled and faded its only tab on a phone.
+        "pointer-coarse:-my-2 pointer-coarse:py-2 inline-flex max-w-full min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0",
         phoneSelect && "max-sm:hidden",
         fade,
       )}
@@ -350,7 +354,7 @@ export function EntityScopeTabs({
                   aria-label={`Filter by ${meta.label}`}
                   className={cn(
                     TAB_BASE,
-                    "min-w-11 justify-center rounded-l-none border-l px-1 lg:min-w-0",
+                    "justify-center rounded-l-none border-l px-1",
                     active
                       ? "bg-primary text-primary-foreground border-primary-foreground/25"
                       : cn(TAB_IDLE, "border-border"),

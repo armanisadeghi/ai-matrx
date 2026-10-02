@@ -10,7 +10,7 @@ import { EDUCATION_LIBRARY_SURFACE } from "../librarySurface";
 
 export function EducationLibraryPage() {
   const createButton = (
-    <Button asChild size="sm" className="h-11 lg:h-7">
+    <Button asChild size="sm">
       <Link href="/education/start">
         <FilePlus2 className="h-4 w-4" />
         <span className="max-sm:sr-only">Create kit</span>
@@ -33,7 +33,7 @@ export function EducationLibraryPage() {
         surface={EDUCATION_LIBRARY_SURFACE}
         headerActions={
           <>
-            <Button asChild variant="outline" size="sm" className="h-11 lg:h-7">
+            <Button asChild variant="outline" size="sm">
               <Link href="/education/library/community">
                 <LibraryBig className="h-4 w-4" />
                 <span className="max-sm:sr-only">Community</span>

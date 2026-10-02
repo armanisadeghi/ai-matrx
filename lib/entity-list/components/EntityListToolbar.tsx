@@ -128,7 +128,7 @@ function IconToggle({
           aria-label={label}
           onClick={onClick}
           className={cn(
-            "inline-flex h-11 w-11 items-center justify-center rounded-md transition-colors lg:h-7 lg:w-7",
+            "inline-flex h-6 w-6 items-center justify-center rounded transition-colors",
             active
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -179,7 +179,9 @@ export function EntityListToolbar<TRow>({
   const placeholder =
     isMobile && shortSearchPlaceholder ? shortSearchPlaceholder : searchPlaceholder;
   const searchBox = (
-      <div className="flex h-12 min-w-0 flex-1 basis-full items-center gap-2 rounded-lg border border-border bg-card px-2.5 sm:basis-auto sm:min-w-48 lg:h-9 lg:min-w-56">
+      <div
+        data-entity-list-search-box=""
+        className="flex h-7 min-w-0 flex-1 basis-full items-center gap-1.5 rounded-md border border-border bg-card px-2 sm:basis-auto sm:min-w-40">
         {isFetching ? (
           <Loader2
             role="status"
@@ -228,7 +230,7 @@ export function EntityListToolbar<TRow>({
                     onPatchQuery({ filters: next });
                   }}
                   className={cn(
-                    "inline-flex h-11 shrink-0 items-center rounded-md px-2 text-xs font-medium transition-colors lg:h-7",
+                    "inline-flex h-6 shrink-0 items-center rounded px-1.5 text-xs font-medium transition-colors",
                     on
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -254,7 +256,7 @@ export function EntityListToolbar<TRow>({
                 onSearch("");
                 phoneRow?.onSearchOpenChange(false);
               }}
-              className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:text-foreground lg:h-7 lg:w-7"
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" />
             </button>
@@ -263,7 +265,6 @@ export function EntityListToolbar<TRow>({
       </div>
   );
   const filterPanel = (
-      <div className="[&_button]:h-11 lg:[&_button]:h-9">
         <EntityFilterPanel
           compact={Boolean(phoneRow)}
           query={query}
@@ -289,7 +290,6 @@ export function EntityListToolbar<TRow>({
           }
           onResetFilters={onResetFilters}
         />
-      </div>
   );
   const viewMenu = (
       <DropdownMenu>
@@ -301,7 +301,7 @@ export function EntityListToolbar<TRow>({
             // ONE "View" MENU BELOW `xl` (DATA-HOME-3E, 2026-10-01): at 1024 px the inline view
             // and density groups pushed the table's controls past the right edge; the phone's
             // menu already held all of them, so it now serves every width under 1280.
-            className="inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground lg:h-9 xl:hidden"
+            className="inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-md border border-border bg-card px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground xl:hidden"
           >
             <Settings2 className="h-3.5 w-3.5" />
             {phoneRow ? null : <span>View</span>}
@@ -398,7 +398,7 @@ export function EntityListToolbar<TRow>({
             aria-label={searchPlaceholder}
             title={searchPlaceholder}
             onClick={() => phoneRow.onSearchOpenChange(true)}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:text-foreground"
           >
             <Search className="h-4 w-4" />
           </button>
@@ -416,7 +416,7 @@ export function EntityListToolbar<TRow>({
     // crushed the search to an empty 22px pill). On a phone the search owns
     // its line and the controls take the next; from `sm:` up everything sits
     // on the search row and the view-tab strip scrolls inside its own box.
-    <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2 lg:flex-nowrap">
+    <div data-entity-list-toolbar="" className="matrx-tap-ring flex min-w-0 flex-wrap items-center gap-1.5 lg:flex-nowrap">
       {searchBox}
 
       {filterPanel}
@@ -436,7 +436,7 @@ export function EntityListToolbar<TRow>({
 
 
       {hasAltViews && (
-        <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 xl:flex">
+        <div className="hidden h-7 items-center gap-0.5 rounded-md border border-border bg-card px-0.5 xl:flex">
           <IconToggle
             active={prefs.view === "table"}
             label="Table"
@@ -465,7 +465,7 @@ export function EntityListToolbar<TRow>({
         </div>
       )}
 
-      <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 xl:flex">
+      <div className="hidden h-7 items-center gap-0.5 rounded-md border border-border bg-card px-0.5 xl:flex">
         <IconToggle
           active={prefs.density === "compact"}
           label={

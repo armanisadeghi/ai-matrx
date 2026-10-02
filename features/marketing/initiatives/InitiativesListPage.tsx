@@ -41,7 +41,7 @@ export function InitiativesListPage({
     [brandName],
   );
   const action = (
-    <Button size="sm" className="h-11 lg:h-7" onClick={() => setCreating(true)}>
+    <Button size="sm" onClick={() => setCreating(true)}>
       <Plus className="h-4 w-4" />
       New initiative
     </Button>

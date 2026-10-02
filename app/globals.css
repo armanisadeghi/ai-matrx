@@ -1389,7 +1389,7 @@
         a[data-tap-target]
       ):not([data-touch-exempt]):not([role="checkbox"]):not([role="radio"]):not(
         [role="switch"]
-      ) {
+      ):not(.matrx-tap-ring *):not(thead *) {
       min-height: 2.75rem; /* 44px */
     }
 
@@ -1406,7 +1406,7 @@
         [title]
       ):not([data-touch-exempt]):not([role="checkbox"]):not([role="radio"]):not(
         [role="switch"]
-      ) {
+      ):not(.matrx-tap-ring *):not(thead *) {
       min-width: 2.75rem;
     }
 
@@ -1420,7 +1420,7 @@
             [type="file"]
           ):not([type="hidden"]),
         textarea
-      ):not([data-touch-exempt]) {
+      ):not([data-touch-exempt]):not(.matrx-tap-ring *) {
       min-height: 2.75rem;
     }
   }
@@ -1471,6 +1471,54 @@
       transform: translate(-50%, -50%);
       /* Behind nothing and painted with nothing: this only catches pointers. */
       background: transparent;
+    }
+  }
+
+  /* =========================================================================
+     .matrx-tap-ring — THE TAP MODEL FOR A SUBTREE OF DENSE CONTROLS.
+
+     The floor above GROWS every control to 44px below `lg` or on any touch
+     device. On a list header that turned every 28px lane, filter and "New"
+     button into a 44px slab on an iPad (owner, /board/all, 2026-10-02), and a
+     table's column headers into 44px rows. The tap model (docs/ui-unification
+     -plan.md §1b, the `@ai-matrx/tap-target` geometry) keeps the painted
+     control at its dense height and adds an INVISIBLE hit area instead:
+       - on a coarse pointer only (a mouse needs nothing),
+       - 44px tall,
+       - widened by exactly one tap gap (half on each side), so it reaches the
+         midpoint of a gap and never a neighbour's pill.
+     Put the class on a container (a toolbar, a header row): it exempts that
+     subtree from the floor above and rings every control in it. Column
+     headers inside a floor subtree get the same ring (`thead`).
+     ========================================================================= */
+  @media (pointer: coarse) {
+    :is(.matrx-tap-ring, .matrx-touch-targets thead)
+      :is(button, [role="button"], [role="combobox"], a[data-tap-target], a[data-matrx-button]):not(
+        [role="checkbox"]
+      ):not([role="radio"]):not([role="switch"]) {
+      position: relative;
+      touch-action: manipulation;
+    }
+    :is(.matrx-tap-ring, .matrx-touch-targets thead)
+      :is(button, [role="button"], [role="combobox"], a[data-tap-target], a[data-matrx-button]):not(
+        [role="checkbox"]
+      ):not([role="radio"]):not([role="switch"])::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: calc(100% + var(--matrx-tap-gap, 0.375rem));
+      height: max(100%, 2.75rem);
+      transform: translate(-50%, -50%);
+      background: transparent;
+    }
+    /* A tab strip scrolls sideways: a ring wider than its tab would widen
+       the strip's scroll area, so inside a tablist the ring keeps the tab's
+       width (the strip pads itself vertically to hold the 44px height). */
+    .matrx-tap-ring [role="tablist"] :is(button, [role="tab"]):not([role="checkbox"]):not(
+        [role="radio"]
+      ):not([role="switch"])::before {
+      width: 100%;
     }
   }
 }
@@ -2660,4 +2708,21 @@ html[data-full-screen-layer] [data-sonner-toaster][data-y-position="top"] {
   white-space: nowrap;
   overflow-wrap: normal;
   word-break: normal;
+}
+
+/* THE TAP MODEL OUTRANKS THE BUTTON FLOOR inside `.matrx-tap-ring`
+   (2026-10-02). `@ai-matrx/design-system` lifts every sub-44px Button to 44px
+   on a coarse pointer with an UNLAYERED rule (`[data-matrx-button]
+   [data-tap-floor]`), so a list header's "New board" stood 44px tall beside
+   28px lanes on an iPad. Inside a tap-ring subtree the ring (see
+   `.matrx-tap-ring` in @layer components) is the hit area, so the Button keeps
+   its dense height. Unlayered and more specific so it wins over the package
+   rule. Retires when the package rebuilds Button on the tap geometry
+   (docs/ui-unification-plan.md §1b, step 1). */
+@media (pointer: coarse) {
+  .matrx-tap-ring [data-matrx-button][data-tap-floor]:not([data-touch-exempt]),
+  .matrx-tap-ring [data-matrx-button][data-tap-floor-square]:not([data-touch-exempt]) {
+    min-height: 0;
+    min-width: 0;
+  }
 }

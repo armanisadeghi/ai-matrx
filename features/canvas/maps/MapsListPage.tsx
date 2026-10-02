@@ -35,7 +35,7 @@ export function MapsListPage() {
   const mayLoad = canLoadMaps({ authReady, userId, accessToken });
 
   const newButton = (
-    <Button size="sm" className="h-11 lg:h-7" onClick={() => setCreating(true)}>
+    <Button size="sm" onClick={() => setCreating(true)}>
       <Plus className="h-4 w-4" />
       <span className="max-sm:sr-only">New map</span>
     </Button>

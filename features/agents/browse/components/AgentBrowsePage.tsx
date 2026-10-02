@@ -76,7 +76,7 @@ export function AgentBrowsePage({
   const newAgentButton = (list: EntityListController<AgentBrowseRow>) => {
     const system = systemAdmin && list.query.scope.kind === "system";
     return (
-      <Button asChild size="sm" className="h-11 lg:h-7">
+      <Button asChild size="sm">
         <Link
           href={newAgentHref(system)}
           aria-label={system ? "New system agent" : "New agent"}
@@ -129,7 +129,7 @@ export function AgentBrowsePage({
           </span>
         ) : (
         <>
-          <Button asChild variant="outline" size="sm" className="h-11 lg:h-7">
+          <Button asChild variant="outline" size="sm">
             <Link href="/agents/orchestras" aria-label="Orchestras">
               <Network className="h-4 w-4" />
               <span className="max-sm:sr-only">Orchestras</span>

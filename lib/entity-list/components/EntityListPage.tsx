@@ -15,6 +15,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { columnsWithoutRoom } from "../columnPriority";
 import { usePhoneWidth } from "../usePhoneWidth";
+import { useHeaderRowFit } from "../useHeaderRowFit";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -1065,6 +1066,9 @@ export function EntityListPage<TRow>({
 
   // The toolbar, drawn in its own row from `sm` up and INSIDE the lane row on a phone (one row).
   const [phoneSearchOpen, setPhoneSearchOpen] = useState(false);
+  // From `sm` up the toolbar joins the lane row whenever both fit at this width (useHeaderRowFit).
+  const controlRowRef = useRef<HTMLDivElement | null>(null);
+  const oneHeaderRow = useHeaderRowFit(controlRowRef, !phoneWidth);
   const phoneSearching = phoneWidth && (phoneSearchOpen || list.query.search !== "");
   const renderToolbar = (phoneRow?: { searchOpen: boolean; onSearchOpenChange: (open: boolean) => void }) =>
     config.tableToolbar ? null : (
@@ -1164,7 +1168,7 @@ export function EntityListPage<TRow>({
           // select-all bar on a desktop) still made its sibling "not last"
           // under space-y and pushed the table down 8px the moment rows
           // arrived (page-pass /connected-sources, 2026-09-27).
-          "flex shrink-0 flex-col gap-1.5 px-3 pb-2 sm:gap-2",
+          "flex shrink-0 flex-col gap-1.5 px-3 pb-2",
           clearsShellHeader
             ? "pt-[calc(var(--shell-header-h)+0.5rem)]"
             : "pt-2",
@@ -1191,11 +1195,26 @@ export function EntityListPage<TRow>({
             {typeof notice === "function" ? notice(list) : notice}
           </div>
         )}
-        <div data-entity-list-control-row="" className="flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
+        <div
+          ref={controlRowRef}
+          data-entity-list-control-row=""
+          // THE TAP MODEL (matrx-tap-ring, app/globals.css): every control in
+          // this row and the toolbar stays 28px and gets an invisible 44px hit
+          // area on a touch screen, instead of the list's touch floor growing
+          // each one to 44px (owner, /board/all on an iPad, 2026-10-02).
+          className="matrx-tap-ring flex min-w-0 items-center justify-between gap-1.5"
+        >
           {/* On a phone the lane select keeps its words and the organization
               filter takes what is left (it truncates); wider, the tabs take the
               room and scroll sideways before the filter or the actions are cut. */}
-          <div className={cn("min-w-0 max-sm:flex-none sm:flex-1", phoneSearching && "hidden")}>
+          <div
+            data-entity-list-lanes=""
+            className={cn(
+              "min-w-0",
+              oneHeaderRow ? "flex-none" : "max-sm:flex-none sm:flex-1",
+              phoneSearching && "hidden",
+            )}
+          >
             {scopeTabs && (
             <EntityScopeTabs
               scope={list.query.scope}
@@ -1213,9 +1232,10 @@ export function EntityListPage<TRow>({
             />
             )}
           </div>
+          {oneHeaderRow ? <div className="min-w-0 flex-1 [&_[data-entity-list-toolbar]]:flex-nowrap">{renderToolbar()}</div> : null}
           {/* A narrowing the address carries is always visible and clearable, knob or not. */}
           {(orgFilterOffered || Boolean(list.query.orgId)) && !(phoneSearching && !list.query.orgId) && (
-            <div className="flex min-w-0 items-center max-sm:flex-1 sm:ml-auto sm:shrink-0">
+            <div data-entity-list-org="" className="flex min-w-0 items-center max-sm:flex-1 sm:ml-auto sm:shrink-0">
               <EntityOrgFilter
                 orgId={list.query.orgId}
                 onChange={list.setOrgId}
@@ -1225,7 +1245,12 @@ export function EntityListPage<TRow>({
             </div>
           )}
           {headerActions && (
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            // A page's actions take the header's one control height whatever
+            // size the page asked for: the shell owns this row's geometry.
+            <div
+              data-entity-list-actions=""
+              className="flex shrink-0 items-center gap-1.5 [&_a]:h-7 [&_button]:h-7 [&_button]:min-h-0"
+            >
               {typeof headerActions === "function"
                 ? headerActions(list)
                 : headerActions}
@@ -1236,7 +1261,7 @@ export function EntityListPage<TRow>({
             : null}
         </div>
 
-        {phoneWidth ? null : renderToolbar()}
+        {phoneWidth || oneHeaderRow ? null : renderToolbar()}
 
         {config.filterChips && (
           <EntityFilterChips

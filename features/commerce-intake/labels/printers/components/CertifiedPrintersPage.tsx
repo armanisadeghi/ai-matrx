@@ -23,7 +23,7 @@ export function CertifiedPrintersPage() {
   const config = useMemo(() => buildCertifiedPrinterListConfig(), []);
 
   const actions = (
-    <Button size="sm" className="h-11 lg:h-7" asChild>
+    <Button size="sm" asChild>
       <Link href={certifyPrinterHref()}>
         <BadgeCheck className="h-4 w-4" />
         <span className="max-sm:sr-only">Certify a printer</span>

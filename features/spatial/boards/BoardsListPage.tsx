@@ -49,7 +49,7 @@ export function BoardsListPage() {
   };
 
   const newButton = (
-    <Button size="sm" className="h-11 lg:h-7" onClick={() => void newBoard()} disabled={creating}>
+    <Button size="sm" onClick={() => void newBoard()} disabled={creating}>
       {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
       <span className="max-sm:sr-only">New board</span>
     </Button>

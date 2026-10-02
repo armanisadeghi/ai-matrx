@@ -22,7 +22,7 @@ import { LIBRARIES_PATH } from "@/features/knowledge/modulePaths";
 
 export function TranscriptsListPage() {
   const newButton = (
-    <Button asChild size="sm" className="h-11 lg:h-7">
+    <Button asChild size="sm">
       <Link href="/transcripts/new" aria-label="New transcript">
         <Plus className="h-4 w-4" />
         <span className="max-sm:sr-only">New</span>
@@ -41,7 +41,7 @@ export function TranscriptsListPage() {
   // the wrong audience can reach is a dead end with extra steps. The header
   // keeps its one-button density on phones (label collapses like "New").
   const wholeChannelButton = (
-    <Button asChild size="sm" variant="outline" className="h-11 lg:h-7">
+    <Button asChild size="sm" variant="outline">
       <Link
         href={LIBRARIES_PATH}
         aria-label="Catalogue a whole YouTube channel in Libraries"

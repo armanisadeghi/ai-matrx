@@ -41,7 +41,7 @@ function ShapeAssistProducer({
  */
 export function ShapeBrowsePage() {
   const newShapeButton = (
-    <Button asChild size="sm" className="h-11 lg:h-7">
+    <Button asChild size="sm">
       <Link href={SHAPES_NEW_HREF} aria-label="New shape">
         <Plus className="h-4 w-4" />
         <span className="max-sm:sr-only">New shape</span>

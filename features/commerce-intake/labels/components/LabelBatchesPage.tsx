@@ -31,7 +31,7 @@ export function LabelBatchesPage() {
 
   const actions = (
     <div className="flex gap-2">
-      <Button variant="outline" size="sm" className="h-11 lg:h-7" asChild>
+      <Button variant="outline" size="sm" asChild>
         <Link href="/commerce/labels/printers">
           <BadgeCheck className="h-4 w-4" />
           <span className="max-sm:sr-only">Printers</span>
@@ -42,7 +42,6 @@ export function LabelBatchesPage() {
           <Button
             variant="outline"
             size="sm"
-            className="h-11 lg:h-7"
             onClick={() => setImporting(true)}
           >
             <FileUp className="h-4 w-4" />
@@ -50,7 +49,6 @@ export function LabelBatchesPage() {
           </Button>
           <Button
             size="sm"
-            className="h-11 lg:h-7"
             onClick={() => setCreating(true)}
           >
             <Plus className="h-4 w-4" />
