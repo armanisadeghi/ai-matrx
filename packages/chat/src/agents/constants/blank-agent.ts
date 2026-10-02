@@ -33,11 +33,9 @@ export const DEFAULT_AGENT_MODEL_ID = "617abdcd-79e2-4a4b-be76-4a9960cdffa1";
  * or context policy. Templates are still available, honestly labelled, behind
  * "Start from a template" on `/agents/new`.
  *
- * `tools` is an EMPTY ARRAY on purpose, not a list. `agent.definition`'s
- * `zz_seed_org_default_tools` trigger seeds the organization's default tool
- * set (which carries Records where the store is on) for exactly the writer who
- * "said nothing about tools" — `new.tools is null or cardinality = 0`. Naming
- * any tool here would silently opt the agent OUT of its organization's set.
+ * `tools` is an EMPTY ARRAY on purpose: a new agent carries exactly the tools
+ * its author gives it. Nothing adds one on save (the org-default INSERT seed was
+ * removed 2026-10-02).
  */
 export const BLANK_AGENT_SEED: Omit<Partial<AgentDefinition>, "id"> = {
   agentType: "user",

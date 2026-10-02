@@ -48,9 +48,7 @@ describe("the manual path gives a person a blank agent", () => {
     expect(BLANK_AGENT_SEED.name).not.toMatch(/template/i);
   });
 
-  it("names no tool, so the organization's default set is what it gets", () => {
-    // `agent.definition`'s `zz_seed_org_default_tools` seeds the organization's
-    // tools (Records where the store is on) only when the writer sent none.
+  it("names no tool: a new agent starts with none", () => {
     expect(BLANK_AGENT_SEED.tools).toEqual([]);
   });
 

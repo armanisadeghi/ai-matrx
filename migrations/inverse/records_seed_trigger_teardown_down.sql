@@ -1,20 +1,8 @@
--- chair-step: THE INVERSE of `records_a_new_agent_is_never_seeded_with_a_tool.sql`. Recreates the
--- knob row, the declaration view, both functions (bodies verbatim as live on 2026-10-02), the
--- client-callable-door row and the BEFORE INSERT trigger. Restoring it brings back the seed the
--- owner ordered removed; it exists so the forward file is provably reversible.
-SELECT set_config('app.actor_system', 'migration:records_a_new_agent_is_never_seeded_with_a_tool.inverse', true);
-
-INSERT INTO platform.feature_knob (
-    feature, key, value, default_value, value_type, label, description,
-    set_by, basis, overridable_by, override_direction, public_read
-) VALUES (
-    'custom', 'records_tool_default', 'true'::jsonb, 'true'::jsonb, 'boolean',
-    'New agents start with records',
-    'New agents with no tools of their own start with the records tool.',
-    'agent',
-    'The verifier found zero agents on the platform carrying the records tool on 2026-09-19, so the store was unreachable from any agent a person could pick.',
-    array['organization']::text[], 'any', true
-) ON CONFLICT (feature, key) DO NOTHING;
+-- window-class: CREATE TRIGGER on agent.definition takes the same estate-wide lock as the drop; 1–4 AM Pacific only.
+-- chair-step: THE INVERSE of `records_seed_trigger_teardown.sql`. Recreates the declaration view, both
+-- functions (default_tool_ids_for_organization verbatim as live 2026-10-02; the seed function in its
+-- inert form), the client-callable-door row and the BEFORE INSERT trigger.
+SELECT set_config('app.actor_system', 'migration:records_seed_trigger_teardown.inverse', true);
 
 CREATE VIEW agent.org_default_tool WITH (security_invoker = true) AS
 SELECT tool_name, feature, key, why
@@ -91,29 +79,9 @@ CREATE OR REPLACE FUNCTION agent._seed_org_default_tools()
  SECURITY DEFINER
  SET search_path TO 'pg_catalog', 'public'
 AS $function$
-declare
-    v_defaults uuid[];
 begin
-    -- Only a writer who said nothing about tools gets the organization's default set.
-    if new.tools is not null and cardinality(new.tools) > 0 then
-        return new;
-    end if;
-    -- A writer that DECLARED its tool list (the Agent Factory's spec) meant exactly that
-    -- list, including an empty one. Never seed over a declaration.
-    if coalesce(new.metadata ->> 'tools_declared', '') = 'true' then
-        return new;
-    end if;
-    -- THE OFF SWITCH, READ HERE AND NOT ONLY INSIDE THE HELPER. With
-    -- `custom/system_enabled` off for this organization there is nothing this seed can
-    -- add, and the old path — an agent carrying exactly the tools its writer sent — is
-    -- reached without touching a second function.
-    if not custom.store_is_open(new.organization_id) then
-        return new;
-    end if;
-    v_defaults := agent.default_tool_ids_for_organization(new.organization_id);
-    if cardinality(v_defaults) > 0 then
-        new.tools := v_defaults;
-    end if;
+    -- INERT since 2026-10-02 (owner: the platform never adds a tool on its own). A new agent
+    -- carries exactly the tools its writer sent. Dropped by records_seed_trigger_teardown.sql.
     return new;
 end;
 $function$;

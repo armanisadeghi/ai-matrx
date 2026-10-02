@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T23:26:08.523Z",
+  "generated_at": "2026-10-02T23:58:37.324Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3626,6 +3626,12 @@
       "checksum": "b9e7ee8b9391b935b0ba8d00b9c497c8a9ac68e48afb1cde210502b048022772",
       "applied_at": "2026-09-22 18:01:09.235786+00"
     },
+    "migrations/campaign/makehome_w5_a_public_form_wears_its_look.sql": {
+      "source": "matrx-frontend",
+      "filename": "makehome_w5_a_public_form_wears_its_look.sql",
+      "checksum": "4ffb26e708f3440431f828ee151aa3dcf9d9e9648ceb3cb14f08c68ea17c3eb0",
+      "applied_at": "2026-10-02 23:47:06.31691+00"
+    },
     "migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql": {
       "source": "matrx-frontend",
       "filename": "merge7_the_merged_grid_is_a_feature_knob.sql",
@@ -4292,11 +4298,23 @@
       "checksum": "7e5d0b60fe2d6c63d0e296e07a81393c6a92b1b63cc7d511e7aea18e9ec965d1",
       "applied_at": "2026-09-21 04:28:47.694867+00"
     },
+    "migrations/campaign/records_a_new_agent_is_never_seeded_with_a_tool.sql": {
+      "source": "matrx-frontend",
+      "filename": "records_a_new_agent_is_never_seeded_with_a_tool.sql",
+      "checksum": "e6e3dd09a7e455a7e4a32048edcd68ea8d2a16c495e9aec8e29f24d3b5b090ac",
+      "applied_at": "2026-10-02 23:55:20.151078+00"
+    },
     "migrations/campaign/records_knob_no_longer_adds_the_tool_to_every_turn.sql": {
       "source": "matrx-frontend",
       "filename": "records_knob_no_longer_adds_the_tool_to_every_turn.sql",
       "checksum": "5cdba629df7623ee4a5f3ea0e1e9b5618b5997dd9e0bd6ff83bfb1e75b592ae5",
       "applied_at": "2026-10-02 19:11:47.552421+00"
+    },
+    "migrations/campaign/records_only_the_agents_that_chose_it_carry_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "records_only_the_agents_that_chose_it_carry_it.sql",
+      "checksum": "4d0a69441df5d2db2d012d93feb81c961168841d3606695444fa2ba9b9606439",
+      "applied_at": "2026-10-02 23:58:34.927557+00"
     },
     "migrations/campaign/recsuite3_a_pick_list_keeps_the_table_it_names.sql": {
       "source": "matrx-frontend",
@@ -6667,6 +6685,12 @@
       "filename": "visfix_the_cutover_diff_runs_to_completion.sql",
       "checksum": "b16d5ff3c265dc8875a1d08f559d49b2d6fdc2f5756b7d575a7b44c53aba03ae",
       "applied_at": "2026-09-19 13:45:47.803844+00"
+    },
+    "migrations/campaign/visionreach_g1_a_relation_is_filled_by_its_name.sql": {
+      "source": "matrx-frontend",
+      "filename": "visionreach_g1_a_relation_is_filled_by_its_name.sql",
+      "checksum": "154c81feab4ad41a0f762fade9ad76a4d5571747fe41fdf098f6ab255f7fdde3",
+      "applied_at": "2026-10-02 23:57:00.682039+00"
     },
     "migrations/campaign/visionreach_w2_formula_columns_are_measured_as_they_are_read.sql": {
       "source": "matrx-frontend",

@@ -2,30 +2,18 @@
 //
 // A TOOL AN ORGANIZATION DOES NOT HAVE IS NOT IN ITS PICKER.
 //
-// WHY THIS EXISTS. On 2026-09-19 the independent verifier found that **no agent on the
-// platform carried the `records` tool** — it was registered and active, and a person could
-// not ask any agent to touch their own records. The database seeds the tool into a new
-// agent's own saved list when the organization's knobs are on (`agent.org_default_tool`,
-// read on every agent INSERT); the server no longer adds it to a turn on its own (owner,
-// 2026-10-02). This is the other half: the agent builder's tool picker must show it in
-// exactly the organizations that have it, and never anywhere else.
+// WHY THIS EXISTS. A tool an organization may not have turned on must not be offered as if it
+// worked: a control whose every action answers "switched off" is the dead-control shape the
+// platform forbids. `TOOL_ORG_KNOBS` names such tools and the organization knobs that must all
+// resolve true; every other tool flows through unfiltered.
 //
-// THE PICKER HAD NO ELIGIBILITY AT ALL. `fetchAvailableTools` reads every
-// `tool.definition` row with `is_active = true` and shows the lot. For most tools that is
-// right — they are platform-wide. It is wrong for a tool an organization may not have
-// turned on: offering `records` to an organization whose store is off would put a control
-// on the screen whose every action answers "the custom data store is switched off", which
-// is the dead-control shape the platform forbids. Absent is honest; present-and-refusing
-// is not.
+// EMPTY SINCE 2026-10-02. `records` was the only entry, tied to the knob
+// custom/records_tool_default and the agent INSERT seed `agent.org_default_tool`. The owner
+// removed both ("Remove the database rule"): the platform never adds a tool on its own, and
+// `records` is offered like any other tool (matrx-frontend migration
+// records_a_new_agent_is_never_seeded_with_a_tool.sql).
 //
-// ONE DECLARATION, READ BY BOTH SIDES. The pairs below are the SAME pairs the database's
-// INSERT seed reads (`agent.org_default_tool`). A tool listed here is offered only where every one of its
-// knobs resolves true for the signed-in person's organization, so the screen and the turn
-// can never disagree about what an organization has.
-//
-// HOW TO ADD ONE. Put the tool's name and the knob pair(s) it needs in `TOOL_ORG_KNOBS`,
-// and the same rows in `agent.org_default_tool` (the guard test compares the two). Nothing else changes: every other tool keeps flowing through
-// unfiltered.
+// HOW TO ADD ONE. Put the tool's name and the knob pair(s) it needs in `TOOL_ORG_KNOBS`.
 
 import {
   ensureEffectiveKnob,
@@ -33,14 +21,7 @@ import {
 } from "@/lib/scoped-config/effectiveKnobs";
 
 /** Tool name → every organization knob that must resolve true for it to be offered. */
-export const TOOL_ORG_KNOBS: Readonly<Record<string, readonly KnobAddress[]>> = {
-  records: [
-    // Is this organization's custom data store open at all?
-    { feature: "custom", key: "system_enabled" },
-    // And when it is, do its agents get the tool without attaching it by hand?
-    { feature: "custom", key: "records_tool_default" },
-  ],
-};
+export const TOOL_ORG_KNOBS: Readonly<Record<string, readonly KnobAddress[]>> = {};
 
 /** The tools this module has an opinion about. Everything else is always offered. */
 export function isOrgKnobGatedTool(name: string | null | undefined): boolean {
