@@ -33,6 +33,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "app.definition",
   "title_column": "name"
  },
+ "crm_party_research": {
+  "table": "crm.party_research",
+  "title_column": "label"
+ },
  "cx_agent_memory": {
   "table": "chat.agent_memory",
   "title_column": "key"
@@ -184,10 +188,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "data_store": {
   "table": "rag.data_stores",
   "title_column": "name"
- },
- "dataset": {
-  "table": "workbench.udt_datasets",
-  "title_column": "table_name"
  },
  "fc_card": {
   "table": "education.fc_card",
@@ -511,7 +511,7 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  },
  "workbook": {
   "table": "workbench.udt_workbooks",
-  "title_column": "description"
+  "title_column": "workbook_name"
  },
  "workflow": {
   "table": "workflow.definition",
@@ -545,6 +545,14 @@ export interface CatalogNounDisplay {
  * never directly.
  */
 export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
+ "ai_setting_profile": {
+  "label": "Settings Profile",
+  "family": "AI catalog"
+ },
+ "ai_translation_cell": {
+  "label": "Translation Cell",
+  "family": "AI catalog"
+ },
  "agent": {
   "label": "Agent",
   "family": "Agents"
@@ -596,6 +604,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "app_rate_limit": {
   "label": "App Rate Limit",
   "family": "Apps"
+ },
+ "crm_party_research": {
+  "label": "Private contact research",
+  "family": "CRM"
  },
  "cx_agent_memory": {
   "label": "Agent Memory",
@@ -1113,6 +1125,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "AI API",
   "family": "Other"
  },
+ "ai_calls": {
+  "label": "AI model calls",
+  "family": "Other"
+ },
  "ai_endpoint": {
   "label": "AI Endpoint",
   "family": "Other"
@@ -1135,6 +1151,18 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "ai_setting": {
   "label": "AI Setting",
+  "family": "Other"
+ },
+ "ai_usage_executions": {
+  "label": "AI usage by execution",
+  "family": "Other"
+ },
+ "ai_usage_hourly": {
+  "label": "AI usage by hour",
+  "family": "Other"
+ },
+ "ai_usage_hourly_watermark": {
+  "label": "AI usage counted through",
   "family": "Other"
  },
  "analysis_result": {
@@ -1935,10 +1963,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "data_store_members": {
   "label": "Data Store Members",
-  "family": "Other"
- },
- "dataset": {
-  "label": "Dataset",
   "family": "Other"
  },
  "ddl_guard_log": {
@@ -3057,6 +3081,18 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Mandate Binding (new)",
   "family": "Other"
  },
+ "mandate_candidate": {
+  "label": "Mandate Candidate",
+  "family": "Other"
+ },
+ "mandate_candidate_run": {
+  "label": "Mandate Candidate Run",
+  "family": "Other"
+ },
+ "mandate_candidate_run_payload": {
+  "label": "Mandate Candidate Run Payload",
+  "family": "Other"
+ },
  "mandate_goal_clauses": {
   "label": "Mandate Goal Clauses",
   "family": "Other"
@@ -3491,6 +3527,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "platform_cutover_seam_press": {
   "label": "Cutover seam press",
+  "family": "Other"
+ },
+ "platform_dated_change": {
+  "label": "Dated Change",
   "family": "Other"
  },
  "platform_doors_only_pending_cutover": {
@@ -4009,6 +4049,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Sms Webhook Logs",
   "family": "Other"
  },
+ "soft_delete_cascade_job": {
+  "label": "Soft-delete cascade job",
+  "family": "Other"
+ },
  "soft_delete_edge": {
   "label": "Soft Delete Edge",
   "family": "Other"
@@ -4031,10 +4075,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "structure": {
   "label": "Structure",
-  "family": "Other"
- },
- "structured_list": {
-  "label": "Structured List",
   "family": "Other"
  },
  "studio_cleaned_segments": {
@@ -4153,6 +4193,18 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "System Write Failure",
   "family": "Other"
  },
+ "t13_backfill_ledger": {
+  "label": "T-13 backfill ledger",
+  "family": "Other"
+ },
+ "t13_default_ledger": {
+  "label": "T-13 default ledger",
+  "family": "Other"
+ },
+ "t13_row_column_events": {
+  "label": "T-13 row column events",
+  "family": "Other"
+ },
  "task_user_state": {
   "label": "Task user state",
   "family": "Other"
@@ -4209,18 +4261,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Trigger Event",
   "family": "Other"
  },
- "udt_dataset_fields": {
-  "label": "Dataset Field",
-  "family": "Other"
- },
- "udt_dataset_row_versions": {
-  "label": "Udt Dataset Row Versions",
-  "family": "Other"
- },
- "udt_dataset_rows": {
-  "label": "Dataset Row",
-  "family": "Other"
- },
  "udt_dataset_template": {
   "label": "Dataset template",
   "family": "Other"
@@ -4235,10 +4275,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "udt_document_snapshot": {
   "label": "Document snapshot",
-  "family": "Other"
- },
- "udt_structured_list_items": {
-  "label": "Structured List Item",
   "family": "Other"
  },
  "udt_workbook_snapshot": {
@@ -4359,6 +4395,18 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "user_surface_state": {
   "label": "User Surface State",
+  "family": "Other"
+ },
+ "vault_fill_approvals": {
+  "label": "Vault fill approvals",
+  "family": "Other"
+ },
+ "vault_fill_devices": {
+  "label": "Vault fill devices",
+  "family": "Other"
+ },
+ "vault_fill_nonces": {
+  "label": "Vault fill nonces",
   "family": "Other"
  },
  "visibility_cache": {
@@ -4657,6 +4705,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Workflow Run",
   "family": "Other"
  },
+ "workflow_run_cost": {
+  "label": "Workflow run cost",
+  "family": "Other"
+ },
+ "workflow_run_facts": {
+  "label": "Workflow run facts",
+  "family": "Other"
+ },
  "workflow_run_log": {
   "label": "Workflow Run Log",
   "family": "Other"
@@ -4696,6 +4752,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "youtube_video": {
   "label": "YouTube Video",
   "family": "Other"
+ },
+ "structured_list": {
+  "label": "Structured List",
+  "family": "Derived shapes"
  },
  "structured_list_group": {
   "label": "Structured List Group",
