@@ -12,6 +12,7 @@ describe("the shell chat's routes", () => {
     expect(shellChatHostedElsewhere("/chat/abc", true)).toBe(true);
     expect(shellChatHostedElsewhere("/board", true)).toBe(true);
     expect(shellChatHostedElsewhere("/education", true)).toBe(true);
+    expect(shellChatHostedElsewhere("/code", true)).toBe(true);
     expect(shellChatHostedElsewhere("/marketing", true)).toBe(false);
     expect(shellChatHostedElsewhere("/notes", true)).toBe(false);
   });

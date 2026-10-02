@@ -12,8 +12,8 @@ export const SHELL_CHAT_TOGGLE_EVENT = "matrx:shell-chat-toggle";
 /** With no remembered choice, the chat starts open at this width and up. */
 export const SHELL_CHAT_WIDE_QUERY = "(min-width: 1440px)";
 
-/** /chat is the chat itself. */
-const FULL_CHAT_PATH = /^\/chat(?:\/|$)/;
+/** /chat is the chat itself; the code workspace docks its own coding agent. */
+const OWN_CHAT_PATHS = [/^\/chat(?:\/|$)/, /^\/code(?:\/|$)/, /^\/agent-apps\/[^/]+\/code(?:\/|$)/];
 
 /** The page family a choice is remembered for: the first path segment. */
 export function shellChatFamily(pathname: string): string {
@@ -26,5 +26,5 @@ export function shellChatWorkspaceId(family: string): string {
 
 /** A page that hosts its own canvas workspace chat (Board, Education) or is the full chat. */
 export function shellChatHostedElsewhere(pathname: string, signedIn: boolean): boolean {
-  return FULL_CHAT_PATH.test(pathname) || isCanvasChromeRoute(pathname, signedIn);
+  return OWN_CHAT_PATHS.some((p) => p.test(pathname)) || isCanvasChromeRoute(pathname, signedIn);
 }
