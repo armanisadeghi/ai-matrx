@@ -23,6 +23,7 @@ import type {
 import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
+import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 export type MediaResearchRequest = components["schemas"]["MediaResearchRequest"];
 export type MediaResearchPreview = components["schemas"]["MediaResearchPreview"];
@@ -98,11 +99,7 @@ export async function runMediaResearch(
       ...(options.signal ? { signal: options.signal } : {}),
       onStreamEvent: (event) => {
         if (event.event === "error") {
-          const data = event.data as { user_message?: unknown; message?: unknown };
-          streamError =
-            (typeof data.user_message === "string" && data.user_message) ||
-            (typeof data.message === "string" && data.message) ||
-            "The research run stopped with an error.";
+          streamError = streamErrorText(event) ?? "The research run stopped with an error.";
           return;
         }
         const parsed = asMediaResearchEvent(event);

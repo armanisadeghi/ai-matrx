@@ -18,6 +18,7 @@ import type {
   StageKind,
 } from "../../../hooks/usePipelineProgress";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 type FilterKey = "all" | "errors" | "info" | "current";
 
@@ -144,7 +145,7 @@ function buildEntries(
         kind: "error",
         level: "error",
         stage: null,
-        primary: data.user_message ?? data.message ?? "Error",
+        primary: streamErrorText(data) ?? "Error",
       });
     } else if (evt.event === "end") {
       out.push({

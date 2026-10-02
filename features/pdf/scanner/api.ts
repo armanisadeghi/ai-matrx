@@ -21,6 +21,7 @@ import type {
   ScanPdfRequest,
   ScanPdfResult,
 } from "./types";
+import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 /**
  * Boundary detection for one uploaded photo. Pure read — nothing persisted.
@@ -46,7 +47,7 @@ export async function detectDocument(
   })) {
     if (evt.event === "error") {
       throw new Error(
-        evt.data.user_message ?? evt.data.message ?? "Document detection failed.",
+        streamErrorText(evt) ?? "Document detection failed.",
       );
     }
     if (evt.event !== "data") continue;

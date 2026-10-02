@@ -25,6 +25,7 @@ import type {
   ImageEditCompleteData,
   ImageGenerateCompleteData,
 } from "@/types/python-generated/stream-events";
+import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 // ---------------------------------------------------------------------------
 // Output options — shared across every op
@@ -163,7 +164,7 @@ async function drainEditStream<B extends object>(
   })) {
     if (evt.event === "error") {
       throw new Error(
-        evt.data.user_message ?? evt.data.message ?? "Image edit failed.",
+        streamErrorText(evt) ?? "Image edit failed.",
       );
     }
     if (evt.event !== "data") continue;
@@ -463,7 +464,7 @@ export async function generateImage(
   })) {
     if (evt.event === "error") {
       throw new Error(
-        evt.data.user_message ?? evt.data.message ?? "Image generation failed.",
+        streamErrorText(evt) ?? "Image generation failed.",
       );
     }
     if (evt.event !== "data") continue;

@@ -64,6 +64,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import type { AppDispatch } from "@/lib/redux/store";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { paths } from "@/types/python-generated/api-types";
+import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 /**
  * A pointer older than this is not worth rejoining: every durable run holds a
@@ -1035,9 +1036,7 @@ export function useDurableRun<TResult>(
         // The server's sentence AND the specific reason behind it — the live
         // path must carry exactly what the durable row carries (W37).
         const message = withDetail(
-          payload?.user_message ||
-            payload?.message ||
-            "The run failed on the server.",
+          streamErrorText(payload) ?? "The run failed on the server.",
           durableRunErrorDetail(payload),
         );
         clearPointer(wire, key);

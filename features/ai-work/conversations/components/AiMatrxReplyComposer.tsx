@@ -36,6 +36,7 @@ import { callConversationContinue } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { readServerRefusal } from "@/features/access-gate/service/serverRefusal";
 import { useCodingReplyResponder } from "./useCodingReplyResponder";
+import { streamErrorText } from "@ai-matrx/agents/matrx";
 // `source_feature` for every reply sent from this composer. Per the provenance
 // ruling the reply's source_app is `code-plugin`; this composer sends none —
 // request attribution for the continue is the server reply path's
@@ -168,8 +169,7 @@ export function AiMatrxReplyComposer({
             return;
           }
           if (event.event === "error") {
-            failure.message =
-              event.data.user_message?.trim() || event.data.message;
+            failure.message = streamErrorText(event) ?? failure.message;
           }
         },
       }),

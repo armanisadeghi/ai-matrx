@@ -40,6 +40,7 @@ import type {
 } from "./types";
 
 import { PROTOCOL_VERSION } from "./types";
+import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 // ============================================================================
 // INTERNAL MUTABLE TYPES (never leave this module)
@@ -205,7 +206,7 @@ export function buildCanonicalBlocks(
       blocks.push({
         type: "error",
         errorType: err.error_type,
-        message: err.message,
+        message: streamErrorText(event) ?? err.message,
       });
       continue;
     }

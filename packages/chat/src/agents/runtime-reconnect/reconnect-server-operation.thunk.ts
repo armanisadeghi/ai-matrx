@@ -36,7 +36,7 @@ import { discardRetainedTransportConsumer } from "../redux/execution-system/thun
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { runtimeOperationRejoinPath } from "@ai-matrx/agents/matrx";
+import { runtimeOperationRejoinPath, settleRunPickup } from "@ai-matrx/agents/matrx";
 import { toast } from "@host/lib/toast";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import type { AppDispatch, RootState } from "@host/lib/redux/store";
@@ -470,25 +470,38 @@ export const reconnectServerOperation = createAsyncThunk<
       return noFollow;
     }
 
-    if (!result.ended) {
-      // Every SSE attempt failed. Don't leave a claim we can't back.
-      console.warn(
-        "[runtime-reconnect] event stream unavailable after retries — falling back to legacy recovery.",
-        { conversationId, executionId: op.execution_id },
-      );
-      dispatch(patchConversation({ conversationId, serverOperation: null }));
-      fallbackToLegacyRecovery();
-      return noFollow;
-    }
-
-    // Terminal. The feature record is the content truth — refetch it so the
-    // finished message appears without a manual refresh.
-    try {
-      await dispatch(loadConversation({ conversationId })).unwrap();
-    } catch (err) {
+    // THE shared pick-up mapping (`settleRunPickup`, @ai-matrx/agents) — the
+    // extension and the desktop end a no-journal rejoin through the same
+    // function: followed to its end → reload the saved turn (the feature
+    // record is the content truth) with the run's real status; the follow
+    // gave up → this surface's legacy recovery poll, never a failure.
+    const settlement = await settleRunPickup(
+      {
+        kind: "followed",
+        executionId: op.execution_id,
+        ended: result.ended,
+        status: result.status,
+      },
+      {
+        reloadSavedTurn: async () => {
+          await dispatch(loadConversation({ conversationId })).unwrap();
+        },
+        onStillRunning: () => {
+          // Every SSE attempt failed. Don't leave a claim we can't back.
+          console.warn(
+            "[runtime-reconnect] event stream unavailable after retries — falling back to legacy recovery.",
+            { conversationId, executionId: op.execution_id },
+          );
+          dispatch(patchConversation({ conversationId, serverOperation: null }));
+          fallbackToLegacyRecovery();
+        },
+      },
+    );
+    if (settlement.state !== "settled") return noFollow;
+    if (!settlement.reloaded) {
       console.warn(
         "[runtime-reconnect] operation settled but the conversation refetch failed.",
-        { conversationId, err },
+        { conversationId, err: settlement.error },
       );
       dispatch(patchConversation({ conversationId, serverOperation: null }));
       return { followed: true, finalStatus: result.status };
@@ -496,7 +509,7 @@ export const reconnectServerOperation = createAsyncThunk<
 
     dispatch(patchConversation({ conversationId, serverOperation: null }));
 
-    const finalStatus = result.status;
+    const finalStatus = settlement.status;
     if (finalStatus === "completed") {
       const rid =
         requestId ?? selectLatestRequestId(conversationId)(getState());

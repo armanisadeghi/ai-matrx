@@ -21,6 +21,7 @@ import type {
   CutoverCopyAgainReportData,
   TypedStreamEvent,
 } from "@/types/python-generated/stream-events";
+import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 /**
  * The readiness checks a copy-again rerun can clear. Only the fallback for a readiness answer that
@@ -78,8 +79,7 @@ export async function copyAgain(
       if (isProgress(d)) onProgress?.({ done: d.done, total: d.total, says: d.says });
       else if (isReport(d)) report = d;
     } else if (event.event === "error") {
-      const e = event.data as { user_message?: string | null; message?: string };
-      refusal = e.user_message || e.message || "Copying again was refused.";
+      refusal = streamErrorText(event) ?? "Copying again was refused.";
     }
   };
 

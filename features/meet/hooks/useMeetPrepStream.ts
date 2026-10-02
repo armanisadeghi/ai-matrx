@@ -17,6 +17,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { selectAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
+import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 export interface AgendaDraftBody {
   organization_id: string;
@@ -109,14 +110,7 @@ export function useMeetPrepStream(instanceId: string, label: string) {
         },
         onEvent: (event) => {
           if (event.event === "error") {
-            const data = event.data as {
-              user_message?: unknown;
-              message?: unknown;
-            };
-            streamError =
-              (typeof data.user_message === "string" && data.user_message) ||
-              (typeof data.message === "string" && data.message) ||
-              "The run stopped with an error.";
+            streamError = streamErrorText(event) ?? "The run stopped with an error.";
           }
         },
       }),

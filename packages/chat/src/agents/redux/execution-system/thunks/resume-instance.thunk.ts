@@ -434,7 +434,7 @@ export const resumeInstance = createAsyncThunk<
           const { reconnectServerOperation } = await import(
             "../../../runtime-reconnect/reconnect-server-operation.thunk"
           );
-          void dispatch(
+          void (dispatch as AppDispatch)(
             reconnectServerOperation({ conversationId, requestId, source: "stream-loss" }),
           );
           return { requestId, conversationId };

@@ -12,6 +12,7 @@ import type {
   ExtractionStreamEvent,
   RunExtractionRequest,
 } from "@/features/page-extraction/types";
+import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 const RUN_STREAM_PATH = "/page-extraction/runs/stream";
 
@@ -115,7 +116,7 @@ function parseLine(line: string): ExtractionStreamEvent | null {
     const d = (env.data ?? {}) as { message?: string; error_type?: string };
     return {
       event: "stream.error",
-      data: { message: d.message ?? d.error_type ?? "Extraction failed" },
+      data: { message: streamErrorText(d) ?? d.error_type ?? "Extraction failed" },
     };
   }
 

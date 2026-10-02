@@ -86,7 +86,11 @@ import {
 } from "../active-requests/active-requests.slice";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import { readLiveRunRejoin, type MatrxLiveRunRejoin } from "@ai-matrx/agents/matrx";
+import {
+  isLiveStreamUnavailable,
+  readLiveRunRejoin,
+  type MatrxLiveRunRejoin,
+} from "@ai-matrx/agents/matrx";
 import { extractErrorMessage } from "@host/utils/errors";
 
 /**
@@ -600,7 +604,13 @@ export async function runAiStream(
       }
 
       const code = response.status;
-      if (kind === "rejoin" && (code === 404 || code === 409)) {
+      // A rejoin with nothing to replay: the operation is unknown (404) or its
+      // journal is gone (409 live_stream_unavailable — the package decides).
+      if (
+        kind === "rejoin" &&
+        (code === 404 ||
+          isLiveStreamUnavailable({ status: code, serverDetail: rawErrorBody }))
+      ) {
         throw new StreamRejoinUnavailableError(serverMessage);
       }
       if (code === 409) {
