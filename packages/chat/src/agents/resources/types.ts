@@ -11,7 +11,7 @@ import type { PreFetchedUrl } from "@ai-matrx/agents/generated/stream-events";
 import type { Note } from "@host/features/notes/types";
 import type { DatabaseTask, ProjectWithTasks } from "@host/features/tasks/types";
 import type { ComponentType } from "react";
-import type { TableBookmark } from "../types/message-types";
+import type { TableBookmark } from "@ai-matrx/agents/message-parts";
 
 // ===========================
 // Base Resource Interfaces

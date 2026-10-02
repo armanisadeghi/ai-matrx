@@ -25,7 +25,7 @@ import type {
   ListInputBlock,
   DataInputBlock,
   ContentBlock,
-} from "./message-types";
+} from "@ai-matrx/agents/message-parts";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 
 // StructuredInputBase is defined in message-types.ts — not re-declared here.

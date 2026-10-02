@@ -7,7 +7,7 @@
  */
 
 import type { ManagedResource } from "../../types/instance.types";
-import type { DataRef } from "../../types/message-types";
+import type { DataRef } from "@ai-matrx/agents/message-parts";
 import {
   isMessagePart,
   type MessagePart,

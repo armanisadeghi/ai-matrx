@@ -22,7 +22,7 @@ import LocatedTableViewer from "@/features/data-tables/components/LocatedTableVi
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
-import type { TableBookmark } from "@ai-matrx/chat/agents/types/message-types";
+import type { TableBookmark } from "@ai-matrx/agents/message-parts";
 import {
   isUserTableFieldRow,
   isUserTableListRow,

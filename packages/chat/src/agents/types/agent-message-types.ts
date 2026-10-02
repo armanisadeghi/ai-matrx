@@ -59,7 +59,7 @@ export type {
   DataRefTable,
   ContentBlock,
   UserInput,
-} from "./message-types";
+} from "@ai-matrx/agents/message-parts";
 
 import type {
   TextBlock,
@@ -75,7 +75,7 @@ import type {
   ListInputBlock,
   DataInputBlock,
   ContentBlock,
-} from "./message-types";
+} from "@ai-matrx/agents/message-parts";
 import type { Enums } from "../../host/db-types";
 import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 import type { DecisionQuestionsPart } from "@host/features/agents/decision-questions/types";

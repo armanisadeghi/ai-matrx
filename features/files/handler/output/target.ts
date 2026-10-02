@@ -13,7 +13,7 @@ import type {
   ImageBlock,
   VideoBlock,
   YouTubeVideoBlock,
-} from "@ai-matrx/chat/agents/types/message-types";
+} from "@ai-matrx/agents/message-parts";
 import type { MediaRef } from "@/features/files/types";
 import type {
   ImageMediaPart,

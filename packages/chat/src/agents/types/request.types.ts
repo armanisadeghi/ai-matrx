@@ -962,20 +962,9 @@ export type AssembledConversationRequest = Partial<
   initiation?: "user" | "auto";
 };
 
-/** One structured item accepted by every generated agent user-input route. */
-type OpenApiUserInputElement = Exclude<
-  NonNullable<components["schemas"]["AgentStartRequest"]["user_input"]>,
-  string
->[number];
-
-/** Exact request-side union generated from the authoritative OpenAPI schema. */
-export type UserInputPart = OpenApiUserInputElement;
-
-type _UserInputPartDriftGuard =
-  Extract<UserInputPart, { type: "text" }> extends { type: "text" }
-    ? true
-    : never;
-const _ENFORCE_USER_INPUT_PART: _UserInputPartDriftGuard = true;
+/** The generated user-input union — one definition, in @ai-matrx/agents/message-parts (P15). */
+import type { UserInputPart } from "@ai-matrx/agents/message-parts";
+export type { UserInputPart };
 
 /**
  * Wire shape for one client tool result
