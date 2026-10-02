@@ -1244,18 +1244,17 @@ export async function deleteField(
 
 /**
  * BRING A REMOVED COLUMN BACK (DATA-V2-BASICS-2 F18). The store retires a column — its values stay
- * on every record — and `custom.field_restore` brings it back with them. The records client has no
- * method for this door yet, so the seam asks it through the same data source the client uses.
+ * on every record — and `custom.field_restore` brings it back with them. Through the records
+ * client's own door, so the restore ANNOUNCES the Table's shape change like every other structure
+ * door (a `table:<uuid>` card on the page repaints — KINDS-GLUE wave 3 slice 4).
  */
 export async function restoreField(
   home: RecordStoreHome,
   args: { tableId: string; fieldId: string },
 ): Promise<ServiceResult<{ field_id: string }>> {
-  const { error } = await createClient()
-    .schema("custom" as never)
-    .rpc("field_restore" as never, { p_organization_id: home.organizationId, p_field_id: args.fieldId } as never);
+  const restored = await clientFor(home).fieldRestore({ field_id: args.fieldId as never });
   invalidateRecordStoreTable(args.tableId);
-  if (error) return plainFailure(`The column could not be brought back: ${(error as { message?: string }).message ?? "the store refused"}. It is still retired; its values are kept.`);
+  if (!restored.ok) return plainFailure(`The column could not be brought back: ${restored.error.message}. It is still retired; its values are kept.`);
   return { success: true, data: { field_id: args.fieldId } };
 }
 

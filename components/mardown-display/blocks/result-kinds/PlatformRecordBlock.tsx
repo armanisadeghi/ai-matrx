@@ -49,7 +49,32 @@
  */
 
 import React from "react";
-import { Database, EyeOff, Info } from "lucide-react";
+import { Database, EyeOff, Info, Lock, PanelRight } from "lucide-react";
+import { isTableKind, type Field } from "@ai-matrx/records";
+import { RecordsProvider } from "@ai-matrx/records/react";
+import {
+  ProvenanceBadge,
+  RecordLabelProvider,
+  RecordValue,
+  RecordsUiProvider,
+  cardTitleField,
+  cardWords,
+  personActor,
+  recordsDataSource,
+  useRecordLabels,
+} from "@ai-matrx/records-ui";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { TapTargetButton } from "@ai-matrx/tap-target";
+import InfoHint from "@/components/official/InfoHint";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { createClient } from "@/utils/supabase/client";
+import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import {
+  useTableKind,
+  useTableRecordDocument,
+  type TableKindState,
+} from "./use-table-record";
 
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -144,6 +169,133 @@ const HonestNotice: React.FC<{
   </div>
 );
 
+// ── A RECORD OF A TABLE (`table:<uuid>`, KINDS-GLUE wave 3 §5) ─────────────────────────
+//
+// THE SAME CARD in a chat, a note and the in-app canvas: every one of them reaches this file
+// through the one kind route (`table:` → `platform_record`, component-registry.ts), and nothing
+// else in the app draws a record of a Table outside the records-ui grid (guard 5,
+// `check:shapes --gate=one-record-card`). The values draw through the Table's own Fields with
+// `@ai-matrx/records-ui` — the same value drawer the grid, the board and the record panel use —
+// inside the card's own records host and label provider, bound to the TABLE's organization (never
+// the active one), so a member or a relation reads as its name, not an id.
+
+/** ONE data seam per page — a fresh seam per render would rebuild the provider's client. */
+let tableCardDataSource: ReturnType<typeof recordsDataSource> | null = null;
+function sharedTableCardDataSource() {
+  tableCardDataSource ??= recordsDataSource(createClient());
+  return tableCardDataSource;
+}
+
+/** One header line: icon, the record's words, the Table's name, then the trailing control. */
+const TableCardHeader: React.FC<{
+  title: string;
+  tableName: string | null;
+  trailing?: React.ReactNode;
+}> = ({ title, tableName, trailing }) => (
+  <div className="flex min-w-0 items-center gap-x-2">
+    <Database className="h-4 w-4 shrink-0 text-muted-foreground" />
+    <span className="min-w-0 truncate text-sm font-medium text-foreground">{title}</span>
+    {tableName ? <span className="shrink-0 truncate text-xs text-muted-foreground">{tableName}</span> : null}
+    {trailing ? <span className="ml-auto flex shrink-0 items-center">{trailing}</span> : null}
+  </div>
+);
+
+/** The store refused: a short label, the store's sentence on hover (B3). */
+const TableCardRefused: React.FC<{ label: string; sentence: string; className?: string }> = ({
+  label,
+  sentence,
+  className,
+}) => (
+  <div className={cn("my-2 flex min-w-0 items-center gap-1.5 rounded-md border border-border bg-card p-2.5 text-xs", className)} data-table-record-card="refused">
+    <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+    <span className="font-medium text-foreground">{label}</span>
+    <InfoHint text={sentence} label="Why" />
+  </div>
+);
+
+const TableCardLoading: React.FC<{ className?: string }> = ({ className }) => (
+  <div className={cn("my-2 space-y-2 rounded-md border border-border bg-card p-2.5", className)} data-table-record-card="loading" aria-busy="true">
+    <div className="h-4 w-1/3 animate-pulse rounded bg-muted" />
+    <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
+    <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+  </div>
+);
+
+const TableRecordBody: React.FC<{
+  value: Record<string, unknown>;
+  table: Extract<TableKindState, { state: "ready" }>;
+  recordsTick: number;
+  className?: string;
+}> = ({ value, table, recordsTick, className }) => {
+  const read = useTableRecordDocument(value, recordsTick);
+  const labels = useRecordLabels(table.fields);
+  const canvas = useOptionalCanvas();
+  const { open } = useCanvas();
+  if (read.state === "loading") return <TableCardLoading className={className} />;
+  if (read.state === "refused") return <TableCardRefused label="Record unavailable" sentence={read.sentence} className={className} />;
+
+  const titleField = cardTitleField(table.fields, table.titleKey);
+  const title = cardWords({ id: read.recordId ?? "", document: read.document, hidden: read.hidden } as never, titleField, labels).text;
+  const openInCanvas = canvas
+    ? () => {
+        open({ type: "kind_value", data: value, metadata: { title } });
+      }
+    : null;
+
+  return (
+    <div className={cn("my-2 min-w-0 space-y-2 rounded-md border border-border bg-card p-2.5", className)} data-table-record-card="ready">
+      <TableCardHeader
+        title={title}
+        tableName={table.name}
+        trailing={
+          openInCanvas ? (
+            <TapTargetButton
+              variant="transparent"
+              icon={<PanelRight className="h-4 w-4" />}
+              ariaLabel="Open in canvas"
+              onClick={openInCanvas}
+            />
+          ) : null
+        }
+      />
+      <dl className="grid min-w-0 grid-cols-[minmax(6rem,auto)_1fr] gap-x-3 gap-y-1 text-xs">
+        {table.fields.map((field: Field) => (
+          <React.Fragment key={field.id}>
+            <dt className="truncate text-muted-foreground">{field.label || field.key}</dt>
+            <dd className="flex min-w-0 items-center gap-1.5 break-words text-foreground" data-field-key={field.key}>
+              <RecordValue field={field} value={read.document[field.key]} document={read.document} withheld={read.hidden[field.key] ?? null} />
+              <ProvenanceBadge document={read.document} fieldKey={field.key} />
+            </dd>
+          </React.Fragment>
+        ))}
+      </dl>
+    </div>
+  );
+};
+
+const TableRecordCard: React.FC<{ value: Record<string, unknown>; className?: string }> = ({ value, className }) => {
+  const kind = String(value.__kind);
+  const table = useTableKind(kind);
+  const userId = useAppSelector(selectUserId);
+  if (table.state === "loading") return <TableCardLoading className={className} />;
+  if (table.state === "refused") return <TableCardRefused label="No access to this table" sentence={table.sentence} className={className} />;
+  return (
+    <RecordsProvider
+      config={{
+        dataSource: sharedTableCardDataSource(),
+        actor: personActor(userId),
+        organizationId: table.facts.organization_id,
+      }}
+    >
+      <RecordsUiProvider value={{}}>
+        <RecordLabelProvider>
+          <TableRecordBody value={value} table={table} recordsTick={table.recordsTick} className={className} />
+        </RecordLabelProvider>
+      </RecordsUiProvider>
+    </RecordsProvider>
+  );
+};
+
 const PlatformRecordBlock: React.FC<ResultKindBlockProps> = ({
   content,
   metadata,
@@ -153,6 +305,10 @@ const PlatformRecordBlock: React.FC<ResultKindBlockProps> = ({
   if (!recovered || !isRecord(value)) {
     // Zero data loss: the region never parsed, so it is shown verbatim.
     return <RawRegion content={content} className={className} />;
+  }
+  // A record of a Table draws as the one table record card.
+  if (isTableKind(value.__kind)) {
+    return streaming ? <StillArriving /> : <TableRecordCard value={value} className={className} />;
   }
 
   const entityType = readText(value.entity_type);

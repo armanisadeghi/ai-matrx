@@ -566,7 +566,7 @@ class KindRegistry {
         const previous = this.defs.get(kind);
         if (answer.ok) {
           this.tableFacts.set(kind, answer.facts);
-          const same = previous?.table?.stamp === answer.facet.stamp && previous?.table?.refusal == null && previous.schema;
+          const same = previous?.table?.stamp === answer.facet.stamp && previous?.table?.refusal == null && previous?.schema;
           if (!same) {
             this.upsertDefinition({
               kind,

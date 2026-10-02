@@ -36,6 +36,21 @@ export interface CanvasBlockMeta {
 }
 
 export const CANVAS_BLOCK_META: Record<string, CanvasBlockMeta> = {
+  kind_value: {
+    label: 'Record',
+    badge: 'Record',
+    descriptionTemplate: 'Open "{title}" — one record, drawn from its table.',
+    keywords: ['record', 'table', 'data'],
+    color: '#475569', // slate-600
+    iconPaths: [
+      'M3 5a9 3 0 1 0 18 0a9 3 0 1 0 -18 0',
+      'M3 5V19A9 3 0 0 0 21 19V5',
+      'M3 12A9 3 0 0 0 21 12',
+    ],
+    iconName: 'Database',
+    emoji: '',
+  },
+
   quiz: {
     label: 'Quiz',
     badge: 'Interactive Quiz',

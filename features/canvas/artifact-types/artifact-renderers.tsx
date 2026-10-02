@@ -48,6 +48,7 @@ import TreeArtifact from "./renderers/TreeArtifact";
 import IframeArtifact from "./renderers/IframeArtifact";
 
 import ImageArtifact from "./renderers/ImageArtifact";
+import KindValueArtifact from "./renderers/KindValueArtifact";
 import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-route";
 import { storedKindValue } from "./storedKindValue";
 import type { ArtifactRendererProps } from "./types";
@@ -92,6 +93,7 @@ const RENDERERS: Record<string, ArtifactRendererComponent> = {
   // heavy engine — stays behind its own boundary (runtime tiering; in-gate, so React.lazy is the build-cheap form)
   code: lazy(() => import("./renderers/CodeArtifact")),
   image: ImageArtifact,
+  kind_value: KindValueArtifact,
 };
 
 export function hasArtifactRenderer(

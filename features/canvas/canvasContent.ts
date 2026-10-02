@@ -76,7 +76,11 @@ export type CanvasContentType =
   // A conversation's documents and the scratchpad are NOT content types: each
   // is one tool tab (`conversation-documents`, `global-scratchpad` —
   // `@ai-matrx/chat/host/canvas-tabs`), never an artifact.
-  | "topical_map";
+  | "topical_map"
+  // A KIND VALUE drawn by its kind (KINDS-GLUE wave 3 §5.5). `data` is the value itself
+  // (`{"__kind": …}`), handed to the one kind front door — so a record of a Table opens here as
+  // the SAME card it draws in a chat or a note. Never a second renderer.
+  | "kind_value";
 
 /**
  * Canvas content types that hold live, non-serializable runtime state —

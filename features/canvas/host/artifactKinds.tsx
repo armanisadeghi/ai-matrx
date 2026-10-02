@@ -40,6 +40,7 @@ import {
   Captions,
   Share2,
   LayoutDashboard,
+  Database,
   type LucideIcon,
 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
@@ -102,6 +103,7 @@ const ICONS: Record<CanvasContentType, LucideIcon> = {
   udt_document: FileText,
   sandbox: Terminal,
   topical_map: Brain,
+  kind_value: Database,
 };
 
 /**

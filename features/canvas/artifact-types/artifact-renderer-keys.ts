@@ -8,7 +8,7 @@ const KEYS = new Set([
   "troubleshooting","recipe","diagram","decision-tree","presentation",
   "math_problem","quiz","mermaid","svg","chart","map","stats","diff",
   "questionnaire","tasks","html","react","table","transcript",
-  "structured_info","tree","iframe","code","image",
+  "structured_info","tree","iframe","code","image","kind_value",
 ]);
 
 export function hasArtifactRenderer(canvasType: string | null | undefined): boolean {

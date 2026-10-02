@@ -13,6 +13,7 @@
  * (the optional fields below) without restructuring callers.
  */
 
+import { isTableKind } from "@ai-matrx/records";
 import type { CanvasContentType } from "@/features/canvas/canvasContent";
 
 export type ArtifactPersistenceStrategy = "custom" | "generic" | "none";
@@ -298,6 +299,16 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
     standaloneAliases: [],
     materializable: true,
   },
+  // A KIND VALUE opened in the canvas (KINDS-GLUE wave 3 §5.5): the value goes to the one kind
+  // front door, so it draws exactly as in a chat or a note. Every `table:<uuid>` kind resolves
+  // here by prefix (`resolveArtifactDefByKind`). Not materializable: a record of a Table lives
+  // in its Table; a chat answer naming one never mints a library artifact.
+  {
+    canvasType: "kind_value",
+    aliases: ["kind_value"],
+    standaloneAliases: [],
+    materializable: false,
+  },
 ];
 
 // ── Indexes ────────────────────────────────────────────────────────────────
@@ -344,6 +355,8 @@ export function resolveArtifactDef(
  * finds its artifact type without any fence/tag/root-key heuristic.
  */
 export function resolveArtifactDefByKind(kind: string): ArtifactTypeDef | null {
+  // Every Table is a kind (`table:<uuid>`, never a registry row): it opens as a kind value.
+  if (isTableKind(kind)) return BY_CANVAS_TYPE.get("kind_value") ?? null;
   return BY_KIND.get(kind) ?? null;
 }
 

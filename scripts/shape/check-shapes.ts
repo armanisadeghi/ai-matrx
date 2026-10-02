@@ -67,6 +67,7 @@ import {
 } from "../../features/content-ir/registry/shape-doctor-extract";
 import { readAllRows } from "@ai-matrx/data/db";
 import { parseContractManifestSnapshot } from "./contract-manifest-format";
+import { checkOneRecordCard } from "./one-record-card";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SYSTEM_KINDS_PATH = resolve(
@@ -833,6 +834,14 @@ async function main(): Promise<number> {
       });
       report.totals.red += 1;
     }
+  }
+
+  // GUARD 5 — ONE RECORD CARD (KINDS-GLUE wave 3 §7.2): no second record drawer reachable from
+  // a kind render root, a table: value leads to the kind_value canvas def and the one card, and
+  // no registry row is a table kind. Zero backlog, so it gates (`check:shapes:components`).
+  for (const finding of checkOneRecordCard(ROOT, db.kinds.map((k) => k.kind))) {
+    report.findings.unshift(finding);
+    report.totals.red += 1;
   }
 
   // Coverage inputs are load-bearing for the strict gate — a missing/corrupt

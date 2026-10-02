@@ -381,6 +381,7 @@ export type FindingCode =
   | "surface-token-undetectable" // an ACTIVE kind_surface token no host literal can fire
   | "unknown-loading-component" // declared loading_component slug is not in the loading library
   | "manual-data-only-flag" // metadata.data_only key on a row — eradicated 2026-08-27, must never return
+  | "one-record-card" // guard 5 (KINDS-GLUE wave 3): a second record drawer, a lost table: route, or a table: registry row
   // yellow
   | "no-loading-component" // renderable kind: no declared loader AND its shape derives none (generic fallback)
   | "no-example"
