@@ -39,6 +39,18 @@ tables at the end.
     SN_TARGET=live uv run --project ../aidream python scripts/safety-net/probes/query_correctness.py
     node scripts/safety-net/run.mjs --target live --only query.correctness
 
+AND FIVE MORE (VISION-REACH W2 verifier findings, 2026-10-02):
+  Q11 related_to — the copay of Daniel's and Hannah's visits named by the PATIENT ids (tool `related_to`): 130.
+      Red before: the tool raised `TypeError: Object of type UUID is not JSON serializable`, and behind it
+      the roll-up door walked outward from the patients and answered 0.
+  Q12 a cut group list says so — Q10 (top 5 of 6 patients) carries truncated + groups_total 6, tool AND REST.
+  Q13 the roll-up door never answers 0 from a walk that missed the field — `custom.query_rollup_sum` with the
+      patients as roots is REFUSED (detail `rollup_field_not_reached:copay`), not 0.
+  Q14 REST v1 with a personal key (test@test.com's own, made through `iam.personal_api_key_create`, held in
+      memory, revoked in `finally`): `POST /v1/tables/<id>/aggregate` answers Q1–Q11 exactly.
+  Q15 the AI Matrx MCP `tables` tool, action `aggregate`, with the same key: Q1–Q11 exactly.
+  REST/MCP go to SN_QC_SERVER (default: the target's server), so a build without the door is red there.
+
 SELF-TEST (planted breaks, in memory, never on disk): query_correctness_selftest.py beside this file runs
 this probe three times — sound with pages of 5 (all PASS), a one-page total (Q04 RED), a dropped filter
 (Q03/Q05/Q06 RED). Green since VISION-REACH W2 (2026-10-02), when the door learned to measure a formula
@@ -223,6 +235,10 @@ def item_id(q: str) -> str:
 
 
 ITEM_IDS = [item_id(q) for q in TRUTH]
+EXTRA_IDS = ["Q11", "Q12", "Q13", "Q14", "Q15"]
+ALL_IDS = ITEM_IDS + EXTRA_IDS
+API_SERVER = os.environ.get("SN_QC_SERVER", SERVER).rstrip("/")
+TRUTH_Q11 = 130  # Daniel 40+40, Hannah 25+25 — named by their patient ids, not by the physician
 
 
 def _assert_truth_matches_seed() -> None:
@@ -412,8 +428,12 @@ async def _ask_all(member: Seat, fx: dict) -> dict:
                                        is_authenticated=True, organization_id=ORG, token=member.jwt))
     out: dict = {}
     try:
-        for q, args in ask_args(fx).items():
-            res = await records(dict(args), _Ctx())
+        for q, args in {**ask_args(fx), "Q11": q11_args(fx)}.items():
+            try:
+                res = await records(dict(args), _Ctx())
+            except Exception as e:  # noqa: BLE001 — a tool that RAISES (the related_to TypeError) is a red, said
+                out[q] = {"success": False, "output": None, "error": f"raised {type(e).__name__}: {e}"}
+                continue
             out[q] = {"success": bool(getattr(res, "success", False)), "output": getattr(res, "output", None),
                       "error": (res.error.message if getattr(res, "error", None) else None)}
     finally:
@@ -457,6 +477,86 @@ def same(q: str, got, want) -> bool:
     if q == "Q7":
         return got == "withheld"
     return _num(got) == _num(want)
+
+
+# ── REST v1 AND THE MCP — the same questions, by column NAME, with test@test.com's own personal key ─────────
+def q11_args(fx: dict) -> dict:
+    return {"action": "record_aggregate", "table_id": fx["visits"], "measure": "sum", "field_key": "Copay",
+            "related_to": [fx["patient_ids"]["daniel"], fx["patient_ids"]["hannah"]]}
+
+
+def rest_args(fx: dict) -> dict:
+    """Each question as `POST /v1/tables/<id>/aggregate` asks it (AggregateRequest: names, never keys)."""
+    out: dict = {}
+    for q, a in {**ask_args(fx), "Q11": q11_args(fx)}.items():
+        body = {"measure": a.get("measure", "count")}
+        for src, dst in (("field_key", "column"), ("group_by", "group_by"), ("match", "where"), ("as_of", "as_of"),
+                         ("order", "order"), ("limit", "limit"), ("related_to", "related_to"), ("bucket", "bucket")):
+            if a.get(src) is not None:
+                body[dst] = a[src]
+        out[q] = body
+    return out
+
+
+def api_value(q: str, body, fx: dict):
+    """Reduce an AggregateResult to the question's one value — a refusal stays a refusal."""
+    if not isinstance(body, dict) or "groups" not in body:
+        return {"refused": json.dumps(body, default=str)[:240]}
+    groups = body["groups"] or []
+    names = {fx["patient_ids"][k]: n for k, n, _ in PATIENTS}
+
+    def val(g):
+        return "withheld" if g.get("withheld") else _num(g.get("value"))
+
+    if q in ("Q2", "Q9"):
+        return {str(g.get("group")): val(g) for g in groups}
+    if q == "Q10":
+        return [(names.get(str(g.get("group")), g.get("group")), val(g)) for g in groups]
+    if q == "Q6":
+        return _num(groups[0].get("rows")) if groups else 0.0
+    return val(groups[0]) if groups else None
+
+
+def make_key(member: Seat) -> tuple[str | None, str | None]:
+    _, made = member.rpc("personal_api_key_create", {"p_name": f"Query correctness {STAMP}", "p_organization_id": ORG}, schema="iam")
+    key = made.get("api_key") if isinstance(made, dict) else None
+    if key:
+        SECRETS.append(key)
+    return key, (made.get("id") if isinstance(made, dict) else None)
+
+
+def rest_answers(key: str, fx: dict) -> dict:
+    out: dict = {}
+    for q, body in rest_args(fx).items():
+        out[q] = http("POST", f"{API_SERVER}/api/v1/tables/{fx['visits']}/aggregate", body,
+                      {"authorization": f"Bearer {key}", "x-organization-id": ORG})
+    return out
+
+
+async def mcp_answers(key: str, fx: dict) -> dict:
+    from mcp import ClientSession
+    from mcp.client.streamable_http import streamablehttp_client
+
+    out: dict = {}
+    async with streamablehttp_client(f"{API_SERVER}/api/matrx-mcp", headers={"Authorization": f"Bearer {key}", **UA}) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            for q, body in rest_args(fx).items():
+                r = await session.call_tool("tables", {"action": "aggregate", "table": fx["visits"], "organization_id": ORG, **body})
+                text = r.content[0].text if r.content else ""
+                got = r.structuredContent or (json.loads(text) if text.strip().startswith("{") else {"text": text})
+                got = got.get("result", got) if isinstance(got, dict) else got
+                log.append(redact(f"MCP tables aggregate {q} -> {json.dumps(got, default=str)[:600]}"))
+                out[q] = got
+    return out
+
+
+def rollup_door_refuses(member: Seat, fx: dict) -> tuple[bool, str]:
+    """Q13: the patients hold no copay and nothing they point at does — the door must say so, never 0."""
+    roots = [fx["patient_ids"]["daniel"], fx["patient_ids"]["hannah"]]
+    s, b = member.rpc("query_rollup_sum", {"p_organization_id": ORG, "p_roots": roots, "p_field_key": "copay"})
+    ok = s != 200 and isinstance(b, dict) and str(b.get("details") or "").startswith("rollup_field_not_reached:")
+    return ok, f"{s} {json.dumps(b, default=str)[:300]}"
 
 
 # ── OPTIONAL: one real chat run of Q1 (INFO only — a model's choice is not graded) ─────────────────────────
@@ -504,10 +604,10 @@ def main() -> int:
         try:
             make_tables(admin, fx)
             fx["t0"] = edit_after_t0(admin, fx)
-            step(ITEM_IDS, "fixture: Patients + Visit Copays in Cedar Ridge, one visit 'Only me', one restricted column, one edit after T0",
+            step(ALL_IDS, "fixture: Patients + Visit Copays in Cedar Ridge, one visit 'Only me', one restricted column, one edit after T0",
                  True, f"visits {fx['visits']}; patients {fx['patients']}; T0 {fx['t0']}")
         except AssertionError as e:
-            step(ITEM_IDS, "fixture", False, f"refused: {e}")
+            step(ALL_IDS, "fixture", False, f"refused: {e}")
             return 1
         door = door_answers(member, fx)
         # THE GRID'S SUMMARY BAR asks the same door in ONE call for several measures of the column
@@ -527,6 +627,48 @@ def main() -> int:
             step([item_id(q)], f"{q} {QUESTIONS[q]}", ok_door and ok_ask,
                  f"truth {json.dumps(want, ensure_ascii=False)} | door {json.dumps(got_door, ensure_ascii=False, default=str)} "
                  f"{'OK' if ok_door else 'WRONG'} | ask {json.dumps(got_ask, ensure_ascii=False, default=str)} {'OK' if ok_ask else 'WRONG'}")
+        # Q11 — related_to, tool and door (the door half is the Rule filter on the visits' Patient field).
+        F = fx["field_ids"]
+        rule = {"op": "or", "args": [{"op": "eq", "args": [{"field": F["patient"]}, {"const": fx["patient_ids"][k]}]} for k in ("daniel", "hannah")]}
+        door11 = _num(_one(_agg(member, fx["visits"], [{"op": "sum", "key": "copay"}], filt=rule), "sum_copay"))
+        ask11 = ask_value("Q11", ask["Q11"], fx)
+        step(["Q11"], "Q11 the copay of Daniel's and Hannah's visits, named by the patients (related_to)",
+             same("Q11", door11, TRUTH_Q11) and same("Q11", ask11, TRUTH_Q11),
+             f"truth {TRUTH_Q11} | door {door11} | ask {json.dumps(ask11, default=str)}")
+        # Q12 — a cut list says so: top 5 of 6 patients. With a page ceiling at or under 5 the count of
+        # groups cannot be exact, so then it must say truncated AND not exact.
+        out10 = (ask["Q10"].get("output") or {}) if ask["Q10"]["success"] else {}
+        exact = out10.get("groups_total_is_exact")
+        ok12 = out10.get("truncated") is True and (out10.get("groups_total") == 6 if exact else exact is False)
+        step(["Q12"], "Q12 the top-5 list of 6 patients says it is cut (tool)", ok12,
+             f"truncated {out10.get('truncated')} groups_total {out10.get('groups_total')} exact {exact} shown {out10.get('groups_shown')}")
+        ok13, said13 = rollup_door_refuses(member, fx)
+        step(["Q13"], "Q13 the roll-up door, rooted at patients, refuses rather than answering 0", ok13, said13)
+        # Q14 / Q15 — REST v1 and the MCP with test@test.com's own personal key.
+        key, key_id = make_key(member)
+        try:
+            if not key:
+                step(["Q14", "Q15"], "personal key for test@test.com", False, "iam.personal_api_key_create refused")
+            else:
+                truth = {**TRUTH, "Q11": TRUTH_Q11}
+                rest = rest_answers(key, fx)
+                bad = {q: api_value(q, b, fx) for q, (st, b) in rest.items() if not same(q, api_value(q, b, fx), truth[q])}
+                cut = rest["Q10"][1] if isinstance(rest["Q10"][1], dict) else {}
+                step(["Q14", "Q12"], "Q14 REST v1 /v1/tables/<id>/aggregate with a personal key: Q1–Q11 exact, Q10 says it is cut",
+                     not bad and cut.get("truncated") is True,
+                     f"server {API_SERVER} | wrong {json.dumps(bad, default=str, ensure_ascii=False)[:500]} | Q10 truncated "
+                     f"{cut.get('truncated')} total {cut.get('groups_total')} | statuses {sorted({st for st, _ in rest.values()})}")
+                try:
+                    mcp = asyncio.run(mcp_answers(key, fx))
+                    bad = {q: api_value(q, b, fx) for q, b in mcp.items() if not same(q, api_value(q, b, fx), truth[q])}
+                    step(["Q15"], "Q15 the AI Matrx MCP tables.aggregate with the same key: Q1–Q11 exact", not bad,
+                         f"server {API_SERVER} | wrong {json.dumps(bad, default=str, ensure_ascii=False)[:500]}")
+                except Exception as e:  # noqa: BLE001 — an unreachable MCP is a red, said
+                    step(["Q15"], "Q15 the AI Matrx MCP tables.aggregate", False, f"{type(e).__name__}: {str(e)[:300]}")
+        finally:
+            if key_id:
+                s, _ = member.rpc("personal_api_key_revoke", {"p_id": key_id}, schema="iam")
+                step([], "cleanup: revoke test@test.com's personal key", s == 200, f"{s}")
         if LLM:
             step([], "INFO real chat run of Q1 (not graded)", None, llm_q1(admin, fx))
     finally:

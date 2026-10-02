@@ -14,7 +14,10 @@ The three runs (each its own disposable fixture, archived at the end like every 
      the executor stripping `match` and returning the whole table's number (the other half of the $640
      answer). Q03, Q05 and Q06 must FAIL.
 
-Exit 0 only when all three verdicts hold. Run from matrx-frontend:
+  4. PLANTED: RELATED_TO IGNORED — Q11 must FAIL.   5. PLANTED: A CUT LIST IS SILENT — Q12 must FAIL.
+  (Q13 is a database door and Q14/Q15 a running server: their red is today's live build, not an in-memory plant.)
+
+Exit 0 only when all five verdicts hold. Run from matrx-frontend:
 
     SN_TARGET=live uv run --project ../aidream python scripts/safety-net/probes/query_correctness_selftest.py
 """
@@ -90,8 +93,8 @@ def main() -> int:
     verdicts: list[tuple[str, bool, str]] = []
 
     sound = _run("1", [(RecordStore, "_read_limits", _small_pages)])
-    ok = sound.get("fixture") != "FAIL" and all(sound.get(i) == "PASS" for i in probe.ITEM_IDS)
-    verdicts.append(("sound code, pages of 5: all ten PASS", ok, str(sound)))
+    ok = sound.get("fixture") != "FAIL" and all(sound.get(i) == "PASS" for i in [*probe.ITEM_IDS, "Q11", "Q12"])
+    verdicts.append(("sound code, pages of 5: Q01–Q12 PASS", ok, str(sound)))
 
     paged = _run("2", [(RecordStore, "_read_limits", _small_pages), (RecordStore, "_call", one_page_only)])
     ok = paged.get("fixture") != "FAIL" and paged.get("Q04") == "FAIL"
@@ -100,6 +103,24 @@ def main() -> int:
     dropped = _run("3", [(RecordStore, "record_aggregate", filter_dropped)])
     ok = dropped.get("fixture") != "FAIL" and all(dropped.get(i) == "FAIL" for i in ("Q03", "Q05", "Q06"))
     verdicts.append(("planted dropped filter: Q03, Q05, Q06 go RED", ok, str(dropped)))
+
+    # 4. PLANTED: RELATED_TO IS IGNORED — the tool measures the whole table (the executor stripping an
+    #    argument, or a roll-up that walks the wrong way). Q11 must FAIL.
+    from matrx_records.agent import tool as records_tool
+
+    real_agg = records_tool._aggregate
+
+    async def related_dropped(a, principal, store, meta):
+        return await real_agg(a.model_copy(update={"related_to": None}), principal, store, meta)
+
+    ignored = _run("4", [(records_tool, "_aggregate", related_dropped)])
+    ok = ignored.get("fixture") != "FAIL" and ignored.get("Q11") == "FAIL"
+    verdicts.append(("planted related_to ignored: Q11 goes RED", ok, str(ignored)))
+
+    # 5. PLANTED: A CUT LIST IS SILENT — the group count and truncated flag are never said. Q12 must FAIL.
+    silent = _run("5", [(records_tool, "_say_groups", lambda body, **kw: None)])
+    ok = silent.get("fixture") != "FAIL" and silent.get("Q12") == "FAIL"
+    verdicts.append(("planted silent truncation: Q12 goes RED", ok, str(silent)))
 
     for what, good, detail in verdicts:
         print(f"{'PASS' if good else 'FAIL'} self-test — {what} — {detail}", flush=True)

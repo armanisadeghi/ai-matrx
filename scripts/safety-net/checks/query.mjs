@@ -2,6 +2,8 @@
 // copays, each answered by the store's aggregate door (directly, as test@test.com) and by the `records` agent
 // tool the chat uses today (in-process, as test@test.com), both held to hand-worked literals. The $640 / $1,440
 // defect is Q01. Disposable tables are made by admin@admin.com through the store doors and archived at the end.
+// Q11–Q15 (W2 verifier): related_to, a cut list says so, the roll-up door never answers a wrong 0, and the same
+// questions through REST v1 and the MCP with test@test.com's own personal key (revoked after).
 // Half a (area "query"). What it does not cover: the language model's own choice of call (see the probe header).
 export default [
   {
@@ -10,7 +12,7 @@ export default [
     kind: "cmd",
     cmd: "uv",
     args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/query_correctness.py"],
-    items: ["Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q09", "Q10"],
+    items: ["Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q09", "Q10", "Q11", "Q12", "Q13", "Q14", "Q15"],
     targets: ["live", "clone"],
     stepsJson: "query-correctness.json",
     timeoutMs: 10 * 60 * 1000,
