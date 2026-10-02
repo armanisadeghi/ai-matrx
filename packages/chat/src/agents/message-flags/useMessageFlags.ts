@@ -12,7 +12,7 @@ import {
 } from "../redux/agent-definition/selectors";
 import { setAgentMessages } from "../redux/agent-definition/slice";
 import { useModelFull } from "@host/features/ai-models/hooks/useModels";
-import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import { useSessionKnob } from "../../host/prefs-react";
 import type { AgentDefinitionMessage } from "../types/agent-message-types";
 import {
   FLAG_COMPATIBILITY_KNOB,

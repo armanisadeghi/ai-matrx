@@ -32,6 +32,7 @@ import {
   markComposerDraftSent,
   writeComposerDraft,
 } from "./composer-draft-store";
+import { selectRestoreUnsentDrafts } from "../../../../host/prefs";
 
 /** Same cadence as the dialog draft keeper (`@ai-matrx/kit/drafts (useTextDraft)`). */
 const WRITE_DEBOUNCE_MS = 400;
@@ -99,7 +100,7 @@ export function flushComposerDraftWrite(conversationId: string): void {
 export function isDraftRestoreEnabled(state: ChatRootState): boolean {
   // `!== false` and never `=== true`: a preferences blob persisted before this
   // key existed has no value for it, and the default is ON.
-  return state.userPreferences?.prompts?.restoreUnsentDrafts !== false;
+  return selectRestoreUnsentDrafts(state);
 }
 
 /**

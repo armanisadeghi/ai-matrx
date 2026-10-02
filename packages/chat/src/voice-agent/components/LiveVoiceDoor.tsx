@@ -8,8 +8,7 @@
 // builder's voice, so the door says so instead of pretending the person's
 // choice applies.
 
-import { SettingDoor } from "@host/features/settings/doors/SettingDoor";
-import { VOICE_SETTING_DOORS } from "@host/features/settings/tabs/voices/voiceSettingDoors";
+import { SettingDoor } from "../../host/prefs-react";
 import { useAppSelector } from "../../store/hooks";
 import { voiceDisplayName } from "@host/lib/voices/voiceSets";
 
@@ -30,7 +29,7 @@ export function LiveVoiceDoor({
   if (!known) {
     return (
       <SettingDoor
-        target={VOICE_SETTING_DOORS.liveConversation}
+        setting="live-conversation-voice"
         label="Voice settings"
         variant="ghost"
       />
@@ -48,7 +47,7 @@ export function LiveVoiceDoor({
   }
   return (
     <SettingDoor
-      target={VOICE_SETTING_DOORS.liveConversation}
+      setting="live-conversation-voice"
       label={`Voice: ${name}`}
       variant="ghost"
     />

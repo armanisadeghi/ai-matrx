@@ -15,7 +15,7 @@ import { Share2, Blocks, Camera } from "lucide-react";
 import dynamic from "next/dynamic";
 import { IconButton, PageHeaderPortal } from "../../host/chrome";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
-import { selectIsSuperAdminDebugger } from "@host/lib/redux/slices/userSlice";
+import { selectIsSuperAdminDebugger } from "../../host/prefs";
 import {
   selectIsBlockMode,
   selectIsSnapshot,

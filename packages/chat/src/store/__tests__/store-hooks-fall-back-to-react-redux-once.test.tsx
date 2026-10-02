@@ -22,6 +22,7 @@ import { _resetAnnouncements } from "../../host/errors";
 import { useChatDispatch, useChatSelector, useChatStore } from "../hooks";
 import { createChatStore } from "../create-chat-store";
 import { chatHostSynced } from "../chat-host.slice";
+import { DEFAULT_CHAT_PREFERENCES } from "../../host/defaults/prefs";
 import { HARBOR_LIGHT, PRIYA } from "./chat-host-test-ports";
 
 it("falls back to the nearest react-redux store and announces it once", () => {
@@ -42,7 +43,13 @@ it("falls back to the nearest react-redux store and announces it once", () => {
   );
   expect(seen.slice(0, 3)).toEqual([null, true, "function"]);
   store.dispatch(
-    chatHostSynced({ identity: PRIYA, org: HARBOR_LIGHT, server: { baseUrl: "x" }, prefs: {} }),
+    chatHostSynced({
+      identity: PRIYA,
+      org: HARBOR_LIGHT,
+      server: { baseUrl: "x" },
+      prefs: {},
+      preferences: DEFAULT_CHAT_PREFERENCES,
+    }),
   );
   expect(store.getState().chatHost.org).toEqual(HARBOR_LIGHT);
   expect(info).toHaveBeenCalledTimes(1);

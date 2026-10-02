@@ -7,7 +7,7 @@
 //     no child ever paints from the empty default (`chat-host-synced-before-first-render`). Only
 //     while the store has never been synced — nothing is subscribed to the store at that point of
 //     a first mount, so no other component is updated during this render.
-//   - AFTER: on every identity / org / prefs port notification, only when a value changed.
+//   - AFTER: on every identity / org / prefs / preferences notification, only when a value changed.
 
 "use client";
 
@@ -48,6 +48,7 @@ export function followChatHost(store: Store, host: ResolvedChatHost): () => void
     host.identity.subscribe(() => sync()),
     host.org.subscribe(() => sync()),
     host.prefs.subscribe((key) => sync(key)),
+    host.prefs.subscribePreferences?.(() => sync()) ?? (() => {}),
   ];
   return () => {
     for (const stop of stops) stop();

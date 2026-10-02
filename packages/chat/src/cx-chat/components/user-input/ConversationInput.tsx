@@ -7,7 +7,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { useDebugContext } from "@host/hooks/useDebugContext";
+import { useDebugContext } from "../../../host/prefs-react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
@@ -37,7 +37,7 @@ import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
 import { InputActionButtons } from "./InputActionButtons";
 import { useAppSelector, useAppDispatch } from "../../../store/hooks";
-import { selectIsSuperAdminDebugger } from "@host/lib/redux/slices/userSlice";
+import { selectIsSuperAdminDebugger } from "../../../host/prefs";
 // Instance-system state
 import { selectUserInputText } from "../../../agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "../../../agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -57,7 +57,7 @@ import { setOverrides } from "../../../agents/redux/execution-system/instance-mo
 import { setOfferingPin } from "../../../agents/redux/execution-system/instance-model-overrides/offering-pin";
 import { smartExecute } from "../../../agents/redux/execution-system/thunks/smart-execute.thunk";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
-import { selectIsDebugMode } from "@host/lib/redux/preferences/adminDebugSlice";
+import { selectIsDebugMode } from "../../../host/prefs";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import { ResourceChips } from "../../../agents/resources/ResourceChips";
 import { useClipboardPaste } from "@host/components/ui/file-upload/useClipboardPaste";

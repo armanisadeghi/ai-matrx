@@ -57,6 +57,7 @@ import { fetchAvailableTools } from "../../../redux/tools/tools.thunks";
 import { fetchAgentExecutionFull } from "../../../redux/agent-definition/thunks";
 import { AiToolRef } from "@host/components/official/entity-ref/AiIdentityRef";
 import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
+import { selectSandboxBySurface } from "../../../../host/prefs";
 
 /** Stable empty fallback for selectors — a fresh `[]` per call re-renders the subscriber on every dispatch. */
 const EMPTY_LIST: never[] = [];
@@ -214,9 +215,7 @@ export function QuicksetPanel({
   const sandboxBinding = useAppSelector((state) => {
     const conversation = state.conversations.byConversationId[conversationId];
     const surfaceBinding = conversation?.sourceFeature
-      ? state.userPreferences.coding.activeAgentSandboxBySurface[
-          conversation.sourceFeature
-        ]
+      ? selectSandboxBySurface(state)[conversation.sourceFeature]
       : null;
     return (
       selectConversationSandboxBinding(conversationId)(state) ??

@@ -59,12 +59,9 @@ import {
 } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectChatIncognitoActive } from "../../../redux/chat/chat-incognito.slice";
 import { useVerifiedSandboxBinding } from "@host/hooks/sandbox/use-verified-binding";
-import {
-  selectShowCreatorPanel,
-  toggleShowCreatorPanel,
-} from "@host/lib/redux/preferences/creatorDebugSlice";
-import { selectIsSuperAdminDebugger } from "@host/lib/redux/slices/userSlice";
-import { selectIsDebugMode } from "@host/lib/redux/preferences/adminDebugSlice";
+import { selectShowCreatorPanel, toggleShowCreatorPanel } from "../../../../host/prefs";
+import { selectIsSuperAdminDebugger } from "../../../../host/prefs";
+import { selectIsDebugMode } from "../../../../host/prefs";
 import { useOpenChatDebugWindow } from "../../../../host/window-openers";
 import { useOpenPromptPreviewWindow } from "../../../../host/window-openers";
 import { AgentMemoryInlinePanel } from "../../memory/components/AgentMemoryInlinePanel";

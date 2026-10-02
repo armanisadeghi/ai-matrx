@@ -90,7 +90,7 @@ import {
 import { resolveEndpointPath } from "@host/lib/api/resolve-endpoint-path";
 import { resolveStartPath } from "../utils/resolve-start-path";
 import { selectEndpointOverrideConfig } from "@host/lib/redux/slices/apiConfigSlice";
-import { selectDesktopTargetInstanceId } from "@host/lib/redux/preferences/adminPreferencesSlice";
+import { selectDesktopTargetInstanceId, selectDirectiveApplyPolicy } from "../../../../host/prefs";
 import {
   createRequest,
   setRequestStatus,
@@ -448,7 +448,7 @@ export function assembleRequest(
  * let the backend resolve from the surface / agent / default cascade).
  */
 function buildUserOverrides(state: ChatRootState): UserOverrides | undefined {
-  const applyPolicy = state.userPreferences.assistant.directiveApplyPolicy;
+  const applyPolicy = selectDirectiveApplyPolicy(state);
   if (applyPolicy && applyPolicy !== "default") {
     return { apply_policy: applyPolicy };
   }

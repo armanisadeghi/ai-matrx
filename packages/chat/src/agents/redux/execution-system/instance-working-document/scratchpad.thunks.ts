@@ -20,7 +20,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
+import { setPreference, selectPreferencesLoaded } from "../../../../host/prefs";
 import {
   applyAgentWorkingDocContent,
   markWorkingDocMaterialized,
@@ -130,7 +130,7 @@ export const hydrateActiveScratchpadThunk = createAsyncThunk<
       // pointer. Wait briefly for the sync engine to hydrate.
       for (
         let i = 0;
-        i < 30 && !getState().userPreferences._meta.loadedPreferences;
+        i < 30 && !selectPreferencesLoaded(getState());
         i++
       ) {
         await new Promise((r) => setTimeout(r, 100));

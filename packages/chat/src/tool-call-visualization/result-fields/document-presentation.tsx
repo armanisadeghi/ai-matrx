@@ -47,7 +47,7 @@
 import React, { createContext, useContext, useMemo } from "react";
 
 import { getStoreSingleton } from "../../store/store-singleton";
-import { useEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs.client";
+import { useEffectiveKnob } from "../../host/prefs-react";
 import { selectUserId } from "../../host/identity";
 import { selectOrganizationId } from "../../host/org";
 

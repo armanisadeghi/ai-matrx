@@ -1,4 +1,4 @@
-import type { CodeAgentFilter } from "@host/lib/redux/preferences/userPreferencesSlice";
+import type { CodeAgentFilter } from "../../../host/prefs";
 import { conversationHistoryAgentIds } from "./selectors";
 
 describe("conversationHistoryAgentIds", () => {

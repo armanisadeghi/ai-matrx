@@ -14,7 +14,7 @@ jest.mock("uuid", () => ({
 import { makeSelectAssembledRequest } from "../aggregate.selectors";
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
 import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
-import type { DirectiveApplyPolicy } from "@host/lib/redux/preferences/userPreferencesSlice";
+import type { DirectiveApplyPolicy } from "../../../../../host/prefs";
 import type { ChatRootState } from "../../../../../store/root-state";
 
 const CONVERSATION_ID = "conversation-1";

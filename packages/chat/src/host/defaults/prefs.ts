@@ -2,10 +2,87 @@
  * Default prefs port: localStorage under one prefix; in memory — announced
  * once, because a draft that vanishes on reload is a silent failure — when
  * storage is unavailable (SSR, private mode, sandboxed frames).
+ *
+ * The typed preferences (P8) start at the platform defaults and keep the
+ * person's changes under one key of the same storage, so a bare host's
+ * choices survive a reload too. There is no settings register here: every
+ * knob reads as "not answered" (each reader's own default) and an override is
+ * refused — both said once.
  */
 
-import type { ChatPrefsPort } from "../contract";
+import type {
+  ChatKnobsPort,
+  ChatPreferences,
+  ChatPreferenceWrite,
+  ChatPrefsPort,
+} from "../contract";
 import { announceOnce } from "../errors";
+
+/** The platform defaults — what a host that keeps no preferences gets. */
+export const DEFAULT_CHAT_PREFERENCES: ChatPreferences = Object.freeze({
+  loaded: true,
+  superAdminDebugger: false,
+  debugMode: false,
+  showCreatorPanel: false,
+  creatorSettings: Object.freeze({
+    showRawIds: false,
+    showBuildAffordances: true,
+    showDrafts: false,
+    disableToolInjection: false,
+  }),
+  desktopTargetInstanceId: null,
+  directiveApplyPolicy: "default",
+  restoreUnsentDrafts: true,
+  sandboxBySurface: Object.freeze({}),
+  sandboxCanvasAutoOpen: true,
+  conversationLanes: undefined,
+  conversationSurfaces: undefined,
+  activeScratchpadId: null,
+}) as ChatPreferences;
+
+/** `module.preference` → the typed field it sets (the stored preferences the package writes). */
+const PREFERENCE_FIELDS: Readonly<Record<string, keyof ChatPreferences>> = {
+  "coding.activeAgentSandboxBySurface": "sandboxBySurface",
+  "coding.sandboxCanvasAutoOpen": "sandboxCanvasAutoOpen",
+  "assistant.directiveApplyPolicy": "directiveApplyPolicy",
+  "prompts.restoreUnsentDrafts": "restoreUnsentDrafts",
+  "conversationFilters.lanes": "conversationLanes",
+  "conversationFilters.surfaces": "conversationSurfaces",
+  "scratchpad.activeId": "activeScratchpadId",
+};
+
+/** The stored-preferences key inside the string store. */
+export const CHAT_PREFERENCES_KEY = "preferences";
+
+/** No settings register: nothing is answered, every override is refused — said once. */
+export function createUnhostedKnobs(): ChatKnobsPort {
+  const unanswered = (): undefined => {
+    announceOnce(
+      "knobs-unhosted",
+      "This host has no settings register, so every setting reads its built-in default. " +
+        "Pass a `prefs.knobs` port to resolve organization and personal settings.",
+    );
+    return undefined;
+  };
+  return {
+    useEffective: unanswered,
+    useSession: unanswered,
+    peekSession: unanswered,
+    ensure: async () => unanswered(),
+    async setOverride() {
+      announceOnce(
+        "knobs-unhosted-write",
+        "A setting was changed, but this host has no settings register to keep it. " +
+          "Pass a `prefs.knobs` port.",
+      );
+      return {
+        ok: false,
+        reason: "This app keeps no settings",
+        detail: "its chat host has no settings register",
+      };
+    },
+  };
+}
 
 export const CHAT_PREFS_PREFIX = "ai-matrx-chat:";
 
@@ -41,6 +118,8 @@ function parseKnob<T extends string | number | boolean>(
 export function createWebPrefs(): ChatPrefsPort {
   const memory = new Map<string, string>();
   const listeners = new Set<(key: string) => void>();
+  const preferenceListeners = new Set<() => void>();
+  let preferences: ChatPreferences | null = null;
 
   function store(): Storage | null {
     const s = storage();
@@ -99,6 +178,61 @@ export function createWebPrefs(): ChatPrefsPort {
     knob(key, fallback) {
       return parseKnob(port.get(key), fallback);
     },
+    preferences() {
+      if (preferences) return preferences;
+      let stored: Partial<ChatPreferences> = {};
+      try {
+        const raw = port.get(CHAT_PREFERENCES_KEY);
+        if (raw) stored = JSON.parse(raw) as Partial<ChatPreferences>;
+      } catch {
+        announceOnce(
+          "prefs-preferences-unreadable",
+          "The stored chat preferences could not be read, so the defaults apply until one is changed.",
+        );
+      }
+      preferences = { ...DEFAULT_CHAT_PREFERENCES, ...stored };
+      return preferences;
+    },
+    subscribePreferences(listener) {
+      preferenceListeners.add(listener);
+      return () => {
+        preferenceListeners.delete(listener);
+      };
+    },
+    write(change: ChatPreferenceWrite) {
+      const current = port.preferences!();
+      let field: keyof ChatPreferences | undefined;
+      let value: unknown;
+      if (change.kind === "preference") {
+        field = PREFERENCE_FIELDS[`${change.module}.${change.preference}`];
+        value = change.value;
+        if (!field) {
+          announceOnce(
+            `prefs-unknown-preference:${change.module}.${change.preference}`,
+            `The preference "${change.module}.${change.preference}" is not one this package keeps, ` +
+              "so the change was not kept. Pass a `prefs` port that stores it.",
+          );
+          return;
+        }
+      } else if (change.kind === "creator-panel-toggled") {
+        field = "showCreatorPanel";
+        value = !current.showCreatorPanel;
+      } else if (change.kind === "debug-mode-toggled") {
+        field = "debugMode";
+        value = !current.debugMode;
+      } else {
+        // No debug panel and no creator authority here: nothing reads them.
+        return;
+      }
+      preferences = { ...current, [field]: value } as ChatPreferences;
+      const changed: Record<string, unknown> = {};
+      for (const name of [...Object.values(PREFERENCE_FIELDS), "showCreatorPanel", "debugMode"] as const) {
+        if (preferences[name] !== DEFAULT_CHAT_PREFERENCES[name]) changed[name] = preferences[name];
+      }
+      port.set(CHAT_PREFERENCES_KEY, JSON.stringify(changed));
+      for (const listener of preferenceListeners) listener();
+    },
+    knobs: createUnhostedKnobs(),
     snapshot() {
       const out: Record<string, string> = Object.fromEntries(memory);
       const s = storage();

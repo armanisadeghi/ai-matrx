@@ -17,8 +17,12 @@ import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let knob: unknown = false;
-jest.mock("@host/lib/scoped-config/sessionKnob", () => ({
+jest.mock("../../../host/prefs-react", () => ({
+  ...jest.requireActual("../../../host/prefs-react"),
   useSessionKnob: () => knob,
+}));
+jest.mock("../../../host/prefs", () => ({
+  ...jest.requireActual("../../../host/prefs"),
   getSessionKnob: () => knob,
 }));
 jest.mock("../../../store/hooks", () => ({

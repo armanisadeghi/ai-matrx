@@ -77,7 +77,7 @@ import { ComposerModeSwitch } from "../../agents/components/inputs/smart-input/c
 import type { ComposerMode } from "../../agents/components/inputs/smart-input/composer/composer-types";
 import { COMPOSER_KNOBS } from "../../agents/components/inputs/smart-input/composer/composer-mode-cookie";
 import type { AttachedContextRailItem } from "../../agents/components/inputs/smart-input/ConversationContextRail";
-import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import { useSessionKnob } from "../../host/prefs-react";
 import { registerInPlaceChatHost } from "../../agents/components/chat/in-place-chat-host";
 import { CanvasChatColumn, type CanvasContextEntry } from "./CanvasChatColumn";
 import {

@@ -37,7 +37,7 @@ import {
 } from "@ai-matrx/diff/react";
 import MarkdownStream from "@host/components/MarkdownStream";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import { useSessionKnob } from "../../host/prefs-react";
 import { cn } from "@ai-matrx/design-system";
 
 import {

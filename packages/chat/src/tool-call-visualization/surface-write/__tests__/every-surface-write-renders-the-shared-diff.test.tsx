@@ -31,8 +31,12 @@ jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => <div>{content}</div>,
 }));
-jest.mock("@host/lib/scoped-config/sessionKnob", () => ({
+jest.mock("../../../host/prefs-react", () => ({
+  ...jest.requireActual("../../../host/prefs-react"),
   useSessionKnob: () => undefined,
+}));
+jest.mock("../../../host/prefs", () => ({
+  ...jest.requireActual("../../../host/prefs"),
   getSessionKnob: () => undefined,
 }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));

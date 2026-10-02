@@ -26,7 +26,7 @@
 import React from "react";
 
 import { LiveRunDisplay } from "../../../agents/components/live-run/LiveRunDisplay";
-import { cn } from "@host/styles/themes/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useLiveRunStatus } from "../../../agents/components/live-run/useLiveRunStatus";
 import { RunSetDisplay } from "../../../agents/components/live-run/RunSetDisplay";
 import { selectRunSetEntries } from "../../../agents/redux/execution-system/run-sets/run-sets.slice";

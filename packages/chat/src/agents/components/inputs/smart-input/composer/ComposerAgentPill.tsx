@@ -33,8 +33,8 @@ import {
   effectiveOfferingPin,
   setOfferingPin,
 } from "../../../../redux/execution-system/instance-model-overrides/offering-pin";
-import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
-import { knobRefusalSentence, setKnobOverride } from "@host/lib/scoped-config/service";
+import { useSessionKnob } from "../../../../../host/prefs-react";
+import { knobRefusalSentence, setKnobOverride } from "../../../../../host/prefs";
 import { CHAT_DEFAULT_MODEL_KNOB } from "@host/features/ai-models/preferredChatModel";
 import { selectModelLabelById } from "@host/features/ai-models/redux/modelRegistrySlice";
 import {

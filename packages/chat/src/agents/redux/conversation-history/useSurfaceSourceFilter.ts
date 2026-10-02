@@ -21,13 +21,12 @@ import {
   resolveSurfaceFilter,
   type ResolvedSourceFilter,
 } from "./source-registry";
+import { selectConversationSurfaceFilters } from "../../../host/prefs";
 
 export function useSurfaceSourceFilter(
   surfaceId: string | undefined,
 ): ResolvedSourceFilter {
-  const surfaces = useAppSelector(
-    (state) => state.userPreferences.conversationFilters?.surfaces,
-  );
+  const surfaces = useAppSelector(selectConversationSurfaceFilters);
   return useMemo(() => {
     if (!surfaceId) {
       return {

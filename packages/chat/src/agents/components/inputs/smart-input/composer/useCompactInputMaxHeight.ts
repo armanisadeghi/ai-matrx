@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import { useSessionKnob } from "../../../../../host/prefs-react";
 import { COMPOSER_KNOBS } from "./composer-mode-cookie";
 
 /** The knob's default when it has not answered (or answered nonsense). */

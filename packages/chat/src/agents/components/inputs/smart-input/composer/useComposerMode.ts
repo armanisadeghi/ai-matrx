@@ -28,7 +28,7 @@ import {
   selectComposerMode,
   setComposerMode,
 } from "../../../../redux/chat/chat-route.slice";
-import { useEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs.client";
+import { useEffectiveKnob } from "../../../../../host/prefs-react";
 import {
   COMPOSER_KNOBS,
   clearComposerModeCookie,

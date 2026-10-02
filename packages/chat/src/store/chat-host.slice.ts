@@ -7,8 +7,14 @@
 // the package's identity/org/prefs/server readers onto it.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { ChatIdentity, ChatOrganization, ResolvedChatHost } from "../host/contract";
+import type {
+  ChatIdentity,
+  ChatOrganization,
+  ChatPreferences,
+  ResolvedChatHost,
+} from "../host/contract";
 import { SIGNED_OUT_IDENTITY } from "../host/defaults/identity";
+import { DEFAULT_CHAT_PREFERENCES } from "../host/defaults/prefs";
 import { DEFAULT_CHAT_SERVER_URL } from "../host/defaults/server";
 
 export interface ChatHostState {
@@ -20,6 +26,8 @@ export interface ChatHostState {
   server: { baseUrl: string };
   /** The prefs port's values (every key `prefs.snapshot()` lists, plus each key it reports changed). */
   prefs: Readonly<Record<string, string | null>>;
+  /** The typed preferences and debug flags (P8) — the prefs port's `preferences()`. */
+  preferences: ChatPreferences;
 }
 
 export type ChatHostSnapshot = Omit<ChatHostState, "synced">;
@@ -30,6 +38,7 @@ export const initialChatHostState: ChatHostState = {
   org: null,
   server: { baseUrl: DEFAULT_CHAT_SERVER_URL },
   prefs: {},
+  preferences: DEFAULT_CHAT_PREFERENCES,
 };
 
 const chatHostSlice = createSlice({
@@ -60,6 +69,7 @@ export function readChatHostSnapshot(
     org: host.org.active(),
     server: { baseUrl: host.server.baseUrl() },
     prefs,
+    preferences: host.prefs.preferences?.() ?? DEFAULT_CHAT_PREFERENCES,
   };
 }
 
@@ -89,6 +99,15 @@ function sameRecord(
   return keys.every((key) => key in b && a[key] === b[key]);
 }
 
+/** Field by field, by reference: a host returns the same value object until it changes. */
+export function samePreferences(a: ChatPreferences, b: ChatPreferences): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const keys = Object.keys(a) as (keyof ChatPreferences)[];
+  if (keys.length !== Object.keys(b).length) return false;
+  return keys.every((key) => a[key] === b[key]);
+}
+
 /** True when `state` already holds `snapshot` (a sync would change nothing). */
 export function chatHostMatches(state: ChatHostState | undefined, snapshot: ChatHostSnapshot): boolean {
   if (!state || !state.synced) return false;
@@ -97,7 +116,8 @@ export function chatHostMatches(state: ChatHostState | undefined, snapshot: Chat
     (state.org?.id ?? null) === (snapshot.org?.id ?? null) &&
     (state.org?.name ?? null) === (snapshot.org?.name ?? null) &&
     state.server.baseUrl === snapshot.server.baseUrl &&
-    sameRecord(state.prefs, snapshot.prefs)
+    sameRecord(state.prefs, snapshot.prefs) &&
+    samePreferences(state.preferences, snapshot.preferences)
   );
 }
 
@@ -113,3 +133,5 @@ export const selectChatHostOrgId = (state: WithChatHost): string | null => state
 export const selectChatHostServerUrl = (state: WithChatHost): string => state.chatHost.server.baseUrl;
 export const selectChatHostPref = (state: WithChatHost, key: string): string | null =>
   state.chatHost.prefs[key] ?? null;
+export const selectChatHostPreferences = (state: WithChatHost): ChatPreferences =>
+  state.chatHost.preferences;

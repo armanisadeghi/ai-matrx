@@ -17,7 +17,7 @@ import React from "react";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";
-import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
+import { setPreference } from "../../../host/prefs";
 import {
   selectConversationLanes,
   selectLaneCounts,

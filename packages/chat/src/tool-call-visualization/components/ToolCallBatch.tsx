@@ -38,7 +38,7 @@ import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import { getToolDisplayName } from "../registry/registry";
 import { DIFF_START_OPEN_KNOB, readSurfaceWrite } from "../surface-write/readSurfaceWrite";
 import { holdsADecision } from "./holdsADecision";
-import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import { useSessionKnob } from "../../host/prefs-react";
 import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
 import { selectToolDisplayPreference } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {

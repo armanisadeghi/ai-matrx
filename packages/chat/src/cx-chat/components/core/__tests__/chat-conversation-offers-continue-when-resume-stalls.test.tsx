@@ -50,7 +50,8 @@ jest.mock(
 jest.mock("../../../_legacy-stubs", () => ({
   selectTurnCount: () => () => 1,
 }));
-jest.mock("@host/hooks/useDebugContext", () => ({
+jest.mock("../../../../host/prefs-react", () => ({
+  ...jest.requireActual("../../../../host/prefs-react"),
   useDebugContext: () => ({ publish: () => undefined, isActive: false }),
 }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));

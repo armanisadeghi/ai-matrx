@@ -40,6 +40,7 @@ import { addOptimisticUserMessage } from "../../../redux/execution-system/messag
 import { createRequest } from "../../../redux/execution-system/active-requests/active-requests.slice";
 import { processStream } from "../../../redux/execution-system/thunks/process-stream";
 import { BoundColumn } from "@host/features/agent-comparison/shared/BoundColumn";
+// The app's own action: its root reducer mirrors creatorDebug into chatHost.preferences (P8).
 import { setShowCreatorPanel } from "@host/lib/redux/preferences/creatorDebugSlice";
 
 jest.mock("../../inputs/smart-input/SmartAgentInput", () => ({

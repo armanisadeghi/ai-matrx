@@ -274,6 +274,151 @@ export interface ChatDiagnosticsPort {
   requests?: ChatNetRequestsPort;
 }
 
+/** How a directive the agent proposes is applied (the person's choice). */
+export type ChatDirectiveApplyPolicy = "default" | "auto" | "ask" | "off";
+
+/** The sandbox a surface's input is bound to (one per surface, never global). */
+export interface ChatSandboxBinding {
+  rowId: string;
+  proxyUrl: string;
+  tier?: "ec2" | "hosted";
+  /** Undefined / "ec2" / "hosted" → orchestrator sandbox; "local-pc" → a matrx-local PC. */
+  kind?: "ec2" | "hosted" | "local-pc";
+  /** Display label latched at selection. */
+  name?: string;
+}
+
+/** One surface's conversation-history source filter. */
+export interface ChatConversationSurfaceFilter {
+  includeFeatures: string[];
+  includeApps: string[];
+  includeEmptySource: boolean;
+}
+
+/** The creator's own run chrome settings. */
+export interface ChatCreatorSettings {
+  showRawIds: boolean;
+  showBuildAffordances: boolean;
+  showDrafts: boolean;
+  /** Emergency brake: declare no client surface, so no surface/default tools are attached. */
+  disableToolInjection: boolean;
+}
+
+/**
+ * The person's preferences and the debug flags the package reads, typed
+ * (PACKAGE-INDEPENDENCE §2.3, P8). The host keeps them; the package's
+ * `chatHost` slice holds a copy (`chatHost.preferences`). Every field has a
+ * platform default (`DEFAULT_CHAT_PREFERENCES`), which is what a host that
+ * keeps none of them gets.
+ */
+export interface ChatPreferences {
+  /** False until the host's stored preferences loaded — an earlier read is the default, not a choice. */
+  loaded: boolean;
+  /** Debug tooling for a super admin, on every page (never admin POWER — that is identity's lane-aware level). */
+  superAdminDebugger: boolean;
+  /** The admin debug-mode switch. */
+  debugMode: boolean;
+  /** The inline creator run panel is shown (also: machine frames are visible). */
+  showCreatorPanel: boolean;
+  creatorSettings: ChatCreatorSettings;
+  /** Admin override: the matrx-local engine delegated desktop tools run on; null = automatic. */
+  desktopTargetInstanceId: string | null;
+  directiveApplyPolicy: ChatDirectiveApplyPolicy;
+  /** Unsent composer drafts come back after a reload. */
+  restoreUnsentDrafts: boolean;
+  /** surface (`sourceFeature`) → its bound sandbox. */
+  sandboxBySurface: Readonly<Record<string, ChatSandboxBinding>>;
+  /** Reveal the sandbox in the canvas the first time the agent works in it. */
+  sandboxCanvasAutoOpen: boolean;
+  /** History lane toggles; undefined = never chosen (the default lanes). */
+  conversationLanes: readonly string[] | undefined;
+  /** surfaceId → source filter override; undefined = every surface uses its default. */
+  conversationSurfaces: Readonly<Record<string, ChatConversationSurfaceFilter>> | undefined;
+  /** The person's active scratchpad; null until one exists. */
+  activeScratchpadId: string | null;
+}
+
+/** One change the package asks the host to make to the person's preferences or debug state. */
+export type ChatPreferenceWrite =
+  /** A stored preference: `module.preference = value` (matrx-frontend's `setPreference`). */
+  | { kind: "preference"; module: string; preference: string; value: unknown }
+  /** Whether the person owns the agent in context (creator authority — never a UI toggle). */
+  | { kind: "creator-ownership"; isCreator: boolean }
+  /** Flip the inline creator run panel (`showCreatorPanel`). */
+  | { kind: "creator-panel-toggled" }
+  /** Flip the admin debug-mode switch (`debugMode`). */
+  | { kind: "debug-mode-toggled" }
+  /** Merge namespaced values into the admin debug panel ("Namespace:Label" keys). */
+  | { kind: "debug-data"; data: Readonly<Record<string, unknown>> }
+  /** Drop every "Namespace:*" key from the admin debug panel. */
+  | { kind: "debug-namespace-cleared"; namespace: string };
+
+/** A settings-register knob: the register's `{ feature, key }` pair, or its dotted form. */
+export type ChatKnobRef = string | { feature: string; key: string };
+
+/** An entity rung a knob is resolved for (beyond org → user → device). */
+export interface ChatKnobScope {
+  kind: string;
+  id: string;
+}
+
+export interface ChatKnobOverrideInput {
+  feature: string;
+  key: string;
+  scopeKind: string;
+  scopeId: string;
+  organizationId: string;
+  /** null clears the override. */
+  value: unknown;
+  note?: string;
+}
+
+/** A refusal is a result, never a throw: `{ ok: false, reason, detail }`. */
+export interface ChatKnobOverrideResult {
+  ok: boolean;
+  reason?: string | null;
+  detail?: string | null;
+  [extra: string]: unknown;
+}
+
+/**
+ * The settings register (org → user → device, nearest wins). `undefined` is
+ * never a value: it means "not answered yet", and every reader uses its own
+ * default until an answer lands. Default: no register — nothing is ever
+ * answered and overrides are refused, said once.
+ */
+export interface ChatKnobsPort {
+  /** React: the effective value for these principals; re-renders when it lands or changes. */
+  useEffective(
+    organizationId: string | null | undefined,
+    userId: string | null | undefined,
+    ref: ChatKnobRef,
+    scopes?: readonly ChatKnobScope[],
+  ): unknown;
+  /** React: the effective value for this session (the signed-in person in the active org). */
+  useSession(ref: ChatKnobRef): unknown;
+  /** Outside React: the cached session value, warming the cache when cold. */
+  peekSession(ref: ChatKnobRef): unknown;
+  /** The effective value, awaited. */
+  ensure(
+    organizationId: string | null,
+    userId: string | null,
+    ref: ChatKnobRef,
+    scopes?: readonly ChatKnobScope[],
+  ): Promise<unknown>;
+  /** Write (or clear, `value: null`) one override at one rung. */
+  setOverride(input: ChatKnobOverrideInput): Promise<ChatKnobOverrideResult>;
+}
+
+export type ChatSettingDoorId = "live-conversation-voice";
+
+export interface ChatSettingDoorProps {
+  setting: ChatSettingDoorId;
+  label?: string;
+  variant?: "link" | "outline" | "ghost";
+  size?: "sm" | "default";
+}
+
 /** Drafts, density, knobs, debug flags. String values, same as the rewrite's port. */
 export interface ChatPrefsPort {
   get(key: string): string | null;
@@ -284,6 +429,19 @@ export interface ChatPrefsPort {
   knob<T extends string | number | boolean>(key: string, fallback: T): T;
   /** Every stored key and value, for the `chatHost` slice's first-render snapshot. Optional. */
   snapshot?(): Readonly<Record<string, string>>;
+  /**
+   * The typed preferences and debug flags. Returns the SAME object until one
+   * changes. Absent: `DEFAULT_CHAT_PREFERENCES`, and writes are refused, said once.
+   */
+  preferences?(): ChatPreferences;
+  /** Called whenever `preferences()` may have changed. */
+  subscribePreferences?(listener: () => void): () => void;
+  /** Apply one change; `preferences()` reflects it before this returns. */
+  write?(change: ChatPreferenceWrite): void;
+  /** The settings register. Absent: no register (see `ChatKnobsPort`). */
+  knobs?: ChatKnobsPort;
+  /** The host control that governs a setting. Absent: no door is drawn. */
+  SettingDoor?: ComponentType<ChatSettingDoorProps>;
 }
 
 export interface ChatLinkProps {

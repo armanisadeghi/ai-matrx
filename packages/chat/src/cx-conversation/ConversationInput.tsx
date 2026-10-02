@@ -65,9 +65,9 @@ import {
   selectShowDebugInfo,
 } from "./_legacy-stubs";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
-import { selectIsSuperAdminDebugger } from "@host/lib/redux/slices/userSlice";
+import { selectIsSuperAdminDebugger } from "../host/prefs";
 import { selectActiveChatAgent } from "./_legacy-stubs";
-import { selectIsDebugMode } from "@host/lib/redux/preferences/adminDebugSlice";
+import { selectIsDebugMode } from "../host/prefs";
 import { ResourceChips } from "../agents/resources/ResourceChips";
 import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";

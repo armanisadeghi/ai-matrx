@@ -78,7 +78,7 @@ import {
   patchConversation,
   setInstanceStatus,
 } from "../conversations/conversations.slice";
-import { selectDesktopTargetInstanceId } from "@host/lib/redux/preferences/adminPreferencesSlice";
+import { selectDesktopTargetInstanceId, selectDirectiveApplyPolicy } from "../../../../host/prefs";
 import {
   selectProjectId,
   selectScopeSelectionsContext,
@@ -298,7 +298,7 @@ export const resumeInstance = createAsyncThunk<
       // USER-layer apply policy — keep the resumed loop's directive handling
       // aligned with the user's preference (highest-priority cascade leg).
       // "default" → omit (let the backend resolve its own default).
-      const applyPolicy = state.userPreferences.assistant.directiveApplyPolicy;
+      const applyPolicy = selectDirectiveApplyPolicy(state);
       const userOverrides: UserOverrides | undefined =
         applyPolicy && applyPolicy !== "default"
           ? { apply_policy: applyPolicy }

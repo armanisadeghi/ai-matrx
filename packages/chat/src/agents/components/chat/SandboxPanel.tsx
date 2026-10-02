@@ -38,7 +38,7 @@ import {
 import { toast } from "../../../host/notify";
 import { Checkbox } from "@host/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
+import { setPreference, selectSandboxBySurface } from "../../../host/prefs";
 import {
   selectConversationSandboxBinding,
   selectConversationIsEphemeral,
@@ -110,9 +110,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
         null)
       : null,
   );
-  const bySurface = useAppSelector(
-    (s) => s.userPreferences.coding.activeAgentSandboxBySurface,
-  );
+  const bySurface = useAppSelector(selectSandboxBySurface);
   const surfaceBound = sourceFeature
     ? (bySurface[sourceFeature] ?? null)
     : null;

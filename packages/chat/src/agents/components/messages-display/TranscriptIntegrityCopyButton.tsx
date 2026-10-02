@@ -15,7 +15,7 @@ import { selectMessageCount } from "../../redux/execution-system/messages/messag
 import { selectStreamPhase } from "../../redux/execution-system/selectors/aggregate.selectors";
 import { writeClipboard } from "@host/components/agent-copy/clipboard";
 import { toast } from "../../../host/notify";
-import { useDebugContext } from "@host/hooks/useDebugContext";
+import { useDebugContext } from "../../../host/prefs-react";
 import { cn } from "@ai-matrx/design-system";
 import {
   buildTranscriptIntegrityReport,

@@ -138,7 +138,7 @@ import {
   selectActiveServer,
   selectEndpointOverrideConfig,
 } from "@host/lib/redux/slices/apiConfigSlice";
-import { selectDesktopTargetInstanceId } from "@host/lib/redux/preferences/adminPreferencesSlice";
+import { selectDesktopTargetInstanceId } from "../../../../host/prefs";
 import {
   selectProjectId,
   selectActiveScopeTypeIds,

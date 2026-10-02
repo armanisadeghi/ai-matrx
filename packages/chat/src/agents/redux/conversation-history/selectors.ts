@@ -13,6 +13,7 @@ import {
   normalizeLanes,
   type ConversationLane,
 } from "./lanes";
+import { selectStoredConversationLanes } from "../../../host/prefs";
 
 const selectConversationHistory = (state: ChatRootState) =>
   state.conversationHistory;
@@ -35,7 +36,7 @@ export const selectLaneCounts = createSelector(
 );
 
 const selectStoredLanes = (state: ChatRootState) =>
-  state.userPreferences.conversationFilters?.lanes;
+  selectStoredConversationLanes(state);
 
 /** The viewer's enabled lanes (persisted preference, normalized). */
 export const selectConversationLanes = createSelector(

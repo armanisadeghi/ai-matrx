@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useAppSelector } from "../../../store/hooks";
 import { selectUserContext } from "@host/lib/redux/slices/userSlice";
-import { useDebugContext } from "@host/hooks/useDebugContext";
+import { useDebugContext } from "../../../host/prefs-react";
 import {
   selectActiveServer,
   selectResolvedBaseUrl,

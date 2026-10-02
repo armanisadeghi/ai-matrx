@@ -17,6 +17,7 @@ import {
   type WorkingDocumentBinding,
   type WorkingDocumentKind,
 } from "./instance-working-document.slice";
+import { selectPreferredScratchpadId } from "../../../../host/prefs";
 
 const entryOf = (
   state: ChatRootState,
@@ -88,7 +89,7 @@ export const selectWorkingDocVersion =
  * the synced userPreferences store; null until the first scratchpad exists.
  */
 export const selectActiveScratchpadId = (state: ChatRootState): string | null =>
-  state.userPreferences.scratchpad.activeId;
+  selectPreferredScratchpadId(state);
 
 const NO_ATTACHED: string[] = [];
 

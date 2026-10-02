@@ -8,7 +8,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../../store/root-state";
-import type { CodeAgentFilter } from "@host/lib/redux/preferences/userPreferencesSlice";
+import type { CodeAgentFilter } from "../../../host/prefs";
 import type { AgentDefinitionRecord } from "../../types/agent-definition.types";
 import { selectActiveAgents } from "../agent-definition/selectors";
 

@@ -51,7 +51,7 @@ import type {
 import { GenericRenderer } from "./GenericRenderer";
 import { withSurfaceWriteDiff } from "../surface-write/withSurfaceWriteDiff";
 import { DIFF_START_OPEN_KNOB, readSurfaceWrite } from "../surface-write/readSurfaceWrite";
-import { getSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import { getSessionKnob } from "../../host/prefs";
 
 import { SearchInline } from "../renderers/search/SearchInline";
 import { SearchOverlay } from "../renderers/search/SearchOverlay";

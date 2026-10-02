@@ -53,7 +53,7 @@ import {
 } from "@host/lib/sandbox/active-binding";
 import { setConversationSandbox } from "../../conversation-list/conversation-row-actions.thunks";
 import { selectConversationSandboxPersisted } from "../conversations/conversations.selectors";
-import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
+import { setPreference, selectSandboxBySurface } from "../../../../host/prefs";
 import { openSandboxGate } from "@host/components/dialogs/sandbox-gate/SandboxGateHost";
 
 const LOG = "[sandbox-gate]";
@@ -79,7 +79,7 @@ function clearSurfaceSeed(
     state.conversations?.byConversationId?.[conversationId]?.sourceFeature;
   if (!sourceFeature) return;
   const bySurface = {
-    ...(state.userPreferences?.coding?.activeAgentSandboxBySurface ?? {}),
+    ...selectSandboxBySurface(state),
   };
   if (!(sourceFeature in bySurface)) return;
   delete bySurface[sourceFeature];

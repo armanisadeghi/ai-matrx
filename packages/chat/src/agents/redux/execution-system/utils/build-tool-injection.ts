@@ -37,7 +37,7 @@ import {
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { callbackManager } from "@host/utils/callbackManager";
 import { getRegisteredCapabilities } from "../client-capabilities/registry";
-import { selectDesktopTargetInstanceId } from "@host/lib/redux/preferences/adminPreferencesSlice";
+import { selectDesktopTargetInstanceId } from "../../../../host/prefs";
 // CRITICAL: register the capability providers in the SAME (client) module graph
 // that reads them. They were previously only imported from app/Providers.tsx —
 // a Server Component — so the side-effect ran server-side and the client
@@ -47,7 +47,7 @@ import { selectDesktopTargetInstanceId } from "@host/lib/redux/preferences/admin
 import "../client-capabilities/register-all";
 import { surfacePatchContractLine } from "../../../../surfaces/runtime/surface-write-patch";
 import { detectActiveSurface } from "../../../../surfaces/utils/route-to-surface";
-import { selectCreatorSettings } from "@host/lib/redux/preferences/creatorDebugSlice";
+import { selectCreatorSettings } from "../../../../host/prefs";
 import { isWarRoomToolName } from "@host/features/agents/war-room-tools/tools/names";
 import { getWarRoomInlineToolDef } from "@host/features/agents/war-room-tools/tools/tool-defs";
 import { isWarRoomMasterToolName } from "@host/features/agents/war-room-master-tools/tools/names";

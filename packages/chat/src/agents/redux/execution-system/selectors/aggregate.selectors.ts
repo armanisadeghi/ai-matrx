@@ -479,8 +479,8 @@ export function makeSelectAssembledRequest(conversationId: string) {
       (s: ChatRootState) => s.instanceContext,
       (s: ChatRootState) => s.instanceClientTools,
       (s: ChatRootState) => s.appContext,
-      (s: ChatRootState) => s.adminPreferences,
-      (s: ChatRootState) => s.userPreferences,
+      // Identity, active org and the person's preferences (P7/P8): the package's own host slice.
+      (s: ChatRootState) => s.chatHost,
       // The context door (buildRequestContext) reads these too: the agent's
       // policies + kill switch, the person's saved context rules, whether this
       // is the first turn, and who is signed in (first-turn system values).
@@ -500,8 +500,7 @@ export function makeSelectAssembledRequest(conversationId: string) {
       instanceContext,
       instanceClientTools,
       appContext,
-      adminPreferences,
-      userPreferences,
+      chatHost,
       agentDefinition,
       surfaceUserState,
       messages,
@@ -518,8 +517,7 @@ export function makeSelectAssembledRequest(conversationId: string) {
         instanceContext,
         instanceClientTools,
         appContext,
-        adminPreferences,
-        userPreferences,
+        chatHost,
         agentDefinition,
         surfaceUserState,
         messages,

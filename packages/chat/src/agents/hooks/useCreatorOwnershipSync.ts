@@ -19,7 +19,7 @@
 
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { setIsCreator } from "@host/lib/redux/preferences/creatorDebugSlice";
+import { setIsCreator } from "../../host/prefs";
 import { selectAgentIsOwner } from "../redux/agent-definition/selectors";
 import { fetchAgentAccessLevel } from "../redux/agent-definition/thunks";
 

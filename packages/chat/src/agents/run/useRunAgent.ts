@@ -59,6 +59,7 @@ import { createMatrxTransport } from "@host/lib/api/matrx-transport";
 import { applyDesktopTargetToRequestBody } from "@host/lib/api/desktop-target-request";
 import type { components } from "@host/types/python-generated/api-types";
 import { extractErrorMessage } from "@ai-matrx/data/net";
+import { selectDesktopTargetInstanceId } from "../../host/prefs";
 
 export interface RunAgentArgs {
   /** Live agent id (UUID) or slug. */
@@ -183,7 +184,7 @@ export function runAgentViaMatrxClient(
     const scope = resolveScope(state, scopeOverrides);
     const request = buildRequestBody(body, scope) as Record<string, unknown>;
     const desktopTargetInstanceId =
-      state.adminPreferences?.desktopTargetInstanceId ?? null;
+      selectDesktopTargetInstanceId(state);
     if (desktopTargetInstanceId) {
       applyDesktopTargetToRequestBody(request, desktopTargetInstanceId);
     }

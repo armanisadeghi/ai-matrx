@@ -24,11 +24,8 @@ import { Separator } from "@ai-matrx/design-system";
 import { Badge } from "@ai-matrx/design-system";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { selectIsSuperAdminDebugger } from "@host/lib/redux/slices/userSlice";
-import {
-  toggleDebugMode,
-  selectIsDebugMode,
-} from "@host/lib/redux/preferences/adminDebugSlice";
+import { selectIsSuperAdminDebugger } from "../host/prefs";
+import { toggleDebugMode, selectIsDebugMode } from "../host/prefs";
 import { chatConversationsActions } from "./_legacy-stubs";
 import {
   selectShowDebugInfo,

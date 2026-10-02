@@ -14,7 +14,8 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 let knob: unknown = 40;
-jest.mock("@host/lib/scoped-config/sessionKnob", () => ({
+jest.mock("../../../../../host/prefs-react", () => ({
+  ...jest.requireActual("../../../../../host/prefs-react"),
   useSessionKnob: () => knob,
 }));
 

@@ -28,8 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ai-matrx/design-system";
-import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
-import type { DirectiveApplyPolicy } from "@host/lib/redux/preferences/userPreferencesSlice";
+import { setPreference, selectDirectiveApplyPolicy } from "../../../host/prefs";
+import type { DirectiveApplyPolicy } from "../../../host/prefs";
 import {
   requestMemoryToggle,
   setBuilderAdvancedSettings,
@@ -209,9 +209,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
     selectReuseConversationId(conversationId),
   );
   const isAdmin = useAppSelector(selectIsSuperAdmin);
-  const directiveApplyPolicy = useAppSelector(
-    (state) => state.userPreferences.assistant.directiveApplyPolicy,
-  );
+  const directiveApplyPolicy = useAppSelector(selectDirectiveApplyPolicy);
   const apiVersion = useAppSelector(selectApiVersion);
   const pathOverrides = useAppSelector(selectPathOverrides);
   const globalManualOverride = pathOverrides[ENDPOINTS.ai.manual] ?? "";

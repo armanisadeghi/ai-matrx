@@ -24,7 +24,13 @@
 //                 openers → the app's overlay openers (`useAppWindowOpeners`)
 //   catalog     → the app's one agent catalog (created by AgentCatalogHost,
 //                 read lazily so its archive-knob seed is never pre-empted)
-//   prefs       → package default until P8 maps the preference knobs
+//   prefs       → strings: the package's localStorage default (unchanged);
+//                 preferences: userPreferences / adminPreferences / creatorDebug /
+//                 adminDebug + the super-admin debugger flag, read by
+//                 lib/redux/chat-host-from-app (the same reading the root
+//                 reducer uses); writes dispatch the app's own actions;
+//                 knobs → lib/scoped-config (the settings register);
+//                 SettingDoor → features/settings doors
 //   chrome      → the app shell (features/shell): header slots, the phone ⋮
 //                 sheet, the nav drawer, canvas chrome, full-screen layers
 //   feedback    → the `submitFeedback` action (the in-app feedback window's path)
@@ -42,6 +48,11 @@ import { ChatProvider } from "@ai-matrx/chat/host/react";
 import type {
   ChatChromePort,
   ChatHost,
+  ChatKnobsPort,
+  ChatPreferences,
+  ChatPreferenceWrite,
+  ChatPrefsPort,
+  ChatSettingDoorProps,
   ChatIdentity,
   ChatIdentityPort,
   ChatNotifyOptions,
@@ -59,9 +70,31 @@ import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
 import {
   readAppChatIdentity,
   readAppChatOrg,
+  readAppChatPreferences,
   sameChatIdentity,
   sameChatOrg,
+  sameChatPreferences,
 } from "@/lib/redux/chat-host-from-app";
+import { createWebPrefs } from "@ai-matrx/chat/host";
+import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
+import {
+  setIsCreator,
+  toggleShowCreatorPanel,
+} from "@/lib/redux/preferences/creatorDebugSlice";
+import {
+  clearDebugNamespace,
+  toggleDebugMode,
+  updateDebugData,
+} from "@/lib/redux/preferences/adminDebugSlice";
+import {
+  getSessionKnob,
+  useSessionKnob,
+} from "@/lib/scoped-config/sessionKnob";
+import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
+import { setKnobOverride } from "@/lib/scoped-config/service";
+import { SettingDoor } from "@/features/settings/doors/SettingDoor";
+import { VOICE_SETTING_DOORS } from "@/features/settings/tabs/voices/voiceSettingDoors";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import {
   closeOverlay,
@@ -212,6 +245,83 @@ function reduxOrg(store: AppStore): ChatOrgPort {
   };
 }
 
+/** The settings register (lib/scoped-config), as the chat package's knobs port (P8). */
+const appKnobs: ChatKnobsPort = {
+  useEffective: useEffectiveKnob,
+  useSession: useSessionKnob,
+  peekSession: getSessionKnob,
+  ensure: ensureEffectiveKnob,
+  setOverride: (input) =>
+    setKnobOverride({
+      ...input,
+      scopeKind: input.scopeKind as Parameters<
+        typeof setKnobOverride
+      >[0]["scopeKind"],
+    }),
+};
+
+/** The package's setting doors, as this app's settings controls. */
+function AppSettingDoor({ setting, ...rest }: ChatSettingDoorProps) {
+  switch (setting) {
+    case "live-conversation-voice":
+      return <SettingDoor target={VOICE_SETTING_DOORS.liveConversation} {...rest} />;
+  }
+}
+
+/** One preference change, as this app's own action (P8). */
+function writeAppPreference(store: AppStore, change: ChatPreferenceWrite): void {
+  switch (change.kind) {
+    case "preference":
+      store.dispatch(
+        setPreference({
+          module: change.module as Parameters<
+            typeof setPreference
+          >[0]["module"],
+          preference: change.preference,
+          value: change.value,
+        }),
+      );
+      return;
+    case "creator-ownership":
+      store.dispatch(setIsCreator(change.isCreator));
+      return;
+    case "creator-panel-toggled":
+      store.dispatch(toggleShowCreatorPanel());
+      return;
+    case "debug-mode-toggled":
+      store.dispatch(toggleDebugMode());
+      return;
+    case "debug-data":
+      store.dispatch(updateDebugData({ ...change.data }));
+      return;
+    case "debug-namespace-cleared":
+      store.dispatch(clearDebugNamespace(change.namespace));
+      return;
+  }
+}
+
+/**
+ * Strings: the package's own localStorage store (as before P8). Preferences:
+ * this app's preference slices, read the way the root reducer reads them.
+ */
+const appStringPrefs = createWebPrefs();
+
+function reduxPrefs(store: AppStore): ChatPrefsPort {
+  let last: ChatPreferences | null = null;
+  return {
+    ...appStringPrefs,
+    preferences() {
+      const next = readAppChatPreferences(store.getState());
+      if (last && sameChatPreferences(last, next)) return last;
+      return (last = next);
+    },
+    subscribePreferences: (listener) => store.subscribe(listener),
+    write: (change) => writeAppPreference(store, change),
+    knobs: appKnobs,
+    SettingDoor: AppSettingDoor,
+  };
+}
+
 /** The package's window ids are this app's overlay ids — checked at compile time. */
 function chatWindowOverlay(id: ChatWindowId): OverlayId {
   return id;
@@ -306,6 +416,7 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
 
   const identity = reduxIdentity(store);
   const org = reduxOrg(store);
+  const prefs = reduxPrefs(store);
   const host: ChatHost = {
     db: supabase,
     sourceApp: "matrx-frontend",
@@ -324,6 +435,7 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
       },
     },
     notify: appNotify,
+    prefs,
     diagnostics: createAppChatDiagnostics(store.dispatch),
     navigation: {
       push: (href) => router.push(href),

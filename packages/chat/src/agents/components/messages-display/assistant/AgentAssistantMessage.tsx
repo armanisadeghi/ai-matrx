@@ -45,7 +45,7 @@ import type { AnnotationSource } from "@host/features/rich-document/annotations/
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { PrefillNote } from "../../../message-flags/PrefillNote";
 import { StoppedNote } from "../../../message-flags/StoppedNote";
-import { useDebugContext } from "@host/hooks/useDebugContext";
+import { useDebugContext } from "../../../../host/prefs-react";
 import {
   selectErrorIsFatal,
   selectRequestError,

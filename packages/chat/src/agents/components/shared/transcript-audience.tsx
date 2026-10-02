@@ -39,7 +39,7 @@
 
 import { createContext, useContext } from "react";
 import { useAppSelector } from "../../../store/hooks";
-import { selectShowCreatorPanel } from "@host/lib/redux/preferences/creatorDebugSlice";
+import { selectShowCreatorPanel } from "../../../host/prefs";
 
 /**
  * Who is reading this transcript.
@@ -85,11 +85,7 @@ export function useMachineFramesVisible(): boolean {
   // slice. This hook runs inside the platform's most widely mounted renderer,
   // and a throw there would blank every transcript on the screen rather than
   // merely mis-answer an escape-hatch question. Absent slice = not a creator.
-  const creatorMode = useAppSelector((state) =>
-    (state as Partial<{ creatorDebug: unknown }>).creatorDebug
-      ? selectShowCreatorPanel(state as Parameters<typeof selectShowCreatorPanel>[0])
-      : false,
-  );
+  const creatorMode = useAppSelector(selectShowCreatorPanel);
   return audience === "builder" || creatorMode;
 }
 

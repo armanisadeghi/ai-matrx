@@ -43,7 +43,7 @@ import type { ConversationListItem } from "../../../agents/redux/conversation-li
 import { resumeConversation } from "../../../agents/redux/execution-system/thunks/resume-conversation.thunk";
 import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-feature-from-surface";
 import { useAgentNames } from "../../hooks/useAgentNames";
-import { useEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs.client";
+import { useEffectiveKnob } from "../../../host/prefs-react";
 import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";

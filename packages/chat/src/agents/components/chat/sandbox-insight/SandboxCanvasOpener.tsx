@@ -38,6 +38,7 @@ import {
   writeSandboxCanvasMemory,
   type SandboxCanvasMemory,
 } from "./sandboxCanvasMemory";
+import { selectSandboxCanvasAutoOpen } from "../../../../host/prefs";
 
 export function SandboxCanvasOpener({
   conversationId,
@@ -57,9 +58,7 @@ export function SandboxCanvasOpener({
     (s) => getEffectiveSandboxRef(s, conversationId ?? null)?.name ?? null,
   );
 
-  const autoOpen = useAppSelector(
-    (s) => s.userPreferences.coding.sandboxCanvasAutoOpen !== false,
-  );
+  const autoOpen = useAppSelector(selectSandboxCanvasAutoOpen);
 
   // Has anything actually run in the box? Both halves of the same truth the
   // transcript renders from — the live lifecycle for the turn in flight, the

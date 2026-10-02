@@ -28,7 +28,7 @@ import {
   setVisibleGroupLimit,
 } from "../../redux/execution-system/messages/messages.slice";
 import { selectStreamPhase } from "../../redux/execution-system/selectors/aggregate.selectors";
-import { selectShowCreatorPanel } from "@host/lib/redux/preferences/creatorDebugSlice";
+import { selectShowCreatorPanel } from "../../../host/prefs";
 import {
   TranscriptAudienceProvider,
   type TranscriptAudience,
