@@ -191,7 +191,7 @@ export function DesignMenuPanel({ model, arranged, point, open, onOpenChange, on
         onPointerUpCapture={(event) => {
           if (event.button === 2) event.preventDefault();
         }}
-        className={`${D.menu} ${isStatic ? "max-h-none shadow-sm" : "max-h-[min(var(--radix-dropdown-menu-content-available-height),44rem)] overflow-y-auto shadow-lg"}`}
+        className={`${D.menu} ${isStatic ? "max-h-none max-w-full shadow-sm" : "max-h-[min(var(--radix-dropdown-menu-content-available-height),44rem)] overflow-y-auto shadow-lg"}`}
       >
         <TooltipProvider>
           {model.header ? (

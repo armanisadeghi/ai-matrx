@@ -40,7 +40,7 @@ type Run = (label: string) => void;
 function Glyph({ icon, className }: { icon?: string; className: string }) {
   if (!icon) return <span aria-hidden className={className} />;
   const C = resolveAlchemyIcon(icon);
-  return C ? React.createElement(C, { className, "aria-hidden": true }) : <span aria-hidden className={className} />;
+  return C ? React.createElement(C, { className }) : <span aria-hidden className={className} />;
 }
 
 /** One tooltip shape for every icon and seat: the name, then its shortcut or why it is greyed. */
@@ -257,7 +257,7 @@ export function R2DesktopPanel({ menu, open, onOpenChange, onRun, point, contain
         onPointerUpCapture={(e) => {
           if (e.button === 2) e.preventDefault();
         }}
-        className={`${D.menu} ${isStatic ? "max-h-none shadow-sm" : "max-h-[min(var(--radix-dropdown-menu-content-available-height),44rem)] overflow-y-auto shadow-lg"}`}
+        className={`${D.menu} ${isStatic ? "max-h-none max-w-full shadow-sm" : "max-h-[min(var(--radix-dropdown-menu-content-available-height),44rem)] overflow-y-auto shadow-lg"}`}
       >
         <TooltipProvider delayDuration={250}>
           {menu.kindLabel ? <DropdownMenuLabel className={D.heading}>{menu.kindLabel}</DropdownMenuLabel> : null}
@@ -369,7 +369,7 @@ function PIcon({ i, run, drill }: { i: StripIcon; run: Run; drill(d: Drill): voi
           <button
             type="button"
             aria-label={`${i.label} options`}
-            onClick={() => drill({ label: i.label, nodes: i.menu! })}
+            onClick={() => drill({ label: i.label, nodes: i.menu ?? [] })}
             className="-ml-1.5 inline-flex h-12 w-5 items-center justify-center rounded-lg text-muted-foreground active:bg-accent"
           >
             <ChevronRight className="h-3.5 w-3.5" />

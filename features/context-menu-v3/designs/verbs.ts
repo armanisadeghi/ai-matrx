@@ -111,12 +111,12 @@ export interface FeatureMenu {
 
 /** The 4 + 1 rule, checked at run time too (a cast can dodge the tuple type). */
 export function assertFeature(f: FeatureMenu): FeatureMenu {
-  const rows = f.rows.filter(Boolean);
+  const rows = f.rows.filter((r): r is DNode => Boolean(r));
   if (rows.length > 4) throw new Error(`${f.noun}: ${rows.length} feature rows; the menu takes 4 plus "More ${f.noun} options".`);
   const verbLabels = new Set(VERBS.map((v) => v.label.toLowerCase()));
   for (const r of [...rows, ...f.more]) {
-    const word = r!.label.replace(/…$/, "").toLowerCase();
-    if (verbLabels.has(word)) throw new Error(`${f.noun}: "${r!.label}" is the menu's own verb — bind it (bind.${word}) instead of adding a row.`);
+    const word = r.label.replace(/…$/, "").toLowerCase();
+    if (verbLabels.has(word)) throw new Error(`${f.noun}: "${r.label}" is the menu's own verb — bind it (bind.${word}) instead of adding a row.`);
   }
   return f;
 }

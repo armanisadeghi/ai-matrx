@@ -107,6 +107,13 @@ function withArchiveGap(icons: StripIcon[]): StripIcon[] {
   return icons.map((i) => (i.verb === "archive" ? { ...i, gapBefore: true } : i));
 }
 
+/** One strip's order: go · copy · share · organize · data · read · archive (most used first). */
+const USE_ORDER = ["open-new-tab", "copy", "copy-link", "share", "duplicate", "favorite", "move", "rename", "export", "import", "history", "settings", "read-aloud", "find", "select-all", "archive"];
+
+function byUse(verbs: StripIcon[]): StripIcon[] {
+  return USE_ORDER.map((id) => verbs.find((v) => v.id === id)).filter((v): v is StripIcon => Boolean(v));
+}
+
 // ── V1–V3 ─────────────────────────────────────────────────────────────────────
 
 export function buildRound2(key: Round2Key, o: Round2Options): R2Menu {
@@ -120,7 +127,7 @@ export function buildRound2(key: Round2Key, o: Round2Options): R2Menu {
       return {
         key,
         kindLabel,
-        strips: [withArchiveGap(verbs)],
+        strips: [withArchiveGap(byUse(verbs))],
         sections: [rows, { heading: "Intelligence", nodes: [...INTELLIGENCE.inline, { id: "more-ai", label: "More AI", icon: I.Layers, children: INTELLIGENCE.more }] }],
         footer: utilities("split"),
       };
@@ -141,12 +148,8 @@ export function buildRound2(key: Round2Key, o: Round2Options): R2Menu {
     case "v3": {
       // Champion pick: one strip grouped by meaning (go · share · organize · data · read · archive),
       // Intelligence heading + 3 rows + More AI, and a 5-icon footer with Save to folded.
-      const order = ["open-new-tab", "copy", "copy-link", "share", "duplicate", "favorite", "move", "rename", "export", "import", "history", "settings", "read-aloud", "find", "select-all", "archive"];
       const groupStarts = new Set(["share", "duplicate", "export", "read-aloud", "archive"]);
-      const strip = order
-        .map((id) => verbs.find((v) => v.id === id))
-        .filter((v): v is StripIcon => Boolean(v))
-        .map((v) => (groupStarts.has(v.id) ? { ...v, gapBefore: true } : v));
+      const strip = byUse(verbs).map((v) => (groupStarts.has(v.id) ? { ...v, gapBefore: true } : v));
       return {
         key,
         kindLabel,

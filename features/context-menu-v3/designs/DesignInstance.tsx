@@ -21,8 +21,6 @@ import { ClinicTableList, firstWord, selectFirstWord } from "./ClinicTableList";
 import { DesignMenuPanel } from "./DesignMenuPanel";
 import { demoTarget, designContext, fullModel, specActions } from "./model";
 
-export { firstWord } from "./ClinicTableList";
-
 // The package's phone layout loads on first open, as everywhere else in the app.
 const ActionSheet = dynamic(() => import("@ai-matrx/alchemy/react/sheet").then((m) => m.ActionSheet), { ssr: false });
 

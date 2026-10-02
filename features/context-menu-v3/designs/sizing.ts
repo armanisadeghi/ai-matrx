@@ -64,3 +64,13 @@ export const P = {
   strip: "flex flex-wrap items-center gap-1 px-1 py-1",
   description: "truncate text-sm text-muted-foreground",
 } as const;
+
+/**
+ * The package's phone sheet (@ai-matrx/alchemy/react/sheet) at the phone numbers above, for the
+ * earlier designs, which still draw through it. Scoped by its own data attribute; demo pages only.
+ */
+export const PACKAGE_SHEET_CSS = `
+[data-alchemy-layout="sheet"] [data-alchemy-node] { min-height: ${PHONE.rowHeight}px !important; font-size: ${PHONE.labelSize}px !important; gap: ${PHONE.rowGap}px !important; }
+[data-alchemy-layout="sheet"] [data-alchemy-node] svg { width: ${PHONE.iconSize}px !important; height: ${PHONE.iconSize}px !important; }
+[data-alchemy-layout="sheet"] [role="toolbar"] [data-alchemy-node] { min-width: ${PHONE.iconButton}px !important; }
+`;
