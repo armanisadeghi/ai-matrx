@@ -22,7 +22,7 @@ import { isTerminal } from "../_shared";
 import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { formatRelativeTime } from "@host/utils/datetime";
-import { useOpenNotesWindow } from "@host/features/overlays/openers/notesWindow";
+import { useOpenNotesWindow } from "../../../host/window-openers";
 
 import { useNoteToolData, type NoteToolMode } from "./useNoteToolData";
 import {

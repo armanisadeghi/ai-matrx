@@ -36,7 +36,7 @@ import {
   DrawerTitle,
 } from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
-import { useOpenAuthGateDialog } from "@host/features/overlays/openers/authGate";
+import { useOpenAuthGateDialog } from "../../../host/window-openers";
 import { GRID_COMPANION_ATTR } from "@host/features/data-tables/grid-companion";
 
 export const SurfaceAgentsPanelImpl = dynamic(

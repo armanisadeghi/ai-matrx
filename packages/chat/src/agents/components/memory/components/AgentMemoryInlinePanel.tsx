@@ -12,7 +12,7 @@
  */
 
 import { ArrowLeft, AppWindow } from "lucide-react";
-import { useOpenAgentMemoryWindow } from "@host/features/overlays/openers/agentMemoryWindow";
+import { useOpenAgentMemoryWindow } from "../../../../host/window-openers";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import {
   ALL_MEMORIES_ID,

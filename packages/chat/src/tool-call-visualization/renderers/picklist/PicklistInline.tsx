@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { GroupSection } from "@host/features/user-lists/components/GroupSection";
 import type { GroupedItem } from "@host/features/user-lists/types";
-import { useOpenStructuredListManagerV2Window } from "@host/features/overlays/openers/structuredListManagerV2Window";
+import { useOpenStructuredListManagerV2Window } from "../../../host/window-openers";
 import type { ToolRendererProps } from "../../types";
 import { parsePicklist } from "./parsePicklist";
 import { usePicklistDetail } from "./usePicklistDetail";

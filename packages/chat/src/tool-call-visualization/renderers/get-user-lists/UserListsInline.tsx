@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { List, CheckSquare, Lock, Globe, Users, Search, ChevronRight, ExternalLink } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
-import { useOpenStructuredListManagerV2Window } from "@host/features/overlays/openers/structuredListManagerV2Window";
+import { useOpenStructuredListManagerV2Window } from "../../../host/window-openers";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 

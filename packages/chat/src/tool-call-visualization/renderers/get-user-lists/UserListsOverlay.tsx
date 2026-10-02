@@ -20,7 +20,7 @@ import { Button } from "@ai-matrx/design-system";
 import { Badge } from "@ai-matrx/design-system";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
-import { useOpenStructuredListManagerV2Window } from "@host/features/overlays/openers/structuredListManagerV2Window";
+import { useOpenStructuredListManagerV2Window } from "../../../host/window-openers";
 import { EntityOpenActions } from "../_shared-entity/EntityOpenActions";
 import { getArg, resultAsObject } from "../_shared";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";

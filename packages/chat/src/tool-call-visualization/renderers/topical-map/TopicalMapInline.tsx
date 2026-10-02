@@ -34,7 +34,7 @@ import {
   type FlatTopic,
 } from "@host/features/marketing/seo/topical-map/proposals/topicRows";
 import { TopicStatusMark } from "@host/features/marketing/seo/topical-map/ui/TopicStatusMark";
-import { useOpenTopicalMapWindow } from "@host/features/overlays/openers/topicalMapWindow";
+import { useOpenTopicalMapWindow } from "../../../host/window-openers";
 
 import type { ToolRendererProps } from "../../types";
 import { ResultValue } from "../../result-fields/ResultValue";

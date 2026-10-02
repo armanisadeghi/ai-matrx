@@ -68,8 +68,8 @@ import {
   selectIsSuperAdminDebugger,
 } from "@host/lib/redux/slices/userSlice";
 import { selectIsDebugMode } from "@host/lib/redux/preferences/adminDebugSlice";
-import { useOpenChatDebugWindow } from "@host/features/overlays/openers/chatDebugWindow";
-import { useOpenPromptPreviewWindow } from "@host/features/overlays/openers/promptPreviewWindow";
+import { useOpenChatDebugWindow } from "../../../../host/window-openers";
+import { useOpenPromptPreviewWindow } from "../../../../host/window-openers";
 import { AgentMemoryInlinePanel } from "../../memory/components/AgentMemoryInlinePanel";
 import { QuicksetPanel } from "./QuicksetPanel";
 import type { Resource } from "../../../resources/types";

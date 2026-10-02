@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { SquareCheckBig, PanelRight, ExternalLink, Maximize2 } from "lucide-react";
 import { useEnsureTaskLoaded } from "@host/features/tasks/hooks/useEnsureTaskLoaded";
-import { useOpenTaskEditorWindow } from "@host/features/overlays/openers/taskEditorWindow";
+import { useOpenTaskEditorWindow } from "../../../host/window-openers";
 import { formatDateOnly } from "@host/utils/dateOnly";
 import type { ToolRendererProps } from "../../types";
 import { parseSingleTask } from "./parseTask";

@@ -41,7 +41,7 @@ jest.mock("../../../../hooks/useMcpTools", () => ({
   useMcpCatalog: () => ({ serverStates: [] }),
 }));
 
-jest.mock("@host/features/overlays/openers/runControlsWindow", () => ({
+jest.mock("../../../../../host/window-openers", () => ({ ...jest.requireActual("../../../../../host/window-openers"),
   useOpenRunControlsWindow: () => jest.fn(),
 }));
 

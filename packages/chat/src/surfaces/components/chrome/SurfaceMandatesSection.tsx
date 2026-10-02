@@ -53,7 +53,7 @@ import {
 } from "../../../mandates/service";
 import { MandateNotesPanel } from "@host/features/mandates/components/MandateNotesPanel";
 import { mandateDisplayName } from "@host/features/mandates/mandate-words";
-import { useOpenMandateWindow } from "@host/features/overlays/openers/mandateWindow";
+import { useOpenMandateWindow } from "../../../host/window-openers";
 import { INTELLIGENCE_ICON } from "@host/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";

@@ -44,8 +44,8 @@ import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectWorkingDocTitle } from "../../agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { useCanvas } from "@host/features/canvas/hooks/useCanvas";
 import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
-import { useOpenNotesWindow } from "@host/features/overlays/openers/notesWindow";
-import { useOpenWorkingDocumentWindow } from "@host/features/overlays/openers/workingDocumentWindow";
+import { useOpenNotesWindow } from "../../host/window-openers";
+import { useOpenWorkingDocumentWindow } from "../../host/window-openers";
 import { cn } from "@host/lib/utils";
 import type { ToolArtifact, ToolArtifactKind } from "../registry/toolArtifact";
 

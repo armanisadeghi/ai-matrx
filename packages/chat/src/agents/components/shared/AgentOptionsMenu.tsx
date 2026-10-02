@@ -6,20 +6,20 @@ import { applyOrganizationContextHeader } from "@host/lib/api/organization-conte
 import { duplicateAgent } from "../../redux/agent-definition/thunks";
 import { invalidateAgentCache } from "../../redux/agent-definition/invalidate-agent-cache.thunk";
 import { selectAgentById } from "../../redux/agent-definition/selectors";
-import { useOpenAgentSettingsWindow } from "@host/features/overlays/openers/agentSettingsWindow";
-import { useOpenAgentRunHistoryWindow } from "@host/features/overlays/openers/agentRunHistoryWindow";
-import { useOpenAgentContentWindow } from "@host/features/overlays/openers/agentAdvancedEditorWindow";
-import { useOpenAgentRunWindow } from "@host/features/overlays/openers/agentRunWindow";
-import { useOpenAgentOptimizerWindow } from "@host/features/overlays/openers/agentOptimizerWindow";
-import { useOpenAgentFindUsagesWindow } from "@host/features/overlays/openers/agentFindUsagesWindow";
-import { useOpenAgentCreateAppWindow } from "@host/features/overlays/openers/agentCreateAppWindow";
-import { useOpenAgentDataStorageWindow } from "@host/features/overlays/openers/agentDataStorageWindow";
-import { useOpenAgentConvertSystemWindow } from "@host/features/overlays/openers/agentConvertSystemWindow";
-import { useOpenAgentShortcutQuickCreateWindow } from "@host/features/overlays/openers/agentAdminShortcutWindow";
-import { useOpenAgentAdminFindUsagesWindow } from "@host/features/overlays/openers/agentAdminFindUsagesWindow";
-import { useOpenAgentImportWindow } from "@host/features/overlays/openers/agentImportWindow";
-import { useOpenAgentInterfaceVariationsWindow } from "@host/features/overlays/openers/agentInterfaceVariationsWindow";
-import { useOpenSaveKitDialog } from "@host/features/overlays/openers/saveKitDialog";
+import { useOpenAgentSettingsWindow } from "../../../host/window-openers";
+import { useOpenAgentRunHistoryWindow } from "../../../host/window-openers";
+import { useOpenAgentContentWindow } from "../../../host/window-openers";
+import { useOpenAgentRunWindow } from "../../../host/window-openers";
+import { useOpenAgentOptimizerWindow } from "../../../host/window-openers";
+import { useOpenAgentFindUsagesWindow } from "../../../host/window-openers";
+import { useOpenAgentCreateAppWindow } from "../../../host/window-openers";
+import { useOpenAgentDataStorageWindow } from "../../../host/window-openers";
+import { useOpenAgentConvertSystemWindow } from "../../../host/window-openers";
+import { useOpenAgentShortcutQuickCreateWindow } from "../../../host/window-openers";
+import { useOpenAgentAdminFindUsagesWindow } from "../../../host/window-openers";
+import { useOpenAgentImportWindow } from "../../../host/window-openers";
+import { useOpenAgentInterfaceVariationsWindow } from "../../../host/window-openers";
+import { useOpenSaveKitDialog } from "../../../host/window-openers";
 import { KIT_WORD } from "@host/features/kits/constants";
 
 /** The menu label is also this item's dispatch key. */

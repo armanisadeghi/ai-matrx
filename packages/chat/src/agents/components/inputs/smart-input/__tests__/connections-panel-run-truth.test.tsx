@@ -41,7 +41,7 @@ jest.mock("@host/features/connectors/useConversationAttachments", () => ({
   useConversationAttachments: () => ({ status: "succeeded", items: [] }),
 }));
 jest.mock("@host/features/connectors/AttachedResourcesSection", () => ({ AttachedResourcesSection: () => null }));
-jest.mock("@host/features/overlays/openers/liveIntegrationsWindow", () => ({ useOpenLiveIntegrationsWindow: () => jest.fn() }));
+jest.mock("../../../../../host/window-openers", () => ({ ...jest.requireActual("../../../../../host/window-openers"), useOpenLiveIntegrationsWindow: () => jest.fn() }));
 jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 import { ComposerConnectorsPanel } from "../composer/ComposerConnectorsPanel";
 

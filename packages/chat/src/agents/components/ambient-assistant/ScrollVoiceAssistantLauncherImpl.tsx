@@ -16,7 +16,7 @@ import { useMandate } from "../../../mandates/useMandate";
 import { useMandateChain } from "../../../mandates/useMandateChain";
 import { selectSubmissionPhase } from "../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { sourceFeatureFromSurfaceName } from "../../utils/source-feature-from-surface";
-import { useOpenQuickChatSheet } from "@host/features/overlays/openers/quickChat";
+import { useOpenQuickChatSheet } from "../../../host/window-openers";
 import { useAuthGuardedAction } from "@host/features/auth/components/useAuthGuardedAction";
 import { useSurfaceRuntime } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import { useVoiceRelaySession } from "../../../voice-agent/relay/useVoiceRelaySession";

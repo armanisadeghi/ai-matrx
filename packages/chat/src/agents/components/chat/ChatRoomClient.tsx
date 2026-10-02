@@ -43,7 +43,7 @@ import { syncHandoffPendingAttachments } from "@host/features/connectors/redux/a
 import { attachmentKey } from "@host/features/connectors/attachable-resources";
 import { patchConversation } from "../../redux/execution-system/conversations/conversations.slice";
 import { linkConversationDocumentThunk } from "../../redux/execution-system/instance-working-document/instance-working-document.thunks";
-import { useOpenWorkingDocumentPanel } from "@host/features/overlays/openers/workingDocumentPanel";
+import { useOpenWorkingDocumentPanel } from "../../../host/window-openers";
 import {
   registerSurface,
   unregisterSurface,

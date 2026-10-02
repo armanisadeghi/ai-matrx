@@ -20,6 +20,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ComponentType, ReactNode } from "react";
 import type { AgentCatalog } from "@ai-matrx/agents/catalog";
 import type { ChatWindowId } from "./windows";
+import type { ChatWindowOpeners } from "./window-openers";
 
 /**
  * The connection contract (R10). Authenticated, RLS applies. P6 narrows this to
@@ -189,6 +190,11 @@ export interface ChatWindowsPort {
   bringToFront?(key: string): void;
   /** Called whenever `isOpen` or `managedWindowKeys` may have changed. */
   subscribe?(listener: () => void): () => void;
+  /**
+   * Openers for host windows the package opens with typed options (agent
+   * builder windows, notes, tasks …). One left out opens nothing and says so.
+   */
+  openers?: Partial<ChatWindowOpeners>;
   Shell?: ComponentType<ChatWindowShellProps>;
 }
 

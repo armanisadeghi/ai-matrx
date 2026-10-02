@@ -31,8 +31,8 @@ import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-featu
 import { cn } from "@host/lib/utils";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectIsAdmin } from "@host/lib/redux/selectors/userSelectors";
-import { useOpenSurfaceContextWindow } from "@host/features/overlays/openers/surfaceContextWindow";
-import { useOpenSurfaceContextInspector } from "@host/features/overlays/openers/surfaceContextInspector";
+import { useOpenSurfaceContextWindow } from "../../../host/window-openers";
+import { useOpenSurfaceContextInspector } from "../../../host/window-openers";
 
 export interface SurfaceAgentsPanelImplProps {
   className?: string;

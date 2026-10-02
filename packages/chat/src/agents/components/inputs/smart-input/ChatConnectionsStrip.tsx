@@ -62,7 +62,7 @@ import { selectAgentMcpServers } from "../../../redux/agent-definition/selectors
 import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
 import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectPrimaryRequest } from "../../../redux/execution-system/active-requests/active-requests.selectors";
-import { useOpenRunControlsWindow } from "@host/features/overlays/openers/runControlsWindow";
+import { useOpenRunControlsWindow } from "../../../../host/window-openers";
 import { attachActionLabel } from "@host/features/connectors/attachable-resources";
 import { useAttachResourcePicker } from "@host/features/connectors/useAttachResourcePicker";
 import { useConversationAttachments } from "@host/features/connectors/useConversationAttachments";

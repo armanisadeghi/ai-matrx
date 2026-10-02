@@ -23,7 +23,7 @@ jest.mock("@host/lib/redux/hooks", () => ({
 
 jest.mock("@host/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 
-jest.mock("@host/features/overlays/openers/runControlsWindow", () => ({
+jest.mock("../../../../../host/window-openers", () => ({ ...jest.requireActual("../../../../../host/window-openers"),
   useOpenRunControlsWindow: () => jest.fn(),
 }));
 

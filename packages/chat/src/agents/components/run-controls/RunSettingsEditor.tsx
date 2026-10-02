@@ -58,7 +58,7 @@ import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../types/instance.types";
 import { parseRequestOverrides } from "../../redux/execution-system/utils/request-overrides";
 import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";
 import { SystemInstructionModal } from "@host/features/agents/components/builder/message-builders/system-instructions/SystemInstructionModal";
-import { useOpenSystemInstructionWindow } from "@host/features/overlays/openers/systemInstructionWindow";
+import { useOpenSystemInstructionWindow } from "../../../host/window-openers";
 import { NumberStepper } from "@host/components/official-candidate/NumberStepper";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import {

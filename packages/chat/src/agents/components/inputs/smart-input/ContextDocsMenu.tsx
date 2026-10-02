@@ -17,7 +17,7 @@ import {
   NotebookPen,
   PanelRight,
 } from "lucide-react";
-import { useOpenWorkingDocumentPanel } from "@host/features/overlays/openers/workingDocumentPanel";
+import { useOpenWorkingDocumentPanel } from "../../../../host/window-openers";
 import {
   Popover,
   PopoverContent,

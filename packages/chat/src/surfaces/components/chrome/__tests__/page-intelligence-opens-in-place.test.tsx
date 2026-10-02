@@ -47,7 +47,7 @@ jest.mock("../../../../mandates/service", () => ({
     Promise.resolve({ "notes.page_guidance": { label: "Notes Page Guide" } }),
 }));
 jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
-jest.mock("@host/features/overlays/openers/mandateWindow", () => ({
+jest.mock("../../../../host/window-openers", () => ({ ...jest.requireActual("../../../../host/window-openers"),
   useOpenMandateWindow: () => openMandate,
 }));
 

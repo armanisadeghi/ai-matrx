@@ -45,7 +45,7 @@ import { usePopoutContainer } from "@host/features/window-panels/popout/usePopou
 import { cn } from "@host/lib/utils";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
-import { useOpenRunControlsWindow } from "@host/features/overlays/openers/runControlsWindow";
+import { useOpenRunControlsWindow } from "../../../../host/window-openers";
 import { PlusAttachMenu } from "./PlusAttachMenu";
 import { ComposerPlusMenu } from "./composer/ComposerPlusMenu";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";

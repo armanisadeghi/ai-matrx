@@ -41,7 +41,7 @@ import {
   useAttachResource,
   useDetachResource,
 } from "../resources/attach-resource";
-import { useOpenRunControlsWindow } from "@host/features/overlays/openers/runControlsWindow";
+import { useOpenRunControlsWindow } from "../../../../host/window-openers";
 import { selectAttachmentCapabilities } from "../../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import { selectWorkingDocEnabled } from "../../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { setConversationDocumentEnabledThunk } from "../../../redux/execution-system/instance-working-document/instance-working-document.thunks";
@@ -53,7 +53,7 @@ import { selectAgentIdFromInstance } from "../../../redux/execution-system/conve
 import { ContextLensBar } from "@host/features/scopes/components/active-context/ContextLensBar";
 import { ComputeLensBar } from "./ComputeLensBar";
 import { useSandboxBindingBlocked } from "./use-compute-target-actions";
-import { useOpenContextPreviewPanel } from "@host/features/overlays/openers/contextPreviewPanel";
+import { useOpenContextPreviewPanel } from "../../../../host/window-openers";
 import { CHAT_WINDOWS } from "../../../../host/windows";
 import { useIsChatWindowOpen } from "../../../../host/windows-react";
 import { useConversationDocumentsBridge } from "../../../hooks/useWorkingDocument";

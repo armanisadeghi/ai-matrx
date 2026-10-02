@@ -78,7 +78,7 @@ import type { SourceFeature } from "../../../agents/types/instance.types";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "../../../agents/menu/agent-actions";
 import { fetchFullAgent } from "../../../agents/redux/agent-definition/thunks";
-import { useOpenRunControlsWindow } from "@host/features/overlays/openers/runControlsWindow";
+import { useOpenRunControlsWindow } from "../../../host/window-openers";
 import { usePreparedResourceSeed } from "../../../agents/components/chat/usePreparedResourceSeed";
 import { useAttachResource } from "../../../agents/components/inputs/resources/attach-resource";
 import type { Resource } from "../../../agents/resources/types";

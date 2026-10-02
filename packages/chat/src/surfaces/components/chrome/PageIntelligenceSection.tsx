@@ -17,7 +17,7 @@ import { fetchMandateIdentities, type MandateIdentity } from "../../../mandates/
 import { mandateDisplayName } from "@host/features/mandates/mandate-words";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
-import { useOpenMandateWindow } from "@host/features/overlays/openers/mandateWindow";
+import { useOpenMandateWindow } from "../../../host/window-openers";
 
 /**
  * The page's jobs, after agents and conversations in the menu. A row opens the

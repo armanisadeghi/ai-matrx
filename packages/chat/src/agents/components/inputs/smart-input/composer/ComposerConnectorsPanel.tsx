@@ -35,7 +35,7 @@ import { useConnectMcpServer } from "@host/features/connectors/useConnectMcpServ
 import { attachActionLabel } from "@host/features/connectors/attachable-resources";
 import { useAttachResourcePicker } from "@host/features/connectors/useAttachResourcePicker";
 import { useConversationAttachments } from "@host/features/connectors/useConversationAttachments";
-import { useOpenLiveIntegrationsWindow } from "@host/features/overlays/openers/liveIntegrationsWindow";
+import { useOpenLiveIntegrationsWindow } from "../../../../../host/window-openers";
 import { fetchAgentExecutionFull } from "../../../../redux/agent-definition/thunks";
 import { fetchCatalog } from "../../../../redux/mcp/mcp.slice";
 import { ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";

@@ -47,7 +47,7 @@ import {
   selectMessageContentHistory,
   selectMessageContent,
 } from "../../../redux/execution-system/messages/messages.selectors";
-import { useOpenDiffViewerWindow } from "@host/features/overlays/openers/diffViewerWindow";
+import { useOpenDiffViewerWindow } from "../../../../host/window-openers";
 import { editMessage } from "../../../redux/execution-system/message-crud/edit-message.thunk";
 import { setRequestEditedText } from "../../../redux/execution-system/active-requests/active-requests.slice";
 import { selectMessageStreamRequestId } from "../../../redux/execution-system/messages/messages.selectors";

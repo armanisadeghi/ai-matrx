@@ -85,8 +85,8 @@ import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../../types/instance.ty
 import { setUserInputText } from "../../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import { prependTemplateToDraft } from "@host/features/message-templates/utils/prepend-template-to-draft";
 import { SmartInputMessageTemplatePicker } from "@host/features/message-templates/components/SmartInputMessageTemplatePicker";
-import { useOpenContextPreviewPanel } from "@host/features/overlays/openers/contextPreviewPanel";
-import { useOpenRunControlsWindow } from "@host/features/overlays/openers/runControlsWindow";
+import { useOpenContextPreviewPanel } from "../../../../../host/window-openers";
+import { useOpenRunControlsWindow } from "../../../../../host/window-openers";
 import { useOpenCloudBrowserCanvas } from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import { ActiveContextTree } from "@host/features/scopes/components/active-context/ActiveContextTree";
 import { useComputeTargetActions } from "../use-compute-target-actions";
