@@ -21,6 +21,7 @@ import ErrorInspectorTrayChip from "@/features/admin/error-inspector/ErrorInspec
 import { useLiveRunStatus } from "@ai-matrx/chat/agents/components/live-run/useLiveRunStatus";
 import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { TrayStatusChip } from "../WindowTray/TrayStatusChip";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function LiveRunTrayPreview({ data }: { data: Record<string, unknown> }) {
   const conversationId =
@@ -151,7 +152,7 @@ export function shareTrayPreview({ data }: TrayPreviewContext): ReactNode {
   return (
     <div className="truncate">
       <span className="text-foreground/80 font-medium">{name}</span>
-      {type && <span className="ml-1 text-muted-foreground/60">· {type}</span>}
+      {type && <span className="ml-1 text-muted-foreground/60">· {humanizeIdentifier(type)}</span>}
     </div>
   );
 }

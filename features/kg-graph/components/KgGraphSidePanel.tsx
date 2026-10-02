@@ -32,6 +32,7 @@ import { fetchSourceNames } from "../service/sourceNames";
 import type { GraphNode, MentionRow } from "../types";
 import { colorForKind } from "../constants";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface KgGraphSidePanelProps {
   node: GraphNode;
@@ -303,7 +304,7 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary" className="text-[10px]">
-              {node.kind}
+              {humanizeIdentifier(node.kind)}
             </Badge>
             <span className="text-[11px] text-muted-foreground">
               {status === "ready"

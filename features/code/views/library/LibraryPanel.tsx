@@ -33,6 +33,7 @@ import type {
 } from "./LibraryTreeNode";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { publishedToWebLabel, shownToLabel, SHOWN_TO_LABEL } from "@/lib/row-access";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface LibraryPanelProps {
   className?: string;
@@ -360,7 +361,7 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({ className }) => {
           propertiesTarget ? (
             <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
               <dt className="text-muted-foreground">Type</dt>
-              <dd>{propertiesTarget.kind}</dd>
+              <dd>{humanizeIdentifier(propertiesTarget.kind)}</dd>
               <dt className="text-muted-foreground">Path</dt>
               <dd className="break-all font-mono">{propertiesTarget.path}</dd>
               <dt className="text-muted-foreground">{SHOWN_TO_LABEL}</dt>

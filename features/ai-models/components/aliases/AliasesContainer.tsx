@@ -36,6 +36,7 @@ import { aiModelService } from "../../service";
 import type { AiModelAliasRow, AiModelRow } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const ALIAS_KINDS = ["alias", "deprecated", "latest"] as const;
 type AliasKind = (typeof ALIAS_KINDS)[number];
@@ -225,7 +226,7 @@ export default function AliasesContainer() {
             variant="outline"
             className={`text-[10px] ${kindBadgeClass[kind]}`}
           >
-            {item.kind}
+            {humanizeIdentifier(item.kind)}
           </Badge>
         );
       },
@@ -442,7 +443,7 @@ export default function AliasesContainer() {
                       ]
                     }`}
                   >
-                    {item.kind}
+                    {humanizeIdentifier(item.kind)}
                   </Badge>
                 </div>
                 <div className="shrink-0">{controls.actions}</div>

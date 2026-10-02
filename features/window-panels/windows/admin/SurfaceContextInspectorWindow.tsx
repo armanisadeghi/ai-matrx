@@ -54,6 +54,7 @@ import {
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // context-menu-exempt: entity — the "values" view inspects one declared
 // SurfaceValue at a time, a manifest field, not a record; the "settings" view
 // attaches the real `surface` entity once its DB row is loaded (see
@@ -443,7 +444,7 @@ function ValueDetail({
                 {item.value.alwaysAvailable ? "Always" : "Sometimes"}
               </Badge>
               <Badge variant="outline" className="text-[10px]">
-                {item.value.valueType}
+                {humanizeIdentifier(item.value.valueType)}
               </Badge>
             </>
           )}

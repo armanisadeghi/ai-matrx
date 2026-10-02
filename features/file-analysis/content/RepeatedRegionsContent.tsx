@@ -17,6 +17,7 @@ import {
   type RepeatedRegionsPayload,
 } from "./utils";
 import type { FileAnalysisResultRow } from "@/features/file-analysis/api/file-analysis";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface Props {
   fileId: string;
@@ -150,7 +151,7 @@ function RegionCard({
     >
       <div className="flex items-center gap-2 border-b border-border px-2 py-1 text-[10px]">
         <span className="rounded bg-muted px-1.5 py-px uppercase tracking-wider text-muted-foreground">
-          {region.kind}
+          {humanizeIdentifier(region.kind)}
         </span>
         <span className="text-muted-foreground">
           {region.pages.length} pages · {Math.round(region.confidence * 100)}%

@@ -27,6 +27,7 @@ import type {
   CaseDisclosureData,
   CaseLedgerEntry,
 } from "@/features/content-ir/kinds/masterwork-unfolding";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface CaseDisclosureBlockProps {
   serverData?: unknown;
@@ -47,7 +48,7 @@ function RequestLine({ entry }: { entry: CaseLedgerEntry }) {
     <div className="flex flex-wrap items-center gap-1.5">
       {request.kind ? (
         <span className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          {request.kind}
+          {humanizeIdentifier(request.kind)}
         </span>
       ) : null}
       <span className="text-xs font-medium text-foreground">

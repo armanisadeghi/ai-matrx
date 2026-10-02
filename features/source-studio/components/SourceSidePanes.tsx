@@ -49,6 +49,7 @@ function entitiesEmptySentence(state: EntitiesState, notSearchable: boolean): st
   }
 }
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export type SideTab = "chunks" | "entities" | "associations";
 
@@ -301,7 +302,7 @@ function EntitiesTab({
             >
               <span className="font-medium">{e.name}</span>
               <Badge variant="outline" className="px-1 py-0 text-[10px]">
-                {e.kind}
+                {humanizeIdentifier(e.kind)}
               </Badge>
               <span className="tabular-nums text-muted-foreground">{e.mentions}</span>
             </button>

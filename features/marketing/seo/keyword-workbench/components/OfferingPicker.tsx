@@ -52,6 +52,7 @@ import {
   SITE_OFFERINGS_KEY,
   type SiteOfferings,
 } from "../hooks/useSiteOfferings";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The filter's and the cell's shared word for "on no offering at all". */
 export const OFFERING_UNPLACED = "none";
@@ -179,7 +180,7 @@ export function OfferingPicker({
               {option.rootName}
             </span>
           ) : (
-            <span className="shrink-0 text-[10px] text-success">{option.kind}</span>
+            <span className="shrink-0 text-[10px] text-success">{humanizeIdentifier(option.kind)}</span>
           )}
         </span>
       ),

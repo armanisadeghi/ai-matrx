@@ -80,6 +80,7 @@ import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { formatRelativeTime } from "@/utils/datetime";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const MATCH_LABEL: Partial<Record<KgMatchKind, string>> = {
   exact: "Exact match",
@@ -184,7 +185,7 @@ export function KgSuggestionRowItem({
           </span>
           {row.entity.kind ? (
             <Badge variant="outline" className="h-4 text-[10px] px-1.5">
-              {row.entity.kind}
+              {humanizeIdentifier(row.entity.kind)}
             </Badge>
           ) : null}
         </div>

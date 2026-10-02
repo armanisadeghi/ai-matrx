@@ -78,6 +78,7 @@ import {
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** Canonical `ui_surface.name` this page emits — the catalog half. */
 const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
@@ -623,7 +624,7 @@ function StoreDetailPanel({
           <Library className="h-4 w-4 text-muted-foreground" />
           <h1 className="text-sm font-semibold">{item.name}</h1>
           <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-secondary-foreground">
-            {item.kind}
+            {humanizeIdentifier(item.kind)}
           </span>
           <EntitlementChip
             entitledVia={item.entitledVia}

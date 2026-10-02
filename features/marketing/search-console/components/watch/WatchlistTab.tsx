@@ -55,6 +55,7 @@ import type {
   GscWatchRow,
 } from "@/features/marketing/search-console/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export function WatchlistTab({
   siteId,
@@ -248,7 +249,7 @@ export function WatchlistTab({
               : "bg-muted text-muted-foreground",
           )}
         >
-          {row.kind}
+          {humanizeIdentifier(row.kind)}
         </span>
       ),
     },

@@ -48,6 +48,7 @@ import { type BrandAsset } from "@/features/marketing/types";
 import { readVideoMetadata } from "@/features/marketing/lib/video-metadata";
 import type { Json } from "@/types/database.types";
 import { toast } from "@/lib/toast";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface AssetPageRef {
   pageId: string;
@@ -139,7 +140,7 @@ export function BrandAssetDetail({
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="outline" className="capitalize">
-              {asset.kind}
+              {humanizeIdentifier(asset.kind)}
             </Badge>
             <Badge variant="secondary" className="capitalize">
               {asset.source}

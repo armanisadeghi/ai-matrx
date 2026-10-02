@@ -16,6 +16,7 @@ import { getEnrollment } from "@/features/hindsight/api";
 import type { DoorAudience } from "@/features/hindsight/subject-doors";
 import type { Finding } from "@/features/hindsight/types";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface HindsightFindingWindowProps {
   instanceId: string;
@@ -86,7 +87,7 @@ export default function HindsightFindingWindow({
               <Badge variant="outline" className="px-1 py-0 text-[10px]">
                 {LEVER_LABEL[item.lever]}
               </Badge>
-              <span>{item.status}</span>
+              <span>{humanizeIdentifier(item.status)}</span>
             </span>
           </button>
         ))}

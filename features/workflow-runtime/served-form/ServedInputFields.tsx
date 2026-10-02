@@ -58,6 +58,7 @@ import {
 import { loadKindSources, valueTypeFromJsonSchema } from "./kind-source";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /** Stable identity for "this surface declares nothing", so effects settle. */
 export const EMPTY_SERVED_INPUTS: ServedInput[] = [];
 
@@ -278,7 +279,7 @@ export function ServedField({
         </span>
         <SourcingBadge input={input} />
         <span className="text-[11px] text-muted-foreground/70">
-          {input.kind}
+          {humanizeIdentifier(input.kind)}
           {input.variant ? ` · ${input.variant}` : ""}
         </span>
       </div>
@@ -373,7 +374,7 @@ export function ServedFieldControl({
             Input <code className="font-mono">{input.name}</code> asks for
             variant{" "}
             <code className="font-mono">{resolution.unregisteredVariant}</code>,
-            which kind <code className="font-mono">{input.kind}</code> does not
+            which kind <code className="font-mono">{humanizeIdentifier(input.kind)}</code> does not
             register — rendered with its{" "}
             {resolution.source === "kind-default-component"
               ? "default input component"

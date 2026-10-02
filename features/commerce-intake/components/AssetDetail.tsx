@@ -40,6 +40,7 @@ import {
 import { PrintLabelDialog } from "../labels/components/PrintLabelDialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface AttributeRow {
   key: string;
@@ -304,7 +305,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
             {identifiers.map((i) => (
               <li key={i.id} className="flex items-center gap-2">
                 <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                  {i.kind}
+                  {humanizeIdentifier(i.kind)}
                 </span>
                 <span className="min-w-0 truncate font-mono">{i.value}</span>
                 {i.isPrimary && !i.replacedAt && (

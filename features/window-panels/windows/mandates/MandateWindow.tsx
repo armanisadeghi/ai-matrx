@@ -68,6 +68,7 @@ import type { MandateWindowView } from "@/features/overlays/openers/mandateWindo
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface MandateWindowProps {
   isOpen?: boolean;
@@ -307,7 +308,7 @@ function MandateWindowInner({
             >
               <span className="flex min-w-0 items-center gap-1">
                 <span className="truncate text-xs font-medium">
-                  {row.label ?? mandate}
+                  {row.label ?? humanizeIdentifier(mandate)}
                 </span>
                 {status && status !== "active" ? (
                   <MandateStatusBadge
@@ -318,7 +319,7 @@ function MandateWindowInner({
                 ) : null}
               </span>
               <span className="block truncate text-[10px] text-muted-foreground">
-                {feature} · {row.agentName}
+                {humanizeIdentifier(feature)} · {row.agentName}
               </span>
             </button>
           );

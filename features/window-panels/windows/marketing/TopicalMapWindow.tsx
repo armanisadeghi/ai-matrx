@@ -54,6 +54,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay, selectOpenInstances } from "@/lib/redux/slices/overlaySlice";
 import { cn } from "@/lib/utils";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface TopicalMapWindowProps {
   onClose: () => void;
@@ -267,7 +268,7 @@ function MapPicker({ onPick }: { onPick: (mapId: string) => void }) {
                   </span>
                 ) : null}
               </span>
-              <span className="shrink-0 text-xs capitalize text-muted-foreground">{row.status}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{humanizeIdentifier(row.status)}</span>
             </button>
           </li>
         ))}

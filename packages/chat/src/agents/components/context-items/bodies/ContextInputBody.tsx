@@ -1,6 +1,7 @@
 "use client";
 
 import type { ContextItemBodyProps } from "../types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function displayValue(value: unknown): string {
   if (typeof value === "string") return value;
@@ -39,8 +40,8 @@ export function ContextInputBody({ item }: ContextItemBodyProps) {
         <dl className="divide-y divide-border/70">
           {entries.map(([key, value]) => (
             <div key={key} className="grid gap-1 py-3 sm:grid-cols-[10rem_1fr]">
-              <dt className="text-xs font-medium text-muted-foreground">
-                {key}
+              <dt className="text-xs font-medium text-muted-foreground" title={key}>
+                {humanizeIdentifier(key) || key}
               </dt>
               <dd className="min-w-0 whitespace-pre-wrap break-words text-sm text-foreground">
                 {displayValue(value)}

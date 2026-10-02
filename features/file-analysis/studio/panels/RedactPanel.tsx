@@ -21,6 +21,7 @@ import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { RepeatedRegionsReport } from "@/features/pdf-extractor/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface Props {
   fileId: string;
@@ -224,7 +225,7 @@ function RepeatedRegionsRedactSection({ fileId }: { fileId: string }) {
                         });
                       }}
                     />
-                    <span className="flex-1 truncate">{r.kind}</span>
+                    <span className="flex-1 truncate">{humanizeIdentifier(r.kind)}</span>
                     <span className="tabular-nums text-muted-foreground">
                       {Math.round((r.confidence ?? 0) * 100)}%
                     </span>

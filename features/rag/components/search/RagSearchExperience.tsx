@@ -143,6 +143,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // ===========================================================================
 // Agent Chat surface — the "Agent Chat" tab embeds the canonical agent system
@@ -1564,7 +1565,7 @@ function AgentToolResultBlock({
             >
               {e.name}
               {e.kind ? (
-                <span className="text-muted-foreground ml-1">{e.kind}</span>
+                <span className="text-muted-foreground ml-1">{humanizeIdentifier(e.kind)}</span>
               ) : null}
             </Badge>
           ))}

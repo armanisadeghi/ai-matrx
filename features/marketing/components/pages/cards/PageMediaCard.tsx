@@ -22,6 +22,7 @@ import {
 } from "@/features/marketing/components/media/SnapshotMediaGallery";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * Media inventory for one canonical page's latest snapshot — every observed
@@ -233,7 +234,7 @@ export function PageMediaCard({
                     variant="outline"
                     className="h-4 shrink-0 px-1 text-[9px] uppercase"
                   >
-                    {resource.kind}
+                    {humanizeIdentifier(resource.kind)}
                   </Badge>
                   <a
                     href={resource.url}

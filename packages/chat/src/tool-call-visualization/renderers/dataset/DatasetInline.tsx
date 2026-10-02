@@ -8,6 +8,7 @@ import { isTerminal } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 import { EmptyResultCard } from "../_shared-entity/EmptyResultCard";
 import { PartPeekPopover } from "../_shared-entity/PartPeekPopover";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 const MAX_FIELD_CHIPS = 12;
 
@@ -127,11 +128,11 @@ export function DatasetInline({
               {shownFields.map((f) => (
                 <PartPeekPopover
                   key={f.name}
-                  header={f.name}
+                  header={displayLabel(f.displayName, f.name)}
                   body={<DatasetFieldPeek f={f} />}
                 >
                   <span className="inline-flex cursor-default items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px] transition-colors hover:bg-muted">
-                    <span className="font-medium text-foreground">{f.name}</span>
+                    <span className="font-medium text-foreground">{displayLabel(f.displayName, f.name)}</span>
                     {f.type ? (
                       <span className="font-mono text-muted-foreground">
                         {f.type}
