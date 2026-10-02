@@ -326,7 +326,13 @@ const nextConfig = {
     // still compiling; cache-off completed at 31.1 GiB. Preserve the former
     // nonpersistent build mode; this does not disable runtime/data caching.
     // Re-enable only after a measured memory acceptance. Guard: build-lab test.
-    turbopackFileSystemCacheForBuild: false,
+    // EXCEPTION — the demos profile (2026-10-02): it parks every group but
+    // (dev), so its graph is a fraction of the 65 GiB one, and ~95% of it (the
+    // AppShell/Providers stack every demo layout renders) never changes between
+    // demo pushes. Vercel restores .next/cache, so a warm demos build compiles
+    // only what changed. Acceptance is measured on ai-matrx-demos builds; the
+    // other two projects keep the nonpersistent mode.
+    turbopackFileSystemCacheForBuild: MATRX_PROFILE === "demos",
     // Avoid the dev snapshot-coordinator panic that drops active review pages.
     turbopackFileSystemCacheForDev: false,
     // ON (2026-08-11): enables `forbidden()` / `unauthorized()` from
