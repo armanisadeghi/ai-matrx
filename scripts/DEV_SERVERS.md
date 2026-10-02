@@ -61,8 +61,10 @@ database. So clone mode:
 2. asks `http://localhost:8200/health/database-identity` which project its
    database pool AND its auth issuer belong to, and REFUSES — starting nothing —
    unless both are the clone. The refusal prints the exact command:
-   `cd ../aidream && scripts/clone/clone_server.sh start` (boots in 4-8 min;
-   `scripts/clone/clone_server.sh status` shows when it is paired);
+   `cd ../aidream && scripts/clone/clone_server.sh start` (boots in a few min;
+   `scripts/clone/clone_server.sh status` shows when it is paired). That server
+   reloads itself onto aidream's checkout (up 10 min + new code); `clone_server.sh
+   reload` gets your code now, and `pnpm preview:status` prints its running commit;
 3. launches with `MATRX_PREVIEW_MODE=clone` and `MATRX_CLONE_PAIRED=<ref>`;
    `next.config.js` re-checks that the Supabase URL is that clone before a worker
    spawns;

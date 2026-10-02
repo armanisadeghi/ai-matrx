@@ -1020,6 +1020,12 @@ cmd_monitor() {
 
 cmd_status() {
   cmd_status_one
+  # The clone preview's Python server (aidream on :8200): its running commit and how stale it is.
+  # It reloads itself onto aidream's checkout; `clone_server.sh reload` gets your code now.
+  local clone_server="$REPO_ROOT/../aidream/scripts/clone/clone_server.sh"
+  if [[ "$(meta_value MODE)" != live && -x "$clone_server" ]]; then
+    log "python :8200 $(bash "$clone_server" code 2>/dev/null)"
+  fi
 }
 
 cmd_status_one() {
