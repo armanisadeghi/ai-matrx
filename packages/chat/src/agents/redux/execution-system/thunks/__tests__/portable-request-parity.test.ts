@@ -23,6 +23,13 @@ import {
   PORTABLE_PARITY_SETTLED_EVENTS,
 } from "../../../../runtime/portable-request-parity.fixtures";
 import type { ChatRootState } from "../../../../../store/root-state";
+import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest({});
+});
+
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;

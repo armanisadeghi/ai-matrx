@@ -33,6 +33,13 @@ import { deriveAnswerText } from "../../active-requests/active-requests.selector
 import { processStream } from "../process-stream";
 import { STREAM_FLUSH_INTERVAL_MS } from "../stream-flush-scheduler";
 import type { ChatRootState } from "../../../../../store/root-state";
+import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest({});
+});
+
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;
