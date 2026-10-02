@@ -11,6 +11,7 @@ import agentsA12 from "./checks/agents-a12.mjs";
 import drill from "./checks/drill.mjs";
 import cutover from "./checks/cutover.mjs";
 import platform from "./checks/platform.mjs";
+import query from "./checks/query.mjs";
 
 export const ITEMS = {
   // Tables
@@ -146,9 +147,20 @@ export const ITEMS = {
   P07: "Performance — data home < 1 s",
   P08: "Performance — table page first paint",
   P09: "Performance — scope tree",
+  // Query correctness (lane 5 VISION-REACH): each answered by the aggregate door AND by the chat's records tool
+  Q01: "Query — sum across all rows (a formula column; the $640 / $1,440 case)",
+  Q02: "Query — count by status",
+  Q03: "Query — filter + sum",
+  Q04: "Query — as of an earlier moment",
+  Q05: "Query — roll-up across a relation",
+  Q06: "Query — empty result",
+  Q07: "Query — a hidden (restricted) field",
+  Q08: "Query — a member-invisible row stays out",
+  Q09: "Query — group by date",
+  Q10: "Query — top 5 by a measure",
 };
 
-export const CHECKS = [...tables, ...lists, ...scopes, ...datahome, ...agents, ...agentsA12, ...drill, ...cutover, ...platform];
+export const CHECKS = [...tables, ...lists, ...scopes, ...datahome, ...agents, ...agentsA12, ...drill, ...cutover, ...platform, ...query];
 
 for (const c of CHECKS) for (const id of c.items) if (!ITEMS[id]) throw new Error(`check ${c.id} names unknown item ${id}`);
 const ids = new Set();
