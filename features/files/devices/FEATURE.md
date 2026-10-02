@@ -1,4 +1,4 @@
-# FEATURE — Devices & sync (browser half of folder sync)
+# FEATURE — Devices & sync, and the device console
 
 **What it is:** Settings → **Devices & sync** (`files.devices`). Every machine
 signed in to this account, every folder each one syncs, what is true about each
@@ -27,6 +27,40 @@ local mechanics only.
 | `@/features/files/storage-meter/` | The meter itself — billing is its only source (D11). See that folder's header. |
 | `useNow.ts` | The shared clock (a `Date.now()` in a render body is impure). |
 | `app/(admin)/administration/applications/sync/` | The admin page over `files.sync_mapping_admin_status`. |
+| `platform.tsx` | Platform glyph, OS line, "last seen" — one copy for every device surface. |
+
+## The device console (`/devices`, `/devices/[deviceId]`) — Matrx 2 lane E
+
+Drive a Matrx 2 computer from any browser, phone first: terminal, files, info. Spec:
+`common-docs/projects/matrx-2/SPEC.md`; plan: `matrx-desktop/design/protocol-v1-draft/PLAN.md`.
+
+| File (`console/`) | What it owns |
+|---|---|
+| `useDeviceClient.ts` | ONE `createDesktopClient` per device page, straight to the relay (token in the subprotocol, re-read every dial; `relay.reauth` on every session refresh; `useDesktopWake`). |
+| `relay.ts` | `NEXT_PUBLIC_MATRX_RELAY_URL` (production default `relay.matrxserver.com`; clone previews get `relay-test`, paired in `scripts/clone-preview/clone-preview-env.cjs`), `/status` reads. |
+| `connection.ts` | The status pill's honest states (Live / Connecting… / Reconnecting… / Offline / refusals), tested. |
+| `TerminalPanel.tsx` | Shell chips (`exec.list`), `+`, close (kill, confirmed), one live shell in `@ai-matrx/terminal`; `?t=` holds the shell. |
+| `FilesPanel.tsx` / `FilePreview.tsx` / `paths.ts` | Breadcrumb, rows, pull to refresh, swipe Rename / Move / Trash (+ Undo), `…` New folder / Upload / Show hidden; `?path=`. |
+| `InfoPanel.tsx` | Device row + `sysinfo.get`; unmeasured = `—`. |
+| `DeviceConsole.tsx` / `DeviceList.tsx` / `devices-query.ts` | The two routes' bodies; the one device query (server page and browser). |
+
+Rules that are easy to get wrong:
+
+1. **Bytes are credited after xterm parses them** (`handle.write` resolves). The Mac paces a shell
+   to its SLOWEST viewer, so a page that is hidden must not hold a shell: it detaches on
+   `visibilitychange` → hidden, never attaches while hidden, and on return reattaches with
+   `since_seq` onto the screen it kept. A socket drop is the client's job (transparent reattach).
+2. **Reload = snapshot, drop = replay.** A fresh page has an empty screen, so `?t=` reattaches
+   without `since_seq` (screen snapshot); an in-memory drop replays exactly the missed bytes.
+3. **View/shell/folder go through `history.replaceState(null, …)`** — Next syncs
+   `useSearchParams` only for a null state; a router navigation would refetch the route.
+4. **A clone page must dial the test relay**: a clone-issued token is refused by production.
+5. `FsEntry` is the cloud daemon's `get_stat_dict` (`mtime` in seconds; no `hidden`): dotfiles are
+   named `.x`, never flagged.
+
+Proof: `matrx-desktop` `test/live/phone-console-live.test.ts` (this console's client through the
+test relay: list, read, `yes` + Ctrl-C, drop + reattach byte-identical, reload + `since_seq`), and
+`test/live/headless-device.ts` (a scratch-HOME device on the test relay for UI walks).
 
 ## The five things that are easy to get wrong
 
@@ -92,9 +126,14 @@ metered to the organization.
 | `pnpm check:honest-states-parity` | The browser's state values, titles and remedy actions equal the engine artifact's, verbatim, both directions. CI job + both release-gate lanes. |
 | `pnpm check:honest-states-parity:self-test` | …and that guard still goes red (three planted drifts). |
 | `pnpm check:user-visible-parity` | The one visibility rule: the TS mirror equals the live SQL functions, and the browser's rendered set equals the predicate's set (needs `AI_ADMIN_*`). Set-based — 4,945 paths in under a second through `files.is_user_visible_paths`. Knobs: `PARITY_PATH_BATCH`, `PARITY_MAX_PATHS`. |
+| `npx jest features/files/devices/console packages/terminal` | The console's status-pill states; the terminal package's keys, Ctrl latch, gestures, selection and viewport math. |
 | `npx jest features/files/storage-meter features/files/devices features/files/utils/user-visible.test.ts` | The meter's honest states, the one-sentence-per-row rule, and the visibility unit covers. |
 
 ## Change log
+
+- **2026-10-02** — The device console (`/devices`, `/devices/[deviceId]`, Matrx 2 lane E) on
+  `@ai-matrx/desktop-protocol` and `@ai-matrx/terminal`; platform helpers moved to `platform.tsx`
+  (the relative-time twin now delegates to the kit's `formatRelativeTime`).
 
 - **2026-09-21** — Verification findings L5-1…L5-4 fixed. The meter is
   rebuilt on billing (see above) and no longer reads `files.account_tiers`; a

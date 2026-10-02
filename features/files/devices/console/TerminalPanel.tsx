@@ -268,7 +268,9 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
     if (!isMobile || !visible || hiddenOnPhone) return undefined;
     const root = document.documentElement;
     root.style.setProperty("--page-bottom-dock-h", `${ACCESSORY_BAR_HEIGHT + 8}px`);
-    return () => root.style.removeProperty("--page-bottom-dock-h");
+    return () => {
+      root.style.removeProperty("--page-bottom-dock-h");
+    };
   }, [isMobile, visible, hiddenOnPhone]);
 
   function onResize(size: TerminalSize): void {

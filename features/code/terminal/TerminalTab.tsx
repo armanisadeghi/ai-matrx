@@ -1,7 +1,9 @@
 "use client";
 
+import "@/styles/terminal-host.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import "@xterm/xterm/css/xterm.css";
+import { Terminal } from "@ai-matrx/terminal/react";
+import type { TerminalHandle, TerminalSize } from "@ai-matrx/terminal/react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { extractErrorMessage } from "@/utils/errors";
@@ -26,12 +28,10 @@ interface TerminalTabProps {
   visible?: boolean;
 }
 
-type XtermTerminal = import("@xterm/xterm").Terminal;
-type FitAddon = import("@xterm/addon-fit").FitAddon;
+type XtermTerminal = TerminalHandle["xterm"];
 
 interface SessionState {
   term: XtermTerminal;
-  fit: FitAddon;
   /** Current in-progress user input. */
   buffer: string;
   /** Cursor index within the buffer. */
@@ -78,8 +78,18 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
   const { process } = useCodeWorkspace();
   const dark = useMonacoTheme();
 
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const sessionRef = useRef<SessionState | null>(null);
+  const [handle, setHandle] = useState<TerminalHandle | null>(null);
+  /** Where keystrokes go right now: read-line emulation, or straight into a live PTY. */
+  const dataSinkRef = useRef<((data: string) => void) | null>(null);
+  const listen = useCallback((sink: (data: string) => void) => {
+    dataSinkRef.current = sink;
+    return {
+      dispose: () => {
+        if (dataSinkRef.current === sink) dataSinkRef.current = null;
+      },
+    };
+  }, []);
   const historyRef = useRef(history);
   const processRef = useRef(process);
 
@@ -456,42 +466,18 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
     [refreshLine, runCommand, writePromptFor],
   );
 
-  // ── Boot xterm once ─────────────────────────────────────────────────────
+  // ── Boot the session once the package terminal is up ────────────────────
+  // @ai-matrx/terminal owns xterm itself: creation, fit, refit on reveal (its resize observer
+  // sees the hidden box get a size), theme, touch and the phone keyboard bar. This component
+  // owns only what it drives: read-line emulation or a live PTY.
   useEffect(() => {
-    if (!hasBeenVisible) return undefined;
+    if (!handle) return undefined;
     let cancelled = false;
 
-    const boot = async () => {
-      if (!containerRef.current) return;
-      const xtermModule = await import("@xterm/xterm");
-      const fitModule = await import("@xterm/addon-fit");
-      const linksModule = await import("@xterm/addon-web-links");
-      if (cancelled || !containerRef.current) return;
-
-      const term = new xtermModule.Terminal({
-        fontFamily:
-          "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace",
-        fontSize: 12.5,
-        lineHeight: 1.25,
-        cursorBlink: true,
-        cursorStyle: "bar",
-        scrollback: 5000,
-        convertEol: true,
-        theme: makeTheme(document.documentElement.classList.contains("dark")),
-      });
-      const fit = new fitModule.FitAddon();
-      term.loadAddon(fit);
-      term.loadAddon(new linksModule.WebLinksAddon());
-      term.open(containerRef.current);
-      try {
-        fit.fit();
-      } catch {
-        /* container may not be sized yet */
-      }
-
+    const boot = () => {
+      const term = handle.xterm;
       const session: SessionState = {
         term,
-        fit,
         buffer: "",
         cursor: 0,
         historyIdx: null,
@@ -504,32 +490,10 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       };
       sessionRef.current = session;
 
-      // Browsers and surrounding app shortcuts may consume Ctrl-C before
-      // xterm can interrupt the remote process. Use the PTY's explicit
-      // signal frame; keep Ctrl-Shift-C available for the platform copy gesture.
-      term.attachCustomKeyEventHandler((event) => {
-        if (
-          event.type === "keydown" &&
-          event.ctrlKey &&
-          !event.shiftKey &&
-          !event.altKey &&
-          !event.metaKey &&
-          event.key.toLowerCase() === "c"
-        ) {
-          if (session.pty?.isOpen) {
-            session.pty.signal("SIGINT");
-          } else {
-            handleData(session, "\x03");
-          }
-          return false;
-        }
-        return true;
-      });
-
       // Default wiring: read-line emulation on top of `process.exec()`.
       // If the active adapter supports a real PTY, we'll swap this out
       // below.
-      const bufferedListener = term.onData((data) => handleData(session, data));
+      const bufferedListener = listen((data) => handleData(session, data));
       session.onDataDisposer = () => bufferedListener.dispose();
 
       const expectsPty = Boolean(processRef.current.openPty);
@@ -598,7 +562,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         // the PTY. The remote daemon owns line editing, history, signal
         // handling, and prompt rendering from this point.
         state.onDataDisposer?.();
-        const liveListener = term.onData((data) => handle.write(data));
+        const liveListener = listen((data) => handle.write(data));
         state.onDataDisposer = () => liveListener.dispose();
         term.options.disableStdin = false;
         // Clear the connecting marker before the daemon emits its prompt.
@@ -618,13 +582,11 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       state.pty = null;
       state.term.options.disableStdin = false;
       state.onDataDisposer?.();
-      const bufferedListener = state.term.onData((data) =>
-        handleData(state, data),
-      );
+      const bufferedListener = listen((data) => handleData(state, data));
       state.onDataDisposer = () => bufferedListener.dispose();
     };
 
-    void boot();
+    boot();
 
     return () => {
       cancelled = true;
@@ -635,84 +597,37 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         s.runAbort?.abort();
         s.pty?.close();
         s.onDataDisposer?.();
-        s.term.dispose();
         sessionRef.current = null;
       }
     };
-  }, [hasBeenVisible]);
+    // Boots once per terminal; the handlers read refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handle]);
 
-  // ── Resize observer ─────────────────────────────────────────────────────
+  // A tab switch back to the terminal puts the cursor in it.
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return undefined;
-    const ro = new ResizeObserver(([entry]) => {
-      const s = sessionRef.current;
-      if (
-        !s ||
-        !entry ||
-        entry.contentRect.width <= 0 ||
-        entry.contentRect.height <= 0
-      ) {
-        return;
-      }
-      try {
-        s.fit.fit();
-        // The DOM renderer's width cache can have measured zero-width glyphs
-        // while its always-mounted parent was hidden. A public refresh makes
-        // it measure the real visible font before painting rows again.
-        s.term.refresh(0, s.term.rows - 1);
-      } catch {
-        /* xterm is still painting */
-      }
-      // Tell the remote PTY about the visible viewport so line wrapping and
-      // full-screen apps (vim/top) stay correct.
-      if (s.pty?.isOpen) {
-        try {
-          s.pty.resize(s.term.cols, s.term.rows);
-        } catch {
-          /* connection changed while fitting */
-        }
-      }
-    });
-    ro.observe(container);
-    return () => ro.disconnect();
-  }, []);
+    if (visible && handle) handle.focus();
+  }, [visible, handle]);
 
-  // Tab switches do not always change the container's dimensions. Refit on
-  // the next frame after a visible terminal tab, but only if layout exists.
-  useEffect(() => {
-    if (!visible) return undefined;
-    const frame = requestAnimationFrame(() => {
-      const container = containerRef.current;
-      const s = sessionRef.current;
-      if (
-        !container ||
-        !s ||
-        container.clientWidth <= 0 ||
-        container.clientHeight <= 0
-      ) {
-        return;
-      }
-      try {
-        s.fit.fit();
-        // See the resize observer above: refresh recovers the DOM renderer's
-        // glyph width cache after a hidden mount.
-        s.term.refresh(0, s.term.rows - 1);
-        if (s.pty?.isOpen) s.pty.resize(s.term.cols, s.term.rows);
-      } catch {
-        /* xterm or the PTY can be between frames */
-      }
-      s.term.focus();
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [visible]);
-
-  // ── Theme swap ──────────────────────────────────────────────────────────
-  useEffect(() => {
+  /** Hardware Ctrl-C: the PTY's explicit SIGINT (page shortcuts may eat the key), else emulation. */
+  const onInterrupt = useCallback((): boolean => {
     const s = sessionRef.current;
-    if (!s) return;
-    s.term.options.theme = makeTheme(dark);
-  }, [dark]);
+    if (!s) return false;
+    if (s.pty?.isOpen) s.pty.signal("SIGINT");
+    else handleData(s, "\x03");
+    return true;
+  }, [handleData]);
+
+  /** The remote PTY follows the visible grid so wrapping and full-screen apps stay right. */
+  const onResize = useCallback((size: TerminalSize) => {
+    const s = sessionRef.current;
+    if (!s?.pty?.isOpen) return;
+    try {
+      s.pty.resize(size.cols, size.rows);
+    } catch {
+      /* connection changed while fitting */
+    }
+  }, []);
 
   // ── Mirror agent-originated Redux lines into xterm ──────────────────────
   useEffect(() => {
@@ -764,11 +679,22 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         className,
       )}
     >
-      <div
-        ref={containerRef}
-        className="h-full min-h-0 w-full overflow-hidden px-1 pt-1"
-        onClick={() => sessionRef.current?.term.focus()}
-      />
+      {hasBeenVisible ? (
+        <div className="h-full min-h-0 w-full overflow-hidden pt-1" onClick={() => handle?.focus()}>
+          <Terminal
+            theme={dark ? "dark" : "light"}
+            fontSize={12.5}
+            lineHeight={1.25}
+            padding={4}
+            convertEol
+            aria-label="Terminal"
+            onReady={setHandle}
+            onData={(data) => dataSinkRef.current?.(data)}
+            onResize={onResize}
+            onInterrupt={onInterrupt}
+          />
+        </div>
+      ) : null}
       {ready && (
         <button
           type="button"
@@ -818,54 +744,4 @@ function parseLineId(id: string | undefined): number {
   if (!id) return 0;
   const m = id.match(/^line-(\d+)$/);
   return m ? Number.parseInt(m[1], 10) : 0;
-}
-
-function makeTheme(dark: boolean) {
-  return dark
-    ? {
-        background: "#1e1e1e",
-        foreground: "#e4e4e7",
-        cursor: "#e4e4e7",
-        cursorAccent: "#1e1e1e",
-        black: "#1e1e1e",
-        red: "#f87171",
-        green: "#4ade80",
-        yellow: "#facc15",
-        blue: "#60a5fa",
-        magenta: "#c084fc",
-        cyan: "#22d3ee",
-        white: "#e5e7eb",
-        brightBlack: "#52525b",
-        brightRed: "#fca5a5",
-        brightGreen: "#86efac",
-        brightYellow: "#fde047",
-        brightBlue: "#93c5fd",
-        brightMagenta: "#d8b4fe",
-        brightCyan: "#67e8f9",
-        brightWhite: "#f4f4f5",
-        selectionBackground: "#3b82f6",
-      }
-    : {
-        background: "#ffffff",
-        foreground: "#18181b",
-        cursor: "#18181b",
-        cursorAccent: "#ffffff",
-        black: "#18181b",
-        red: "#b91c1c",
-        green: "#15803d",
-        yellow: "#b45309",
-        blue: "#1d4ed8",
-        magenta: "#7c3aed",
-        cyan: "#0e7490",
-        white: "#d4d4d8",
-        brightBlack: "#71717a",
-        brightRed: "#dc2626",
-        brightGreen: "#16a34a",
-        brightYellow: "#d97706",
-        brightBlue: "#2563eb",
-        brightMagenta: "#9333ea",
-        brightCyan: "#0891b2",
-        brightWhite: "#a1a1aa",
-        selectionBackground: "#93c5fd",
-      };
 }

@@ -156,6 +156,7 @@ export function Terminal(props: TerminalProps) {
       return undefined;
     }
     setDark(prefersDark());
+    if (typeof MutationObserver === "undefined") return undefined;
     const observer = new MutationObserver(() => setDark(prefersDark()));
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     return () => observer.disconnect();
@@ -323,9 +324,10 @@ export function Terminal(props: TerminalProps) {
         // xterm is mid-paint
       }
     };
+    refit();
+    if (typeof ResizeObserver === "undefined") return undefined; // non-browser hosts (jsdom)
     const ro = new ResizeObserver(refit);
     ro.observe(host);
-    refit();
     return () => ro.disconnect();
   }, [booted]);
 

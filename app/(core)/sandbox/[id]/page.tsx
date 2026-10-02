@@ -51,6 +51,8 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { SshAccessPanel } from "@/components/sandbox/ssh-access-panel";
+import { SandboxTranscript } from "@/components/sandbox/SandboxTranscript";
+import type { SandboxTranscriptEntry } from "@/components/sandbox/SandboxTranscript";
 import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -79,12 +81,7 @@ import { extractErrorMessage } from "@/utils/errors";
 
 const DEFAULT_CWD = "/home/agent";
 
-interface TerminalEntry {
-  type: "command" | "stdout" | "stderr" | "info";
-  text: string;
-  exitCode?: number;
-  cwd?: string;
-}
+type TerminalEntry = SandboxTranscriptEntry;
 
 export default function SandboxDetailPage() {
   const params = useParams();
@@ -133,7 +130,6 @@ export default function SandboxDetailPage() {
     null,
   );
 
-  const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const extensionGeneration = useRef(0);
   const extensionIdentity = useRef("");
@@ -188,12 +184,6 @@ export default function SandboxDetailPage() {
     const interval = setInterval(fetchInstance, 10000);
     return () => clearInterval(interval);
   }, [fetchInstance]);
-
-  useEffect(() => {
-    if (terminalRef.current) {
-      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-    }
-  }, [terminalHistory]);
 
   const handleExec = async () => {
     if (!commandInput.trim() || executing) return;
@@ -817,50 +807,12 @@ export default function SandboxDetailPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div
-                ref={terminalRef}
-                className="bg-zinc-950 rounded-t-md p-4 min-h-48 max-h-[50dvh] overflow-y-auto font-mono text-sm"
-                onClick={() => inputRef.current?.focus()}
-              >
-                {terminalHistory.length === 0 && (
-                  <p className="text-zinc-500">
-                    {isActive
-                      ? "Type a command below and press Enter..."
-                      : "Sandbox is not running. Terminal is read-only."}
-                  </p>
-                )}
-                {terminalHistory.map((entry, i) => (
-                  <div key={i} className="mb-1">
-                    {entry.type === "command" && (
-                      <div className="text-green-400">
-                        <span className="text-blue-400 text-xs">
-                          {entry.cwd || ""}
-                        </span>
-                        <span className="text-zinc-500"> $ </span>
-                        {entry.text}
-                      </div>
-                    )}
-                    {entry.type === "stdout" && (
-                      <pre className="text-zinc-200 whitespace-pre-wrap">
-                        {entry.text}
-                      </pre>
-                    )}
-                    {entry.type === "stderr" && (
-                      <pre className="text-red-400 whitespace-pre-wrap">
-                        {entry.text}
-                      </pre>
-                    )}
-                    {entry.type === "info" && (
-                      <div className="text-zinc-500 italic">{entry.text}</div>
-                    )}
-                  </div>
-                ))}
-                {executing && (
-                  <div className="text-zinc-500 animate-pulse">
-                    Executing...
-                  </div>
-                )}
-              </div>
+              <SandboxTranscript
+                entries={terminalHistory}
+                executing={executing}
+                emptyText={isActive ? "Type a command below and press Enter..." : "Sandbox is not running. Terminal is read-only."}
+                onActivate={() => inputRef.current?.focus()}
+              />
               <div className="flex items-center bg-zinc-900 rounded-b-md border-t border-zinc-800">
                 <span className="text-green-400 font-mono text-xs pl-3 pr-0.5 shrink-0">
                   agent@sandbox
@@ -909,7 +861,7 @@ export default function SandboxDetailPage() {
                 {agentStagedCommand && (
                   <span
                     data-testid="agent-staged-command-marker"
-                    title="An agent typed this command into the box. Nothing has run — read it, then press Enter yourself if you want it. Editing it clears this marker."
+                    title="An agent typed this command; nothing runs until you press Enter, and editing it clears this marker."
                     className="shrink-0 mr-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-mono text-[10px] uppercase tracking-wide"
                   >
                     staged by agent · not run
@@ -1217,7 +1169,7 @@ export default function SandboxDetailPage() {
                   )}
 
                   <p className="text-xs text-muted-foreground">
-                    Admin actions bypass user permissions. Use responsibly.
+                    Admin actions bypass user permissions
                   </p>
                 </CardContent>
               )}

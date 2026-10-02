@@ -48,7 +48,8 @@ Entries: `@ai-matrx/terminal` (core, no React, no xterm at runtime), `@ai-matrx/
 
 `<Terminal>` imports its own structural CSS and xterm's. Each host imports
 `styles/terminal-host.css`, which maps the `--mxt-*` tokens onto the app theme. Consumers: `features/files/devices/console`
-(the device console), `features/code/terminal/TerminalTab.tsx`, `app/(core)/sandbox/[id]`.
+(the device console), `features/code/terminal/TerminalTab.tsx` (the code workspace: read-line emulation or a
+live sandbox PTY), `components/sandbox/SandboxTranscript.tsx` (the `/sandbox/[id]` output pane).
 
 ## Tests
 
