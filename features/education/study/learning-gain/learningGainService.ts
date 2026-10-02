@@ -10,6 +10,7 @@
 "use client";
 
 import { assessmentService } from "@/features/education/assessment/data/assessmentService";
+import { getUserId, NotAuthenticatedError } from "@/utils/auth/getUserId";
 import { pairLearningGain } from "@/features/education/assessment/data/learningGain";
 import type { AssessmentResultRow } from "@/features/education/assessment/data/types";
 import type { StudyResult } from "../types";
@@ -128,6 +129,12 @@ export const learningGainService = {
    * folds them via `buildGainReport`.
    */
   async getReport(): Promise<StudyResult<LearningGainReport>> {
+    // Personal data: a signed-out visitor has none, and `anon` holds no grant
+    // on `education.assessment_result` — never send the read (live
+    // 2026-10-01: 42501 on every guest load of /education/progress).
+    if (!getUserId()) {
+      return fail("learningGain.getReport", new NotAuthenticatedError());
+    }
     const { data, error } = await assessmentService.listGainResults();
     if (error) return fail("learningGain.getReport", error);
     return { data: buildGainReport(data ?? []), error: null };

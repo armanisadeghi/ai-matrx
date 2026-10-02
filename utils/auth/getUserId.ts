@@ -41,10 +41,26 @@ export function getUserId(): string | null {
   return getStoreUser().id;
 }
 
-/** Throws if no user ID is available in the store. */
+/**
+ * What `requireUserId` / `requireUser` throw for a signed-out visitor. A typed
+ * class so a caller can tell "nobody is signed in" (a state — render the
+ * signed-out view) from a real failure, without matching on a message.
+ */
+export class NotAuthenticatedError extends Error {
+  override readonly name = "NotAuthenticatedError";
+  constructor() {
+    super("Not authenticated");
+  }
+}
+
+export function isNotAuthenticatedError(error: unknown): error is NotAuthenticatedError {
+  return error instanceof NotAuthenticatedError;
+}
+
+/** Throws `NotAuthenticatedError` if no user ID is available in the store. */
 export function requireUserId(): string {
   const id = getUserId();
-  if (!id) throw new Error("Not authenticated");
+  if (!id) throw new NotAuthenticatedError();
   return id;
 }
 
@@ -56,6 +72,6 @@ export function getUserEmail(): string | null {
 /** Returns both id and email, throws if not authenticated. */
 export function requireUser(): { id: string; email: string | null } {
   const { id, email } = getStoreUser();
-  if (!id) throw new Error("Not authenticated");
+  if (!id) throw new NotAuthenticatedError();
   return { id, email };
 }

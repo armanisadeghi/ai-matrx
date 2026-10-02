@@ -7,6 +7,7 @@
 
 import type { StudyResult } from "../types";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { isNotAuthenticatedError } from "@/utils/auth/getUserId";
 
 /**
  * Surface PostgREST/DB errors loudly (message + details + hint + code), never a
@@ -73,6 +74,13 @@ export function fail<T>(context: string, error: unknown): StudyResult<T> {
       error:
         "Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu.",
     };
+  }
+  // A signed-out visitor is a STATE, not a service failure: study history is
+  // personal, so there is nothing to read. Return it as an error the surface
+  // can render, never a console.error the capture pipeline files as a defect
+  // (live 2026-10-01: four "[study] …: Not authenticated" per guest page).
+  if (isNotAuthenticatedError(error)) {
+    return { data: null, error: "Sign in to see your study history." };
   }
   const message = describeError(error);
   if (!isPostgrestResultError(error)) {
