@@ -47,9 +47,13 @@ import {
   selectAgentAccessResolved,
   selectAgentById,
   selectAgentIsReadOnly,
+  selectAgentOfferingPin,
   selectAllAgentsArray,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { selectModelNameById } from "@/features/ai-models/redux/modelRegistrySlice";
+import {
+  selectModelLabelWithClass,
+  selectModelNameById,
+} from "@/features/ai-models/redux/modelRegistrySlice";
 import { agentOwnershipLabel } from "@/features/agents/components/settings/AgentSettingsForm";
 import { readAgentSettingsDraft } from "@/features/agents/components/settings/agentSettingsDraftRegistry";
 
@@ -147,7 +151,13 @@ export function useAgentSettingsSurface(
       agent_is_archived: agent.isArchived,
 
       agent_model_name: orUndefined(
-        selectModelNameById(redux, agent.modelId || "") || agent.modelId,
+        (selectAgentOfferingPin(redux, agent.id) !== undefined
+          ? selectModelLabelWithClass(
+              redux,
+              agent.modelId,
+              selectAgentOfferingPin(redux, agent.id),
+            )
+          : selectModelNameById(redux, agent.modelId || "")) || agent.modelId,
       ),
       agent_ownership: agentOwnershipLabel(agent),
       agent_default_rag_boost: agent.defaultRagBoost ?? undefined,

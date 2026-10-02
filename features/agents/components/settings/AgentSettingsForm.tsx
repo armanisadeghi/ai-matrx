@@ -41,7 +41,7 @@ import {
   publishAgentSettingsDraft,
 } from "./agentSettingsDraftRegistry";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
-import { selectModelNameById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 interface AgentSettingsFormProps {
@@ -86,9 +86,8 @@ export function AgentSettingsForm({
 
   const [draft, setDraft] = useState<Partial<AgentDefinition>>({});
   const [tagsInput, setTagsInput] = useState("");
-  const modelName = useAppSelector((state) =>
-    selectModelNameById(state, modelId),
-  );
+  // The model it uses, named with its class when the model has several.
+  const { label: modelName } = useAgentModelLabel(agentId);
 
   const uniqueCategories = useMemo(() => {
     const cats = new Set<string>();
