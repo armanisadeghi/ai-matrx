@@ -28,24 +28,46 @@ export interface Decision {
 export const DECISIONS: Decision[] = [
   {
     id: "D1",
-    title: "Dense toolbar height",
-    question: "Which height does every toolbar control share?",
+    title: "Toolbar height",
+    question: "Which height do all toolbar controls share?",
     wide: true,
     options: [
-      { id: "a", label: "Current defaults", stat: "as shipped", Specimen: S.ToolbarCurrent },
-      { id: "b", label: "28px row", stat: "1,440 sites", Specimen: S.Toolbar28 },
-      { id: "c", label: "32px row", stat: "2,695 sites", Specimen: S.Toolbar32 },
-      { id: "d", label: "36px row", stat: "113 sites", Specimen: S.Toolbar36 },
+      { id: "a", label: "Today, mixed", stat: "as shipped", Specimen: S.ToolbarCurrent },
+      { id: "b", label: "28px, the tap capsule", stat: "1,440 sites", Specimen: S.Toolbar28 },
+      { id: "c", label: "32px, the tap pill", stat: "2,695 sites", Specimen: S.Toolbar32 },
+      { id: "d", label: "36px, today's default", stat: "113 sites", Specimen: S.Toolbar36 },
+    ],
+  },
+  {
+    id: "D1b",
+    title: "Touch screens",
+    question: "What does a phone do to a small control?",
+    wide: true,
+    options: [
+      { id: "a", label: "Row grows to 44px", stat: "Button today", Specimen: S.TouchGrows },
+      { id: "b", label: "Invisible 44px hit area", stat: "tap system", Specimen: S.TouchHitArea },
+    ],
+  },
+  {
+    id: "D1c",
+    title: "Size scale",
+    question: "How many heights does the one scale have?",
+    wide: true,
+    options: [
+      { id: "a", label: "Five: 24 · 28 · 32 · 36 · 40", Specimen: S.Rungs5 },
+      { id: "b", label: "Three: 28 · 32 · 36", Specimen: S.Rungs3 },
+      { id: "c", label: "Two: 28 · 36", Specimen: S.Rungs2 },
     ],
   },
   {
     id: "D2",
     title: "Form field height",
-    question: "Which height is the standard text field?",
+    question: "How tall is a standard form row?",
     wide: true,
     options: [
-      { id: "a", label: "Input h-10", stat: "992 sites", Specimen: S.FieldInput },
-      { id: "b", label: "BasicInput h-9", Specimen: S.FieldBasicInput },
+      { id: "a", label: "40px input, 36px rest", stat: "992 sites", Specimen: S.FieldInput },
+      { id: "b", label: "All 36px", Specimen: S.FieldBasicInput },
+      { id: "c", label: "All 32px", stat: "410 inputs", Specimen: S.Field32 },
     ],
   },
   {
@@ -189,6 +211,17 @@ export const DECISIONS: Decision[] = [
       { id: "a", label: "rounded-md", stat: "6,175 sites", Specimen: S.RadiusMd },
       { id: "b", label: "rounded-lg", stat: "3,999 sites", Specimen: S.RadiusLg },
       { id: "c", label: "rounded-xl", stat: "1,511 sites", Specimen: S.RadiusXl },
+    ],
+  },
+  {
+    id: "D15",
+    title: "Phone page structure",
+    question: "How is a screen built at phone width?",
+    wide: true,
+    options: [
+      { id: "a", label: "Cards inside cards", stat: "common today", Specimen: S.PhoneNested },
+      { id: "b", label: "Flat rows, hairlines", Specimen: S.PhoneFlat },
+      { id: "c", label: "Inset grouped (iOS)", Specimen: S.PhoneInsetGrouped },
     ],
   },
 ];

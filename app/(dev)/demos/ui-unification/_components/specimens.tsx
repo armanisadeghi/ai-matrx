@@ -58,6 +58,13 @@ import IconButton from "@/components/official/IconButton";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import EmptyStateCard from "@/components/official/cards/EmptyStateCard";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import {
+  ArrowDownUpTapButton,
+  FilterTapButton,
+  MoreHorizontalTapButton,
+  SettingsTapButton,
+} from "@ai-matrx/tap-target/buttons";
 import { toast } from "@/lib/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
@@ -83,7 +90,14 @@ function MeasuredRow({ children }: { children: ReactNode }) {
             child.getAttribute("aria-hidden") !== "true" &&
             child.getBoundingClientRect().width > 2,
         )
-        .map((child) => Math.round(child.getBoundingClientRect().height));
+        // A tap-target button's box is the invisible 38px footprint; what
+        // the eye lines up is its visible pill (or the group's capsule).
+        .map((child) => {
+          const visible =
+            child.querySelector(".matrx-tap-group-capsule, .matrx-tap-pill") ??
+            child;
+          return Math.round(visible.getBoundingClientRect().height);
+        });
       setHeights((prev) =>
         prev.length === next.length && prev.every((h, i) => h === next[i])
           ? prev
@@ -103,7 +117,7 @@ function MeasuredRow({ children }: { children: ReactNode }) {
     <div className="flex flex-col gap-1.5">
       <div
         ref={ref}
-        className="flex flex-wrap items-center gap-1.5 rounded-md border border-dashed border-border bg-background p-2"
+        className="flex flex-wrap items-center gap-1.5 py-1"
       >
         {children}
       </div>
@@ -161,6 +175,23 @@ function ScopeTabs({
 }
 
 /* ------------------------------ D1 ------------------------------ */
+/* Every row ends with the tap-target pair the shell already ships, so the   */
+/* question is visible: do the text controls line up with the 32px pill and  */
+/* the 28px capsule the tap system ruled on 2026-10-01?                      */
+
+// Tap buttons space themselves: their wrapper carries no gap (the tap
+// guard paints a red box when one does — it caught this board doing it).
+function TapPair() {
+  return (
+    <div className="flex items-center">
+      <TapTargetButtonGroup>
+        <FilterTapButton variant="group" ariaLabel="Filter" />
+        <ArrowDownUpTapButton variant="group" ariaLabel="Sort" />
+      </TapTargetButtonGroup>
+      <SettingsTapButton variant="transparent" ariaLabel="Settings" />
+    </div>
+  );
+}
 
 export function ToolbarCurrent() {
   return (
@@ -171,9 +202,7 @@ export function ToolbarCurrent() {
       <Input placeholder="Search" className="w-36" />
       <StatusSelect />
       <ScopeTabs />
-      <Button size="icon" variant="ghost" aria-label="Settings">
-        <Settings />
-      </Button>
+      <TapPair />
     </MeasuredRow>
   );
 }
@@ -181,15 +210,13 @@ export function ToolbarCurrent() {
 export function Toolbar28() {
   return (
     <MeasuredRow>
-      <Button size="sm" className="h-7 px-2">
+      <Button size="sm" className="h-7 px-2.5">
         <Plus /> New
       </Button>
-      <Input placeholder="Search" className="h-7 w-36" />
+      <Input placeholder="Search" className="h-7 w-36 text-xs" />
       <StatusSelect size="sm" />
-      <ScopeTabs listClassName="h-7" triggerClassName="py-0.5" />
-      <Button size="icon-sm" variant="ghost" aria-label="Settings">
-        <Settings />
-      </Button>
+      <ScopeTabs listClassName="h-7" triggerClassName="py-0.5 text-xs" />
+      <TapPair />
     </MeasuredRow>
   );
 }
@@ -203,14 +230,7 @@ export function Toolbar32() {
       <Input placeholder="Search" className="h-8 w-36" />
       <StatusSelect className="h-8" />
       <ScopeTabs listClassName="h-8" triggerClassName="py-1" />
-      <Button
-        size="icon"
-        variant="ghost"
-        className="h-8 w-8"
-        aria-label="Settings"
-      >
-        <Settings />
-      </Button>
+      <TapPair />
     </MeasuredRow>
   );
 }
@@ -224,12 +244,74 @@ export function Toolbar36() {
       <Input placeholder="Search" className="h-9 w-36" />
       <StatusSelect />
       <ScopeTabs listClassName="h-9" />
-      <Button size="icon" variant="ghost" aria-label="Settings">
-        <Settings />
+      <TapPair />
+    </MeasuredRow>
+  );
+}
+
+/* ------------------------------ D1b ----------------------------- */
+/* What a phone does to the row. Today Button grows its LAYOUT to 44px on a */
+/* coarse pointer; the tap system grows an invisible hit area instead.      */
+
+export function TouchGrows() {
+  return (
+    <MeasuredRow>
+      <Button size="sm" className="min-h-11">
+        <Plus /> New
+      </Button>
+      <Button size="sm" variant="outline" className="min-h-11">
+        Export
+      </Button>
+      <Button size="icon-sm" variant="ghost" className="min-h-11 min-w-11" aria-label="More">
+        <MoreHorizontal />
       </Button>
     </MeasuredRow>
   );
 }
+
+export function TouchHitArea() {
+  return (
+    <MeasuredRow>
+      <Button size="sm">
+        <Plus /> New
+      </Button>
+      <Button size="sm" variant="outline">
+        Export
+      </Button>
+      <div className="flex items-center">
+        <MoreHorizontalTapButton variant="transparent" ariaLabel="More" />
+      </div>
+    </MeasuredRow>
+  );
+}
+
+/* ------------------------------ D1c ----------------------------- */
+/* How many rungs the one scale has. Literal class strings per rung so the  */
+/* Tailwind compiler sees them.                                              */
+
+const RUNG: Record<number, string> = {
+  24: "h-6 px-2 text-xs",
+  28: "h-7 px-2.5 text-xs",
+  32: "h-8 px-3 text-xs",
+  36: "h-9 px-4",
+  40: "h-10 px-4",
+};
+
+function Ladder({ rungs }: { rungs: number[] }) {
+  return (
+    <MeasuredRow>
+      {rungs.map((h) => (
+        <Button key={h} size="sm" variant="outline" className={RUNG[h]}>
+          {h}
+        </Button>
+      ))}
+    </MeasuredRow>
+  );
+}
+
+export const Rungs5 = () => <Ladder rungs={[24, 28, 32, 36, 40]} />;
+export const Rungs3 = () => <Ladder rungs={[28, 32, 36]} />;
+export const Rungs2 = () => <Ladder rungs={[28, 36]} />;
 
 /* ------------------------------ D2 ------------------------------ */
 
@@ -249,6 +331,16 @@ export function FieldBasicInput() {
       <BasicInput placeholder="Project name" className="w-40" />
       <StatusSelect />
       <Button>Save</Button>
+    </MeasuredRow>
+  );
+}
+
+export function Field32() {
+  return (
+    <MeasuredRow>
+      <Input placeholder="Project name" className="h-8 w-40" />
+      <StatusSelect className="h-8" />
+      <Button size="sm">Save</Button>
     </MeasuredRow>
   );
 }
@@ -834,3 +926,83 @@ function RadiusPanel({ radius }: { radius: string }) {
 export const RadiusMd = () => <RadiusPanel radius="rounded-md" />;
 export const RadiusLg = () => <RadiusPanel radius="rounded-lg" />;
 export const RadiusXl = () => <RadiusPanel radius="rounded-xl" />;
+
+/* ------------------------------ D15 ----------------------------- */
+/* The same settings screen at phone width (360px), built three ways. The  */
+/* frame is the phone; everything inside it is the option being judged.   */
+
+const PHONE_ROWS = [
+  { label: "Notifications", value: "On" },
+  { label: "Default model", value: "Claude Opus" },
+  { label: "Language", value: "English" },
+];
+
+function Phone({ children }: { children: ReactNode }) {
+  return (
+    <div className="w-[360px] max-w-full overflow-hidden rounded-md border border-border bg-background">
+      {children}
+    </div>
+  );
+}
+
+export function PhoneNested() {
+  return (
+    <Phone>
+      <div className="p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Preferences</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+              {PHONE_ROWS.map((r) => (
+                <div key={r.label} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate">{r.label}</span>
+                  <span className="truncate text-muted-foreground">{r.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </Phone>
+  );
+}
+
+export function PhoneFlat() {
+  return (
+    <Phone>
+      <div className="px-3 pb-1 pt-3 text-xs font-medium text-muted-foreground">
+        Preferences
+      </div>
+      <div className="divide-y divide-border border-y border-border">
+        {PHONE_ROWS.map((r) => (
+          <div key={r.label} className="flex min-h-11 items-center justify-between gap-2 px-3 text-sm">
+            <span className="truncate">{r.label}</span>
+            <span className="truncate text-muted-foreground">{r.value}</span>
+          </div>
+        ))}
+      </div>
+    </Phone>
+  );
+}
+
+export function PhoneInsetGrouped() {
+  return (
+    <Phone>
+      <div className="bg-muted/40 px-3 py-3">
+        <div className="px-1 pb-1 text-xs font-medium text-muted-foreground">
+          Preferences
+        </div>
+        <div className="divide-y divide-border overflow-hidden rounded-lg bg-card">
+          {PHONE_ROWS.map((r) => (
+            <div key={r.label} className="flex min-h-11 items-center justify-between gap-2 px-3 text-sm">
+              <span className="truncate">{r.label}</span>
+              <span className="truncate text-muted-foreground">{r.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Phone>
+  );
+}

@@ -1,9 +1,24 @@
 "use client";
 
+/**
+ * The decision board. Layout rules it holds itself to (it is the page that
+ * judges the design system, so it may not carry the disease it is judging):
+ * - ONE surface level: sections are separated by hairlines, never boxed; an
+ *   option is a radio row, never a card inside a card.
+ * - Phone gutters are 12px, desktop 24px; nothing else pads the sides.
+ * - Choosing is the RadioGroup primitive (pick-one-of-N is what it is for);
+ *   header actions are tap-target buttons; no raw styled <button>.
+ */
+
 import { useEffect, useState } from "react";
 import { Input } from "@ai-matrx/design-system";
-import { Check, Copy, Download } from "lucide-react";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import {
+  CopyTapButton,
+  DownloadTapButton,
+} from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { DECISIONS, type Decision } from "./decisions";
@@ -59,7 +74,7 @@ function toMarkdown(picks: Picks): string {
   return lines.join("\n");
 }
 
-function DecisionCard({
+function DecisionSection({
   decision,
   state,
   onPick,
@@ -67,84 +82,97 @@ function DecisionCard({
 }: {
   decision: Decision;
   state: DecisionState;
-  onPick: (optionId: string) => void;
+  onPick: (optionId: string | undefined) => void;
   onNote: (note: string) => void;
 }) {
-  const decided = Boolean(state.winner);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const showNote = noteOpen || Boolean(state.note);
+
   return (
     <section
       id={decision.id}
-      className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4"
+      className="scroll-mt-24 border-b border-border px-3 py-5 sm:px-6"
     >
-      <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="font-mono text-xs text-muted-foreground">
+      <header className="mb-3 flex items-start gap-2">
+        <span className="pt-0.5 font-mono text-xs text-muted-foreground">
           {decision.id}
         </span>
-        <h2 className="text-base font-semibold text-foreground">
-          {decision.title}
-        </h2>
-        <span className="text-sm text-muted-foreground">
-          {decision.question}
-        </span>
-        {decided && <Check className="h-4 w-4 text-primary" aria-label="Decided" />}
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold text-foreground">
+            {decision.title}
+          </h2>
+          <p className="text-xs text-muted-foreground">{decision.question}</p>
+        </div>
+        {state.winner ? (
+          <Button size="sm" variant="ghost" onClick={() => onPick(undefined)}>
+            Clear
+          </Button>
+        ) : (
+          !showNote && (
+            <Button size="sm" variant="ghost" onClick={() => setNoteOpen(true)}>
+              Note
+            </Button>
+          )
+        )}
       </header>
 
-      <div
+      <RadioGroup
+        value={state.winner ?? ""}
+        onValueChange={(value) => onPick(value)}
+        aria-label={decision.title}
         className={cn(
-          "grid gap-3",
-          decision.wide
-            ? "grid-cols-1"
-            : "grid-cols-[repeat(auto-fill,minmax(min(100%,240px),1fr))]",
+          "grid gap-x-6 gap-y-1",
+          !decision.wide && "lg:grid-cols-2",
         )}
       >
         {decision.options.map((option) => {
           const picked = state.winner === option.id;
+          const inputId = `${decision.id}-${option.id}`;
           const { Specimen } = option;
           return (
             <div
               key={option.id}
               className={cn(
-                "flex min-w-0 flex-col gap-3 rounded-md border bg-background p-3 transition-shadow",
-                picked
-                  ? "border-primary ring-2 ring-primary"
-                  : "border-border",
+                "-mx-2 min-w-0 rounded-md px-2 py-2 transition-colors",
+                picked && "bg-primary/5",
               )}
             >
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-foreground">
-                    {option.id}) {option.label}
-                  </div>
-                  {option.stat && (
-                    <div className="text-xs text-muted-foreground">
-                      {option.stat}
-                    </div>
+              <label
+                htmlFor={inputId}
+                className="flex min-h-9 cursor-pointer items-center gap-2.5"
+              >
+                <RadioGroupItem value={option.id} id={inputId} />
+                <span
+                  className={cn(
+                    "min-w-0 flex-1 truncate text-sm",
+                    picked ? "font-semibold text-foreground" : "text-foreground",
                   )}
-                </div>
-                <Button
-                  size="sm"
-                  variant={picked ? "default" : "outline"}
-                  aria-pressed={picked}
-                  onClick={() => onPick(option.id)}
                 >
-                  {picked && <Check />}
-                  {picked ? "Picked" : "Pick"}
-                </Button>
-              </div>
-              <div className="min-w-0 overflow-x-auto">
+                  {option.label}
+                </span>
+                {option.stat && (
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                    {option.stat}
+                  </span>
+                )}
+              </label>
+              <div className="min-w-0 overflow-x-auto pb-1 sm:pl-6">
                 <Specimen />
               </div>
             </div>
           );
         })}
-      </div>
+      </RadioGroup>
 
-      <Input
-        value={state.note ?? ""}
-        onChange={(e) => onNote(e.target.value)}
-        placeholder="Note (optional)"
-        aria-label={`${decision.id} note`}
-      />
+      {showNote && (
+        <Input
+          value={state.note ?? ""}
+          onChange={(e) => onNote(e.target.value)}
+          placeholder="Note"
+          aria-label={`${decision.id} note`}
+          className="mt-3"
+        />
+      )}
     </section>
   );
 }
@@ -190,39 +218,64 @@ export function DecisionBoard() {
     }
   };
 
+  const jump = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+
   return (
-    <div className="h-full w-full overflow-y-auto bg-textured">
-      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-border bg-background/95 px-4 py-2 backdrop-blur">
-        <h1 className="text-sm font-semibold text-foreground">UI unification</h1>
-        <span className="text-sm text-muted-foreground">
-          {decidedCount} of {DECISIONS.length} decided
-        </span>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" onClick={copy}>
-            <Copy /> Copy decisions
-          </Button>
-          <Button size="sm" variant="outline" onClick={download}>
-            <Download /> Download .md
-          </Button>
+    <div className="h-full w-full overflow-y-auto bg-background">
+      <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center gap-2 px-3 pt-1 sm:px-6">
+          <h1 className="text-sm font-semibold text-foreground">
+            UI unification
+          </h1>
+          <span className="font-mono text-xs text-muted-foreground">
+            {decidedCount} of {DECISIONS.length} decided
+          </span>
+          <div className="ml-auto">
+            <TapTargetButtonGroup>
+              <CopyTapButton
+                variant="group"
+                ariaLabel="Copy decisions"
+                onClick={copy}
+              />
+              <DownloadTapButton
+                variant="group"
+                ariaLabel="Download .md"
+                onClick={download}
+              />
+            </TapTargetButtonGroup>
+          </div>
         </div>
+        <nav
+          aria-label="Decisions"
+          className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-3 pb-1.5 sm:px-6"
+        >
+          {DECISIONS.map((d) => (
+            <Button
+              key={d.id}
+              size="sm"
+              variant={picks[d.id]?.winner ? "secondary" : "ghost"}
+              onClick={() => jump(d.id)}
+            >
+              {d.id}
+            </Button>
+          ))}
+        </nav>
       </div>
 
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
-        {DECISIONS.map((decision) => (
-          <DecisionCard
-            key={decision.id}
-            decision={decision}
-            state={picks[decision.id] ?? {}}
+      <main className="mx-auto max-w-5xl">
+        {DECISIONS.map((d) => (
+          <DecisionSection
+            key={d.id}
+            decision={d}
+            state={picks[d.id] ?? {}}
             onPick={(optionId) =>
-              update(decision.id, (prev) => ({
-                ...prev,
-                winner: prev.winner === optionId ? undefined : optionId,
-              }))
+              update(d.id, (prev) => ({ ...prev, winner: optionId }))
             }
-            onNote={(note) => update(decision.id, (prev) => ({ ...prev, note }))}
+            onNote={(note) => update(d.id, (prev) => ({ ...prev, note }))}
           />
         ))}
-      </div>
+      </main>
     </div>
   );
 }

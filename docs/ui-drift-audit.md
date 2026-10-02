@@ -8,7 +8,7 @@
 
 ## Summary
 
-**The three worst problems**
+**The worst problems**
 
 1. **The primitives cannot express the density the app actually uses, so overriding them is the only way to get a legitimate result.**
    - 56% of all 27,361 primitive call sites pass visual classes.
@@ -19,13 +19,18 @@
      - The Button has no 28px text size, which is the size dense UIs use most: `size="sm"` plus a hand-written `h-7` appears **1,440** times.
    - The type scale has no step below `text-xs`. The 14 custom font-size tokens in `globals.css` are written in Tailwind 3 syntax and are **inert under Tailwind 4** (verified live). So `text-[10px]` / `text-[11px]` were typed **11,753** times.
    - Icon size inside a Button is set by the Button on every rung and **cannot be overridden from the icon**. 3,613 icons inside Buttons carry a size class, and about 2,200 of those request a size the user never sees (verified live: the login page's 20px social icons render at 16px).
-2. **Bespoke reimplementation is as common as the primitives.**
+2. **Phones get the worst of it.**
+   - Touch grows the Button's *layout* to 44px while fields stay small.
+   - Cards nest inside cards: 36 nested surfaces on `/organizations` at 375px.
+   - Page roots pad 24–32px per side with no phone value.
+   - Details in §2.5b.
+3. **Bespoke reimplementation is as common as the primitives.**
    - **5,594** raw `<button>` against 8,180 `<Button>`.
    - **2,808** hand-rolled card divs against `<Card>` in 331 files.
    - **~3,000** `Loader2 animate-spin` against ~290 uses of any shared loader.
    - No `EmptyState` exists anywhere, so there are 140 local ones.
    - 10 `IconButton` implementations, three live toast stacks, and ~104 hand-rolled tab bars.
-3. **Nothing enforces anything, and the agent instructions teach the drift.**
+4. **Nothing enforces anything, and the agent instructions teach the drift.**
    - ESLint is never executed (no CI step, no hook, no release step).
    - No check anywhere inspects `className` on a primitive, arbitrary values, or colours outside one feature.
    - Every UI check that does exist is advisory, runs after the push, or runs nowhere.
@@ -285,6 +290,33 @@ There are 23,975 Lucide icon elements.
 - **Inline `style`:** 2,365 attributes.
 - **The package itself uses arbitrary values** (`text-[11px]` ×9, including the Badge base; `z-[10000]` ×21; `max-h-[90dvh]` ×10), so there is no clean example to copy.
 
+### 2.5b Phone structure: cards inside cards, and touch growing the layout
+
+*Added 2026-10-02 on the owner's report that pages are "unusable on mobile".*
+
+**Cards inside cards — static count.**
+- Within single files: 43 cases. 9 are a Card inside a Card, 22 a bordered padded box inside a Card, and 12 a box inside a box. Top locations: `app/(core)` 11, `app/(admin)` 5, `features/marketing` 5.
+- **This is a floor.** Most nesting crosses component boundaries — a `*Panel` rendered inside a Card defined in another file — and that is invisible to per-file analysis.
+
+**Cards inside cards — measured in the rendered DOM** at 375px, signed in as the test admin on the clone. A *surface* is an element with a border on 3+ sides, radius ≥4px and padding ≥8px.
+
+| Route | Surfaces | Nested surfaces | Notes |
+|---|---|---|---|
+| `/organizations` | 83 | **36** | Every organization card holds a bordered "Context" card. Names truncate ("LCP Test Repositories l…"). Body text starts about 95px from the left edge of a 375px screen. |
+| `/agents/all` | 26 | 0 | No nesting, but the toolbar runs off the right edge (6 controls in a 375px row) and a two-line prose banner sits above the list |
+| `/user-settings`, `/tasks` | 1–2 | 0 | |
+
+**So the class is real and cross-file. It must be detected at runtime**, where the dev guard can see two surfaces nested in the DOM, not only by static scan.
+
+**Touch grows the layout.**
+- The Button raises its *layout* height to 44px on a coarse pointer, while Input and Select do not. Measured on `/demos/ui-unification` at phone emulation:
+  - a "28px" toolbar row renders 44 · 28 · 28 · 30 · 32px;
+  - a "32px" form row renders 32 · 32 · 44px.
+- No height choice survives on a phone today.
+- The tap-target system solved this the other way: an invisible `::before` hit area, so the layout is unchanged.
+
+**Page gutters.** 38 route files open with a literal `p-6`/`p-8`/`px-6`/`px-8` page padding and no phone value. On 375px that is 48–64px of a 375px width spent on side padding before any card adds its own.
+
 ### 2.6 Where the drift lives
 
 **Highest override rate** (directories with ≥150 primitive call sites):
@@ -403,6 +435,7 @@ No primitive restricts `className` by type, and no runtime filter exists.
 | `check:theme-color-literals` | Raw hex/rgb/hsl, light-only neutrals | **Nowhere**; `DEFAULT_ROOTS = ["features/masterwork"]` | No: 13 findings in its one feature; **1,608 repo-wide**, never in scope |
 | `check:package-twins` | A local export *named* like a package export (132 design-system names) | Release runner, advisory | Partly: catches `function Button`, not `function StatusPill` built from `<button>`; `useIsMobile`, `useScrollFade` and `cn` are unregistered |
 | `check:canonical-pickers`, `check:archived-items-law` | One agent picker; archive controls | **CI** | Yes, the only UI guards in CI. Even CI is a post-push signal on a push-to-main repo. |
+| **Tap-target dev guard** (`enableTapTargetGuard()`, design-system `tap-target`) | Off-canon geometry, a wrapper adding gap or padding, `className` beyond a glyph colour, on tap buttons | In the browser, dev builds, the moment the page renders: a red box plus a console error naming the fault | **Yes — the only UI guard that reaches the author at the right moment.** It caught the decision board adding a gap on 2026-10-02. It is the model for §2.9/§2.12 of the plan. |
 | Package Vitest (field surface, one chevron, popover sizing, touch floors, no hardcoded colour in `styles.css`) | Package source only | Package publish gate | Yes, but cannot see a single consumer call site. `popover-sizing-guard.test.tsx` documents the core weakness: "cn() lets a caller's className silently win over sizing". |
 
 **Guards that do not exist:**

@@ -38,28 +38,31 @@ describe("UiUnificationPage", () => {
 
   beforeEach(() => window.localStorage.clear());
 
-  it("renders one card per decision with live specimens", () => {
+  it("renders one section per decision with live specimens", () => {
     mount();
     expect(container.querySelectorAll("section")).toHaveLength(DECISIONS.length);
     expect(container.textContent).toContain(`0 of ${DECISIONS.length} decided`);
     unmount();
   });
 
-  it("persists a pick across a remount and un-picks on a second click", () => {
+  it("persists a pick across a remount and clears it", () => {
     mount();
-    const firstPick = () =>
-      container.querySelector<HTMLButtonElement>("section#D1 button[aria-pressed]")!;
-    act(() => firstPick().click());
-    expect(firstPick().getAttribute("aria-pressed")).toBe("true");
+    const firstRadio = () =>
+      container.querySelector<HTMLButtonElement>('section#D1 [role="radio"]')!;
+    act(() => firstRadio().click());
+    expect(firstRadio().getAttribute("aria-checked")).toBe("true");
     const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY)!);
     expect(stored.D1.winner).toBe("a");
     unmount();
 
     mount();
-    expect(firstPick().getAttribute("aria-pressed")).toBe("true");
+    expect(firstRadio().getAttribute("aria-checked")).toBe("true");
     expect(container.textContent).toContain(`1 of ${DECISIONS.length} decided`);
-    act(() => firstPick().click());
-    expect(firstPick().getAttribute("aria-pressed")).toBe("false");
+    const clear = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("section#D1 button"),
+    ).find((b) => b.textContent === "Clear")!;
+    act(() => clear.click());
+    expect(firstRadio().getAttribute("aria-checked")).toBe("false");
     unmount();
   });
 
