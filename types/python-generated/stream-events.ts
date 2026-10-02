@@ -531,6 +531,12 @@ export interface ContextDeliveredText {
   sha256: string;
 }
 
+export interface ContextReceiptBlock {
+  id: string;
+  label: string;
+  delivered: ContextDeliveredText;
+}
+
 export interface ContextReceiptRow {
   key: string;
   label: string;
@@ -564,6 +570,7 @@ export interface ContextReceiptData {
   model_reads_context?: boolean;
   rows?: ContextReceiptRow[];
   rules_error?: string | null;
+  blocks?: ContextReceiptBlock[];
 }
 
 export interface ConversationIdData {

@@ -5648,6 +5648,30 @@
         "title": "ContextDeliveredText",
         "type": "object"
       },
+      "ContextReceiptBlock": {
+        "additionalProperties": false,
+        "description": "One block of text the server put in front of the model this turn that is NOT a single\ncontext value: the turn's ``<active_context>``, earlier-turn context, the sandbox briefing,\nunplaced bound data, skills, observational memory, the organization catalog, the\ndictionary… (RULES.md §5 ``blocks``). Captured from the final config just before the model\ncall — the exact text the model received, never a rebuilt copy.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "delivered": {
+            "$ref": "#/$defs/ContextDeliveredText"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "delivered"
+        ],
+        "title": "ContextReceiptBlock",
+        "type": "object"
+      },
       "ContextReceiptRow": {
         "additionalProperties": false,
         "description": "One context value this turn: whether it reached the model, and how.",
@@ -5892,6 +5916,13 @@
         ],
         "default": null,
         "title": "Rules Error"
+      },
+      "blocks": {
+        "items": {
+          "$ref": "#/$defs/ContextReceiptBlock"
+        },
+        "title": "Blocks",
+        "type": "array"
       }
     },
     "required": [
