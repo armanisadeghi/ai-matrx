@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T09:15:53.321Z",
+  "generated_at": "2026-10-02T17:35:45.175Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -6500,6 +6500,12 @@
       "checksum": "b16d5ff3c265dc8875a1d08f559d49b2d6fdc2f5756b7d575a7b44c53aba03ae",
       "applied_at": "2026-09-19 13:45:47.803844+00"
     },
+    "migrations/campaign/visionreach_w2_formula_columns_are_measured_as_they_are_read.sql": {
+      "source": "matrx-frontend",
+      "filename": "visionreach_w2_formula_columns_are_measured_as_they_are_read.sql",
+      "checksum": "b639c92d2f0bb3d38fea8158ec30e7325e174bf120054e93c6ae6bb5d230dcb2",
+      "applied_at": "2026-10-02 17:35:43.576453+00"
+    },
     "migrations/campaign/w1_field_definitions_and_validation.sql": {
       "source": "matrx-frontend",
       "filename": "w1_field_definitions_and_validation.sql",
@@ -6775,6 +6781,12 @@
       "filename": "w1_val_the_value_envelope_on_main.sql",
       "checksum": "6df3549b4d2795038a5e7b0007d4f159a8bb2755ab5e0d60562d47ec83a82d6a",
       "applied_at": "2026-09-18 19:45:04.819249+00"
+    },
+    "migrations/campaign/w22_a_reference_can_point_at_a_meeting_a_mandate_and_a_form.sql": {
+      "source": "matrx-frontend",
+      "filename": "w22_a_reference_can_point_at_a_meeting_a_mandate_and_a_form.sql",
+      "checksum": "ba72324778c6a2449eb080c27bcd3056eb52e5fbb67a7dc1675b40cb247e6ac0",
+      "applied_at": "2026-10-02 17:21:20.20828+00"
     },
     "migrations/campaign/w2_access_one_grant_mechanism_four_levels.sql": {
       "source": "matrx-frontend",
