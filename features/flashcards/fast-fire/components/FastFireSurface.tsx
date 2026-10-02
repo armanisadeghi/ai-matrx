@@ -87,9 +87,14 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
     dispatch(openSetup({ setId: config.setId }));
   };
 
+  // Finishing returns to the deck that was drilled (it is where the learner
+  // came from and where its Progress lives); no deck → the flashcards home.
   const exit = (): void => {
+    const target = config.setId
+      ? `${FLASHCARDS_HOME}/${config.setId}`
+      : FLASHCARDS_HOME;
     dispatch(resetFastFire());
-    startExitTransition(() => router.push(FLASHCARDS_HOME));
+    startExitTransition(() => router.push(target));
   };
 
   // Live scope for the surface system — read from the store at Run time only.

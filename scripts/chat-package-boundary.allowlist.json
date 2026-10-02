@@ -1,6 +1,6 @@
 {
   "$note": "SHRINK-ONLY budget of host ties per specifier in packages/chat/src. Never raise a number or add a key by hand \u2014 route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
-  "total": 2233,
+  "total": 2231,
   "budget": {
     "@/features/content-ir/registry/schema-source-kind-tables": 1,
     "@/features/surfaces/manifests/registry": 1,
@@ -18,7 +18,6 @@
     "@host/components/agent-copy/page-capture/usePageCapture": 4,
     "@host/components/audio/MicDeviceMenu": 1,
     "@host/components/comments/EntityCommentPopover": 1,
-    "@host/components/content-refine/utils/stripThinking": 2,
     "@host/components/cost/Cost": 2,
     "@host/components/cost/costUnit": 3,
     "@host/components/cost/pointsRate": 5,

@@ -36,6 +36,8 @@ export const FC_MANDATES = {
   spokenFrontTts: MANDATE_KEYS.flashcards__spoken_front_tts,
   /** explanation text, voice settings → durable instant-help audio */
   helperTts: MANDATE_KEYS.flashcards__helper_tts,
+  /** deck_name, set_id, cards (flashcard_deck_cards_v1) → list_change_proposal_v1 (card rewrites) */
+  fixGiveaways: MANDATE_KEYS.flashcards__fix_giveaway_cards,
 } as const;
 
 export type FcMandateKey = keyof typeof FC_MANDATES;

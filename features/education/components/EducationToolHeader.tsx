@@ -82,9 +82,15 @@ export function EducationToolHeader({
   title,
   actions,
   right,
+  backHref = "/education",
+  backLabel = "Back to Education",
 }: {
   /** The tool name — one short `text-sm` title, nothing more. */
   title: string;
+  /** Where the back chevron goes (a sub-page returns to its record). */
+  backHref?: string;
+  /** Accessible name of the back chevron. */
+  backLabel?: string;
   /**
    * The tool's page-level actions. Mark the one or two a person comes here
    * for `primary`; the rest go into one labelled "More" menu.
@@ -133,9 +139,9 @@ export function EducationToolHeader({
       left={
         <div className="flex min-w-0 items-center">
           <ChevronLeftTapButton
-            href="/education"
+            href={backHref}
             variant="transparent"
-            ariaLabel="Back to Education"
+            ariaLabel={backLabel}
           />
           <span
             className="min-w-0 truncate text-sm font-medium text-foreground"

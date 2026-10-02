@@ -19,6 +19,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
 import { StudyDeck } from "./StudyDeck";
 import { StudyDeckHeader } from "./StudyDeckHeader";
+import { OfflineDeckButton } from "../set-detail/OfflineDeckButton";
 import { getVoiceTestForCard } from "./voiceTestExtra";
 
 const EDU_BASE = "/education/flashcards";
@@ -33,14 +34,23 @@ export function LearnSurface({ setId }: { setId: string }) {
     // Nothing loads or is written until an organization is chosen — the
     // notice shows in place instead of the blocking workspace prompt.
   });
-  const title = study.set?.name ?? "Learn";
+  const title = study.set?.name ?? "";
 
   return (
     <>
       <PageHeader>
         <StudyDeckHeader
-          title={`Learn — ${title}`}
+          mode="Learn"
+          title={title}
           backHref={`${EDU_BASE}/${setId}`}
+          actions={
+            // The same offline control as Study and the deck page.
+            <OfflineDeckButton
+              setId={setId}
+              size="sm"
+              disabled={study.loading || study.cards.length === 0}
+            />
+          }
         />
       </PageHeader>
       <div className="h-full overflow-hidden">

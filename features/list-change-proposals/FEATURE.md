@@ -12,7 +12,7 @@ that file's header carries the schema doctrine. This directory is the reviewer a
 
 | File | What it is |
 |---|---|
-| [`applyListChange.ts`](./applyListChange.ts) | **THE PORT.** `readListTarget(target)` and `applyListChange(target, proposal)`, one implementation per kind of list. The only module that knows what a list IS. |
+| [`applyListChange.ts`](./applyListChange.ts) | **THE PORT.** `readListTarget(target)` and `applyListChange(target, proposal)`, one implementation per kind of list (`scope_dataset`, `table`, `flashcard_deck`). The only module that knows what a list IS. |
 | [`ListChangeProposalView.tsx`](./ListChangeProposalView.tsx) | **THE ONE component** for the kind. One row per proposal: what, why, Accept, Reject. |
 | [`decisions.ts`](./decisions.ts) | Where a decision lives: `chat.message.metadata` via `mergeJsonColumn`. |
 
@@ -58,6 +58,12 @@ item whose `reference_source` is `{container_type:"dataset_template", template_i
 `directive_v1_reference_table` fence that the server expands to one line per row.
 
 ## Change log
+
+- **2026-10-02** — Third kind of list: `{kind:"flashcard_deck", set_id}` — one row per card
+  (`front`, `back`), read and written through `fcService`; `update` only (add/remove refused in
+  words). Every `update` row now shows each patched column as current → proposed (rich text, so
+  math renders), and "Accept all" stops to say edits replace the current wording. First customer:
+  mandate `flashcards.fix_giveaway_cards`. Migration `list_change_target_flashcard_deck.sql`.
 
 - **2026-09-18** — Built. Kind, port, component, decisions, skill + content blocks, "Known
   defects" template. Proven live as `admin@admin.com`: accept adds a row, accept removes one,

@@ -111,9 +111,12 @@ export function computeMasteryDistribution(
 export function DeckMasteryBar({
   masteries,
   className,
+  showHeadline = true,
 }: {
   masteries: (ItemMasteryRow | null | undefined)[];
   className?: string;
+  /** False when the host already states the mastered share (a ring, a title). */
+  showHeadline?: boolean;
 }) {
   const dist = computeMasteryDistribution(masteries);
   if (dist.total === 0) return null;
@@ -122,14 +125,16 @@ export function DeckMasteryBar({
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="font-medium text-foreground">
-          {Math.round(dist.masteredPct * 100)}% mastered
-        </span>
-        <span className="text-muted-foreground">
-          {dist.studied}/{dist.total} studied
-        </span>
-      </div>
+      {showHeadline && (
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <span className="font-medium text-foreground">
+            {Math.round(dist.masteredPct * 100)}% mastered
+          </span>
+          <span className="text-muted-foreground">
+            {dist.studied}/{dist.total} studied
+          </span>
+        </div>
+      )}
       <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
         {segments.map((t) => (
           <div

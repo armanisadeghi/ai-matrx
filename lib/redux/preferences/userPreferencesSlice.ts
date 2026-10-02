@@ -321,6 +321,10 @@ export interface FlashcardPreferences {
   primaryTutorPersona: string;
   /** Pairs per Match round (useMatchGame clamps it to the deck size). */
   matchPairCount: number;
+  /** Questions per Test round; 0 = every card (clamped to the deck). */
+  testQuestionCount: number;
+  /** Cards per Write round; 0 = every card (clamped to the deck). */
+  writeCardCount: number;
 }
 
 /**
@@ -1152,6 +1156,8 @@ export const initializeUserPreferencesState = (
       primaryAudioVoice: "default",
       primaryTutorPersona: "default",
       matchPairCount: 8,
+      testQuestionCount: 20,
+      writeCardCount: 10,
     },
     tutor: {
       // Must match DEFAULT_TUTOR_SETTINGS in features/education/tutor/settings.ts.

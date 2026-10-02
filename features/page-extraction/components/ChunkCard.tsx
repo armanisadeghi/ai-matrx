@@ -31,7 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import MarkdownStream from "@/components/MarkdownStream";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
-import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
+import { stripThinkingStreaming } from "@ai-matrx/kit/text";
 import { SOURCE_VARIATION_BY_KIND } from "@/features/page-extraction/constants";
 import type {
   ChunkPreviewItem,

@@ -30,6 +30,7 @@ import { recordAttemptOfflineAware } from "@/features/education/study/offline/re
 import { toast } from "@/lib/toast";
 import { currentRetrievability } from "@/features/education/study/utils/masteryFsrs";
 import { needsWork } from "@/features/education/study/analytics/computeAnalytics";
+import { rankDeckPractice } from "./deckPractice";
 import type { CardWithDetails } from "./types";
 import type {
   ItemMasteryRow,
@@ -70,6 +71,12 @@ export function useWeakAreaDrill(
      */
     topic?: string | null;
     /**
+     * Drill ONE deck (the deck Progress screen's "Practice these"): that
+     * deck's cards that need practice (`rankDeckPractice`), worst first. The
+     * session files under the deck so it counts on the deck's Progress.
+     */
+    setId?: string | null;
+    /**
      * False while the session has no organization yet: a drill opens a
      * study_session, which is filed under one, so starting now would raise
      * the blocking "Which workspace?" prompt. The surface shows the inline
@@ -80,6 +87,7 @@ export function useWeakAreaDrill(
 ): UseWeakAreaDrillResult {
   const { limit = 20 } = options;
   const topic = options.topic?.trim() || null;
+  const deckId = options.setId?.trim() || null;
   const enabled = options.enabled ?? true;
 
   const [cards, setCards] = useState<CardWithDetails[]>([]);
@@ -130,7 +138,24 @@ export function useWeakAreaDrill(
         return;
       }
       let candidates = weakRes.data ?? [];
-      if (topic) {
+      if (deckId) {
+        const deckRes = await fcService.getSetWithCards(deckId);
+        if (cancelled) return;
+        if (!deckRes.data) {
+          setError(deckRes.error ?? "This deck couldn't be loaded.");
+          setCards([]);
+          setResultsByCard({});
+          setLoading(false);
+          return;
+        }
+        const inDeck = new Set(deckRes.data.cards.map((c) => c.id));
+        candidates = rankDeckPractice(
+          candidates.filter(
+            (m) => m.item_type === FC_CARD_ITEM_TYPE && inDeck.has(m.item_id),
+          ),
+          new Date(),
+        );
+      } else if (topic) {
         const fcRows = candidates.filter(
           (m) => m.item_type === FC_CARD_ITEM_TYPE,
         );
@@ -158,7 +183,7 @@ export function useWeakAreaDrill(
 
       // 2. Re-rank by LIVE (decayed) retrievability, worst first, then cap.
       const now = new Date();
-      const ranked = [...candidates].sort((a, b) => {
+      const ranked = deckId ? candidates : [...candidates].sort((a, b) => {
         const ra = currentRetrievability(a, now) ?? 0;
         const rb = currentRetrievability(b, now) ?? 0;
         if (a.struggle_flag !== b.struggle_flag) return a.struggle_flag ? -1 : 1;
@@ -196,6 +221,7 @@ export function useWeakAreaDrill(
             mode: STUDY_MODE,
             sourceKind: "weak_area",
             orgId: sessionOrgId,
+            ...(deckId ? { sourceSetId: deckId } : {}),
             ...(topic ? { sourceQuery: { topic } } : {}),
           }),
         );
@@ -206,7 +232,7 @@ export function useWeakAreaDrill(
     return () => {
       cancelled = true;
     };
-  }, [limit, topic, enabled]);
+  }, [limit, topic, deckId, enabled]);
 
   const closeRef = useRef<{ id: string; closed: boolean } | null>(null);
   useEffect(() => {

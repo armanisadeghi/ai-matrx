@@ -37,7 +37,23 @@ import {
   GraduationCap,
   Expand,
   Flame,
+  SlidersHorizontal,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  STUDY_TOOLBAR_ROW,
+  STUDY_TOOL_BODY,
+  STUDY_TOOL_BUTTON,
+  STUDY_TOOL_BUTTON_ACTIVE,
+} from "@/features/education/study/components/studyToolbar";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
@@ -218,14 +234,43 @@ export interface StudyDeckProps {
   enableConfidence?: boolean;
 }
 
+/**
+ * The phone's grade bar is a page-owned bottom dock: publish how far its top
+ * sits above the viewport bottom as --page-bottom-dock-h, so the assists
+ * launcher rests above it instead of covering the "5" button (the same
+ * contract the note editor's dock uses; read by AssistsDock).
+ */
+function publishBottomDock(el: HTMLDivElement | null): (() => void) | void {
+  if (!el || typeof ResizeObserver === "undefined") return;
+  const root = document.documentElement;
+  const update = () => {
+    const fromBottom = window.innerHeight - el.getBoundingClientRect().top;
+    root.style.setProperty(
+      "--page-bottom-dock-h",
+      `${Math.max(0, Math.round(fromBottom + 8))}px`,
+    );
+  };
+  update();
+  const observer = new ResizeObserver(update);
+  observer.observe(el);
+  return () => {
+    observer.disconnect();
+    root.style.removeProperty("--page-bottom-dock-h");
+  };
+}
+
 const GRADE_STYLE_KEY = "fc-grade-style";
 type GradeStyle = "confidence" | "simple";
 
 function readGradeStyle(): GradeStyle {
   if (typeof window === "undefined") return "confidence";
-  return window.localStorage.getItem(GRADE_STYLE_KEY) === "simple"
-    ? "simple"
-    : "confidence";
+  try {
+    return window.localStorage.getItem(GRADE_STYLE_KEY) === "simple"
+      ? "simple"
+      : "confidence";
+  } catch {
+    return "confidence";
+  }
 }
 
 export function StudyDeck(props: StudyDeckProps) {
@@ -284,15 +329,13 @@ export function StudyDeck(props: StudyDeckProps) {
     setPreFlipConfidence(confidence);
     if (!isFlipped) flip();
   };
-  const toggleGradeStyle = (): void => {
-    setGradeStyle((prev) => {
-      const nextStyle: GradeStyle =
-        prev === "confidence" ? "simple" : "confidence";
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(GRADE_STYLE_KEY, nextStyle);
-      }
-      return nextStyle;
-    });
+  const chooseGradeStyle = (nextStyle: GradeStyle): void => {
+    setGradeStyle(nextStyle);
+    try {
+      window.localStorage.setItem(GRADE_STYLE_KEY, nextStyle);
+    } catch {
+      // Private mode / blocked storage: the choice still holds this session.
+    }
   };
 
   // Completion once every card has a result this load (state so the user can
@@ -701,6 +744,230 @@ export function StudyDeck(props: StudyDeckProps) {
     });
   };
 
+  // ── Shared pieces (desktop + phone render the SAME controls) ──────────────
+
+  /** ONE caption slot over ONE 44px row, whichever grading style is on. */
+  const gradeCaption = !useConfidence
+    ? "How did it go?"
+    : !isFlipped
+      ? "How well do you know it?"
+      : preFlipConfidence != null
+        ? `Predicted ${preFlipConfidence}/5 · How did it go?`
+        : "How well did you know it?";
+
+  const renderGradeControl = (): ReactNode =>
+    currentKind === CARD_KIND.matching ? null : (
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="truncate text-center text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          {gradeCaption}
+        </span>
+        {useConfidence ? (
+          !isFlipped ? (
+            // Predict BEFORE the flip (gap 7): rating reveals the back and the
+            // prediction rides along to the final grade.
+            <FlashcardConfidenceRow
+              onRate={handlePredict}
+              disabled={grading}
+              label={null}
+              className="w-full"
+            />
+          ) : preFlipConfidence != null ? (
+            // The answer is showing and a prediction exists: record the outcome.
+            <FlashcardGradeButtonRow
+              size="large"
+              onGrade={(r) => void handleGrade(r, preFlipConfidence)}
+              disabled={grading}
+              className="w-full"
+            />
+          ) : (
+            // Flipped without predicting — grade by confidence directly.
+            <FlashcardConfidenceRow
+              onRate={(confidence) =>
+                void handleGrade(confidenceToResult(confidence), confidence)
+              }
+              disabled={grading}
+              label={null}
+              className="w-full"
+            />
+          )
+        ) : (
+          <FlashcardGradeButtonRow
+            size="large"
+            onGrade={(r) => void handleGrade(r)}
+            disabled={grading}
+            className="w-full"
+          />
+        )}
+      </div>
+    );
+
+  /** Grading style + the keyboard map — one quiet menu, not a text link. */
+  const renderOptionsMenu = (): ReactNode =>
+    enableConfidence ? (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={STUDY_TOOL_BUTTON}
+            title="Study options"
+            aria-label="Study options"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-60">
+          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+            Grading
+          </DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={gradeStyle}
+            onValueChange={(value) =>
+              chooseGradeStyle(value === "simple" ? "simple" : "confidence")
+            }
+          >
+            <DropdownMenuRadioItem value="confidence">
+              1–5 confidence
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="simple">
+              Again · Partial · Correct
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+          {!isMobile && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
+                Space flip · ← → move · {useConfidence ? "1–5" : "1–3"} grade
+              </DropdownMenuLabel>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ) : null;
+
+  /**
+   * The card's whole toolbox as ONE wrapping row of compact tools; each tool's
+   * expanded body drops onto its own line beneath the row (studyToolbar.ts).
+   */
+  const renderToolRow = (card: CardWithDetails): ReactNode => {
+    const isMatching = currentKind === CARD_KIND.matching;
+    const voiceTest = voiceTestForCard?.(card);
+    return (
+      <div className={STUDY_TOOLBAR_ROW}>
+        {/* 🚨 The enrichment the learner already paid for, RENDERED, plus the
+            in-place "explain more" that adds to it. Closed by default so it
+            never spoils the answer. */}
+        <CardDetailLayers
+          key={`layers-${card.id}`}
+          card={card}
+          canEnrich={Boolean(setId)}
+          onEnriched={() => onCardsChanged?.()}
+          variant="toolbar"
+        />
+
+        {/* VISION §2/§4 — audio help is always on the table: hear the card or
+            talk it through with the realtime voice tutor. Matching cards skip
+            it (no single question/answer to narrate). */}
+        {!isMatching && (
+          <CardAudioHelp
+            key={`audio-${card.id}`}
+            cardId={card.id}
+            front={card.front}
+            back={card.back ?? ""}
+            topic={card.topic}
+            revealed={isFlipped}
+            variant="toolbar"
+            spokenFrontFileId={
+              voiceTest?.spokenFrontFileId ??
+              card.details?.find(
+                (d) => d.kind === "spoken_front" && d.audio_file_id,
+              )?.audio_file_id ??
+              null
+            }
+          />
+        )}
+
+        {/* The phone's card has no corner mic, so the voice quiz sits here. */}
+        {isMobile && voiceTest && card.back != null && (
+          <VoiceTestButton
+            card={{ id: voiceTest.cardId, front: card.front, back: card.back }}
+            spokenFrontFileId={voiceTest.spokenFrontFileId}
+            label="Quiz me"
+            variant="ghost"
+            className={STUDY_TOOL_BUTTON}
+          />
+        )}
+
+        {enableTutor && (
+          <>
+            <AskAiPanel
+              open={askOpen}
+              question={question}
+              onQuestionChange={setQuestion}
+              onToggle={() => setAskOpen((o) => !o)}
+              onAsk={() => void askAi()}
+              loading={helpLoading}
+              result={shownHelp}
+              tip={shownTip}
+              unavailable={helpAsked && !helpLoading && !help}
+              unavailableReason={helpUnusable}
+            />
+            {/* P2 AskTutor — escalate into the full memory-carrying tutor,
+                pre-loaded with THIS card. */}
+            <AskTutorButton
+              seed={{
+                title: "This flashcard the learner is studying",
+                material: `Front: "${card.front}"\nBack: "${card.back}"${
+                  card.topic ? `\nTopic: ${card.topic}` : ""
+                }`,
+              }}
+              label="Tutor"
+              variant="ghost"
+              className={STUDY_TOOL_BUTTON}
+            />
+          </>
+        )}
+
+        <coppa.Gate />
+
+        {/* VISION §11 — a stored aid renders on sight, and a struggling card
+            gets a reasoned offer instead of a quiet button. */}
+        {enableMemoryAids && !isMatching && (
+          <MemoryAidButton
+            key={`memory-${card.id}`}
+            cardId={card.id}
+            front={card.front}
+            back={card.back ?? ""}
+            topic={card.topic}
+            existingDetails={card.details}
+            struggling={strugglingOnCurrent}
+            variant="toolbar"
+          />
+        )}
+
+        {/* VISION §1 — deepen THIS card without leaving the session. Only when
+            the driver knows the owning set (cross-set drivers omit setId). */}
+        {setId && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={cn(STUDY_TOOL_BUTTON, enhanceOpen && STUDY_TOOL_BUTTON_ACTIVE)}
+            onClick={() => setEnhanceOpen(true)}
+            title="Split into sub-cards"
+            aria-label="Split into sub-cards"
+          >
+            <Expand className="h-3.5 w-3.5" />
+            Split
+          </Button>
+        )}
+
+        {renderOptionsMenu()}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-textured">
@@ -819,9 +1086,7 @@ export function StudyDeck(props: StudyDeckProps) {
                   {isYoungerLearner ? "bright points!" : "learning points"}
                 </div>
                 <p className="text-muted-foreground">
-                  {isYoungerLearner
-                    ? "You made your learning stronger — nice work!"
-                    : "From this session’s learning outcomes. Practice is never capped."}
+                  {isYoungerLearner ? "Nice work!" : "This session"}
                 </p>
               </div>
               <div className="rounded-lg border border-border bg-muted/40 p-3">
@@ -841,25 +1106,19 @@ export function StudyDeck(props: StudyDeckProps) {
                     {engagement.next_badge_target}
                   </p>
                 ) : (
-                  <p className="text-muted-foreground">
-                    Every current milestone earned.
-                  </p>
+                  <p className="text-muted-foreground">All earned</p>
                 )}
               </div>
-              <div className="col-span-2 rounded-lg border border-border bg-muted/40 p-3">
-                {engagement.league_opted_in && engagement.league_rank > 0 ? (
+              {/* Leagues are opt-in: the tile shows only for someone in one. */}
+              {engagement.league_opted_in && engagement.league_rank > 0 && (
+                <div className="col-span-2 rounded-lg border border-border bg-muted/40 p-3">
                   <p className="font-medium text-foreground">
                     {isYoungerLearner ? "Your learning team" : "Private league"}
                     : #{engagement.league_rank} of {engagement.league_size} · +
                     {Number(engagement.league_mastery_gain).toFixed(1)} mastery
                   </p>
-                ) : (
-                  <p className="text-muted-foreground">
-                    Private mastery leagues are optional. Your practice still
-                    counts either way.
-                  </p>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -869,7 +1128,7 @@ export function StudyDeck(props: StudyDeckProps) {
           {reviewLoading && !review && (
             <div className="flex w-full items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Reviewing your session — watch it in the run window.
+              Reviewing your session…
             </div>
           )}
           {review && <BatchReviewBlock review={review} />}
@@ -909,66 +1168,20 @@ export function StudyDeck(props: StudyDeckProps) {
     // IC-4 parity — the phone gets the SAME affordances as desktop, rendered
     // by the same canonical components, injected into the mobile deck's slots
     // (never re-implemented inside FlashcardMobileView).
-    const mobileVoiceTest = current ? voiceTestForCard?.(current) : undefined;
-
-    // Grade controls: the identical confidence / simple / pre-flip-predict
-    // logic the desktop renders, on the shared handlers. Wrapped in a real
-    // themed surface so semantic tokens read correctly over the black deck.
+    // Grade controls: the identical caption + row the desktop renders, on a
+    // real themed surface so semantic tokens read over the dark deck.
     const mobileBottomBar =
       currentKind === CARD_KIND.matching ? null : (
-        <div className="rounded-2xl border border-border bg-background p-2 shadow-xl">
-          {useConfidence ? (
-            !isFlipped ? (
-              <FlashcardConfidenceRow
-                onRate={handlePredict}
-                disabled={grading}
-                className="w-full"
-                label="Predict before you flip"
-              />
-            ) : preFlipConfidence != null ? (
-              <div className="flex flex-col gap-1">
-                <FlashcardGradeButtonRow
-                  onGrade={(r) => handleGrade(r, preFlipConfidence)}
-                  disabled={grading}
-                  className="w-full"
-                />
-                <span className="self-center text-[11px] text-muted-foreground">
-                  You predicted {preFlipConfidence}/5 — how did it go?
-                </span>
-              </div>
-            ) : (
-              <FlashcardConfidenceRow
-                onRate={(confidence) =>
-                  handleGrade(confidenceToResult(confidence), confidence)
-                }
-                disabled={grading}
-                className="w-full"
-              />
-            )
-          ) : (
-            <FlashcardGradeButtonRow
-              onGrade={handleGrade}
-              disabled={grading}
-              className="w-full"
-            />
-          )}
-          {enableConfidence && (
-            <button
-              type="button"
-              onClick={toggleGradeStyle}
-              className="mt-1 w-full text-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
-            >
-              {useConfidence
-                ? "Use simple grading"
-                : "Use 1–5 confidence rating"}
-            </button>
-          )}
+        <div
+          ref={publishBottomDock}
+          className="rounded-2xl border border-border bg-background p-2 shadow-xl"
+        >
+          {renderGradeControl()}
         </div>
       );
 
-    // The card's full toolbox — audio help, voice test, Ask AI, the full
-    // tutor, memory aids, "Improve this card", the trust footer, and the
-    // mastery list (IC-4 §4: the desktop rail's phone form is this drawer).
+    // The card's full toolbox (same tool row as desktop) plus the mastery
+    // list — IC-4 §4: the desktop rail's phone form is this drawer.
     const mobileTools = current ? (
       <div className="flex flex-col gap-2 rounded-2xl border border-border bg-background p-2.5">
         {isFlipped && (
@@ -981,101 +1194,15 @@ export function StudyDeck(props: StudyDeckProps) {
           />
         )}
 
-        {/* 🚨 The enrichment the learner already paid for, RENDERED — plus the
-            in-place "explain more" that adds to it. Collapsed by default so it
-            never spoils the answer or crowds the phone. */}
-        <CardDetailLayers
-          key={`m-layers-${current.id}`}
-          card={current}
-          canEnrich={Boolean(setId)}
-          onEnriched={() => onCardsChanged?.()}
-        />
+        {renderToolRow(current)}
 
-        {currentKind !== CARD_KIND.matching && (
-          <CardAudioHelp
-            key={`m-audio-${current.id}`}
-            cardId={current.id}
-            front={current.front}
-            back={current.back ?? ""}
-            topic={current.topic}
-            revealed={isFlipped}
-            spokenFrontFileId={
-              mobileVoiceTest?.spokenFrontFileId ??
-              current.details?.find(
-                (d) => d.kind === "spoken_front" && d.audio_file_id,
-              )?.audio_file_id ??
-              null
-            }
+        {Object.keys(masteryByCard).length > 0 && (
+          <DeckMasteryBar
+            masteries={cards.map((c) => masteryByCard[c.id])}
+            className="px-1"
           />
         )}
 
-        {mobileVoiceTest && current.back != null && (
-          <VoiceTestButton
-            card={{
-              id: mobileVoiceTest.cardId,
-              front: current.front,
-              back: current.back,
-            }}
-            spokenFrontFileId={mobileVoiceTest.spokenFrontFileId}
-          />
-        )}
-
-        {enableTutor && (
-          <>
-            <AskAiPanel
-              open={askOpen}
-              question={question}
-              onQuestionChange={setQuestion}
-              onToggle={() => setAskOpen((o) => !o)}
-              onAsk={() => void askAi()}
-              loading={helpLoading}
-              result={shownHelp}
-              tip={shownTip}
-              unavailable={helpAsked && !helpLoading && !help}
-              unavailableReason={helpUnusable}
-            />
-            <AskTutorButton
-              seed={{
-                title: "This flashcard the learner is studying",
-                material: `Front: "${current.front}"\nBack: "${current.back}"${
-                  current.topic ? `\nTopic: ${current.topic}` : ""
-                }`,
-              }}
-              label="Open full tutor"
-              variant="ghost"
-              className="w-full"
-            />
-          </>
-        )}
-
-        <coppa.Gate />
-
-        {enableMemoryAids && currentKind !== CARD_KIND.matching && (
-          <MemoryAidButton
-            key={`m-memory-${current.id}`}
-            cardId={current.id}
-            front={current.front}
-            back={current.back ?? ""}
-            topic={current.topic}
-            existingDetails={current.details}
-            struggling={strugglingOnCurrent}
-          />
-        )}
-
-        {setId && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="w-full gap-1.5 text-xs"
-            onClick={() => setEnhanceOpen(true)}
-          >
-            <Expand className="h-3.5 w-3.5" />
-            Split into sub-cards
-          </Button>
-        )}
-
-        {/* The mastery rail's phone form — same component, drawer placement. */}
         <div className="flex max-h-[38dvh] flex-col overflow-hidden rounded-lg border border-border">
           <FlashcardStudySidebar
             cards={cards}
@@ -1121,10 +1248,20 @@ export function StudyDeck(props: StudyDeckProps) {
     );
   }
 
-  const positionPct =
-    cards.length > 0
-      ? Math.round(((currentIndex + 1) / cards.length) * 100)
+  const sessionPct =
+    progress.total > 0
+      ? Math.round((Math.min(progress.done, progress.total) / progress.total) * 100)
       : 0;
+  const hasMastery = Object.keys(masteryByCard).length > 0;
+  // Deck mastery on the canonical tier scale — what the grades DO, visible
+  // while studying. Self-hides when no mastery loaded.
+  const deckMastery = (className: string): ReactNode =>
+    hasMastery ? (
+      <DeckMasteryBar
+        masteries={cards.map((c) => masteryByCard[c.id])}
+        className={className}
+      />
+    ) : null;
 
   // Card variant — matching branches to its own player; cloze/basic flip, with
   // cloze rendering its blanked/revealed faces (studyFaces) instead of raw markup.
@@ -1132,56 +1269,54 @@ export function StudyDeck(props: StudyDeckProps) {
 
   return (
     <Shell>
-      <div className="mb-4">
-        <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-2">
-            <span className="inline-flex items-center gap-1">
-              <BookOpen className="h-3.5 w-3.5" />
-              Card {currentIndex + 1} / {cards.length}
+      {/* ONE status strip: this session's progress bar, then position + the
+          card's tier. (Two stacked bars with two different "studied" counts
+          used to sit here; deck mastery now heads the card list.) */}
+      <div className="mb-3 flex flex-col gap-2">
+        <div
+          className="h-1 w-full overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-label="Session progress"
+          aria-valuemin={0}
+          aria-valuemax={progress.total}
+          aria-valuenow={progress.done}
+          title={`${progress.done} of ${progress.total} graded`}
+        >
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-500"
+            style={{ width: `${sessionPct}%` }}
+          />
+        </div>
+        <div className="flex min-w-0 items-center justify-between gap-3 text-xs text-muted-foreground">
+          <span className="inline-flex min-w-0 items-center gap-2">
+            <span className="font-medium tabular-nums text-foreground">
+              {currentIndex + 1} / {cards.length}
             </span>
-            {/* VISION §16 — the current card's real mastery standing (the
-                canonical 5-tier scale behind the 1–5 grades), not just a
-                binary checkmark. */}
+            {/* VISION §16 — the current card's real mastery standing. */}
             {current && masteryByCard[current.id] !== undefined && (
               <MasteryTierPill mastery={masteryByCard[current.id]} />
             )}
           </span>
-          <span className="inline-flex items-center gap-3">
-            <span>
-              {progress.done}/{progress.total} studied
-            </span>
+          <span className="inline-flex shrink-0 items-center gap-3">
             {progress.correct > 0 && (
-              <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+              <span
+                className="inline-flex items-center gap-1 tabular-nums text-green-600 dark:text-green-400"
+                title="Correct this session"
+              >
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 {progress.correct}
               </span>
             )}
           </span>
         </div>
-        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all duration-500"
-            style={{ width: `${positionPct}%` }}
-          />
-        </div>
-        {/* Deck mastery on the canonical tier scale — the same segmented bar
-            and colors as set detail, so what the grades DO is visible while
-            studying, not only afterward. Self-hides when no mastery loaded. */}
-        {Object.keys(masteryByCard).length > 0 && (
-          <DeckMasteryBar
-            masteries={cards.map((c) => masteryByCard[c.id])}
-            className="mt-2"
-          />
-        )}
       </div>
 
       <div className="flex items-start justify-center gap-4">
-        {/* VISION §16 (WP3 gap 9) — the built mastery sidebar, un-gated: every
-            learner gets the card list + live FSRS stats beside the deck on
-            wide screens. The same component the study window panel mounts —
-            never a second implementation. Mobile parity is WP1/IC-4. */}
-        <aside className="sticky top-14 hidden w-60 shrink-0 xl:block">
+        {/* VISION §16 (WP3 gap 9) — the mastery sidebar beside the deck on
+            wide screens; the same component the study window panel mounts. */}
+        <aside className="sticky top-[calc(var(--shell-header-h)+0.75rem)] hidden w-60 shrink-0 xl:block">
           <div className="flex max-h-[70dvh] flex-col overflow-hidden rounded-lg border border-border bg-card px-1 py-1">
+            {deckMastery("border-b border-border px-2 pb-2 pt-1.5")}
             <FlashcardStudySidebar
               cards={cards}
               currentIndex={currentIndex}
@@ -1195,8 +1330,7 @@ export function StudyDeck(props: StudyDeckProps) {
         <div className="min-w-0 max-w-2xl flex-1 lg:max-w-3xl xl:max-w-4xl">
           {currentKind === CARD_KIND.matching ? (
             // Matching variant — a tap-to-match mini-game that self-grades on
-            // completion through the deck's canonical grade path (no flip, no
-            // manual grade row).
+            // completion through the deck's canonical grade path.
             <MatchingCardPlayer
               key={`fc-match-${current.id}`}
               cardId={current.id}
@@ -1219,11 +1353,11 @@ export function StudyDeck(props: StudyDeckProps) {
                 voiceTest={voiceTestForCard?.(current)}
                 frontImage={getCardImages(current).front}
                 backImage={getCardImages(current).back}
+                heightClassName="h-[clamp(15rem,46dvh,32rem)]"
               />
 
-              {/* P0 Trust — once the answer is revealed, show where it came from:
-                citations (tap → exact passage), the confidence badge, and the
-                "Verify against source" action. Renders nothing for hand-made cards. */}
+              {/* P0 Trust — once the answer is revealed, show where it came
+                  from. Renders nothing for hand-made cards. */}
               {isFlipped && (
                 <CardTrustFooter
                   trust={coerceTrustEnvelope(current.metadata)}
@@ -1234,199 +1368,51 @@ export function StudyDeck(props: StudyDeckProps) {
                   className="mt-2"
                 />
               )}
-
-              {/* 🚨 The enrichment the learner already paid for, RENDERED —
-                  every stored detail layer, labelled, under the card it belongs
-                  to, plus the in-place "explain more" that adds to it. */}
-              <CardDetailLayers
-                key={`layers-${current.id}`}
-                card={current}
-                canEnrich={Boolean(setId)}
-                onEnriched={() => onCardsChanged?.()}
-                className="mt-2"
-              />
             </>
           )}
 
-          <div className="mt-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 px-2 text-xs"
-                onClick={prev}
-                disabled={currentIndex === 0}
-              >
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Prev
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 px-2 text-xs"
-                onClick={next}
-                disabled={currentIndex === cards.length - 1}
-              >
-                Next
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Matching cards self-grade on completion — no manual grade row. */}
-            {currentKind === CARD_KIND.matching ? null : useConfidence ? (
-              <div className="flex flex-col gap-1">
-                {!isFlipped ? (
-                  // Phase 1 — predict BEFORE the flip (gap 7). Rating reveals
-                  // the back; the prediction rides along to the final grade.
-                  <FlashcardConfidenceRow
-                    onRate={handlePredict}
-                    disabled={grading}
-                    className="w-full"
-                    label="Predict before you flip — how well do you know this?"
-                  />
-                ) : preFlipConfidence != null ? (
-                  // Phase 2 — the answer is showing and a prediction exists:
-                  // record what actually happened.
-                  <div className="flex flex-col gap-1">
-                    <FlashcardGradeButtonRow
-                      onGrade={(r) => handleGrade(r, preFlipConfidence)}
-                      disabled={grading}
-                      className="w-full"
-                    />
-                    <span className="self-center text-[11px] text-muted-foreground">
-                      You predicted {preFlipConfidence}/5 — how did it go?
-                    </span>
-                  </div>
-                ) : (
-                  // Flipped without predicting — grade by confidence directly
-                  // (the pre-gap-7 behavior stays available).
-                  <FlashcardConfidenceRow
-                    onRate={(confidence) =>
-                      handleGrade(confidenceToResult(confidence), confidence)
-                    }
-                    disabled={grading}
-                    className="w-full"
-                  />
-                )}
-                {enableConfidence && (
-                  <button
-                    type="button"
-                    onClick={toggleGradeStyle}
-                    className="self-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
-                  >
-                    Use simple grading
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1">
-                <FlashcardGradeButtonRow
-                  onGrade={handleGrade}
-                  disabled={grading}
-                  className="w-full"
-                />
-                {enableConfidence && (
-                  <button
-                    type="button"
-                    onClick={toggleGradeStyle}
-                    className="self-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
-                  >
-                    Use 1–5 confidence rating
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* VISION §2/§4 — audio help is ALWAYS on the table: hear the card
-              (cached spoken front, generated on demand when missing) or talk
-              it through with the realtime voice tutor. Matching cards skip it
-              (no single question/answer to narrate). */}
-            {current && currentKind !== CARD_KIND.matching && (
-              <CardAudioHelp
-                key={`audio-${current.id}`}
-                cardId={current.id}
-                front={current.front}
-                back={current.back ?? ""}
-                topic={current.topic}
-                revealed={isFlipped}
-                spokenFrontFileId={
-                  voiceTestForCard?.(current)?.spokenFrontFileId ??
-                  current.details?.find(
-                    (d) => d.kind === "spoken_front" && d.audio_file_id,
-                  )?.audio_file_id ??
-                  null
-                }
-              />
-            )}
-
-            {enableTutor && (
-              <div className="flex flex-col gap-2">
-                <AskAiPanel
-                  open={askOpen}
-                  question={question}
-                  onQuestionChange={setQuestion}
-                  onToggle={() => setAskOpen((o) => !o)}
-                  onAsk={() => void askAi()}
-                  loading={helpLoading}
-                  result={shownHelp}
-                  tip={shownTip}
-                  unavailable={helpAsked && !helpLoading && !help}
-                  unavailableReason={helpUnusable}
-                />
-                {/* P2 AskTutor — escalate from the one-shot nudge above into the
-                  full memory-carrying tutor, pre-loaded with THIS card. */}
-                {current && (
-                  <AskTutorButton
-                    seed={{
-                      title: "This flashcard the learner is studying",
-                      material: `Front: "${current.front}"\nBack: "${current.back}"${
-                        current.topic ? `\nTopic: ${current.topic}` : ""
-                      }`,
-                    }}
-                    label="Open full tutor"
-                    variant="ghost"
-                    className="w-full"
-                  />
-                )}
-              </div>
-            )}
-
-            {/* VISION §11 — the memory aid surfaces itself: a stored aid renders
-              on sight, and a struggling card gets a reasoned offer instead of a
-              quiet button. Skipped for matching cards (no single answer). */}
-            {enableMemoryAids &&
-              current &&
-              currentKind !== CARD_KIND.matching && (
-                <MemoryAidButton
-                  key={`memory-${current.id}`}
-                  cardId={current.id}
-                  front={current.front}
-                  back={current.back ?? ""}
-                  topic={current.topic}
-                  existingDetails={current.details}
-                  struggling={strugglingOnCurrent}
-                />
+          {/* THE action bar: previous · grade · next, one 44px line. */}
+          <div className="mt-3 flex items-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-11 w-11 shrink-0 rounded-lg"
+              onClick={prev}
+              disabled={currentIndex === 0}
+              aria-label="Previous card"
+              title="Previous (←)"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              {currentKind === CARD_KIND.matching ? (
+                // Matching cards self-grade on completion — no grade row.
+                <div className="h-11" />
+              ) : (
+                renderGradeControl()
               )}
-
-            {/* VISION §1 — the per-item "make this deeper" moment: enrich /
-              deepen THIS card without leaving the session. Only when the
-              driver knows the owning set (cross-set drivers omit setId). */}
-            {setId && current && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-full gap-1.5 text-xs"
-                onClick={() => setEnhanceOpen(true)}
-              >
-                <Expand className="h-3.5 w-3.5" />
-                Split into sub-cards
-              </Button>
-            )}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-11 w-11 shrink-0 rounded-lg"
+              onClick={next}
+              disabled={currentIndex === cards.length - 1}
+              aria-label="Next card"
+              title="Next (→)"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+          {current && <div className="mt-3">{renderToolRow(current)}</div>}
+
+          {/* Below xl the sidebar is hidden — deck mastery and the dot strip
+              are its stand-in. */}
+          {deckMastery("mt-5 xl:hidden")}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5 xl:hidden">
             {cards.map((card, i) => (
               <button
                 key={`dot-${card.id}`}
@@ -1498,29 +1484,38 @@ function AskAiPanel({
   /** The chosen tutor ran but cannot answer this job — the plain sentence. */
   unavailableReason?: string | null;
 }) {
+  // Toolbar shape (studyToolbar.ts): the trigger joins the host's tool row,
+  // every body drops onto its own line beneath it.
   return (
-    <div className="flex flex-col gap-2">
+    <div className="contents">
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         size="sm"
-        className="w-full gap-1.5 text-xs"
+        className={cn(STUDY_TOOL_BUTTON, open && STUDY_TOOL_BUTTON_ACTIVE)}
         onClick={onToggle}
+        aria-expanded={open}
+        title="Ask AI for help with this card"
       >
         {loading ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : (
           <HelpCircle className="h-3.5 w-3.5" />
         )}
-        Ask AI for help
+        Ask AI
       </Button>
 
       {open && (
-        <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-2.5">
+        <div
+          className={cn(
+            "flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-2.5",
+            STUDY_TOOL_BODY,
+          )}
+        >
           <ProTextarea
             value={question}
             onChange={(e) => onQuestionChange(e.target.value)}
-            placeholder="Optional: what specifically is confusing? (Leave blank for a general hint.)"
+            placeholder="What's confusing? (optional)"
             className="min-h-[52px] resize-none text-xs"
           />
           <Button
@@ -1542,17 +1537,31 @@ function AskAiPanel({
 
       {/* The `live_help_answer` kind component — answer, hint level,
           followups, citations; refusal-gated inside. */}
-      {result && <LiveHelpAnswerBlock result={result} />}
-      {/* D151 — the per-card coaching tip this session paid for. It used to be
-          an 8-second toast and nothing else; now it stays with its card. */}
+      {result && (
+        <div className={STUDY_TOOL_BODY}>
+          <LiveHelpAnswerBlock result={result} />
+        </div>
+      )}
+      {/* D151 — the per-card coaching tip this session paid for stays with
+          its card. */}
       {tip && (
-        <div className="flex items-start gap-1.5 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+        <div
+          className={cn(
+            "flex items-start gap-1.5 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground",
+            STUDY_TOOL_BODY,
+          )}
+        >
           <GraduationCap className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span className="text-foreground">{tip}</span>
         </div>
       )}
       {unavailable && (
-        <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+        <div
+          className={cn(
+            "rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground",
+            STUDY_TOOL_BODY,
+          )}
+        >
           {unavailableReason
             ? `Couldn't get help — ${unavailableReason}`
             : "AI help isn't available right now."}
@@ -1597,7 +1606,7 @@ function Stat({
 function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="h-full overflow-y-auto overscroll-contain bg-background">
-      <div className="mx-auto max-w-3xl px-2 pb-safe pt-14 sm:px-6 lg:max-w-4xl xl:max-w-5xl">
+      <div className="matrx-touch-targets mx-auto max-w-3xl px-3 pb-safe pt-[calc(var(--shell-header-h)+0.75rem)] sm:px-6 sm:pb-8 lg:max-w-4xl xl:max-w-5xl">
         {children}
       </div>
     </div>

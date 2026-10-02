@@ -15,7 +15,7 @@ import {
   useAiPostProcess,
   type AiProcessPhase,
 } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
-import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
+import { stripThinkingStreaming } from "@ai-matrx/kit/text";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectLatestAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import type { SessionContextItem } from "@/features/transcript-studio/types";

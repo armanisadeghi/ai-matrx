@@ -29,11 +29,21 @@ import {
   type QuizQuestion,
 } from "./quiz/buildQuizQuestions";
 import { makeQuizItems } from "./quiz/makeQuizItems";
-import type { FcSetRow } from "./types";
+import type { CardWithDetails, FcSetRow } from "./types";
 import { useLazyStudySession } from "@/features/education/study/hooks/useLazyStudySession";
+import { useSetting } from "@/features/settings/hooks/useSetting";
+import {
+  clampRoundSize,
+  pickRound,
+  roundSizeChoices,
+  roundSizeValue,
+} from "./roundSize";
 
 const FC_CARD_ITEM_TYPE = "fc_card";
 const QUIZ_MODE = "test";
+/** Questions per round until the learner picks (Quizlet's default test size). */
+export const DEFAULT_TEST_QUESTION_COUNT = 20;
+const TEST_QUESTION_COUNT_SETTING = "userPreferences.flashcard.testQuestionCount";
 
 function normalize(s: string): string {
   return s.trim().toLowerCase();
@@ -83,6 +93,20 @@ export interface UseQuizStudyResult {
   /** Advance to the next question (clamped). */
   next: () => void;
   goTo: (index: number) => void;
+  /** Cards in the loaded deck (the ceiling for a round). */
+  deckSize: number;
+  /** The saved round size as stored: a count, or 0 for every card. */
+  questionCount: number;
+  /** Round sizes offered for this deck — see roundSizeChoices. */
+  questionCountChoices: number[];
+  /** Save the round size for the learner and deal a fresh round with it. */
+  setQuestionCount: (count: number) => void;
+  /** Deal a fresh shuffled round at the saved size. */
+  restart: () => void;
+  /** Cards answered wrong this round. */
+  missedCount: number;
+  /** Deal a round of only the cards answered wrong. */
+  retakeMissed: () => void;
 }
 
 export function useQuizStudy(
@@ -114,6 +138,43 @@ export function useQuizStudy(
   const [fallbackAttempted, setFallbackAttempted] = useState<Set<string>>(
     new Set(),
   );
+  const [deckCards, setDeckCards] = useState<CardWithDetails[]>([]);
+  // The learner's saved round size (durable user preference, synced across
+  // devices). Read through a ref by the loader so a change never refetches.
+  const [savedCount, setSavedCount] = useSetting<number>(
+    TEST_QUESTION_COUNT_SETTING,
+  );
+  const countRef = useRef<unknown>(savedCount);
+  useEffect(() => {
+    countRef.current = savedCount;
+  }, [savedCount]);
+
+  const armSession = (loadedSet: FcSetRow): void => {
+    lazySession.arm(
+      withSession
+        ? () =>
+            studyService.createSession({
+              mode: QUIZ_MODE,
+              sourceKind: "set",
+              sourceSetId: loadedSet.id,
+              // Filed under the DECK's own organization, never the active one.
+              orgId: loadedSet.organization_id,
+            })
+        : null,
+    );
+  };
+
+  /** Deal a round from already-loaded cards — no refetch, no loader flash.
+   *  Re-arming drops the outgoing session; the close effect below stamps it
+   *  'abandoned' when the learner left it unfinished. Event handlers only. */
+  const deal = (roundCards: CardWithDetails[], pool: CardWithDetails[]): void => {
+    setQuestions(buildQuizQuestions(roundCards, pool));
+    setCurrentIndex(0);
+    setSelectedByIndex({});
+    setCorrectByIndex({});
+    setFallbackAttempted(new Set());
+    if (set) armSession(set);
+  };
 
   useEffect(() => {
     if (!enabled) return;
@@ -122,6 +183,7 @@ export function useQuizStudy(
       if (!setId) {
         if (cancelled) return;
         setSet(null);
+        setDeckCards([]);
         setQuestions([]);
         setSelectedByIndex({});
         setCorrectByIndex({});
@@ -144,6 +206,7 @@ export function useQuizStudy(
       if (cancelled) return;
       if (!setRes.data) {
         setSet(null);
+        setDeckCards([]);
         setQuestions([]);
         setError(setRes.error ?? "Failed to load flashcard set");
         setLoading(false);
@@ -152,23 +215,18 @@ export function useQuizStudy(
 
       const { set: loadedSet, cards: loadedCards } = setRes.data;
       setSet(loadedSet);
-      setQuestions(buildQuizQuestions(loadedCards));
+      setDeckCards(loadedCards);
+      const size = clampRoundSize(
+        countRef.current,
+        loadedCards.length,
+        DEFAULT_TEST_QUESTION_COUNT,
+      );
+      setQuestions(
+        buildQuizQuestions(pickRound(loadedCards, size), loadedCards),
+      );
 
       // Armed, never written: the first answer opens it.
-      if (!cancelled) {
-        lazySession.arm(
-          withSession
-            ? () =>
-                studyService.createSession({
-                  mode: QUIZ_MODE,
-                  sourceKind: "set",
-                  sourceSetId: loadedSet.id,
-                  // Filed under the DECK's own organization, never the active one.
-                  orgId: loadedSet.organization_id,
-                })
-            : null,
-        );
-      }
+      if (!cancelled) armSession(loadedSet);
 
       if (!cancelled) setLoading(false);
     })();
@@ -274,6 +332,34 @@ export function useQuizStudy(
     }
   };
 
+  const restart = (): void => {
+    const size = clampRoundSize(
+      countRef.current,
+      deckCards.length,
+      DEFAULT_TEST_QUESTION_COUNT,
+    );
+    deal(pickRound(deckCards, size), deckCards);
+  };
+
+  const setQuestionCount = (count: number): void => {
+    const stored = roundSizeValue(count, deckCards.length);
+    setSavedCount(stored);
+    countRef.current = stored;
+    deal(pickRound(deckCards, clampRoundSize(stored, deckCards.length, 0)), deckCards);
+  };
+
+  const missedIds = new Set(
+    questions
+      .filter((_, i) => correctByIndex[i] === false)
+      .map((q) => q.cardId),
+  );
+
+  const retakeMissed = (): void => {
+    const missed = deckCards.filter((c) => missedIds.has(c.id));
+    if (missed.length === 0) return;
+    deal(pickRound(missed, 0), deckCards);
+  };
+
   const doneCount = Object.keys(selectedByIndex).length;
   const correctCount = Object.values(correctByIndex).filter(Boolean).length;
 
@@ -345,5 +431,16 @@ export function useQuizStudy(
     answer,
     next,
     goTo,
+    deckSize: deckCards.length,
+    questionCount: clampRoundSize(
+      savedCount,
+      deckCards.length,
+      DEFAULT_TEST_QUESTION_COUNT,
+    ),
+    questionCountChoices: roundSizeChoices(deckCards.length),
+    setQuestionCount,
+    restart,
+    missedCount: missedIds.size,
+    retakeMissed,
   };
 }

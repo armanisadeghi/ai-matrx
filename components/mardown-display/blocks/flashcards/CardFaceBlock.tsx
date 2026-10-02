@@ -13,7 +13,7 @@
 
 import type React from "react";
 import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
-import { makeCardFaceStyle } from "./CardFaceContent";
+import { getFaceTextSizeClass, makeCardFaceStyle } from "./CardFaceContent";
 
 const centeredParagraph = ({
   node: _node,
@@ -37,19 +37,36 @@ export function getTileFaceTextSizeClass(
   return "text-xs";
 }
 
-export function CardFaceBlock({ content }: { content: string }) {
+export function CardFaceBlock({
+  content,
+  size = "tile",
+  align = "auto",
+}: {
+  content: string;
+  /** "tile": compact slot (Match tiles, answer options). "card": the flip
+   *  card's own auto-scaling size (a Test / Write question). */
+  size?: "tile" | "card";
+  /** "auto": a single-line face centered, multi-line left-aligned (the flip
+   *  card). "center": centered unless the face is a list (a question whose
+   *  second line is a hint). "start": always left-aligned (answer options). */
+  align?: "auto" | "center" | "start";
+}) {
   const isMultiLine = content.includes("\n");
+  const isList = /^\s*([-*+]|\d+[.)])\s/m.test(content);
+  const centered =
+    align === "auto" ? !isMultiLine : align === "center" ? !isList : false;
+  const textSize =
+    size === "card"
+      ? getFaceTextSizeClass(content, isMultiLine)
+      : getTileFaceTextSizeClass(content, isMultiLine);
   return (
     <ConfigurableMarkdownContent
       imagePolicy="inherit"
       content={content}
       isStreamActive={false}
       showCopyButton={false}
-      styleConfig={makeCardFaceStyle(
-        getTileFaceTextSizeClass(content, isMultiLine),
-        !isMultiLine,
-      )}
-      componentOverrides={isMultiLine ? undefined : { p: centeredParagraph }}
+      styleConfig={makeCardFaceStyle(textSize, centered)}
+      componentOverrides={centered ? { p: centeredParagraph } : undefined}
     />
   );
 }

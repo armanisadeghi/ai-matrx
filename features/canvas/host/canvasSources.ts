@@ -88,7 +88,7 @@ function buildOpeners(canvas: CanvasController | null): CanvasOpeners {
   return {
     isAvailable: canvas !== null,
     open: (content) => openArtifactContent(canvas, content) !== null,
-    offer: (content) => openArtifactContent(canvas, content, { quiet: true }) !== null,
+    offer: (content) => openArtifactContent(canvas, content) !== null,
     hide: () => canvas?.hide(),
     toggle: () => canvas?.toggle(),
   };

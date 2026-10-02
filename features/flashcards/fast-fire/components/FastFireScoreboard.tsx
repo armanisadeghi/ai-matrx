@@ -24,7 +24,7 @@ import {
   RotateCcw,
   Layers,
   MicOff,
-  History,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
@@ -104,15 +104,10 @@ export function FastFireScoreboard({
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400">
             <Trophy className="h-7 w-7" />
           </div>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">
-              Session complete
-            </h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {/* read-gate-exempt: cards played in the session this browser just ran, not a fetched count */}
-              {config.setName ?? "FastFire"} · {board.total} cards
-            </p>
-          </div>
+          {/* read-gate-exempt: cards played in the session this browser just ran, not a fetched count */}
+          <h1 className="text-xl font-semibold text-foreground">
+            {board.total} {board.total === 1 ? "card" : "cards"} done
+          </h1>
         </div>
 
         {/* Rollup */}
@@ -143,17 +138,25 @@ export function FastFireScoreboard({
         <FastFireReviewPlaylist key={filter} />
 
         {/* Filter tabs */}
-        <div className="mb-3 flex items-center gap-1.5">
+        {/* One segmented control — the same shape as the setup's Speak /
+            Type switch, not a row of colored pills. */}
+        <div
+          role="tablist"
+          aria-label="Show cards"
+          className="mb-3 grid grid-cols-4 gap-1 rounded-xl bg-muted p-1"
+        >
           {FILTERS.map((f) => (
             <button
               key={f.id}
               type="button"
+              role="tab"
+              aria-selected={filter === f.id}
               onClick={() => dispatch(setReviewFilter({ filter: f.id }))}
               className={cn(
-                "min-h-11 rounded-full px-3 py-1 text-xs font-medium transition-colors sm:min-h-0",
+                "min-h-11 truncate rounded-lg px-2 text-sm font-medium transition-colors sm:min-h-9",
                 filter === f.id
-                  ? "bg-orange-600 text-white"
-                  : "bg-muted text-muted-foreground hover:bg-accent",
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {f.label}
@@ -272,12 +275,12 @@ export function FastFireScoreboard({
           </Button>
           <Button className="flex-1 gap-1.5" onClick={onExit}>
             <Layers className="h-4 w-4" />
-            Back to flashcards
+            {config.setId ? "Back to deck" : "Back to flashcards"}
           </Button>
         </div>
 
-        {/* Previous results — the session is persisted to the study spine, so
-            past drills are browsable in the history. */}
+        {/* Progress — the session is persisted to the study spine, so the
+            deck's Progress screen shows this drill beside every other one. */}
         <div className="mt-3 text-center">
           <Link
             href={
@@ -287,8 +290,8 @@ export function FastFireScoreboard({
             }
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            <History className="h-3.5 w-3.5" />
-            View past sessions
+            <TrendingUp className="h-3.5 w-3.5" />
+            Progress
           </Link>
         </div>
       </div>

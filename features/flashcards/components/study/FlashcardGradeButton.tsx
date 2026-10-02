@@ -34,10 +34,17 @@ const GRADE_CONFIG: Record<
   },
 };
 
-export type FlashcardGradeButtonSize = "default" | "compact" | "embedded";
+export type FlashcardGradeButtonSize =
+  | "default"
+  | "large"
+  | "compact"
+  | "embedded";
 
 const SIZE_CLASSES: Record<FlashcardGradeButtonSize, string> = {
   default: "min-h-9 flex-1 min-w-0 px-2 py-1.5 text-xs rounded-lg gap-1",
+  // The study deck's grade row — the same 44px height as the 1–5 row, so
+  // switching grading style never changes the control's size.
+  large: "min-h-11 flex-1 min-w-0 px-2 py-1.5 text-sm rounded-lg gap-1.5",
   compact: "h-7 flex-1 min-w-0 px-1.5 text-[11px] rounded-md gap-0.5",
   embedded:
     "flex-1 min-w-0 px-1.5 py-1 text-[11px] rounded-md gap-0.5 border-0",
@@ -82,7 +89,11 @@ export function FlashcardGradeButton({
       <Icon
         className={cn(
           "shrink-0",
-          size === "default" ? "h-3.5 w-3.5" : "h-3 w-3",
+          size === "large"
+            ? "h-4 w-4"
+            : size === "default"
+              ? "h-3.5 w-3.5"
+              : "h-3 w-3",
         )}
       />
       <span className="truncate">{label}</span>

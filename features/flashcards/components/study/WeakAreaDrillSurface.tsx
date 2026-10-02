@@ -25,17 +25,28 @@ export function WeakAreaDrillSurface() {
   const router = useRouter();
   // `?topic=<raw topic>` drills one topic (the progress dashboard's topic
   // rows and the narrator's weak_area recommendations link it).
-  const topic = useSearchParams().get("topic")?.trim() || null;
+  const params = useSearchParams();
+  const topic = params.get("topic")?.trim() || null;
+  // `?set=<deckId>` drills one deck's cards that need practice (the deck
+  // Progress screen's "Practice these"); it returns to that Progress screen.
+  const deckId = topic ? null : params.get("set")?.trim() || null;
+  const returnHref = deckId ? `${EDU_BASE}/${deckId}/sessions` : EDU_BASE;
   // The drill's session files under the organization of its own cards.
-  const study = useWeakAreaDrill({ topic });
+  const study = useWeakAreaDrill({ topic, setId: deckId });
   const topicName = topic ? topicLabel(topic) : null;
 
   return (
     <>
       <PageHeader>
         <StudyDeckHeader
-          title={topicName ? `Practice: ${topicName}` : "Drill weak areas"}
-          backHref={EDU_BASE}
+          title={
+            topicName
+              ? `Practice: ${topicName}`
+              : deckId
+                ? "Practice"
+                : "Drill weak areas"
+          }
+          backHref={returnHref}
         />
       </PageHeader>
       <div className="h-full overflow-hidden">
@@ -60,12 +71,16 @@ export function WeakAreaDrillSurface() {
           emptyTitle={
             topicName
               ? `No studied cards in ${topicName} yet`
-              : "No weak areas right now"
+              : deckId
+                ? "Nothing to practice"
+                : "No weak areas right now"
           }
           emptyBody={
             topicName
               ? "You haven't studied any cards in this topic yet. Study its set first and practice will pick them up."
-              : "Nothing is flagged as struggling or low-retention yet. Keep studying — cards that need extra practice will surface here automatically."
+              : deckId
+                ? "Every card you've studied in this deck is going well."
+                : "Nothing is flagged as struggling or low-retention yet. Keep studying — cards that need extra practice will surface here automatically."
           }
           completionTitle="Drill complete"
           completionSubtitle={
@@ -74,9 +89,9 @@ export function WeakAreaDrillSurface() {
               : `You reviewed all ${study.progress.total} weak cards.`
           }
           completionPrimary={{
-            label: "Back to flashcards",
+            label: deckId ? "Back to progress" : "Back to flashcards",
             icon: Flame,
-            onClick: () => router.push(EDU_BASE),
+            onClick: () => router.push(returnHref),
           }}
         />
       </div>

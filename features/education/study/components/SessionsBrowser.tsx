@@ -83,6 +83,7 @@ export function SessionsBrowser({
   backHref,
   detailBasePath,
   hideEmpty = false,
+  embedded = false,
 }: {
   /** Restrict to one set (study_session.source_set_id). */
   setId?: string;
@@ -98,6 +99,12 @@ export function SessionsBrowser({
    * not study; the cross-mode history hides them.
    */
   hideEmpty?: boolean;
+  /**
+   * Render only the list (no page frame, back button or title) — the deck
+   * Progress screen hosts it. With `setId`, each row is named by its mode,
+   * since the deck's name is already the page's title.
+   */
+  embedded?: boolean;
 }) {
   const router = useRouter();
   const [sessions, setSessions] = useState<StudySessionRow[]>([]);
@@ -250,22 +257,34 @@ export function SessionsBrowser({
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
     >
-      <div className="min-h-full w-full bg-textured">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-4 h-8 px-2 text-xs text-muted-foreground"
-            onClick={() => (backHref ? router.push(backHref) : router.back())}
-          >
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
+      <div className={cn(!embedded && "min-h-full w-full bg-textured")}>
+        <div
+          className={cn(
+            !embedded && "mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8 pb-safe",
+          )}
+        >
+          {!embedded && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mb-4 h-8 px-2 text-xs text-muted-foreground"
+                onClick={() =>
+                  backHref ? router.push(backHref) : router.back()
+                }
+              >
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                Back
+              </Button>
 
-          <div className="mb-5 flex items-center gap-2">
-            <History className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold text-foreground">{title}</h1>
-          </div>
+              <div className="mb-5 flex items-center gap-2">
+                <History className="h-5 w-5 text-primary" />
+                <h1 className="text-lg font-semibold text-foreground">
+                  {title}
+                </h1>
+              </div>
+            </>
+          )}
 
           {loading ? (
             <div className="space-y-2">
@@ -285,14 +304,18 @@ export function SessionsBrowser({
               </p>
             </div>
           ) : shown.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-14 text-center">
+            <div
+              className={cn(
+                "flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 text-center",
+                embedded ? "py-8" : "py-14",
+              )}
+            >
               <History className="h-6 w-6 text-muted-foreground" />
               <p className="text-sm font-medium text-foreground">
                 No sessions yet
               </p>
               <p className="max-w-sm text-xs text-muted-foreground">
-                Study or run a Fast Fire drill and your sessions will show up
-                here with your results and progress over time.
+                Every study session shows up here with its score.
               </p>
             </div>
           ) : (
@@ -304,6 +327,7 @@ export function SessionsBrowser({
                   setName={
                     s.source_set_id ? setNames[s.source_set_id] : undefined
                   }
+                  namedByMode={embedded && !!setId}
                   attempts={attemptSummaries[s.id]}
                   detailHref={`${detailBasePath}/${s.id}`}
                   isNavigating={navigatingId === s.id && isPending}
@@ -342,9 +366,12 @@ function SessionRow({
   isDeleting,
   onOpen,
   onDelete,
+  namedByMode = false,
 }: {
   session: StudySessionRow;
   setName?: string;
+  /** Title the row by its mode (the deck is already named by the page). */
+  namedByMode?: boolean;
   attempts?: SessionAttemptSummary;
   detailHref: string;
   isNavigating: boolean;
@@ -354,12 +381,19 @@ function SessionRow({
   onDelete: () => void;
 }) {
   const status = STATUS_META[session.status ?? ""] ?? STATUS_META.abandoned;
-  const lines = buildSessionListLines(
-    session,
-    setName,
-    attempts,
-    modeLabel(session.mode),
-  );
+  const mode = modeLabel(session.mode);
+  const built = buildSessionListLines(session, setName, attempts, mode);
+  // On a deck's own Progress the row leads with the mode; the deck name
+  // would repeat the page title on every row.
+  const lines = namedByMode
+    ? {
+        title: mode,
+        detail: built.meta,
+        meta: built.detail.startsWith(`${mode} · `)
+          ? built.detail.slice(mode.length + 3)
+          : "",
+      }
+    : built;
   const scorePct = sessionListScorePct(attempts);
   const isHighScore = scorePct !== null && scorePct >= 90;
   const editedCount = attempts?.editedCount ?? 0;

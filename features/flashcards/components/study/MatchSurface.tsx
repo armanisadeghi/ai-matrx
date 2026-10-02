@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useMatchGame } from "../../data/useMatchGame";
 import { StudyDeckHeader } from "./StudyDeckHeader";
+import { FixGiveawayCardsAction } from "../giveaway/FixGiveawayCardsAction";
 import CardFaceBlock from "@/components/mardown-display/blocks/flashcards/CardFaceBlock";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
@@ -46,6 +47,7 @@ export function MatchSurface({ setId }: { setId: string }) {
         <StudyDeckHeader
           title={`Match — ${title}`}
           backHref={`${EDU_BASE}/${setId}`}
+          actions={<FixGiveawayCardsAction setId={setId} />}
         />
       </PageHeader>
       <div className="h-full overflow-y-auto overscroll-contain bg-background">

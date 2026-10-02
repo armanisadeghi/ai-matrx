@@ -127,12 +127,15 @@ function changedFields(
 ): ChangedField[] {
   if (item.action !== "update") return [];
   const row = snapshot?.rows.find((r) => r.id === item.rowId) ?? null;
-  return Object.entries(item.patch).map(([name, value]) => ({
-    name,
-    label: snapshot?.fields.find((f) => f.name === name)?.label ?? name,
-    before: row ? asText(row.values[name]) : null,
-    after: asText(value),
-  }));
+  // A provider's null for a column it did not change means "kept", never "emptied".
+  return Object.entries(item.patch)
+    .filter(([, value]) => value != null)
+    .map(([name, value]) => ({
+      name,
+      label: snapshot?.fields.find((f) => f.name === name)?.label ?? name,
+      before: row ? asText(row.values[name]) : null,
+      after: asText(value),
+    }));
 }
 
 export function ListChangeProposalView({

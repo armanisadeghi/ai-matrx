@@ -37,6 +37,12 @@ import { memoryHint, memoryHintFromDetail } from "../lanes/memoryHint";
 import type { MemoryHintPayload } from "@/features/content-ir/kinds/memory-aid";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { EDU_MEMORY_MANDATES } from "../mandates";
+import { cn } from "@/lib/utils";
+import {
+  STUDY_TOOL_BODY,
+  STUDY_TOOL_BUTTON,
+  STUDY_TOOL_BUTTON_ACTIVE,
+} from "@/features/education/study/components/studyToolbar";
 
 export function MemoryAidButton({
   cardId,
@@ -45,6 +51,7 @@ export function MemoryAidButton({
   topic,
   existingDetails,
   struggling = false,
+  variant = "stacked",
   className,
 }: {
   /** The card the aid belongs to — the row it is persisted on (D151). */
@@ -67,8 +74,13 @@ export function MemoryAidButton({
    * it is a paid call, so it is offered, never silently spent.
    */
   struggling?: boolean;
+  /** `toolbar`: a compact "Memory" trigger in the host's study tool row, the
+   *  aid below it (see studyToolbar.ts). `stacked`: the standalone block. */
+  variant?: "stacked" | "toolbar";
   className?: string;
 }) {
+  const toolbar = variant === "toolbar";
+  const body = toolbar ? STUDY_TOOL_BODY : undefined;
   useDeclaredSurfaceMandates([
     {
       mandateKey: EDU_MEMORY_MANDATES.memoryHint,
@@ -159,55 +171,89 @@ export function MemoryAidButton({
   // yet, nothing asked. It states the reason so it never feels like a nag.
   const offerProactively = struggling && !shown && !asked && !loading;
 
-  return (
-    <div className={className}>
-      {offerProactively && (
-        <button
-          type="button"
-          onClick={() => void fetchHint()}
-          className="mb-1 flex w-full items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-left transition-colors hover:bg-primary/10"
-        >
-          <Brain className="h-4 w-4 shrink-0 text-primary" />
-          <span className="min-w-0 flex-1 text-xs">
-            <span className="font-medium text-foreground">
-              This one keeps slipping.
-            </span>{" "}
-            <span className="text-muted-foreground">
-              Want a memory trick for it?
-            </span>
-          </span>
-        </button>
+  const offer = offerProactively ? (
+    <button
+      type="button"
+      onClick={() => void fetchHint()}
+      className={cn(
+        "mb-1 flex w-full items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-left transition-colors hover:bg-primary/10",
+        toolbar && "order-first mb-0 basis-full",
       )}
-      <div className="flex items-center gap-1">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="flex-1 gap-1.5 text-xs"
-          onClick={() => void fetchHint()}
-          disabled={loading}
-        >
-          {loading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Brain className="h-3.5 w-3.5" />
-          )}
-          {shown || asked ? "Another memory aid" : "Give me a memory aid"}
-        </Button>
-        {run.conversationId && (
+    >
+      <Brain className="h-4 w-4 shrink-0 text-primary" />
+      <span className="min-w-0 flex-1 text-xs">
+        <span className="font-medium text-foreground">
+          This one keeps slipping.
+        </span>{" "}
+        <span className="text-muted-foreground">
+          Want a memory trick for it?
+        </span>
+      </span>
+    </button>
+  ) : null;
+
+  const chatButton = run.conversationId ? (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className={toolbar ? STUDY_TOOL_BUTTON : "gap-1.5 text-xs"}
+      onClick={openConversation}
+      aria-label="Chat about this memory aid"
+      title="Chat about this memory aid"
+    >
+      <MessageSquare className="h-3.5 w-3.5" />
+      Chat
+    </Button>
+  ) : null;
+
+  return (
+    <div className={toolbar ? "contents" : className}>
+      {offer}
+      {toolbar ? (
+        <>
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="gap-1.5 text-xs"
-            onClick={openConversation}
-            aria-label="Chat about this memory aid"
+            className={cn(
+              STUDY_TOOL_BUTTON,
+              (loading || shown) && STUDY_TOOL_BUTTON_ACTIVE,
+            )}
+            onClick={() => void fetchHint()}
+            disabled={loading}
+            title={shown || asked ? "Another memory aid" : "Give me a memory aid"}
+            aria-label="Memory aid"
           >
-            <MessageSquare className="h-3.5 w-3.5" />
-            Chat
+            {loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Brain className="h-3.5 w-3.5" />
+            )}
+            Memory
           </Button>
-        )}
-      </div>
+          {chatButton}
+        </>
+      ) : (
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="flex-1 gap-1.5 text-xs"
+            onClick={() => void fetchHint()}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Brain className="h-3.5 w-3.5" />
+            )}
+            {shown || asked ? "Another memory aid" : "Give me a memory aid"}
+          </Button>
+          {chatButton}
+        </div>
+      )}
 
       {loading ? (
         // The run streams in place — the registered `memory_hint` kind renders
@@ -217,12 +263,17 @@ export function MemoryAidButton({
           pending={!run.conversationId}
           label="Finding you a memory aid"
           variant="card"
-          className="mt-2"
+          className={cn("mt-2", body)}
         />
       ) : shown ? (
-        <MemoryHintBlock serverData={shown} className="mt-2" />
+        <MemoryHintBlock serverData={shown} className={cn("mt-2", body)} />
       ) : asked ? (
-        <div className="mt-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+        <div
+          className={cn(
+            "mt-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground",
+            body,
+          )}
+        >
           {unusable
             ? `Couldn't come up with a memory aid — ${unusable}`
             : "Couldn't come up with a memory aid for this card right now."}

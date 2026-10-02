@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   Flame,
@@ -21,16 +21,17 @@ import {
   Mic,
   Headphones,
   ChevronDown,
-  ChevronRight,
   Keyboard,
   Plus,
-  History,
+  TrendingUp,
   Volume2,
   Loader2,
   CheckCircle2,
   Zap,
   HelpCircle,
+  type LucideIcon,
 } from "lucide-react";
+import { InfoHint } from "@/components/official/InfoHint";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -84,10 +85,10 @@ export function FastFireSetup() {
   const [sets, setSets] = useState<FcSetRow[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [setsAttempt, setSetsAttempt] = useState(0);
-  // Device-check gate (Zoom/Meet style): confirm + test mic/speaker BEFORE the
-  // drill. Open by default so the learner sees it; reuses the shared
-  // MediaDevicesPanel (the same component the avatar-menu window opens).
-  const [showDevices, setShowDevices] = useState(true);
+  // Device check (Zoom/Meet style): test mic/speaker before the drill. Closed
+  // by default (redesign 2026-10-01) — Start warms the mic in its own gesture,
+  // so the check is optional; reuses the shared MediaDevicesPanel.
+  const [showDevices, setShowDevices] = useState(false);
   // Spoken-front prep (TTS): generated ON-DEMAND here (a pre-step, so the mic-warm
   // in the Start gesture stays in-gesture). Cached after — instant on later runs.
   const [prepping, setPrepping] = useState(false);
@@ -292,507 +293,532 @@ export function FastFireSetup() {
       if (started) await liveGrade.commit();
     });
   };
+  const progressHref = config.setId
+    ? `/education/flashcards/${config.setId}/sessions`
+    : "/education/flashcards/sessions";
+  const cardCount = selectedSet ? config.cardLimit : null;
+
+  // LAYOUT (redesign 2026-10-01, model: Duolingo's lesson start + iOS
+  // Settings groups). One start card — deck, how you answer, Start — and one
+  // grouped settings list beside it. Definitions live behind info icons; no
+  // helper sentence sits under any control. On a phone the start card comes
+  // first, so a learner can pick a deck and go without scrolling.
   return (
     <div className="matrx-touch-targets min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
-        {/* Set picker */}
-        <section className="mb-5 rounded-xl border border-border bg-card p-4">
-          <label htmlFor="fastfire-set-picker" className="sr-only">
-            Deck
-          </label>
-          {sets === null ? (
-            <div className="flex items-center justify-center py-8">
-              <SuspenseLoader
-                centered={false}
-                message="Loading your decks"
-              />
-            </div>
-          ) : loadError ? (
-            <div
-              role="alert"
-              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-4 text-xs text-muted-foreground"
-            >
-              <span className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                {loadError}
+      <div className="mx-auto max-w-5xl px-3 py-4 pb-safe sm:px-6 sm:py-8">
+        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-5">
+          {/* START CARD */}
+          <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 lg:sticky lg:top-4">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 text-orange-600 dark:text-orange-400">
+                <Flame className="h-6 w-6" />
               </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={retrySetsLoad}
+              <p className="min-w-0 truncate text-base font-semibold text-foreground">
+                {cardCount === null
+                  ? "Pick a deck"
+                  : `${cardCount === 0 ? "All" : cardCount} cards · ${config.secondsPerCard}s each`}
+              </p>
+            </div>
+
+            <label htmlFor="fastfire-set-picker" className="sr-only">
+              Deck
+            </label>
+            {sets === null ? (
+              <div className="flex items-center justify-center py-6">
+                <SuspenseLoader centered={false} message="Loading your decks" />
+              </div>
+            ) : loadError ? (
+              <div
+                role="alert"
+                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-3 text-xs text-muted-foreground"
               >
-                Retry
-              </Button>
-              <ErrorAlchemyMenu />
-            </div>
-          ) : sets.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border bg-background px-3 py-8 text-center text-xs text-muted-foreground">
-              No decks yet. Create one in Flashcard Studio first.
-            </div>
-          ) : (
-            <>
-              <FastFireSetPicker
-                id="fastfire-set-picker"
-                sets={sets}
-                value={config.setId}
-                onChange={(setId) => dispatch(updateConfig({ setId }))}
-              />
-              {/* A link to a deck that is not in the list (archived, or not
-                  the person's to see) says so — never a silently empty picker
-                  (page-pass 2026-09-27). */}
-              {config.setId && !selectedSet && (
-                <MissingDeckNotice
-                  setId={config.setId}
-                  onRestored={retrySetsLoad}
-                />
-              )}
-            </>
-          )}
-        </section>
-
-        {/* Two columns on a wide screen: how the drill runs (left), how you
-            answer and Start (right) — the setup uses the width it has. */}
-        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
-        <div>
-        {/* Pace + count */}
-        <section className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-2 flex items-center justify-between text-sm font-medium text-foreground">
-              <span className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                Seconds per card
-              </span>
-              <span className="tabular-nums text-primary">
-                {config.secondsPerCard}s
-              </span>
-            </div>
-            <Slider
-              min={DRILL_CONFIG_BOUNDS.secondsPerCard.min}
-              max={DRILL_CONFIG_BOUNDS.secondsPerCard.max}
-              step={1}
-              value={[config.secondsPerCard]}
-              onValueChange={(v) =>
-                dispatch(
-                  updateConfig({
-                    secondsPerCard: v[0] ?? DEFAULT_DRILL_CONFIG.secondsPerCard,
-                  }),
-                )
-              }
-            />
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-2 flex items-center justify-between text-sm font-medium text-foreground">
-              <span className="flex items-center gap-2">
-                <Bell className="h-4 w-4 text-muted-foreground" />
-                Warning beep
-              </span>
-              <span className="tabular-nums text-primary">
-                {config.warningSeconds === 0
-                  ? "Off"
-                  : `${config.warningSeconds}s left`}
-              </span>
-            </div>
-            <Slider
-              min={DRILL_CONFIG_BOUNDS.warningSeconds.min}
-              max={DRILL_CONFIG_BOUNDS.warningSeconds.max}
-              step={1}
-              value={[config.warningSeconds]}
-              onValueChange={(v) =>
-                dispatch(
-                  updateConfig({
-                    warningSeconds: v[0] ?? DEFAULT_DRILL_CONFIG.warningSeconds,
-                  }),
-                )
-              }
-            />
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              A light beep this many seconds before time runs out. 0 = off. Only
-              fires when it lands inside a card&apos;s window.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-2 flex items-center justify-between text-sm font-medium text-foreground">
-              <span className="flex items-center gap-2">
-                <Hash className="h-4 w-4 text-muted-foreground" />
-                Number of cards
-              </span>
-              <span className="tabular-nums text-primary">
-                {config.cardLimit === 0 ? "All" : config.cardLimit}
-              </span>
-            </div>
-            <Slider
-              min={DRILL_CONFIG_BOUNDS.cardLimit.min}
-              max={DRILL_CONFIG_BOUNDS.cardLimit.max}
-              step={1}
-              value={[config.cardLimit]}
-              onValueChange={(v) =>
-                dispatch(
-                  updateConfig({
-                    cardLimit: v[0] ?? DEFAULT_DRILL_CONFIG.cardLimit,
-                  }),
-                )
-              }
-            />
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              0 = all cards in the set.
-            </p>
-          </div>
-        </section>
-
-        {/* Live score toggle */}
-        <section className="mb-6 rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Gauge className="h-4 w-4 text-muted-foreground" />
-            <span>Live scoreboard</span>
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-              Show grades as they catch up, or only at the end.
-            </p>
-            <label className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center">
-              <Switch
-                checked={config.liveScore}
-                onCheckedChange={(checked) =>
-                  dispatch(updateConfig({ liveScore: checked }))
-                }
-              />
-            </label>
-          </div>
-        </section>
-
-        {/* VISION §3 — live session adaptation: the unseen queue tilts toward
-            struggling topics as grades resolve, in THIS session. */}
-        <section className="mb-5 rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Zap className="h-4 w-4 text-muted-foreground" />
-            <span>Adapt to how you&apos;re doing</span>
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-              Upcoming cards reorder toward the topics you&apos;re missing —
-              during the drill, not the next one.
-            </p>
-            <label className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center">
-              <Switch
-                checked={config.adaptive}
-              onCheckedChange={(checked) =>
-                dispatch(updateConfig({ adaptive: checked }))
-              }
-            />
-            </label>
-          </div>
-        </section>
-
-        {/* Hear the questions (optional TTS) — generated on-demand + cached. */}
-        <section className="mb-5 rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Volume2 className="h-4 w-4 text-muted-foreground" />
-            <span>Hear the questions</span>
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-              A fast-paced host reads each question aloud. Generated once,
-              then cached for instant playback.
-            </p>
-            <label className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center">
-              <Switch
-                checked={config.spokenFronts}
-              onCheckedChange={(checked) =>
-                dispatch(updateConfig({ spokenFronts: checked }))
-              }
-            />
-            </label>
-          </div>
-
-          {config.spokenFronts && selectedSet && (
-            <div className="mt-3 border-t border-border pt-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">
-                  {prepReadError != null
-                    ? "Couldn't check which cards already have cached audio — Prepare only generates what is missing."
-                    : prepDone
-                    ? "Question audio is cached and durable — it plays instantly, and nothing is re-generated when you return."
-                    : prepProgress && prepProgress.done > 0
-                      ? `${prepProgress.done} of ${prepProgress.total} cards already have cached audio — Prepare only generates the ${prepProgress.total - prepProgress.done} still missing.`
-                      : "Prepare the audio once (it's cached durably) so there's no delay mid-drill."}
-                </p>
+                <span className="flex min-w-0 items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{loadError}</span>
+                </span>
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
-                  className="shrink-0 gap-1.5"
-                  onClick={() => void prepareAudio()}
-                  disabled={prepping || prepDone}
+                  onClick={retrySetsLoad}
                 >
-                  {prepping ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : prepDone ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  ) : (
-                    <Volume2 className="h-4 w-4" />
-                  )}
-                  {prepping
-                    ? "Preparing…"
-                    : prepDone
-                      ? "Audio ready"
-                      : prepProgress && prepProgress.done > 0
-                        ? `Prepare ${prepProgress.total - prepProgress.done} more`
-                        : "Prepare audio"}
+                  Retry
+                </Button>
+                <ErrorAlchemyMenu />
+              </div>
+            ) : sets.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-background px-3 py-6 text-center">
+                <p className="text-sm text-muted-foreground">No decks yet</p>
+                <Button asChild size="sm">
+                  <Link href="/education/flashcards/new">
+                    <Plus className="h-4 w-4" />
+                    New deck
+                  </Link>
                 </Button>
               </div>
-              {prepReadError == null && prepProgress && prepProgress.total > 0 && (
-                <div className="mt-2">
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-primary transition-[width]"
-                      style={{
-                        width: `${Math.round((prepProgress.done / prepProgress.total) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {prepProgress.done} / {prepProgress.total} ready
-                  </p>
+            ) : (
+              <>
+                <FastFireSetPicker
+                  id="fastfire-set-picker"
+                  sets={sets}
+                  value={config.setId}
+                  onChange={(setId) => dispatch(updateConfig({ setId }))}
+                />
+                {/* A link to a deck that is not in the list (archived, or not
+                    the person's to see) says so — never a silently empty
+                    picker (page-pass 2026-09-27). */}
+                {config.setId && !selectedSet && (
+                  <MissingDeckNotice
+                    setId={config.setId}
+                    onRestored={retrySetsLoad}
+                  />
+                )}
+              </>
+            )}
+
+            {/* How you answer — voice or typing. Voice is absent (never a
+                button that fails) when the browser has no usable mic. */}
+            <div className="mt-4">
+              {voicePossible ? (
+                <div
+                  role="radiogroup"
+                  aria-label="Answer by"
+                  className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
+                >
+                  {(
+                    [
+                      { value: "voice", label: "Speak", Icon: Mic },
+                      { value: "typed", label: "Type", Icon: Keyboard },
+                    ] as const
+                  ).map(({ value, label, Icon }) => {
+                    const selected = config.answerMode === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        className={cn(
+                          "flex min-h-11 items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors",
+                          selected
+                            ? "bg-card text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                        onClick={() =>
+                          dispatch(updateConfig({ answerMode: value }))
+                        }
+                      >
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
+              ) : (
+                <p className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2.5 text-sm text-muted-foreground">
+                  <Keyboard className="h-4 w-4 shrink-0" />
+                  {micSupported ? "Mic blocked — you'll type" : "No mic — you'll type"}
+                  <InfoHint
+                    text={
+                      micSupported
+                        ? "Allow the microphone in your browser's site settings to answer aloud."
+                        : "This browser has no microphone to answer aloud."
+                    }
+                    label="Why typing"
+                  />
+                </p>
               )}
             </div>
-          )}
 
-          {config.spokenFronts && (
-            <div className="mt-3 border-t border-border pt-3">
-              <div className="mb-2 flex items-center justify-between text-sm font-medium text-foreground">
-                <span className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  Answer time (after the question is read)
-                </span>
-                <span className="tabular-nums text-primary">
-                  {config.voiceAnswerSeconds}s
-                </span>
-              </div>
-              <Slider
-                min={DRILL_CONFIG_BOUNDS.voiceAnswerSeconds.min}
-                max={maxVoiceAnswerSeconds(config.secondsPerCard)}
-                step={1}
-                value={[config.voiceAnswerSeconds]}
-                onValueChange={(v) =>
+            {startError && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{startError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2 empty:hidden">
+              <coppa.Gate />
+              <EntitlementMeter capability="education.live_grade" />
+            </div>
+            <Button
+              size="lg"
+              className="mt-3 h-12 w-full gap-2 text-base font-semibold"
+              disabled={!selectedSet || starting || liveGrade.isChecking}
+              onClick={() => void launch()}
+            >
+              {starting ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  {typed ? "Starting…" : "Warming the mic…"}
+                </>
+              ) : (
+                <>
+                  <Flame className="h-5 w-5" />
+                  Start
+                </>
+              )}
+            </Button>
+            {/* Respectful paywall — opens only on a real cap. */}
+            <liveGrade.Paywall />
+            <enrichGuard.Paywall />
+
+            <div className="mt-2 grid grid-cols-2 gap-1">
+              <Button asChild variant="ghost" className="min-h-11 text-muted-foreground">
+                <Link href={progressHref}>
+                  <TrendingUp className="h-4 w-4" />
+                  Progress
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" className="min-h-11 text-muted-foreground">
+                <Link href="/education/flashcards/new">
+                  <Plus className="h-4 w-4" />
+                  New deck
+                </Link>
+              </Button>
+            </div>
+          </section>
+
+          {/* SETTINGS */}
+          <div className="flex flex-col gap-4">
+            <SettingsGroup>
+              <SliderRow
+                icon={Clock}
+                label="Seconds per card"
+                value={`${config.secondsPerCard}s`}
+                min={DRILL_CONFIG_BOUNDS.secondsPerCard.min}
+                max={DRILL_CONFIG_BOUNDS.secondsPerCard.max}
+                current={config.secondsPerCard}
+                onChange={(v) =>
                   dispatch(
                     updateConfig({
-                      voiceAnswerSeconds:
-                        v[0] ?? DEFAULT_DRILL_CONFIG.voiceAnswerSeconds,
+                      secondsPerCard: v ?? DEFAULT_DRILL_CONFIG.secondsPerCard,
                     }),
                   )
                 }
               />
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                The timer starts only after the spoken question finishes — so
-                you never lose time to the reading. Kept shorter than the{" "}
-                {config.secondsPerCard}s above since you don&apos;t spend part
-                of it reading.
-              </p>
-            </div>
-          )}
-        </section>
+              <SliderRow
+                icon={Hash}
+                label="Cards"
+                value={config.cardLimit === 0 ? "All" : `${config.cardLimit}`}
+                min={DRILL_CONFIG_BOUNDS.cardLimit.min}
+                max={DRILL_CONFIG_BOUNDS.cardLimit.max}
+                current={config.cardLimit}
+                onChange={(v) =>
+                  dispatch(
+                    updateConfig({
+                      cardLimit: v ?? DEFAULT_DRILL_CONFIG.cardLimit,
+                    }),
+                  )
+                }
+              />
+              <SliderRow
+                icon={Bell}
+                label="Warning beep"
+                hint="A soft beep this many seconds before time runs out."
+                value={
+                  config.warningSeconds === 0
+                    ? "Off"
+                    : `${config.warningSeconds}s left`
+                }
+                min={DRILL_CONFIG_BOUNDS.warningSeconds.min}
+                max={DRILL_CONFIG_BOUNDS.warningSeconds.max}
+                current={config.warningSeconds}
+                onChange={(v) =>
+                  dispatch(
+                    updateConfig({
+                      warningSeconds: v ?? DEFAULT_DRILL_CONFIG.warningSeconds,
+                    }),
+                  )
+                }
+              />
+            </SettingsGroup>
 
-        </div>
-        <div>
-        {/* How you answer — voice or typing. */}
-        <section className="mb-5 rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            {typed ? (
-              <Keyboard className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <Mic className="h-4 w-4 text-muted-foreground" />
-            )}
-            <span>Answer by</span>
-          </div>
-          {voicePossible ? (
-            <div
-              role="radiogroup"
-              aria-label="Answer by"
-              className="mt-3 grid grid-cols-2 gap-2"
-            >
-              {(
-                [
-                  { value: "voice", label: "Speaking", Icon: Mic },
-                  { value: "typed", label: "Typing", Icon: Keyboard },
-                ] as const
-              ).map(({ value, label, Icon }) => {
-                const selected = config.answerMode === value;
-                return (
-                  <Button
-                    key={value}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    variant={selected ? "default" : "outline"}
-                    className={cn("min-h-11 gap-2")}
-                    onClick={() => dispatch(updateConfig({ answerMode: value }))}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </Button>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {micSupported
-                ? "Typing — the microphone is blocked for this site. Allow it in your browser's site settings to answer aloud."
-                : "Typing — this browser has no microphone to answer aloud."}
-            </p>
-          )}
-        </section>
+            <SettingsGroup>
+              <SwitchRow
+                icon={Gauge}
+                label="Live scoreboard"
+                hint="Show grades as they come in, or only at the end."
+                checked={config.liveScore}
+                onChange={(checked) =>
+                  dispatch(updateConfig({ liveScore: checked }))
+                }
+              />
+              {/* VISION §3 — live session adaptation: the unseen queue tilts
+                  toward struggling topics as grades resolve, in THIS session. */}
+              <SwitchRow
+                icon={Zap}
+                label="Adapt to you"
+                hint="Upcoming cards shift toward the topics you're missing."
+                checked={config.adaptive}
+                onChange={(checked) =>
+                  dispatch(updateConfig({ adaptive: checked }))
+                }
+              />
+              {/* Hear the questions (optional TTS) — generated on-demand,
+                  cached durably in fc_detail. */}
+              <SwitchRow
+                icon={Volume2}
+                label="Read questions aloud"
+                hint="A host reads each question; audio is made once and cached."
+                checked={config.spokenFronts}
+                onChange={(checked) =>
+                  dispatch(updateConfig({ spokenFronts: checked }))
+                }
+              />
+              {config.spokenFronts && (
+                <SliderRow
+                  icon={Clock}
+                  label="Answer time"
+                  hint="The timer starts after the question is read."
+                  value={`${config.voiceAnswerSeconds}s`}
+                  min={DRILL_CONFIG_BOUNDS.voiceAnswerSeconds.min}
+                  max={maxVoiceAnswerSeconds(config.secondsPerCard)}
+                  current={config.voiceAnswerSeconds}
+                  onChange={(v) =>
+                    dispatch(
+                      updateConfig({
+                        voiceAnswerSeconds:
+                          v ?? DEFAULT_DRILL_CONFIG.voiceAnswerSeconds,
+                      }),
+                    )
+                  }
+                  inset
+                />
+              )}
+              {config.spokenFronts && selectedSet && (
+                <PrepareRow
+                  icon={Volume2}
+                  label="Question audio"
+                  progress={prepReadError != null ? null : prepProgress}
+                  readFailed={prepReadError != null}
+                  busy={prepping}
+                  done={prepDone}
+                  readyLabel="Ready"
+                  onPrepare={() => void prepareAudio()}
+                  inset
+                />
+              )}
+              {/* Instant help (Q15) — pre-recorded "I'm confused" audio per
+                  card, so mid-drill help plays with zero wait. */}
+              {selectedSet && (
+                <PrepareRow
+                  icon={HelpCircle}
+                  label="Instant help"
+                  hint="A recorded explanation per card, so help plays with no wait."
+                  progress={helpReadError != null ? null : helpPrepProgress}
+                  readFailed={helpReadError != null}
+                  busy={helpPrepping}
+                  done={helpPrepDone}
+                  readyLabel="Ready"
+                  onPrepare={() => void prepareHelpAudio()}
+                />
+              )}
+            </SettingsGroup>
 
-        {/* Instant help (Q15) — pre-recorded "I'm confused" audio per card, so
-            mid-drill help plays with zero wait. Prepared once, cached durably. */}
-        {selectedSet && (
-          <section className="mb-5 rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <HelpCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <div>
-                  <div className="text-sm font-medium text-foreground">
-                    Instant help
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {helpReadError != null
-                      ? "Couldn't check which cards already have a pre-recorded explanation — Prepare only covers what is missing."
-                      : helpPrepDone
-                      ? "Every card has a pre-recorded explanation — “I'm confused” answers instantly, no wait."
-                      : helpPrepProgress && helpPrepProgress.done > 0
-                        ? `${helpPrepProgress.done} of ${helpPrepProgress.total} cards have a pre-recorded explanation — Prepare covers the ${helpPrepProgress.total - helpPrepProgress.done} still missing.`
-                        : "Pre-record a short explanation for each card so “I'm confused” answers instantly mid-drill."}
-                  </div>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="shrink-0 gap-1.5"
-                onClick={() => void prepareHelpAudio()}
-                disabled={helpPrepping || helpPrepDone}
-              >
-                {helpPrepping ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : helpPrepDone ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                ) : (
-                  <HelpCircle className="h-4 w-4" />
-                )}
-                {helpPrepping
-                  ? "Preparing…"
-                  : helpPrepDone
-                    ? "Help ready"
-                    : helpPrepProgress && helpPrepProgress.done > 0
-                      ? `Prepare ${helpPrepProgress.total - helpPrepProgress.done} more`
-                      : "Prepare help"}
-              </Button>
-            </div>
-            {helpReadError == null && helpPrepProgress && helpPrepProgress.total > 0 && (
-              <div className="mt-2">
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-[width]"
-                    style={{
-                      width: `${Math.round((helpPrepProgress.done / helpPrepProgress.total) * 100)}%`,
-                    }}
+            {/* Device check (Zoom/Meet style) — the shared MediaDevicesPanel
+                (also openable as a window from the avatar menu). Collapsed by
+                default; Start warms the mic in its own gesture either way. */}
+            {!typed && (
+              <section className="overflow-hidden rounded-2xl border border-border bg-card">
+                <button
+                  type="button"
+                  aria-expanded={showDevices}
+                  onClick={() => setShowDevices((v) => !v)}
+                  className="flex min-h-12 w-full items-center justify-between gap-2 px-4 py-3 text-left"
+                >
+                  <span className="flex items-center gap-3 text-sm font-medium text-foreground">
+                    <Headphones className="h-4 w-4 text-muted-foreground" />
+                    Mic and speaker
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-muted-foreground transition-transform",
+                      showDevices && "rotate-180",
+                    )}
                   />
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {helpPrepProgress.done} / {helpPrepProgress.total} ready
-                </p>
-              </div>
+                </button>
+                {showDevices && (
+                  <div className="border-t border-border">
+                    {/* A drill never uses the camera. */}
+                    <MediaDevicesPanel showCamera={false} />
+                  </div>
+                )}
+              </section>
             )}
-          </section>
-        )}
-
-        {/* Device check (Zoom/Meet style) — confirm + test mic/speaker before the
-            drill. Reuses the shared MediaDevicesPanel (also openable as a window
-            from the avatar menu via dispatch). Built to host video later. */}
-        {!typed && (
-        <section className="mb-5 rounded-xl border border-border bg-card">
-          <button
-            type="button"
-            onClick={() => setShowDevices((v) => !v)}
-            className="flex min-h-11 w-full items-center justify-between gap-2 px-4 py-3 text-left"
-          >
-            <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Headphones className="h-4 w-4 text-muted-foreground" />
-              Check your audio
-            </span>
-            {showDevices ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
-          </button>
-          {showDevices && (
-            <div className="border-t border-border">
-              {/* A drill never uses the camera — no camera controls here. */}
-              <MediaDevicesPanel showCamera={false} />
-            </div>
-          )}
-        </section>
-        )}
-
-        {startError && (
-          <Alert variant="destructive" className="mb-3">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{startError}</AlertDescription>
-          </Alert>
-        )}
-
-        <div className="mb-2 flex justify-center">
-          <coppa.Gate />
-          <EntitlementMeter capability="education.live_grade" />
-        </div>
-        <Button
-          size="lg"
-          className="w-full gap-2"
-          disabled={!selectedSet || starting || liveGrade.isChecking}
-          onClick={() => void launch()}
-        >
-          {starting ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" />
-              {typed ? "Starting…" : "Warming the mic…"}
-            </>
-          ) : (
-            <>
-              <Flame className="h-5 w-5" />
-              Start Fast Fire
-            </>
-          )}
-        </Button>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          {typed
-            ? "Type each answer and press Enter before the timer runs out."
-            : "One microphone prompt for the whole session. Answer each card aloud before the timer runs out."}
-        </p>
-        {/* Respectful paywall — opens only on a real cap; decides for itself when it shows. */}
-        <liveGrade.Paywall />
-        <enrichGuard.Paywall />
-
-        {/* Entry-flow affordances: create a new set, or review past results. */}
-        <div className="mt-5 flex flex-col items-stretch justify-center gap-1 sm:flex-row sm:items-center">
-          <Button asChild variant="ghost" className="min-h-11">
-            <Link href="/education/flashcards/new">
-              <Plus className="h-4 w-4" />
-              Create a new deck
-            </Link>
-          </Button>
-          <Button asChild variant="ghost" className="min-h-11">
-            <Link href="/education/flashcards/sessions">
-              <History className="h-4 w-4" />
-              View past results
-            </Link>
-          </Button>
-        </div>
-        </div>
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** One iOS-Settings-style group: rows divided by hairlines. */
+function SettingsGroup({ children }: { children: ReactNode }) {
+  return (
+    <section className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+      {children}
+    </section>
+  );
+}
+
+function RowLabel({
+  icon: Icon,
+  label,
+  hint,
+}: {
+  icon: LucideIcon;
+  label: string;
+  hint?: string;
+}) {
+  return (
+    <span className="flex min-w-0 items-center gap-3 text-sm font-medium text-foreground">
+      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <span className="truncate">{label}</span>
+      {hint && <InfoHint text={hint} label={`About ${label}`} />}
+    </span>
+  );
+}
+
+function SliderRow({
+  icon,
+  label,
+  hint,
+  value,
+  min,
+  max,
+  current,
+  onChange,
+  inset = false,
+}: {
+  icon: LucideIcon;
+  label: string;
+  hint?: string;
+  value: string;
+  min: number;
+  max: number;
+  current: number;
+  onChange: (value: number | undefined) => void;
+  inset?: boolean;
+}) {
+  return (
+    <div className={cn("px-4 py-3", inset && "bg-muted/30")}>
+      <div className="mb-2.5 flex items-center justify-between gap-3">
+        <RowLabel icon={icon} label={label} hint={hint} />
+        <span className="shrink-0 text-sm font-semibold tabular-nums text-primary">
+          {value}
+        </span>
+      </div>
+      <Slider
+        min={min}
+        max={max}
+        step={1}
+        value={[current]}
+        aria-label={label}
+        onValueChange={(v) => onChange(v[0])}
+      />
+    </div>
+  );
+}
+
+function SwitchRow({
+  icon,
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  icon: LucideIcon;
+  label: string;
+  hint?: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex min-h-12 items-center justify-between gap-3 py-1 pl-4 pr-2">
+      <RowLabel icon={icon} label={label} hint={hint} />
+      <label className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center">
+        <Switch
+          checked={checked}
+          aria-label={label}
+          onCheckedChange={onChange}
+        />
+      </label>
+    </div>
+  );
+}
+
+/** A prepare-once asset (question audio, instant help): readiness + one button. */
+function PrepareRow({
+  icon,
+  label,
+  hint,
+  progress,
+  readFailed,
+  busy,
+  done,
+  readyLabel,
+  onPrepare,
+  inset = false,
+}: {
+  icon: LucideIcon;
+  label: string;
+  hint?: string;
+  progress: { done: number; total: number } | null;
+  readFailed: boolean;
+  busy: boolean;
+  done: boolean;
+  readyLabel: string;
+  onPrepare: () => void;
+  inset?: boolean;
+}) {
+  const missing = progress ? progress.total - progress.done : null;
+  const pct =
+    progress && progress.total > 0
+      ? Math.round((progress.done / progress.total) * 100)
+      : null;
+  return (
+    <div className={cn("px-4 py-3", inset && "bg-muted/30")}>
+      <div className="flex items-center justify-between gap-3">
+        <RowLabel icon={icon} label={label} hint={hint} />
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            className="text-xs tabular-nums text-muted-foreground"
+            title={readFailed ? "Couldn't check what's cached" : undefined}
+          >
+            {readFailed || !progress ? "—" : `${progress.done}/${progress.total}`}
+          </span>
+          {done ? (
+            <span className="inline-flex min-h-11 items-center gap-1 px-2 text-sm font-medium text-green-600 dark:text-green-400">
+              <CheckCircle2 className="h-4 w-4" />
+              {readyLabel}
+            </span>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-11 gap-1.5 sm:min-h-9"
+              onClick={onPrepare}
+              disabled={busy}
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {busy
+                ? "Preparing…"
+                : missing && progress && progress.done > 0
+                  ? `Prepare ${missing}`
+                  : "Prepare"}
+            </Button>
+          )}
+        </div>
+      </div>
+      {!readFailed && pct !== null && !done && progress && progress.done > 0 && (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary transition-[width]"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }

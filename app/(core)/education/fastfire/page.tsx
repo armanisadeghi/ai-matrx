@@ -22,7 +22,16 @@ export default async function FastFireToolPage({
   const { set } = await searchParams;
   return (
     <>
-      <EducationToolHeader title="Fast Fire" />
+      {/* Opened from a deck, back returns to that deck. */}
+      <EducationToolHeader
+        title="Fast Fire"
+        {...(set
+          ? {
+              backHref: `/education/flashcards/${encodeURIComponent(set)}`,
+              backLabel: "Back to deck",
+            }
+          : {})}
+      />
       <div className="h-full overflow-hidden bg-textured">
         {/* One scroll owner for setup and scoreboard. The header offset keeps
             their first interactive controls below the AppShell glass. */}

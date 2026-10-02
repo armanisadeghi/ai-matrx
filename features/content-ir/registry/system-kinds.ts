@@ -64,6 +64,7 @@ import { MEDIA_LIST_KIND_DEFINITIONS } from "../kinds/media-list";
 import { NEWS_MONITOR_KIND_DEFINITIONS } from "../kinds/news-monitor";
 import { DECISION_ANSWERS_KIND_DEFINITIONS } from "../kinds/decision-answers";
 import { LIST_CHANGE_PROPOSAL_KIND_DEFINITIONS } from "../kinds/list-change-proposal";
+import { FLASHCARD_DECK_CARDS_KIND_DEFINITIONS } from "../kinds/flashcard-deck-cards";
 import { RESOURCE_COLLECTION_KIND_DEFINITIONS } from "../kinds/resource-collection";
 import { PROGRESS_TRACKER_KIND_DEFINITIONS } from "../kinds/progress-tracker";
 import { TIMELINE_KIND_DEFINITIONS } from "../kinds/timeline";
@@ -130,6 +131,8 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...NEWS_MONITOR_KIND_DEFINITIONS,
   ...DECISION_ANSWERS_KIND_DEFINITIONS,
   ...LIST_CHANGE_PROPOSAL_KIND_DEFINITIONS,
+  // Deck-wide AI steps are offered the deck as this input kind (data-only).
+  ...FLASHCARD_DECK_CARDS_KIND_DEFINITIONS,
   ...RESOURCE_COLLECTION_KIND_DEFINITIONS,
   ...PROGRESS_TRACKER_KIND_DEFINITIONS,
   ...TIMELINE_KIND_DEFINITIONS,

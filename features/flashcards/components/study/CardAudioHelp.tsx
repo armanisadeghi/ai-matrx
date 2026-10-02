@@ -32,6 +32,12 @@ import {
 } from "@/features/flashcards/fast-fire/spoken-front/generateSpokenFront.thunk";
 import type { VoiceTutorCardContext } from "./VoiceTutorPanel";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
+import { cn } from "@/lib/utils";
+import {
+  STUDY_TOOL_BODY,
+  STUDY_TOOL_BUTTON,
+  STUDY_TOOL_BUTTON_ACTIVE,
+} from "@/features/education/study/components/studyToolbar";
 
 const VoiceTutorPanel = lazy(() =>
   import("./VoiceTutorPanel").then((m) => ({ default: m.VoiceTutorPanel })),
@@ -44,6 +50,7 @@ export function CardAudioHelp({
   topic,
   revealed,
   spokenFrontFileId,
+  variant = "stacked",
   className,
 }: {
   cardId: string;
@@ -54,8 +61,12 @@ export function CardAudioHelp({
   revealed: boolean;
   /** Cached spoken-front audio, when the card already has one. */
   spokenFrontFileId?: string | null;
+  /** `toolbar`: two compact triggers in the host's study tool row, bodies
+   *  below it (see studyToolbar.ts). `stacked`: the standalone block. */
+  variant?: "stacked" | "toolbar";
   className?: string;
 }) {
+  const toolbar = variant === "toolbar";
   useFlashcardMandates(["spokenFrontTts"]);
   const dispatch = useAppDispatch();
   const [fileId, setFileId] = useState<string | null>(
@@ -104,45 +115,85 @@ export function CardAudioHelp({
     setPlaying(true);
   }
 
+  const hearIcon = generating ? (
+    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+  ) : playing ? (
+    <AudioLines className="h-3.5 w-3.5" />
+  ) : (
+    <Volume2 className="h-3.5 w-3.5" />
+  );
+
+  const triggers = toolbar ? (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={cn(STUDY_TOOL_BUTTON, playing && STUDY_TOOL_BUTTON_ACTIVE)}
+        onClick={() => void hearCard()}
+        disabled={generating}
+        title={playing ? "Stop" : "Read this card aloud"}
+        aria-label={playing ? "Stop reading" : "Listen to this card"}
+      >
+        {hearIcon}
+        {playing ? "Stop" : "Listen"}
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={cn(STUDY_TOOL_BUTTON, tutorOpen && STUDY_TOOL_BUTTON_ACTIVE)}
+        onClick={() => setTutorOpen((o) => !o)}
+        aria-pressed={tutorOpen}
+        title="Talk this card through with a voice tutor"
+        aria-label="Talk it through"
+      >
+        <Mic className="h-3.5 w-3.5" />
+        Talk
+      </Button>
+    </>
+  ) : (
+    <div className="flex items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="flex-1 gap-1.5 text-xs"
+        onClick={() => void hearCard()}
+        disabled={generating}
+      >
+        {hearIcon}
+        {generating
+          ? "Narrating this card…"
+          : playing
+            ? "Playing — tap to stop"
+            : "Hear this card"}
+      </Button>
+      <Button
+        type="button"
+        variant={tutorOpen ? "secondary" : "outline"}
+        size="sm"
+        className="flex-1 gap-1.5 text-xs"
+        onClick={() => setTutorOpen((o) => !o)}
+      >
+        <Mic className="h-3.5 w-3.5" />
+        {tutorOpen ? "Close voice tutor" : "Talk it through"}
+      </Button>
+    </div>
+  );
+
   return (
-    <div className={className}>
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="flex-1 gap-1.5 text-xs"
-          onClick={() => void hearCard()}
-          disabled={generating}
-        >
-          {generating ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : playing ? (
-            <AudioLines className="h-3.5 w-3.5" />
-          ) : (
-            <Volume2 className="h-3.5 w-3.5" />
-          )}
-          {generating
-            ? "Narrating this card…"
-            : playing
-              ? "Playing — tap to stop"
-              : "Hear this card"}
-        </Button>
-        <Button
-          type="button"
-          variant={tutorOpen ? "secondary" : "outline"}
-          size="sm"
-          className="flex-1 gap-1.5 text-xs"
-          onClick={() => setTutorOpen((o) => !o)}
-        >
-          <Mic className="h-3.5 w-3.5" />
-          {tutorOpen ? "Close voice tutor" : "Talk it through"}
-        </Button>
-      </div>
+    <div className={toolbar ? "contents" : className}>
+      {triggers}
 
       {failed && (
-        <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
-          Couldn&apos;t narrate this card right now — try again in a moment.
+        <p
+          className={cn(
+            "mt-1.5 text-center text-[11px] text-muted-foreground",
+            toolbar && STUDY_TOOL_BODY,
+          )}
+        >
+          Couldn&apos;t narrate this card. Try again.
         </p>
       )}
 
@@ -158,7 +209,12 @@ export function CardAudioHelp({
       {tutorOpen && (
         <Suspense
           fallback={
-            <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+            <div
+              className={cn(
+                "mt-2 flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground",
+                toolbar && STUDY_TOOL_BODY,
+              )}
+            >
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Getting your tutor ready…
             </div>
@@ -174,7 +230,10 @@ export function CardAudioHelp({
                 revealed,
               } satisfies VoiceTutorCardContext
             }
-            className="mt-2 rounded-lg border border-border bg-muted/30 p-3"
+            className={cn(
+              "mt-2 rounded-lg border border-border bg-muted/30 p-3",
+              toolbar && STUDY_TOOL_BODY,
+            )}
           />
         </Suspense>
       )}

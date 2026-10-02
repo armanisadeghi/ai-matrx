@@ -1,24 +1,18 @@
-// /education/flashcards/[setId]/sessions — study sessions for ONE set.
-// Server shell → the mode-agnostic SessionsBrowser, scoped to this set's id.
-// Rows open the shared session detail under /education/flashcards/sessions.
+// /education/flashcards/[setId]/sessions — the deck's Progress screen (the deck
+// page's "Progress" button): mastery, streak, scores over time, the cards that
+// need practice, and every session. Server shell → the client DeckProgressView.
+// Session rows open the shared session detail under /education/flashcards/sessions.
 import type { Metadata } from "next";
 import { toolMetadata } from "@/features/education/route-helpers";
-import { SessionsBrowser } from "@/features/education/study/components/SessionsBrowser";
+import { DeckProgressView } from "@/features/flashcards/components/set-detail/DeckProgressView";
 
 export const metadata: Metadata = toolMetadata("flashcards");
 
-interface SetSessionsPageProps {
+interface DeckProgressPageProps {
   params: Promise<{ setId: string }>;
 }
 
-export default async function SetSessionsPage({ params }: SetSessionsPageProps) {
+export default async function DeckProgressPage({ params }: DeckProgressPageProps) {
   const { setId } = await params;
-  return (
-    <SessionsBrowser
-      setId={setId}
-      title="Sessions for this set"
-      backHref={`/education/flashcards/${setId}`}
-      detailBasePath="/education/flashcards/sessions"
-    />
-  );
+  return <DeckProgressView setId={setId} />;
 }

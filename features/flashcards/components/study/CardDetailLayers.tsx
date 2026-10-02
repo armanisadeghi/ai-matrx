@@ -45,11 +45,17 @@ import { selectCardDetailLayers } from "../../data/cardDetailLayers";
 import { enrichAndSaveCard } from "../../data/enrichCardLane";
 import type { CardWithDetails, FcDetailRow } from "../../data/types";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
+import {
+  STUDY_TOOL_BODY,
+  STUDY_TOOL_BUTTON,
+  STUDY_TOOL_BUTTON_ACTIVE,
+} from "@/features/education/study/components/studyToolbar";
 
 export function CardDetailLayers({
   card,
   canEnrich = false,
   onEnriched,
+  variant = "stacked",
   className,
 }: {
   card: CardWithDetails;
@@ -60,6 +66,9 @@ export function CardDetailLayers({
   canEnrich?: boolean;
   /** Fired after new layers land so the driver can refetch its own copy. */
   onEnriched?: () => void;
+  /** `toolbar`: one "Explain" trigger in the host's study tool row, the layers
+   *  list below it (see studyToolbar.ts). `stacked`: the standalone strip. */
+  variant?: "stacked" | "toolbar";
   className?: string;
 }) {
   useFlashcardMandates(canEnrich ? ["enrichCard"] : []);
@@ -119,6 +128,103 @@ export function CardDetailLayers({
   // shell under every card.
   if (count === 0 && !canEnrich) return null;
 
+  const working = busy || enrichGuard.isChecking;
+
+  const layerList = (
+    <div className="space-y-2 px-2.5 py-2.5">
+      {layers.map((layer) => (
+        <div key={layer.id} className="min-w-0">
+          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {layer.label}
+          </div>
+          <div className="text-sm leading-relaxed text-foreground">
+            <ConfigurableMarkdownContent
+              imagePolicy="ai"
+              content={layer.text}
+              isStreamActive={false}
+              showCopyButton={false}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (variant === "toolbar") {
+    // One trigger. With stored layers it toggles them open (Add more lives
+    // inside); with none it asks the AI straight away.
+    const showBody = (open && count > 0) || busy;
+    return (
+      <div className="contents">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(STUDY_TOOL_BUTTON, showBody && STUDY_TOOL_BUTTON_ACTIVE)}
+          disabled={count === 0 && working}
+          aria-expanded={count > 0 ? open : undefined}
+          title={count > 0 ? "More on this card" : "Explain this card further"}
+          aria-label="Explain"
+          onClick={() =>
+            count > 0 ? setOpen((o) => !o) : void enrich()
+          }
+        >
+          {working && count === 0 ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Lightbulb className="h-3.5 w-3.5" />
+          )}
+          Explain
+          {count > 0 && (
+            <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold tabular-nums text-primary">
+              {/* read-gate-exempt: layers are the card prop's own details plus those this session's enrichment wrote; no read happens here */}
+              {count}
+            </span>
+          )}
+        </Button>
+
+        <coppa.Gate />
+
+        {showBody && (
+          <div
+            className={cn(
+              "rounded-lg border border-border bg-card/60 text-left",
+              STUDY_TOOL_BODY,
+            )}
+          >
+            {busy && (
+              <LiveRunDisplay
+                conversationId={run.conversationId}
+                pending={!run.conversationId}
+                label="Building more on this card"
+                className="m-2"
+                bodyClassName="max-h-56"
+              />
+            )}
+            {open && count > 0 && layerList}
+            {open && count > 0 && canEnrich && !busy && (
+              <div className="flex justify-end border-t border-border p-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5 px-2 text-xs"
+                  disabled={working}
+                  onClick={() => void enrich()}
+                >
+                  <Lightbulb className="h-3.5 w-3.5" />
+                  Add more
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <enrichGuard.Paywall />
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -159,11 +265,11 @@ export function CardDetailLayers({
             variant="ghost"
             size="sm"
             className="h-8 shrink-0 gap-1.5 px-2 text-xs"
-            disabled={busy || enrichGuard.isChecking}
+            disabled={working}
             onClick={() => void enrich()}
-            title="Ask the AI to explain this card further — the new layers appear right here"
+            title="Explain this card further"
           >
-            {busy || enrichGuard.isChecking ? (
+            {working ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Lightbulb className="h-3.5 w-3.5" />
@@ -188,23 +294,7 @@ export function CardDetailLayers({
       )}
 
       {open && count > 0 && (
-        <div className="space-y-2 border-t border-border px-2.5 py-2.5">
-          {layers.map((layer) => (
-            <div key={layer.id} className="min-w-0">
-              <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {layer.label}
-              </div>
-              <div className="text-sm leading-relaxed text-foreground">
-                <ConfigurableMarkdownContent
-                  imagePolicy="ai"
-                  content={layer.text}
-                  isStreamActive={false}
-                  showCopyButton={false}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+        <div className="border-t border-border">{layerList}</div>
       )}
 
       {/* Respectful paywall — opens only on a real cap. */}

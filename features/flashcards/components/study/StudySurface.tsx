@@ -30,12 +30,13 @@ export function StudySurface({ setId }: { setId: string }) {
     setId,
     withSession: true,
   });
-  const title = study.set?.name ?? "Study";
+  const title = study.set?.name ?? "";
 
   return (
     <>
       <PageHeader>
         <StudyDeckHeader
+          mode="Study"
           title={title}
           backHref={`${EDU_BASE}/${setId}`}
           actions={
@@ -50,7 +51,7 @@ export function StudySurface({ setId }: { setId: string }) {
               />
               <FlashcardStudyWindowDevTrigger
                 setId={setId}
-                title={title}
+                title={title || "Study"}
                 disabled={study.loading || study.cards.length === 0}
               />
             </div>

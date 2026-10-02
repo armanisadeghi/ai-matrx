@@ -34,6 +34,7 @@ import type {
   RecordAttemptInput,
 } from "@/features/education/study/types";
 import type { ReviewResult } from "../types";
+import { pickRound } from "./roundSize";
 
 /** The study item type every flashcard attempt is keyed by in the study spine. */
 const FC_CARD_ITEM_TYPE = "fc_card";
@@ -112,6 +113,9 @@ export interface UseFlashcardStudyResult {
    *  single owning set to re-read — they omit it, and StudyDeck hides the
    *  enhance affordance without a setId anyway. */
   refreshCards?: () => Promise<void>;
+  /** Cards in the loaded deck — more than `cards.length` when the load dealt
+   *  a `round`. Optional: cross-set drivers have no single deck. */
+  deckSize?: number;
 }
 
 export interface UseFlashcardStudyOptions {
@@ -144,6 +148,13 @@ export interface UseFlashcardStudyOptions {
    * Defaults true (the canvas inline view writes no session).
    */
   enabled?: boolean;
+  /**
+   * Deal a shuffled ROUND instead of the whole deck in set order (Write mode).
+   * `size` is the cards dealt (0 = every card); `cardIds`, when set, deals
+   * only those cards (a "missed cards" retake); changing `key` deals again.
+   * Absent = the classic whole deck in order, unchanged.
+   */
+  round?: { size: number; key: number; cardIds?: readonly string[] | null };
 }
 
 function clampIndex(index: number, length: number): number {
@@ -162,7 +173,12 @@ export function useFlashcardStudy(
     mode = STUDY_MODE,
     reshuffleWeighted = false,
     enabled = true,
+    round,
   } = options;
+  const roundSize = round?.size;
+  const roundKey = round?.key;
+  // A string, so an equal list from a fresh array never re-deals.
+  const roundCardIdsKey = round?.cardIds ? round.cardIds.join(",") : null;
 
   const [set, setSet] = useState<FcSetRow | null>(null);
   const [cards, setCards] = useState<CardWithDetails[]>([]);
@@ -195,6 +211,8 @@ export function useFlashcardStudy(
   // for a stable `progress.total` (otherwise the bar would shrink as cards
   // get mastered instead of filling up).
   const [originalCount, setOriginalCount] = useState(0);
+  /** Cards in the loaded deck — larger than `cards` when a round is dealt. */
+  const [deckSize, setDeckSize] = useState(0);
   const [masteredIds, setMasteredIds] = useState<Set<string>>(new Set());
 
   // Render-synced mirrors for `refreshCards`, whose queue rebuild runs AFTER
@@ -304,8 +322,15 @@ export function useFlashcardStudy(
         return;
       }
 
-      const { set: loadedSet, cards: loadedCards } = setRes.data;
+      const { set: loadedSet, cards: deckCards } = setRes.data;
+      let loadedCards = deckCards;
+      if (roundSize !== undefined) {
+        const only = roundCardIdsKey ? new Set(roundCardIdsKey.split(",")) : null;
+        const pool = only ? deckCards.filter((c) => only.has(c.id)) : deckCards;
+        loadedCards = pickRound(pool, only ? 0 : roundSize);
+      }
       setSet(loadedSet);
+      setDeckSize(deckCards.length);
       setCards(loadedCards);
       setOriginalCount(loadedCards.length);
 
@@ -366,7 +391,7 @@ export function useFlashcardStudy(
     return () => {
       cancelled = true;
     };
-  }, [setId, withSession, mode, enabled]);
+  }, [setId, withSession, mode, enabled, roundSize, roundKey, roundCardIdsKey]);
 
   // Re-read the card rows (details/layers/sub-cards) WITHOUT restarting the
   // session — used after an in-session enrich/deepen so the new material shows
@@ -634,5 +659,6 @@ export function useFlashcardStudy(
     sessionId: session?.id ?? null,
     masteredCount: masteredIds.size,
     refreshCards,
+    deckSize,
   };
 }

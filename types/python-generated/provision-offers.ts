@@ -1491,6 +1491,17 @@ export interface FlashcardsExpandCardOffer {
   struggle_signal?: string;
 }
 
+/** Offered shape of provision `flashcards.fix_giveaway_cards` (kind `flashcards.fix_giveaway_cards.offer`). */
+export interface FlashcardsFixGiveawayCardsOffer {
+  __kind?: "flashcards.fix_giveaway_cards.offer";
+  deck_name: string;
+  set_id: string;
+  cards: {
+  cards: unknown[];
+  __kind: "flashcard_deck_cards_v1";
+};
+}
+
 /** Offered shape of provision `flashcards.generate_cards` (kind `flashcards.generate_cards.offer`). */
 export interface FlashcardsGenerateCardsOffer {
   __kind?: "flashcards.generate_cards.offer";
@@ -4880,6 +4891,7 @@ export interface ProvisionOffers {
   "feedback.item_triage": FeedbackItemTriageOffer;
   "flashcards.enrich_card": FlashcardsEnrichCardOffer;
   "flashcards.expand_card": FlashcardsExpandCardOffer;
+  "flashcards.fix_giveaway_cards": FlashcardsFixGiveawayCardsOffer;
   "flashcards.generate_cards": FlashcardsGenerateCardsOffer;
   "flashcards.generate_from_source": FlashcardsGenerateFromSourceOffer;
   "flashcards.grade_spoken": FlashcardsGradeSpokenOffer;
@@ -5215,6 +5227,7 @@ export const PROVISION_OFFER_KINDS = {
   "feedback.item_triage": "feedback.item_triage.offer",
   "flashcards.enrich_card": "flashcards.enrich_card.offer",
   "flashcards.expand_card": "flashcards.expand_card.offer",
+  "flashcards.fix_giveaway_cards": "flashcards.fix_giveaway_cards.offer",
   "flashcards.generate_cards": "flashcards.generate_cards.offer",
   "flashcards.generate_from_source": "flashcards.generate_from_source.offer",
   "flashcards.grade_spoken": "flashcards.grade_spoken.offer",

@@ -3,8 +3,8 @@
 // Phase 1B (Write mode) — free-typed recall graded against the card's back
 // text. Types an answer → auto-graded via normalized Levenshtein similarity
 // (features/flashcards/utils/textSimilarity.ts) → the user confirms or
-// overrides the suggested grade with the SAME three-button row every other
-// mode uses, then it's recorded through useFlashcardStudy's canonical
+// overrides the suggested grade (Enter accepts it; 1/2/3 pick one), then
+// it's recorded through useFlashcardStudy's canonical
 // `grade()` with responseKind='typed' + the typed transcript persisted.
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
@@ -14,12 +14,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CheckCircle2,
   AlertCircle,
+  ArrowRight,
   BookOpen,
-  Trophy,
-  Layers,
-  PenLine,
+  CheckCircle2,
+  Loader2,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -28,7 +28,6 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
 import { StudyDeckHeader } from "./StudyDeckHeader";
-import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { gradeTypedAnswer, type TypedGrade } from "../../utils/textSimilarity";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import {
@@ -36,32 +35,101 @@ import {
   type TypedGradeVerdict,
 } from "../../data/gradeTypedSemantic";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { Loader2 } from "lucide-react";
 import type { ReviewResult } from "../../types";
-import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
+import CardFaceBlock from "@/components/mardown-display/blocks/flashcards/CardFaceBlock";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { cn } from "@/lib/utils";
+import { useSetting } from "@/features/settings/hooks/useSetting";
+import { studyFaces } from "../../utils/cardVariants";
+import { clampRoundSize, roundSizeChoices } from "../../data/roundSize";
+import {
+  ROUND_PAGE_CLASS,
+  RoundComplete,
+  RoundProgress,
+  RoundSizeMenu,
+} from "./round-controls";
 
 const EDU_BASE = "/education/flashcards";
+/** Cards per Write round until the learner picks — typing is slower than
+ *  tapping, so a shorter round than Test's. */
+export const DEFAULT_WRITE_CARD_COUNT = 10;
+const WRITE_CARD_COUNT_SETTING = "userPreferences.flashcard.writeCardCount";
 
-const AUTO_GRADE_LABEL: Record<TypedGrade, string> = {
-  correct: "Looks correct",
-  partial: "Partial match",
-  incorrect: "Doesn't match",
+/** The three grades in key order: 1 = Again, 2 = Partial, 3 = Correct. */
+const GRADE_ORDER: ReviewResult[] = ["incorrect", "partial", "correct"];
+
+const GRADE_UI: Record<
+  ReviewResult,
+  {
+    verdict: string;
+    button: string;
+    icon: typeof XCircle;
+    banner: string;
+    chosen: string;
+  }
+> = {
+  correct: {
+    verdict: "Correct",
+    button: "Correct",
+    icon: CheckCircle2,
+    banner:
+      "border-green-500/50 bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-200",
+    chosen:
+      "border-green-600 bg-green-600 text-white hover:bg-green-600/90 dark:border-green-500 dark:bg-green-600",
+  },
+  partial: {
+    verdict: "Almost",
+    button: "Partial",
+    icon: AlertCircle,
+    banner:
+      "border-amber-500/50 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200",
+    chosen:
+      "border-amber-500 bg-amber-500 text-white hover:bg-amber-500/90 dark:border-amber-500 dark:bg-amber-600",
+  },
+  incorrect: {
+    verdict: "Not quite",
+    button: "Again",
+    icon: XCircle,
+    banner:
+      "border-red-500/50 bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-200",
+    chosen:
+      "border-red-600 bg-red-600 text-white hover:bg-red-600/90 dark:border-red-500 dark:bg-red-600",
+  },
 };
 
 export function WriteSurface({ setId }: { setId: string }) {
   useFlashcardMandates(["gradeTypedAnswer"]);
   const router = useRouter();
+
+  // The round: a shuffled subset at the learner's saved size (durable user
+  // preference), or only the cards missed last round. A new `key` re-deals.
+  const [savedCount, setSavedCount] = useSetting<number>(
+    WRITE_CARD_COUNT_SETTING,
+  );
+  // The size is fixed when a round is dealt, so a preference that arrives
+  // late never reshuffles the cards under the learner. Any size >= the deck
+  // deals every card (pickRound).
+  const sizeFor = (saved: unknown): number =>
+    clampRoundSize(saved, Number.MAX_SAFE_INTEGER, DEFAULT_WRITE_CARD_COUNT);
+  const [round, setRound] = useState<{
+    key: number;
+    size: number;
+    cardIds: string[] | null;
+  }>(() => ({ key: 0, size: sizeFor(savedCount), cardIds: null }));
+
   // The session files under the deck's own organization (see the hook).
   const study = useFlashcardStudy({
     setId,
     withSession: true,
     mode: "write",
+    round,
   });
   const title = study.set?.name ?? "Write";
+  const deckSize = study.deckSize ?? study.cards.length;
   const current = study.cards[study.currentIndex];
+  const faces = current ? studyFaces(current) : null;
   // The LIVE current-card id, for the async verdict guard below. A closure
   // capture is useless there — it would compare the captured id to itself
   // (adversarial finding F1): the ref is what the component sees NOW.
@@ -97,21 +165,29 @@ export function WriteSurface({ setId }: { setId: string }) {
     setUnusable(null);
   }, [current?.id]);
 
-  // One-way latch, not a pure derivation (see StudyDeck's `completed`).
-  const [completed, setCompleted] = useState(false);
-  useEffect(() => {
-    if (
-      study.progress.total > 0 &&
-      study.progress.done >= study.progress.total
-    ) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCompleted(true);
-    }
-  }, [study.progress.done, study.progress.total]);
+  // Derived, not latched: a new round resets the grades, which un-completes it.
+  const completed =
+    study.progress.total > 0 && study.progress.done >= study.progress.total;
+  const missedIds = Object.entries(study.resultsByCard)
+    .filter(([, r]) => r !== undefined && r !== "correct")
+    .map(([id]) => id);
 
-  const submitAnswer = (): void => {
-    if (!current || submitted) return;
-    setAutoGrade(gradeTypedAnswer(typed, current.back));
+  const sizeChoices = roundSizeChoices(deckSize);
+  // The saved size as this deck deals it (a missed-cards retake is shorter).
+  const dealtSize = clampRoundSize(
+    savedCount,
+    deckSize,
+    DEFAULT_WRITE_CARD_COUNT,
+  );
+  const changeSize = (count: number): void => {
+    setSavedCount(count);
+    setRound((r) => ({ key: r.key + 1, size: sizeFor(count), cardIds: null }));
+  };
+
+  const submitAnswer = (answer: string): void => {
+    if (!current || !faces || submitted) return;
+    setTyped(answer);
+    setAutoGrade(gradeTypedAnswer(answer, faces.back));
     setSubmitted(true);
     // A previous card's late verdict must never survive into this submit
     // (F1): clear before dispatching, and gate the arrival on the LIVE card
@@ -124,13 +200,13 @@ export function WriteSurface({ setId }: { setId: string }) {
     // suggestion. Fire-and-forget — the learner is never blocked, and the
     // live-id guard drops a verdict that arrives after they moved on.
     const cardId = current.id;
-    if (typed.trim().length > 0 && !coppa.blocked) {
+    if (answer.trim().length > 0 && !coppa.blocked) {
       setVerdictLoading(true);
       void dispatch(
         gradeTypedSemantic({
-          question: current.front,
-          expectedAnswer: current.back,
-          learnerAnswer: typed,
+          question: faces.front,
+          expectedAnswer: faces.back,
+          learnerAnswer: answer,
         }),
       ).then((v) => {
         setVerdictLoading(false);
@@ -149,16 +225,57 @@ export function WriteSurface({ setId }: { setId: string }) {
     });
   };
 
+  // The suggestion the learner confirms: the meaning verdict when it landed,
+  // else the spelling match.
+  const suggested: ReviewResult | null = verdict?.result ?? autoGrade;
+
+  // Keyboard after checking: Enter accepts the suggestion, 1/2/3 pick a grade.
+  useEffect(() => {
+    if (!submitted) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.closest(
+          "input, textarea, select, [contenteditable='true'], [role='menu'], [role='dialog']",
+        )
+      ) {
+        return;
+      }
+      if (e.key === "Enter" && suggested) {
+        e.preventDefault();
+        void confirmGrade(suggested);
+        return;
+      }
+      const n = Number(e.key);
+      if (Number.isInteger(n) && n >= 1 && n <= GRADE_ORDER.length) {
+        e.preventDefault();
+        void confirmGrade(GRADE_ORDER[n - 1]);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   return (
     <>
       <PageHeader>
         <StudyDeckHeader
-          title={`Write — ${title}`}
+          title={`Write · ${title}`}
           backHref={`${EDU_BASE}/${setId}`}
+          actions={
+            <RoundSizeMenu
+              dealt={dealtSize}
+              deckSize={deckSize}
+              choices={sizeChoices}
+              noun="Cards"
+              onChange={changeSize}
+            />
+          }
         />
       </PageHeader>
-      <div className="h-full overflow-y-auto overscroll-contain bg-background">
-        <div className="mx-auto max-w-2xl px-2 pb-safe pt-14 sm:px-6">
+      <div className="h-full overflow-y-auto overscroll-contain bg-textured">
+        <div className={ROUND_PAGE_CLASS}>
           {study.loading ? (
             <div className="flex h-64 items-center justify-center">
               <MatrxMiniLoader />
@@ -175,10 +292,10 @@ export function WriteSurface({ setId }: { setId: string }) {
               renderFault={
                 typeof navigator !== "undefined" && navigator.onLine === false
                   ? (fault) => (
-                      <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card px-6 py-16 text-center">
                         <AlertCircle className="h-6 w-6 text-muted-foreground" />
                         <p className="text-sm font-medium text-foreground">
-                          Couldn&apos;t load this set
+                          Couldn&apos;t load this deck
                           <ErrorAlchemyMenu />
                         </p>
                         <p className="max-w-md text-xs text-muted-foreground">
@@ -192,132 +309,155 @@ export function WriteSurface({ setId }: { setId: string }) {
               fallbackLabel="Flashcards"
             />
           ) : study.cards.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center">
               <BookOpen className="h-6 w-6 text-muted-foreground" />
               <p className="text-sm font-medium text-foreground">
-                This set has no cards yet
-              </p>
-              <p className="max-w-sm text-xs text-muted-foreground">
-                Generate some in chat to practice writing answers.
+                No cards yet
               </p>
             </div>
           ) : completed ? (
-            <CompletionScreen
-              progress={study.progress}
-              onBackToSet={() => router.push(`${EDU_BASE}/${setId}`)}
+            <RoundComplete
+              title="Round complete"
+              correct={study.progress.correct}
+              total={study.progress.total}
+              missed={missedIds.length}
+              deckSize={deckSize}
+              sizeChoices={sizeChoices}
+              dealt={dealtSize}
+              onSizeChange={changeSize}
+              onRetake={() =>
+                setRound((r) => ({
+                  key: r.key + 1,
+                  size: sizeFor(savedCount),
+                  cardIds: null,
+                }))
+              }
+              onRetakeMissed={() =>
+                setRound((r) => ({ ...r, key: r.key + 1, cardIds: missedIds }))
+              }
+              onBack={() => router.push(`${EDU_BASE}/${setId}`)}
             />
-          ) : current ? (
+          ) : current && faces ? (
             <>
-              <div className="mb-4">
-                <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                  <span>
-                    Card {study.currentIndex + 1} / {study.cards.length}
-                  </span>
-                  <span className="inline-flex items-center gap-3">
-                    <span>
-                      {study.progress.done}/{study.progress.total} written
-                    </span>
-                    {study.progress.correct > 0 && (
-                      <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        {study.progress.correct}
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{
-                      width: `${Math.round(((study.currentIndex + 1) / study.cards.length) * 100)}%`,
-                    }}
+              <RoundProgress
+                position={study.currentIndex + 1}
+                total={study.cards.length}
+                correct={study.progress.correct}
+              />
+
+              <div className="flex min-h-32 flex-col justify-center rounded-2xl border border-border bg-card px-5 py-6 shadow-sm sm:min-h-48 sm:px-8">
+                <CardFaceBlock
+                  content={faces.front}
+                  size="card"
+                  align="center"
+                />
+              </div>
+
+              {!submitted ? (
+                <form
+                  className="mt-3 flex flex-col gap-2 sm:mt-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (typed.trim().length > 0) submitAnswer(typed);
+                  }}
+                >
+                  <Input
+                    autoFocus
+                    value={typed}
+                    onChange={(e) => setTyped(e.target.value)}
+                    placeholder="Type the answer"
+                    aria-label="Your answer"
+                    autoComplete="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    className="h-12 rounded-xl bg-card px-4 text-base"
                   />
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border bg-card p-5">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                  Type the answer
-                </p>
-                <div className="mt-1.5">
-                  <CardFaceContent content={current.front} variant="prompt" />
-                </div>
-
-                {!submitted ? (
-                  <form
-                    className="mt-4 flex flex-col gap-2"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      submitAnswer();
-                    }}
-                  >
-                    <Input
-                      autoFocus
-                      value={typed}
-                      onChange={(e) => setTyped(e.target.value)}
-                      placeholder="Your answer…"
-                      className="text-base"
-                    />
-                    <Button type="submit" disabled={typed.trim().length === 0}>
-                      <PenLine className="mr-1.5 h-4 w-4" />
-                      Check answer
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-11 flex-1 text-muted-foreground sm:flex-none"
+                      onClick={() => submitAnswer("")}
+                    >
+                      Don&apos;t know
                     </Button>
-                  </form>
-                ) : (
-                  <div className="mt-4 flex flex-col gap-3">
-                    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm">
-                      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                        Your answer
-                      </p>
-                      <p className="mt-0.5 text-foreground">
-                        {typed || "(blank)"}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm dark:border-green-900 dark:bg-green-950/30">
-                      <p className="text-[11px] font-medium uppercase tracking-wider text-green-700/80 dark:text-green-400/80">
-                        Correct answer
-                      </p>
-                      <div className="mt-0.5 text-green-900 dark:text-green-200">
-                        <CardFaceContent
-                          content={current.back}
-                          variant="inline"
-                        />
-                      </div>
-                    </div>
-                    {verdict ? (
-                      // The grade-on-meaning verdict, with its reason. The
-                      // learner still confirms — grading stays learner-final.
-                      <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                        <AGENT_ICON className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                        <span>
-                          <span className="font-medium capitalize text-foreground">
-                            {verdict.result}
-                          </span>
-                          {verdict.reason ? ` — ${verdict.reason}` : ""} Confirm
-                          or adjust below.
-                        </span>
-                      </p>
-                    ) : autoGrade ? (
-                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        {verdictLoading && (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        )}
-                        {AUTO_GRADE_LABEL[autoGrade]} — confirm or adjust the
-                        grade below.
-                      </p>
-                    ) : null}
-                    <FlashcardGradeButtonRow
-                      onGrade={(r) => void confirmGrade(r)}
-                      disabled={study.grading}
-                    />
-                    {unusable ? (
-                      <p className="text-xs text-muted-foreground">
-                        Couldn&apos;t grade on meaning — {unusable}
-                      </p>
-                    ) : null}
+                    <Button
+                      type="submit"
+                      className="h-11 flex-1"
+                      disabled={typed.trim().length === 0}
+                    >
+                      Check
+                      <ArrowRight className="ml-1.5 h-4 w-4" />
+                    </Button>
                   </div>
-                )}
-              </div>
+                </form>
+              ) : (
+                <div className="mt-3 flex flex-col gap-3 sm:mt-4">
+                  {suggested ? (
+                    <Verdict
+                      grade={suggested}
+                      onMeaning={verdict !== null}
+                      reason={verdict?.reason ?? null}
+                      pending={verdictLoading}
+                    />
+                  ) : null}
+
+                  <div className="rounded-xl border border-border bg-card px-4 py-3">
+                    <div className="mb-1 text-[11px] font-medium text-muted-foreground">
+                      Answer
+                    </div>
+                    <CardFaceBlock content={faces.back} align="start" />
+                    <div className="mt-2.5 border-t border-border pt-2.5">
+                      <div className="mb-0.5 text-[11px] font-medium text-muted-foreground">
+                        You
+                      </div>
+                      <p
+                        className={cn(
+                          "break-words text-sm",
+                          typed ? "text-foreground" : "text-muted-foreground",
+                        )}
+                      >
+                        {typed || "—"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    className="grid grid-cols-3 gap-2"
+                    role="group"
+                    aria-label="Grade"
+                  >
+                    {GRADE_ORDER.map((r, i) => {
+                      const ui = GRADE_UI[r];
+                      const Icon = ui.icon;
+                      const isSuggested = suggested === r;
+                      return (
+                        <Button
+                          key={r}
+                          type="button"
+                          variant="outline"
+                          disabled={study.grading}
+                          onClick={() => void confirmGrade(r)}
+                          aria-keyshortcuts={String(i + 1)}
+                          className={cn(
+                            "h-11 min-w-0 gap-1.5 rounded-xl px-2",
+                            isSuggested && ui.chosen,
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{ui.button}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  {unusable ? (
+                    <p className="text-xs text-muted-foreground">
+                      Graded on spelling — {unusable}
+                    </p>
+                  ) : null}
+                </div>
+              )}
             </>
           ) : null}
         </div>
@@ -326,52 +466,36 @@ export function WriteSurface({ setId }: { setId: string }) {
   );
 }
 
-function CompletionScreen({
-  progress,
-  onBackToSet,
+/** The suggested grade as one banner: what it is, and whether it was judged
+ *  on meaning (the agent) or on spelling (instant). The learner confirms. */
+function Verdict({
+  grade,
+  onMeaning,
+  reason,
+  pending,
 }: {
-  progress: { done: number; total: number; correct: number };
-  onBackToSet: () => void;
+  grade: ReviewResult;
+  onMeaning: boolean;
+  reason: string | null;
+  pending: boolean;
 }) {
-  const accuracy =
-    progress.done > 0
-      ? Math.round((progress.correct / progress.done) * 100)
-      : 0;
+  const ui = GRADE_UI[grade];
+  const Icon = ui.icon;
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-2xl border border-border bg-card px-6 py-10 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-        <Trophy className="h-7 w-7" />
+    <div className={cn("rounded-xl border px-4 py-3", ui.banner)}>
+      <div className="flex items-center gap-2">
+        <Icon className="h-5 w-5 shrink-0" />
+        <span className="text-base font-semibold">{ui.verdict}</span>
+        <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium opacity-75">
+          {pending ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : onMeaning ? (
+            <AGENT_ICON className="h-3 w-3" />
+          ) : null}
+          {onMeaning ? "By meaning" : pending ? "Checking meaning" : "By spelling"}
+        </span>
       </div>
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">
-          Write session complete
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          You wrote answers for all {progress.total} cards.
-        </p>
-      </div>
-      <div className="grid w-full grid-cols-2 gap-2 text-center">
-        <div className="rounded-lg border border-border bg-background px-2 py-2">
-          <div className="text-lg font-semibold tabular-nums text-green-600 dark:text-green-400">
-            {progress.correct}
-          </div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Correct
-          </div>
-        </div>
-        <div className="rounded-lg border border-border bg-background px-2 py-2">
-          <div className="text-lg font-semibold tabular-nums text-foreground">
-            {accuracy}%
-          </div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Accuracy
-          </div>
-        </div>
-      </div>
-      <Button className="w-full" onClick={onBackToSet}>
-        <Layers className="mr-1.5 h-4 w-4" />
-        Back to set
-      </Button>
+      {reason ? <p className="mt-1 text-sm opacity-90">{reason}</p> : null}
     </div>
   );
 }

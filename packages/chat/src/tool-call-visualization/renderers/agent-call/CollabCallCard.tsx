@@ -28,7 +28,7 @@ import { useConversationTitle } from "../../../agents/hooks/useConversationTitle
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import MarkdownStream from "@host/components/MarkdownStream";
 import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
-import { stripThinkingStreaming } from "@host/components/content-refine/utils/stripThinking";
+import { stripThinkingStreaming } from "@ai-matrx/kit/text";
 import { cn } from "@ai-matrx/design-system";
 import type { ToolRendererProps } from "../../types";
 import { getCollabCallInfo, type CollabCallInfo } from "./collab";

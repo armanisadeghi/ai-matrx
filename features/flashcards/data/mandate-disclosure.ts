@@ -32,6 +32,7 @@ const descriptions: Record<FcMandateKey, string> = {
     "Checks a flashcard against the source material it came from.",
   spokenFrontTts: "Creates the spoken question audio for a flashcard.",
   helperTts: "Creates the prepared spoken explanation for a flashcard.",
+  fixGiveaways: "Rewrites cards whose one side gives the other away.",
 };
 
 export function flashcardMandateRefs(

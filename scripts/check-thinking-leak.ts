@@ -53,7 +53,7 @@ export function checkSource(file: string, source: string): Finding | null {
   return {
     file,
     reason:
-      "renders a live stream through a plain markdown component without stripThinkingStreaming — <reasoning> fences would print as content. Route it through MarkdownStream, or strip with stripThinkingStreaming (components/content-refine/utils/stripThinking.ts).",
+      "renders a live stream through a plain markdown component without stripThinkingStreaming — <reasoning> fences would print as content. Route it through MarkdownStream, or strip with stripThinkingStreaming (@ai-matrx/kit/text).",
   };
 }
 

@@ -65,6 +65,9 @@ interface FlashcardItemProps {
   /** Face images (fc_detail front_image/back_image) — see FlashcardFaceImage. */
   frontImage?: FaceImageRef | null;
   backImage?: FaceImageRef | null;
+  /** Inline card height — overrides the default scale (a focused study
+   *  session gives the card the screen's height, not a list row's). */
+  heightClassName?: string;
 }
 
 const FlashcardItem: React.FC<FlashcardItemProps> = ({
@@ -83,6 +86,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
   voiceTest,
   frontImage,
   backImage,
+  heightClassName,
 }) => {
   const isPanel = presentation === "panel";
   const isControlledFlip = flipped !== undefined;
@@ -215,7 +219,9 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
         // Inline height scales with the viewport — a fixed 224px card wastes a
         // laptop screen and crams long faces; larger screens get a taller card
         // (and therefore larger readable faces) everywhere this renders.
-        isPanel ? "h-full min-h-0 flex-1" : "h-56 lg:h-72 2xl:h-80",
+        isPanel
+          ? "h-full min-h-0 flex-1"
+          : (heightClassName ?? "h-56 lg:h-72 2xl:h-80"),
         !isPanel && "animate-in fade-in duration-300",
       )}
       style={{ perspective: "1000px" }}
@@ -375,24 +381,28 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
                 ref={scrollRef}
                 className={cn(
                   "overflow-y-auto scrollbar-none px-1 w-full",
-                  isMultiLineBack ? "h-full pt-3 pb-2" : "",
+                  // A bulleted back that fits sits in the card's middle (auto
+                  // margins); one that overflows scrolls from its first line.
+                  isMultiLineBack ? "flex h-full flex-col pt-3 pb-2" : "",
                 )}
               >
-                {hasFaceImage(backImage) && (
-                  <FlashcardFaceImage
-                    image={backImage}
-                    className="max-h-32 mb-1.5"
+                <div className={isMultiLineBack ? "my-auto w-full" : undefined}>
+                  {hasFaceImage(backImage) && (
+                    <FlashcardFaceImage
+                      image={backImage}
+                      className="max-h-32 mb-1.5"
+                    />
+                  )}
+                  <ConfigurableMarkdownContent imagePolicy="inherit"
+                    content={backContent}
+                    isStreamActive={back === null}
+                    showCopyButton={false}
+                    styleConfig={backStyleConfig}
+                    componentOverrides={
+                      isMultiLineBack ? undefined : { p: centeredParagraph }
+                    }
                   />
-                )}
-                <ConfigurableMarkdownContent imagePolicy="inherit"
-                  content={backContent}
-                  isStreamActive={back === null}
-                  showCopyButton={false}
-                  styleConfig={backStyleConfig}
-                  componentOverrides={
-                    isMultiLineBack ? undefined : { p: centeredParagraph }
-                  }
-                />
+                </div>
               </div>
               {hasOverflow && !isScrolledToBottom && (
                 <div className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none bg-gradient-to-t from-emerald-50 dark:from-emerald-950 to-transparent" />

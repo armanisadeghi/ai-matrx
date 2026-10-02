@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   Info,
   Library,
+  Maximize2,
 } from "lucide-react";
 import Link from "next/link";
 import { flashcardSetHref } from "../routes";
@@ -120,7 +121,10 @@ export function CanvasFlashcardsView({
   } = useFlashcardStudy({ setId: linkedSetId });
 
   const isMobile = useIsMobile();
-  const [mobileDismissed, setMobileDismissed] = useState(false);
+  // The phone deck is a full-screen overlay; inside a canvas pane it would
+  // cover the canvas and every remount would re-open it. It opens only when
+  // the person asks for it.
+  const [deckOpen, setDeckOpen] = useState(false);
 
   const mobileResultsByIndex = useMemo(
     () => studyResultsByIndex(cards, resultsByCard),
@@ -229,7 +233,7 @@ export function CanvasFlashcardsView({
 
   const current = cards[currentIndex];
 
-  if (isMobile && !mobileDismissed) {
+  if (isMobile && !deckOpen) {
     return (
       <div className={cn("flex flex-col", className)}>
         {debugStrip}
@@ -243,7 +247,7 @@ export function CanvasFlashcardsView({
           onGrade={handleGrade}
           resultsByIndex={mobileResultsByIndex}
           grading={grading}
-          onClose={() => setMobileDismissed(true)}
+          onClose={() => setDeckOpen(false)}
           toolsPanel={
             <Button asChild variant="outline" size="sm" className="w-full">
               <Link href={flashcardSetHref({ id: linkedSetId })}>
@@ -284,17 +288,31 @@ export function CanvasFlashcardsView({
             </>
           )}
         </div>
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs"
-        >
-          <Link href={flashcardSetHref({ id: linkedSetId })}>
-            <Library className="h-3.5 w-3.5" />
-            Open in Flashcards
-          </Link>
-        </Button>
+        <div className="flex items-center gap-1">
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setDeckOpen(true)}
+              title="Study full screen"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+              Full screen
+            </Button>
+          )}
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+          >
+            <Link href={flashcardSetHref({ id: linkedSetId })}>
+              <Library className="h-3.5 w-3.5" />
+              Open in Flashcards
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {progress.total > 0 && (

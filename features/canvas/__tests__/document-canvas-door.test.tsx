@@ -40,7 +40,7 @@
  * functions whose tests did not change.
  */
 
-import React, { act } from "react";
+import React, { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -93,6 +93,10 @@ class NoopResizeObserver {
   disconnect() {}
 }
 (globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= NoopResizeObserver;
+// …nor scrollIntoView, which the tab strip calls to keep the active tab seen.
+if (typeof Element.prototype.scrollIntoView !== "function") {
+  Element.prototype.scrollIntoView = () => {};
+}
 
 // The two LEAF editors are network-bound (a live pty, the Univer editor
 // fetching its snapshot). They are the boundary: everything above them —
@@ -177,8 +181,24 @@ function entryWith(result: unknown): ToolLifecycleEntry {
   } as unknown as ToolLifecycleEntry;
 }
 
-/** `withCanvas: false` mounts with NO canvas provider: a route with no canvas. */
-function mount(store: Store, node: React.ReactNode, withCanvas = true) {
+/**
+ * Stands in for the shell's canvas column being on screen: the column is the
+ * one thing that registers a presentation, and an open with none is refused.
+ */
+function PresentedColumn() {
+  const canvas = useCanvas();
+  useEffect(() => canvas.registerPresentation(), [canvas]);
+  return null;
+}
+
+/**
+ * `canvas`: "presented" = provider + a column on screen (every shell route);
+ * "provider-only" = provider, no column (kiosk, meeting stage); "none" = no
+ * canvas provider at all.
+ */
+type CanvasMode = "presented" | "provider-only" | "none";
+
+function mount(store: Store, node: React.ReactNode, canvas: CanvasMode = "presented") {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -186,7 +206,14 @@ function mount(store: Store, node: React.ReactNode, withCanvas = true) {
     root.render(
       <QueryClientProvider client={new QueryClient()}>
         <Provider store={store}>
-          {withCanvas ? <CanvasHostProvider>{node}</CanvasHostProvider> : node}
+          {canvas === "none" ? (
+            node
+          ) : (
+            <CanvasHostProvider>
+              {canvas === "presented" ? <PresentedColumn /> : null}
+              {node}
+            </CanvasHostProvider>
+          )}
         </Provider>
       </QueryClientProvider>,
     );
@@ -338,22 +365,28 @@ describe("a document tool result reaches the canvas", () => {
     unmount();
   });
 
-  it("announces a drop instead of doing nothing when no canvas is reachable", () => {
-    const store = makeStore();
-    const { container, unmount } = mount(
-      store,
-      <DocumentInline entry={entryWith(CREATE_RESULT)} />,
-      false, // no canvas provider — no canvas surface at all
-    );
-    act(() => findCanvasButton(container)!.click());
+  it.each<[CanvasMode, string]>([
+    ["none", "no canvas provider at all"],
+    ["provider-only", "a provider but no column on screen"],
+  ])(
+    "announces a drop instead of doing nothing when no canvas is reachable (%s)",
+    (mode) => {
+      const store = makeStore();
+      const { container, unmount } = mount(
+        store,
+        <DocumentInline entry={entryWith(CREATE_RESULT)} />,
+        mode,
+      );
+      act(() => findCanvasButton(container)!.click());
 
-    expect(itemsOf(store)).toHaveLength(0);
-    expect(toastError).toHaveBeenCalledTimes(1);
-    expect(String(toastError.mock.calls[0][0])).toContain(
-      "Canvas Switcher Probe",
-    );
-    unmount();
-  });
+      expect(itemsOf(store)).toHaveLength(0);
+      expect(toastError).toHaveBeenCalledTimes(1);
+      expect(String(toastError.mock.calls[0][0])).toContain(
+        "Canvas Switcher Probe",
+      );
+      unmount();
+    },
+  );
 
   it("a completed call carrying nothing still leaves a trace", () => {
     const store = makeStore();
@@ -555,18 +588,27 @@ describe("the udt_document canvas type", () => {
 
     // …and the real tab header shows it: the artifact kind's own action.
     const store = makeStore();
-    const { openers, unmount: unmountOpeners } = mountOpeners(store);
+    const api: { openers: CanvasOpeners | null } = { openers: null };
+    function Opener() {
+      api.openers = useCanvasOpeners();
+      return null;
+    }
+    const { container, unmount } = mount(
+      store,
+      <>
+        <Opener />
+        <PaneProbe />
+      </>,
+    );
     act(() => {
-      openers.open(SANDBOX);
+      api.openers!.open(SANDBOX);
     });
-    unmountOpeners();
-    const { container, unmount } = mount(store, <PaneProbe />);
     const sourceButton = () =>
       container.querySelector<HTMLButtonElement>('button[aria-label="Show source"]');
     expect(sourceButton()).toBeNull(); // the sandbox has none
 
     await act(async () => {
-      openers.open(
+      api.openers!.open(
         buildDocumentCanvasContent({ documentId: DOC_ID, title: "Probe" }),
       );
     });

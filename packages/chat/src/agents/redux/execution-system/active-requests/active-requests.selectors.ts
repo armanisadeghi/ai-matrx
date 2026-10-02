@@ -85,7 +85,7 @@ import {
   type MessageCitationSource,
 } from "../messages/message-citations";
 import { soleFence } from "@host/lib/markdown/code-ranges";
-import { stripThinkingStreaming } from "@host/components/content-refine/utils/stripThinking";
+import { stripThinkingStreaming } from "@ai-matrx/kit/text";
 
 /** Stable fallbacks — never inline `?? []` in selector outputs. */
 export const EMPTY_REQUEST_IDS: string[] = [];

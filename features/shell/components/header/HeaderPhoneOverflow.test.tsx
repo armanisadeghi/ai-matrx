@@ -18,9 +18,9 @@
  * The Canvas row runs on the REAL `@ai-matrx/canvas` controller: a standalone
  * `createCanvasStore()` under `CanvasProvider`, read through the real
  * `useCanvasHeaderToggle`. Rows are asserted by what they DO to that store.
- * (The old "route with no canvas" / "availability unknown" cases are gone:
- * the package's canvas column is mounted wherever a header is, so the hook
- * has no unavailable state left to pin.)
+ * Availability is the package's: a canvas column registered as presented.
+ * (The old "availability unknown" reservation is gone — the hook always
+ * knows.)
  *
  * PROVEN FAILING BEFORE PASSING: against the pre-fix header, case 1 is RED
  * (no `.shell-header-secondary`, no overflow, no media rule). Planted
@@ -28,12 +28,12 @@
  * "opens the canvas" cases RED (2 failed).
  */
 
-import React, { act } from "react";
+import React, { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { canvasActions, createCanvasStore, type CanvasStoreBinding } from "@ai-matrx/canvas";
-import { CanvasProvider } from "@ai-matrx/canvas/react";
+import { CanvasProvider, useCanvas } from "@ai-matrx/canvas/react";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -43,6 +43,14 @@ const read = (file: string) => readFileSync(path.join(REPO, file), "utf8");
 const openBar = jest.fn();
 const openAuthGate = jest.fn();
 let canvasStore: CanvasStoreBinding = createCanvasStore();
+let canvasPresented = true;
+
+/** Stands in for the shell's canvas column being on screen. */
+function PresentedColumn() {
+  const canvas = useCanvas();
+  useEffect(() => canvas.registerPresentation(), [canvas]);
+  return null;
+}
 
 jest.mock("@/features/knowledge/command-bar/OpenCommandBarButtons", () => ({
   useOpenBarOrGate: () => openBar,
@@ -84,6 +92,7 @@ function mount(isAuthenticated: boolean) {
   act(() => {
     root.render(
       <CanvasProvider store={canvasStore} persistence={null} hotkeys={false}>
+        {canvasPresented ? <PresentedColumn /> : null}
         <TooltipProvider>
           <HeaderPhoneOverflow isAuthenticated={isAuthenticated} />
         </TooltipProvider>
@@ -114,6 +123,7 @@ afterEach(() => {
   document.body.innerHTML = "";
   jest.clearAllMocks();
   canvasStore = createCanvasStore();
+  canvasPresented = true;
 });
 
 /** Two real tabs on the canvas; the active one is titled `hello.py`. */
@@ -185,6 +195,14 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
     openSheet();
     click(row("Put away canvas — hello.py"));
     expect(canvasStore.getState().isOpen).toBe(false);
+  });
+
+  it("leaves the canvas row out where no canvas column is on screen", () => {
+    canvasPresented = false;
+    mount(true);
+    openSheet();
+    expect(row("Search")).toBeDefined();
+    expect(row("Canvas")).toBeUndefined();
   });
 
   it("Search opens the bar", () => {

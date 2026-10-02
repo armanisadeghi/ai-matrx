@@ -13,7 +13,7 @@ import { useMemo, useState } from "react";
 import {
   stripThinking,
   hasThinkingTags,
-} from "@/components/content-refine/utils/stripThinking";
+} from "@ai-matrx/kit/text";
 import { applyTrim } from "@/components/content-refine/utils/trimContent";
 
 export interface UseRefinableContentArgs {

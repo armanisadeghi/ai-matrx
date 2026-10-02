@@ -5,11 +5,14 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 export function StudyDeckHeader({
   title,
+  mode,
   backHref,
   onBack,
   actions,
 }: {
   title: string;
+  /** The study mode, shown as a quiet tag before the deck name ("Learn"). */
+  mode?: string;
   backHref?: string;
   onBack?: () => void;
   actions?: ReactNode;
@@ -22,6 +25,11 @@ export function StudyDeckHeader({
         href={backHref}
         onClick={onBack}
       />
+      {mode ? (
+        <span className="ml-2 shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
+          {mode}
+        </span>
+      ) : null}
       <h1 className="ml-2 min-w-0 flex-1 truncate text-sm font-medium text-foreground">
         {title}
       </h1>

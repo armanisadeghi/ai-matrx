@@ -8,6 +8,7 @@
 
 import type { Json } from "@/types/database.types";
 import type { CardWithDetails } from "../types";
+import { studyFaces } from "../../utils/cardVariants";
 
 export const QUIZ_DISTRACTOR_COUNT = 3;
 
@@ -90,11 +91,21 @@ function normalize(s: string): string {
   return s.trim().toLowerCase();
 }
 
-export function buildQuizQuestions(cards: CardWithDetails[]): QuizQuestion[] {
-  const allBacks = cards.map((c) => c.back);
+/**
+ * One question per card in `cards`. Distractors are drawn from `pool` (the
+ * whole deck by default) so a short round still gets full option sets. Faces
+ * come through studyFaces — the flip card's own bridge — so a cloze or
+ * formula card asks and answers with its study faces, never raw markup.
+ */
+export function buildQuizQuestions(
+  cards: CardWithDetails[],
+  pool: CardWithDetails[] = cards,
+): QuizQuestion[] {
+  const allBacks = pool.map((c) => studyFaces(c).back);
 
   return cards.map((card) => {
-    const correctNorm = normalize(card.back);
+    const faces = studyFaces(card);
+    const correctNorm = normalize(faces.back);
     const seen = new Set<string>([correctNorm]);
     const siblingDistractors: string[] = [];
 
@@ -108,9 +119,9 @@ export function buildQuizQuestions(cards: CardWithDetails[]): QuizQuestion[] {
 
     const base: QuizQuestion = {
       cardId: card.id,
-      front: card.front,
-      correctAnswer: card.back,
-      options: shuffle([card.back, ...siblingDistractors]),
+      front: faces.front,
+      correctAnswer: faces.back,
+      options: shuffle([faces.back, ...siblingDistractors]),
       needsFallback: siblingDistractors.length < QUIZ_DISTRACTOR_COUNT,
       aiQuestion: "",
       explanation: "",

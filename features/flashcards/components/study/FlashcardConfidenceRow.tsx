@@ -2,7 +2,7 @@
 //
 // The one-tap 1–5 CONFIDENCE rating row (Brainscape's most loved interaction,
 // on our stronger FSRS engine). Each tap is a self-rated recall confidence —
-// 1 "No idea" → 5 "Knew it cold" — which the study spine turns into an FSRS
+// 1 "No idea" → 5 "Easy" — which the study spine turns into an FSRS
 // grade (uniquely reaching Easy(4)) via `studyService.recordAttempt({ confidence })`.
 // Presentational only: it emits the raw 1–5 value; the driver owns persistence.
 //
@@ -53,8 +53,10 @@ const CONFIDENCE_STEPS: {
   },
   {
     value: 5,
-    label: "Knew it cold",
-    hint: "Instant, effortless",
+    // "Knew it cold" truncated to "Knew it c…" on a 375px phone; "Easy" is
+    // also the FSRS grade this step reaches.
+    label: "Easy",
+    hint: "Knew it cold, instantly",
     classes:
       "border-green-300 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-950/60",
   },
@@ -75,14 +77,17 @@ export function FlashcardConfidenceRow({
   onRate: (confidence: Confidence) => void;
   disabled?: boolean;
   className?: string;
-  /** Row caption — pre-flip prediction phrasing vs. post-flip grading. */
-  label?: string;
+  /** Row caption — pre-flip prediction phrasing vs. post-flip grading.
+   *  `null` hides the caption (the host renders its own). */
+  label?: string | null;
 }) {
   return (
     <div className={cn("flex min-w-0 flex-col gap-1", className)}>
-      <div className="flex items-center justify-between px-0.5 text-[10px] uppercase tracking-wider text-muted-foreground/70">
-        <span>{label}</span>
-      </div>
+      {label && (
+        <div className="flex items-center justify-between px-0.5 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+          <span>{label}</span>
+        </div>
+      )}
       <div className="flex min-w-0 items-stretch gap-0.5 sm:gap-1">
         {CONFIDENCE_STEPS.map((step) => (
           <button
