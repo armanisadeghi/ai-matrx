@@ -125,14 +125,12 @@ export const CtxItemCard: React.FC<CtxItemCardProps> = ({
         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground">
           <Icon className="h-3.5 w-3.5" />
         </span>
-        <span className="min-w-0 truncate font-medium text-foreground">
+        <span
+          className="min-w-0 truncate font-medium text-foreground"
+          title={showKey ? item.key : undefined}
+        >
           {label}
         </span>
-        {showKey && (
-          <span className="shrink-0 truncate font-mono text-xs text-muted-foreground">
-            {item.key}
-          </span>
-        )}
         <span className="ml-auto flex shrink-0 items-center gap-1.5">
           {isSummary && (
             <Badge variant="secondary" className="font-normal">

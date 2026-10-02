@@ -29,6 +29,7 @@ import type { ResultDensity } from "../../result-fields/ResultValue";
 import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { CtxItemCard, type CtxItem } from "./CtxItemCard";
+import { contextEntryLabel } from "../../../agents/components/context-policies-display/contextEntryLabel";
 
 /** Narrow an arbitrary result object to the CtxItem display shape. */
 function toCtxItem(
@@ -100,7 +101,7 @@ export const CtxGetInline: React.FC<Props> = ({
         <span>
           Looking up{" "}
           {keyArg ? (
-            <span className="font-mono text-foreground">{keyArg}</span>
+            <span className="text-foreground">{contextEntryLabel({ key: keyArg })}</span>
           ) : (
             "context"
           )}
