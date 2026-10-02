@@ -456,7 +456,6 @@ function CardPeek({
   // exactly what study will show.
   const faces = kind === CARD_KIND.matching ? null : studyFaces(card);
   const interactive = selectable || !!onOpen;
-  const activate = () => {
   const studied = (mastery?.attempt_count ?? 0) > 0;
   const hasBadges =
     kind === CARD_KIND.cloze ||
@@ -465,6 +464,7 @@ function CardPeek({
     hasAudio ||
     !!(images.front || images.back);
   const showHeader = selectable || studied || hasBadges;
+  const activate = () => {
     if (selectable) onToggleSelected?.();
     else onOpen?.();
   };
@@ -572,8 +572,8 @@ function CardPeek({
           )}
         </div>
       </div>
-      {kind === CARD_KIND.matching ? (
       )}
+      {kind === CARD_KIND.matching ? (
         <div className="space-y-0.5 pr-6">
           {card.front.trim() && (
             <div className="text-sm font-medium text-foreground">
@@ -642,7 +642,6 @@ export function SetDetailView({
   const [deckToolsOpen, setDeckToolsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cardSearch, setCardSearch] = useState("");
-  // WP3 gap 5 — card merge selection.
   // The card view rides the URL so a reload or a shared link keeps it.
   const searchParams = useSearchParams();
   const view = asDeckView(searchParams.get("view"));
@@ -653,6 +652,7 @@ export function SetDetailView({
     const qs = params.toString();
     replaceAddressWithoutNavigating(qs ? `?${qs}` : window.location.pathname);
   };
+  // WP3 gap 5 — card merge selection.
   const [selecting, setSelecting] = useState(false);
   // Phone-only layout choices (Deck tools sheet, audio status-only) key off
   // this; desktop always shows the whole deck toolset on the page.
@@ -1033,6 +1033,9 @@ export function SetDetailView({
     getScope: buildScope,
   });
 
+  /** The chat this deck was made in, when it was made in one. */
+  const chatHref = data ? madeInChatHref(data.set.metadata) : null;
+
   /** A loaded deck with no cards: the page offers what makes cards. */
   const deckEmpty = !!data && data.cards.length === 0;
 
@@ -1067,9 +1070,6 @@ export function SetDetailView({
               <div className="flex items-center gap-2">
                 {deckEmpty ? (
                   canEdit && (
-  /** The chat this deck was made in, when it was made in one. */
-  const chatHref = data ? madeInChatHref(data.set.metadata) : null;
-
                     <Button className="h-10 px-5" onClick={() => setGenerateOpen(true)}>
                       <AGENT_ICON className="mr-1.5 h-4 w-4" />
                       Generate cards
@@ -1146,6 +1146,14 @@ export function SetDetailView({
                       )}
                       Progress
                     </Button>
+                    {chatHref && (
+                      <Button asChild variant="ghost" className="h-10">
+                        <Link href={chatHref}>
+                          <MessagesSquare className="mr-1.5 h-4 w-4" />
+                          See chat
+                        </Link>
+                      </Button>
+                    )}
                   </>
                 )}
               </div>
@@ -1180,14 +1188,6 @@ export function SetDetailView({
                 )}
                 {!deckEmpty && (
                   <DropdownMenu>
-                    {chatHref && (
-                      <Button asChild variant="ghost" className="h-10">
-                        <Link href={chatHref}>
-                          <MessagesSquare className="mr-1.5 h-4 w-4" />
-                          See chat
-                        </Link>
-                      </Button>
-                    )}
                     <IconAction label="Audio" asTrigger>
                       <Volume2 className="h-4 w-4" />
                     </IconAction>
@@ -1556,7 +1556,15 @@ export function SetDetailView({
                           Select
                         </Button>
                       )}
+                    <div className="ml-auto flex items-center gap-2 sm:order-last sm:ml-0">
+                      <DeckViewToggle view={view} onChange={changeView} />
                     </div>
+                    <EducationCollectionSearch
+                      value={cardSearch}
+                      onValueChange={setCardSearch}
+                      label="cards in this deck"
+                      className="order-last basis-full sm:order-none sm:ml-auto sm:basis-auto"
+                    />
                   </div>
                   {canEdit && selecting && (
                     <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
@@ -1594,15 +1602,7 @@ export function SetDetailView({
                             <Merge className="mr-1.5 h-3.5 w-3.5" />
                             Merge{" "}
                             {selectedIds.size >= 2 ? selectedIds.size : ""}
-                    <div className="ml-auto flex items-center gap-2 sm:order-last sm:ml-0">
-                      <DeckViewToggle view={view} onChange={changeView} />
                           </Button>
-                    <EducationCollectionSearch
-                      value={cardSearch}
-                      onValueChange={setCardSearch}
-                      label="cards in this deck"
-                      className="order-last basis-full sm:order-none sm:ml-auto sm:basis-auto"
-                    />
                           <Button
                             size="sm"
                             variant="ghost"
@@ -1632,6 +1632,20 @@ export function SetDetailView({
                       query={cardSearch}
                       label="cards in this deck"
                       onClear={() => setCardSearch("")}
+                    />
+                  ) : view === "fronts" || view === "backs" ? (
+                    <DeckFlashcardGrid
+                      items={filteredCards}
+                      face={view === "backs" ? "back" : "front"}
+                    />
+                  ) : view === "list" ? (
+                    <DeckCardList items={filteredCards} onOpen={openCard} />
+                  ) : view === "table" ? (
+                    <DeckCardTable
+                      items={filteredCards}
+                      deckName={data.set.name}
+                      masteryByCard={masteryByCard}
+                      onOpen={openCard}
                     />
                   ) : (
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1671,20 +1685,6 @@ export function SetDetailView({
 
             {/* "Make this deeper" — per-card enrich (detail layers) + deepen
                 (atomic sub-cards) via the live enrichCard/expandCard agents. */}
-                  ) : view === "fronts" || view === "backs" ? (
-                    <DeckFlashcardGrid
-                      items={filteredCards}
-                      face={view === "backs" ? "back" : "front"}
-                    />
-                  ) : view === "list" ? (
-                    <DeckCardList items={filteredCards} onOpen={openCard} />
-                  ) : view === "table" ? (
-                    <DeckCardTable
-                      items={filteredCards}
-                      deckName={data.set.name}
-                      masteryByCard={masteryByCard}
-                      onOpen={openCard}
-                    />
             {/* Per-set image run — live progress, then the review pass.
                 Floats beside the deck so the page never shifts. */}
             {illustrateOpen && (
@@ -1815,6 +1815,17 @@ export function SetDetailView({
                           className="h-11 justify-start"
                         />
                       )}
+                      {chatHref && (
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="h-11 justify-start"
+                        >
+                          <Link href={chatHref}>
+                            <MessagesSquare className="mr-2 h-4 w-4" /> See chat
+                          </Link>
+                        </Button>
+                      )}
                       {/* An empty deck has nothing to keep offline or
                           print: those appear with its first card. */}
                       {!deckEmpty && (
@@ -1858,17 +1869,6 @@ export function SetDetailView({
                     </h2>
                     <div className="grid grid-cols-2 gap-2">
                       {(["csv", "anki", "md", "json"] as const).map(
-                      {chatHref && (
-                        <Button
-                          asChild
-                          variant="outline"
-                          className="h-11 justify-start"
-                        >
-                          <Link href={chatHref}>
-                            <MessagesSquare className="mr-2 h-4 w-4" /> See chat
-                          </Link>
-                        </Button>
-                      )}
                         (format) => (
                           <Button
                             key={format}
