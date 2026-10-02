@@ -66,11 +66,25 @@ import {
   FolderKanban,
   IdCard,
   ListTodo,
+  ListOrdered,
 } from "lucide-react";
-import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 
-const STRUCTURED_LIST_INFO = getEntityInfo("structured_list");
+/**
+ * `structured_list` left the entity registry (@ai-matrx/associations 0.13.135:
+ * its table `workbench.udt_structured_lists` is gone — lists live in the record
+ * store as pick lists). A module-level `getEntityInfo("structured_list")` threw
+ * on import and took down every page that loads this catalogue (/notes,
+ * 2026-10-02). The row's words are fixed here until the lists entry moves onto
+ * the pick-list home; "Pick list" is the vocabulary word (Arman, 2026-10-02).
+ */
+const PICK_LIST_INFO = {
+  label: "Pick list",
+  labelPlural: "Pick lists",
+  contentRole: "hybrid" as ContentRole,
+  Icon: ListOrdered,
+  scopeable: true,
+};
 
 /**
  * The four content roles. Mirrors the knowledge model: every entity either
@@ -402,11 +416,11 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "structured_list",
-    token: "structured_list",
-    label: STRUCTURED_LIST_INFO.label,
-    labelPlural: STRUCTURED_LIST_INFO.labelPlural,
-    role: STRUCTURED_LIST_INFO.contentRole,
-    icon: STRUCTURED_LIST_INFO.Icon,
+    token: null,
+    label: PICK_LIST_INFO.label,
+    labelPlural: PICK_LIST_INFO.labelPlural,
+    role: PICK_LIST_INFO.contentRole,
+    icon: PICK_LIST_INFO.Icon,
     description: "Reusable, optionally grouped lists of editable option objects.",
     // A list lives in the record store as a Table of choices, read through
     // `custom.organization_pick_lists` (`alsoInTheNewSystem`).
@@ -416,7 +430,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     shareKey: "structured_list",
     titleColumn: null,
     orgRoute: null,
-    scopeable: STRUCTURED_LIST_INFO.scopeable,
+    scopeable: PICK_LIST_INFO.scopeable,
   },
   {
     key: "workbook",
