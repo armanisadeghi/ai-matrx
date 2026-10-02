@@ -15,3 +15,5 @@ export type { Cell } from "./core/selection";
 export { KEYBOARD_MIN_PX, keyboardInset, visibleHeightBelow } from "./core/viewport";
 export type { ViewportBox } from "./core/viewport";
 export { ACCESSORY_BAR_HEIGHT, TERMINAL_DEFAULTS, TERMINAL_FONT_FAMILY, terminalTheme } from "./core/theme";
+export { createLineEditor } from "./core/line-editor";
+export type { LineEditor, LineEditorHost } from "./core/line-editor";

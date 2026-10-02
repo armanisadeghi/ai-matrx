@@ -181,7 +181,7 @@ The management list exposes stored template/tier, resources, heartbeat, expiry, 
 
 ## Change log
 
-- **2026-10-02** — **`TerminalTab` runs on `@ai-matrx/terminal`.** xterm creation, fit, refit on reveal, theme, phone touch and the keyboard accessory bar are the package's; this tab keeps only the read-line emulation and the PTY wiring (keystrokes arrive through the package's `onData`, already modified by the bar's Ctrl/Alt; hardware Ctrl-C through `onInterrupt` → the PTY's SIGINT frame; the grid through `onResize`). The `/sandbox/[id]` output pane moved onto the same package (`components/sandbox/SandboxTranscript.tsx`).
+- **2026-10-02** — **`TerminalTab` runs on `@ai-matrx/terminal`.** xterm creation, fit, refit on reveal, theme, phone touch and the keyboard accessory bar are the package's; this tab keeps only the read-line emulation and the PTY wiring (keystrokes arrive through the package's `onData`, already modified by the bar's Ctrl/Alt; hardware Ctrl-C through `onInterrupt` → the PTY's SIGINT frame; the grid through `onResize`). The whole `/sandbox/[id]` terminal moved onto the same package (`components/sandbox/SandboxConsole.tsx`): output, prompt, command line, history and the agent-staged markers, with the package's line editor as the exec API's line discipline. `TerminalTab`'s read-line emulation is the same editor (`createLineEditor`).
 
 
 - **2026-09-17** — **A failed edit-history flush is no longer silent.** `markWriteError` lands in a slice NOTHING renders, so the history for a file the person just changed could fail to write with no screen saying so — and since 2026-09-17 `ensureOrgId` throws the organization refusal through the same catch. The flush loop now presents that refusal with its remedy before recording the write error.

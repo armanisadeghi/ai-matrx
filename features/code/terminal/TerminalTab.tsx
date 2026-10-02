@@ -2,6 +2,8 @@
 
 import "@/styles/terminal-host.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createLineEditor } from "@ai-matrx/terminal";
+import type { LineEditor } from "@ai-matrx/terminal";
 import { Terminal } from "@ai-matrx/terminal/react";
 import type { TerminalHandle, TerminalSize } from "@ai-matrx/terminal/react";
 import { cn } from "@/lib/utils";
@@ -32,30 +34,20 @@ type XtermTerminal = TerminalHandle["xterm"];
 
 interface SessionState {
   term: XtermTerminal;
-  /** Current in-progress user input. */
-  buffer: string;
-  /** Cursor index within the buffer. */
-  cursor: number;
-  /** Position in history ring buffer (null = not recalling). */
-  historyIdx: number | null;
-  /** True while a command is executing — keystrokes are ignored. */
-  running: boolean;
+  /** Read-line emulation when no PTY is attached (prompt, editing, history, paste queue). */
+  editor: LineEditor;
   /** Latest Redux line id rendered into xterm (for agent-line mirroring). */
   lastSeenLineId: number;
   /** Live PTY handle when the adapter supports it; xterm is attached
    *  directly to it and the read-line emulation below is bypassed. */
   pty: PtyHandle | null;
-  /** Disposable for the term.onData listener so we can swap it when the
+  /** Disposable for the current keystroke sink so we can swap it when the
    *  PTY connects/disconnects without leaking handlers. */
   onDataDisposer: (() => void) | null;
   /** When a streaming `runCommand` is in flight, this aborts the SSE
    *  request and tells the orchestrator to SIGTERM the underlying
    *  process. Cleared back to null when the command finishes. */
   runAbort: AbortController | null;
-  /** Pending lines from a multi-line paste that are queued to run after
-   *  the current command finishes. Each entry is the trimmed line content
-   *  (no trailing newline). */
-  pasteQueue: string[];
 }
 
 // ANSI color escape codes
@@ -111,49 +103,19 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
     if (visible) setHasBeenVisible(true);
   }, [visible]);
 
-  // ── Prompt writing helpers ──────────────────────────────────────────────
-  const writePromptFor = useCallback((state: SessionState) => {
-    const cwd = shortCwd(processRef.current.cwd);
-    state.term.write(`${PROMPT_GREEN}${cwd}${RESET} ${PROMPT_BLUE}❯${RESET} `);
-    if (state.buffer) {
-      state.term.write(state.buffer);
-      const trailing = state.buffer.length - state.cursor;
-      if (trailing > 0) state.term.write(`\x1b[${trailing}D`);
-    }
-  }, []);
-
-  const refreshLine = useCallback(
-    (state: SessionState) => {
-      state.term.write("\r\x1b[K");
-      writePromptFor(state);
-    },
-    [writePromptFor],
+  /** The emulated prompt: the adapter's cwd, the way a shell would show it. */
+  const promptText = useCallback(
+    () => `${PROMPT_GREEN}${shortCwd(processRef.current.cwd)}${RESET} ${PROMPT_BLUE}❯${RESET} `,
+    [],
   );
 
-  /** Pop the next queued paste line (if any) and run it. Lets a multi-line
-   *  paste behave the way the user expects — one command after the next.
-   *  Defined as a ref-mutating closure so `runCommand` can call it without
-   *  taking a circular dep on itself. */
+  /** The latest runCommand, for the line editor created once at boot. */
   const runCommandRef = useRef<
     ((state: SessionState, command: string) => Promise<void>) | null
   >(null);
 
   const runCommand = useCallback(
     async (state: SessionState, command: string) => {
-      if (!command.trim()) {
-        state.term.write("\r\n");
-        writePromptFor(state);
-        const next = state.pasteQueue.shift();
-        if (next !== undefined && runCommandRef.current) {
-          state.buffer = "";
-          state.cursor = 0;
-          state.historyIdx = null;
-          void runCommandRef.current(state, next);
-        }
-        return;
-      }
-
-      state.running = true;
       dispatch(pushHistory(command));
       dispatch(setExecuting(true));
 
@@ -166,8 +128,6 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
           source: "user",
         }),
       );
-
-      state.term.write("\r\n");
 
       const adapter = processRef.current;
       const ac = new AbortController();
@@ -273,198 +233,20 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
           );
         }
       } finally {
-        state.running = false;
         state.runAbort = null;
-        state.buffer = "";
-        state.cursor = 0;
-        state.historyIdx = null;
         dispatch(setExecuting(false));
-        writePromptFor(state);
-        const next = state.pasteQueue.shift();
-        if (next !== undefined && runCommandRef.current) {
-          void runCommandRef.current(state, next);
-        }
+        // Prompt again, then run the next line of a multi-line paste, if any.
+        state.editor.done();
       }
     },
-    [dispatch, writePromptFor],
+    [dispatch],
   );
 
-  // Keep the ref in sync so the queue-drain hop above always calls the
+  // Keep the ref in sync so the editor (created once at boot) always runs the
   // current `runCommand`.
   useEffect(() => {
     runCommandRef.current = runCommand;
   }, [runCommand]);
-
-  // ── Input handler (read-line emulation, used when no PTY is available) ─
-  const handleData = useCallback(
-    (state: SessionState, data: string) => {
-      // Ctrl-C while a streamed command is running: abort the SSE so the
-      // orchestrator SIGTERMs the process. The `runCommand` finally block
-      // takes care of redrawing the prompt.
-      if (state.running) {
-        if (data === "\x03" && state.runAbort) {
-          state.runAbort.abort();
-        }
-        return;
-      }
-
-      // Paste-in: multi-char chunk without escape prefix.
-      if (data.length > 1 && !data.startsWith("\x1b")) {
-        const lines = data.split(/\r?\n/);
-        for (let i = 0; i < lines.length; i++) {
-          const chunk = lines[i];
-          if (chunk) {
-            state.buffer =
-              state.buffer.slice(0, state.cursor) +
-              chunk +
-              state.buffer.slice(state.cursor);
-            state.cursor += chunk.length;
-            state.term.write(chunk);
-          }
-          if (i < lines.length - 1) {
-            // Newline boundary inside the paste — run the first line now,
-            // and queue the remaining lines so they execute one-by-one
-            // after each command completes (see `runCommand`'s finally
-            // block). Empty lines are kept so the visual rhythm matches
-            // what the user pasted.
-            const toRun = state.buffer;
-            state.buffer = "";
-            state.cursor = 0;
-            for (let j = i + 1; j < lines.length; j++) {
-              state.pasteQueue.push(lines[j] ?? "");
-            }
-            void runCommand(state, toRun);
-            return;
-          }
-        }
-        return;
-      }
-
-      switch (data) {
-        case "\r": {
-          const command = state.buffer;
-          state.buffer = "";
-          state.cursor = 0;
-          state.historyIdx = null;
-          void runCommand(state, command);
-          return;
-        }
-        case "\x7f": {
-          if (state.cursor === 0) return;
-          state.buffer =
-            state.buffer.slice(0, state.cursor - 1) +
-            state.buffer.slice(state.cursor);
-          state.cursor -= 1;
-          refreshLine(state);
-          return;
-        }
-        case "\x1b[3~": {
-          if (state.cursor >= state.buffer.length) return;
-          state.buffer =
-            state.buffer.slice(0, state.cursor) +
-            state.buffer.slice(state.cursor + 1);
-          refreshLine(state);
-          return;
-        }
-        case "\x1b[A": {
-          const hist = historyRef.current;
-          if (hist.length === 0) return;
-          const idx =
-            state.historyIdx === null
-              ? hist.length - 1
-              : Math.max(0, state.historyIdx - 1);
-          state.historyIdx = idx;
-          state.buffer = hist[idx] ?? "";
-          state.cursor = state.buffer.length;
-          refreshLine(state);
-          return;
-        }
-        case "\x1b[B": {
-          const hist = historyRef.current;
-          if (state.historyIdx === null) return;
-          const next = state.historyIdx + 1;
-          if (next >= hist.length) {
-            state.historyIdx = null;
-            state.buffer = "";
-          } else {
-            state.historyIdx = next;
-            state.buffer = hist[next] ?? "";
-          }
-          state.cursor = state.buffer.length;
-          refreshLine(state);
-          return;
-        }
-        case "\x1b[C": {
-          if (state.cursor < state.buffer.length) {
-            state.cursor += 1;
-            state.term.write("\x1b[C");
-          }
-          return;
-        }
-        case "\x1b[D": {
-          if (state.cursor > 0) {
-            state.cursor -= 1;
-            state.term.write("\x1b[D");
-          }
-          return;
-        }
-        case "\x01": {
-          if (state.cursor > 0) {
-            state.term.write(`\x1b[${state.cursor}D`);
-            state.cursor = 0;
-          }
-          return;
-        }
-        case "\x05": {
-          const dist = state.buffer.length - state.cursor;
-          if (dist > 0) {
-            state.term.write(`\x1b[${dist}C`);
-            state.cursor = state.buffer.length;
-          }
-          return;
-        }
-        case "\x0b": {
-          state.buffer = state.buffer.slice(0, state.cursor);
-          refreshLine(state);
-          return;
-        }
-        case "\x15": {
-          state.buffer = state.buffer.slice(state.cursor);
-          state.cursor = 0;
-          refreshLine(state);
-          return;
-        }
-        case "\x0c": {
-          state.term.clear();
-          refreshLine(state);
-          return;
-        }
-        case "\x03": {
-          state.term.write("^C\r\n");
-          state.buffer = "";
-          state.cursor = 0;
-          state.historyIdx = null;
-          writePromptFor(state);
-          return;
-        }
-        default: {
-          if (data >= " " && data.length === 1) {
-            state.buffer =
-              state.buffer.slice(0, state.cursor) +
-              data +
-              state.buffer.slice(state.cursor);
-            state.cursor += 1;
-            if (state.cursor === state.buffer.length) {
-              state.term.write(data);
-            } else {
-              refreshLine(state);
-            }
-          }
-        }
-      }
-    },
-    [refreshLine, runCommand, writePromptFor],
-  );
 
   // ── Boot the session once the package terminal is up ────────────────────
   // @ai-matrx/terminal owns xterm itself: creation, fit, refit on reveal (its resize observer
@@ -476,24 +258,34 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
 
     const boot = () => {
       const term = handle.xterm;
+      // The editor's handlers reach the session through this cell; it is set right below.
+      const self: { session: SessionState | null } = { session: null };
+      const editor = createLineEditor({
+        write: (data) => term.write(data),
+        prompt: promptText,
+        history: () => historyRef.current,
+        onSubmit: (command) => {
+          if (self.session) void runCommandRef.current?.(self.session, command);
+        },
+        // Ctrl-C while a streamed command runs: abort the SSE so the orchestrator SIGTERMs it.
+        onInterrupt: () => self.session?.runAbort?.abort(),
+        onClearScreen: () => term.clear(),
+      });
       const session: SessionState = {
         term,
-        buffer: "",
-        cursor: 0,
-        historyIdx: null,
-        running: false,
+        editor,
         lastSeenLineId: parseLineId(reduxLines[reduxLines.length - 1]?.id),
         pty: null,
         onDataDisposer: null,
         runAbort: null,
-        pasteQueue: [],
       };
+      self.session = session;
       sessionRef.current = session;
 
       // Default wiring: read-line emulation on top of `process.exec()`.
       // If the active adapter supports a real PTY, we'll swap this out
       // below.
-      const bufferedListener = listen((data) => handleData(session, data));
+      const bufferedListener = listen((data) => session.editor.input(data));
       session.onDataDisposer = () => bufferedListener.dispose();
 
       const expectsPty = Boolean(processRef.current.openPty);
@@ -505,7 +297,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       if (expectsPty) {
         term.write(`${DIM}[connecting interactive terminal…]${RESET}`);
       } else {
-        writePromptFor(session);
+        session.editor.prompt();
       }
       setReady(true);
 
@@ -539,7 +331,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
             // Fall back to buffered emulation so the user still has a
             // useful prompt while we don't auto-reconnect.
             detachPty(state);
-            writePromptFor(state);
+            state.editor.prompt();
           },
           onError: (err) => {
             term.write(
@@ -572,7 +364,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         term.write(
           `\r\x1b[K${RED}[interactive PTY unavailable: ${extractErrorMessage(error)}; using buffered terminal]${RESET}\r\n`,
         );
-        writePromptFor(state);
+        state.editor.prompt();
       }
     };
 
@@ -582,7 +374,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       state.pty = null;
       state.term.options.disableStdin = false;
       state.onDataDisposer?.();
-      const bufferedListener = listen((data) => handleData(state, data));
+      const bufferedListener = listen((data) => state.editor.input(data));
       state.onDataDisposer = () => bufferedListener.dispose();
     };
 
@@ -614,9 +406,9 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
     const s = sessionRef.current;
     if (!s) return false;
     if (s.pty?.isOpen) s.pty.signal("SIGINT");
-    else handleData(s, "\x03");
+    else s.editor.input("\x03");
     return true;
-  }, [handleData]);
+  }, []);
 
   /** The remote PTY follows the visible grid so wrapping and full-screen apps stay right. */
   const onResize = useCallback((size: TerminalSize) => {
@@ -659,17 +451,17 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
           line.exitCode !== undefined ? `exit ${line.exitCode}` : line.text;
         s.term.write(`${DIM}${text}${RESET}\r\n`);
       }
-      writePromptFor(s);
+      s.editor.prompt();
     }
-  }, [reduxLines, writePromptFor]);
+  }, [reduxLines]);
 
   const handleClear = useCallback(() => {
     const s = sessionRef.current;
     if (!s) return;
     s.term.clear();
     dispatch(clearLines("terminal"));
-    if (!s.pty?.isOpen) writePromptFor(s);
-  }, [dispatch, writePromptFor]);
+    if (!s.pty?.isOpen) s.editor.refresh();
+  }, [dispatch]);
 
   return (
     <div

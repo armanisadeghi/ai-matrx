@@ -8,8 +8,10 @@
  * out through `onData`, size out through `onResize`. Any PTY (desktop relay, cloud sandbox,
  * local process) plugs in with three lines.
  */
+// The package ships its stylesheets; importing them here means a host never forgets them. Both
+// stay as imports in the built bundle (tsup externals) for the host's bundler to place.
 import "@xterm/xterm/css/xterm.css";
-import "../styles.css";
+import "@ai-matrx/terminal/styles.css";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { ITerminalOptions, Terminal as XTerm } from "@xterm/xterm";

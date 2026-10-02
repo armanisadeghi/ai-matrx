@@ -13,7 +13,6 @@ import {
   Timer,
   AlertCircle,
   Terminal,
-  Send,
   Settings,
   Activity,
   HardDrive,
@@ -51,8 +50,8 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { SshAccessPanel } from "@/components/sandbox/ssh-access-panel";
-import { SandboxTranscript } from "@/components/sandbox/SandboxTranscript";
-import type { SandboxTranscriptEntry } from "@/components/sandbox/SandboxTranscript";
+import { SandboxConsole } from "@/components/sandbox/SandboxConsole";
+import type { SandboxConsoleEntry } from "@/components/sandbox/SandboxConsole";
 import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -81,7 +80,7 @@ import { extractErrorMessage } from "@/utils/errors";
 
 const DEFAULT_CWD = "/home/agent";
 
-type TerminalEntry = SandboxTranscriptEntry;
+type TerminalEntry = SandboxConsoleEntry;
 
 export default function SandboxDetailPage() {
   const params = useParams();
@@ -100,7 +99,6 @@ export default function SandboxDetailPage() {
   const [executing, setExecuting] = useState(false);
   const [terminalHistory, setTerminalHistory] = useState<TerminalEntry[]>([]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [forceStopOpen, setForceStopOpen] = useState(false);
   const [lifecycleBusy, setLifecycleBusy] = useState<"stop" | "delete" | "extend" | null>(null);
@@ -130,7 +128,6 @@ export default function SandboxDetailPage() {
     null,
   );
 
-  const inputRef = useRef<HTMLInputElement>(null);
   const extensionGeneration = useRef(0);
   const extensionIdentity = useRef("");
   const pendingExtension = useRef<number | null>(null);
@@ -185,15 +182,13 @@ export default function SandboxDetailPage() {
     return () => clearInterval(interval);
   }, [fetchInstance]);
 
-  const handleExec = async () => {
-    if (!commandInput.trim() || executing) return;
-
-    const cmd = commandInput.trim();
+  /** Enter in the terminal: run the line through the exec API (one command per call). */
+  const handleExec = async (line: string) => {
+    const cmd = line.trim();
     setCommandInput("");
     // The user just ran it: whoever composed it, the box is theirs again.
     setAgentStagedCommand(false);
     setCommandHistory((prev) => [...prev, cmd]);
-    setHistoryIndex(-1);
     setTerminalHistory((prev) => [
       ...prev,
       { type: "command", text: cmd, cwd },
@@ -261,9 +256,6 @@ export default function SandboxDetailPage() {
       ]);
     } finally {
       setExecuting(false);
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-      });
     }
   };
 
@@ -301,36 +293,6 @@ export default function SandboxDetailPage() {
       setTimeout(() => setCopied(false), 2000);
     }
   }, [terminalHistory]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleExec();
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (commandHistory.length > 0) {
-        const newIndex =
-          historyIndex < commandHistory.length - 1
-            ? historyIndex + 1
-            : historyIndex;
-        setHistoryIndex(newIndex);
-        setCommandInput(commandHistory[commandHistory.length - 1 - newIndex]);
-        // History recall replaces the value without an onChange, so the marker
-        // has to be dropped here or it would describe a command it did not stage.
-        setAgentStagedCommand(false);
-      }
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (historyIndex > 0) {
-        const newIndex = historyIndex - 1;
-        setHistoryIndex(newIndex);
-        setCommandInput(commandHistory[commandHistory.length - 1 - newIndex]);
-      } else {
-        setHistoryIndex(-1);
-        setCommandInput("");
-      }
-      setAgentStagedCommand(false);
-    }
-  };
 
   const handleStop = async (graceful = true) => {
     if (!instance || lifecycleBusy) return;
@@ -573,7 +535,6 @@ export default function SandboxDetailPage() {
           `This sandbox is ${effectiveStatus}, so the terminal input is disabled and a command cannot be staged. Start a running sandbox first.`,
         );
       setCommandInput(cmd);
-      setHistoryIndex(-1);
       // Mark it as staged, so the box does not present an agent's command as
       // something the user typed. Cleared on their first keystroke.
       setAgentStagedCommand(true);
@@ -807,76 +768,22 @@ export default function SandboxDetailPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <SandboxTranscript
+              <SandboxConsole
                 entries={terminalHistory}
                 executing={executing}
-                emptyText={isActive ? "Type a command below and press Enter..." : "Sandbox is not running. Terminal is read-only."}
-                onActivate={() => inputRef.current?.focus()}
+                active={isActive}
+                cwd={cwd}
+                cwdStaged={agentStagedCwd}
+                line={commandInput}
+                lineStaged={agentStagedCommand}
+                history={commandHistory}
+                onLineChange={(next) => {
+                  setCommandInput(next);
+                  // The person changed it (typing, deleting, history recall): it is theirs now.
+                  setAgentStagedCommand(false);
+                }}
+                onSubmit={(command) => void handleExec(command)}
               />
-              <div className="flex items-center bg-zinc-900 rounded-b-md border-t border-zinc-800">
-                <span className="text-green-400 font-mono text-xs pl-3 pr-0.5 shrink-0">
-                  agent@sandbox
-                </span>
-                <span className="text-zinc-500 font-mono text-xs">:</span>
-                <span
-                  className={
-                    agentStagedCwd
-                      ? "text-amber-400 font-mono text-xs pr-1 shrink-0 max-w-[200px] truncate underline decoration-dotted decoration-amber-500/60"
-                      : "text-blue-400 font-mono text-xs pr-1 shrink-0 max-w-[200px] truncate"
-                  }
-                  data-testid={
-                    agentStagedCwd ? "agent-staged-cwd-marker" : undefined
-                  }
-                  title={
-                    agentStagedCwd
-                      ? `${cwd} — set by an agent, not by a cd you ran. Your next command runs here. It reverts to the shell's own directory after the next command.`
-                      : cwd
-                  }
-                >
-                  {cwd.startsWith("/home/agent")
-                    ? "~" + cwd.slice("/home/agent".length)
-                    : cwd}
-                </span>
-                <span className="text-zinc-200 font-mono text-sm pr-1 shrink-0">
-                  $
-                </span>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={commandInput}
-                  onChange={(e) => {
-                    setCommandInput(e.target.value);
-                    // First keystroke and the command is the user's, not the
-                    // agent's — drop the marker.
-                    setAgentStagedCommand(false);
-                  }}
-                  onKeyDown={handleKeyDown}
-                  disabled={!isActive || executing}
-                  placeholder={
-                    isActive ? "Enter command..." : "Sandbox not running"
-                  }
-                  className="flex-1 bg-transparent text-zinc-200 font-mono text-sm py-3 px-2 outline-none placeholder:text-zinc-600 disabled:opacity-50"
-                  autoFocus
-                />
-                {agentStagedCommand && (
-                  <span
-                    data-testid="agent-staged-command-marker"
-                    title="An agent typed this command; nothing runs until you press Enter, and editing it clears this marker."
-                    className="shrink-0 mr-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-mono text-[10px] uppercase tracking-wide"
-                  >
-                    staged by agent · not run
-                  </span>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleExec}
-                  disabled={!isActive || executing || !commandInput.trim()}
-                  className="mr-2 text-zinc-400 hover:text-zinc-200"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
             </CardContent>
           </Card>
 
