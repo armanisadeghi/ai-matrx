@@ -18,7 +18,7 @@ this directory.
    store first); elsewhere today's scope doors write and the store's copy follows. `scopesService.ts`
    keeps the READS and is the legacy adapter until the final switch; its write methods are called by
    nothing (`service/scopeStore.test.ts` fails on any new call). Decoders + slug rule:
-   `service/scopeRows.ts`. Design and census: `common-docs/projects/data-doctrine-adoption/v5/PROGRESS-SCOPES-WRITE-THROUGH.md`.
+   `service/scopeRows.ts`. Design and census: `common-docs/systems/account/scopes-context/STATE.md`.
 
 1. **`scopesService.ts` is the ONLY file that may query the `context.*` tables**, and ESLint
    enforces it. The boy-scout rule applies — fix violators on sight.

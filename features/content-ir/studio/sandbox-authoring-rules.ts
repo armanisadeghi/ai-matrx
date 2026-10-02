@@ -18,7 +18,7 @@
  * changes, and the screen follows.
  *
  * Cross-repo context lives once, in
- * `common-docs/projects/data-doctrine-adoption/plans/DD-123-shape-sandbox.md`.
+ * `common-docs/projects/archive/data-doctrine-adoption/plans/DD-123-shape-sandbox.md`.
  */
 
 export type SandboxRuleTopic =

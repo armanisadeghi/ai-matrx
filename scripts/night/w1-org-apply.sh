@@ -6,7 +6,7 @@
 # document fixes, each as its own short transaction, with the documented seat probe
 # after every one and a HARD STOP the moment a probe does not answer what it must.
 #
-#   common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/W1-ORG-CHAIR-STEP.md
+#   common-docs/systems/platform/custom-data/STATE.md
 #
 # THE FOUR, IN ORDER (smallest lock first, the two auth.users retries last):
 #   1  C   w1_org_audience_is_a_word_on_main.sql            context.templates only

@@ -3,7 +3,7 @@
  * AN INVERSE PUTS A DEFECT BACK. IT MAY NOT TAKE THE GROUND OUT FROM UNDER THE PLATFORM.
  *
  * WHAT THIS CLOSES — seven instances, measured, in one session (lane RED-SUITES-3, 2026-09-21,
- * `common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/PROGRESS-RED-SUITES-3.md` §1)
+ * `common-docs/systems/platform/custom-data/STATE.md` §1)
  * ------------------------------------------------------------------------------------------
  * An inverse file is a SNAPSHOT of the world on the day it was written. It carries no
  * `-- based-on:` line for the objects it merely removes, no sweep in either repo reads this

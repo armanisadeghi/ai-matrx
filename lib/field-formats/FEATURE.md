@@ -3,7 +3,7 @@
 **Status:** live · **Owner:** platform primitive. The pure half (types, registry, `format`) is
 `@ai-matrx/design-system/field-formats` and the formula engine is
 `@ai-matrx/design-system/formulas` (the app forks were deleted 2026-09-25, merge step 2 —
-[MERGE-DESIGN](../../../common-docs/projects/data-doctrine-adoption/v5/v2-readiness-audit/MERGE-DESIGN.md) §2).
+[MERGE-DESIGN](../../../common-docs/systems/platform/custom-data/STATE.md) §2).
 What stays here is app-only glue: the React pieces, choice hydration, relation states and the
 agent-context bridge. **Add or change a format in the package, never here.**
 
