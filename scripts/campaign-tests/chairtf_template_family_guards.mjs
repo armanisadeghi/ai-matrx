@@ -44,7 +44,7 @@ const PLANTS = {
 if (plant && !PLANTS[plant]) { console.error(`unknown plant ${plant}; one of ${Object.keys(PLANTS).join(", ")}`); process.exit(2); }
 
 // The template, as templateDeclaration(spec) in @ai-matrx/records produces it (card + install plan).
-const ex = (token, name, fields) => ({ business: "Brightwater Family Dental", tables: [{ token, name, labelSingular: name.replace(/s$/, ""), labelPlural: name, type: "entity", fields, rows: [] }] });
+const ex = (token, name, fields) => ({ business: "Brightwater Family Dental", tables: [{ token, name, labelSingular: name.replace(/s$/, ""), labelPlural: name, type: "entity", titleField: fields[0].key, fields, rows: [] }] });
 const DECLARATION = {
   catalogueId: "TG001", version: 1, specVersion: 1, id: "brightwater-family-dental-guard",
   card: { name: "Dental practice", persona: "Dana Ruiz runs the front desk at Brightwater Family Dental and books every cleaning from one board.",
@@ -78,7 +78,7 @@ const DECLARATION = {
       { label: "forms.intake", door: "form_declare", args: { p_organization_id: "${org}", p_table_id: "${ref:tables.patient}", p_title: "New patient intake",
           p_questions: [{ field: "full_name", ask: "What is your full name?", required: true }, { field: "phone", ask: "What is the best number to reach you?" }], p_presentation: {} },
         save: { "forms.intake": [] }, made: [{ kind: "form", ref: "forms.intake", title: "New patient intake", table: "tables.patient" }] },
-      { label: "dashboards.week", door: "dashboard_declare", args: { p_organization_id: "${org}", p_table_id: "${ref:tables.appointment}", p_name: "This week", p_blocks: [{ title: "Visits by status", kind: "bar", group_by: "status" }] },
+      { label: "dashboards.week", door: "dashboard_declare", args: { p_organization_id: "${org}", p_table_id: "${ref:tables.appointment}", p_name: "This week", p_blocks: [{ title: "Visits by status", kind: "column", group_by: ["status"], measures: [{ op: "count" }], span: 12 }] },
         save: { "dashboards.week": [] }, made: [{ kind: "dashboard", ref: "dashboards.week", title: "This week" }] },
     ],
   },
@@ -166,7 +166,7 @@ try {
   const tables = Number((await one("select count(*) n from custom.template_install i, jsonb_array_elements(i.made) x where i.organization_id = $1 and i.catalogue_id = 'TG001' and x->>'kind' = 'table'", [ORG])).n);
   record("G1 install twice = one footprint",
     first?.state === "installed" && second?.already === true && second?.install_id === first?.install_id && installs === 1 && tables === 2,
-    `first ${first?.state} in ${first?.calls} call(s), ${first?.ms} ms; second already=${second?.already}; ${installs} install row(s), ${tables} table(s)`);
+    `first ${first?.state} in ${first?.calls} call(s), ${first?.ms} ms${first?.refusal ? ` (${first.refusal.label}: ${first.refusal.code} ${first.refusal.message})` : ""}; second already=${second?.already}; ${installs} install row(s), ${tables} table(s)`);
 
   // G2 — uninstall archives everything the install made; restore brings it back.
   const live = async () => (await one(`
@@ -182,7 +182,15 @@ try {
      where i.organization_id = $1 and i.catalogue_id = 'TG001'
      group by i.id`, [ORG]));
   const before = await live();
-  const un = await untilDone("template_uninstall", ORG, first?.install_id);
+  let un = null;
+  await c.query("savepoint g2");
+  try {
+    un = await untilDone("template_uninstall", ORG, first?.install_id);
+    await c.query("release savepoint g2");
+  } catch (e) {
+    await c.query("rollback to savepoint g2");
+    un = { state: "refused", refusal: { code: e.code, message: e.message } };
+  }
   await asRunner();
   const after = await live();
   const back = await untilDone("template_restore", ORG, first?.install_id);
@@ -190,7 +198,7 @@ try {
   const restored = await live();
   record("G2 uninstall archives everything",
     un?.state === "uninstalled" && Number(after.objects) === 0 && Number(after.rows_live) === 0 && back?.state === "installed" && Number(restored.objects) === Number(before.objects) && Number(restored.rows_live) === Number(before.rows_live),
-    `made ${before.made}: live before ${before.objects} objects / ${before.rows_live} rows; after uninstall ${after.objects} / ${after.rows_live}; after restore ${restored.objects} / ${restored.rows_live}`);
+    `${un?.state === "uninstalled" ? "" : `uninstall ${un?.state}: ${un?.refusal?.code ?? ""} ${un?.refusal?.message ?? ""}; `}made ${before.made}: live before ${before.objects} objects / ${before.rows_live} rows; after uninstall ${after.objects} / ${after.rows_live}; after restore ${restored.objects} / ${restored.rows_live}`);
 } catch (e) {
   console.log("FATAL", e.code ?? "", e.message);
   results.push({ guard: "run", ok: false });

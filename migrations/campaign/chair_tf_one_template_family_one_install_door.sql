@@ -113,6 +113,7 @@ create table custom.template_install (
 create unique index template_install_one_live_idx
   on custom.template_install (organization_id, catalogue_id) where state <> 'uninstalled';
 create index template_install_org_idx on custom.template_install (organization_id, started_at desc);
+create index template_install_template_idx on custom.template_install (template_id);   -- covers the foreign key
 revoke all on table custom.template_install from public, anon, authenticated;
 comment on table custom.template_install is
   'Chair (v6) — one row per template install: the next step, every id it made (made), the refusal that stopped it, what uninstall archived. At most one live install of a catalogue id per organization. Written only by custom.template_install / template_uninstall / template_restore / template_install_note.';
@@ -930,12 +931,8 @@ comment on function custom.template_restore(uuid, uuid, integer) is
   'Chair (v6) — bring back everything custom.template_uninstall archived for one install (tables with their records through custom.record_restore, dashboards, documents, portals, forms, views), each in its own subtransaction so a table waiting on another is retried after it; budgeted (done=false means call again). Refused when the same template has been installed again since.';
 
 -- ── THE DOORS ────────────────────────────────────────────────────────────────────────────────────
-revoke all on function custom.template_declare(text, jsonb) from public, anon;
-revoke all on function custom.templates(jsonb) from public, anon;
-revoke all on function custom.template_install(uuid, uuid, integer) from public, anon;
-revoke all on function custom.template_install_note(uuid, uuid, text, uuid, text) from public, anon;
-revoke all on function custom.template_uninstall(uuid, uuid, integer) from public, anon;
-revoke all on function custom.template_restore(uuid, uuid, integer) from public, anon;
+-- (A new definer's PUBLIC EXECUTE is cleared at birth by the DDL guard; the door rows below open the
+-- signed-in lane and custom.reopen_declared_doors() grants it. anon gets nothing.)
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
@@ -978,7 +975,10 @@ select 'custom', d.fn, d.args, d.types, d.reason,
          'foreign', jsonb_build_object('sqlstate', '42501', 'same_as_invented', true), 'verified', '2026-10-02 lane CHAIR-TEMPLATE-FAMILY — written with this body'),
        'p_install_id', jsonb_build_object('type', 'uuid', 'position', 2, 'entity', 'template_install',
          'check', 'matched only with organization_id = arg1.',
-         'foreign', jsonb_build_object('sqlstate', 'P0002', 'not_a_leak', true, 'same_as_invented', true), 'verified', '2026-10-02 lane CHAIR-TEMPLATE-FAMILY — written with this body'))),
+         'foreign', jsonb_build_object('sqlstate', 'P0002', 'not_a_leak', true, 'same_as_invented', true), 'verified', '2026-10-02 lane CHAIR-TEMPLATE-FAMILY — written with this body'),
+       'p_id', jsonb_build_object('type', 'uuid', 'position', 4, 'entity', 'agent',
+         'check', 'only recorded in this install''s footprint and named back by uninstall; never read, opened or changed by any template door.',
+         'foreign', jsonb_build_object('bounded', true, 'note', 'a foreign or invented agent id is stored as a label on the caller''s own install and reaches nothing.', 'not_a_leak', true), 'verified', '2026-10-02 lane CHAIR-TEMPLATE-FAMILY — written with this body'))),
     ('template_uninstall', 'p_organization_id uuid, p_install_id uuid, p_budget_ms integer',
      array['uuid'::regtype, 'uuid'::regtype, 'integer'::regtype]::oid[],
      'Archives everything one install made, through the archive doors and the caller''s own rung on each table.',

@@ -109,8 +109,6 @@ $function$;
 comment on function custom.publish_bind(uuid, text, uuid, text, text) is
   'Chair (v6) — give a table, record, dashboard, page or saved view of one organization a public address: checks the object is that kind there, then iam.publish_binding_create judges the person (top content level, world lane, public addresses open). Never enters the world lane itself.';
 
-revoke all on function iam.resolve_publish_binding_kind(text) from public;
-revoke all on function custom.publish_bind(uuid, text, uuid, text, text) from public, anon;
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
