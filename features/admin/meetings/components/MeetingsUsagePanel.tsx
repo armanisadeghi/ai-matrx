@@ -113,7 +113,7 @@ export function MeetingsUsagePanel({ onOpenOrganization }: { onOpenOrganization:
         <Stat label="Recordings" value={totals ? formatCount(totals.recordings) : dash} />
         <Stat label="Recording storage" value={totals ? formatFileSize(totals.recording_bytes) : dash} hint="Size of the recording files in the file store" />
         <Stat label="Transcript lines" value={totals ? formatCount(totals.transcript_segments) : dash} />
-        <Stat label="Live now" value={totals ? formatCount(totals.live_now) : dash} tone="live" hint="Meetings with someone in the room right now, regardless of period" />
+        <Stat label="Live now" value={totals ? formatCount(totals.live_now) : dash} tone="live" hint="Meetings with someone in the room right now" />
       </div>
 
       <div className="min-h-0 flex-1">
