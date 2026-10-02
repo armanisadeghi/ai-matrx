@@ -48,6 +48,7 @@ import {
   openItemSurface,
   type ItemSurfaceIndex,
 } from "./item-surfaces";
+import { settleFrames } from "./settle-frames";
 
 export interface AddTileInput {
   kind: BoardTileKindInput;
@@ -436,9 +437,12 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     return { ok: true, id: tile.id };
   };
 
-  /** Two frames: a selection or an unpark has rendered and its effects ran. */
-  const settle = () =>
-    new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  /**
+   * Two frames: a selection or an unpark has rendered and its effects ran. A
+   * background tab pauses animation frames, so a timer settles it too — an
+   * agent's tool call never waits on the person looking at this tab.
+   */
+  const settle = () => settleFrames();
 
   /**
    * The tile's surface capture, held awake for the call (a sleeping tile's body
