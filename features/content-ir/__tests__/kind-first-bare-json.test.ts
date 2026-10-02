@@ -18,7 +18,7 @@
  * to nothing — the kind is known on the first upsert, so the region shows that
  * KIND's loading state immediately and then fills item by item.
  *
- * Contract: common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md §6.
+ * Contract: common-docs/systems/architecture/content-ir/FEATURE.md §6.
  */
 
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";

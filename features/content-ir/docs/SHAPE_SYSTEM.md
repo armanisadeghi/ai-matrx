@@ -4,9 +4,9 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/arch
 
 > **Naming rule:** "Shape" is the product name of the system; **"kind"** is the technical noun (`content_ir.kind_definition.kind`). CLI namespace is `shape:*`; DB and code vocabulary stays `kind`.
 >
-> 🚨 **Names in this area are settled in the lexicon (ruled 2026-08-17) — read it before using `kind`, `primitive`, or `family`:** `common-docs/systems/platform/vocabulary/FEATURE.md` § Settled — Content IR / Shapes, with the full state of play, the four naming defects, and the rename campaign in `common-docs/systems/architecture/content-ir/NOMENCLATURE.md`. The headline: **`legacyBlockType` → `primitive`** (it is the binding channel and the ~95% render path, NOT legacy), **envelope `kind` → spoken as `family`**, and **`scalar_generic` splits into `primitive` + `io_generic`**. Block-type string VALUES and every dispatch outcome are frozen; XML surfaces are permanent.
+> 🚨 **Names in this area are settled in the lexicon (ruled 2026-08-17) — read it before using `kind`, `primitive`, or `family`:** `common-docs/systems/platform/vocabulary/FEATURE.md` § Settled — Content IR / Shapes, with the full state of play, the four naming defects, and the rename campaign in `common-docs/systems/architecture/content-ir/FEATURE.md`. The headline: **`legacyBlockType` → `primitive`** (it is the binding channel and the ~95% render path, NOT legacy), **envelope `kind` → spoken as `family`**, and **`scalar_generic` splits into `primitive` + `io_generic`**. Block-type string VALUES and every dispatch outcome are frozen; XML surfaces are permanent.
 >
-> Companion concept doc (the keystone 7x3x4 model, centralized 2026-08-25): `/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/content-ir-kind-full-system.md`. Program plan of record: `~/.claude/plans/please-review-this-plan-serialized-parrot.md` (this doc is the durable extract).
+> Companion concept doc (the keystone 7x3x4 model, centralized 2026-08-25): `/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/FEATURE.md`. Program plan of record: `~/.claude/plans/please-review-this-plan-serialized-parrot.md` (this doc is the durable extract).
 
 ---
 
@@ -61,7 +61,7 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/arch
 > kind instances CARRY `__kind` as a declared model field (the workflow engine's marker-free
 > wire-shape doctrine is reversed for interior payloads; out-of-band survives only for external
 > egress and unconverted legacy models), and the workflow rollout runs as Stage 2–3 of the plan
-> of record, `common-docs/systems/architecture/content-ir/KINDS_EVERYWHERE_PLAN.md`. Current measured
+> of record, `common-docs/systems/architecture/content-ir/FEATURE.md`. Current measured
 > coverage (2026-08-20): 35 of ~214 node types declare a real `output_kind`. The bullets below
 > stand as the 2026-07-15 record.
 

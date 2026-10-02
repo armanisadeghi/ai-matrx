@@ -109,7 +109,7 @@ export interface NodeInvocationState {
    * Null is NORMAL, not a failure: the producer fails open, and a run recorded
    * before the wrapper shipped has none. Every field it carries also still
    * exists on the event, so a null wrapper costs the surface nothing.
-   * Contract: common-docs/systems/architecture/content-ir/RUNTIME_WRAPPER_WIRE.md
+   * Contract: common-docs/systems/architecture/content-ir/FEATURE.md
    */
   wrapper: NodeOutcomeWrapper | null;
   /**
@@ -275,7 +275,7 @@ export interface WorkflowRunState {
    * the frame `output.<node_id>` addresses. Null until the row lands, and null
    * forever for a run recorded before the wrapper shipped: the producer fails
    * open and every field also still exists on the row.
-   * Contract: common-docs/systems/architecture/content-ir/RUNTIME_WRAPPER_WIRE.md
+   * Contract: common-docs/systems/architecture/content-ir/FEATURE.md
    */
   result: RunResultWrapper | null;
   interrupt: {

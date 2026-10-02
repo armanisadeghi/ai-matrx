@@ -658,7 +658,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // provisional render at all, so the swap to the final value happens in the
   // same frame with no flicker. Withheld by default per kind; a component that
   // throws anyway is caught and falls back to this kind's loading skeleton.
-  // Contract: common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md
+  // Contract: common-docs/systems/architecture/content-ir/FEATURE.md
   if (decision.gate?.kind === "provisional") {
     const provisional = decision.gate.provisional;
     return (

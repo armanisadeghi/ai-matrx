@@ -3,7 +3,7 @@
 /**
  * The Matrix binding of the `node_outcome` runtime-wrapper renderer.
  *
- * Contract: `common-docs/systems/architecture/content-ir/RUNTIME_WRAPPER_WIRE.md`.
+ * Contract: `common-docs/systems/architecture/content-ir/FEATURE.md`.
  * The reader is `@ai-matrx/content-ir` (`wire/runtime-wrapper`); the render
  * half is `@ai-matrx/content-ir-react` (`NodeOutcomeView` / `DelegatedOutput`).
  *

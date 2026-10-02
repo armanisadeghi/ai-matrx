@@ -1,5 +1,5 @@
 {
-  "_source": "Generated from the REAL Python producer (matrx_ai StreamBlockProcessor). Regenerate: aidream scripts/generate_partial_kind_fixture.py. Drift gate: aidream packages/matrx-ai/tests/parity/test_partial_kind_fixture.py. Contract: common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md",
+  "_source": "Generated from the REAL Python producer (matrx_ai StreamBlockProcessor). Regenerate: aidream scripts/generate_partial_kind_fixture.py. Drift gate: aidream packages/matrx-ai/tests/parity/test_partial_kind_fixture.py. Contract: common-docs/systems/architecture/content-ir/FEATURE.md",
   "fixtures": {
     "clean_finish": [
       {

@@ -11,7 +11,7 @@
  * ever streams it for real.
  *
  * Contract background (who closes the JSON, and where):
- * `common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md`.
+ * `common-docs/systems/architecture/content-ir/FEATURE.md`.
  * Two producers exist in production:
  *   - the FRONTEND accumulator parses raw chunk text itself and emits
  *     STREAMING `metadata.__ir` envelopes (this is what chat surfaces run,

@@ -7,7 +7,7 @@
 -- `markdown` (`{ text: string }`, family `primitive`, maturity `distilled`) is
 -- the kind the agent output contract folds prose into — 99% of every agent
 -- result is `content = [one markdown instance]`
--- (common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md §6). It had
+-- (common-docs/systems/architecture/content-ir/FEATURE.md §6). It had
 -- NO `(kind, 'web', 'output')` row, so it reached the generic viewer by SILENT
 -- FALLBACK (`applyIrKindRoute` -> `routeToGeneric`, marker `by:'generic',
 -- unverified:true`) and a reader got the field label "Text" above their own

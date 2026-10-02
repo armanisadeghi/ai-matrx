@@ -1,7 +1,7 @@
 /**
  * THE LEG-3 RENDER PROBE — the render half of the kinds VERIFICATION PASS.
  *
- * Plan of record: `common-docs/systems/architecture/content-ir/KINDS_EVERYWHERE_PLAN.md`
+ * Plan of record: `common-docs/systems/architecture/content-ir/FEATURE.md`
  * §7.8 (maturity tiers). A kind is `verified` only when four legs hold, and
  * leg 3 is RENDERED: a REAL payload (the kind's canonical example) renders
  * through its registered `(kind, 'web', 'output')` component via the CANONICAL

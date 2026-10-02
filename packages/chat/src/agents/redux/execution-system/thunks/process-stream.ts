@@ -598,7 +598,7 @@ export async function processStream({
   // replayed on reconnect or arrive out of order, and `upsertRenderBlock`
   // REPLACES the stored block — so a stale event would regress this block's
   // provisional render. The gate carries the highest accepted event forward.
-  // Contract: common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md
+  // Contract: common-docs/systems/architecture/content-ir/FEATURE.md
   const gatePartialKindStaleness = makePartialKindStalenessGate();
 
   let textBuffer = "";

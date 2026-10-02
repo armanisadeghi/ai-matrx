@@ -139,7 +139,7 @@ same query through the `attempt` nonce.
   `features/surfaces` (the manifest + runtime provider),
   `features/auth/components/module-landing` (the landing shell).
 - Cross-links: `aidream/services/search_kinds/FEATURE.md` ·
-  `common-docs/systems/architecture/content-ir/KINDS_EVERYWHERE_PLAN.md` §10c ·
+  `common-docs/systems/architecture/content-ir/FEATURE.md` §10c ·
   `common-docs/operations/search-kinds-pilot.md`.
 
 ---

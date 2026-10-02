@@ -8,7 +8,7 @@
  * the same answer twice, under two sets of block ids — and it must apply the
  * same wire-boundary rules `processStream` applies, carry-forward included.
  *
- * Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md.
+ * Contract: common-docs/systems/architecture/content-ir/FEATURE.md.
  */
 
 import { RunLaneManager } from "../lane-manager";
