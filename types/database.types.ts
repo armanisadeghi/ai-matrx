@@ -30740,6 +30740,19 @@ export type Database = {
         Args: { p_org: string; p_type: string }
         Returns: boolean
       }
+      _ctx_tree_part: {
+        Args: {
+          p_admin: string[]
+          p_limit?: number
+          p_me: string
+          p_mode: string
+          p_offset?: number
+          p_orgs: string[]
+          p_query?: string
+          p_type_ids?: string[]
+        }
+        Returns: Json
+      }
       _ctx_upsert_doc: {
         Args: {
           p_class: string
@@ -30971,6 +30984,36 @@ export type Database = {
         Args: { p_by: string; p_organization_id: string }
         Returns: Json
       }
+      _output_contained: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: string[]
+      }
+      _output_mark: {
+        Args: { p_organization_id: string; p_patch: Json; p_record_id: string }
+        Returns: undefined
+      }
+      _output_mark_with_contained: {
+        Args: {
+          p_contained_patch: Json
+          p_organization_id: string
+          p_patch: Json
+          p_record_id: string
+        }
+        Returns: undefined
+      }
+      _output_person_wrote: {
+        Args: {
+          p_data: Json
+          p_keys: Json
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: boolean
+      }
+      _output_platform_keys: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
       _parity_types_sentence: { Args: never; Returns: string }
       _pick_list_index_of: {
         Args: { p_me: string; p_organization_id: string }
@@ -31140,6 +31183,16 @@ export type Database = {
         Args: { p_organization_ids: string[]; p_table_id: string }
         Returns: Json
       }
+      _row_control_columns: { Args: never; Returns: Json }
+      _rule_eval_seated: {
+        Args: {
+          p_context?: Json
+          p_expr: Json
+          p_organization_id: string
+          p_values: Json
+        }
+        Returns: Json
+      }
       _seen_one: { Args: { p_id: string; p_user_id: string }; Returns: boolean }
       _share_write_person: {
         Args: {
@@ -31187,6 +31240,10 @@ export type Database = {
       }
       _table_move_plan: {
         Args: { p_me: string; p_table_id: string; p_to: string }
+        Returns: Json
+      }
+      _table_row_defaults: {
+        Args: { p_organization_id: string; p_table_id: string }
         Returns: Json
       }
       _table_share_invite_deliver: {
@@ -32322,6 +32379,22 @@ export type Database = {
       }
       context_templates: { Args: never; Returns: Json[] }
       context_tree: { Args: { p_organization_ids: string[] }; Returns: Json }
+      context_tree_search: {
+        Args: {
+          p_limit?: number
+          p_organization_ids: string[]
+          p_query: string
+        }
+        Returns: Json
+      }
+      context_tree_type_scopes: {
+        Args: { p_limit?: number; p_offset?: number; p_scope_type_id: string }
+        Returns: Json
+      }
+      context_tree_types: {
+        Args: { p_organization_ids: string[]; p_with_counts?: boolean }
+        Returns: Json
+      }
       context_type_archive: { Args: { p_type_id: string }; Returns: Json }
       context_type_restore: { Args: { p_type_id: string }; Returns: Json }
       context_type_write: {
@@ -32462,7 +32535,11 @@ export type Database = {
         }[]
       }
       data_home: {
-        Args: { p_organization_id?: string; p_search?: string }
+        Args: {
+          p_include_app_tables?: boolean
+          p_organization_id?: string
+          p_search?: string
+        }
         Returns: Json
       }
       data_home_changed_by: {
@@ -32486,25 +32563,45 @@ export type Database = {
           table_name: string
         }[]
       }
-      data_home_tables: {
-        Args: { p_organization_id?: string }
-        Returns: {
-          created_by: string
-          kept_by_the_app: boolean
-          kind: string
-          member: boolean
-          mine: boolean
-          organization_id: string
-          organization_name: string
-          shared_with_me: boolean
-          system: boolean
-          table_id: string
-          table_name: string
-          team: boolean
-          updated_at: string
-          visibility: string
-        }[]
-      }
+      data_home_tables:
+        | {
+            Args: { p_organization_id?: string }
+            Returns: {
+              created_by: string
+              kept_by_the_app: boolean
+              kind: string
+              member: boolean
+              mine: boolean
+              organization_id: string
+              organization_name: string
+              shared_with_me: boolean
+              system: boolean
+              table_id: string
+              table_name: string
+              team: boolean
+              updated_at: string
+              visibility: string
+            }[]
+          }
+        | {
+            Args: { p_include_app_tables: boolean; p_organization_id: string }
+            Returns: {
+              created_by: string
+              kept_by_the_app: boolean
+              kind: string
+              member: boolean
+              mine: boolean
+              organization_id: string
+              organization_name: string
+              shared_with_me: boolean
+              system: boolean
+              table_id: string
+              table_name: string
+              team: boolean
+              updated_at: string
+              visibility: string
+            }[]
+          }
       decoration_colors: { Args: never; Returns: string[] }
       decoration_rule_ops: {
         Args: never
@@ -34661,6 +34758,16 @@ export type Database = {
         }
         Returns: number
       }
+      publish_bind: {
+        Args: {
+          p_kind: string
+          p_organization_id: string
+          p_render_mode?: string
+          p_resource_id: string
+          p_slug: string
+        }
+        Returns: Json
+      }
       query_access_ids: {
         Args: { p_organization_id: string; p_required?: string }
         Returns: string[]
@@ -35013,6 +35120,24 @@ export type Database = {
           row_count: number
         }[]
       }
+      record_aggregate_as_of: {
+        Args: {
+          p_field_key?: string
+          p_group_by?: string
+          p_match?: Json
+          p_measure?: string
+          p_organization_id: string
+          p_recorded_at: string
+          p_table_id: string
+        }
+        Returns: {
+          a_non_number: string
+          bucket: string
+          not_numbers: number
+          result: number
+          row_count: number
+        }[]
+      }
       record_applicability: {
         Args: { p_organization_id: string; p_record_id: string }
         Returns: {
@@ -35207,6 +35332,18 @@ export type Database = {
             }
             Returns: Json
           }
+      record_row_controls: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      record_row_controls_set: {
+        Args: {
+          p_controls: Json
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
       record_scope_context: {
         Args: {
           p_history?: number
@@ -35303,6 +35440,20 @@ export type Database = {
           p_edges?: Json
           p_organization_id: string
           p_parent: Json
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      record_write_graph_superseding: {
+        Args: {
+          p_chain?: Json
+          p_children?: Json
+          p_edges?: Json
+          p_idempotence?: Json
+          p_lock_key: string
+          p_organization_id: string
+          p_parent?: Json
+          p_rows_state?: Json
           p_table_id: string
         }
         Returns: Json
@@ -35990,6 +36141,10 @@ export type Database = {
           table_id: string
         }[]
       }
+      table_add_rung: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
       table_archive: {
         Args: {
           p_chunk?: number
@@ -36100,11 +36255,18 @@ export type Database = {
         Args: { p_data: Json; p_is_kernel: boolean; p_is_options: boolean }
         Returns: string
       }
-      table_kernel_id: { Args: never; Returns: string }
-      table_list_everywhere: {
-        Args: { p_organization_id?: string }
-        Returns: Json
+      table_kept_out_of_lists: {
+        Args: { p_kept_for: string }
+        Returns: boolean
       }
+      table_kernel_id: { Args: never; Returns: string }
+      table_kind_facts: { Args: { p_table_id: string }; Returns: Json }
+      table_list_everywhere:
+        | { Args: { p_organization_id?: string }; Returns: Json }
+        | {
+            Args: { p_include_app_tables: boolean; p_organization_id: string }
+            Returns: Json
+          }
       table_move: {
         Args: {
           p_expected_version?: number
@@ -36131,6 +36293,18 @@ export type Database = {
           table_id: string
           visible_rows: number
         }[]
+      }
+      table_row_defaults: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      table_row_defaults_set: {
+        Args: {
+          p_defaults: Json
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
       }
       table_rules: {
         Args: {
@@ -71186,6 +71360,21 @@ export type Database = {
           slug: string
         }[]
       }
+      resolve_publish_binding_kind: {
+        Args: { p_slug: string }
+        Returns: {
+          kind: string
+          namespace: string
+          notice: string
+          organization_id: string
+          render_mode: string
+          resource_id: string
+          resource_type: string
+          slug: string
+          table_id: string
+          title: string
+        }[]
+      }
       role_label: { Args: { p_role: string }; Returns: string }
       role_vocabulary_offenders: {
         Args: never
@@ -88550,6 +88739,7 @@ export type Database = {
         Args: { p_depth?: number; p_id: string; p_type: string }
         Returns: boolean
       }
+      is_client_channel: { Args: never; Returns: boolean }
       is_provisioning: { Args: never; Returns: boolean }
       is_service_only_history: { Args: { p_token: string }; Returns: boolean }
       is_sqlstate: { Args: { p_code: string }; Returns: boolean }
@@ -88858,6 +89048,10 @@ export type Database = {
       link_trigger_is_attached: {
         Args: { p_schema: string; p_table: string; p_trigger: string }
         Returns: boolean
+      }
+      list_dimension_ids: {
+        Args: { p_entity_type: string; p_filters: Json }
+        Returns: string[]
       }
       list_dimension_match: {
         Args: { p_entity_id: string; p_entity_type: string; p_filters: Json }
