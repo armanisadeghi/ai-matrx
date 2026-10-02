@@ -213,7 +213,7 @@ function DocumentChipRow({
       initial={{ opacity: 0, scale: 0.85 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.85 }}
-      className="inline-flex"
+      className="inline-flex shrink-0"
     >
       <AttachedDocumentChip
         title={title}
@@ -232,10 +232,16 @@ function DocumentChipRow({
 
 interface AttachedDocumentChipsProps {
   conversationId: string;
+  /**
+   * Render as items of the composer's ONE row (ConversationContextRail's left
+   * side) instead of a row of its own.
+   */
+  inline?: boolean;
 }
 
 export function AttachedDocumentChips({
   conversationId,
+  inline = false,
 }: AttachedDocumentChipsProps) {
   const dispatch = useAppDispatch();
   const isMaterialized = useConversationMaterialized(conversationId);
@@ -399,13 +405,18 @@ export function AttachedDocumentChips({
   };
 
   return (
-    <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0">
+    <div
+      className={
+        inline ? "contents" : "flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0"
+      }
+      data-rail-entry={inline ? "" : undefined}
+    >
       {links.error && (
         <button
           type="button"
           onClick={() => void links.reload()}
           disabled={links.status === "loading"}
-          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 text-xs text-amber-700 hover:bg-amber-500/15 disabled:opacity-60 dark:text-amber-300"
+          className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 text-xs text-amber-700 hover:bg-amber-500/15 disabled:opacity-60 dark:text-amber-300"
           title={links.error}
         >
           <AlertTriangle className="size-3.5" />

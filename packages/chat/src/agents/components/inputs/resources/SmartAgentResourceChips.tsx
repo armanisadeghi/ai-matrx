@@ -219,7 +219,7 @@ function ResourceChip({
       initial={{ opacity: 0, scale: 0.85 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.85 }}
-      className="inline-flex items-center gap-1"
+      className="inline-flex shrink-0 items-center gap-1"
     >
       <ResourceAttachmentTile
         typeLabel={display.label}
@@ -260,7 +260,7 @@ function PendingDocumentResourceChip({
       initial={{ opacity: 0, scale: 0.85 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.85 }}
-      className="inline-flex"
+      className="inline-flex shrink-0"
     >
       <AttachedDocumentChip
         title={getResourceLabel(resource)}
@@ -299,11 +299,17 @@ interface SmartAgentResourceChipsProps {
   conversationId: string;
   /** Optional Locate anchor supplied by the owning surface. */
   surfaceValueName?: string;
+  /**
+   * Render as items of the composer's ONE row (ConversationContextRail's left
+   * side) instead of a row of its own.
+   */
+  inline?: boolean;
 }
 
 export function SmartAgentResourceChips({
   conversationId,
   surfaceValueName,
+  inline = false,
 }: SmartAgentResourceChipsProps) {
   const dispatch = useAppDispatch();
   const resources = useAppSelector(selectInstanceResources(conversationId));
@@ -387,7 +393,10 @@ export function SmartAgentResourceChips({
 
   return (
     <div
-      className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0"
+      className={
+        inline ? "contents" : "flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0"
+      }
+      data-rail-entry={inline ? "" : undefined}
       data-surface-value={surfaceValueName}
     >
       <AnimatePresence mode="popLayout">

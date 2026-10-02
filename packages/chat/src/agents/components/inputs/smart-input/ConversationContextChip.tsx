@@ -43,6 +43,19 @@ import { resolveMandateKillSwitch } from "../../../redux/execution-system/contex
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 import { useMachineFramesVisible } from "../../shared/transcript-audience";
 
+/**
+ * The chip's text: the group's REAL name (the page's display name) or nothing.
+ * A generic word — "Context", "Page context", "Context items" — is never a
+ * name; with no real name the chip is icon + count only (Arman, 2026-10-01:
+ * "If the best word you can come up with is context, then you should not have
+ * any text at all").
+ */
+export function valueGroupName(surfaceName: string | null | undefined): string {
+  if (!surfaceName) return "";
+  const label = getSurfaceDisplayLabel(surfaceName).trim();
+  return /^(page\s+)?context(\s+items?)?$/i.test(label) ? "" : label;
+}
+
 /** The Mandate's context kill switch for this conversation (false until known). */
 export function useMandateKillSwitch(mandateKey: AnyMandateKey | null | undefined): boolean {
   const [state, setState] = useState<{ key: AnyMandateKey | null; on: boolean }>({
@@ -167,15 +180,15 @@ export function ConversationContextChip({
   if (!surfaceName && rows.length === 0) return null;
 
   if (!agentLayerKnown) {
-    const label = surfaceName ? getSurfaceDisplayLabel(surfaceName) : "Context";
+    const name = valueGroupName(surfaceName);
     return (
       <span
         role="status"
         aria-busy={!agentReadFailed}
-        title={agentReadFailed ? "Couldn't read this agent's context rules" : "Reading this agent's context rules"}
-        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-xs text-muted-foreground"
+        title={agentReadFailed ? "Couldn't read this agent's rules" : "Reading this agent's rules"}
+        className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-border px-1.5 text-xs font-medium text-muted-foreground"
       >
-        {label}
+        {name ? <span className="min-w-0 truncate">{name}</span> : null}
         <span className="tabular-nums">{agentReadFailed ? "—" : rows.length}</span>
       </span>
     );
@@ -190,7 +203,8 @@ export function ConversationContextChip({
 
   return (
     <ContextRulesChip
-      label={surfaceName ? getSurfaceDisplayLabel(surfaceName) : "Context"}
+      // "" (not undefined) also renders no text on @ai-matrx/agents < 0.29.0.
+      label={valueGroupName(surfaceName)}
       rows={rows}
       cap={cap}
       on={surfaceName ? !off : undefined}

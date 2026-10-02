@@ -28,7 +28,7 @@ import {
 import { contextPolicyEntryPreview } from "./contextPolicyPreview";
 import { getKnownContextDefinition } from "./knownContextValues";
 import { ContextPolicyDetailSheet } from "./ContextPolicyDetailSheet";
-import { ContextPolicyTile } from "./ContextPolicyTile";
+import { ValueCountPill } from "./ValueCountPill";
 import { contextEntryLabel } from "./contextEntryLabel";
 
 interface ContextPolicyItemsPopoverProps {
@@ -63,11 +63,10 @@ export function ContextPolicyItemsPopover({
     <>
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
-          <ContextPolicyTile
-            typeLabel="Context"
-            title={`Context Items (${count})`}
+          <ValueCountPill
+            text={String(count)}
             icon={Boxes}
-            themeKey="context-group"
+            aria-label={`${count} sent`}
             className={className}
           />
         </PopoverTrigger>
@@ -78,9 +77,6 @@ export function ContextPolicyItemsPopover({
           sideOffset={6}
           className="p-1.5"
         >
-          <p className="px-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Context items
-          </p>
           <div className="max-h-64 overflow-y-auto space-y-0.5">
             {entries.map((entry) => {
               const policy = policyByKey.get(entry.key);
@@ -90,7 +86,7 @@ export function ContextPolicyItemsPopover({
               const typeLabel =
                 getKnownContextDefinition(entry.key)?.typeLabel ??
                 CONTEXT_TYPE_TILE_LABEL[type] ??
-                "Context";
+                "";
               const label =
                 contextEntryLabel(entry, policy?.label);
               // The snapshot only — a sent turn never shows today's value.

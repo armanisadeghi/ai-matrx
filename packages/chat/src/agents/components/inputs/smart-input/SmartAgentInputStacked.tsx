@@ -13,8 +13,6 @@
 
 import React, { useState } from "react";
 import { ArrowUp, CircleStop, Loader2 } from "lucide-react";
-import { SmartAgentResourceChips } from "../resources/SmartAgentResourceChips";
-import { AttachedDocumentChips } from "../resources/AttachedDocumentChips";
 import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVariables";
 import { AgentTextarea } from "./AgentTextarea";
 import { InputActionButtons } from "./InputActionButtons";
@@ -324,11 +322,14 @@ export function SmartAgentInputStacked({
           uploadPath={uploadPath}
           className={cardClassName}
         >
+          {/* ONE row: attachments left, the value-group chip right. */}
           <ConversationContextRail
             conversationId={conversationId}
             presentation={contextRailPresentation}
             attachedItems={contextRailAttachedItems}
             surfaceValueName={surfaceValueAnchors?.context}
+            withAttachments
+            attachmentsSurfaceValueName={surfaceValueAnchors?.resources}
           />
           <SmartAgentVariables
             conversationId={conversationId}
@@ -337,11 +338,6 @@ export function SmartAgentInputStacked({
             styleOverride={variablesPanelStyle}
             surfaceValueName={surfaceValueAnchors?.variables}
           />
-          <SmartAgentResourceChips
-            conversationId={conversationId}
-            surfaceValueName={surfaceValueAnchors?.resources}
-          />
-          <AttachedDocumentChips conversationId={conversationId} />
           {textarea}
           {compact ? null : toolbar}
         </SmartInputFileDropTarget>
@@ -369,6 +365,8 @@ export function SmartAgentInputStacked({
         presentation={contextRailPresentation}
         attachedItems={contextRailAttachedItems}
         surfaceValueName={surfaceValueAnchors?.context}
+        withAttachments
+        attachmentsSurfaceValueName={surfaceValueAnchors?.resources}
       />
 
       {/* Variable inputs — scrolls internally, never pushes textarea/toolbar off screen */}
@@ -380,13 +378,7 @@ export function SmartAgentInputStacked({
         surfaceValueName={surfaceValueAnchors?.variables}
       />
 
-      {/* Resource chips — pinned, never scrolls away */}
-      <SmartAgentResourceChips
-        conversationId={conversationId}
-        surfaceValueName={surfaceValueAnchors?.resources}
-      />
-      {/* Durable document attachments (association edges) — persist across turns/reloads */}
-      <AttachedDocumentChips conversationId={conversationId} />
+      {/* Resource + durable document chips ride the rail's row above. */}
 
       {/* Textarea — owns its own height transition for smooth flow */}
       <AgentTextarea

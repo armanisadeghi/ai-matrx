@@ -19,7 +19,7 @@ import { ContextRulesTable } from "@ai-matrx/agents/context/react";
 import type { ContextReceiptMismatch } from "@ai-matrx/agents/context";
 import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
 import { receiptRowToResolved } from "../../redux/execution-system/messages/message-context-receipt";
-import { ContextPolicyTile } from "./ContextPolicyTile";
+import { ValueCountPill } from "./ValueCountPill";
 import { ContextDeliveredBlock } from "./ContextDeliveredBlock";
 import { deliveredFieldsFor } from "../../redux/execution-system/context-rules/receipt-check";
 
@@ -50,11 +50,11 @@ export function MessageContextReceiptTable({
     <div className="flex min-w-0 flex-col">
       {receipt.model_reads_context === false ? (
         <p className="px-2 py-1 text-xs text-muted-foreground">
-          This model can&apos;t read context
+          This model can&apos;t read these values
         </p>
       ) : null}
       {receipt.rules_error ? (
-        <p className="px-2 py-1 text-xs text-warning">Your context rules could not be read</p>
+        <p className="px-2 py-1 text-xs text-warning">Your rules could not be read</p>
       ) : null}
       <ContextRulesTable
         rows={rows}
@@ -84,13 +84,12 @@ export function MessageContextReceipt({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <ContextPolicyTile
-          typeLabel="Context"
-          title={receiptSummary(receipt)}
-          tooltip={hasMismatch ? "Sent differently than shown" : undefined}
+        <ValueCountPill
+          text={receiptSummary(receipt)}
+          title={hasMismatch ? "Sent differently than shown" : undefined}
           icon={hasMismatch ? TriangleAlert : Boxes}
-          themeKey="context-group"
-          aria-label={`Context: ${receiptSummary(receipt)}`}
+          warn={hasMismatch}
+          aria-label={receiptSummary(receipt)}
           className={className}
         />
       </PopoverTrigger>

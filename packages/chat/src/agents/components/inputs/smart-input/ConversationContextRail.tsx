@@ -62,13 +62,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@ai-matrx/design-system";
-import {
-  openCanvas,
-  closeCanvas,
-  openArtifactInCanvas,
-  selectCanvasIsOpen,
-  selectCurrentCanvasItem,
-} from "@host/features/canvas/redux/canvasSlice";
+import { useArtifactCanvas } from "@host/features/canvas/host/useArtifactCanvas";
+import { useCanvasSources } from "@host/features/canvas/host/canvasSources";
+import { readArtifactPointerId } from "@host/features/canvas/artifact-types/artifactId";
 import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
 import { selectCloudBrowserRunLive } from "@host/features/cloud-browser/redux/cloudBrowserSlice";
 import {
@@ -80,6 +76,8 @@ import {
   ConversationContextChip,
   useConversationContextChipShown,
 } from "./ConversationContextChip";
+import { SmartAgentResourceChips } from "../resources/SmartAgentResourceChips";
+import { AttachedDocumentChips } from "../resources/AttachedDocumentChips";
 import { removeContextEntry } from "../../../redux/execution-system/instance-context/instance-context.slice";
 import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
 import type { InstanceContextEntry } from "../../../types/instance.types";
@@ -134,6 +132,15 @@ interface ConversationContextRailProps {
   attachedItems?: readonly AttachedContextRailItem[];
   /** Optional Locate anchor supplied by the owning surface. */
   surfaceValueName?: string;
+  /**
+   * Also render the composer's attachments (resource chips + durable document
+   * chips) at the LEFT of this row, so attachments and the value-group chip
+   * share ONE row (Arman, 2026-10-01). The composer then mounts neither on its
+   * own row.
+   */
+  withAttachments?: boolean;
+  /** Locate anchor for the attachments, when `withAttachments`. */
+  attachmentsSurfaceValueName?: string;
 }
 
 export interface AttachedContextRailItem {
@@ -191,6 +198,8 @@ export function ConversationContextRail({
   presentation = "default",
   attachedItems = [],
   surfaceValueName,
+  withAttachments = false,
+  attachmentsSurfaceValueName,
 }: ConversationContextRailProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -244,9 +253,14 @@ export function ConversationContextRail({
   const showScratchPill = scratchEnabled || attachedScratchIds.length > 0;
 
   // ── Canvas state for the doc pills' show/hide toggle ─────────────────────
-  const canvasOpen = useAppSelector(selectCanvasIsOpen);
-  const currentCanvasItem = useAppSelector(selectCurrentCanvasItem);
-  const currentCanvasSourceId = currentCanvasItem?.sourceMessageId ?? null;
+  const canvas = useArtifactCanvas();
+  const { isOpen: canvasOpen, activeSourceId: currentCanvasSourceId } =
+    useCanvasSources();
+  const currentCanvasContent = canvas.activeContent;
+  const currentCanvasArtifactId =
+    currentCanvasContent?.metadata?.canvasItemId ??
+    readArtifactPointerId(currentCanvasContent?.data) ??
+    null;
 
   // ── Agent lists (plan / tasks / todos). Hydrate + live-subscribe here so the
   // rail is the single owner now that the standalone chip is gone. ──────────
@@ -306,7 +320,7 @@ export function ConversationContextRail({
    * Doc pill click = CANVAS VISIBILITY TOGGLE: open the canvas on this doc,
    * or close it if it's already showing this doc. Deliberately not the detail
    * sheet — the pill is the "see it / hide it" affordance; management lives in
-   * the docs menu. `openCanvas` dedups on the stable sourceMessageId shared
+   * the docs menu. The canvas dedups on the stable sourceMessageId shared
    * with ChatCanvasButton / openInCanvas, so all surfaces reuse one item.
    */
   const toggleDocInCanvas = (kind: "working" | "scratch") => {
@@ -323,28 +337,26 @@ export function ConversationContextRail({
     }
     const stableId = `wd:${scope}:${kind}`;
     if (canvasOpen && currentCanvasSourceId === stableId) {
-      dispatch(closeCanvas());
+      canvas.hide();
       return;
     }
-    dispatch(
-      openCanvas({
-        type: kind === "scratch" ? "scratchpad" : "working_document",
-        // gateConversationId: the CHAT this pill lives in — lets the canvas
-        // scratch panel offer its per-document "Share with this chat" toggle.
-        data: {
-          conversationId: scope,
-          kind,
-          gateConversationId: conversationId,
-        },
-        metadata: {
-          title:
-            (kind === "scratch" ? scratchTitle : workingDocTitle)?.trim() ||
-            (kind === "scratch" ? "Scratchpad" : "Working document"),
-          conversationId: scope,
-          sourceMessageId: stableId,
-        },
-      }),
-    );
+    canvas.openContent({
+      type: kind === "scratch" ? "scratchpad" : "working_document",
+      // gateConversationId: the CHAT this pill lives in — lets the canvas
+      // scratch panel offer its per-document "Share with this chat" toggle.
+      data: {
+        conversationId: scope,
+        kind,
+        gateConversationId: conversationId,
+      },
+      metadata: {
+        title:
+          (kind === "scratch" ? scratchTitle : workingDocTitle)?.trim() ||
+          (kind === "scratch" ? "Scratchpad" : "Working document"),
+        conversationId: scope,
+        sourceMessageId: stableId,
+      },
+    });
   };
 
   const toggleLists = () => {
@@ -373,7 +385,7 @@ export function ConversationContextRail({
   const openCloudBrowser = useOpenCloudBrowserCanvas();
   const toggleCloudBrowser = () => {
     if (canvasOpen && currentCanvasSourceId === cloudBrowserSourceId) {
-      dispatch(closeCanvas());
+      canvas.hide();
       return;
     }
     // The ONE opener — it carries the chat binding the takeover flow needs.
@@ -515,20 +527,17 @@ export function ConversationContextRail({
           active:
             canvasOpen &&
             (currentCanvasSourceId === e.key ||
-              currentCanvasItem?.savedItemId === e.key ||
-              currentCanvasItem?.content?.metadata?.canvasItemId === e.key),
+              currentCanvasArtifactId === e.key),
           onOpen: () => {
-            dispatch(
-              openArtifactInCanvas({
-                artifactId: e.key,
-                type: "code",
-                metadata: {
-                  title: label,
-                  canvasItemId: e.key,
-                  conversationId,
-                },
-              }),
-            );
+            canvas.openPointer({
+              artifactId: e.key,
+              type: "code",
+              metadata: {
+                title: label,
+                canvasItemId: e.key,
+                conversationId,
+              },
+            });
           },
           onRemove: () =>
             dispatch(removeContextEntry({ conversationId, key: e.key })),
@@ -598,48 +607,57 @@ export function ConversationContextRail({
     />
   );
 
-  // Zero footprint when there's nothing to surface.
-  const railShown = items.length > 0 || showSetScopeCta || contextChipShown;
+  // Zero footprint when there's nothing to surface. The attachment chips
+  // decide for themselves whether they render, so with attachments the row is
+  // always mounted and shows only while it holds an entry ([data-rail-entry]).
+  const railShown =
+    items.length > 0 || showSetScopeCta || contextChipShown || withAttachments;
 
+  // ONE row (Arman, 2026-10-01): LEFT = what the person attached (attachment
+  // chips, rail pills, the "+N" overflow), scrolling sideways when it runs
+  // out of room; RIGHT = the value-group chip, pinned, never wraps away.
   return (
     <>
       {railShown ? (
         <div
           className={cn(
             "flex min-w-0 items-center gap-1.5 px-0.5 pb-1",
+            withAttachments && "hidden has-[[data-rail-entry]]:flex",
             className,
           )}
           data-surface-value={surfaceValueName}
         >
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+          <div className="scrollbar-none flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
             {showSetScopeCta && (
               <span
+                data-rail-entry=""
                 className="shrink-0 rounded-md ring-1 ring-inset ring-amber-500/60"
-                title="This agent uses context items from a scope you haven't set yet"
+                title="This agent needs a scope you haven't set yet"
               >
                 <ActiveContextButton size="xs" iconOnly className="shrink-0" />
               </span>
             )}
-            {contextChipShown ? (
-              <ConversationContextChip
-                conversationId={conversationId}
-                onOpenFullView={(key) =>
-                  void openAfterCurrentLayerCloses(() => toggleEntry(key))
-                }
-              />
+            {withAttachments ? (
+              <>
+                <SmartAgentResourceChips
+                  conversationId={conversationId}
+                  surfaceValueName={attachmentsSurfaceValueName}
+                  inline
+                />
+                <AttachedDocumentChips conversationId={conversationId} inline />
+              </>
             ) : null}
             {inline.map((item) => (
               <RailPill key={item.id} item={item} />
             ))}
-          </div>
-
-          {overflow.length > 0 && (
+            {overflow.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
+                  data-rail-entry=""
                   title={`${overflow.length} more`}
-                  aria-label={`${overflow.length} more context items`}
+                  aria-label={`${overflow.length} more`}
                   className={cn(
                     "inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-border px-2",
                     "text-xs font-medium text-muted-foreground transition-colors",
@@ -688,7 +706,18 @@ export function ConversationContextRail({
                 })}
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+            )}
+          </div>
+          {contextChipShown ? (
+            <div data-rail-entry="" className="ml-auto flex shrink-0 items-center">
+              <ConversationContextChip
+                conversationId={conversationId}
+                onOpenFullView={(key) =>
+                  void openAfterCurrentLayerCloses(() => toggleEntry(key))
+                }
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
       {detailSurfaces}
@@ -708,7 +737,7 @@ function RailPill({ item }: { item: RailItem }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="group relative inline-flex shrink-0">
+        <span data-rail-entry="" className="group relative inline-flex shrink-0">
           <button
             type="button"
             onClick={item.onOpen}

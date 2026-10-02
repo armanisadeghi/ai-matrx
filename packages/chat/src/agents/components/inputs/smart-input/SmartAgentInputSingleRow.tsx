@@ -13,8 +13,6 @@
  */
 
 import React, { useState } from "react";
-import { SmartAgentResourceChips } from "../resources/SmartAgentResourceChips";
-import { AttachedDocumentChips } from "../resources/AttachedDocumentChips";
 import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVariables";
 import { AgentTextarea } from "./AgentTextarea";
 import { SingleRowActionButtons } from "./SingleRowActionButtons";
@@ -111,6 +109,8 @@ export function SmartAgentInputSingleRow({
           presentation={contextRailPresentation}
           attachedItems={contextRailAttachedItems}
           surfaceValueName={surfaceValueAnchors?.context}
+          withAttachments
+          attachmentsSurfaceValueName={surfaceValueAnchors?.resources}
         />
       ) : null}
 
@@ -125,17 +125,7 @@ export function SmartAgentInputSingleRow({
         />
       ) : null}
 
-      {/* Resource chips (stacked above the row when present) */}
-      {!isAmbient ? (
-        <SmartAgentResourceChips
-          conversationId={conversationId}
-          surfaceValueName={surfaceValueAnchors?.resources}
-        />
-      ) : null}
-      {/* Durable document attachments (association edges) — persist across turns/reloads */}
-      {!isAmbient ? (
-        <AttachedDocumentChips conversationId={conversationId} />
-      ) : null}
+      {/* Resource + durable document chips ride the rail's row above. */}
 
       {/* Single horizontal row */}
       <div

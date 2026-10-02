@@ -40,7 +40,7 @@ export function ContextPolicyChip({
 
   const type: ContextObjectType = policy?.type ?? entry.type;
   const Icon = CONTEXT_TYPE_ICON[type] ?? FALLBACK_CONTEXT_ICON;
-  const typeLabel = CONTEXT_TYPE_TILE_LABEL[type] ?? "Context";
+  const typeLabel = CONTEXT_TYPE_TILE_LABEL[type] ?? "";
 
   const label = contextEntryLabel(entry, policy?.label);
   // The snapshot only — a sent turn never shows today's value.
