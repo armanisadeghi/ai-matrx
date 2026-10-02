@@ -654,6 +654,13 @@ describe("assembleManualRequest — live read contract", () => {
 // ---------------------------------------------------------------------------
 
 import { buildSettingsDocument } from "@host/features/agents/components/settings-management/settings-document";
+import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest({});
+});
+
 
 describe("assembleManualRequest — sends what the settings views show", () => {
   const variableDefinitions = [

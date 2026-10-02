@@ -150,6 +150,14 @@ import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { useMandateChain } from "@ai-matrx/chat/mandates/useMandateChain";
 import { useMandateSet } from "@ai-matrx/chat/mandates/useMandateSet";
 import { withClaims } from "@/test-utils/supabase-auth";
+import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
+import { appChatServerApi } from "@/lib/api/chat-server-api";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest(appChatServerApi);
+});
+
 
 let container: HTMLDivElement;
 let root: Root;

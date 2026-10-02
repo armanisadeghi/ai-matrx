@@ -50,6 +50,13 @@ import { TooltipProvider } from "@ai-matrx/design-system";
 // The app root's one Alchemy action registry (AlchemyHost, ALC-15): the
 // assistant turn's rich-document action bar reads it.
 import { AlchemyActionsTestHost } from "@host/test-utils/alchemy-actions-host";
+import { configureServerForTest } from "../../../../host/__tests__/server-test-host";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest({});
+});
+
 
 // The user bubble's variable chips need the associations store; this test is
 // about the assistant turn, so that one leaf is stubbed.

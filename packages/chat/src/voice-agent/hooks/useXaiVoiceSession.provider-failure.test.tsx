@@ -112,6 +112,17 @@ jest.mock("../transport/tokenManager", () => ({
 }));
 
 import { useXaiVoiceSession } from "./useXaiVoiceSession";
+import { configureServerForTest } from "../../host/__tests__/server-test-host";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  // The seam under test is this app's own report (behind the server port).
+  configureServerForTest({
+    reportBrowserProviderFailure: jest.requireActual("@host/lib/api/provider-session-failure")
+      .reportBrowserProviderFailure,
+  });
+});
+
 
 const INSTANCE = "chat-voice-main";
 const ORG = "3f6b2c1e-8a4d-4e7f-9b2c-5d1a7e3f9c48";

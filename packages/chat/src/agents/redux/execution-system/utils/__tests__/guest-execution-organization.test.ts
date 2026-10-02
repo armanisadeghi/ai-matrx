@@ -15,6 +15,13 @@ import {
   executionOrganizationForRequest,
   isFingerprintGuestExecution,
 } from "../required-organization";
+import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest({});
+});
+
 
 const CONVERSATION = "11111111-1111-4111-8111-111111111111";
 

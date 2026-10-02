@@ -128,6 +128,13 @@ import {
   groupDisplayEntries,
 } from "../display-groups";
 import { AssistantTurnGroup } from "../assistant/AssistantTurnGroup";
+import { configureServerForTest } from "../../../../host/__tests__/server-test-host";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest({});
+});
+
 
 const encoder = new TextEncoder();
 const CONV = "3d2e1f0a-7b6c-4d5e-8f9a-0b1c2d3e4f5a";

@@ -31,6 +31,13 @@ jest.mock("../../store/store-singleton", () => ({
 
 import { supabase } from "../../host/db";
 import { createGoogleRealtimeClient } from "./googleRealtimeClient";
+import { configureServerForTest } from "../../host/__tests__/server-test-host";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest({});
+});
+
 
 const getSessionMock = jest.mocked(supabase.auth.getSession);
 

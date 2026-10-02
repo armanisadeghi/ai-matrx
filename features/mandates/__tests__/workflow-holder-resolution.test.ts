@@ -56,6 +56,14 @@ jest.mock("@/utils/supabase/client", () => {
 });
 
 import { invalidateMandateCache, resolveMandate, resolveMandateHolder } from "@ai-matrx/chat/mandates/service";
+import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
+import { appChatServerApi } from "@/lib/api/chat-server-api";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest(appChatServerApi);
+});
+
 
 function workflowVerdict(pin: { id: string; n: number } | null) {
   return {

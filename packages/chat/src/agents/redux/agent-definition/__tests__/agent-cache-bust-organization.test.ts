@@ -13,6 +13,13 @@
 
 import type { ChatRootState } from "../../../../store/root-state";
 import { resolveAgentCacheBustBackend } from "../agent-cache-bust-request";
+import { configureServerForTest } from "../../../../host/__tests__/server-test-host";
+
+// Server calls reach the host's server client through the server port (P9).
+beforeAll(() => {
+  configureServerForTest({});
+});
+
 
 const ORGANIZATION_ID = "f9cb3e35-1b2c-4d5e-8f60-71a2b3c4d5e6";
 const BASE_URL = "https://server.app.matrxserver.com";
