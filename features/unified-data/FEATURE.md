@@ -1,0 +1,59 @@
+---
+type: Feature
+title: "unified-data — the web app's record-store host code"
+description: "Mechanics and landmines for features/unified-data: the data home, the table page, the host ports records-ui calls, the cutover leftovers, and the guards. What is live and why lives in the common-docs custom-data node."
+tags: [custom-data, record-store, unified-data, frontend]
+timestamp: 2026-10-02
+---
+
+# FEATURE — `features/unified-data`
+
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/platform/custom-data/STATE.md — read it before touching this feature in ANY repo.
+
+This file holds only mechanics and landmines for this directory. What is live, what is open and what Arman ruled
+live in the custom-data node (`STATE.md`, `HANDOFF.md`, `DECISIONS.md`, `VISION.md`); drill-down in
+`common-docs/systems/platform/drill-down/STATE.md`.
+
+## What is where
+
+| Path | What it holds |
+|---|---|
+| `home/` | The data home at `/data-v2`. `DataHomeRoute.tsx` picks the new list-shell home or the old hub |
+| `hub/` | The old hub and its listing; `hub/doors.ts` is the only file that calls store doors the `@ai-matrx/records` client does not carry yet |
+| `table-page/` | The table page at `/data-v2/<tableId>` (`UnifiedDataTablePage.tsx`, `UnifiedTable.tsx`) |
+| `cutover/` | Switch-era clients: `seamSwitches.ts` (the one client for `platform.cutover_seams` / `cutover_seam_press`), `copyAgain.ts`, the switch cards |
+| `records*.ts(x)` at the root | Host ports handed to `@ai-matrx/records-ui`: files, file images, clean text, references and kinds, toasts |
+| `whereThisTableLives.ts`, `objectOrganization.ts` | A table's organization, read from its own id through `custom.where_id_opens` |
+| `standard-field-columns/` | Custom fields shown as columns on standard tables' lists |
+| `grid-agent-context/`, `page-capture/`, `record-chat/`, `row-agent-action/`, `row-change-agent/` | What a table, a row or a visible view hands to agents and chat |
+| `typedAnswers.ts` | What a stranger typed on a public door (form, booking, portal), turned into values once |
+| `test-bench/` | The try-everything screen |
+| `__tests__/` | Behaviour tests for the host code |
+
+Routes outside this directory: `app/(core)/data-v2/`, `app/(core)/data/page.tsx` (redirects to `/data-v2`),
+`app/(core)/lists/` with `features/user-lists/`.
+
+## Mechanics
+
+- **Every store read and write goes through the two packages.** `@ai-matrx/records` (doors) and
+  `@ai-matrx/records-ui` (screens); source in `aidream/apps/shared/records` and `records-ui`; this app takes `latest`.
+  A door the client lacks goes through the package's own seam, `recordsDataSource(...).rpc(fn, args, { schema })`,
+  in `hub/doors.ts` only, and moves into the package at its next release.
+- **A table opens in its own organization.** The store's doors are keyed (organization, id); the organization comes
+  from the object's id (`custom.where_id_opens`), never from the active organization or a caller.
+- **A package change ships package first.** Publish `@ai-matrx/records` / `records-ui` before any consumer code that
+  needs it lands on main; until npm has it, `:3001` and the release build break on the missing export.
+
+## Landmines
+
+- **The old hub is one knob or one link away.** `custom.data_home_shell` picks the new home (live value true,
+  platform default false); `?home=old` still renders the old hub for one visit. Both are removed after the soak, not
+  before 2026-10-03 20:38Z (v6 ONE-HOME wave 4).
+- **"Copy this table again" is still on the table menu** (`UnifiedTable.tsx` imports `cutover/copyAgain.ts`), though
+  every organization has switched. Same clock as above.
+- **Never touch `custom.*` directly.** `pnpm check:no-custom-store-code` fails on any `.schema("custom")`, store SQL or
+  profile header in app code.
+- **Never reach the old tables.** The six `udt_*` tables sit in schema `deprecated` and refuse writes;
+  `pnpm check:old-system-unreachable` (and `:db`) lists every path that still names them and fails on a new one.
+- **The undo is gone.** `platform.cutover_seam_press` refuses a press back to the old system; the switch cards in
+  `cutover/` are history waiting for deletion, not controls to rely on.
