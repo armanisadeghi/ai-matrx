@@ -4,7 +4,7 @@ import { useState } from "react";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { useCanvasOpenGuard } from "./useCanvasOpenGuard";
 import type { ArtifactDebugTrace, CanvasContentType } from "@/features/canvas/canvasContent";
-import { useArtifactCanvas } from "@/features/canvas/host/useArtifactCanvas";
+import { useArtifactCanvasActions } from "@/features/canvas/host/useArtifactCanvas";
 import {
   ensureArtifactPersisted,
   type EnsureArtifactResult,
@@ -26,7 +26,7 @@ export interface OpenArtifactInCanvasInput {
  * Materializes on demand when the UUID doesn't exist yet.
  */
 export function useOpenArtifactInCanvas() {
-  const canvas = useArtifactCanvas();
+  const canvas = useArtifactCanvasActions();
   const { ensureCanvasReachable } = useCanvasOpenGuard();
   const [busy, setBusy] = useState(false);
   const [lastResult, setLastResult] = useState<EnsureArtifactResult | null>(

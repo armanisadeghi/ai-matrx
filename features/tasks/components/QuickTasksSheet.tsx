@@ -46,6 +46,7 @@ import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   Select,
   SelectContent,
@@ -70,6 +71,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import CompactTaskItem from "./CompactTaskItem";
+import type { TaskWithProject } from "@/features/tasks/types";
 import TaskDetailsPanel from "./TaskDetailsPanel";
 import { QuickTasksToolbarGroup } from "./QuickTasksToolbarGroup";
 import { XTapButton } from "@ai-matrx/tap-target/buttons";
@@ -519,44 +521,20 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
 
               {/* Tasks List — the viewport's inner box is a block, so a long
                   task title wraps instead of widening every card off-screen. */}
-              <ScrollArea className="flex-1" viewportClassName="[&>div]:!block">
-                <div className="p-1">
-                  {filteredTasks.length === 0 ? (
-                    <div className="text-center text-xs text-muted-foreground py-4">
-                      {projects.length === 0
-                        ? "Create a project to get started"
-                        : "No tasks found"}
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {filteredTasks.map((task) => (
-                        <CompactTaskItem
-                          key={task.id}
-                          task={task}
-                          isSelected={false}
-                          onSelect={() => setSelectedTaskId(task.id)}
-                          onToggleComplete={() => {
-                            void dispatch(
-                              toggleTaskCompleteThunk({ taskId: task.id }),
-                            )
-                              .unwrap()
-                              .catch((error) => {
-                                console.error(
-                                  "Error changing task completion:",
-                                  error,
-                                );
-                                toast.error(
-                                  "Could not update task completion",
-                                );
-                              });
-                          }}
-                          hideProjectName={!showAllProjects}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
+              <QuickTasksList
+                tasks={filteredTasks}
+                emptyLabel={projects.length === 0 ? "Create a project to get started" : "No tasks found"}
+                hideProjectName={!showAllProjects}
+                onSelect={setSelectedTaskId}
+                onToggleComplete={(taskId) => {
+                  void dispatch(toggleTaskCompleteThunk({ taskId }))
+                    .unwrap()
+                    .catch((error) => {
+                      console.error("Error changing task completion:", error);
+                      toast.error("Could not update task completion");
+                    });
+                }}
+              />
             </div>
           ) : (
             /* Full Task Details View */
@@ -583,4 +561,71 @@ export function QuickTasksSheet(props: QuickTasksSheetProps) {
   // every other consumer in the app — no duplicate fetching.
   useNavTree();
   return <QuickTasksSheetContent {...props} />;
+}
+
+/** Rows are measured, so a wrapped title or a meta line keeps its real height. */
+const TASK_ROW_ESTIMATE_PX = 64;
+
+/**
+ * The task list, virtualized: only the rows in view (plus overscan) mount.
+ * Rendering every task cost ~19 DOM nodes each — 504 tasks were 9,600 nodes
+ * and ~300 ms on every canvas open (measured 2026-10-02).
+ */
+function QuickTasksList({
+  tasks,
+  emptyLabel,
+  hideProjectName,
+  onSelect,
+  onToggleComplete,
+}: {
+  tasks: readonly TaskWithProject[];
+  emptyLabel: string;
+  hideProjectName: boolean;
+  onSelect: (taskId: string) => void;
+  onToggleComplete: (taskId: string) => void;
+}) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: tasks.length,
+    getScrollElement: () => viewportRef.current,
+    estimateSize: () => TASK_ROW_ESTIMATE_PX,
+    getItemKey: (index) => tasks[index]?.id ?? index,
+    overscan: 8,
+  });
+
+  // The viewport's inner box is a block, so a long task title wraps instead of
+  // widening every card off-screen.
+  return (
+    <ScrollArea className="flex-1" viewportClassName="[&>div]:!block" viewportRef={viewportRef}>
+      <div className="p-1">
+        {tasks.length === 0 ? (
+          <div className="text-center text-xs text-muted-foreground py-4">{emptyLabel}</div>
+        ) : (
+          <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
+            {virtualizer.getVirtualItems().map((row) => {
+              const task = tasks[row.index];
+              if (!task) return null;
+              return (
+                <div
+                  key={row.key}
+                  data-index={row.index}
+                  ref={virtualizer.measureElement}
+                  className="absolute left-0 top-0 w-full pb-1"
+                  style={{ transform: `translateY(${row.start}px)` }}
+                >
+                  <CompactTaskItem
+                    task={task}
+                    isSelected={false}
+                    onSelect={() => onSelect(task.id)}
+                    onToggleComplete={() => onToggleComplete(task.id)}
+                    hideProjectName={hideProjectName}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </ScrollArea>
+  );
 }

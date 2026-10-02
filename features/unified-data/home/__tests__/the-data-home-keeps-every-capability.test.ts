@@ -196,8 +196,8 @@ describe("census items that are wiring", () => {
 
   it("the old page is behind the knob, untouched beside the new one (copy mode)", () => {
     expect(route).toContain("DATA_HOME_SHELL_KNOB");
-    const appPage = readFileSync(join(__dirname, "../../../../app/(core)/data-v2/page.tsx"), "utf8");
-    expect(appPage).toMatch(/<DataHomeRoute old=\{<UnifiedDataPage \/>\} \/>/);
+    const appPage = readFileSync(join(__dirname, "../../../../app/(core)/data-v2/DataHomePageClient.tsx"), "utf8");
+    expect(appPage).toMatch(/<DataHomeRoute[^>]*old=\{\(making\) => <UnifiedDataPage making=\{making\} \/>\}/);
     expect(appPage).toContain("<OrganizationHub");
   });
 });

@@ -48,42 +48,42 @@ export function openArtifactContent(
   return canvas.open(artifactOpenInput(content, options));
 }
 
-export function useArtifactCanvas() {
-  const canvas = useOptionalCanvas();
-  const isPresented = useCanvasIsPresented();
-  const isOpen = useCanvasStateSafe();
-  const activeContent = useActiveContent();
+/** The verbs, read against the canvas at CALL time — they never subscribe. */
+export interface ArtifactCanvasActions {
+  /** Opens content; returns null (and announces why) when it cannot. */
+  openContent: (content: CanvasContent, options?: ArtifactOpenOptions) => CanvasItemId | null;
+  /** Opens a saved artifact by pointer — the row is the truth, never a copy. */
+  openPointer: (input: ArtifactPointerInput) => CanvasItemId | null;
+  /** Adds a tab without revealing the canvas or stealing focus. */
+  offer: (content: CanvasContent) => CanvasItemId | null;
+  show: () => void;
+  hide: () => void;
+  toggle: () => void;
+  /** Closes every tab and puts the canvas away. */
+  clear: () => void;
+  closeActive: () => void;
+  /** Replaces the active artifact tab's content in place. */
+  updateActive: (content: CanvasContent) => boolean;
+}
 
-  /** Opens content; returns false (and announces why) when it cannot. */
+function buildActions(canvas: CanvasController | null): ArtifactCanvasActions {
   const openContent = (content: CanvasContent, options: ArtifactOpenOptions = {}): CanvasItemId | null =>
     openArtifactContent(canvas, content, options);
-
-  /** Opens a saved artifact by pointer — the row is the truth, never a copy. */
-  const openPointer = (input: ArtifactPointerInput): CanvasItemId | null =>
-    openContent(
-      {
-        type: input.type,
-        data: { artifactId: input.artifactId },
-        metadata: { ...input.metadata, canvasItemId: input.artifactId },
-      },
-      { savedItemId: input.artifactId, artifactDebug: input.artifactDebug ?? null },
-    );
-
-  /** Adds a tab without revealing the canvas or stealing focus. */
-  const offer = (content: CanvasContent): CanvasItemId | null => openContent(content, { quiet: true });
-
   return {
-    isAvailable: isPresented,
-    isOpen,
-    /** The content of the tab the person is looking at, if it is an artifact. */
-    activeContent,
     openContent,
-    openPointer,
-    offer,
+    openPointer: (input) =>
+      openContent(
+        {
+          type: input.type,
+          data: { artifactId: input.artifactId },
+          metadata: { ...input.metadata, canvasItemId: input.artifactId },
+        },
+        { savedItemId: input.artifactId, artifactDebug: input.artifactDebug ?? null },
+      ),
+    offer: (content) => openContent(content, { quiet: true }),
     show: () => canvas?.show(),
     hide: () => canvas?.hide(),
     toggle: () => canvas?.toggle(),
-    /** Closes every tab and puts the canvas away. */
     clear: () => {
       if (!canvas) return;
       for (const id of Object.keys(canvas.getState().items)) canvas.close(id as CanvasItemId);
@@ -94,8 +94,7 @@ export function useArtifactCanvas() {
       const pane = active ? active.panes[active.focusedPaneId] : undefined;
       if (canvas && pane?.activeItemId) canvas.close(pane.activeItemId);
     },
-    /** Replaces the active artifact tab's content in place. */
-    updateActive: (content: CanvasContent) => {
+    updateActive: (content) => {
       if (!canvas) return false;
       const state = canvas.getState();
       const pane = state.panes[state.focusedPaneId];
@@ -105,6 +104,47 @@ export function useArtifactCanvas() {
       const next = artifactOpenInput(content, { savedItemId: data.savedItemId });
       return canvas.update(item.id, { data: next.data, title: next.title ?? null });
     },
+  };
+}
+
+// One actions object per controller: stable identities whether or not the
+// React Compiler compiled the calling component (same rule as chatCanvasPort).
+const ACTIONS = new WeakMap<CanvasController, ArtifactCanvasActions>();
+const NO_CANVAS = buildActions(null);
+
+/**
+ * The canvas verbs for a component that OPENS things (a code block, a rich
+ * block, a menu item). Subscribes to nothing, so opening, hiding or switching
+ * the canvas never re-renders it. Read state with `useArtifactCanvas()` only
+ * where the component actually shows that state.
+ */
+export function useArtifactCanvasActions(): ArtifactCanvasActions {
+  const canvas = useOptionalCanvas();
+  if (!canvas) return NO_CANVAS;
+  let actions = ACTIONS.get(canvas);
+  if (!actions) {
+    actions = buildActions(canvas);
+    ACTIONS.set(canvas, actions);
+  }
+  return actions;
+}
+
+/**
+ * The verbs PLUS the canvas state (availability, open flag, active content).
+ * Re-renders on every open, hide and tab switch — use it only where that state
+ * is on screen; an opener uses `useArtifactCanvasActions()`.
+ */
+export function useArtifactCanvas() {
+  const actions = useArtifactCanvasActions();
+  const isPresented = useCanvasIsPresented();
+  const isOpen = useCanvasStateSafe();
+  const activeContent = useActiveContent();
+  return {
+    ...actions,
+    isAvailable: isPresented,
+    isOpen,
+    /** The content of the tab the person is looking at, if it is an artifact. */
+    activeContent,
   };
 }
 

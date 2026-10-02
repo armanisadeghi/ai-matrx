@@ -5,7 +5,7 @@
 // WHICH DATA HOME /data-v2 SHOWS: the knob `custom.data_home_shell` (platform default off = the old
 // hub), or `?home=new` / `?home=old` for one visit, so old and new can be opened side by side
 // (Arman, 2026-10-01: no redirects until validated; copy mode; one flip later). Until the knob
-// answers, the old page is shown — it is what everybody sees today, and a knob that never answers
+// answers (and the server did not hand one down), the old page is shown — it is what everybody sees today, and a knob that never answers
 // must not leave a blank page.
 //
 // THE HEADER'S PRESSES LIVE HERE, ABOVE BOTH HOMES (lane DATA-PAGE-DEFECTS, safety net T01/L02):
@@ -29,9 +29,19 @@ export interface DataHomeMaking {
   ask: (what: "create" | "examples") => void;
 }
 
-export function DataHomeRoute({ old }: { old: (making: DataHomeMaking) => ReactNode }) {
+export function DataHomeRoute({
+  old,
+  serverKnob,
+}: {
+  old: (making: DataHomeMaking) => ReactNode;
+  /** The knob as the SERVER resolved it for this person (page.tsx); the first paint uses it, no swap. */
+  serverKnob?: unknown;
+}) {
   const userId = useAppSelector(selectUserId);
-  const knob = useEffectiveKnob(null, userId, DATA_HOME_SHELL_KNOB);
+  const browserKnob = useEffectiveKnob(null, userId, DATA_HOME_SHELL_KNOB);
+  // The browser's own answer wins once it lands (it also knows this device's rung); until then the
+  // server's answer draws the right home from the first byte.
+  const knob = browserKnob !== undefined ? browserKnob : serverKnob;
   const preview = useSearchParams().get(DATA_HOME_PREVIEW_PARAM);
   const [asked, setAsked] = useState({ create: 0, examples: 0 });
   const making: DataHomeMaking = {

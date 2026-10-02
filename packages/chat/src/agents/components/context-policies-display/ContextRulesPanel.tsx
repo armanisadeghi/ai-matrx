@@ -135,9 +135,8 @@ export function ContextRulesPanel({
         : row.value;
     return (
       <div className="flex flex-col gap-3">
-        {policy?.description || row.description ? (
-          <p className="text-xs text-muted-foreground">{policy?.description ?? row.description}</p>
-        ) : null}
+        {/* A value's `description` is written for the AGENT (code names, wire shapes) — it never
+            renders to a person (interface-text law: author-facing text stays off screen). */}
         {received || serverOwned ? null : (
           <>
             {value !== undefined && value !== null ? (

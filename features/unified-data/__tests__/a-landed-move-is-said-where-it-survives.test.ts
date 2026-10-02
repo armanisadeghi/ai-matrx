@@ -16,7 +16,7 @@ const ROOT = join(__dirname, "..", "..", "..");
 const CHIP_MOUNTS = [
   // The table page body (moved out of app/(core)/data-v2/[tableId]/page.tsx in 98dc9cc741).
   "features/unified-data/table-page/UnifiedTable.tsx",
-  "app/(core)/data-v2/page.tsx",
+  "app/(core)/data-v2/DataHomePageClient.tsx",
   "app/(core)/organizations/[orgId]/tables/page.tsx",
 ];
 

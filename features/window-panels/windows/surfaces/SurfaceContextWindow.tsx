@@ -699,11 +699,8 @@ export default function SurfaceContextWindow({
                 Copy
               </button>
             </div>
-            {selected.declaration?.description && (
-              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">
-                {selected.declaration.description}
-              </p>
-            )}
+            {/* The declaration's `description` is agent-facing copy (code names, wire shapes);
+                it never renders to a person — the label carries the meaning. */}
           </div>
           <div className="min-h-0 flex-1 overflow-auto bg-muted/15 p-4">
             {hasValue(selectedRaw) || isPresentEmpty(selectedRaw) ? (

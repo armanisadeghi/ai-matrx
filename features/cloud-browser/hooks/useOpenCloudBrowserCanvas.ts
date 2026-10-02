@@ -18,7 +18,7 @@
 
 import { useCallback } from "react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
-import { useArtifactCanvas } from "@/features/canvas/host/useArtifactCanvas";
+import { useArtifactCanvasActions } from "@/features/canvas/host/useArtifactCanvas";
 import type { CanvasContent } from "@/features/canvas/canvasContent";
 
 export interface OpenCloudBrowserCanvasOptions {
@@ -81,7 +81,7 @@ export function useOpenCloudBrowserCanvas() {
  * See `features/canvas/liveSourceReachability.ts`.
  */
 export function useOfferCloudBrowserCanvas() {
-  const { offer } = useArtifactCanvas();
+  const { offer } = useArtifactCanvasActions();
   return useCallback(
     (opts: OpenCloudBrowserCanvasOptions = {}) => {
       offer(buildCloudBrowserCanvasContent(opts));

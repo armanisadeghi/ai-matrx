@@ -1,5 +1,5 @@
 /**
- * The offer verb must reach THE canvas (`useArtifactCanvas().offer`) — the old
+ * The offer verb must reach THE canvas (`useArtifactCanvasActions().offer`) — the old
  * `offerCanvasItem` slice action rendered nowhere after the @ai-matrx/canvas
  * rebuild, so a live run's browser silently lost its door.
  */
@@ -9,7 +9,7 @@ const offer = jest.fn();
 const openContent = jest.fn();
 
 jest.mock("@/features/canvas/host/useArtifactCanvas", () => ({
-  useArtifactCanvas: () => ({ offer, openContent }),
+  useArtifactCanvasActions: () => ({ offer, openContent }),
 }));
 jest.mock("@/features/canvas/hooks/useCanvas", () => ({
   useCanvas: () => ({ open: openContent }),

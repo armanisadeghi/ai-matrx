@@ -65,20 +65,49 @@ try {
   }
 
   // ── R01–R03 a table drilled by a Dimension (the custom-table kind) ───────────────────────────
-  await ctx.step(["R01", "R02", "R03"], "a clinic table drills by a Dimension and its groups add up", admin, async () => {
+  // `?by=<field>` on a table page groups the grid's ROWS (records-ui 70c60014f1, the ruled behaviour); the
+  // drill's answer view is its own mode, reached through the Group menu's second level ("Then by"), which is
+  // a real drill question. So this walk goes in through that entry, as a person does, never through `?by=`.
+  await ctx.step(["R01", "R02", "R03"], "a clinic table drills through the Group menu and its groups add up", admin, async () => {
     doors.length = 0;
-    // The drill's own URL grammar (`?by=<dimension>`), so a person's remembered "look" from an earlier
-    // run cannot decide what this step sees (the 04:19 baseline opened already grouped and found no
-    // "No groups" button). Status is a choice column, so it is a Dimension (BREAKER-4 B4-05).
-    await ctx.goto(admin, `/data-v2/${TABLE}?view=grid&by=status&show=count`);
+    await ctx.goto(admin, `/data-v2/${TABLE}?view=grid`);
+    await admin.waitForSelector("[data-matrx-table-group-by]", { timeout: 90000 });
+    await sleep(800);
+    const pick = async (marker, optionRef) => {
+      await admin.locator("[data-matrx-table-group-by]").first().click();
+      await admin.locator(`[data-matrx-drill-level-menu="${marker}"]`).first().click();
+      const option = optionRef
+        ? admin.locator(`[data-matrx-drill-option="${optionRef}"]`).first()
+        : admin.locator("[data-matrx-drill-option]:not([data-matrx-drill-option='status'])").first();
+      await option.waitFor({ timeout: 15000 });
+      const ref = await option.getAttribute("data-matrx-drill-option");
+      await option.click();
+      await sleep(600);
+      return ref;
+    };
+    // Level one is a Dimension (Status is a choice column, BREAKER-4 B4-05); a second level opens the drill.
+    await pick("0", "status");
+    const second = await pick("1", null);
     await settle(admin);
     await sleep(800);
     const r = await read(admin);
+    const sums = await admin.evaluate(() => {
+      const int = (t) => Number((t ?? "").replace(/[^0-9]/g, ""));
+      const total = int(document.querySelector("[data-matrx-drill-total] .text-muted-foreground")?.textContent);
+      const groups = [...document.querySelectorAll('[data-matrx-drill-level="0"]')].map((row) => {
+        const m = (row.textContent ?? "").match(/([\d,]+)\s*records?/i);
+        return m ? int(m[1]) : NaN;
+      });
+      return { total, groups };
+    });
+    const sum = sums.groups.reduce((a, n) => a + n, 0);
+    const adds = Number.isFinite(sum) && sums.total > 0 && sum === sums.total;
     const used = [...new Set(doors.map((d) => `${d.door} ${d.status}`))];
     const asked = doors.some((d) => d.door === "drill_ask" && d.status < 400);
+    const described = doors.some((d) => d.door === "drill_describe" && d.status < 400);
     return {
-      ok: r.groups > 0 && !r.error && asked && !doors.some((d) => d.status >= 400),
-      detail: `?by=status: ${r.groups} groups, total ${JSON.stringify((r.total ?? "").slice(0, 40))}; doors ${used.join(", ") || "none seen"}`,
+      ok: r.groups > 0 && !r.error && asked && described && adds && !doors.some((d) => d.status >= 400),
+      detail: `Group menu status › ${second}: ${r.groups} groups sum ${sum} vs total ${sums.total} (${adds ? "add up" : "DO NOT add up"}); doors ${used.join(", ") || "none seen"}`,
     };
   });
 
