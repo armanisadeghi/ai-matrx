@@ -1,0 +1,66 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD FOR THE MOVE, written by scripts/sync-main.py
+File:        features/agents/components/inputs/smart-input/__tests__/sheet-attach-returns-to-index.test.tsx (new locally, git status '??')
+Copy:        THE HELD FILE (the working tree's version)
+Why:         held for chat package move (CPM-006); re-apply after GO. Its path is listed in .matrx/held-paths.txt, so the
+             sweep did not commit this edit there; the working tree was put back to HEAD.
+Done with it: the edit is re-applied at the file's new home, this .held file is deleted,
+and its line in _conflicts/README.md is deleted.
+---------------- THE HELD FILE BELOW ----------------
+/**
+ * PB-08 (2026-10-01): picking a note in the phone sheet's Attach tab closed
+ * the whole "Chat options" sheet. It must return to the tab list instead;
+ * every other tab's onClose still closes the sheet.
+ */
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { TabbedBottomSheet } from "@ai-matrx/design-system";
+import { sheetPickTarget } from "../run-controls-sheet-nav";
+
+describe("phone sheet: Attach returns to Chat options", () => {
+  it("routes only Attach picks back to the tab list", () => {
+    expect(sheetPickTarget("attach")).toBe("index");
+    expect(sheetPickTarget("connections")).toBe("close");
+    expect(sheetPickTarget("context")).toBe("close");
+  });
+
+  it("showIndex from a tab's render function returns to the index, sheet open", async () => {
+    const onOpenChange = jest.fn();
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    const byText = (t: string) =>
+      Array.from(document.body.querySelectorAll<HTMLElement>("*")).find(
+        (el) => el.children.length === 0 && el.textContent === t,
+      );
+    await act(async () => {
+      root.render(
+        <TabbedBottomSheet
+          open
+          onOpenChange={onOpenChange}
+          title="Chat options"
+          tabs={[
+            {
+              id: "attach",
+              label: "Attach",
+              content: ({ showIndex }) => (
+                <button type="button" onClick={showIndex}>
+                  pick note
+                </button>
+              ),
+            },
+            { id: "tools", label: "Tools", content: <div>tools body</div> },
+          ]}
+        />,
+      );
+    });
+    await act(async () => byText("Attach")!.click());
+    expect(byText("pick note")).toBeTruthy();
+    await act(async () => byText("pick note")!.click());
+    expect(byText("Tools")).toBeTruthy();
+    expect(byText("pick note")).toBeUndefined();
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    await act(async () => root.unmount());
+  });
+});

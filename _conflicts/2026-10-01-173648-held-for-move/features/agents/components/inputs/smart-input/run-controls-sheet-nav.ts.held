@@ -1,0 +1,27 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD FOR THE MOVE, written by scripts/sync-main.py
+File:        features/agents/components/inputs/smart-input/run-controls-sheet-nav.ts (new locally, git status '??')
+Copy:        THE HELD FILE (the working tree's version)
+Why:         held for chat package move (CPM-006); re-apply after GO. Its path is listed in .matrx/held-paths.txt, so the
+             sweep did not commit this edit there; the working tree was put back to HEAD.
+Done with it: the edit is re-applied at the file's new home, this .held file is deleted,
+and its line in _conflicts/README.md is deleted.
+---------------- THE HELD FILE BELOW ----------------
+/**
+ * Where a pick inside the phone "Chat options" sheet sends the person.
+ *
+ * Attach is a picker the person returns from: choosing a note / file / context
+ * value goes back to the tab list so they can keep setting up the chat (PB-08,
+ * 2026-10-01: attaching a note closed the whole sheet with no way back). Every
+ * other tab's `onClose` means "I'm leaving" (e.g. Connections navigates away),
+ * so it closes the sheet.
+ */
+
+import type { RunControlsTab } from "./RunControlsTabPanel";
+
+export type SheetPickTarget = "index" | "close";
+
+export function sheetPickTarget(tab: RunControlsTab): SheetPickTarget {
+  return tab === "attach" ? "index" : "close";
+}
