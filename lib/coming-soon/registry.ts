@@ -733,7 +733,7 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "Fields your org defined render with the right editor for their type, in the order an admin set, with their own sensitivity tier — on the profile and as directory columns.",
     stage: "blocked",
     blockedBy:
-      "The platform tier-1 custom-fields client kit (CustomFieldsSection / CustomFieldInput / customFieldColumns) belongs to lane L14 and does not exist. The profile shows the stored values read-only through a marked adapter rather than inventing a competing kit.",
+      "HR still keeps its own field system. The shared Custom fields section (CustomFieldsSection, @ai-matrx/records-ui, over custom.field) exists and HR moves onto it in lane 7's HR fold; directory columns wait on the shared list column source (lane 7 wave 2). Until then the profile shows the stored values read-only through a marked adapter.",
     surfaces: [
       "/hr/people/[employeeId]/[tab] — More section",
       "/hr/people/[employeeId]/c/[tabKey]",
@@ -969,14 +969,14 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     promise:
       "Create an extra field on an HR record — its type, where it appears, who may see it, and whether AI may read it — and edit or archive the ones that already exist.",
     stage: "blocked",
-    // The registry (`platform.custom_field_definition` / `custom_field_target`) is
-    // live and route 73 READS it today. What does not exist is the platform CLIENT
-    // KIT — `CustomFieldsSection`, `CustomFieldInput`, `customFieldColumns` — which
-    // lane L14 owns. Building an HR-local editor would be a second renderer for one
-    // shape, which is the defect the one-component law exists to prevent, and the
-    // kind that is never removed once two surfaces depend on it.
+    // HR's fields still live in HR's own registry (`platform.custom_field_definition` /
+    // `custom_field_target`), which route 73 READS today. The platform's one field editor
+    // exists — `FieldEditor` / `CustomFieldsSection` in @ai-matrx/records-ui, declaring into
+    // `custom.field` for custom and standard tables alike — and HR authoring arrives when lane 7
+    // STANDARD-TABLES folds HR's registry into `custom.field` (its wave 4). Building an HR-local
+    // editor meanwhile would be a second editor for one shape.
     blockedBy:
-      "The platform custom-field client kit (CustomFieldsSection / CustomFieldInput / customFieldColumns) is owned by lane L14 and does not exist yet; HR must not fork a competing editor.",
+      "HR's fields still live in HR's own registry; authoring arrives through the shared field editor (FieldEditor over custom.field) when lane 7 folds HR into it. HR must not fork an editor.",
     surfaces: ["/hr/settings/fields — Add a custom field"],
   },
   "commerce.store-connect-oauth": {

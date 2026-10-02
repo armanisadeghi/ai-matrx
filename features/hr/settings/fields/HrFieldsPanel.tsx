@@ -3,17 +3,18 @@
 // ROUTE 73 — CUSTOM FIELDS AND CUSTOM TABS.
 //
 // 🚨 THE AUTHORING SURFACE IS NOT BUILT HERE, ON PURPOSE.
-// `CustomFieldsSection`, `CustomFieldInput` and `customFieldColumns` are the PLATFORM
-// client kit, owned by lane L14, and they do not exist yet. Building a competing
-// editor in `features/hr/` would produce a second renderer for one shape — the exact
-// defect the one-component law exists to prevent, and the kind that is never removed
-// once two surfaces depend on it.
+// The PLATFORM's one field editor is `FieldEditor` / `CustomFieldsSection` in
+// @ai-matrx/records-ui, declaring into `custom.field` for custom and standard tables alike.
+// HR's definitions still live in `platform.custom_field_definition`, so this panel cannot use it
+// yet; lane 7 STANDARD-TABLES folds HR into `custom.field` (wave 4) and this panel then mounts
+// that editor. Building a competing editor in `features/hr/` meanwhile would be a second
+// renderer for one shape — the kind that is never removed once two surfaces depend on it.
 //
 // So this panel does the half that is honest today: it READS
 // `platform.custom_field_definition` and `platform.custom_field_target` (both live,
 // both in a PostgREST-exposed schema) and renders the registry as it actually is,
 // with the governance rules stated in words. The authoring half is a registered,
-// countable promise in `lib/coming-soon/registry.ts` naming L14 as its owner.
+// countable promise in `lib/coming-soon/registry.ts` (`hr-settings.custom-field-authoring`).
 //
 // ── THE GOVERNANCE RULES, STATED ON THE PAGE (SPEC-EMPLOYEES §7.4) ─────────
 //  • `field_key`, `field_type` and `reference_target_token` are IMMUTABLE once any

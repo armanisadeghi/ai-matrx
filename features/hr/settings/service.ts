@@ -413,11 +413,11 @@ export const HR_CUSTOM_FIELD_TOKEN_LIKE = "hr\\_%";
 /**
  * Read the custom-field registry for this org's HR tokens.
  *
- * 🚨 READ ONLY, ON PURPOSE. The authoring surface — `CustomFieldsSection`,
- * `CustomFieldInput`, `customFieldColumns` — is lane L14's platform client kit and
- * DOES NOT EXIST. Building a competing kit here would produce two renderers for one
- * shape, which is the defect the one-component law exists to prevent. So route 73
- * renders the registry honestly and names L14 as the owner of the authoring half.
+ * 🚨 READ ONLY, ON PURPOSE. The platform's one authoring surface — `FieldEditor` and
+ * `CustomFieldsSection` in @ai-matrx/records-ui, declaring into `custom.field` — exists, but
+ * HR's definitions still live in this older registry. Lane 7 STANDARD-TABLES folds them into
+ * `custom.field` (wave 4) and HR then authors through that one editor; a competing kit here
+ * would be two editors for one shape. So route 73 renders this registry honestly until then.
  *
  * The `platform` schema IS exposed to PostgREST (unlike `hr`), so this is a direct
  * RLS-checked read — no RPC, no Next.js hop.

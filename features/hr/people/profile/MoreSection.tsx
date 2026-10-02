@@ -9,16 +9,16 @@
 // never interleaved with them. An admin reordering a custom field must never be
 // able to move a legally-required one.
 //
-// 🚨 THIS IS A MARKED ADAPTER, NOT A FIELD KIT. The platform tier-1 client kit —
-// `<CustomFieldsSection>`, `<CustomFieldInput>`, `customFieldColumns()` — belongs
-// to lane L14 and DOES NOT EXIST (checked 2026-08-26). Building a per-type
-// renderer here would be a competing kit that L14 then has to delete, so this
-// renders the stored `custom` jsonb READ-ONLY, says out loud that it is doing
-// so, and registers the dependency (`hr.people.custom-fields`).
+// 🚨 THIS IS A MARKED ADAPTER, NOT A FIELD KIT. The platform's one section is
+// `<CustomFieldsSection entityToken recordId>` (@ai-matrx/records-ui, mounted in this app
+// through `features/unified-data/components/EntityCustomFields.tsx`). HR's values still sit
+// in HR's own `custom` columns under HR's own registry, so the section cannot read them yet;
+// this renders the stored `custom` jsonb READ-ONLY, says so, and registers the dependency
+// (`hr.people.custom-fields`).
 //
-// WHEN THE KIT LANDS: delete this component's body and mount
-// `<CustomFieldsSection targetToken="hr_employee" …>` in its place. Do not keep
-// both. The one thing to carry over is the placement rule above.
+// WHEN LANE 7 FOLDS HR INTO `custom.field` (its wave 4): delete this component's body and
+// mount `<EntityCustomFields entityToken="hr_employee" …>` in its place. Do not keep both.
+// The one thing to carry over is the placement rule above.
 //
 // SENSITIVITY STILL APPLIES IDENTICALLY. A `confidential` custom field is ABSENT
 // for a manager, not greyed — and it is absent because the SERVER did not put

@@ -5,10 +5,9 @@
 // A CUSTOM TAB, at `/hr/people/[employeeId]/c/[tabKey]`, rendered at the END of
 // the tab bar after Notes.
 //
-// 🚨 THE SAME MARKED-ADAPTER RULE AS `MoreSection`: the platform tier-1
-// custom-fields client kit is lane L14's and does not exist. This renders the
-// stored values read-only and says so; it does NOT invent a per-field-type
-// renderer that L14 would then have to delete.
+// 🚨 THE SAME MARKED-ADAPTER RULE AS `MoreSection`: HR's values are not in the shared
+// custom-fields store yet (lane 7 folds them in), so this renders the stored values read-only
+// and says so; it does NOT invent a per-field-type renderer that would then have to be deleted.
 //
 // SENSITIVITY APPLIES IDENTICALLY TO A CUSTOM FIELD. A `confidential` custom
 // field is ABSENT for a manager, not greyed — and it is absent because the
