@@ -283,7 +283,7 @@ const FIXTURES: Fixture[] = [
       "One step happens in the app, not here",
       "Keep it as its own table",
       "fields ready",
-      "table mint is client side",
+      "Table Mint Is Client Side",
     ],
   },
   {
@@ -387,7 +387,7 @@ const FIXTURES: Fixture[] = [
       "rows returned",
       "our stored facts — no call to Google",
       "complete within the window asked for",
-      "start date 2026-08-01",
+      "Start Date 2026-08-01",
       "about three days behind",
       "The numbers",
       // THE F-86 FINDING: `site_id` sat in PROMOTED (so MetaStrip/LeftoverFields

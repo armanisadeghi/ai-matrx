@@ -91,7 +91,7 @@ describe("KindCellPeek", () => {
       ),
     );
     expect(container.innerHTML).not.toContain('"__kind"');
-    expect(container.textContent).toContain("Flashcard set");
+    expect(container.textContent).toContain("Flashcard Set");
     const button = container.querySelector("button");
     act(() => button!.click());
     expect(opened).toHaveLength(1);

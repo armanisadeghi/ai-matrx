@@ -344,7 +344,7 @@ export const WRITE_CLAIM_KEYS = [...HOLD_KEYS, ...COMPLETED_KEYS, "approval"] as
 
 /** `would_append` → `would append`; `dry_run` → `dry run`. */
 function saidAs(key: string): string {
-  return humanizeIdentifier(key) || key;
+  return key.replace(/_/g, " ");
 }
 
 /** A `would_*` key that ARRIVED — the preview signal, whatever its shape. */
