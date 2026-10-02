@@ -1040,7 +1040,7 @@ export function ContentPlanWorkbench({
                   <Panel
                     id="content-plan-map-detail"
                     defaultSize="45%"
-                    minSize="25%"
+                    minSize="340px"
                   >
                     {selectedNodeDetail(selectedNode)}
                   </Panel>

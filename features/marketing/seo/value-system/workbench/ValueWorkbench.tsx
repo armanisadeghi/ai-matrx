@@ -1732,8 +1732,8 @@ export function ValueWorkbench() {
             {isMobile ? null : <Handle />}
             <Panel
               id="value-workbench-meaning"
-              defaultSize={isMobile ? "100%" : "34%"}
-              minSize="22%"
+              defaultSize={isMobile ? "100%" : "40%"}
+              minSize="300px"
               maxSize={isMobile ? "100%" : "60%"}
             >
               <MeaningPanel
