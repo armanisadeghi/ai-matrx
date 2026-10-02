@@ -15,7 +15,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
-import { callCompactTurns, type CompactTurnsResult } from "@host/lib/api/call-api";
+import { callCompactTurns, type CompactTurnsResult } from "../../../../../host/server/call-api";
 import { loadConversation } from "../../thunks/load-conversation.thunk";
 import { markCacheBypass } from "../cache-bypass.slice";
 import { invalidateConversationCache } from "../invalidate-conversation-cache.thunk";

@@ -6,8 +6,8 @@
  *   - `invalidateAgentCache` thunk (explicit user action with confirmation)
  */
 
-import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";
-import { selectResolvedBaseUrl } from "@host/lib/redux/slices/apiConfigSlice";
+import { applyOrganizationContextHeader } from "../../../host/server/organization-context";
+import { selectResolvedBaseUrl } from "../../../host/server/api-config";
 import {
   selectAccessToken,
   selectFingerprintId,

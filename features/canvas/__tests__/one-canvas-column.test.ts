@@ -4,7 +4,7 @@
  * layout and the link layout. A route never mounts, wraps or forks a canvas of
  * its own — it opens things INTO the one canvas.
  *
- * Static: scans every tracked .ts/.tsx outside packages/canvas.
+ * Static: scans every tracked app .ts/.tsx; the column implementation ships from npm.
  */
 
 import { execSync } from "node:child_process";
@@ -15,7 +15,7 @@ const ROOT = process.cwd();
 function trackedSources(): string[] {
   return execSync("git ls-files '*.ts' '*.tsx'", { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
     .split("\n")
-    .filter((p) => p && !p.startsWith("packages/canvas/") && !p.includes("__tests__/one-canvas-column"));
+    .filter((p) => p && !p.includes("__tests__/one-canvas-column"));
 }
 
 const isTest = (path: string) => /(__tests__\/|\.test\.tsx?$|\.spec\.tsx?$)/.test(path);

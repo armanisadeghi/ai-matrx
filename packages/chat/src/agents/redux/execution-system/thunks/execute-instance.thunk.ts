@@ -89,7 +89,7 @@ import {
 } from "./resolve-base-url";
 import { resolveEndpointPath } from "@host/lib/api/resolve-endpoint-path";
 import { resolveStartPath } from "../utils/resolve-start-path";
-import { selectEndpointOverrideConfig } from "@host/lib/redux/slices/apiConfigSlice";
+import { selectEndpointOverrideConfig } from "../../../../host/server/api-config";
 import { selectDesktopTargetInstanceId, selectDirectiveApplyPolicy } from "../../../../host/prefs";
 import {
   createRequest,

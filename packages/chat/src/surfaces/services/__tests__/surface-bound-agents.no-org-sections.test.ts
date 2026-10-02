@@ -12,7 +12,7 @@ jest.mock("../../../host/db", () => ({
     }),
   },
 }));
-jest.mock("@host/lib/api/adminDoor", () => ({ adminDoorOpen: () => false }));
+jest.mock("../../../host/server/admin-door", () => ({ adminDoorOpen: () => false }));
 
 import { fetchSurfaceMenuAgentsGrouped } from "../surface-bound-agents.service";
 

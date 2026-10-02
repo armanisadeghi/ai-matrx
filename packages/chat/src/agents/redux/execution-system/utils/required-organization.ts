@@ -1,5 +1,5 @@
 import type { ChatRootState } from "../../../../store/root-state";
-import { adminLaneOrganizationId } from "@host/lib/api/admin-lane";
+import { adminLaneOrganizationId } from "../../../../host/server/admin-lane";
 import { selectOrganizationId } from "../../../../host/org";
 
 /**

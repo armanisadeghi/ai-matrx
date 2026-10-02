@@ -19,7 +19,9 @@ import type {
   ChatPortName,
   ChatRegistrations,
   ChatRoutes,
+  ChatServerApi,
   ResolvedChatHost,
+  ResolvedChatServerPort,
 } from "./contract";
 import {
   ChatHostInvalidError,
@@ -33,6 +35,7 @@ import {
 import { createDbIdentity } from "./defaults/identity";
 import { createNoPickerOrg } from "./defaults/org";
 import { createDefaultServer } from "./defaults/server";
+import { createDefaultServerApi } from "./defaults/server-api";
 import { createDomNotifier } from "./defaults/notify";
 import { createWebPrefs } from "./defaults/prefs";
 import { createWindowNavigation } from "./defaults/navigation";
@@ -101,12 +104,16 @@ export function resolveChatHost(host: ChatHost): ResolvedChatHost {
       () => ref.notify,
       () => ref.diagnostics,
     );
-  const server =
+  const serverPort =
     host.server ??
     createDefaultServer(
       () => ref.identity,
       () => ref.org,
     );
+  const server: ResolvedChatServerPort = {
+    ...serverPort,
+    api: serverPort.api ?? defaultServerApi(() => ref),
+  };
   const prefs = host.prefs ?? createWebPrefs();
   const navigation = host.navigation ?? createWindowNavigation();
   const windows = host.windows ?? createUnhostedWindows(() => ref.diagnostics);
@@ -142,6 +149,16 @@ export function resolveChatHost(host: ChatHost): ResolvedChatHost {
     overridden,
   } satisfies ResolvedChatHost);
   return ref;
+}
+
+/**
+ * The package's own server client, for a host that supplied none (P9). A host
+ * that REGISTERS its server client type (`ChatServerRegister`) supplies the
+ * client itself (matrx-frontend does), so this stand-in is typed as the
+ * registered client only to fill the slot — the one assertion of the seam.
+ */
+function defaultServerApi(host: () => ResolvedChatHost): ChatServerApi {
+  return createDefaultServerApi(host) as unknown as ChatServerApi;
 }
 
 let configured: { host: ChatHost; resolved: ResolvedChatHost } | null = null;

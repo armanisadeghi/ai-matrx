@@ -12,14 +12,14 @@
  */
 import { createClient } from "../../host/db";
 import type { McpToolSchema } from "./mcp-client/tool-discovery";
-import { AIDREAM_PRODUCTION_URL } from "@host/lib/api/endpoints";
-import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";
+import { productionUrl } from "../../host/server/endpoints";
+import { applyOrganizationContextHeader } from "../../host/server/organization-context";
 import type { components } from "@host/types/python-generated/api-types";
 import type { AttachableAvailability } from "@host/features/connectors/attachable-resources";
 import { ensureOrganizationForRequest } from "../../host/org";
 
 function backendBase(): string {
-  return AIDREAM_PRODUCTION_URL;
+  return productionUrl();
 }
 
 async function authHeaders(

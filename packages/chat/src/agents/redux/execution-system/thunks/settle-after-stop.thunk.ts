@@ -23,7 +23,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import { cancelAgentRunRequest } from "@host/lib/api/matrx-transport";
+import { cancelAgentRunRequest } from "../../../../host/server/matrx-transport";
 import { fetchOperationsByLink } from "../../../runtime-reconnect/api";
 import type {
   RuntimeOperationView,

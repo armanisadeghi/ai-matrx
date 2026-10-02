@@ -23,7 +23,7 @@ import type { ChatDispatch, ChatRootState } from "../../../../../store/root-stat
 import {
   callConversationFork,
   type ConversationForkBody,
-} from "@host/lib/api/call-api";
+} from "../../../../../host/server/call-api";
 import { loadConversation } from "../../thunks/load-conversation.thunk";
 import { setFocus } from "../../conversation-focus/conversation-focus.slice";
 import { markCacheBypass } from "../cache-bypass.slice";

@@ -81,7 +81,7 @@ import {
   type XaiCloseInfo,
   type XaiClientError,
 } from "../transport/xaiClient";
-import { reportBrowserProviderFailure } from "@host/lib/api/provider-session-failure";
+import { reportBrowserProviderFailure } from "../../host/server/provider-session-failure";
 import type { XaiServerEvent } from "../transport/serverEvents";
 import { transcriptTextFromEvent } from "../transport/serverEvents";
 import type { VoiceRelayBinding } from "../relay/types";

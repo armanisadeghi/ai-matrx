@@ -23,7 +23,7 @@
  */
 
 import { startOAuthPopup } from "@host/utils/oauth-popup";
-import { peekSelectedOrganizationId } from "@host/lib/api/organization-admission";
+import { peekSelectedOrganizationId } from "../../../host/server/organization-admission";
 
 export type McpOAuthOutcome =
   | { ok: true; serverId: string }

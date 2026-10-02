@@ -77,7 +77,7 @@ jest.mock(
   }),
 );
 
-jest.mock("@host/lib/api/context-api", () => ({
+jest.mock("../../../../../host/server/context-api", () => ({
   fetchContextState: (args: unknown) => ({ type: "test/fetchContextState", args }),
 }));
 

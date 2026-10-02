@@ -137,7 +137,7 @@ import { resolveAgentSandboxRef } from "@host/lib/sandbox/active-binding";
 import {
   selectActiveServer,
   selectEndpointOverrideConfig,
-} from "@host/lib/redux/slices/apiConfigSlice";
+} from "../../../../host/server/api-config";
 import { selectDesktopTargetInstanceId } from "../../../../host/prefs";
 import {
   selectProjectId,

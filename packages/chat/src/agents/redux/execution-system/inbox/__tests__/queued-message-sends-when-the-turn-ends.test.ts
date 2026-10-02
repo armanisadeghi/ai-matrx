@@ -53,7 +53,7 @@ const deleted: string[] = [];
 const sent: { conversationId: string; composerText: string }[] = [];
 let storeRef: ReturnType<typeof makeStore> | null = null;
 
-jest.mock("@host/lib/api/call-api", () => ({
+jest.mock("../../../../../host/server/call-api", () => ({
   callApi:
     (args: { method: string; pathParams: { injection_id?: string } }) =>
     async () => {

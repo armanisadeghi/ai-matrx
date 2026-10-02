@@ -170,7 +170,15 @@ export function InlineProjectName({
       ? "text-2xl md:text-3xl font-bold"
       : "text-base font-semibold";
 
-  React.useEffect(() => setDraft(project.name), [project.name]);
+  // Follow the saved name only when it CHANGES: effects re-run without a
+  // remount (a board tile waking from sleep), and a re-run must not throw away
+  // a name being typed.
+  const syncedName = React.useRef(project.name);
+  React.useEffect(() => {
+    if (syncedName.current === project.name) return;
+    syncedName.current = project.name;
+    setDraft(project.name);
+  }, [project.name]);
 
   const commit = async () => {
     const next = draft.trim();
@@ -257,10 +265,14 @@ export function InlineProjectDescription({
   const [draft, setDraft] = React.useState(project.description ?? "");
   const [busy, setBusy] = React.useState(false);
 
-  React.useEffect(
-    () => setDraft(project.description ?? ""),
-    [project.description],
-  );
+  // Follow the saved description only when it CHANGES (see the name above).
+  const syncedDescription = React.useRef(project.description ?? "");
+  React.useEffect(() => {
+    const saved = project.description ?? "";
+    if (syncedDescription.current === saved) return;
+    syncedDescription.current = saved;
+    setDraft(saved);
+  }, [project.description]);
 
   const commit = async () => {
     const next = draft.trim();

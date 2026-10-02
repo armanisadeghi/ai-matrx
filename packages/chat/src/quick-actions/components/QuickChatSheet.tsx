@@ -432,9 +432,11 @@ function QuickChatSheetBody({
       ) : null}
 
       {/* Body: optional history sidebar + centered conversation column. */}
-      <div ref={bodyRef} className="flex min-h-0 flex-1">
+      {/* A container: in a narrow host (a 360px canvas pane) the history takes
+          the whole width instead of squeezing the conversation to a sliver. */}
+      <div ref={bodyRef} className="@container flex min-h-0 flex-1">
         {showHistory && (
-          <div className="w-64 shrink-0 border-r border-border">
+          <div className="w-64 shrink-0 border-r border-border @max-[520px]:w-full @max-[520px]:border-r-0">
             <ChatHistorySidebar
               scopeId={HISTORY_SCOPE}
               surfaceId="chat"
@@ -446,7 +448,12 @@ function QuickChatSheetBody({
           </div>
         )}
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+            showHistory && "@max-[520px]:hidden",
+          )}
+        >
           {conversationId && !resuming ? (
             <div ref={measureRef} className="flex min-h-0 flex-1 overflow-hidden justify-center">
               <AgentConversationColumn

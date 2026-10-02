@@ -39,7 +39,7 @@ import {
 import type { ConfirmOptions } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { useReferenceDoor } from "@/features/matrx-envelope/components/useReferenceDoor";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 import {
   getReferenceResolver,
   referenceChipLabel,

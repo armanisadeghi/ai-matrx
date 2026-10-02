@@ -12,7 +12,7 @@
 //     surface an error via `onError` and stop scheduling new refreshes — the
 //     orchestrator hook is responsible for showing the user a banner.
 
-import { mintCredential } from "@host/lib/api/broker/client";
+import { mintCredential } from "../../host/server/broker";
 import { BackendApiError } from "@host/lib/api/errors";
 import { TOKEN_REFRESH_SKEW_SECONDS, TOKEN_TTL_SECONDS } from "../constants";
 import type { VoiceAgentTokenResponse } from "../types";

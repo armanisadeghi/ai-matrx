@@ -45,8 +45,8 @@ importers:
         specifier: latest
         version: 0.4.4(react@19.3.0)
       '@ai-matrx/canvas':
-        specifier: workspace:*
-        version: link:packages/canvas
+        specifier: latest
+        version: 0.1.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/capture':
         specifier: latest
         version: 0.5.47(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -105,8 +105,8 @@ importers:
         specifier: latest
         version: 0.2.19(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/terminal':
-        specifier: workspace:*
-        version: link:packages/terminal
+        specifier: latest
+        version: 0.1.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-sdk/google':
         specifier: ^4.0.82
         version: 4.0.82(zod@4.6.5)
@@ -1009,40 +1009,7 @@ importers:
         specifier: latest
         version: 0.12.5
 
-  packages/canvas:
-    dependencies:
-      '@ai-matrx/tap-target':
-        specifier: latest
-        version: 0.2.19(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
-      '@radix-ui/react-dropdown-menu':
-        specifier: latest
-        version: 2.1.24(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      react:
-        specifier: latest
-        version: 19.3.0
-      react-dom:
-        specifier: latest
-        version: 19.3.0(react@19.3.0)
-
   packages/chat: {}
-
-  packages/terminal:
-    dependencies:
-      '@xterm/addon-fit':
-        specifier: latest
-        version: 0.11.0
-      '@xterm/addon-web-links':
-        specifier: latest
-        version: 0.12.0
-      '@xterm/xterm':
-        specifier: latest
-        version: 6.0.0
-      react:
-        specifier: latest
-        version: 19.3.0
-      react-dom:
-        specifier: latest
-        version: 19.3.0(react@19.3.0)
 
 packages:
 
@@ -1092,6 +1059,18 @@ packages:
       react: '>=18.0.0'
     peerDependenciesMeta:
       react:
+        optional: true
+
+  '@ai-matrx/canvas@0.1.0':
+    resolution: {integrity: sha512-Fg4foyj/FNh/uWrIyZvcok4j9K7xiiwYxGCthbciwFfKvP/IUhvZTtLjT7BvK90WJfqGbVK4OtngRdHoc5Fbxw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
         optional: true
 
   '@ai-matrx/capture@0.5.47':
@@ -1257,6 +1236,13 @@ packages:
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
+
+  '@ai-matrx/terminal@0.1.1':
+    resolution: {integrity: sha512-WnlLeBZ/7KsiQHPHSOn63y/h+uMSf1jq6bYOK9JIUamPp11RttpOF5gPxMFoEIv1HRRKSIUXPwXMWpMbgSx67w==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
 
   '@ai-sdk/gateway@4.0.94':
     resolution: {integrity: sha512-hcp7GLnMynH6NfMnemgvW9acn7j3WsUe/dHFzX3/fhPit08xhm1aYmDGHMiIT6YwsXVBxkit9TriKb2SGAOg+Q==}
@@ -11819,6 +11805,18 @@ snapshots:
     optionalDependencies:
       react: 19.3.0
 
+  '@ai-matrx/canvas@0.1.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
+    dependencies:
+      '@ai-matrx/tap-target': 0.2.19(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+      '@radix-ui/react-dropdown-menu': 2.1.24(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+    optionalDependencies:
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - recharts
+
   '@ai-matrx/capture@0.5.47(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
     dependencies:
       '@ai-matrx/design-system': 0.50.9(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -12073,6 +12071,14 @@ snapshots:
       - '@types/react-dom'
       - react-dom
       - recharts
+
+  '@ai-matrx/terminal@0.1.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+    dependencies:
+      '@xterm/addon-fit': 0.11.0
+      '@xterm/addon-web-links': 0.12.0
+      '@xterm/xterm': 6.0.0
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
 
   '@ai-sdk/gateway@4.0.94(zod@4.6.5)':
     dependencies:

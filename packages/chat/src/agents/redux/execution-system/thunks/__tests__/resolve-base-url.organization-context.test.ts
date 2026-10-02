@@ -6,7 +6,7 @@
 
 import type { ChatRootState } from "../../../../../store/root-state";
 
-jest.mock("@host/lib/redux/slices/apiConfigSlice", () => ({
+jest.mock("../../../../../host/server/api-config", () => ({
   selectResolvedBaseUrl: () => "https://backend.test",
   selectActiveServer: () => "production",
 }));
@@ -24,7 +24,12 @@ jest.mock("@host/lib/sandbox/active-binding", () => ({
   resolveAgentSandboxRef: () => null,
   getEffectiveSandboxRef: () => null,
 }));
-jest.mock("@host/lib/local-engine/discovery", () => ({
+// A user page: no admin seat (what the host's admin lane answers off /administration).
+jest.mock("../../../../../host/server/admin-lane", () => ({
+  adminLaneOrganizationId: () => null,
+  adminLaneHeadersFor: () => ({}),
+}));
+jest.mock("../../../../../host/server/local-engine", () => ({
   discoverLocalEngine: jest.fn(),
   getCachedLocalEngine: () => null,
   supportsLocalAgentExecution: () => false,

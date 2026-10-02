@@ -12,7 +12,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-jest.mock("@host/lib/api/call-api", () => ({ callApi: jest.fn() }));
+jest.mock("../../../host/server/call-api", () => ({ callApi: jest.fn() }));
 jest.mock("../../../store/hooks", () => ({
   useAppDispatch: () => (thunk: unknown) => thunk,
   useAppSelector: (selector: (state: unknown) => unknown) => selector(undefined),
@@ -42,7 +42,7 @@ jest.mock("@host/components/MarkdownStream", () => ({
 jest.mock("@host/lib/api/run-wait", () => ({
   resolveRunWait: jest.fn(async () => ({ firstResponseMs: 120_000 })),
 }));
-jest.mock("@host/lib/api/organization-admission", () => ({
+jest.mock("../../../host/server/organization-admission", () => ({
   peekSelectedOrganizationId: () => null,
 }));
 jest.mock("@host/utils/auth/getUserId", () => ({ getUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7" }));
@@ -86,7 +86,7 @@ jest.mock("../../../host/identity", () => {
   };
 });
 
-import { callApi } from "@host/lib/api/call-api";
+import { callApi } from "../../../host/server/call-api";
 import { ContextCompareView, focusLines } from "./ContextCompareView";
 
 (

@@ -1,6 +1,6 @@
 # FEATURE.md — `canvas` (local mechanics)
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/STATE.md` — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/publish/artifacts/STATE.md` — read it before touching this feature in ANY repo.
 
 The product truth, architecture narrative, wire contract, data model, decisions and open work live
 in that node's doc kit (`STATE.md`, `ARTIFACT-WIRE-CONTRACT.md`, `TWO-WAY-BINDING.md`,
@@ -8,7 +8,7 @@ in that node's doc kit (`STATE.md`, `ARTIFACT-WIRE-CONTRACT.md`, `TWO-WAY-BINDIN
 the rules an agent editing THIS directory must obey.
 
 > **The one thing to understand: the Canvas is a HOST, not an editor.** It is the
-> `@ai-matrx/canvas` column (`packages/canvas/FEATURE.md`): one docked right-hand column with panes
+> `@ai-matrx/canvas` column (`aidream/apps/shared/canvas/FEATURE.md`): one docked right-hand column with panes
 > and tabs. This directory is the app's binding to it plus the ARTIFACT kinds it shows through a
 > type-keyed switch. No nodes, no node selection, no text elements of its own.
 
@@ -16,7 +16,7 @@ the rules an agent editing THIS directory must obey.
 
 | Layer                                                                          | Where                                                                                            |
 | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| THE canvas — column, panes, tabs, identity, memory (package)                  | `packages/canvas/` (`@ai-matrx/canvas`)                                                          |
+| THE canvas — column, panes, tabs, identity, memory (npm package)             | `aidream/apps/shared/canvas/` (`@ai-matrx/canvas`, consumed from npm)                             |
 | App binding: Redux key `canvasHost`, open-drop reporting                       | `host/CanvasHostProvider.tsx`                                                                    |
 | Placement: fixed right column, `--shell-canvas-w`, surface emitter             | `host/ShellCanvasColumn.tsx`, `host/canvas-host.css`, `host/canvasSurfaceScope.ts`               |
 | Every content type as a kind (icon, restore, keep-alive, header action, menu)  | `host/artifactKinds.tsx`                                                                         |
@@ -170,7 +170,7 @@ path updates the node's `STATE.md` in the same session.
   are deleted. The canvas is a full-height right column the header ends at, with split panes, tabs,
   full screen, memory and identity keys; every content type is a kind (`host/artifactKinds.tsx`),
   saved items are a launcher kind, live editor callbacks ride by id. Guards: `one-canvas-column.test.ts`,
-  `packages/canvas/src/__tests__/core.test.ts`.
+  `aidream/apps/shared/canvas/src/__tests__/core.test.ts`.
 
 - `2026-09-29` — **Surface-owned conversations survive a reload.** The module-level `materialization/surfaceOwnedConversations.ts` Set (lost on every reload, never consulted by the on-load reconcile) is deleted; ownership is the launch option `surfaceOwnsOutput`, carried on the conversation record in the execution-system Redux state, persisted in the row's metadata, restored by `loadConversation`, and read by `materializeMessageArtifacts` (now given `getState`) via `selectConversationSurfaceOwnsOutput`. Tests: `education/convert/__tests__/segment-runs-never-materialize.test.ts` (red on a scratch copy of the old claim path), `materialization/__tests__/materializeMessageArtifacts.test.ts`.
 - `2026-09-28` — **Submitting a score and recording a view work again.** `hooks/canvas/useCanvasScore.ts` and `hooks/canvas/useSharedCanvas.ts` wrote `canvas.canvas_scores` / `canvas.canvas_views` directly, closed by the same 2026-09-21 sweep; they now call the new `canvas.submit_canvas_score` / `canvas.record_canvas_view` doors (migration `canvas_score_and_view_doors.sql`). Rank and high score now come from the door (the browser could only count its own scores).

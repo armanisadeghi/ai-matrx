@@ -25,7 +25,7 @@
 // converts that into an explanatory `output` string so the voice turn never
 // crashes.
 
-import { apiPost } from "@host/lib/api/typed-client";
+import { apiPost } from "../../host/server/typed-client";
 import type { components } from "@host/types/python-generated/api-types";
 
 /** Optional org/project/task/scope envelope (contract §4 `ToolContextEnvelope`). */

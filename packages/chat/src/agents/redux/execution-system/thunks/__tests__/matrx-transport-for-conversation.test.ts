@@ -16,6 +16,7 @@ jest.mock("@host/lib/diagnostics/captureApiError", () => ({
   captureApiError: jest.fn(),
 }));
 jest.mock("@host/lib/api/log-api-target", () => ({ logApiTarget: jest.fn() }));
+// The host's own transport (behind the server port) reads these.
 jest.mock("@host/lib/redux/slices/apiConfigSlice", () => ({
   selectResolvedBaseUrl: () => "https://backend.test",
   selectEndpointOverrideConfig: () => null,
@@ -26,6 +27,7 @@ jest.mock("../resolve-base-url", () => ({
 }));
 
 import { resilientFetch } from "@ai-matrx/data/net";
+import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
 import { resolveBackendForConversation } from "../resolve-base-url";
 import { createMatrxTransportForConversation } from "../matrx-transport-for-conversation";
 
@@ -37,6 +39,11 @@ const getState = () =>
   ({ apiConfig: { activeServer: "production" } }) as unknown as ChatRootState;
 
 beforeEach(() => {
+  // The package hands its target to the host's transport (P9): this app's own.
+  configureServerForTest({
+    createMatrxTransportFromTarget: jest.requireActual("@host/lib/api/matrx-transport")
+      .createMatrxTransportFromTarget,
+  });
   mockedFetch.mockReset();
   mockedResolve.mockReset();
   mockedFetch.mockResolvedValue({

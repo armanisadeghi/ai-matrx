@@ -75,7 +75,7 @@ import {
   unregisterAbortController,
 } from "./abort-registry";
 import type { BackendChannel } from "./resolve-base-url";
-import { selectActiveServer } from "@host/lib/redux/slices/apiConfigSlice";
+import { selectActiveServer } from "../../../../host/server/api-config";
 import { resolveAgentSandboxRef } from "@host/lib/sandbox/active-binding";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import {

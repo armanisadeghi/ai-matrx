@@ -12,7 +12,7 @@
 //                 reducer uses to keep the package's `chatHost` slice equal
 //   org         → appContext active org (same reading); require = the
 //                 canonical gate (lib/organization/chat-org-port)
-//   server      → apiConfig's resolved aidream URL; bearer + X-Organization-Id
+//   server      → apiConfig's resolved aidream URL; bearer + X-Organization-Id; `api` = lib/api (P9)
 //   notify      → lib/toast (`toast`, `recordToast`)
 //   diagnostics → the Error Inspector capture store (which persists through
 //                 `log_client_error`) — lib/diagnostics/chat-diagnostics-port;
@@ -88,6 +88,7 @@ import { setKnobOverride } from "@/lib/scoped-config/service";
 import { SettingDoor } from "@/features/settings/doors/SettingDoor";
 import { VOICE_SETTING_DOORS } from "@/features/settings/tabs/voices/voiceSettingDoors";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import { appChatServerApi } from "@/lib/api/chat-server-api";
 import {
   closeOverlay,
   openOverlay,
@@ -444,6 +445,8 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
         if (active) headers["X-Organization-Id"] = active.id;
         return headers;
       },
+      // Every package server call runs this app's own lib/api (P9).
+      api: appChatServerApi,
     },
     notify: appNotify,
     prefs,

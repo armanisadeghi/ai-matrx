@@ -355,6 +355,7 @@ export const WORK_ITEMS: BoardItemType[] = [
       return id ? `/chat/${id}` : null;
     },
     kindLabel: "chat",
+    sleeps: true, // LANE-TRIAL
   },
   {
     key: "note",
@@ -376,6 +377,7 @@ export const WORK_ITEMS: BoardItemType[] = [
       return id ? `/notes/${id}` : null;
     },
     kindLabel: "note",
+    sleeps: true, // LANE-TRIAL
   },
   {
     key: "file",

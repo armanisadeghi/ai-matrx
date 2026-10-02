@@ -12,7 +12,7 @@
  * from the dispatcher. Red against the pre-fix funnel, which touched neither.
  */
 
-jest.mock("@host/lib/api/call-api", () => ({
+jest.mock("../../../host/server/call-api", () => ({
   callApi: jest.fn(() => ({ type: "test/noop" })),
 }));
 jest.mock("../../../host/notify", () => ({

@@ -13,7 +13,7 @@
  */
 
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import { callApi } from "@host/lib/api/call-api";
+import { callApi } from "../../../../host/server/call-api";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import { buildPreviewRequestContext } from "./request-context";
 import { sentWithRequest } from "../messages/messages.slice";

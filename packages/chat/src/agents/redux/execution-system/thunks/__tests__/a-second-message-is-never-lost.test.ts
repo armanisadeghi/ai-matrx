@@ -91,7 +91,7 @@ jest.mock("../../utils/build-tool-injection", () => ({
 
 // The ONE network edge reached: the queue POST.
 const inboxPosts: Array<{ text: string; delivery: string }> = [];
-jest.mock("@host/lib/api/call-api", () => ({
+jest.mock("../../../../../host/server/call-api", () => ({
   callApi: (args: { body: { text: string; delivery: string } }) => () => {
     inboxPosts.push({ text: args.body.text, delivery: args.body.delivery });
     return Promise.resolve({

@@ -71,7 +71,7 @@
  *    pretending the tool failed.
  */
 
-import { callApi } from "@host/lib/api/call-api";
+import { callApi } from "../../host/server/call-api";
 import { toast } from "../../host/notify";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { ThunkAction, ThunkDispatch } from "redux-thunk";

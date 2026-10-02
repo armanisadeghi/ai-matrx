@@ -31,7 +31,7 @@ import type {
 } from "./types";
 import { selectCategoryById } from "./selectors";
 import { resolveShortcutWriteScope } from "@host/features/agent-shortcuts/resolveShortcutWriteScope";
-import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";
+import { applyOrganizationContextHeader } from "../../../host/server/organization-context";
 import { requireSelectedOrgId } from "@host/lib/organizations/activeOrg";
 import { withOrganizationRefusalShown } from "@host/lib/organizations/organizationRefusalToast";
 import { selectUserId } from "../../../host/identity";

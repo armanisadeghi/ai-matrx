@@ -10,7 +10,7 @@
  */
 
 import type { ChatRootState } from "../../store/root-state";
-import { selectEndpointOverrideConfig } from "@host/lib/redux/slices/apiConfigSlice";
+import { selectEndpointOverrideConfig } from "../../host/server/api-config";
 import { resolveEndpointPath } from "@host/lib/api/resolve-endpoint-path";
 import { ENDPOINTS } from "@host/lib/api/endpoints";
 import { resolveBackendForConversation } from "../redux/execution-system/thunks/resolve-base-url";

@@ -15,13 +15,14 @@ import type { ChatRootState } from "../../store/root-state";
 jest.mock("@ai-matrx/agents/matrx", () => ({
   startAgentRun: jest.fn(),
 }));
-jest.mock("@host/lib/api/matrx-transport", () => ({
+jest.mock("../../host/server/matrx-transport", () => ({
   createMatrxTransport: jest.fn(() => ({ fetch: jest.fn() })),
 }));
-jest.mock("@host/lib/api/call-api", () => {
+jest.mock("../../host/server/call-api", () => {
+  // The scope injection under test is the host's own `buildRequestBody` (behind the server port).
   const actual = jest.requireActual("@host/lib/api/call-api");
   return {
-    ...actual,
+    buildRequestBody: actual.buildRequestBody,
     waitForAuthReady: jest.fn(async () => true),
     resolveScope: jest.fn(() => ({
       user_id: "user-1",

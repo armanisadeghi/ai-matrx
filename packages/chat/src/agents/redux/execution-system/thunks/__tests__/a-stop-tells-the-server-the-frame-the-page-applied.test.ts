@@ -26,8 +26,8 @@ if (typeof g.TextEncoder !== "function") g.TextEncoder = NodeTextEncoder;
 if (typeof g.TextDecoder !== "function") g.TextDecoder = NodeTextDecoder;
 
 const cancelCalls: unknown[][] = [];
-jest.mock("@host/lib/api/matrx-transport", () => {
-  const actual = jest.requireActual("@host/lib/api/matrx-transport");
+jest.mock("../../../../../host/server/matrx-transport", () => {
+  const actual = jest.requireActual("../../../../../host/server/matrx-transport");
   return {
     ...actual,
     cancelAgentRunRequest: (...args: unknown[]) => {
@@ -40,7 +40,15 @@ jest.mock("../settle-after-stop.thunk", () => ({
   settleAfterStop: () => () => Promise.resolve("reloaded"),
 }));
 
+import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
 import { processStream } from "../process-stream";
+
+// The stream is read by the host's parser behind the server port (P9): this app's own.
+beforeAll(() => {
+  configureServerForTest({
+    parseNdjsonStream: jest.requireActual("@host/lib/api/stream-parser").parseNdjsonStream,
+  });
+});
 import { cancelExecution } from "../smart-execute.thunk";
 import { registerAbortController } from "../abort-registry";
 import type { ChatRootState } from "../../../../../store/root-state";

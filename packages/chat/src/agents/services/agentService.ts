@@ -10,7 +10,7 @@
 // model + reference lookups. Running an agent uses the existing streaming path,
 // not this client.
 
-import { apiGet, apiPatch, apiPost, buildPath } from "@host/lib/api/typed-client";
+import { apiGet, apiPatch, apiPost, buildPath } from "../../host/server/typed-client";
 
 import type {
   AgentDetail,

@@ -14,7 +14,7 @@
 
 import { useEffect } from "react";
 import { useAppSelector } from "../../store/hooks";
-import { selectResolvedBaseUrl } from "@host/lib/redux/slices/apiConfigSlice";
+import { selectResolvedBaseUrl } from "../../host/server/api-config";
 import { warmAgent } from "@host/lib/api/warm-helpers";
 
 interface UseWarmAgentOptions {

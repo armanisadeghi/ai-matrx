@@ -22,6 +22,7 @@ import type { AgentCatalog } from "@ai-matrx/agents/catalog";
 import type { ChatDatabase } from "./db-types";
 import type { ChatWindowId } from "./windows";
 import type { ChatWindowOpeners } from "./window-openers";
+import type { DefaultChatServerApi, DefaultChatServerTypes } from "./defaults/server-api";
 
 /**
  * The connection contract (R10). Authenticated, RLS applies. Typed with the
@@ -91,9 +92,42 @@ export interface ChatOrgPort {
   require(reason: string, options?: ChatOrgRequireOptions): Promise<string>;
 }
 
+/**
+ * The host's server client and its types, REGISTERED by module augmentation —
+ * the same TanStack `Register` pattern as `ChatStoreRegister`
+ * (`../store/root-state.ts`). matrx-frontend registers its own `lib/api`
+ * (`lib/api/chat-server-api.ts`), so every package call type-checks against
+ * the app's signatures; a bare host registers nothing and gets the package
+ * default over `@ai-matrx/agents/matrx` (`./defaults/server-api.ts`).
+ *
+ *   declare module "@ai-matrx/chat/host/contract" {
+ *     interface ChatServerRegister { api: AppChatServerApi; types: AppChatServerTypes }
+ *   }
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ChatServerRegister {}
+
+/** Every server call the package makes (P9): the registered host client, else the package default. */
+export type ChatServerApi = ChatServerRegister extends { api: infer A } ? A : DefaultChatServerApi;
+
+/** The request/response types those calls use: the registered host's, else the package default's. */
+export type ChatServerTypes = ChatServerRegister extends { types: infer T }
+  ? T
+  : DefaultChatServerTypes;
+
 export interface ChatServerPort {
   baseUrl(): string;
   headers?(): Promise<Record<string, string>>;
+  /**
+   * Every server call the package makes. Absent: the package default — the
+   * shared transport in `@ai-matrx/agents/matrx` over `baseUrl()` + `headers()`.
+   */
+  api?: ChatServerApi;
+}
+
+/** The server port as resolved: the client is always present. */
+export interface ResolvedChatServerPort extends ChatServerPort {
+  api: ChatServerApi;
 }
 
 /** One press offered with a notice (e.g. "Undo", "Use “Sales 2”"). */
@@ -773,7 +807,7 @@ export interface ResolvedChatHost {
   sourceApp: ChatSourceApp | null;
   identity: ChatIdentityPort;
   org: ChatOrgPort;
-  server: ChatServerPort;
+  server: ResolvedChatServerPort;
   notify: ChatNotifyPort;
   diagnostics: ChatDiagnosticsPort;
   prefs: ChatPrefsPort;

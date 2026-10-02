@@ -26,7 +26,7 @@ import {
   callHideMessages,
   type HideMessagesResult,
   type MessageSelector,
-} from "@host/lib/api/call-api";
+} from "../../../../../host/server/call-api";
 import { loadConversation } from "../../thunks/load-conversation.thunk";
 import { markCacheBypass } from "../cache-bypass.slice";
 import { invalidateConversationCache } from "../invalidate-conversation-cache.thunk";

@@ -126,7 +126,7 @@ metered to the organization.
 | `pnpm check:honest-states-parity` | The browser's state values, titles and remedy actions equal the engine artifact's, verbatim, both directions. CI job + both release-gate lanes. |
 | `pnpm check:honest-states-parity:self-test` | …and that guard still goes red (three planted drifts). |
 | `pnpm check:user-visible-parity` | The one visibility rule: the TS mirror equals the live SQL functions, and the browser's rendered set equals the predicate's set (needs `AI_ADMIN_*`). Set-based — 4,945 paths in under a second through `files.is_user_visible_paths`. Knobs: `PARITY_PATH_BATCH`, `PARITY_MAX_PATHS`. |
-| `npx jest features/files/devices/console packages/terminal` | The console's status-pill states; the terminal package's keys, Ctrl latch, gestures, selection and viewport math. |
+| `npx jest features/files/devices/console` | The console's status-pill states. Terminal's keys, Ctrl latch, gestures, selection and viewport math are tested in `aidream/apps/shared/terminal` (`pnpm test`). |
 | `npx jest features/files/storage-meter features/files/devices features/files/utils/user-visible.test.ts` | The meter's honest states, the one-sentence-per-row rule, and the visibility unit covers. |
 
 ## Change log

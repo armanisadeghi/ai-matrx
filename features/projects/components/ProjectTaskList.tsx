@@ -109,14 +109,23 @@ export function ProjectTaskList({
   const { inputRef: subInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
     useRefocusInputAfterAsync(isAddingSub);
 
+  // One read per project and reload. Effects re-run without a remount (a
+  // board tile waking from sleep); a re-run that read again swapped the list
+  // for a spinner, dropping its rows, open editors and scroll.
+  const loadedFor = React.useRef<string | null>(null);
   React.useEffect(() => {
+    const key = `${projectId}#${reloadTick}`;
+    if (loadedFor.current === key) return undefined;
     let cancelled = false;
     (async () => {
       setLoading(true);
       setLoadError(null);
       try {
         const rows = await getProjectTasks(projectId);
-        if (!cancelled) setTasks(rows);
+        if (!cancelled) {
+          setTasks(rows);
+          loadedFor.current = key;
+        }
       } catch (err) {
         if (!cancelled) setLoadError(err ?? new Error("The read failed"));
       } finally {

@@ -25,7 +25,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { useOrganizationRequired } from "@host/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@host/features/organizations/components/OrganizationRequiredNotice";
-import { fetchContextState } from "@host/lib/api/context-api";
+import { fetchContextState } from "../../../../host/server/context-api";
 import {
   selectContextState,
   selectEstimatedTokens,

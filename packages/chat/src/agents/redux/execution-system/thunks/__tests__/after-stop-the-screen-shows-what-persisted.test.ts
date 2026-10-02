@@ -54,7 +54,7 @@ const cancelAgentRunRequest = jest.fn((requestId: string) => async () => ({
 jest.mock("../../../../runtime-reconnect/api", () => ({
   fetchOperationsByLink: (...a: unknown[]) => fetchOperationsByLink(...(a as [])),
 }));
-jest.mock("@host/lib/api/matrx-transport", () => ({
+jest.mock("../../../../../host/server/matrx-transport", () => ({
   cancelAgentRunRequest: (id: string) => cancelAgentRunRequest(id),
 }));
 jest.mock("../resolve-base-url", () => ({

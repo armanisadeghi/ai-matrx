@@ -10,7 +10,7 @@
  */
 
 import type { TypedStreamEvent } from "@host/types/python-generated/stream-events";
-import type { LLMParams } from "@host/lib/api/types";
+import type { LLMParams } from "../../host/server/types";
 import type { Json } from "../../host/db-types";
 import type {
   CxToolCall,

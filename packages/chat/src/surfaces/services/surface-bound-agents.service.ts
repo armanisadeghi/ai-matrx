@@ -14,7 +14,7 @@
 
 import { supabase } from "../../host/db";
 import { DEFAULT_AGENT_CATALOG_LABELS } from "@ai-matrx/agents/catalog";
-import { adminDoorOpen } from "@host/lib/api/adminDoor";
+import { adminDoorOpen } from "../../host/server/admin-door";
 
 export interface SurfaceBoundAgentEntry {
   agentId: string;

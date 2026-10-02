@@ -60,13 +60,13 @@ import { getClaimsUser } from "../host/db";
 import { isJsonObject } from "@host/types/json";
 import { recordUnavailable } from "../host/diagnostics";
 import type { FeLlmParams } from "../agents/types/agent-api-types";
-import { apiGet, buildPath } from "@host/lib/api/typed-client";
+import { apiGet, buildPath } from "../host/server/typed-client";
 import { BackendApiError } from "@host/lib/api/errors";
 import {
   peekSelectedOrganizationId,
   waitForOrganizationAdmission,
   type OrganizationAdmission,
-} from "@host/lib/api/organization-admission";
+} from "../host/server/organization-admission";
 import type { components } from "@host/types/python-generated/api-types";
 import { toLlmParams } from "./llm-params";
 import { invalidateMandateCatalogueCache } from "@host/features/mandates/catalogue";

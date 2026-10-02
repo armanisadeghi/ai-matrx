@@ -10,7 +10,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../../../store/root-state";
 import { submitToolResult } from "../../../api/submit-tool-results";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
-import { invokeMatrxExtendTool } from "@host/lib/extension-bridge/matrx-extend-client";
+import { invokeMatrxExtendTool } from "../../../../host/server/extension-bridge";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 
 export interface DispatchMatrxExtendToolPayload {

@@ -16,7 +16,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-jest.mock("@host/lib/api/call-api", () => ({ callApi: jest.fn() }));
+jest.mock("../../../host/server/call-api", () => ({ callApi: jest.fn() }));
 jest.mock("../../../store/hooks", () => ({
   // The door itself is the mock, so dispatch only hands back what it produced.
   // A function thunk (the door read) runs against an empty state.
@@ -48,7 +48,7 @@ jest.mock("../../redux/execution-system/context-rules/request-context", () => ({
   selectResolvedContextRows: () => () => [],
 }));
 
-import { callApi } from "@host/lib/api/call-api";
+import { callApi } from "../../../host/server/call-api";
 import { useContextPreview, type ContextPreviewState } from "./useContextPreview";
 
 (

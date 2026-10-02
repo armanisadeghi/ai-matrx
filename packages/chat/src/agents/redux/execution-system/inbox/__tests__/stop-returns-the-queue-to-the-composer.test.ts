@@ -25,7 +25,7 @@ import instanceUserInputReducer, {
 const CONV = "e2acdae2-eb77-4c99-9511-f3d591d4841c";
 const deleteOutcome = new Map<string, number>(); // injection id → HTTP status
 
-jest.mock("@host/lib/api/call-api", () => ({
+jest.mock("../../../../../host/server/call-api", () => ({
   callApi: (args: { pathParams: { injection_id: string } }) => async () => {
     const status = deleteOutcome.get(args.pathParams.injection_id) ?? 200;
     return status === 200

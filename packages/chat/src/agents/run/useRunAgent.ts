@@ -54,8 +54,8 @@ import {
   waitForAuthReady,
   type CallScope,
   type LLMParamsBody,
-} from "@host/lib/api/call-api";
-import { createMatrxTransport } from "@host/lib/api/matrx-transport";
+} from "../../host/server/call-api";
+import { createMatrxTransport } from "../../host/server/matrx-transport";
 import { applyDesktopTargetToRequestBody } from "@host/lib/api/desktop-target-request";
 import type { components } from "@host/types/python-generated/api-types";
 import { extractErrorMessage } from "@ai-matrx/data/net";

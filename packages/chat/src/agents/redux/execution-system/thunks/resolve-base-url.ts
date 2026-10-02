@@ -1,9 +1,9 @@
 import type { ChatRootState } from "../../../../store/root-state";
-import { adminLaneHeadersFor, adminLaneOrganizationId } from "@host/lib/api/admin-lane";
+import { adminLaneHeadersFor, adminLaneOrganizationId } from "../../../../host/server/admin-lane";
 import {
   selectResolvedBaseUrl,
   selectActiveServer,
-} from "@host/lib/redux/slices/apiConfigSlice";
+} from "../../../../host/server/api-config";
 import {
   selectAccessToken,
   selectFingerprintId,
@@ -16,7 +16,7 @@ import {
   discoverLocalEngine,
   getCachedLocalEngine,
   supportsLocalAgentExecution,
-} from "@host/lib/local-engine/discovery";
+} from "../../../../host/server/local-engine";
 import { selectOrganizationId } from "../../../../host/org";
 
 export type BackendChannel =

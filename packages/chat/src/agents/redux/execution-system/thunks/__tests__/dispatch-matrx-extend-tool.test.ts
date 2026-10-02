@@ -4,7 +4,7 @@ const mockSubmitToolResult = jest.fn((args) => ({
   payload: args,
 }));
 
-jest.mock("@host/lib/extension-bridge/matrx-extend-client", () => ({
+jest.mock("../../../../../host/server/extension-bridge", () => ({
   invokeMatrxExtendTool: mockInvokeMatrxExtendTool,
 }));
 jest.mock("../../../../api/submit-tool-results", () => ({

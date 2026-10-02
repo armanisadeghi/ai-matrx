@@ -15,7 +15,7 @@
  */
 
 import { useState } from "react";
-import { callApi } from "@host/lib/api/call-api";
+import { callApi } from "../host/server/call-api";
 import { useAppDispatch } from "../store/hooks";
 import { toast } from "../host/notify";
 import { getChatHost } from "../host/configure";

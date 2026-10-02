@@ -25,7 +25,7 @@ const mockCallApi = jest.fn((config: unknown) => ({
   config,
 }));
 
-jest.mock("@host/lib/api/call-api", () => ({
+jest.mock("../../../host/server/call-api", () => ({
   callApi: mockCallApi,
 }));
 

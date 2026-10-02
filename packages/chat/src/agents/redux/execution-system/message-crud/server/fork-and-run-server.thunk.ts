@@ -32,7 +32,7 @@ import {
   callConversationForkAndRun,
   type ApiCallError,
   type ConversationForkAndRunBody,
-} from "@host/lib/api/call-api";
+} from "../../../../../host/server/call-api";
 import type { TypedStreamEvent } from "@host/types/python-generated/stream-events";
 import {
   isConversationForkedEvent,

@@ -28,7 +28,7 @@ import type { MatrxTransport } from "@ai-matrx/agents/matrx";
 import {
   createMatrxTransportFromTarget,
   type MatrxTransportOptions,
-} from "@host/lib/api/matrx-transport";
+} from "../../../../host/server/matrx-transport";
 import { resolveBackendForConversation } from "./resolve-base-url";
 
 /**

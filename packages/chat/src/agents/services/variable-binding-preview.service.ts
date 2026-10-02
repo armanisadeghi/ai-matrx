@@ -18,7 +18,7 @@
  * editor shows calmly, never an error.
  */
 
-import { postJson } from "@host/lib/python-client";
+import { postJson } from "../../host/server/python-client";
 import { BackendApiError } from "@host/lib/api/errors";
 import type { CustomDataBinding } from "../types/agent-definition.types";
 

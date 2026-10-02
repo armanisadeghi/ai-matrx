@@ -34,7 +34,7 @@ jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hoo
 jest.mock("@host/lib/redux/slices/userSlice", () => ({
   selectUserContext: () => ({ isAuthenticated: true, isAdmin: false }),
 }));
-jest.mock("@host/lib/redux/slices/apiConfigSlice", () => ({
+jest.mock("../../../../host/server/api-config", () => ({
   selectActiveServer: () => "local",
   selectResolvedBaseUrl: () => "http://localhost:8200",
   selectActiveServerHealth: () => ({ status: "healthy", latencyMs: null }),

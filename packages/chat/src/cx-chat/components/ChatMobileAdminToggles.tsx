@@ -10,7 +10,7 @@ import {
   selectActiveServer,
   selectLoopbackTargetsAllowed,
   switchServer,
-} from "@host/lib/redux/slices/apiConfigSlice";
+} from "../../host/server/api-config";
 import {
   selectIsBlockMode,
   selectIsSnapshot,

@@ -18,7 +18,7 @@ import type { ChatRootState } from "../../../../store/root-state";
 import {
   callConversationMemoryCost,
   type MemoryCostSummary,
-} from "@host/lib/api/call-api";
+} from "../../../../host/server/call-api";
 import {
   setCostFetchStatus,
   setCostSummary,

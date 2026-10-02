@@ -28,6 +28,14 @@ import { AgentTextarea } from "../AgentTextarea";
 
 const tick = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Render, then let the effects' timers run (effects flush when the first act ends). */
+async function show(ui: React.ReactNode) {
+  await act(async () => root.render(ui));
+  await act(async () => {
+    await tick(150);
+  });
+}
+
 let host: HTMLDivElement;
 let root: Root;
 beforeEach(() => {
@@ -48,21 +56,12 @@ it("a wake does not take the caret from the field the person is typing in", asyn
       <AgentTextarea conversationId="c-vendor-review" />
     </Activity>
   );
-  await act(async () => {
-    root.render(ui("visible"));
-    await tick(150);
-  });
+  await show(ui("visible"));
   expect(document.activeElement?.tagName).toBe("TEXTAREA");
 
-  await act(async () => {
-    root.render(ui("hidden"));
-    await tick(20);
-  });
+  await show(ui("hidden"));
   elsewhere.focus();
-  await act(async () => {
-    root.render(ui("visible"));
-    await tick(150);
-  });
+  await show(ui("visible"));
   expect(document.activeElement).toBe(elsewhere);
   elsewhere.remove();
 });
@@ -70,15 +69,9 @@ it("a wake does not take the caret from the field the person is typing in", asyn
 it("a new conversation in the same composer still takes the caret", async () => {
   const elsewhere = document.createElement("input");
   document.body.appendChild(elsewhere);
-  await act(async () => {
-    root.render(<AgentTextarea conversationId="c-first" />);
-    await tick(150);
-  });
+  await show(<AgentTextarea conversationId="c-first" />);
   elsewhere.focus();
-  await act(async () => {
-    root.render(<AgentTextarea conversationId="c-second" />);
-    await tick(150);
-  });
+  await show(<AgentTextarea conversationId="c-second" />);
   expect(document.activeElement?.tagName).toBe("TEXTAREA");
   elsewhere.remove();
 });

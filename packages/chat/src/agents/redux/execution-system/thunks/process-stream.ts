@@ -17,7 +17,7 @@ import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { CompletionStats } from "../../../types/instance.types";
 import type { ClientMetrics } from "../../../types/request.types";
 import type { ToolLifecycleStatus } from "../../../types/request.types";
-import { parseNdjsonStream } from "@host/lib/api/stream-parser";
+import { parseNdjsonStream } from "../../../../host/server/stream-parser";
 import { isStreamTransportLost, StreamTransportError } from "@host/lib/api/errors";
 import { monitorStream } from "@ai-matrx/data/net";
 import { mintClientTempId } from "@ai-matrx/kit/ids";

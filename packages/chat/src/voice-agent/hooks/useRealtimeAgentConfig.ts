@@ -82,7 +82,7 @@ export async function resolveRealtimeTools(
 ): Promise<ResolveRealtimeToolsResult> {
   try {
     const send =
-      post ?? (await import("@host/lib/python-client")).postJson;
+      post ?? (await import("../../host/server/python-client")).postJson;
     const { data } = await send<RealtimeToolsResponse, RealtimeToolsRequest>(
       REALTIME_TOOLS_PATH(agentId),
       body,
