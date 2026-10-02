@@ -46,13 +46,22 @@ set local lock_timeout = '3s';
 -- brief ACCESS EXCLUSIVE lock on platform.entity_types (metadata only: a constant default needs
 -- no rewrite). Every default says "not reached": nothing is exposed by this ALTER alone.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-ALTER TABLE platform.entity_types
-  ADD COLUMN IF NOT EXISTS api_reach text NOT NULL DEFAULT 'none',
-  ADD COLUMN IF NOT EXISTS api_reach_reason text,
-  ADD COLUMN IF NOT EXISTS api_writable_columns text[] NOT NULL DEFAULT '{}'::text[],
-  ADD COLUMN IF NOT EXISTS create_via text NOT NULL DEFAULT 'refuse',
-  ADD COLUMN IF NOT EXISTS search_columns text[],
-  ADD COLUMN IF NOT EXISTS default_list_where jsonb NOT NULL DEFAULT '{}'::jsonb;
+-- (Only when a column is missing: ADD COLUMN IF NOT EXISTS still queues for the lock.)
+DO $$
+BEGIN
+  IF (SELECT count(*) FROM pg_attribute
+       WHERE attrelid = 'platform.entity_types'::regclass AND NOT attisdropped
+         AND attname IN ('api_reach', 'api_reach_reason', 'api_writable_columns', 'create_via',
+                         'search_columns', 'default_list_where')) < 6 THEN
+    ALTER TABLE platform.entity_types
+      ADD COLUMN IF NOT EXISTS api_reach text NOT NULL DEFAULT 'none',
+      ADD COLUMN IF NOT EXISTS api_reach_reason text,
+      ADD COLUMN IF NOT EXISTS api_writable_columns text[] NOT NULL DEFAULT '{}'::text[],
+      ADD COLUMN IF NOT EXISTS create_via text NOT NULL DEFAULT 'refuse',
+      ADD COLUMN IF NOT EXISTS search_columns text[],
+      ADD COLUMN IF NOT EXISTS default_list_where jsonb NOT NULL DEFAULT '{}'::jsonb;
+  END IF;
+END $$;
 
 DO $$
 BEGIN

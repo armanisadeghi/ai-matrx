@@ -3,6 +3,9 @@
 -- functions it created and their door rows, deletes its two knobs, and drops the six
 -- platform.entity_types columns (a BRIEF ACCESS EXCLUSIVE lock on that table).
 -- lock: platform
+-- based-on: platform._drill_resolve(uuid, text) 9ab06085159c7ff7ef0acca607992c2cf4c1a18f8fba5caac05b784f11775c73
+-- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) 61fbf24ad9e50b3a6eba2fd8d5204c87311837829cec3da288b7dc5a949cd26e
+-- based-on: platform.drill_rows(uuid, jsonb, jsonb) e6b85722f62b3b68ba89ea0b7a1e5e231d490bada033e4fa46d881d979a9832f
 
 set local lock_timeout = '3s';
 
