@@ -52,7 +52,11 @@ import type {
   RulesEnvelope,
   RulesParams,
 } from "../../types";
-import { buildControlRows } from "../../controls/resolveControls";
+import {
+  buildControlRows,
+  type OfferingCellRow,
+} from "../../controls/resolveControls";
+import { readOfferingCells } from "../../translation/data";
 import ControlRuleRow, { type RuleDestination } from "./ControlRuleRow";
 import PendingChangesBar from "./PendingChangesBar";
 import JsonFieldEditor from "../JsonFieldEditor";
@@ -113,6 +117,14 @@ export default function ModelControlsEditor({
   const [drafts, setDrafts] = useState<Drafts>({});
   const [addKeyFilter, setAddKeyFilter] = useState("");
   const [showAddPicker, setShowAddPicker] = useState(false);
+  // K5 rows for the selected offering (settings-translation C4a). Non-empty =
+  // translation cells are the rule source (same as ai.resolve_model_config):
+  // the rows show the cells and edits go through the Translations grid, since
+  // writes to ai.api.rules / ai.offering.override no longer reach the wire.
+  const [cells, setCells] = useState<{
+    offeringId: string;
+    rows: OfferingCellRow[] | null;
+  } | null>(null);
 
   // Rule sources come from OUR fetch (refreshed after every save) — the
   // parent's offerings prop is only the initial value; relying on it made a
@@ -207,6 +219,27 @@ export default function ModelControlsEditor({
     return { workingFamilyParams: fam, workingOverrideParams: ovr };
   }, [drafts, familyEnvelope, overrideEnvelope]);
 
+  useEffect(() => {
+    if (!effectiveOfferingId) return;
+    let live = true;
+    readOfferingCells(effectiveOfferingId)
+      .then((rows) => {
+        if (live) setCells({ offeringId: effectiveOfferingId, rows });
+      })
+      .catch((err: unknown) => {
+        if (live) setLoadError(err instanceof Error ? err.message : String(err));
+      });
+    return () => {
+      live = false;
+    };
+  }, [effectiveOfferingId]);
+
+  const offeringCells =
+    cells && cells.offeringId === effectiveOfferingId && cells.rows?.length
+      ? cells.rows
+      : null;
+  const cellsGovern = offeringCells !== null;
+
   const rows = useMemo(
     () =>
       buildControlRows(
@@ -214,8 +247,9 @@ export default function ModelControlsEditor({
         workingOverrideParams,
         settings,
         model.max_tokens,
+        offeringCells,
       ),
-    [workingFamilyParams, workingOverrideParams, settings, model.max_tokens],
+    [workingFamilyParams, workingOverrideParams, settings, model.max_tokens, offeringCells],
   );
 
   // Distinct models served by this offering's wire contract (React Compiler
@@ -433,6 +467,20 @@ export default function ModelControlsEditor({
             </span>
           )}
         </div>
+        {cellsGovern && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            Set by translation cells
+            <a
+              href="/administration/ai/ai-models/translations"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-0.5 text-primary hover:underline"
+            >
+              Translations
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </p>
+        )}
         {showNoOffering && (
           <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
             This model has NO offering — it cannot route; controls resolve to
@@ -483,12 +531,12 @@ export default function ModelControlsEditor({
             draft={drafts[row.key] ?? null}
             onDraftChange={setDraft}
             onDiscardDraft={discardDraft}
-            readOnly={showNoOffering}
+            readOnly={showNoOffering || cellsGovern}
           />
         ))}
 
         {/* Add setting */}
-        {hasOffering && (
+        {hasOffering && !cellsGovern && (
           <div className="pt-1">
             {!showAddPicker ? (
               <Button

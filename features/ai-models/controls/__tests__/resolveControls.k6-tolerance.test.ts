@@ -73,25 +73,31 @@ describe("generated rule field list", () => {
   });
 });
 
+/** K6 fields the UI resolver ACTS on (settings-translation C4a, lockstep with
+ *  ai.resolve_model_config): a declared drop is not a control. Every other K6
+ *  field is carried and shown, and changes nothing about the control. */
+const HIDES_THE_CONTROL = new Set(["drop"]);
+
 describe.each(Object.entries(K6_SAMPLES))("rule carrying %s", (field, value) => {
   const withField = (base: ControlRule) =>
     ({ ...base, [field]: value }) as ControlRule;
+  const expectedFrom = <T,>(plain: T): T | null => (HIDES_THE_CONTROL.has(field) ? null : plain);
 
   it("passes shape validation", () => {
     expect(validateRuleShape(withField(enumBase))).toEqual([]);
     expect(validateRuleShape(withField(numberBase))).toEqual([]);
   });
 
-  it("resolves to the same enum control as without it", () => {
+  it("resolves to the same enum control as without it (a drop hides it)", () => {
     expect(
       resolveControlForKey("reasoning_effort", withField(enumBase), reasoningEffort, null),
-    ).toEqual(resolveControlForKey("reasoning_effort", enumBase, reasoningEffort, null));
+    ).toEqual(expectedFrom(resolveControlForKey("reasoning_effort", enumBase, reasoningEffort, null)));
   });
 
-  it("resolves to the same numeric control as without it", () => {
+  it("resolves to the same numeric control as without it (a drop hides it)", () => {
     expect(
       resolveControlForKey("max_output_tokens", withField(numberBase), maxTokens, 32000),
-    ).toEqual(resolveControlForKey("max_output_tokens", numberBase, maxTokens, 32000));
+    ).toEqual(expectedFrom(resolveControlForKey("max_output_tokens", numberBase, maxTokens, 32000)));
   });
 
   it("is carried through the family/override merge and shown read-only", () => {
@@ -107,7 +113,7 @@ describe.each(Object.entries(K6_SAMPLES))("rule carrying %s", (field, value) => 
       [reasoningEffort],
       null,
     );
-    expect(rows[0].resolved).toEqual(plain[0].resolved);
+    expect(rows[0].resolved).toEqual(expectedFrom(plain[0].resolved));
     expect((rows[0].merged as Record<string, unknown>)[field]).toEqual(value);
     expect(rows[0].provenance.override).toContain(field);
     expect(readOnlyRuleFields(withField(enumBase))).toContainEqual({ field, value });

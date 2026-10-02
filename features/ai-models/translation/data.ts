@@ -15,6 +15,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import type { ControlRule } from "../types";
+import type { OfferingCellRow } from "../controls/resolveControls";
 import type {
   ModelCapabilities,
   CompiledRow,
@@ -80,6 +81,25 @@ async function readCompiled(): Promise<CompiledRow[]> {
         .range(from, to),
     { label: "ai.offering_rules_compiled" },
   );
+}
+
+/** One offering's K5 rows WITH their rules — the rule source
+ *  `ai.resolve_model_config` and `resolveControls.buildControlRows` use when it
+ *  is non-empty. `null` = the view is not on this database (legacy columns). */
+export async function readOfferingCells(offeringId: string): Promise<OfferingCellRow[] | null> {
+  const { data, error } = await ai()
+    .from("offering_rules_compiled")
+    .select("offering_id, setting_key, rule, cell_id, layer, state, version")
+    .eq("offering_id", offeringId)
+    .order("setting_key", { ascending: true });
+  if (error) {
+    if (isAbsentRelationError(error)) return null;
+    throw error;
+  }
+  return ((data ?? []) as OfferingCellRow[]).map((r) => ({
+    ...r,
+    rule: (r.rule ?? {}) as ControlRule,
+  }));
 }
 
 async function readProfiles(): Promise<SettingProfileRow[]> {

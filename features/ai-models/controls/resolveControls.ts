@@ -8,8 +8,12 @@
  * the preferred offering only), and (c) validate the auto/none law before save.
  *
  * Mirrored semantics (keep in lockstep with the SQL):
- * - merge: shallow field-level `||` — override field wins over family field
- * - `supported: false` → control is hidden (not rendered to users)
+ * - rule source (settings-translation C4a): when the offering has rows in
+ *   `ai.offering_rules_compiled` (K5), each key's rule is its cell's rule,
+ *   WHOLE (no merge); otherwise the legacy merge below
+ * - legacy merge: shallow field-level `||` — override field wins over family
+ *   field (C4b deletes it with the SQL's LEGACY RULE SOURCE block)
+ * - `supported: false` or a declared drop (`drop: true`) → control is hidden
  * - key missing from `ai.setting` → never resolves (unknown key)
  * - clamp INTERSECTS canonical range (greatest min, least max)
  * - `max_output_tokens` additionally capped at model.max_tokens
@@ -26,7 +30,23 @@ import type {
   RulesParams,
 } from "../types";
 
+import type { CellLayer, CellState } from "../translation/types";
 import { RULE_FIELDS as GENERATED_RULE_FIELDS } from "./controlRuleFields.generated";
+
+/** One `ai.offering_rules_compiled` row (K5) with its rule — the most specific
+ *  live translation cell for one offering × setting key. */
+export type OfferingCellRow = {
+  offering_id: string;
+  setting_key: string;
+  rule: ControlRule;
+  cell_id: string;
+  layer: CellLayer;
+  state: CellState;
+  version: number;
+};
+
+/** The cell a row's rule came from (null = the legacy column merge). */
+export type ControlRowCell = Pick<OfferingCellRow, "cell_id" | "layer" | "state" | "version">;
 
 /** Every valid ControlRule field — GENERATED from the server's Pydantic model
  *  plus contract K6 (scripts/control-rule-fields.mjs; guard
@@ -73,7 +93,7 @@ export function resolveControlForKey(
   setting: AiSetting | undefined,
   modelMaxTokens: number | null | undefined,
 ): ControlParam | null {
-  if (mergedRule.supported === false) return null;
+  if (mergedRule.supported === false || mergedRule.drop === true) return null;
   if (!setting) return null;
 
   const type = setting.value_type ?? "string";
@@ -228,13 +248,20 @@ export type ControlRowModel = {
   merged: ControlRule;
   resolved: ControlParam | null;
   provenance: ControlProvenance;
+  /** Set when K5 cells govern this offering: `merged` IS this cell's rule. */
+  cell: ControlRowCell | null;
 };
 
+/** Rows for one offering. `cells` = that offering's `ai.offering_rules_compiled`
+ *  rows: when non-empty they are the rule source (keys = cell keys, each rule
+ *  whole), exactly like `ai.resolve_model_config`; null/empty = the legacy
+ *  family ‖ override merge. */
 export function buildControlRows(
   familyParams: RulesParams,
   overrideParams: RulesParams,
   settings: AiSetting[],
   modelMaxTokens: number | null | undefined,
+  cells: OfferingCellRow[] | null = null,
 ): ControlRowModel[] {
   // is_system rows win on key collision — mirror of `order by is_system desc`.
   const settingByKey = new Map<string, AiSetting>();
@@ -244,13 +271,20 @@ export function buildControlRows(
       settingByKey.set(s.key, s);
     }
   }
-  const keys = Array.from(
-    new Set([...Object.keys(familyParams), ...Object.keys(overrideParams)]),
+  const cellByKey = new Map<string, OfferingCellRow>();
+  for (const c of cells ?? []) cellByKey.set(c.setting_key, c);
+  const fromCells = cellByKey.size > 0;
+  // ══ LEGACY RULE SOURCE — C4b deletes the family ‖ override branch ══
+  const keys = (
+    fromCells
+      ? Array.from(cellByKey.keys())
+      : Array.from(new Set([...Object.keys(familyParams), ...Object.keys(overrideParams)]))
   ).sort();
   return keys.map((key) => {
     const familyRule = familyParams[key];
     const overrideRule = overrideParams[key];
-    const merged = mergeRule(familyRule, overrideRule);
+    const cell = cellByKey.get(key);
+    const merged = cell ? { ...cell.rule } : mergeRule(familyRule, overrideRule);
     const setting = settingByKey.get(key);
     return {
       key,
@@ -265,6 +299,9 @@ export function buildControlRows(
         overrideParams,
         settingByKey,
       ),
+      cell: cell
+        ? { cell_id: cell.cell_id, layer: cell.layer, state: cell.state, version: cell.version }
+        : null,
     };
   });
 }
