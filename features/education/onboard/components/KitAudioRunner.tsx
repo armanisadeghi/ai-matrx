@@ -20,7 +20,7 @@ import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatElapsed } from "./elapsed";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
-import { LiveAudioPlayer } from "@/features/podcasts/generator/components/LiveAudioPlayer";
+import { LiveAudioPlayer } from "@ai-matrx/media/live-audio-react";
 import { studyMediaService } from "@/features/education/media/service";
 import { useAudioStudyRunPersistence } from "@/features/education/media/audio/useAudioStudyRunPersistence";
 import type { StudyMediaRow } from "@/features/education/media/types";

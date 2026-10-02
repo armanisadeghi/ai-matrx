@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { callApi } from "@/lib/api/call-api";
+import { rejoinOperationThunk } from "@/lib/api/resume-or-rejoin";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
 import { readDecisionResult, type DecisionResultView } from "./decision-result";
@@ -107,22 +108,21 @@ export async function runDecision(
     }),
   );
   if (response.error && runtimeRequestId) {
-    const rejoin = await dispatch(
-      callApi({
-        path: "/runtime/operations/{request_id}/rejoin",
-        // Background (rejoin / warm-up): never opens the workspace picker.
-        interactiveOrganization: false,
-        method: "POST",
-        pathParams: { request_id: runtimeRequestId },
-        stream: true,
-        onStreamEvent: (event) => {
+    // Our stream dropped but the run keeps going server-side: rejoin it
+    // through the shared package (replay-then-follow of the original NDJSON).
+    const requestId: string = runtimeRequestId;
+    // A failed rejoin throws the package's MatrxApiError (an Error with the
+    // server's message) — the caller shows it.
+    await dispatch(
+      rejoinOperationThunk({
+        requestId,
+        onEvent: (event) => {
           if (event.event !== "data") return;
           const result = readDecisionResult(event.data);
           if (result) streamedResult = { ...result, source: "recovered" };
         },
       }),
     );
-    if (rejoin.error) throw new Error(rejoin.error.message);
   } else if (response.error) throw new Error(response.error.message);
   if (!streamedResult)
     throw new Error(

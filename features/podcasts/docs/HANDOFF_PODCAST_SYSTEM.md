@@ -222,8 +222,7 @@ summarization,fact_checking,expansion}`) → the create form's "Pre/Post-script
 - `features/podcasts/generator/` — form, constants, voices, reduce, useEpisodeArticles.
 - `features/podcasts/studio/` — run page, EpisodeContentStudio, useStudioRun.
 - `features/podcasts/components/player/` — players, episode/blog pages.
-- `features/audio/streamingPcmPlayer.ts` — client PCM player (Gemini live audio).
-- `features/audio/streamingMp3Player.ts` — client MediaSource player (ElevenLabs live audio).
+- `@ai-matrx/media/live-audio` — the shared PCM (Gemini) and MediaSource MP3 (ElevenLabs) live players + controller.
 - `app/(core)/podcast/` — routes (`studio/create`, `studio/run/[id]`, `[slug]`, `[slug]/blog`).
 
 ---

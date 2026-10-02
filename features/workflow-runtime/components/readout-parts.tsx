@@ -30,6 +30,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
+import { LiveAudioPlayer, useLiveAudioPlayer } from "@ai-matrx/media/live-audio-react";
+import { workflowLiveAudio, workflowLiveAudioKey } from "../transport/live-media";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import {
   NODE_OUTCOME_KIND,
@@ -266,7 +268,27 @@ function looksLikeBareJsonWindow(text: string): boolean {
   );
 }
 
-export function InvocationBody({
+/**
+ * A step's body, with its live audio on top while the step's TTS streams
+ * (workflow `node_stream` media frames → `@ai-matrx/media` live player). The
+ * player goes away when the audio stream is dropped; the settled output
+ * carries the saved file.
+ */
+export function InvocationBody(props: Parameters<typeof InvocationBodyContent>[0]) {
+  const livePlayer = useLiveAudioPlayer(
+    workflowLiveAudio,
+    workflowLiveAudioKey(props.runId, props.invocation.invocationKey),
+  );
+  if (!livePlayer) return <InvocationBodyContent {...props} />;
+  return (
+    <div className="space-y-3">
+      <LiveAudioPlayer player={livePlayer} />
+      <InvocationBodyContent {...props} />
+    </div>
+  );
+}
+
+function InvocationBodyContent({
   runId,
   invocation,
   prefer = "live",

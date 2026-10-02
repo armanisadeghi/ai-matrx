@@ -86,6 +86,7 @@ import {
 } from "../active-requests/active-requests.slice";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { readLiveRunRejoin, type MatrxLiveRunRejoin } from "@ai-matrx/agents/matrx";
 import { extractErrorMessage } from "@host/utils/errors";
 
 /**
@@ -225,6 +226,22 @@ export function shouldCaptureStreamFailure(error: unknown): boolean {
 export class ResumeConflictError extends Error {
   override name = "ResumeConflictError" as const;
   constructor(message: string) {
+    super(message);
+  }
+}
+
+/**
+ * A /resume refused because the run is STILL LIVE — the server named where to
+ * rejoin it (`rejoin_path`; chat keeps `resume_conflict` as its code but adds
+ * `live_request_id` + `rejoin_path`). The decision is the shared package's
+ * (`readLiveRunRejoin`); the caller rejoins instead of retrying.
+ */
+export class RunInProgressError extends Error {
+  override name = "RunInProgressError" as const;
+  constructor(
+    message: string,
+    readonly rejoin: MatrxLiveRunRejoin,
+  ) {
     super(message);
   }
 }
@@ -550,8 +567,10 @@ export async function runAiStream(
       // — read all three so neither shape regresses silently.
       let errorCode: string | null = null;
       let userMessage: string | null = null;
+      let rawErrorBody: unknown;
       try {
-        const parsed = parseApiErrorBody(await response.json());
+        rawErrorBody = await response.json();
+        const parsed = parseApiErrorBody(rawErrorBody);
         errorCode = parsed.errorCode;
         userMessage = parsed.userMessage;
         if (parsed.serverMessage) serverMessage = parsed.serverMessage;
@@ -600,6 +619,15 @@ export async function runAiStream(
           //     ≥1 cx_tool_call rows still in status='delegated'; the user
           //     hasn't answered everything. Keep the waiting-on-user
           //     affordance; the next /tool_results POST re-triggers resume.
+          // A live run is REJOINED, never retried beside itself: chat's
+          // resume_conflict now names the live run (rejoin_path).
+          const liveRun = readLiveRunRejoin({
+            status: code,
+            serverDetail: rawErrorBody,
+          });
+          if (liveRun) {
+            throw new RunInProgressError(serverMessage, liveRun);
+          }
           if (errorCode === "resume_conflict") {
             throw new ResumeConflictError(serverMessage);
           }
@@ -780,6 +808,10 @@ export async function runAiStream(
     // user-facing surface: a conflicting live run means the conversation is
     // (or is about to be) running fine without us.
     if (error instanceof ResumeConflictError) {
+      throw error;
+    }
+    // A live run named by the server — resumeInstance rejoins it.
+    if (error instanceof RunInProgressError) {
       throw error;
     }
     if (error instanceof RunInFlightError) {

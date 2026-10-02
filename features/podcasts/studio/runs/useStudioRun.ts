@@ -36,15 +36,12 @@ import {
   type PodcastMetadataEvent,
   type PodcastAssetEvent,
   type PodcastCompleteEvent,
-  type AudioStreamChunkEvent,
   type AudioStreamEndEvent,
   type MediaSlot,
 } from "@/features/podcasts/generator/types";
-import {
-  createStreamingPcmPlayer,
-  type StreamingAudioPlayer,
-} from "@/features/audio/streamingPcmPlayer";
-import { createStreamingMp3Player } from "@/features/audio/streamingMp3Player";
+import type { StreamingAudioPlayer } from "@ai-matrx/media/live-audio";
+import { useLiveAudio } from "@ai-matrx/media/live-audio-react";
+import { resumeOrRejoinThunk } from "@/lib/api/resume-or-rejoin";
 import { studioRunsService } from "./service";
 import { rowToRunState, detailToRunState, mergeRowPrompts } from "./mapping";
 import { takePendingStart } from "./pendingStart";
@@ -65,7 +62,6 @@ import {
 } from "./reconcile";
 import { formatText } from "@ai-matrx/kit/text-case";
 import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
-import { liveRunRequestId } from "./live-run-rejoin";
 import type {
   ToolEventPayload,
   TypedStreamEvent,
@@ -197,21 +193,17 @@ export function useStudioRun(runId: string): UseStudioRun {
     ResearchActivityEntry[]
   >([]);
   const [assetBusy, setAssetBusy] = useState<Record<string, boolean>>({});
-  const [livePlayer, setLivePlayer] = useState<StreamingAudioPlayer | null>(
-    null,
-  );
+  // Live TTS (listen while it renders): THE shared controller — codec choice,
+  // one stream identity, gap-free seq, loud drop to the canonical file.
+  const {
+    player: livePlayer,
+    handle: handleLiveAudio,
+    reset: resetLiveAudio,
+  } = useLiveAudio();
 
   const abortRef = useRef<AbortController | null>(null);
   const startedRef = useRef(false);
   const streamingRef = useRef(false);
-  const livePlayerRef = useRef<StreamingAudioPlayer | null>(null);
-  // Next expected audio chunk seq. A gap means we missed audio (reconnect /
-  // dropped frame) — buffered playback would be corrupt, so we stop feeding
-  // and fall back to waiting for the canonical file.
-  const audioSeqRef = useRef(0);
-  const audioStreamIdRef = useRef<string | null>(null);
-  const audioEncodingRef = useRef<"pcm_s16le" | "mp3" | null>(null);
-  const audioStreamBrokenRef = useRef(false);
   const backendRunIdRef = useRef<string | null>(null);
   // The organization the run belongs to (from its durable record). Resume and
   // rejoin are work on THIS run, so they carry its org rather than the
@@ -285,16 +277,6 @@ export function useStudioRun(runId: string): UseStudioRun {
     vidUrlsRef.current = [];
     setResearchActivity([]);
 
-    function dropLiveAudio(reason: string) {
-      console.warn(
-        `[studio-run] ${reason} — dropping live playback; the canonical file will take over when rendering finishes`,
-      );
-      audioStreamBrokenRef.current = true;
-      livePlayerRef.current?.destroy();
-      livePlayerRef.current = null;
-      setLivePlayer(null);
-    }
-
     function onData(raw: PodcastDataEvent) {
       // Any event is a sign of life — feed the heartbeat watchdog. Resetting
       // to false is a no-op render when already false (React bails on an
@@ -308,68 +290,15 @@ export function useStudioRun(runId: string): UseStudioRun {
       if (kind === "podcast_tick") return;
 
       if (kind === "audio_stream_chunk") {
-        // Live TTS audio. Chunks feed the codec-appropriate player directly
-        // (never React state — base64 at chunk rate would thrash renders).
-        // Gemini PCM uses Web Audio; ElevenLabs MP3 uses MediaSource.
-        if (audioStreamBrokenRef.current) return;
-        const e = raw as AudioStreamChunkEvent;
-        const encoding =
-          e.encoding === "mp3" || /(?:mpeg|mp3)/i.test(e.mime_type)
-            ? "mp3"
-            : e.encoding === "pcm_s16le" || /(?:l16|pcm)/i.test(e.mime_type)
-              ? "pcm_s16le"
-              : null;
-        if (!encoding) {
-          dropLiveAudio(
-            `unsupported audio stream format ${e.encoding || e.mime_type}`,
-          );
-          return;
-        }
-        if (
-          audioStreamIdRef.current !== null &&
-          (audioStreamIdRef.current !== e.stream_id ||
-            audioEncodingRef.current !== encoding)
-        ) {
-          dropLiveAudio(
-            `audio stream identity/format changed mid-render (${audioStreamIdRef.current}/${audioEncodingRef.current} → ${e.stream_id}/${encoding})`,
-          );
-          return;
-        }
-        if (e.seq !== audioSeqRef.current) {
-          dropLiveAudio(
-            `audio stream gap (expected seq ${audioSeqRef.current}, got ${e.seq})`,
-          );
-          return;
-        }
-        audioStreamIdRef.current = e.stream_id;
-        audioEncodingRef.current = encoding;
-        audioSeqRef.current = e.seq + 1;
-        let player = livePlayerRef.current;
-        if (!player) {
-          player =
-            encoding === "mp3"
-              ? createStreamingMp3Player({
-                  mimeType: e.mime_type || "audio/mpeg",
-                  onError: (error) => dropLiveAudio(error.message),
-                })
-              : createStreamingPcmPlayer({
-                  sampleRate: e.sample_rate || 24000,
-                  channels: e.channels || 1,
-                });
-          if (!player) {
-            dropLiveAudio(`no browser player is available for ${encoding}`);
-            return;
-          }
-          livePlayerRef.current = player;
-          setLivePlayer(player);
-        }
-        player.enqueueBase64(e.audio_base64);
+        // Live TTS audio feeds the shared player directly (never React state —
+        // base64 at chunk rate would thrash renders).
+        handleLiveAudio(raw);
         return;
       }
 
       if (kind === "audio_stream_end") {
         const e = raw as AudioStreamEndEvent;
-        livePlayerRef.current?.end();
+        handleLiveAudio(raw);
         // Persist the durable audio URL the moment TTS finishes (crash-safe,
         // minutes before podcast_complete). Only the permanent CDN flavour —
         // never a signed URL — may be written to a row the public web reads.
@@ -626,13 +555,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       lastHeartbeatRef.current = Date.now();
       // Fresh stream ⇒ fresh audio chunk sequence (a resume that re-runs the
       // audio stage restarts at seq 0).
-      audioSeqRef.current = 0;
-      audioStreamIdRef.current = null;
-      audioEncodingRef.current = null;
-      audioStreamBrokenRef.current = false;
-      livePlayerRef.current?.destroy();
-      livePlayerRef.current = null;
-      setLivePlayer(null);
+      resetLiveAudio();
       if (kind === "generate") {
         setState({
           ...INITIAL_RUN_STATE,
@@ -781,49 +704,34 @@ export function useStudioRun(runId: string): UseStudioRun {
                   onStreamEvent,
                 }),
               )
-            : await dispatch(
-                callApi({
-                  path: "/podcast/resume/{run_id}",
-                  method: "POST",
-                  pathParams: { run_id: resumeRunId },
-                  ...(runOrganizationIdRef.current
-                    ? { scopeOverrides: { organization_id: runOrganizationIdRef.current } }
-                    : {}),
-                  stream: true,
-                  signal: controller.signal,
-                  onStreamEvent,
-                  // 409 run_in_progress is the server saying "rejoin, don't
-                  // re-run" — an expected answer, not an incident.
-                  expectedErrorStatuses: [409],
-                }),
-              );
-        // A run still generating is FOLLOWED, never run twice: replay its
-        // journaled stream (stages, live audio chunks) and keep following.
-        const liveRequestId =
-          kind === "resume" ? liveRunRequestId(result.error) : null;
-        if (liveRequestId && !controller.signal.aborted) {
-          const rejoin = await dispatch(
-            callApi({
-              path: "/runtime/operations/{request_id}/rejoin",
-              interactiveOrganization: false,
-              method: "POST",
-              pathParams: { request_id: liveRequestId },
-              ...(runOrganizationIdRef.current
-                ? { scopeOverrides: { organization_id: runOrganizationIdRef.current } }
-                : {}),
-              stream: true,
+            : null;
+        if (kind === "resume" && resumeRunId) {
+          // Resume — or, when the server says the run is STILL generating
+          // (409 run_in_progress), rejoin its live stream: replay its journal
+          // (stages, live audio from seq 0) and keep following. A live run is
+          // never run twice. Both carry THE RUN's organization (its durable
+          // record), never the session's selection.
+          const outcome = await dispatch(
+            resumeOrRejoinThunk({
+              path: `/podcast/resume/${encodeURIComponent(resumeRunId)}`,
+              organizationId: runOrganizationIdRef.current,
               signal: controller.signal,
-              onStreamEvent,
+              onEvent: onStreamEvent,
+              onRejoin: () => resetLiveAudio(),
             }),
           );
-          if (rejoin.error && !controller.signal.aborted) {
+          if (
+            !controller.signal.aborted &&
+            (outcome.kind === "followed" || outcome.kind === "resume_conflict")
+          ) {
             console.warn(
-              "[studio-run] live rejoin unavailable; watching durable record:",
-              rejoin.error,
+              `[studio-run] ${outcome.kind === "followed" ? "live replay unavailable" : "resume conflict"}; watching durable record`,
             );
             void watchInBackground();
           }
-        } else if (result.error && !controller.signal.aborted) {
+          return;
+        }
+        if (result?.error && !controller.signal.aborted) {
           console.warn(
             "[studio-run] stream dropped; watching durable record:",
             result.error,
@@ -1100,10 +1008,9 @@ export function useStudioRun(runId: string): UseStudioRun {
       cancelled = true;
       if (bgPollTimer) clearTimeout(bgPollTimer);
       abortRef.current?.abort();
-      livePlayerRef.current?.destroy();
-      livePlayerRef.current = null;
+      resetLiveAudio();
     };
-  }, [runId, dispatch, persist, adoptBackendRunId]);
+  }, [runId, dispatch, persist, adoptBackendRunId, handleLiveAudio, resetLiveAudio]);
 
   // Heartbeat watchdog: while a stream is open but silent past STALL_MS, mark
   // the run stalled and settle lingering "queued" assets to failed.

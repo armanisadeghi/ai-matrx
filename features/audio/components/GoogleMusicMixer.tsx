@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { beginPlaybackSession } from "@/features/audio/session/audioSessionRegistry";
 import type { PlaybackSessionHandle } from "@/features/audio/session/types";
-import { createStreamingPcmPlayer } from "@/features/audio/streamingPcmPlayer";
+import { createStreamingPcmPlayer } from "@ai-matrx/media/live-audio";
 import {
   createGoogleRealtimeClient,
   type GoogleRealtimeConnectionState,

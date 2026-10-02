@@ -56,6 +56,7 @@ import {
   stampRunStreamOrganizationContext,
 } from "../transport/organization-context";
 import { RenderBlockFrameAssembler } from "../transport/render-block-frames";
+import { createWorkflowMediaRouter } from "../transport/live-media";
 import {
   applyNodeStreamMeta,
   applyRunEvent,
@@ -232,6 +233,18 @@ export function adoptWorkflowRun(
      * lanes stay empty — budget burnt on invisible content (adversarial
      * finding 1).
      */
+    // One live-media router per run: a TTS / podcast step's audio arrives as
+    // sliced `kind: "media"` frames and plays live on the step it belongs to.
+    const mediaRouters = new Map<string, ReturnType<typeof createWorkflowMediaRouter>>();
+    const mediaRouterFor = (runId: string) => {
+      let router = mediaRouters.get(runId);
+      if (!router) {
+        router = createWorkflowMediaRouter(runId);
+        mediaRouters.set(runId, router);
+      }
+      return router;
+    };
+
     const laneKeyForNodeStream = (
       runId: string,
       nodeId: string,
@@ -263,6 +276,11 @@ export function adoptWorkflowRun(
         return;
       }
       if (!event.node_id) return;
+
+      if (event.kind === "media") {
+        mediaRouterFor(runId).push(event);
+        return;
+      }
 
       if (event.kind === "render_block") {
         // THE typed live-rendering channel. A completed frame set is a
@@ -653,6 +671,8 @@ export function adoptWorkflowRun(
           metaTimer = null;
         }
         metaBuffer.clear();
+        for (const router of mediaRouters.values()) router.flush();
+        mediaRouters.clear();
         for (const stop of tree.stops.values()) stop();
         tree.stops.clear();
         tree.laneManager.disposeRun();

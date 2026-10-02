@@ -28,7 +28,8 @@ import { EpisodeTitlePanel } from "@/features/podcasts/studio/components/Episode
 import { Skeleton } from "@ai-matrx/design-system";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
 import type { PodcastAudioPlayerHandle } from "@/features/podcasts/components/player/PodcastAudioPlayer";
-import { LiveAudioPlayer } from "@/features/podcasts/generator/components/LiveAudioPlayer";
+import { LiveAudioPlayer } from "@ai-matrx/media/live-audio-react";
+import { takeLiveAudioHandoff } from "@ai-matrx/media/live-audio";
 import { MetadataHero } from "@/features/podcasts/generator/components/MetadataHero";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
 import { ProductionTeaser } from "@/features/podcasts/generator/components/ProductionTeaser";
@@ -119,11 +120,9 @@ export function StudioRunView({ runId }: { runId: string }) {
   } | null>(null);
   useEffect(() => {
     if (state.audioUrl && livePlayer) {
-      const resume = livePlayer.isPlaying();
-      const timeSec = livePlayer.getPositionMs() / 1000;
-      livePlayer.pause();
-      if (timeSec <= 0) return undefined;
-      const handoffTimer = setTimeout(() => setHandoff({ timeSec, resume }), 0);
+      const taken = takeLiveAudioHandoff(livePlayer);
+      if (!taken) return undefined;
+      const handoffTimer = setTimeout(() => setHandoff(taken), 0);
       return () => clearTimeout(handoffTimer);
     }
     return undefined;

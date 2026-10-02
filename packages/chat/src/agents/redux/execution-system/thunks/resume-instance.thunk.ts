@@ -52,6 +52,7 @@ import {
 import {
   runAiStream,
   ResumeConflictError,
+  RunInProgressError,
   StreamCancelledError,
   StreamPhaseError,
 } from "./run-ai-stream";
@@ -134,6 +135,8 @@ export const resumeInstance = createAsyncThunk<
       );
     }
 
+    // The backend the resume went to — a live-run refusal rejoins on the SAME server.
+    let resumeBackend: ReturnType<typeof resolveBackendForConversation> | null = null;
     try {
       const state = getState() as RootState;
 
@@ -239,6 +242,7 @@ export const resumeInstance = createAsyncThunk<
         releaseResumeClaim(userRequestId);
         return rejectWithValue("No backend URL configured");
       }
+      resumeBackend = backend;
 
       // Mirror the original launch's capability surface. Resume goes to the
       // additive endpoint family (it never replaces the agent's saved tools),
@@ -398,6 +402,27 @@ export const resumeInstance = createAsyncThunk<
       releaseResumeClaim(userRequestId);
       return result;
     } catch (error) {
+      if (error instanceof RunInProgressError && resumeBackend) {
+        const backend = resumeBackend;
+        // The run is STILL LIVE — rejoin it at the server-named rejoin_path
+        // (replay-then-follow through the same processStream pipeline),
+        // never resume it beside itself and never spin the retry loop.
+        releaseResumeClaim(userRequestId);
+        return runAiStream({
+          requestId,
+          conversationId,
+          url: `${backend.baseUrl}${error.rejoin.rejoinPath}`,
+          headers: backend.headers,
+          body: {},
+          channel: backend.channel,
+          dispatch,
+          getState: getState as () => RootState,
+          submitAt: performance.now(),
+          kind: "rejoin",
+          clearInputOnError: false,
+          onStreamOpen: () => onResumeStreamOpened(userRequestId),
+        });
+      }
       if (error instanceof ResumeConflictError) {
         // 409 resume_conflict — another run is still live for this request
         // (usually the suspending run hasn't persisted status='paused' yet;

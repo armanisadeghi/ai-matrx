@@ -36,6 +36,7 @@ import { discardRetainedTransportConsumer } from "../redux/execution-system/thun
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { runtimeOperationRejoinPath } from "@ai-matrx/agents/matrx";
 import { toast } from "@host/lib/toast";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import type { AppDispatch, RootState } from "@host/lib/redux/store";
@@ -358,7 +359,7 @@ export const reconnectServerOperation = createAsyncThunk<
         await runAiStream({
           requestId: localRequestId,
           conversationId,
-          url: `${backend.baseUrl}/runtime/operations/${op.request_id}/rejoin`,
+          url: `${backend.baseUrl}${runtimeOperationRejoinPath(op.request_id)}`,
           headers: backend.headers,
           body: {},
           channel: backend.channel,

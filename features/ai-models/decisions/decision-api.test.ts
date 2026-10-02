@@ -4,6 +4,17 @@ import { loadDecision, runDecision } from "./decision-api";
 jest.mock("@/lib/api/call-api", () => ({
   callApi: (options: unknown) => options,
 }));
+// The rejoin rides the shared package (`rejoinOperationThunk`); the mock hands
+// the dispatch the same options object so the test drives its stream.
+jest.mock("@/lib/api/resume-or-rejoin", () => ({
+  rejoinOperationThunk: (options: { requestId: string }) => ({
+    path: "/runtime/operations/{request_id}/rejoin",
+    method: "POST",
+    pathParams: { request_id: options.requestId },
+    ...options,
+    onStreamEvent: (options as { onEvent?: unknown }).onEvent,
+  }),
+}));
 
 type RequestOptions = {
   path: string;
@@ -104,8 +115,12 @@ it("loads a saved result through the authorized GET route", async () => {
 
 it("reports a failed recovery instead of submitting the decision twice", async () => {
   const dispatch = jest.fn(async (options: RequestOptions) => {
-    options.onStreamStart?.("request-1");
-    return { error: { message: "recovery unavailable" } };
+    if (options.path === "/ai/decisions") {
+      options.onStreamStart?.("request-1");
+      return { error: { message: "connection interrupted" } };
+    }
+    // A failed rejoin throws (the package's MatrxApiError).
+    throw new Error("recovery unavailable");
   });
   await expect(
     runDecision(dispatch as unknown as AppDispatch, input),

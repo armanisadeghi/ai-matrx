@@ -48,13 +48,15 @@ files, with a live-streaming studio, resumable runs, and public share pages.
    (durable media — see Invariants) incl. `host_count` + `speakers`.
 5. **Streaming audio (no Supabase Realtime):** the same authenticated NDJSON
    response that carries podcast progress also carries `audio_stream_chunk` +
-   `audio_stream_end`; `useStudioRun` consumes it directly through `callApi`.
-   Gemini chunks are base64 s16le PCM and play through
-   `features/audio/streamingPcmPlayer.ts` (Web Audio). ElevenLabs chunks are
-   base64 MP3 bytes and play through `features/audio/streamingMp3Player.ts`
-   (MediaSource). Both implement the transport used by
-   `generator/components/LiveAudioPlayer.tsx`; `encoding`/`mime_type` selects
-   the implementation on the first chunk. `audio_stream_end` supplies the
+   `audio_stream_end`; `useStudioRun` feeds every data payload to the shared
+   live-audio controller (`useLiveAudio` from `@ai-matrx/media/live-audio-react`
+   — the players, seq/stream checks and `LiveAudioPlayer` live in the package so
+   every client plays live TTS identically). Gemini chunks are base64 s16le PCM
+   (Web Audio); ElevenLabs chunks are base64 MP3 bytes (MediaSource);
+   `encoding`/`mime_type` selects the implementation on the first chunk. Resume
+   rides `resumeOrRejoinThunk` (`lib/api/resume-or-rejoin.ts` →
+   `@ai-matrx/agents/matrx` `resumeOrRejoin`): a still-live run is rejoined at
+   the 409 body's `rejoin_path`, never re-run. `audio_stream_end` supplies the
    canonical URL and swaps to `PodcastAudioPlayer` — often minutes before
    `podcast_complete`. A seq gap, stream-id change, codec change, decoder error,
    or unsupported MediaSource drops only the transient live preview and waits
@@ -804,7 +806,7 @@ fixed` window titled "Marking chapters" — the page did not move — chapters
   success requires audio; FE offers Resume on completed-without-audio).
   Image/video mandates retry ONCE on the alternate pinned model before failing
   (`_run_asset_with_fallback`), with an informational `note` chip on fallback
-  successes (`AssetCard`). Client: generic `features/audio/streamingPcmPlayer.ts`
+  successes (`AssetCard`). Client: generic PCM player (now `@ai-matrx/media/live-audio`)
   - `LiveAudioPlayer` consume `audio_stream_chunk`/`audio_stream_end`; early
     player swap at TTS finish; `liveText` now fed by `onChunk` (ProductionTeaser
     sneak peek is live); GeneratorForm hosts 1–20 + per-host name/voice pickers
