@@ -46,7 +46,8 @@ import { TOOL_CANVAS_KINDS } from "@/features/canvas/host/toolKinds";
 import { ARTIFACT_CANVAS_KINDS } from "@/features/canvas/host/artifactKinds";
 import { appChatCanvasPort } from "@/features/canvas/host/chatCanvasPort";
 import { useOpenConversationDocuments } from "@/features/canvas/host/conversation/documentsKind";
-import { useOpenScratchpad, useOpenScratchpadPanel } from "@/features/quick-actions/canvas/scratchpadKind";
+import { useQuickToolToggle } from "@/features/canvas/host/toolKinds";
+import { useOpenScratchpadPanel } from "@/features/quick-actions/canvas/scratchpadKind";
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true });
 
@@ -71,7 +72,7 @@ function PresentedColumn() {
 interface Probe {
   openDocuments: ReturnType<typeof useOpenConversationDocuments>;
   openScratchpadFromChat: ReturnType<typeof useOpenScratchpadPanel>;
-  openScratchpadFromQuickAccess: ReturnType<typeof useOpenScratchpad>;
+  openScratchpadFromQuickAccess: ReturnType<typeof useQuickToolToggle>;
   sourceIds: readonly string[];
 }
 
@@ -81,7 +82,7 @@ function ChatHostUnderTest({ store, probe, children }: { store: Store; probe: Pa
   const openScratchpadFromChat = useOpenScratchpadPanel();
   probe.openDocuments = openDocuments;
   probe.openScratchpadFromChat = openScratchpadFromChat;
-  probe.openScratchpadFromQuickAccess = useOpenScratchpad();
+  probe.openScratchpadFromQuickAccess = useQuickToolToggle("global-scratchpad");
   const host: ChatHost = {
     db: createFakeDb().db,
     canvas: appChatCanvasPort,
@@ -163,11 +164,16 @@ describe("every door opens the same Documents tab", () => {
     unmount();
   });
 
-  it("the chat's Scratch pill and Quick Access open the same scratchpad tab", () => {
+  it("the chat's Scratch pill and Quick Access are the same scratchpad tab", () => {
     const store = makeStore();
     const { probe, unmount } = mount(store);
     act(() => void probe.openScratchpadFromChat({ gateConversationId: CONVERSATION_ID }));
-    act(() => void probe.openScratchpadFromQuickAccess());
+    // Quick Access is a toolbar toggle on that same tab: in front, it closes it.
+    expect(probe.openScratchpadFromQuickAccess.isVisible).toBe(true);
+    act(() => probe.openScratchpadFromQuickAccess.toggle());
+    expect(itemIds(store)).toEqual([]);
+    act(() => probe.openScratchpadFromQuickAccess.toggle());
+    act(() => void probe.openScratchpadFromChat({ gateConversationId: CONVERSATION_ID }));
 
     expect(itemIds(store)).toEqual([scratchpadTabId()]);
     const tab = canvasOf(store).items[scratchpadTabId()];

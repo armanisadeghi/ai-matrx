@@ -15,8 +15,10 @@
  * goes back to an overlay, an opener that keys the tab by the moment instead
  * of the thing, a reopen that resets Quick Chat's conversation — goes RED.
  *
- * Proven failing before passing (2026-10-02): `openToolInCanvas` made to
- * return null without opening → every test RED; restored → GREEN.
+ * Proven failing before passing (2026-10-02): `toggleToolInCanvas` made to
+ * return null without toggling → every test RED; restored → GREEN. A Quick
+ * Access row is a toolbar icon (`toggleKind`): absent opens, behind comes
+ * forward, in front closes (Quick Chat / Scribe put the canvas away instead).
  */
 
 import React, { act, useEffect } from "react";
@@ -114,18 +116,59 @@ describe("every Quick Access row opens its tool as a canvas tab", () => {
     );
   });
 
-  it.each(rows.map((row) => [row.label, row] as const))("%s → its tab, opened once", (_label, row) => {
+  it.each(rows.map((row) => [row.label, row] as const))("%s → its tab, toggled like a toolbar icon", (_label, row) => {
     if (!("canvasTool" in row)) throw new Error("not a canvas row");
     const store = makeStore();
     const { container, unmount } = mount(store, <CanvasToolMenuItem {...row} />);
-    const button = container.querySelector("button");
-    act(() => button?.click());
-    act(() => button?.click());
+    const button = container.querySelector("button")!;
     const id = `${row.canvasTool}::default`;
+    const hides = row.canvasTool === "quick-chat" || row.canvasTool === "quick-scribe";
+
+    // absent -> opens, in front, row shows pressed
+    expect(button.getAttribute("aria-pressed")).toBe("false");
+    act(() => button.click());
     expect(item(store, id)?.kind).toBe(row.canvasTool);
-    // Opened twice, shown once — the second click focuses the same tab.
     expect(Object.keys(canvasOf(store).items)).toEqual([id]);
     expect(canvasOf(store).isOpen).toBe(true);
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+
+    // in front -> close (or put the canvas away for live tools; the tab survives)
+    act(() => button.click());
+    expect(button.getAttribute("aria-pressed")).toBe("false");
+    if (hides) {
+      expect(item(store, id)).toBeDefined();
+      expect(canvasOf(store).isOpen).toBe(false);
+    } else {
+      expect(item(store, id)).toBeUndefined();
+    }
+
+    // and a third press brings it back
+    act(() => button.click());
+    expect(item(store, id)?.kind).toBe(row.canvasTool);
+    expect(canvasOf(store).isOpen).toBe(true);
+    unmount();
+  });
+
+  it("something else in front -> the press brings the tool forward, not closed", () => {
+    const store = makeStore();
+    const notes = rows.find((row) => "canvasTool" in row && row.canvasTool === "quick-notes")!;
+    const tasks = rows.find((row) => "canvasTool" in row && row.canvasTool === "quick-tasks")!;
+    if (!("canvasTool" in notes) || !("canvasTool" in tasks)) throw new Error("not canvas rows");
+    const { container, unmount } = mount(
+      store,
+      <>
+        <CanvasToolMenuItem {...notes} />
+        <CanvasToolMenuItem {...tasks} />
+      </>,
+    );
+    const [notesButton, tasksButton] = Array.from(container.querySelectorAll("button"));
+    act(() => notesButton.click());
+    act(() => tasksButton.click()); // tasks opens in front of notes
+    expect(notesButton.getAttribute("aria-pressed")).toBe("false");
+    act(() => notesButton.click()); // notes is behind -> forward, NOT closed
+    expect(item(store, "quick-notes::default")).toBeDefined();
+    expect(notesButton.getAttribute("aria-pressed")).toBe("true");
+    expect(tasksButton.getAttribute("aria-pressed")).toBe("false");
     unmount();
   });
 });

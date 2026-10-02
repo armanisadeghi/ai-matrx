@@ -9,7 +9,7 @@
 import { Database } from "lucide-react";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
-import { canvasText, useToolOpener } from "@/features/canvas/host/toolCanvas";
+import { canvasText } from "@/features/canvas/host/toolCanvas";
 
 export const QUICK_DATA_KIND = "quick-data";
 const TITLE = "Quick Data";
@@ -25,20 +25,3 @@ export const quickDataKind = defineCanvasKind<CanvasJson>({
   load: () => import("./QuickDataCanvasView"),
   restore: true,
 });
-
-export interface OpenQuickDataOptions {
-  /** A table to show first. */
-  initialTableId?: string | null;
-}
-
-/** Opens Quick Data in the canvas (or focuses its tab). */
-export function useOpenQuickData() {
-  const open = useToolOpener((options: OpenQuickDataOptions) => ({
-    kind: QUICK_DATA_KIND,
-    key: "default",
-    title: TITLE,
-    data: { tableId: options.initialTableId ?? null },
-    replaceData: Boolean(options.initialTableId),
-  }));
-  return (options: OpenQuickDataOptions = {}) => open(options);
-}
