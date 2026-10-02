@@ -6,6 +6,7 @@
  */
 
 import type {
+  ChatNotifyAction,
   ChatNotifyLevel,
   ChatNotifyOptions,
   ChatNotifyPort,
@@ -38,6 +39,16 @@ function container(doc: Document): HTMLElement {
     "flex-direction:column;gap:8px;max-width:360px;font:14px/1.4 system-ui,sans-serif;";
   doc.body.appendChild(el);
   return el;
+}
+
+/** The plain-DOM toaster renders only a `{ label, onClick }` action; a React node needs a React host. */
+function isNotifyAction(value: unknown): value is ChatNotifyAction {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as ChatNotifyAction).label === "string" &&
+    typeof (value as ChatNotifyAction).onClick === "function"
+  );
 }
 
 export function createDomNotifier(): ChatNotifyPort {
@@ -80,7 +91,7 @@ export function createDomNotifier(): ChatNotifyPort {
       item.appendChild(sub);
     }
     const action = options.action;
-    if (action) {
+    if (isNotifyAction(action)) {
       const button = document.createElement("button");
       button.type = "button";
       button.textContent = action.label;

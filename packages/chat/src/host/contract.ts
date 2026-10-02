@@ -90,7 +90,8 @@ export interface ChatNotifyOptions {
   /** Same id replaces an earlier notice instead of stacking. */
   id?: string | number;
   durationMs?: number;
-  action?: ChatNotifyAction;
+  /** A rendered control (e.g. an entity door) is passed through to a host toaster that renders React. */
+  action?: ChatNotifyAction | ReactNode;
 }
 
 /** The platform's record reference (`CONTEXT_MENU_ENTITY_KEY` shape). */

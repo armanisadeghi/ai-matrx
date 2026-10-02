@@ -11,6 +11,7 @@
  * it throws `ChatHostNotConfiguredError`, which names the remedy.
  */
 
+import type { ReactNode } from "react";
 import { getChatHost } from "./configure";
 import type {
   ChatNotifyAction,
@@ -28,7 +29,7 @@ export interface ToastOptions {
   id?: string | number;
   /** Milliseconds on screen. */
   duration?: number;
-  action?: ChatNotifyAction;
+  action?: ChatNotifyAction | ReactNode;
 }
 
 function toPort(options?: ToastOptions): ChatNotifyOptions | undefined {
