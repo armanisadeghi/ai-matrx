@@ -52,3 +52,17 @@ export function sentenceCaseValue(value: string): string {
   const spaced = value.replace(/[_-]+/g, " ").trim();
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
+
+/**
+ * The word a person reads for one stored value of one field — the same word
+ * the record's own screens show ("incomplete" on a task reads "Inbox").
+ * Consumers: write-form pick-lists (`schemaFields.ts`) and the record search's
+ * secondary line (`features/scopes/service/recordFacts.ts`).
+ */
+export function valueWord(noun: string, key: string, value: string): string {
+  const vocabulary = valueVocabularyFor(noun, key);
+  const canonical = vocabulary?.canonical?.(value) ?? value;
+  return (
+    vocabulary?.labels[canonical] ?? vocabulary?.labels[value] ?? sentenceCaseValue(value)
+  );
+}

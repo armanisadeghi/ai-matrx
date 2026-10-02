@@ -23,6 +23,7 @@ import {
 } from "@/features/directive-catalog/identityPicker";
 import { SchemaFieldsForm } from "@/features/directive-catalog/components/SchemaFieldsForm";
 import { valueVocabularyFor } from "@/features/directive-catalog/valueVocabulary";
+import { recordFactFromRow } from "@/features/scopes/service/recordFacts";
 
 jest.mock("@/features/tasks/components/TaskAssigneePicker", () => ({
   __esModule: true,
@@ -226,5 +227,18 @@ describe("a write form speaks the record's own words", () => {
     expect(container.querySelector("textarea")).toBeNull();
     expect(container.textContent).toContain("Does not repeat");
     act(() => root.unmount());
+  });
+});
+
+/**
+ * The record search's secondary line names a task's status the same way
+ * (G6B browser check, nightly clone: "Ashford Labs · Incomplete · Edited 4 min
+ * ago" while the Task window says "Inbox").
+ */
+describe("the record search speaks the same status words", () => {
+  it("a task's stored status reads as the task screens say it", () => {
+    expect(recordFactFromRow("task", { status: "incomplete" }).fact).toBe("Inbox");
+    expect(recordFactFromRow("task", { status: "active" }).fact).toBe("In progress");
+    expect(recordFactFromRow("project", { status: "planning" }).fact).toBe("Planning");
   });
 });

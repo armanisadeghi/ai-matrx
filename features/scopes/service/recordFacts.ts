@@ -23,6 +23,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { partyKindWord } from "@/features/crm/party-words";
+import { valueWord } from "@/features/directive-catalog/valueVocabulary";
 
 /** The ≤60-character secondary slot (interface-text policy). */
 export const SECONDARY_LINE_MAX = 60;
@@ -48,6 +49,11 @@ export function statusWord(value: unknown): string | null {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+function statusOf(noun: string, value: unknown): string | null {
+  const raw = asText(value);
+  return raw ? valueWord(noun, "status", raw) : null;
+}
+
 /** The first words of a body, on one line, quoted so it reads as content. */
 export function snippet(value: unknown, max = 28): string | null {
   const raw = asText(value);
@@ -63,8 +69,10 @@ export function snippet(value: unknown, max = 28): string | null {
 }
 
 const RECORD_FACTS: Readonly<Record<string, FactSpec>> = {
-  task: { columns: ["status"], text: (r) => statusWord(r.status) },
-  project: { columns: ["status"], text: (r) => statusWord(r.status) },
+  // The record's own status words ("Inbox", "In progress") — never the stored
+  // value ("incomplete"), which the Task window never says (G6B review).
+  task: { columns: ["status"], text: (r) => statusOf("task", r.status) },
+  project: { columns: ["status"], text: (r) => statusOf("project", r.status) },
   note: { columns: ["content_preview"], text: (r) => snippet(r.content_preview) },
   conversation: {
     columns: ["message_count"],
