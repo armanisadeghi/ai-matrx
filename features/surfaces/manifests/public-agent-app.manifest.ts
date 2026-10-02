@@ -8,8 +8,8 @@
  * (`CustomComponentRenderer` in `AgentAppPublicRendererImpl.tsx`).
  *
  * This is a genuinely anonymous surface: `useApiAuth` resolves either a real
- * session OR a browser fingerprint (`X-Fingerprint-ID`), and `useGuestLimit`
- * caps unauthenticated runs. Nothing here may assume a signed-in user.
+ * session OR a browser fingerprint (`X-Fingerprint-ID`), and the SERVER counts
+ * a guest's AI actions (`guest_ai_allowance_used` → the one reminder). Nothing here may assume a signed-in user.
  *
  * TWO SURFACES, NOT ONE — the decision (2026-08-15)
  * -------------------------------------------------
@@ -18,7 +18,7 @@
  *
  *   - `/p/[slug]` → THIS surface. An anonymous stranger runs a published app.
  *     Its vocabulary contains values that exist nowhere else — `is_authenticated`,
- *     `guest_fingerprint_id`, `guest_runs_remaining` — and the agents bound here
+ *     `guest_fingerprint_id` — and the agents bound here
  *     are first-contact agents talking to someone the platform has never seen.
  *   - `/agent-apps/[id]/**` (run tab, editor preview, code preview) →
  *     `matrx-user/agent-apps` (`agent-apps.manifest.ts`), already emitted for
@@ -181,18 +181,6 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "visitor",
     sortOrder: 210,
   },
-  {
-    name: "guest_runs_remaining",
-    label: "Guest runs remaining",
-    description:
-      "Free executions left for this anonymous guest before signup is required (from `useGuestLimit`). Meaningless once `is_authenticated` is true.",
-    valueType: "number",
-    alwaysAvailable: false,
-    typicalCharCount: 2,
-    autoContext: false,
-    group: "visitor",
-    sortOrder: 220,
-  },
 
   // ── Run input ────────────────────────────────────────────────────────
   {
@@ -297,7 +285,6 @@ export function createPublicAgentAppScope(values: {
   // alwaysAvailable: false → optional
   agent_version_id?: string;
   guest_fingerprint_id?: string;
-  guest_runs_remaining?: number;
   user_input?: string;
   form_variable_values?: PublicAgentAppFormVariableValues;
   conversation_id?: string;

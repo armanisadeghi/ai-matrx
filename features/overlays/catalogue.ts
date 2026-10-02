@@ -373,6 +373,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: false,
   },
+  guestAiAllowance: {
+    label: "Guest AI Allowance Reminder",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   browserFrameWindow: {
     label: "Browser Frame Window",
     instanceMode: "singleton",

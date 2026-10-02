@@ -8,8 +8,7 @@
  *
  *   - `/p/[slug]` (+ `?embed=widget`) → `matrx-public/p`. An anonymous
  *     stranger runs a published app. Its vocabulary includes things that
- *     exist nowhere else: `is_authenticated`, `guest_fingerprint_id`,
- *     `guest_runs_remaining`. Bound agents are first-contact agents.
+ *     exist nowhere else: `is_authenticated`, `guest_fingerprint_id`. Bound agents are first-contact agents.
  *   - `/agent-apps/[id]/**` (run / preview / code preview) →
  *     `matrx-user/agent-apps`, already emitted for every sub-route by
  *     `features/agent-apps/route/AgentAppSurfaceRuntime.tsx` (mounted in the
@@ -56,7 +55,6 @@ export interface AgentAppSurfaceHostValues {
   is_authenticated: boolean;
   agent_version_id?: string;
   guest_fingerprint_id?: string;
-  guest_runs_remaining?: number;
 }
 
 /**
