@@ -211,7 +211,6 @@ export function ConversationContextChip({
 
   return (
     <ContextRulesChip
-      // "" (not undefined) also renders no text on @ai-matrx/agents < 0.29.0.
       label={valueGroupName(surfaceName)}
       rows={rows}
       cap={cap}

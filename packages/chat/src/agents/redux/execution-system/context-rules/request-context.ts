@@ -29,8 +29,9 @@ import {
   humanizeContextKey,
   systemRowsToResolved,
   withheldKeys,
+  isServerAuthoritativeKey,
+  CONTEXT_ROW_BLOCKS,
 } from "@ai-matrx/agents/context";
-import * as contextPackage from "@ai-matrx/agents/context";
 import { getManifest } from "../../../../surfaces/runtime/registry";
 import {
   BASELINE_VALUES,
@@ -563,21 +564,9 @@ export function contextRowsForRequest(request: object): ResolvedContextRow[] {
 
 // ── What the table DISPLAYS ─────────────────────────────────────────────────
 
-/**
- * RULES.md §5a and the value→blocks map, from @ai-matrx/agents (≥ 0.28.0 /
- * ≥ 0.29.0); the literal fallbacks serve an older installed build — retire with
- * the 0.29.0 adoption.
- */
-const SERVER_OWNED_FALLBACK = new Set(["user", "client", "organization", "active_scopes"]);
-function isServerOwnedKey(key: string): boolean {
-  const fromPackage = (contextPackage as { isServerAuthoritativeKey?: (k: string) => boolean })
-    .isServerAuthoritativeKey;
-  return fromPackage ? fromPackage(key) : SERVER_OWNED_FALLBACK.has(key);
-}
-const ROW_BLOCK_IDS: Readonly<Record<string, readonly string[]>> =
-  (contextPackage as { CONTEXT_ROW_BLOCKS?: Record<string, readonly string[]> }).CONTEXT_ROW_BLOCKS ?? {
-    organization: ["organization_catalog"],
-  };
+/** RULES.md §5a (identity is the server's) and the value→blocks map. */
+const isServerOwnedKey = isServerAuthoritativeKey;
+const ROW_BLOCK_IDS = CONTEXT_ROW_BLOCKS;
 
 function statedBlockChars(receipt: { blocks?: { id: string; delivered: { chars: number } }[] }, key: string): number {
   const ids = ROW_BLOCK_IDS[key] ?? [];
