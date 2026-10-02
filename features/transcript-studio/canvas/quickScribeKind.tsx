@@ -24,7 +24,6 @@ export const quickScribeKind = defineCanvasKind<CanvasJson>({
   icon: Mic,
   load: () => import("./QuickScribeCanvasView"),
   restore: false,
-  keepAlive: true,
 });
 
 export interface OpenQuickScribeOptions {

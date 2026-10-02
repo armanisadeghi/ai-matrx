@@ -5,7 +5,9 @@
  * of the page how wide it is. The shell root (and the public/link layouts)
  * read `--shell-canvas-w` and shrink by exactly that much, so the canvas owns
  * its own strip of the top edge and never sits over the header or the page.
- * Full screen hides the app (`data-canvas-fullscreen` on <html>).
+ * Full screen keeps that inset: the column grows OVER the app, which hides
+ * once the slide ends (`data-canvas-fullscreen` on <html>). Every change
+ * moves on the package's motion contract (canvas-host.css).
  */
 
 import "@ai-matrx/canvas/styles.css";
@@ -24,7 +26,7 @@ export function ShellCanvasColumn() {
   useEffect(() => {
     const root = document.documentElement;
     if (width === null) {
-      root.style.setProperty("--shell-canvas-w", "100vw");
+      // Expanded: the docked inset stays, so the app does not squeeze while the column grows over it.
       root.setAttribute("data-canvas-fullscreen", "");
     } else {
       root.style.setProperty("--shell-canvas-w", `${width}px`);

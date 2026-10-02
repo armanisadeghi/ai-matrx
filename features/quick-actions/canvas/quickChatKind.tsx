@@ -99,7 +99,6 @@ export const quickChatKind = defineCanvasKind<QuickChatTabData>({
   icon: MessageSquare,
   load: () => import("./QuickChatCanvasView"),
   restore: true,
-  keepAlive: true,
   launcher: { key: "default", data: freshQuickChatData(null), title: TITLE },
   HeaderAction: QuickChatHeaderAction,
   menuItems: quickChatMenu,

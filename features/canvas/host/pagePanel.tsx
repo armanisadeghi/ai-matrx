@@ -107,8 +107,6 @@ export const PAGE_PANEL_CANVAS_KIND: AnyCanvasKind = defineCanvasKind({
   component: PagePanelBody,
   // The content is the page's live tree: it cannot come back after a reload.
   restore: false,
-  // A background tab keeps its slot, so the page's form keeps its state.
-  keepAlive: true,
   HeaderAction: KindHeaderSlot,
 });
 

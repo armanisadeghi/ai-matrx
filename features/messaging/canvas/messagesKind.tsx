@@ -24,8 +24,6 @@ export const messagesKind = defineCanvasKind<null>({
   icon: MessageSquare,
   load: () => import("./MessagesCanvasView"),
   restore: true,
-  // A half-typed reply must survive switching tabs.
-  keepAlive: true,
   launcher: { key: KEY, data: null, title: TITLE },
   menuItems: () => [
     {

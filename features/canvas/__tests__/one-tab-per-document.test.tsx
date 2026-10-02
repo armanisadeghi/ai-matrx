@@ -33,7 +33,7 @@ import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { configureStore } from "@reduxjs/toolkit";
-import { CANVAS_MAIN_WINDOW, type CanvasState } from "@ai-matrx/canvas";
+import { CANVAS_MAIN_WINDOW, canvasPresentation, type CanvasState } from "@ai-matrx/canvas";
 import { useCanvas } from "@ai-matrx/canvas/react";
 import { ChatProvider } from "@ai-matrx/chat/host/react";
 import type { ChatHost } from "@ai-matrx/chat/host";
@@ -134,7 +134,16 @@ function LauncherTab() {
   const item = state.items[LAUNCHER_ITEM_ID];
   if (!item) return null;
   return (
-    <ChatDocumentsCanvasView item={item} data={null} paneId={state.focusedPaneId} isFocused canvas={canvas} windowId={CANVAS_MAIN_WINDOW} />
+    <ChatDocumentsCanvasView
+      item={item}
+      data={null}
+      paneId={state.focusedPaneId}
+      isFocused
+      isVisible
+      canvas={canvas}
+      windowId={CANVAS_MAIN_WINDOW}
+      presentation={canvasPresentation({ width: 640, height: 800, isFullscreen: false, paneCount: 1 })}
+    />
   );
 }
 

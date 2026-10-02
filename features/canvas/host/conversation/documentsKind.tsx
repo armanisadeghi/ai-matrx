@@ -42,8 +42,6 @@ export const documentsKind = defineCanvasKind<CanvasJson>({
   icon: FileText,
   load: () => import("./DocumentsCanvasView"),
   restore: true,
-  // The editor holds unsaved keystrokes between autosaves.
-  keepAlive: true,
 });
 
 export interface OpenConversationDocumentsOptions {

@@ -18,8 +18,6 @@ export const quickNotesKind = defineCanvasKind<null>({
   icon: StickyNote,
   load: () => import("./QuickNotesCanvasView"),
   restore: true,
-  // A note being typed must survive switching tabs.
-  keepAlive: true,
   launcher: { key: "default", data: null, title: TITLE },
   menuItems: () => [
     {

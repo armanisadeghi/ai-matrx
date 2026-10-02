@@ -42,10 +42,60 @@
   margin-right: var(--shell-canvas-w, 0px);
 }
 
-:root[data-canvas-fullscreen] .shell-root,
+/*
+ * MOTION: the page's right edge moves in lockstep with the canvas column's
+ * sliding edge — same property pair as the package (--mxc-motion-duration /
+ * --mxc-motion-ease = the shell sidebar's 600ms cubic-bezier(0.4, 0, 0.2, 1)).
+ * The doubled class out-ranks shell.css's own `.shell-root` transition, whose
+ * grid track (sidebar + chat dock) it repeats. Off while the edge is dragged.
+ */
+.shell-root.shell-root {
+  transition:
+    grid-template-columns 600ms var(--shell-ease-smooth),
+    right var(--mxc-motion-duration) var(--mxc-motion-ease),
+    visibility 0s linear 0s;
+}
+
+[data-public-layout],
+[data-link-layout] {
+  transition:
+    margin-right var(--mxc-motion-duration) var(--mxc-motion-ease),
+    visibility 0s linear 0s;
+}
+
+/* Expanded: the column grows over the app; the app hides once the slide ends. */
+:root[data-canvas-fullscreen] .shell-root.shell-root {
+  visibility: hidden;
+  transition:
+    grid-template-columns 600ms var(--shell-ease-smooth),
+    right var(--mxc-motion-duration) var(--mxc-motion-ease),
+    visibility 0s linear var(--mxc-motion-duration);
+}
+
 :root[data-canvas-fullscreen] [data-public-layout],
 :root[data-canvas-fullscreen] [data-link-layout] {
   visibility: hidden;
+  transition:
+    margin-right var(--mxc-motion-duration) var(--mxc-motion-ease),
+    visibility 0s linear var(--mxc-motion-duration);
+}
+
+:root[data-mxc-resizing] .shell-root.shell-root {
+  transition: grid-template-columns 600ms var(--shell-ease-smooth);
+}
+
+:root[data-mxc-resizing] [data-public-layout],
+:root[data-mxc-resizing] [data-link-layout] {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell-root.shell-root,
+  :root[data-canvas-fullscreen] .shell-root.shell-root,
+  [data-public-layout],
+  [data-link-layout] {
+    transition: none;
+  }
 }
 
 /* Phones: the canvas is a full-screen layer, so the page keeps its width. */
@@ -54,7 +104,7 @@
     --shell-canvas-w: 0px !important;
   }
 
-  :root[data-canvas-fullscreen] .shell-root,
+  :root[data-canvas-fullscreen] .shell-root.shell-root,
   :root[data-canvas-fullscreen] [data-public-layout],
   :root[data-canvas-fullscreen] [data-link-layout] {
     visibility: visible;

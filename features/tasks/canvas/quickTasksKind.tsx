@@ -36,8 +36,6 @@ export const quickTasksKind = defineCanvasKind<CanvasJson>({
   icon: CheckSquare,
   load: () => import("./QuickTasksCanvasView"),
   restore: true,
-  // A half-typed task must survive switching tabs.
-  keepAlive: true,
   launcher: { key: "default", data: null, title: TITLE },
   menuItems: () => [
     {

@@ -43,8 +43,6 @@ export const scratchpadKind = defineCanvasKind<CanvasJson>({
   icon: NotebookPen,
   load: () => import("./ScratchpadCanvasView"),
   restore: true,
-  // The editor holds unsaved keystrokes between autosaves.
-  keepAlive: true,
   launcher: { key: SCRATCHPAD_TAB_KEY, data: null, title: SCRATCHPAD_TITLE },
   HeaderAction: ScratchpadHeaderAction,
 });

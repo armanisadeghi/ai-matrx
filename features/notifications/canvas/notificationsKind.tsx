@@ -20,12 +20,12 @@ export const notificationsKind = defineCanvasKind<null>({
   icon: Bell,
   load: () => import("./NotificationsCanvasView"),
   restore: true,
+  // While the canvas shows something, the inbox opens in a pane BELOW it (the 70/30 split).
+  preferredTarget: "split-down",
   launcher: { key: "default", data: null, title: TITLE },
 });
 
-/** The bell's press and pressed state: toggle-or-focus, new tab in a split below. */
+/** The bell's press and pressed state: toggle-or-focus; a new tab opens below (the kind's `preferredTarget`). */
 export function useNotificationsToggle() {
-  // TODO(canvas 0.5.0): move `target` onto the kind as `preferredTarget` and
-  // use the package's `useCanvasKindToggle` directly.
-  return useToolToggle({ kind: NOTIFICATIONS_KIND, title: TITLE, data: null, target: "split-down" });
+  return useToolToggle({ kind: NOTIFICATIONS_KIND, title: TITLE, data: null });
 }

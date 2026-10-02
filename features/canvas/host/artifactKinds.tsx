@@ -116,9 +116,6 @@ const NOT_RESTORABLE: ReadonlySet<CanvasContentType> = new Set([
   "sandbox",
 ]);
 
-/** Live, stateful bodies stay mounted while their tab is in the background. */
-const KEEP_ALIVE: ReadonlySet<CanvasContentType> = new Set(["cloud_browser", "sandbox"]);
-
 const loadView = () => import("./ArtifactCanvasView");
 
 function ArtifactHeaderAction({ item, canvas }: CanvasKindProps) {
@@ -208,7 +205,6 @@ export const ARTIFACT_CANVAS_KINDS: readonly AnyCanvasKind[] = (Object.keys(ICON
       return title || getDefaultTitle(type);
     },
     restore: !NOT_RESTORABLE.has(type),
-    keepAlive: KEEP_ALIVE.has(type),
     HeaderAction: ArtifactHeaderAction,
     menuItems: artifactMenu,
   }),
