@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T18:52:50.558Z",
+  "generated_at": "2026-10-02T19:06:51.296Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -421,6 +421,36 @@
       "filename": "carryingedgesperf_the_carrying_edges_have_their_indexes.sql",
       "checksum": "b5fb0c5afc831480603006ce30baa53c27cf079ed66447e29012604411dd9155",
       "applied_at": "2026-09-27 17:55:20.328026+00"
+    },
+    "migrations/campaign/chair_pb_a_view_or_a_page_gets_a_public_address.sql": {
+      "source": "matrx-frontend",
+      "filename": "chair_pb_a_view_or_a_page_gets_a_public_address.sql",
+      "checksum": "3ddbf5902647dcd9830b029960834f6d6d527b3702ea1676026bccf668e03607",
+      "applied_at": "2026-10-02 19:02:32.416309+00"
+    },
+    "migrations/campaign/chairdoors1_a_a_table_says_its_kind_facts.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors1_a_a_table_says_its_kind_facts.sql",
+      "checksum": "e3cfd89c7339963204a7bd9d708b362f1c2c14514295611656e6a349ea8add63",
+      "applied_at": "2026-10-02 19:03:07.687325+00"
+    },
+    "migrations/campaign/chairdoors1_b_an_import_takes_typed_rows.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors1_b_an_import_takes_typed_rows.sql",
+      "checksum": "ac4c9a8d70a8c1a8338b2323bfa09414a7b898ed7d3f3ea6a7a96dfcee89c1ee",
+      "applied_at": "2026-10-02 19:03:26.946581+00"
+    },
+    "migrations/campaign/chairdoors1_c_a_rule_is_worked_out_from_the_callers_seat.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors1_c_a_rule_is_worked_out_from_the_callers_seat.sql",
+      "checksum": "3aeed5e399140edda0b2efe4b9d415798430d330fc0502ddebbd1dfbe5e3f345",
+      "applied_at": "2026-10-02 19:03:38.733553+00"
+    },
+    "migrations/campaign/chairdoors1_e_a_form_keeps_a_drawn_signature_as_a_file.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors1_e_a_form_keeps_a_drawn_signature_as_a_file.sql",
+      "checksum": "d607ee05d10bb1a8d079a29e47bd2c9d4f4691574d5d3fa339d7eeb117524ece",
+      "applied_at": "2026-10-02 19:03:49.211551+00"
     },
     "migrations/campaign/chairrc_a_record_changed_carries_its_change.sql": {
       "source": "matrx-frontend",
@@ -4604,6 +4634,12 @@
       "checksum": "8409b758ced944b740e995cab6adcf491b1d2dd04fea2573a63db2c6fb67154e",
       "applied_at": "2026-09-27 16:13:49.320214+00"
     },
+    "migrations/campaign/scopestreepaged_the_tree_paints_its_types_first.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopestreepaged_the_tree_paints_its_types_first.sql",
+      "checksum": "76a29ffefd5fb05a04661660cff59c40435838ff7b688e81553d7e39ba379912",
+      "applied_at": "2026-10-02 19:03:58.727527+00"
+    },
     "migrations/campaign/scopeswt_a_template_applies_and_a_value_brings_its_field.sql": {
       "source": "matrx-frontend",
       "filename": "scopeswt_a_template_applies_and_a_value_brings_its_field.sql",
@@ -6541,6 +6577,12 @@
       "filename": "visionreach_w3_a_condition_across_a_relation.sql",
       "checksum": "39a41aff93ec9cd69a5e5087e9b26a2f988d9afaa2f4df1c78c99576c4989e77",
       "applied_at": "2026-10-02 18:52:49.373428+00"
+    },
+    "migrations/campaign/visionreach_w3_a_table_as_it_stood_is_measured_in_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "visionreach_w3_a_table_as_it_stood_is_measured_in_the_store.sql",
+      "checksum": "8a9a3ac5280fc06b6a321d1c93f52594af8d05e7c8f4e1253ee0a8ccc2369e60",
+      "applied_at": "2026-10-02 19:06:49.563943+00"
     },
     "migrations/campaign/visionreach_w3_formula_columns_filter_bucket_window.sql": {
       "source": "matrx-frontend",
