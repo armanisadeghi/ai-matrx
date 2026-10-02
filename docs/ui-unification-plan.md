@@ -109,6 +109,21 @@ Dense page defaults, from the D0e sample at the same content: page side gutter 1
 
 Visible effect: every toolbar and form row in the app becomes 28px and evenly spaced at once. That is the point.
 
+## 1c. Round 2 rules (owner, 2026-10-02)
+
+**Space doctrine.** AI-generated UI fails by adding space everywhere: page padding, then a card with more padding, then a box inside with more again. That crams the part people care about until it wraps and collides. Space belongs **between groups**, to make structure readable, and never stacked as padding inside padding. One surface level. Content gets the width. The reference is Apple's Human Interface Guidelines.
+
+**Loading is a system, not a widget.** Every region of a page loads independently, with a skeleton shaped exactly like what renders there: a table skeleton looks like the table, a list skeleton like its rows, a menu skeleton like the menu. Never one block for the page, and never one spinner in the middle. An inline spinner is only for an action in progress inside its own control. AI work streams into the live window (an existing law). Reference implementation: the agent builder.
+
+**Combined answers are allowed.** Several winners take the best of two options. These are on the board as "Combine":
+- **Empty state:** the icon + title + action structure, with EmptyStateCard's tinted icon disc, at dense sizes.
+- **Status colour:** the raw-palette tint the owner likes, expressed as token variants.
+- **Tabs:** underline for page sections, capsule for filters.
+
+**Found live: the status colour ramp is missing.** `--warning-foreground` is near-white in light mode (it is meant for text on a solid fill), so amber text on a light tint is unreadable. Every status role needs four tokens: text, subtle background, border and solid. This is the token gap the audit predicted; it is now confirmed on a real screen.
+
+**Persistence for the board:** the custom-data probe showed storage works, but the page-level primitive (`ensureTable` + `useAppTable`) is missing. It is filed as its own task, and the board stays on local storage plus Markdown export until it lands.
+
 ## 2. Mechanism per drift category
 
 Mechanism key: **A** = close the component · **B** = add the missing variant · **C** = enforce mechanically · **D** = instruct.
