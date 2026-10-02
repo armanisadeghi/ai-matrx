@@ -93,21 +93,11 @@ function Stage({ children }: { children: React.ReactNode }) {
 }
 
 /** Back to the meeting's home — drawn only when embedded. */
-function BackToMeeting({ tone = "stage" }: { tone?: "stage" | "page" }) {
+function BackToMeeting() {
   const embedded = useContext(EmbeddedContext);
   if (!embedded) return null;
   return (
-    <Button
-      type="button"
-      size="sm"
-      variant="ghost"
-      onClick={embedded.onLeave}
-      className={
-        tone === "stage"
-          ? "gap-1.5 text-[color:var(--mx-meet-stage-text)] hover:bg-white/15 hover:text-[color:var(--mx-meet-stage-text)]"
-          : "gap-1.5"
-      }
-    >
+    <Button type="button" size="sm" variant="outline" onClick={embedded.onLeave} className="gap-1.5">
       <ArrowLeft className="h-4 w-4" aria-hidden="true" />
       Details
     </Button>
@@ -124,7 +114,7 @@ function Centered({ children }: { children: React.ReactNode }) {
     >
       {embedded ? (
         <div className="absolute left-3 top-3">
-          <BackToMeeting tone="page" />
+          <BackToMeeting />
         </div>
       ) : null}
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm">
@@ -362,7 +352,9 @@ function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
           <>
             <BackToMeeting />
             <PreJoinRsvp meeting={meeting} />
-            <MeetingInviteButton meeting={meeting} signedIn />
+            {/* The lobby is the page surface (--mx-meet-bg), not the dark
+                stage: the stage look drew a white-on-white Invite here. */}
+            <MeetingInviteButton meeting={meeting} signedIn look="row" />
           </>
         }
         endedControls={embedded ? <BackToMeeting /> : undefined}
@@ -485,7 +477,7 @@ function GuestRoom({
           preJoinControls={
             <>
               <BackToMeeting />
-              <MeetingInviteButton meeting={meeting} signedIn={false} />
+              <MeetingInviteButton meeting={meeting} signedIn={false} look="row" />
             </>
           }
           // After the meeting: an offer to keep the notes, never a gate.
