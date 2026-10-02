@@ -141,6 +141,21 @@ async function openArchive() {
 }
 
 describe("W4 — the archive pages and speaks for a person", () => {
+  it("the archive door is not called on first paint, only when the archive opens", async () => {
+    archived.mockResolvedValue({ ok: true, data: archivedRows(3) });
+    await act(async () => {
+      root.render(<DataHomeArchive dataSource={{} as never} organizationFilter={null} />);
+    });
+    await flush();
+    expect(archived).not.toHaveBeenCalled();
+    const toggle = host.querySelector<HTMLButtonElement>("[data-testid=archived-disclosure-toggle]");
+    await act(async () => {
+      toggle?.click();
+    });
+    await flush();
+    expect(archived).toHaveBeenCalledTimes(1);
+  });
+
   it("asks 200 at a time and offers Show more, never the whole archive at once", async () => {
     archived.mockImplementation(async (_ds: unknown, page: { limit: number; offset: number }) => ({
       ok: true,

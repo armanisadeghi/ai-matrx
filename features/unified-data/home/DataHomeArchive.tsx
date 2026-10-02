@@ -71,6 +71,11 @@ export function DataHomeArchive({
   const [trouble, setTrouble] = useState<RecordsError | null>(null);
   // A newer read (a restore, a retry) wins; an older answer arriving late is dropped.
   const generation = useRef(0);
+  // The archive is read the first time it is opened, never on first paint (3-5 s on a cold load).
+  const [opened, setOpened] = useState(false);
+  const onOpenChange = useCallback((open: boolean) => {
+    if (open) setOpened(true);
+  }, []);
 
   const readPage = useCallback(
     async (offset: number, prior: ArchivedTable[]) => {
@@ -93,8 +98,8 @@ export function DataHomeArchive({
   const read = useCallback(() => readPage(0, []), [readPage]);
 
   useEffect(() => {
-    void read();
-  }, [read]);
+    if (opened) void read();
+  }, [read, opened]);
 
   const showMore = useCallback(() => {
     void readPage(tables?.length ?? 0, tables ?? []);
@@ -129,7 +134,7 @@ export function DataHomeArchive({
     <section data-data-home-archive="" className="rounded-lg border border-border bg-card p-3">
       {/* read-gate-exempt: a troubled first read shows no count; the list says the trouble inside */}
       {/* The count is said only when the whole archive is in hand; a partial count would be a guess. */}
-      <ArchivedDisclosure noun="tables" count={complete && !trouble ? shown?.length : undefined}>
+      <ArchivedDisclosure noun="tables" onOpenChange={onOpenChange} count={complete && !trouble ? shown?.length : undefined}>
         <ArchivedTablesList
           tables={shown}
           readTrouble={null}
@@ -141,7 +146,7 @@ export function DataHomeArchive({
         />
       </ArchivedDisclosure>
       <div className="mt-2">
-        <ArchivedPortalsEverywhere dataSource={dataSource} />
+        {opened ? <ArchivedPortalsEverywhere dataSource={dataSource} /> : null}
       </div>
     </section>
   );

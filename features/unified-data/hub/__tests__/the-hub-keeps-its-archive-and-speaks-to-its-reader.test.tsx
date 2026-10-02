@@ -61,7 +61,18 @@ jest.mock("@ai-matrx/records-ui", () => {
   const actual = jest.requireActual("@ai-matrx/records-ui");
   return {
     ...actual,
-    ArchivedDisclosure: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    ArchivedDisclosure: ({
+      children,
+      onOpenChange,
+    }: {
+      children: React.ReactNode;
+      onOpenChange?: (open: boolean) => void;
+    }) => (
+      <div>
+        <button data-testid="archived-disclosure-toggle" onClick={() => onOpenChange?.(true)} />
+        {children}
+      </div>
+    ),
     ArchivedPortals: () => null,
     TablesHome: () => null,
   };
@@ -117,6 +128,13 @@ async function flush() {
   }
 }
 
+async function openArchive() {
+  await act(async () => {
+    container.querySelector<HTMLButtonElement>("[data-testid=archived-disclosure-toggle]")?.click();
+  });
+  await flush();
+}
+
 async function mount() {
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -136,6 +154,7 @@ describe("UI-FIX-19 · a refused Bring it back keeps the archive", () => {
   it("keeps every archived row and says the store's refusal, with its fix, on the refused row", async () => {
     role = "owner";
     await mount();
+    await openArchive();
     // Found by what a person sees, so the suite judges the old hub by the same eyes.
     const rowOf = (name: string) =>
       Array.from(container.querySelectorAll("li")).find((li) => li.querySelector("span")?.textContent === name);
@@ -151,6 +170,17 @@ describe("UI-FIX-19 · a refused Bring it back keeps the archive", () => {
     expect(rowOf("Status choices")).toBeDefined();
     // The refusal sits on Rooms' own row, in the store's words, naming the fix.
     expect(rowOf("Rooms")?.textContent).toMatch(/bring "Status choices" back first/);
+  });
+});
+
+describe("the archive door waits for the archive to open", () => {
+  it("is not read on first paint, and is read once when opened", async () => {
+    role = "owner";
+    CLIENT.listArchived.mockClear();
+    await mount();
+    expect(CLIENT.listArchived).not.toHaveBeenCalled();
+    await openArchive();
+    expect(CLIENT.listArchived).toHaveBeenCalled();
   });
 });
 

@@ -482,9 +482,11 @@ export function OrganizationHub({
     );
   }, [client, dataSource, organizationId]);
 
+  // Read the first time the archive is opened, never on first paint (3-5 s on a cold load).
+  const [archiveOpened, setArchiveOpened] = useState(false);
   useEffect(() => {
-    void readArchive();
-  }, [readArchive]);
+    if (archiveOpened) void readArchive();
+  }, [readArchive, archiveOpened]);
 
   // A REFUSED RESTORE IS THE ROW'S, NEVER THE ARCHIVE READ'S (UI-FIX-19): the refusal goes back
   // to the list, which draws it on the row and keeps every other row where it was.
@@ -765,6 +767,9 @@ export function OrganizationHub({
         {/* read-gate-exempt: a troubled first read shows no count; a troubled refresh keeps the last count while readTrouble is said inside the list */}
         <ArchivedDisclosure
           noun="tables"
+          onOpenChange={(open) => {
+            if (open) setArchiveOpened(true);
+          }}
           count={archiveTrouble && archivedTables === null ? undefined : archivedTables?.length}
         >
           <ArchivedTablesList
@@ -775,7 +780,7 @@ export function OrganizationHub({
           />
         </ArchivedDisclosure>
         <div className="mt-2">
-          {organizationId ? <ArchivedPortals /> : <ArchivedPortalsEverywhere dataSource={dataSource} />}
+          {!archiveOpened ? null : organizationId ? <ArchivedPortals /> : <ArchivedPortalsEverywhere dataSource={dataSource} />}
         </div>
       </section>
     </div>
