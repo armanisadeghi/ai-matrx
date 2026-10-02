@@ -79,14 +79,15 @@ export function placeContextRow(
   pageSurface: string | null,
 ): ContextRowPlacement {
   if (PERSON_CONTEXT_VALUES.has(row.key)) return { level: AI_MATRX_PLACE, group: null };
-  if (row.origin === "attached") return { level: ATTACHED_PLACE, group: null };
+  // Before "attached": a sent turn's receipt files every client-sent `_default`
+  // value as attached, the page's own route included.
   const surface =
     row.surfaceKey && row.surfaceKey !== DEFAULT_SURFACE_KEY
       ? row.surfaceKey
       : pageSurface && PAGE_OFF_WITHHELD.includes(row.key)
         ? pageSurface
         : null;
-  if (!surface) return { level: AI_MATRX_PLACE, group: null };
+  if (!surface) return { level: row.origin === "attached" ? ATTACHED_PLACE : AI_MATRX_PLACE, group: null };
   return { level: surfaceLevelPlace(surface), group: declaredGroup(surface, row.key) };
 }
 

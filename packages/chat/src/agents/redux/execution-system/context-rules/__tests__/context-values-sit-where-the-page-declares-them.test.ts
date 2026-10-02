@@ -48,6 +48,10 @@ describe("a value's place in the context list", () => {
     expect(placeContextRow({ key: "route_brief", surfaceKey: "_default", origin: "system" }, null).level.id).toBe(
       "ai_matrx",
     );
+    // A sent turn's receipt files it as client-sent ("attached"); it is still the page's.
+    expect(placeContextRow({ key: "route_brief", surfaceKey: "_default", origin: "attached" }, BRAND).level.id).toBe(
+      BRAND,
+    );
   });
 
   it("an attached file sits under Attached", () => {
