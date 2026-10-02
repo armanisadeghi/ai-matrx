@@ -15,10 +15,13 @@ import type { DeviceRow } from "../types";
 import { MATRX_RELAY_URL } from "./relay";
 
 export async function removeDevice(device: Pick<DeviceRow, "id" | "organization_id">): Promise<void> {
+  // Every write names its organization explicitly — the row's own, never one chosen for it.
+  const organizationId = device.organization_id;
+  if (!organizationId) throw new Error("This computer's record has no organization, so it cannot be changed here");
   await writeOne(
     supabase
       .from("app_instances")
-      .update({ is_active: false, organization_id: device.organization_id ?? null })
+      .update({ is_active: false, organization_id: organizationId })
       .eq("id", device.id)
       .select("id"),
     { action: "remove", noun: "computer" },
