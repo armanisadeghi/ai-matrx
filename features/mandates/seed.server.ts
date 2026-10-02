@@ -38,6 +38,7 @@ import "server-only";
  */
 
 import { resolveMandateServer } from "@/features/mandates/service.server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { ResolvedMandate } from "@ai-matrx/chat/mandates/service";
 
@@ -89,6 +90,20 @@ export async function resolveMandateSeed(
   mandateKey: AnyMandateKey,
   deadlineMs: number = MANDATE_SEED_DEADLINE_MS,
 ): Promise<MandateSeed> {
+  // A SIGNED-OUT GUEST HAS NO SSR SEED. `mandate.definition` is
+  // authenticated-only, so the read below could only answer 42501 and scream
+  // on every guest page load. The browser resolves the guest's mandate on the
+  // server's guest lane (GET /mandates/{key}/resolution, fingerprint) a hop
+  // after hydration — the same "paint without a seed" outcome, honestly named.
+  const auth = await getServerAuth();
+  if (!auth.isAuthenticated && !auth.authUnavailable) {
+    return {
+      agentId: null,
+      resolved: null,
+      unavailable: `Signed out: the default agent for "${mandateKey}" is resolved in the browser.`,
+    };
+  }
+
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
 

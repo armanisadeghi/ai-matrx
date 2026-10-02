@@ -103,8 +103,12 @@ export interface ResolvedMandate {
    * `agent.mandate.id` — the row the JOB is, as opposed to the agent currently
    * holding it. Consumers that write something ABOUT the mandate (notes,
    * observations) key on this, never on `agentId`, which moves with the pin.
+   *
+   * `null` ONLY on the GUEST lane: a signed-out guest is answered by the
+   * server's verdict alone (`mandate.definition` is authenticated-only), so
+   * the row id is not known. A guest writes nothing about a mandate.
    */
-  mandateId: string;
+  mandateId: string | null;
   /**
    * The agent.definition id of the Holder — ALWAYS the live agent row, even
    * when the winning rung is version-pinned. Attribution, snapshots, and
@@ -506,7 +510,14 @@ async function fetchResolutionVerdict(
   options: ResolveMandateOptions,
   cacheLookup?: (cacheKey: string) => ResolvedMandate | undefined,
 ): Promise<
-  | { kind: "verdict"; verdict: MandateResolutionResponse; organizationId: string; cacheKey: string }
+  | {
+      kind: "verdict";
+      verdict: MandateResolutionResponse;
+      organizationId: string | null;
+      cacheKey: string;
+      /** The signed-out fingerprint lane: verdict only, no local reads. */
+      guest: boolean;
+    }
   | { kind: "cached"; value: ResolvedMandate }
   | null
 > {
@@ -523,7 +534,23 @@ async function fetchResolutionVerdict(
     throw new Error(`mandate resolution could not verify the session: ${authError.message}`);
   }
   if (!userId) {
-    throw new Error("mandate resolution requires an authenticated session");
+    // THE GUEST LANE (2026-10-02). Every feature is free for guests; the
+    // server's resolution door admits the fingerprint lane
+    // (`require_guest_or_above`) and answers the same verdict shape. A guest
+    // has no organization — none is read, waited for or asked for — and the
+    // transport sends the fingerprint with no X-Organization-Id.
+    const guestKey = `guest::${mandateKey}`;
+    const cachedGuest = cacheLookup?.(guestKey);
+    if (cachedGuest) return { kind: "cached", value: cachedGuest };
+    const guestVerdict = await askResolutionDoor(mandateKey, options, null);
+    if (guestVerdict === null) return null;
+    return {
+      kind: "verdict",
+      verdict: guestVerdict,
+      organizationId: null,
+      cacheKey: guestKey,
+      guest: true,
+    };
   }
 
   // THE ORGANIZATION IS PART OF THE QUESTION (D-R1). Wait for the active-org
@@ -538,6 +565,21 @@ async function fetchResolutionVerdict(
   const cachedValue = cacheLookup?.(cacheKey);
   if (cachedValue) return { kind: "cached", value: cachedValue };
 
+  const verdict = await askResolutionDoor(mandateKey, options, organizationId);
+  if (verdict === null) return null;
+  return { kind: "verdict", verdict, organizationId, cacheKey, guest: false };
+}
+
+/**
+ * `GET /mandates/{key}/resolution` — the one ask, for either lane.
+ * `organizationId` null = the guest lane (no org header; the transport sends
+ * the fingerprint). `null` result = the optional lane's 404 and nothing else.
+ */
+async function askResolutionDoor(
+  mandateKey: AnyMandateKey,
+  options: ResolveMandateOptions,
+  organizationId: string | null,
+): Promise<MandateResolutionResponse | null> {
   // THE ONE LADDER, ASKED — never walked here. The transport binds the admitted
   // `X-Organization-Id` fail-closed, so the rung the server picks is the rung of
   // the org the user actually selected, and it is the same verdict the server
@@ -556,8 +598,9 @@ async function fetchResolutionVerdict(
         // two reads, the answer would be filed under one org and resolved in
         // another — the exact class of mismatch this campaign exists to close.
         // `RequestOptions.organizationId` is documented for precisely this case,
-        // a caller that has authoritatively resolved its own scope.
-        organizationId,
+        // a caller that has authoritatively resolved its own scope. The guest
+        // lane binds none: a guest has no organization.
+        ...(organizationId ? { organizationId } : {}),
         // The OPTIONAL lane owns its own outcome: a deliberately-unassigned key
         // answering 404 is the documented result, not a system error, so it must
         // not enter the global Error Inspector. Anything that is not a 404 is
@@ -578,7 +621,7 @@ async function fetchResolutionVerdict(
     }
     throw error;
   }
-  return { kind: "verdict", verdict, organizationId, cacheKey };
+  return verdict;
 }
 
 export function resolveMandate(
@@ -600,7 +643,7 @@ export async function resolveMandate(
   });
   if (fetched === null) return null;
   if (fetched.kind === "cached") return fetched.value;
-  const { verdict, organizationId, cacheKey } = fetched;
+  const { verdict, organizationId, cacheKey, guest } = fetched;
 
   const holder = assertRunnableVerdict(mandateKey, verdict);
   const provenance = verdict.provenance;
@@ -610,6 +653,40 @@ export async function resolveMandate(
   )
     ? toLlmParams(verdict.config_overrides)
     : null;
+
+  if (guest) {
+    // THE GUEST LANE: the server's verdict is the whole answer. The definition
+    // and treatment rows are authenticated-only and are never read here, so a
+    // guest runs on the platform-default presentation with no code-owned pins
+    // (the server applies its own pins when it runs the mandate).
+    const guestValue: ResolvedMandate = {
+      mandateKey,
+      mandateId: null,
+      agentId: holder.agentId,
+      isVersion: holder.isVersion,
+      versionId: holder.versionId,
+      holderType,
+      configOverrides,
+      provenance,
+      organizationId: null,
+      freshness: verdict.freshness,
+      consumptionMap: isJsonObject(verdict.consumption_map)
+        ? verdict.consumption_map
+        : null,
+      autoRun: verdict.auto_run ?? null,
+      droppedRungs: parseDroppedRungs(verdict),
+      outputWarnings: parseOutputWarnings(verdict),
+      contract: parseMandateContract(verdict.contract ?? null),
+      inputKind: verdict.input_kind ?? null,
+      outputKind: verdict.output_kind ?? null,
+      provisionKey: verdict.provision_key ?? null,
+      pins: {},
+      pinnedContext: [],
+      presentation: null,
+    };
+    cache.set(cacheKey, { at: Date.now(), value: guestValue });
+    return guestValue;
+  }
 
   // IDENTITY + CODE-OWNED LEVERS, read straight off the definition row. This is
   // NOT a rung: one row, addressed by key, no principal and no binding. The job

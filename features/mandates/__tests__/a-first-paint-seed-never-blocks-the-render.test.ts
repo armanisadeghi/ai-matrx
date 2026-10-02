@@ -33,6 +33,13 @@ jest.mock("@/features/mandates/service.server", () => {
   return { ...actual, resolveMandateServer };
 });
 
+// Signed in by default: the deadline is what these tests are about. A guest
+// asks no SSR seed at all (last test).
+const serverAuth = { isAuthenticated: true, authUnavailable: false, user: null };
+jest.mock("@/utils/supabase/getServerAuth", () => ({
+  getServerAuth: jest.fn(async () => serverAuth),
+}));
+
 import {
   MANDATE_SEED_DEADLINE_MS,
   resolveMandateSeed,
@@ -89,5 +96,18 @@ describe("a first-paint seed never blocks the render", () => {
 
     expect(seed.agentId).toBeNull();
     expect(seed.unavailable).toContain("permission denied for table definition");
+  });
+
+  it("a signed-out guest asks no SSR read (the browser's guest lane answers)", async () => {
+    serverAuth.isAuthenticated = false;
+    try {
+      resolveMandateServer.mockClear();
+      const seed = await resolveMandateSeed(MANDATE_KEY);
+      expect(resolveMandateServer).not.toHaveBeenCalled();
+      expect(seed.agentId).toBeNull();
+      expect(seed.unavailable).toContain("Signed out");
+    } finally {
+      serverAuth.isAuthenticated = true;
+    }
   });
 });
