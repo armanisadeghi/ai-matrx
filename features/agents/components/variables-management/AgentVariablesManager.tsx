@@ -25,9 +25,7 @@ import {
   setAgentMessages,
   setAgentVariableDefinitions,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
-import {
-  unbindControlVariable,
-} from "@ai-matrx/chat/agents/utils/control-variables";
+import { unbindControlVariable } from "@ai-matrx/chat/agents/utils/control-variables";
 import { isControlVariable } from "@ai-matrx/agents";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { useOpenAgentVariableEditorWindow } from "@/features/overlays/openers/agentVariableEditorWindow";
@@ -67,7 +65,9 @@ function isStillFresh(v: VariableDefinition): boolean {
 export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
   const dispatch = useAppDispatch();
   const openBatchImport = useOpenScopeBatchImportWindow();
-  const settings = useAppSelector((state) => selectAgentSettings(state, agentId));
+  const settings = useAppSelector((state) =>
+    selectAgentSettings(state, agentId),
+  );
   const rawVariables = useAppSelector((state) =>
     selectAgentVariableDefinitions(state, agentId),
   );
@@ -91,7 +91,9 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
   const definedNamesSet = new Set(variables.map((v) => v.name));
   // Bound to a table but placed in no message: the server still delivers it as
   // a labelled context block; the chip offers to place it (never blocks a save).
-  const unplacedBound = new Set(unplacedBoundVariableNames(variables, messages));
+  const unplacedBound = new Set(
+    unplacedBoundVariableNames(variables, messages),
+  );
   const handlePlace = (name: string) => {
     dispatch(
       setAgentMessages({
@@ -208,8 +210,13 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
           {variables.map((variable) => {
             // A bound model control is used by the model setting, not the text.
             const isControl = isControlVariable(variable);
+            // A bound value no message places is still sent (as context), so
+            // it is not "unused": it shows its state instead of the warning.
+            const isBoundUnplaced = unplacedBound.has(variable.name);
             const isUsed =
-              isControl || isVariableUsedInText(variable.name, allText);
+              isControl ||
+              isBoundUnplaced ||
+              isVariableUsedInText(variable.name, allText);
             return (
               <div
                 key={variable.name}
@@ -250,7 +257,15 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
                 >
                   {variable.name}
                 </button>
-                {unplacedBound.has(variable.name) && (
+                {isBoundUnplaced && (
+                  <span
+                    className="shrink-0 rounded px-1 text-[10px] font-medium text-muted-foreground ring-1 ring-border"
+                    title="No message places it, so its data is sent beside the prompt"
+                  >
+                    As context
+                  </span>
+                )}
+                {isBoundUnplaced && (
                   <button
                     type="button"
                     onClick={() => handlePlace(variable.name)}
@@ -262,9 +277,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
                   </button>
                 )}
                 {isEmptyBinding(variable.binding) && (
-                  <span
-                    className="shrink-0 rounded px-1 text-[10px] font-medium text-warning ring-1 ring-warning/40"
-                  >
+                  <span className="shrink-0 rounded px-1 text-[10px] font-medium text-warning ring-1 ring-warning/40">
                     Not set up
                   </span>
                 )}
@@ -338,7 +351,6 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
           </ScrollFade>
         </div>
       )}
-
     </>
   );
 }

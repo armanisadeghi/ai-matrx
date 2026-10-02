@@ -35,6 +35,7 @@ import {
 import { AgentVariableEditor } from "./AgentVariableEditor";
 import {
   isCustomDataBinding,
+  unplacedBoundVariableNames,
   isEmptyBinding,
 } from "@ai-matrx/chat/agents/utils/variable-binding";
 import { CustomDataBindingSummary } from "./custom-data/CustomDataBindingSummary";
@@ -87,6 +88,9 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
   const variables: VariableDefinition[] = rawVariables ?? [];
   const allText = buildAllText(messages);
   const definedNamesSet = new Set(variables.map((v) => v.name));
+  const unplacedBound = new Set(
+    unplacedBoundVariableNames(variables, messages),
+  );
   const undeclaredNames = extractVariableReferences(allText).filter(
     (n) => !definedNamesSet.has(n) && isDeclarableVariableName(n),
   );
@@ -220,9 +224,7 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
                     {variable.name}
                   </span>
                   {isEmptyBinding(variable.binding) && (
-                    <span
-                      className="shrink-0 rounded px-1 text-[10px] font-medium text-warning ring-1 ring-warning/40"
-                    >
+                    <span className="shrink-0 rounded px-1 text-[10px] font-medium text-warning ring-1 ring-warning/40">
                       Not set up
                     </span>
                   )}
@@ -232,11 +234,21 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
                       iconOnly
                     />
                   )}
-                  {!isUsed && !isControlVariable(variable) && (
-                    <span title="Not referenced in messages">
-                      <AlertCircle className="w-3 h-3 shrink-0 text-amber-500" />
+                  {unplacedBound.has(variable.name) && (
+                    <span
+                      className="shrink-0 rounded px-1 text-[10px] font-medium text-muted-foreground ring-1 ring-border"
+                      title="No message places it, so its data is sent beside the prompt"
+                    >
+                      As context
                     </span>
                   )}
+                  {!isUsed &&
+                    !isControlVariable(variable) &&
+                    !unplacedBound.has(variable.name) && (
+                      <span title="Not referenced in messages">
+                        <AlertCircle className="w-3 h-3 shrink-0 text-amber-500" />
+                      </span>
+                    )}
                 </button>
               );
             })}
@@ -305,8 +317,8 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
             <div>
               <p className="text-sm font-medium text-foreground">
                 {variables.length === 0
-                  // read-gate-exempt: editor over the loaded agent's own variable definitions (its record), not a list read's answer
-                  ? "No variables defined"
+                  ? // read-gate-exempt: editor over the loaded agent's own variable definitions (its record), not a list read's answer
+                    "No variables defined"
                   : "Select a variable"}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
