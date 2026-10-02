@@ -82,6 +82,11 @@ for (const sig of [HELPER_SIG, ...Object.values(DOORS)]) {
 
 // ── plants: temp copies (committed in their own transaction, session-local, gone at disconnect) ──
 let NS = "custom";
+// The doors are asked as `authenticated`, the way PostgREST asks them. A plant's pg_temp copies cannot
+// be granted to a client role (the ddl guard takes undeclared definer grants back), so a planted run
+// asks as the connection's own role with the same claims — custom.query_principal() reads the claims,
+// and the doors are SECURITY DEFINER either way (M3a plan: same answer, same timings, both seats).
+let ROLE = "authenticated";
 if (PLANT === "memo_path_drops_one" || PLANT === "batch_unnamed") {
   const def = async (sig) => (await c.query("select pg_get_functiondef(to_regprocedure($1)) d", [sig])).rows[0].d;
   let helper = (await def(HELPER_SIG)).replace("CREATE OR REPLACE FUNCTION custom._ctx_tree_part(", "CREATE FUNCTION pg_temp._ctx_tree_part(");
@@ -100,12 +105,11 @@ if (PLANT === "memo_path_drops_one" || PLANT === "batch_unnamed") {
   for (const [k, sig] of Object.entries(DOORS)) {
     const d = sub((await def(sig)).replace(/CREATE OR REPLACE FUNCTION custom\./, "CREATE FUNCTION pg_temp."), "custom._ctx_tree_part(", "pg_temp._ctx_tree_part(");
     await c.query(d);
-    await c.query(`grant execute on function ${sig.replace("custom.", "pg_temp.")} to authenticated`);
     void k;
   }
-  await c.query(`grant execute on function ${HELPER_SIG.replace("custom.", "pg_temp.")} to authenticated`);
   await c.query("commit");
   NS = "pg_temp";
+  ROLE = null;
   console.log(`# plant ${PLANT}: the doors are asked through pg_temp copies`);
 }
 
@@ -136,8 +140,9 @@ async function asSeat(uid, isolation) {
   await c.query(`begin isolation level ${isolation} read only`);
   await c.query("set local statement_timeout = '180s'");
   await c.query("set local track_functions = 'all'");
+  await c.query("set local lock_timeout = '20s'");
   await c.query("select set_config('request.jwt.claims', json_build_object('sub', $1::text, 'role', 'authenticated')::text, true)", [uid]);
-  await c.query("set local role authenticated");
+  if (ROLE) await c.query(`set local role ${ROLE}`);
 }
 async function prof() {
   const r = await c.query(`select funcname f, calls::int n from pg_stat_xact_user_functions
@@ -154,9 +159,17 @@ async function answers(s, profile) {
   const call = async (key, sql, params) => {
     const before = profile ? await prof() : null;
     let v;
-    await c.query("savepoint door_call");
-    try { v = await q1(sql, params); await c.query("release savepoint door_call"); }
-    catch (e) { v = `ERROR ${e.code} ${e.message}`; await c.query("rollback to savepoint door_call"); }
+    // The clone is shared: another lane's DDL can hold a lock for seconds. A lock timeout is retried
+    // (never compared); any other error is the answer, compared as text like any other.
+    for (let attempt = 1; ; attempt++) {
+      await c.query("savepoint door_call");
+      try { v = await q1(sql, params); await c.query("release savepoint door_call"); break; }
+      catch (e) {
+        await c.query("rollback to savepoint door_call");
+        if (e.code === "55P03" && attempt < 6) { await new Promise((r) => setTimeout(r, 2000 * attempt)); continue; }
+        v = `ERROR ${e.code} ${e.message}`; break;
+      }
+    }
     if (profile) { const a = await prof(); counts.push({ key, seen: a.tables_seen_among - before.tables_seen_among, listed: a.tables_listed_among - before.tables_listed_among }); }
     out.set(key, v);
     return v;
@@ -186,7 +199,9 @@ function compare(s, A) {
   const who = tag(s.email);
   let whole; try { whole = JSON.parse(A.get("tree")); } catch { fail(who, "tree", "", A.get("tree").slice(0, 120)); return 0; }
   const types = whole.types, scopes = whole.scopes;
-  const lst = JSON.parse(A.get("types:false")), cnt = JSON.parse(A.get("types:true"));
+  const J = (key) => { try { return JSON.parse(A.get(key)); } catch { fail(who, "answer", key, String(A.get(key)).slice(0, 120)); return null; } };
+  const lst = J("types:false"), cnt = J("types:true");
+  if (!lst || !cnt) return 0;
   if (JSON.stringify(lst.types) !== JSON.stringify(types)) fail(who, "F1 first paint", "", `${lst.types.length} vs ${types.length} types`);
   for (const t of cnt.types) {
     const { scope_count, ...obj } = t;
@@ -199,12 +214,13 @@ function compare(s, A) {
   for (const t of types) {
     const want = scopes.filter((x) => x.scope_type_id === t.id);
     let got = [], total = null;
-    for (const [k, v] of A) if (k.startsWith(`page:${t.id}:`)) { const p = JSON.parse(v); got = got.concat(p.scopes); total = p.total; }
+    for (const [k] of A) if (k.startsWith(`page:${t.id}:`)) { const p = J(k); if (!p) continue; got = got.concat(p.scopes); total = p.total; }
     if (JSON.stringify(got) !== JSON.stringify(want)) fail(who, "F3 type pages", t.id, `${got.length} vs ${want.length} scopes`);
     if (total !== want.length) fail(who, "F3 total", t.id, `${total} vs ${want.length}`);
   }
   for (const q of QUERIES) {
-    const p = JSON.parse(A.get(`search:${q}`));
+    const p = J(`search:${q}`);
+    if (!p) continue;
     const want = scopes.filter((x) => typeof x.name === "string" && x.name.toLowerCase().includes(q.toLowerCase()));
     const gotIds = p.scopes.map((x) => x.id).sort(), wantIds = want.map((x) => x.id).sort();
     if (want.length <= 500 && JSON.stringify(gotIds) !== JSON.stringify(wantIds)) fail(who, "F4 search", q, `${gotIds.length} vs ${wantIds.length} ids`);
@@ -243,7 +259,7 @@ for (const s of seats) {
     const ctl = (await c.query("select platform.memo_k_get('memo-path-control') k, platform.memo_get('memo-path-control') g, platform.memo_all() a")).rows[0];
     if (ctl.k !== null || ctl.g !== null || JSON.stringify(ctl.a) !== "{}") { console.error("REFUSED: the memo readers did not turn off"); process.exit(2); }
     await c.query("select set_config('request.jwt.claims', json_build_object('sub', $1::text, 'role', 'authenticated')::text, true)", [s.id]);
-    await c.query("set local role authenticated");
+    if (ROLE) await c.query(`set local role ${ROLE}`);
     off = await answers(s, false);
   } finally { await c.query("rollback").catch(() => {}); }
 
