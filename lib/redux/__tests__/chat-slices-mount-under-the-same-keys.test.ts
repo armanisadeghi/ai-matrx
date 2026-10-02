@@ -88,6 +88,14 @@ const CHAT_KEYS_BEFORE_P2 = [
 /** Keys the package added since P2 (none existed in the host before): P3's synced host state. */
 const CHAT_KEYS_ADDED = ["chatHost"];
 
+/**
+ * Host keys whose slice moved INTO the package since P2 (P17b), under the SAME key: the host
+ * no longer imports these reducers itself, it mounts them through `...chatReducers`.
+ */
+const CHAT_KEYS_MOVED_IN = ["proposedDirectives"];
+
+const ALL_CHAT_KEYS = [...CHAT_KEYS_BEFORE_P2, ...CHAT_KEYS_ADDED, ...CHAT_KEYS_MOVED_IN];
+
 /** The chat middlewares in the order store.ts ran them before P2. */
 const CHAT_MIDDLEWARES_BEFORE_P2: Middleware[] = [
   agentCacheBustMiddleware,
@@ -99,15 +107,15 @@ const CHAT_MIDDLEWARES_BEFORE_P2: Middleware[] = [
 ];
 
 describe("chat slices mount under the same keys", () => {
-  it("exports exactly today's 38 chat keys, plus the keys added since", () => {
+  it("exports exactly today's 38 chat keys, plus the keys added or moved in since", () => {
     expect(Object.keys(chatReducers).sort()).toEqual(
-      [...CHAT_KEYS_BEFORE_P2, ...CHAT_KEYS_ADDED].sort(),
+      [...ALL_CHAT_KEYS].sort(),
     );
   });
 
   it("the host root reducer mounts every chat key with the package's own reducer", () => {
     const hostMap = slimReducerMap as Record<string, unknown>;
-    for (const key of [...CHAT_KEYS_BEFORE_P2, ...CHAT_KEYS_ADDED]) {
+    for (const key of ALL_CHAT_KEYS) {
       const mounted = hostMap[key];
       expect({ key, mounted: typeof mounted }).toEqual({ key, mounted: "function" });
       expect({ key, same: mounted === (chatReducers as Record<string, unknown>)[key] }).toEqual({
@@ -120,7 +128,7 @@ describe("chat slices mount under the same keys", () => {
   it("a built store holds every chat key, initialised by the chat reducer", () => {
     const store = makeStore();
     const state = store.getState() as unknown as Record<string, unknown>;
-    for (const key of [...CHAT_KEYS_BEFORE_P2, ...CHAT_KEYS_ADDED]) {
+    for (const key of ALL_CHAT_KEYS) {
       const reducer = (chatReducers as Record<string, (s: unknown, a: { type: string }) => unknown>)[key];
       expect({ key, state: state[key] }).toEqual({
         key,

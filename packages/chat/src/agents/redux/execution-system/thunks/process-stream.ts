@@ -159,7 +159,7 @@ import { getCapabilitiesForConversation } from "../../../runtime/get-model-capab
 import type { ContentType } from "@host/features/ai-models/capabilities/types";
 import { toast } from "../../../../host/notify";
 import { isDirectiveApplyEvent } from "@host/features/matrx-envelope/envelope";
-import { proposeDirective } from "@host/features/matrx-envelope/state/proposedDirectivesSlice";
+import { proposeDirective } from "../../proposed-directives/proposedDirectivesSlice";
 
 function readTransportCursor(event: unknown): {
   streamId: string | null;

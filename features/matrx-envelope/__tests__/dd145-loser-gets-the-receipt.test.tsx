@@ -28,7 +28,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import apiConfigReducer from "@/lib/redux/slices/apiConfigSlice";
 import proposedDirectivesReducer, {
   proposeDirective,
-} from "@/features/matrx-envelope/state/proposedDirectivesSlice";
+} from "@ai-matrx/chat/agents/redux/proposed-directives/proposedDirectivesSlice";
 
 const SLUG = "directive_v1_action_create_project_with_tasks";
 const CONVERSATION = "44444444-4444-4444-4444-444444444444";

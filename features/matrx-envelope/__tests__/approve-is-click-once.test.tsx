@@ -26,7 +26,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import apiConfigReducer from "@/lib/redux/slices/apiConfigSlice";
 import proposedDirectivesReducer, {
   proposeDirective,
-} from "@/features/matrx-envelope/state/proposedDirectivesSlice";
+} from "@ai-matrx/chat/agents/redux/proposed-directives/proposedDirectivesSlice";
 
 const confirmCalls: unknown[] = [];
 let confirmResult: Record<string, unknown> = {};

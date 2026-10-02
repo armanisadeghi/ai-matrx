@@ -32,7 +32,7 @@
 import { tryDecodeDirective } from "@ai-matrx/content-ir";
 
 import { fetchDirectiveApplyState } from "@/features/directive-catalog/service";
-import type { ProposedDirective } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
+import type { ProposedDirective } from "@ai-matrx/chat/agents/redux/proposed-directives/proposedDirectivesSlice";
 import { supabase } from "@/utils/supabase/client";
 
 /** A two-key shell found in a stored message, ready to go back to the server. */

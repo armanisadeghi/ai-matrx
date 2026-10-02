@@ -21,7 +21,7 @@ import proposedDirectivesReducer, {
   proposeDirective,
   removeProposal,
   resolveProposal,
-} from "@/features/matrx-envelope/state/proposedDirectivesSlice";
+} from "@ai-matrx/chat/agents/redux/proposed-directives/proposedDirectivesSlice";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
 
 (

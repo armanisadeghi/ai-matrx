@@ -23,7 +23,7 @@ import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
 import apiConfigReducer from "@/lib/redux/slices/apiConfigSlice";
-import proposedDirectivesReducer from "@/features/matrx-envelope/state/proposedDirectivesSlice";
+import proposedDirectivesReducer from "@ai-matrx/chat/agents/redux/proposed-directives/proposedDirectivesSlice";
 
 const rows: Record<string, unknown>[] = [];
 let readError: { message: string } | null = null;

@@ -48,7 +48,7 @@ import {
   resolveProposal,
   selectProposedDirectives,
   type ProposedDirective,
-} from "@/features/matrx-envelope/state/proposedDirectivesSlice";
+} from "@ai-matrx/chat/agents/redux/proposed-directives/proposedDirectivesSlice";
 import { BackendApiError } from "@/lib/api/errors";
 import {
   fetchConversationReceipts,

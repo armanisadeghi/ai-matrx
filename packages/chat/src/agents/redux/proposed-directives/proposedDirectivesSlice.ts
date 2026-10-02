@@ -16,7 +16,7 @@
 
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import type { RootState } from "@/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 
 export interface ProposedDirective {
   proposalId: string;
@@ -122,7 +122,7 @@ export default proposedDirectivesSlice.reducer;
 
 const EMPTY: ProposedDirective[] = [];
 
-const selectByConversation = (state: RootState) =>
+const selectByConversation = (state: ChatRootState) =>
   state.proposedDirectives.byConversation;
 
 /** The pending proposals for one conversation (memoized; stable empty array). */
