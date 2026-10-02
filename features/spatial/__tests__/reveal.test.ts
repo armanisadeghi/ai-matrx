@@ -38,7 +38,7 @@ describe("panToReveal — the smallest pan that brings a focused element into vi
 
 
 describe("shouldReveal — when a focus change may move the camera", () => {
-  const base = { inTile: true, pointersDown: 0, msSincePress: 5000 };
+  const base = { inTile: true, pointersDown: 0, msSincePress: 5000, msSinceKey: 50 };
   it("keyboard focus moves inside a tile reveal", () => {
     expect(shouldReveal(base)).toBe(true);
   });
@@ -47,6 +47,9 @@ describe("shouldReveal — when a focus change may move the camera", () => {
   });
   it("never during a drag, a pan or a pinch", () => {
     expect(shouldReveal({ ...base, pointersDown: 1 })).toBe(false);
+  });
+  it("an editor focusing itself as it loads (no key pressed) never moves the camera", () => {
+    expect(shouldReveal({ ...base, msSinceKey: Infinity })).toBe(false);
   });
   it("focus outside tiles (chrome, the chat) is not the board's", () => {
     expect(shouldReveal({ ...base, inTile: false })).toBe(false);

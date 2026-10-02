@@ -37,13 +37,29 @@ export function panToReveal(el: ScreenRect, view: ScreenRect, margin: number): {
 /** A focus change that follows a press this recently came from that press. */
 export const PRESS_FOCUS_WINDOW_MS = 400;
 
+/** A focus change this soon after a key press came from the keyboard (Tab, find-next, typing). */
+export const KEY_FOCUS_WINDOW_MS = 1000;
+
 /**
- * Whether a focus change may move the camera: only inside a tile, never while
- * a pointer is down (a drag, a pan, a pinch), and never for the focus a
- * click just gave — a clicked element is on screen already.
+ * Whether a focus change may move the camera: only inside a tile, only when
+ * the KEYBOARD moved it (a key pressed just before), never while a pointer is
+ * down (a drag, a pan, a pinch), and never for the focus a click just gave —
+ * a clicked element is on screen already. An editor focusing itself as it
+ * loads is no one's keyboard: it used to fly the camera away from where a
+ * board was opened, seconds after it opened.
  */
-export function shouldReveal(at: { inTile: boolean; pointersDown: number; msSincePress: number }): boolean {
-  return at.inTile && at.pointersDown === 0 && at.msSincePress >= PRESS_FOCUS_WINDOW_MS;
+export function shouldReveal(at: {
+  inTile: boolean;
+  pointersDown: number;
+  msSincePress: number;
+  msSinceKey: number;
+}): boolean {
+  return (
+    at.inTile &&
+    at.pointersDown === 0 &&
+    at.msSincePress >= PRESS_FOCUS_WINDOW_MS &&
+    at.msSinceKey <= KEY_FOCUS_WINDOW_MS
+  );
 }
 
 /**

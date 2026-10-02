@@ -70,6 +70,7 @@ import {
   type SurfaceToolCall,
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { executeSurfaceClientTool } from "@ai-matrx/chat/surfaces/runtime/surface-client-tools";
+import { configureChat, _resetChatHostForTests } from "@ai-matrx/chat/host";
 import { SPATIAL_BOARD_SURFACE_NAME } from "@/features/surfaces/manifests/spatial-board.manifest";
 import { SpatialBoardSurface } from "../components/SpatialBoardSurface";
 import { SpatialStore } from "../engine/spatial-store";
@@ -166,6 +167,16 @@ function agentCall(decision: "approved" | "declined") {
   };
   return { call, requestApproval };
 }
+
+// The approval card runs inside the chat package, which needs a host (a stand-in
+// db — nothing here reads it), as the app's ChatProvider gives it.
+beforeAll(() =>
+  configureChat({
+    db: { auth: {}, rpc: () => undefined, from: () => undefined } as never,
+    org: { active: () => null, subscribe: () => () => undefined, require: async () => null },
+  } as never),
+);
+afterAll(() => _resetChatHostForTests());
 
 describe("the bridge — every board item in two requests", () => {
   let root: ReturnType<typeof createRoot>;

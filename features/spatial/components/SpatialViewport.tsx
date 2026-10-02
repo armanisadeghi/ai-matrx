@@ -202,6 +202,10 @@ export function SpatialViewport({
     if (!root) return;
     const down = new Set<number>();
     let pressedAt = -Infinity;
+    let keyAt = -Infinity;
+    const onKey = () => {
+      keyAt = performance.now();
+    };
     let frame = 0;
     let recheck: ReturnType<typeof setTimeout> | undefined;
     // A grid or editor often scrolls its own content to the focused element
@@ -249,7 +253,8 @@ export function SpatialViewport({
     const reveal = (from: Node | null, measure: () => ScreenRect | null) => {
       const el = from instanceof Element ? from : from?.parentElement ?? null;
       const inTile = !!el && root.contains(el) && !!el.closest("[data-spatial-tile]");
-      if (!shouldReveal({ inTile, pointersDown: down.size, msSincePress: performance.now() - pressedAt })) return;
+      const now = performance.now();
+      if (!shouldReveal({ inTile, pointersDown: down.size, msSincePress: now - pressedAt, msSinceKey: now - keyAt })) return;
       if (from) {
         settling = { el: from, measure };
         settleUntil = performance.now() + REVEAL_SETTLE_MS;
@@ -293,6 +298,7 @@ export function SpatialViewport({
     window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("pointerup", onUp, true);
     window.addEventListener("pointercancel", onUp, true);
+    window.addEventListener("keydown", onKey, true);
     root.addEventListener("focusin", onFocusIn);
     document.addEventListener("selectionchange", onSelection);
     document.addEventListener("scroll", onContentScroll, true);
@@ -301,6 +307,7 @@ export function SpatialViewport({
       cancelAnimationFrame(frame);
       clearTimeout(recheck);
       window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("pointerup", onUp, true);
       window.removeEventListener("pointercancel", onUp, true);
       root.removeEventListener("focusin", onFocusIn);
@@ -393,7 +400,14 @@ export function SpatialViewport({
         panning = true;
         root.setPointerCapture(e.pointerId);
         root.style.cursor = "grabbing";
-        if (onBackground && e.button === 0 && !spaceDown && !handTool) store.select(null);
+        if (onBackground && e.button === 0 && !spaceDown && !handTool) {
+          store.select(null);
+          // A press on the empty board leaves the tile you were typing in
+          // (Figma): the capture below keeps the browser from moving focus, so
+          // ⌘Z would otherwise still undo inside that tile's editor.
+          const active = document.activeElement;
+          if (active instanceof HTMLElement && active.closest("[data-spatial-tile], [data-spatial-card]")) active.blur();
+        }
         // Hand / space / middle pan wins over whatever is underneath (a tile
         // header would otherwise start dragging the tile).
         if (!onBackground) e.stopPropagation();

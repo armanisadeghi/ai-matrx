@@ -300,12 +300,18 @@ export function SpatialTile({
   // reloaded, a chat lost its place — on every enter and exit. The card is the
   // tile's first child, and its siblings (throw hint, handles) are inserted
   // after it, so React never needs the card's position while it is away.
+  // The field the person last typed in inside this card: moving the card drops
+  // the browser's focus (without moveBefore), so it is given back after a move.
+  const lastFieldRef = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
     const tile = tileRef.current;
     const card = cardRef.current;
     if (!tile || !card) return;
     const parent = focused && focusHost ? focusHost : tile;
-    if (card.parentElement !== parent) moveInto(parent, card, parent === tile ? tile.firstChild : null);
+    if (card.parentElement === parent) return;
+    moveInto(parent, card, parent === tile ? tile.firstChild : null);
+    const field = lastFieldRef.current;
+    if (field && card.contains(field) && document.activeElement !== field) field.focus({ preventScroll: true });
   }, [focused, focusHost]);
   // Keyboard focus inside the tile (a field the person clicked into without the
   // tile becoming "interacting") keeps it awake: it never sleeps under a caret.
@@ -313,8 +319,12 @@ export function SpatialTile({
     const card = cardRef.current;
     if (!card) return;
     let release: (() => void) | null = null;
-    const onIn = () => {
+    const onIn = (e: FocusEvent) => {
       if (!release) release = store.holdAwake(id);
+      const t = e.target;
+      if (t instanceof HTMLElement && t.matches("input, textarea, select, [contenteditable=''], [contenteditable='true']")) {
+        lastFieldRef.current = t;
+      }
     };
     const onOut = (e: FocusEvent) => {
       if (e.relatedTarget instanceof Node && card.contains(e.relatedTarget)) return;
