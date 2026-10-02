@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T20:14:37.675Z",
+  "generated_at": "2026-10-02T20:30:06.991Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -481,6 +481,24 @@
       "filename": "chairdoors2_f_a_table_kept_for_agent_output_waits_behind_show_app_tables.sql",
       "checksum": "b6694ed8c39ff3bf8c674469a713235a36c510e5f6fccb9500724bc8cd6ea006",
       "applied_at": "2026-10-02 19:59:40.392611+00"
+    },
+    "migrations/campaign/chairdoors2_g_every_member_adds_to_a_table_kept_for_agent_outputs.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors2_g_every_member_adds_to_a_table_kept_for_agent_outputs.sql",
+      "checksum": "4e52f1178da6a19c7da957e455830a3b87901cad6808d88270d87beab496a5d7",
+      "applied_at": "2026-10-02 20:28:50.430694+00"
+    },
+    "migrations/campaign/chairdoors2_h_a_persons_edit_of_an_agent_output_keeps_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors2_h_a_persons_edit_of_an_agent_output_keeps_it.sql",
+      "checksum": "0f67cfc8c9dabc49a40278e30d61818d4c01b13272f7d11fed8e7e916d654145",
+      "applied_at": "2026-10-02 20:29:33.568343+00"
+    },
+    "migrations/campaign/chairdoors2_i_a_new_output_replaces_the_old_under_one_lock.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors2_i_a_new_output_replaces_the_old_under_one_lock.sql",
+      "checksum": "8304e17587f878e33946531106430ddfc9547190a3510c155788f74755b8ab63",
+      "applied_at": "2026-10-02 20:30:03.693617+00"
     },
     "migrations/campaign/chairdoors2_j_a_table_gives_its_new_rows_their_row_controls.sql": {
       "source": "matrx-frontend",

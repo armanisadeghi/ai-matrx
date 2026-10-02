@@ -696,6 +696,8 @@ values
    'chairdoors2_i_a_new_output_replaces_the_old_under_one_lock.sql', null, true, false,
    jsonb_build_object('version', '1', 'arguments', jsonb_build_object(
      'p_organization_id', jsonb_build_object('foreign', jsonb_build_object('bounded', true,
-       'note', 'Decided by assert_client_may_reach before anything is read; every row it touches is read in this organization only.')))));
+       'note', 'Decided by assert_client_may_reach before anything is read; every row it touches is read in this organization only.')),
+     'p_table_id', jsonb_build_object('foreign', jsonb_build_object('bounded', true,
+       'note', 'Must be a Table of p_organization_id kept for agent outputs (one sentence refuses any other id), then assert_client_may_change on it.')))));
 
 grant execute on function custom.record_write_graph_superseding(uuid, uuid, text, jsonb, jsonb, jsonb, jsonb, jsonb, jsonb) to authenticated;

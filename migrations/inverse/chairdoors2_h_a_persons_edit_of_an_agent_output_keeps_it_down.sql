@@ -1,5 +1,6 @@
 -- chair-step: undo chairdoors2_h_a_persons_edit_of_an_agent_output_keeps_it.sql — restores custom._value_envelope() exactly as it was and archives the knob records/agent_outputs.keep_on_person_edit (a knob is archived, never deleted). Nothing else is touched.
 -- lane: CHAIR-DOORS-2
+-- based-on: custom._value_envelope() 52643f906b25684b2b77515d5ee41b498ba0af3c9ed5bcc309f3380ebb75b9af
 
 CREATE OR REPLACE FUNCTION custom._value_envelope()
  RETURNS trigger

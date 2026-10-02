@@ -1,6 +1,11 @@
 -- chair-step: undo chairdoors2_g_every_member_adds_to_a_table_kept_for_agent_outputs.sql — restores the six door bodies exactly as they were (the editor rung on every Table) and drops custom.table_add_rung(uuid, uuid). Nothing else is touched.
 -- lane: CHAIR-DOORS-2
--- (based-on lines: run pnpm db:based-on migrations/campaign/chairdoors2_g_every_member_adds_to_a_table_kept_for_agent_outputs.sql after the forward file is applied)
+-- based-on: custom.record_write(uuid, uuid, jsonb) dda4e143b1ee6cfb52a8579a5be7ac6e27055ae230144e3f7d98bcc85ca1525a
+-- based-on: custom.record_write_many(uuid, uuid, jsonb[], uuid[]) d9f8b51784053c0b03b73e5c21044e8f6fb97062da13083049cc1a71e8abc86c
+-- based-on: custom.record_write_graph(uuid, uuid, jsonb, jsonb, jsonb) 9c938a84b0442a434b0877f2e8f1ccbb5aa42d791ac0d0ca1e3f02d5bb41efe5
+-- based-on: custom.io_import_begin(uuid, uuid, text, text, jsonb, text, jsonb, text, bigint, boolean) a38dabda7367019d5089e7d4e9f44be6997815bfe264fcb664f2378a1ece13e6
+-- based-on: custom.io_import_rows(uuid, uuid, jsonb, jsonb) 2de44656c45d1e67941469241a9c3055257c2bf24ea41a3acb5c325a61763490
+-- based-on: custom.io_import_finish(uuid, uuid, text) c95ba63e7f5a7e699d311ad5ea1ec2faaaa2b2222d70729cfb128844426362ad
 
 CREATE OR REPLACE FUNCTION custom.record_write(p_organization_id uuid, p_table_id uuid, p_data jsonb)
  RETURNS uuid
@@ -26,9 +31,12 @@ begin
       using errcode = '22004';
   end if;
   -- DATA-V2-BASICS-2: every value this new record does not name takes its Field's default.
-  insert into custom.record (organization_id, table_id, data)
+  -- CHAIR-DOORS-2 j: and it is shown to whoever its Table's "Shown to by default" names (null = the
+  -- organization's default, read at list time, as before).
+  insert into custom.record (organization_id, table_id, data, shown_to)
   values (p_organization_id, p_table_id,
-          custom._record_defaults_filled(p_organization_id, p_table_id, coalesce(p_data, '{}'::jsonb)))
+          custom._record_defaults_filled(p_organization_id, p_table_id, coalesce(p_data, '{}'::jsonb)),
+          (custom._table_row_defaults(p_organization_id, p_table_id) ->> 'shown_to')::platform.shown_to)
   returning id into v_id;
   return v_id;
 end
@@ -47,6 +55,7 @@ declare
   v_seen  text := null;
   v_this  text;
   ord     integer;
+  v_shown platform.shown_to;
 begin
   -- The switch, then the organization, then the Table these records are being added to — the
   -- same two predicates `custom.record_write` asks, in the same order, ONCE for the batch.
@@ -103,8 +112,10 @@ begin
     v_ids := p_ids;
   end if;
 
-  insert into custom.record (organization_id, table_id, id, data)
-  select p_organization_id, p_table_id, v_ids[s], coalesce(v_clean[s], '{}'::jsonb)
+  -- CHAIR-DOORS-2 j: every row of the batch is shown to whoever its Table's "Shown to by default" names.
+  v_shown := (custom._table_row_defaults(p_organization_id, p_table_id) ->> 'shown_to')::platform.shown_to;
+  insert into custom.record (organization_id, table_id, id, data, shown_to)
+  select p_organization_id, p_table_id, v_ids[s], coalesce(v_clean[s], '{}'::jsonb), v_shown
     from generate_subscripts(v_clean, 1) s
    order by s;
 

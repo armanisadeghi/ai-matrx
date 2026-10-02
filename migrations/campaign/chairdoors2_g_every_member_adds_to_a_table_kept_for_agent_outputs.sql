@@ -1,7 +1,7 @@
--- chair-step: this CREATES one helper, custom.table_add_rung(uuid, uuid) (STABLE SECURITY DEFINER, reads one Table document, EXECUTE revoked from PUBLIC and granted to nobody else — only the store's own doors call it), and replaces the bodies of six existing doors (same signatures, same SECURITY DEFINER, same grants): custom.record_write, custom.record_write_many, custom.record_write_graph, custom.io_import_begin, custom.io_import_rows, custom.io_import_finish. In each, the one rung asked of the Table before records are ADDED is now custom.table_add_rung: viewer on a Table whose document says kept_for = agent_output, editor on every other Table (exactly as before). Changing an existing record is still decided on that record (custom.record_update and the graph door's existing-parent arm are untouched), so a member edits only her own rows. No table, policy, index or data row is touched.
+-- chair-step: this CREATES one helper, custom.table_add_rung(uuid, uuid) (STABLE, SECURITY INVOKER, reads one Table document, EXECUTE revoked from PUBLIC and granted to nobody else — only the store's own SECURITY DEFINER doors call it, as the store's owner), and replaces the bodies of six existing doors (same signatures, same SECURITY DEFINER, same grants): custom.record_write, custom.record_write_many, custom.record_write_graph, custom.io_import_begin, custom.io_import_rows, custom.io_import_finish. In each, the one rung asked of the Table before records are ADDED is now custom.table_add_rung: viewer on a Table whose document says kept_for = agent_output, editor on every other Table (exactly as before). Changing an existing record is still decided on that record (custom.record_update and the graph door's existing-parent arm are untouched), so a member edits only her own rows. No table, policy, index or data row is touched.
 -- lane: CHAIR-DOORS-2 (asked by v6 lane 4 KINDS-GLUE, need N-C6)
--- based-on: custom.record_write(uuid, uuid, jsonb) a2599ed72dae36c05aaeed295de5da32402852ffe23c0abc37d535a339c0fa3a
--- based-on: custom.record_write_many(uuid, uuid, jsonb[], uuid[]) b0afc3e2645c9a1bf01808d7ad68eb39fb2dee2a2e28bab58c4d79e4dd581e11
+-- based-on: custom.record_write(uuid, uuid, jsonb) c4881987f3773f729aca4f0aea24cfec802d1ca5dde5857d3db305a47c1ea56e
+-- based-on: custom.record_write_many(uuid, uuid, jsonb[], uuid[]) 6d589b711e01ba06e29e234cd8c386dbfd2c53615a42638a33b5a040d63d6a7e
 -- based-on: custom.record_write_graph(uuid, uuid, jsonb, jsonb, jsonb) 6723c9553f24f283665bb5f68f9cea71941f6e7a2599dea0a7e369380785ee5e
 -- based-on: custom.io_import_begin(uuid, uuid, text, text, jsonb, text, jsonb, text, bigint, boolean) 6715a819f585a6e323ce97354ee7a17f643d159c19407722ea9623f0d31f9f94
 -- based-on: custom.io_import_rows(uuid, uuid, jsonb, jsonb) dd9d07cfa744e1a24a2d6158ea541b75bffbadf4bc6332bced295771e0a7ff45
@@ -18,7 +18,7 @@
 CREATE FUNCTION custom.table_add_rung(p_organization_id uuid, p_table_id uuid)
  RETURNS public.permission_level
  LANGUAGE sql
- STABLE SECURITY DEFINER
+ STABLE
  SET search_path TO 'pg_catalog'
 AS $function$
   -- The rung a caller must hold on a Table to ADD records to it. A Table the app keeps for agent
@@ -63,9 +63,12 @@ begin
       using errcode = '22004';
   end if;
   -- DATA-V2-BASICS-2: every value this new record does not name takes its Field's default.
-  insert into custom.record (organization_id, table_id, data)
+  -- CHAIR-DOORS-2 j: and it is shown to whoever its Table's "Shown to by default" names (null = the
+  -- organization's default, read at list time, as before).
+  insert into custom.record (organization_id, table_id, data, shown_to)
   values (p_organization_id, p_table_id,
-          custom._record_defaults_filled(p_organization_id, p_table_id, coalesce(p_data, '{}'::jsonb)))
+          custom._record_defaults_filled(p_organization_id, p_table_id, coalesce(p_data, '{}'::jsonb)),
+          (custom._table_row_defaults(p_organization_id, p_table_id) ->> 'shown_to')::platform.shown_to)
   returning id into v_id;
   return v_id;
 end
@@ -84,6 +87,7 @@ declare
   v_seen  text := null;
   v_this  text;
   ord     integer;
+  v_shown platform.shown_to;
 begin
   -- The switch, then the organization, then the Table these records are being added to — the
   -- same two predicates `custom.record_write` asks, in the same order, ONCE for the batch.
@@ -143,8 +147,10 @@ begin
     v_ids := p_ids;
   end if;
 
-  insert into custom.record (organization_id, table_id, id, data)
-  select p_organization_id, p_table_id, v_ids[s], coalesce(v_clean[s], '{}'::jsonb)
+  -- CHAIR-DOORS-2 j: every row of the batch is shown to whoever its Table's "Shown to by default" names.
+  v_shown := (custom._table_row_defaults(p_organization_id, p_table_id) ->> 'shown_to')::platform.shown_to;
+  insert into custom.record (organization_id, table_id, id, data, shown_to)
+  select p_organization_id, p_table_id, v_ids[s], coalesce(v_clean[s], '{}'::jsonb), v_shown
     from generate_subscripts(v_clean, 1) s
    order by s;
 

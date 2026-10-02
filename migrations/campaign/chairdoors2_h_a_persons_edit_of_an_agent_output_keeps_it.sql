@@ -1,4 +1,4 @@
--- chair-step: this replaces the body of one trigger function, custom._value_envelope() (same signature, same trigger, same grants), and adds one knob row, platform.feature_knob (records, agent_outputs.keep_on_person_edit), boolean, default true, overridable per organization and Table. In the existing walk of a record's applicable Fields the envelope now also notes the platform Fields of a Table kept for agent outputs (Field config.kept_by = agent_output). On such a Table a write whose author is a person (actor user) is refused if it changes a platform Field (except setting output_kept to true, the owner's Keep), unless it is the chain door's own write; and any other value she writes, or a row she adds, sets output_kept = true while the knob is on. Every other Table, and every agent or system write, is exactly as before. No table, policy, index or grant is touched.
+-- chair-step: this replaces the body of one trigger function, custom._value_envelope() (same signature, same trigger, same grants), and adds one knob row, platform.feature_knob (records, agent_outputs.keep_on_person_edit), boolean, default true, overridable per organization and Table. In the existing walk of a record's applicable Fields the envelope now also notes the platform Fields of a Table kept for agent outputs (Field config.kept_by = agent_output). On such a Table a write whose author is a person (actor user, or a row her own import adds in her browser session) is refused if it changes a platform Field (except setting output_kept to true, the owner's Keep), unless it is the chain door's own write; and any other value she writes, or a row she adds, sets output_kept = true while the knob is on. Every other Table, and every agent or system write, is exactly as before. No table, policy, index or grant is touched.
 -- lane: CHAIR-DOORS-2 (asked by v6 lane 4 KINDS-GLUE, need N-C3)
 -- based-on: custom._value_envelope() 6d63852443efb8e7cd201a0bd31c01c9166198af5f23749f448cddec5582f0d4
 --
@@ -194,8 +194,12 @@ begin
     -- platform Field a person sets herself is output_kept = true: keeping is the owner's own mark.
     -- Any other value a person writes on such a row (or a row she adds) marks it kept, so the next
     -- regeneration never hides or overwrites her work (knob records/agent_outputs.keep_on_person_edit,
-    -- default on, per organization and Table).
-    if v_platform <> '{}'::jsonb and v_actor = 'user'
+    -- default on, per organization and Table). A person's own import counts as hers: the importer
+    -- stamps imported values `system` (they came from a file), so a row it adds in a person's browser
+    -- session (the connection says user, the document says it came via import) is judged as her write.
+    if v_platform <> '{}'::jsonb
+       and (v_actor = 'user'
+            or (v_data -> '_source' ->> 'via' = 'import' and platform.declared_actor_tier() is not distinct from 'user'))
        and coalesce(current_setting('custom.output_chain_door', true), '') is distinct from txid_current()::text then
       for v_pkey in select k from jsonb_object_keys(v_platform) k loop
         if v_pkey = 'output_kept' and (v_data -> v_pkey) = 'true'::jsonb then
