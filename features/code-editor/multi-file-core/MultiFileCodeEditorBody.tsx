@@ -20,7 +20,7 @@ import { getLanguageIconNode } from "@/features/code-editor/components/code-bloc
 import { PanelLeftClose } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { CodeFile } from "./types";
 
 export interface MultiFileCodeEditorBodyProps {

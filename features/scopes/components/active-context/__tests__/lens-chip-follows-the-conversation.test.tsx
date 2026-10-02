@@ -45,7 +45,7 @@ jest.mock("@/features/scopes/hooks/useScopeTree", () => ({
   useScopeTree: () => ({ organizations }),
 }));
 jest.mock("../ActiveContextTree", () => ({ ActiveContextTree: () => null }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 jest.mock("@/features/scopes/redux/thunks/ensureEntityScopes", () => ({
   entityScopesKey: (t: string, id: string) => `${t}:${id}`,
   ensureEntityScopes: () => ({ type: "test/ensureEntityScopes" }),

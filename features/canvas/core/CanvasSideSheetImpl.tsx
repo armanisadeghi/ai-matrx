@@ -30,7 +30,7 @@ import {
 } from "@/features/canvas/redux/canvasSlice";
 import { Sheet, SheetContent, SheetTitle } from "@ai-matrx/design-system";
 import { CanvasSurfaceCard } from "./CanvasSurface";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 
 const MIN_WIDTH = 480;

@@ -58,7 +58,7 @@ jest.mock("@/components/ui/dialog", () => ({
     <h1>{children}</h1>
   ),
 }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 jest.mock("@/features/masterwork/MasterworkDictationOrigin", () => ({
   MasterworkDictationOrigin: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>

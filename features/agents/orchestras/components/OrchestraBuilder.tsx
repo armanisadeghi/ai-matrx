@@ -23,7 +23,7 @@ import {
   RefreshCw,
   Settings2,
 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
 import { Button } from "@/components/ui/button";

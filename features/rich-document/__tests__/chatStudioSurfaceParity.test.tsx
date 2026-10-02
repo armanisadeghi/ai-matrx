@@ -54,7 +54,7 @@ jest.mock("@/utils/supabase/client", () => {
   return { supabase: { schema: () => chain } };
 });
 jest.mock("next/dynamic", () => () => () => null);
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 
 
 import React, { act } from "react";

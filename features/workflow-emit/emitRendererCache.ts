@@ -19,7 +19,7 @@ import type React from "react";
 import {
   INVALIDATION_KEYS,
   registerInvalidationCallback,
-} from "@/lib/invalidation/invalidation-registry";
+} from "@ai-matrx/kit/invalidation";
 
 import { compileEmitRenderer } from "./compileEmitRenderer";
 import { fetchEmitRendererRow } from "./fetchEmitRendererRow";

@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 // The gallery is a LIST CONSUMER of the ONE agent catalog (ruling D1): its
 // card UI stays here, its rows and every filter/sort/count come from the
 // package. There is no second agent-list store in this app.

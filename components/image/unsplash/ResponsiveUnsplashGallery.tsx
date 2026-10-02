@@ -3,7 +3,7 @@
 import React from 'react';
 import { EnhancedUnsplashGallery } from '@/components/image/unsplash/desktop/EnhancedUnsplashGallery';
 import { MobileUnsplashGallery } from '@/components/image/unsplash/mobile/MobileUnsplashGallery';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@ai-matrx/kit/media-query';
 
 interface ResponsiveUnsplashGalleryProps {
   initialSearchTerm?: string;

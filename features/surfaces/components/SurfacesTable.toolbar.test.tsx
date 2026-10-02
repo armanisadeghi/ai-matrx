@@ -20,8 +20,7 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
   },
 }));
 
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => true }));
-jest.mock("@/hooks/use-media-query", () => ({ useMediaQuery: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => true, useMediaQuery: () => false }));
 jest.mock("./SurfacesFilterBar", () => ({
   DEFAULT_FILTER_STATE: {
     status: "all",

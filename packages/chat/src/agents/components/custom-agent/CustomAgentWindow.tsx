@@ -29,7 +29,7 @@ import {
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { toast } from "../../../host/notify";
 import { cn } from "@ai-matrx/design-system";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";
 import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import { selectAgentVariableDefinitions } from "../../redux/agent-definition/selectors";

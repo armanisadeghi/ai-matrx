@@ -24,7 +24,7 @@ import {
   ChevronRight,
   GitCompareArrows,
 } from "lucide-react";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import {
   Dialog,

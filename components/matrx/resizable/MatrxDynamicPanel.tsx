@@ -38,7 +38,7 @@ import {
   type GroupImperativeHandle,
   type Layout,
 } from "react-resizable-panels";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { CSSProperties } from "react";
 
 type PanelPosition = "left" | "right" | "top" | "bottom";

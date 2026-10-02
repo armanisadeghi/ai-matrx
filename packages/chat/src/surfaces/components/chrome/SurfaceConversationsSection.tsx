@@ -47,7 +47,7 @@ import { useEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs.client"
 import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@host/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 const RECENT_COUNT = 2;
 /**

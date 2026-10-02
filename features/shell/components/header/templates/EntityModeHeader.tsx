@@ -17,7 +17,7 @@
 
 import { useBackHref } from "@/lib/navigation/useBackHref";
 import { useState } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { usePhonePageActions } from "@/features/shell/components/header/phone-page-actions";
 import AppLink from "@/components/navigation/AppLink";
 import {

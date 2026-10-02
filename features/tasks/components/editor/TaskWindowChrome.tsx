@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/utils/cn";
-import { formatDateOnly } from "@/utils/dateOnly";
+import { formatDateOnly } from "@ai-matrx/kit/dates";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { TASK_PRIORITY_META } from "@/features/tasks/components/TaskPriorityPicker";

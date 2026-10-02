@@ -36,7 +36,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 jest.mock("next/dynamic", () => () => function TestMenuContent() {
   return null;
 });
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 jest.mock("@ai-matrx/chat/agents/hooks/useWidgetHandle", () => ({
   useOptionalWidgetHandle: () => null,
 }));

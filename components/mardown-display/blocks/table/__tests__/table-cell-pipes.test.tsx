@@ -48,7 +48,7 @@ jest.mock("next/navigation", () => ({
   usePathname: () => "/",
   useSearchParams: () => new URLSearchParams(),
 }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 jest.mock("@/features/overlays/openers/tableViewerWindow", () => ({
   useOpenTableViewerWindow: () => jest.fn(),
 }));

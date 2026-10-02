@@ -4,7 +4,7 @@
  * TaskDueDatePicker — the single, reusable editor for a task's due date.
  *
  * Always a Calendar popover with a Clear option (so the picked day is the
- * stored day — see `utils/dateOnly`), in two looks:
+ * stored day — see `@ai-matrx/kit/dates`), in two looks:
  *   - `variant="pill"`  compact inline pill (the project task table)
  *   - `variant="field"` full-width form field (the full task editor)
  *
@@ -20,7 +20,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
-import { parseDateOnly, toDateOnly, formatDateOnly } from "@/utils/dateOnly";
+import { parseDateOnly, toDateOnly, formatDateOnly } from "@ai-matrx/kit/dates";
 
 export function TaskDueDatePicker({
   value,

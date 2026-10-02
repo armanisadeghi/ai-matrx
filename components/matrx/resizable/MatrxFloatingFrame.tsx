@@ -52,7 +52,7 @@ import { X } from "lucide-react";
 import { PortalContainerProvider } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { mayTakeFocusOnOpen } from "@/components/matrx/resizable/focusOnOpen";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   raiseTransientWindow,

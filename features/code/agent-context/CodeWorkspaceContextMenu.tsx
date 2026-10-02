@@ -19,7 +19,7 @@
 
 import React, { useEffect, useState, type MutableRefObject } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { formatEditorSurroundContext } from "@/utils/format-editor-surround-context";
+import { formatEditorSurroundContext } from "@ai-matrx/kit/text";
 import { selectActiveTab, selectCodeTabs } from "../redux/tabsSlice";
 import {
   selectActiveFilesystemId,

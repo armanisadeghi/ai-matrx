@@ -27,7 +27,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setNoteEditorMode } from "../redux/slice";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import { canonicalNoteEditorMode } from "../redux/notes.types";
 import type { EditorMode } from "../components/NoteEditorCore";

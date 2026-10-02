@@ -30,7 +30,7 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAssociateTask } from "@/features/tasks/hooks/useAssociateTask";
 import {
   selectOrganizationId,

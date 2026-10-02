@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from "react";
 import { TriangleAlert } from "lucide-react";
 import ProcessorExtractor from "./ProcessorExtractor";
-import { useDebounce } from "@/hooks/usehooks";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { extractErrorMessage } from "@/utils/errors";
 

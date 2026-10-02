@@ -32,7 +32,7 @@ jest.mock("@ai-matrx/design-system", () => ({
   BottomSheetHeader: () => null,
 }));
 
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => mockUseIsMobile() }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => mockUseIsMobile() }));
 jest.mock("@/utils/navigation/should-open-in-new-tab", () => ({
   allowNativeNewTab: () => false,
 }));

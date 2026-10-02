@@ -39,7 +39,7 @@ import { Button } from "@/components/ui/button";
 import { DeviceMenuPanel } from "@/components/audio/micDeviceMenuShared";
 import { useAudioDevices } from "@/features/audio/useAudioDevices";
 import { useOpenAudioDevices } from "@/features/overlays/openers/audioDevices";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 
 export interface CaptureDeviceRailProps {

@@ -17,7 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   BottomSheet,
   BottomSheetHeader,

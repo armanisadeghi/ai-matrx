@@ -25,7 +25,7 @@
 import type { ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../store/root-state";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 import { getUiFirstToolEntry } from "../../agents/ui-first-tools/tools/registry";
 
 /**

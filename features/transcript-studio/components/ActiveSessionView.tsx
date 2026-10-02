@@ -38,7 +38,7 @@ import { useStudioAutoLabel } from "../hooks/useStudioAutoLabel";
 import { useStudioSession } from "../hooks/useStudioSession";
 import { useStudioSettings } from "../hooks/useStudioSettings";
 import { useTriggerScheduler } from "../hooks/useTriggerScheduler";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { TRANSCRIPT_STUDIO_SURFACE } from "../constants";
 import { getModule } from "../modules/registry";
 import { EditableSessionTitle } from "./EditableSessionTitle";

@@ -15,7 +15,7 @@ import {
 } from "@ai-matrx/design-system";
 import { DiffViewer } from "@ai-matrx/diff/react";
 import { Button } from "@ai-matrx/design-system";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../store/hooks";
 import { selectWorkingDocBinding } from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";

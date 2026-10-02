@@ -34,7 +34,7 @@ import {
   pageContextFor,
   selectResolvedContextRows,
 } from "../../redux/execution-system/context-rules/request-context";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { components } from "@host/types/python-generated/api-types";
 
 export type ContextSelection = components["schemas"]["ContextSelection"];

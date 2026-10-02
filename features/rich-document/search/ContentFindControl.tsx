@@ -4,7 +4,7 @@ import { useEffect, useState, type RefObject } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RenderedFindBar } from "./RenderedFindBar";
-import { surfaceOwnsKey } from "@/utils/keyboard-scope";
+import { surfaceOwnsKey } from "@ai-matrx/kit/keyboard-scope";
 
 /** Places the shared rendered-content finder in a reader's existing header. */
 export function ContentFindControl({

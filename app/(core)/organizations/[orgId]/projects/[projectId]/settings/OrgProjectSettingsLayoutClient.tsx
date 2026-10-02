@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import { Menu, Puzzle } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";

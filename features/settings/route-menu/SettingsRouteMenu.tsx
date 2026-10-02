@@ -22,7 +22,7 @@ import {
   ROUTE_MENU_ICON_STROKE_WIDTH,
   ROUTE_MENU_NAV_ITEM_CLASS,
 } from "@/features/shell/constants/route-menu-style";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useMediaQuery } from "@ai-matrx/kit/media-query";
 import { SETTINGS_BASE, tabIdToHref, urlToTabId } from "../route-shell/routing";
 import { isUserSettingsPath } from "../route-shell/settings-route-path";
 import { findSettingsCategoryMatches, hasSettingsSearchResults } from "./search";

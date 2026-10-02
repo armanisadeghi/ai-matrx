@@ -16,7 +16,7 @@ import { createRoot, type Root } from "react-dom/client";
 jest.mock("@/lib/toast", () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn(), warning: jest.fn() },
 }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 jest.mock("@/features/context-menu-v3/EditableContextMenu", () => ({
   EditableContextMenu: ({ children }: { children: React.ReactNode }) => children,
 }));

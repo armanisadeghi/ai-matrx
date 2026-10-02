@@ -17,7 +17,7 @@ import {
 import { isCompleteBinding } from "./customDataBinding";
 import { useCustomDataOrganizationId } from "./CustomDataRecordsScope";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 import { InfoHint } from "@/components/official/InfoHint";
 
 /** Quiet time before the preview re-asks the server after an edit. */

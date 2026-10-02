@@ -19,7 +19,7 @@
  */
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useMeasure } from "@/hooks/usehooks";
+import { useMeasure } from "@ai-matrx/kit/hooks";
 import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
 import {
   mapLanguageForMonaco,

@@ -35,7 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,

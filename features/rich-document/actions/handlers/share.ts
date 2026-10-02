@@ -5,7 +5,7 @@
 // what the reader sees; chat provenance rides along when the source is a chat
 // message (the per-message idempotency key on the public page).
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import { FileText, Globe } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { registerAction } from "../provider";

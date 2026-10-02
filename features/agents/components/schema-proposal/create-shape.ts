@@ -54,7 +54,7 @@ import type { ShapeWriteClient } from "@/features/content-ir/studio/shape-author
 import {
   INVALIDATION_KEYS,
   fireInvalidation,
-} from "@/lib/invalidation/invalidation-registry";
+} from "@ai-matrx/kit/invalidation";
 
 /** The proposal envelope the schema_proposal block carries. */
 export interface ShapeProposalInput {

@@ -883,7 +883,7 @@ export function isCensusScannable(rel: string): boolean {
  * "`{error}. Dropping a file…`" — a render that writes its own full stop after
  * a message value. Messages usually end in one already, so the screen shows
  * "try again.. Dropping". The value goes through `asClause(…)`
- * (lib/text/asClause.ts), which drops its closing punctuation, or the period
+ * (@ai-matrx/kit/text), which drops its closing punctuation, or the period
  * moves into the value. Returns the lines of every such join (RC-B12 round 9).
  */
 export function findDoubledStops(source: string, fileName = "file.tsx"): number[] {

@@ -43,8 +43,8 @@ jest.mock("@/utils/supabase/client", () => ({
   }),
 }));
 
-jest.mock("@/hooks/use-media-query", () => ({
-  useMediaQuery: () => true,
+jest.mock("@ai-matrx/kit/media-query", () => ({
+  ...jest.requireActual("@ai-matrx/kit/media-query"), useMediaQuery: () => true,
 }));
 
 jest.mock("@/features/organizations/hooks", () => ({

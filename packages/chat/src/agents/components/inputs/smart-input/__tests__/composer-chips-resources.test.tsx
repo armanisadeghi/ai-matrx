@@ -23,7 +23,7 @@ jest.mock("../../../../../store/hooks", () => ({
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
 jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
 
-jest.mock("@host/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 
 jest.mock("../../../../../host/window-openers", () => ({ ...jest.requireActual("../../../../../host/window-openers"),
   useOpenRunControlsWindow: () => jest.fn(),

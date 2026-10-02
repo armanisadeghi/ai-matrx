@@ -13,7 +13,7 @@ import {
   resolveMandate,
   type ResolvedMandate,
 } from "./service";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export interface MandateState {

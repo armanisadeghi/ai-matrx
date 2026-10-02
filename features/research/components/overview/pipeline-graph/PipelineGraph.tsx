@@ -46,7 +46,7 @@ import {
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { ProInput } from "@/components/official/ProInput";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 import {
   useTopicContext,

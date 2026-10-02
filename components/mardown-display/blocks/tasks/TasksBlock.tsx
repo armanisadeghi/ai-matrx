@@ -1,5 +1,5 @@
 "use client";
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import React, { useMemo, useState } from "react";
 import { CheckSquare, ListPlus, ExternalLink } from "lucide-react";
 import TaskChecklist from "@/components/mardown-display/blocks/tasks/TaskChecklist";

@@ -49,7 +49,7 @@ import {
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 export default function ScannerHealthPage() {
   const { organizationId, canLoad, organizationRequired, organizationState } =

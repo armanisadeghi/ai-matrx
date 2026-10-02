@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { OrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 jest.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

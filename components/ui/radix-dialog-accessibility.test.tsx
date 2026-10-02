@@ -30,8 +30,8 @@ import {
 import { BottomSheet } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
-jest.mock("@/hooks/use-mobile", () => ({
-  useIsMobile: () => false,
+jest.mock("@ai-matrx/kit/media-query", () => ({
+  ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false,
 }));
 
 jest.mock("@/features/window-panels/popout/usePopoutContainer", () => ({

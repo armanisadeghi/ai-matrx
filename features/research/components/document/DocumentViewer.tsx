@@ -19,7 +19,7 @@ import {
 import MarkdownCore from "@/components/markdown-core/MarkdownCore";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useTopicContext, useStreamDebug } from "../../context/ResearchContext";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchDocument } from "../../hooks/useResearchState";

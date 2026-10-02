@@ -13,7 +13,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Loader2, ScanLine } from "lucide-react";
 import {
   Dialog,

@@ -3,7 +3,7 @@
 import React from 'react';
 import { ImageGallery } from '@/components/image/gallery/desktop/ImageGallery';
 import { MobileImageGallery } from '@/components/image/gallery/mobile/MobileImageGallery';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@ai-matrx/kit/media-query';
 
 interface ResponsiveDirectGalleryProps {
   imageUrls: string[];

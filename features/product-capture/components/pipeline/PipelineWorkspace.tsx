@@ -13,7 +13,7 @@ import { ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 import type { PipelineStage } from "../../pipeline-types";
 import {

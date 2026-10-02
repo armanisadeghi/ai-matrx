@@ -23,7 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { getFolderIconAndColor } from "../utils/folderUtils";
 import type { FolderReference } from "../types";
 import { cn } from "@/lib/utils";

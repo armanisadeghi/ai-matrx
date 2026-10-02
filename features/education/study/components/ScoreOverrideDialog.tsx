@@ -12,7 +12,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, AlertTriangle, XCircle, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {

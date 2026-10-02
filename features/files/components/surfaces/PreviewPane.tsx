@@ -16,7 +16,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { keyScopeRoot, surfaceOwnsKey } from "@/utils/keyboard-scope";
+import { keyScopeRoot, surfaceOwnsKey } from "@ai-matrx/kit/keyboard-scope";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,

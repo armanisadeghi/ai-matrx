@@ -46,7 +46,7 @@ jest.mock("@/features/mandates/candidates/openers", () => ({
   useOpenCandidateSummary: () => jest.fn(),
 }));
 jest.mock("@/features/bindings/HolderAssignment", () => ({ HolderAssignment: () => null }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 const mandateHolder = jest.fn();
 jest.mock("@ai-matrx/chat/mandates/useMandateHolder", () => ({ useMandateHolder: () => mandateHolder() }));
 

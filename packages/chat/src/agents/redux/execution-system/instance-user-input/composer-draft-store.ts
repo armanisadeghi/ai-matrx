@@ -17,7 +17,7 @@
 // Conductor, agent run and every embedded agent conversation inherit it.
 //
 // SCOPE: `sessionStorage`, per browser tab, same as the dialog draft keeper in
-// `lib/drafts/useTextDraft.ts` (whose TTL this reuses). A crash net, never a
+// `@ai-matrx/kit/drafts (useTextDraft)` (whose TTL this reuses). A crash net, never a
 // synced store: a draft is not a message and never reaches the server.
 //
 // ── TWO KEYS, BECAUSE A ROOM CAN CHANGE ITS MIND ABOUT ITS ID ───────────────
@@ -72,7 +72,7 @@
 // reload it exists to protect.
 // ============================================================================
 
-import { DRAFT_TTL_MS } from "@host/lib/drafts/useTextDraft";
+import { DRAFT_TTL_MS } from "@ai-matrx/kit/drafts";
 
 const PREFIX = "matrx.composer-draft.";
 const ALIAS_PREFIX = "matrx.composer-draft.surface.";

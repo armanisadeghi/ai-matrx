@@ -21,7 +21,7 @@ import React, {
 import {
   payloadSafetyStore,
   type PayloadRecord,
-} from "@/lib/persistence/payloadSafetyStore";
+} from "@ai-matrx/kit/payload-safety";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setOnline } from "@/lib/redux/net/netHealthSlice";
 

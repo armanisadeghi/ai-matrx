@@ -754,7 +754,7 @@
   list-style-type: lower-alpha;
 }
 
-/* The shared "look here" cue — see `lib/dom/flash-attention.ts`. Animation
+/* The shared "look here" cue — see `@ai-matrx/kit/dom`. Animation
    only (box-shadow), never layout, so flashing an element cannot nudge the
    page around it. */
 .matrx-attention-ring {

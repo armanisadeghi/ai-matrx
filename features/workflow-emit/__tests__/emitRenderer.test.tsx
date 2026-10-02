@@ -195,7 +195,7 @@ describe("emitRendererCache invalidation (D115 — the sibling gap)", () => {
     // Importing the cache is what registers the callback (module init — the
     // D115 inversion). It must therefore come BEFORE the fire.
     const cache = await import("../emitRendererCache");
-    const registry = await import("@/lib/invalidation/invalidation-registry");
+    const registry = await import("@ai-matrx/kit/invalidation");
 
     const first = await cache.loadEmitRenderer("ref_edit");
     expect(first).toBeTruthy();
@@ -219,7 +219,7 @@ describe("emitRendererCache invalidation (D115 — the sibling gap)", () => {
     mockFetch.mockResolvedValue(null);
 
     const cache = await import("../emitRendererCache");
-    const registry = await import("@/lib/invalidation/invalidation-registry");
+    const registry = await import("@ai-matrx/kit/invalidation");
 
     await cache.loadEmitRenderer("ref_x");
     expect(cache.isKnownNoEmitRenderer("ref_x")).toBe(true);

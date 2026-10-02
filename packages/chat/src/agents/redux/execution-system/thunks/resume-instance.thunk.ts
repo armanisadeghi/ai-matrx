@@ -89,7 +89,7 @@ import {
   createRequest,
   setRequestStatus,
 } from "../active-requests/active-requests.slice";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 interface ResumeInstanceArgs {
   conversationId: string;

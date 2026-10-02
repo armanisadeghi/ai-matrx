@@ -26,7 +26,7 @@ import {
 } from "@ai-matrx/design-system";
 import { Alert, AlertDescription } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 export type DuplicateOutcomeState = "loading" | "success" | "error";
 

@@ -31,7 +31,7 @@ import {
 } from "./components/SyncStorageMeters";
 import { useDevicesAndSync } from "./useDevicesAndSync";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 export function DevicesSyncTab() {
   const { devices, mappings, loading, error, liveStatus, refresh } =

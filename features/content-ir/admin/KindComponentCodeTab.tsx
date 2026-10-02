@@ -25,7 +25,7 @@ import { toast } from "@/lib/toast";
 import {
   fireInvalidation,
   INVALIDATION_KEYS,
-} from "@/lib/invalidation/invalidation-registry";
+} from "@ai-matrx/kit/invalidation";
 import type {
   KindDetailData,
   KindExampleListItem,

@@ -128,8 +128,8 @@ jest.mock("@/features/access-gate/components/AccessGate", () => ({
   AccessGate: ({ id }: { id: string }) => <div>No access page for {id}</div>,
 }));
 
-jest.mock("@/hooks/use-media-query", () => ({
-  useMediaQuery: () => desktopWorkspace,
+jest.mock("@ai-matrx/kit/media-query", () => ({
+  ...jest.requireActual("@ai-matrx/kit/media-query"), useMediaQuery: () => desktopWorkspace,
 }));
 
 import { VaultWorkspace } from "../components/VaultWorkspace";

@@ -30,7 +30,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { AlertCircle, Copy, Loader2, Save, X } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import { DynamicIcon } from "@ai-matrx/icons";
 import { useToast } from "@/components/ui/use-toast";

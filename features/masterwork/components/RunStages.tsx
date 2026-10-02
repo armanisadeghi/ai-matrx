@@ -58,7 +58,7 @@ import { AlertTriangle, Check, Circle, Loader2 } from "lucide-react";
 
 import { DEFAULT_EXPECTED_MS } from "@/lib/durable-run/useDurableRun";
 import { WorkingNotice } from "@/lib/progress/WorkingNotice";
-import { honestProgressSummary } from "@/lib/progress/honestSummary";
+import { honestProgressSummary } from "@ai-matrx/kit/progress";
 import { cn } from "@/lib/utils";
 
 import type { IngestProgress } from "../durable-run/ingestProgress";

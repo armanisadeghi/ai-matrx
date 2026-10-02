@@ -6,7 +6,7 @@
  * opt into it where you need". Registration is by ACTION NAME, so a heavy
  * feature cluster can register itself without the ubiquitous subscriber ever
  * importing it (the same zero-import-edge shape as
- * `lib/invalidation/invalidation-registry.ts`, and for the same build reason).
+ * `@ai-matrx/kit/invalidation`, and for the same build reason).
  *
  * NOTHING FAILS SILENTLY. Three ways a directive can go nowhere, and all three
  * say so with the remedy:

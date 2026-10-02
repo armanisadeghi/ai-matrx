@@ -27,7 +27,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";

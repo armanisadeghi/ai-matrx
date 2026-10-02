@@ -23,7 +23,7 @@ import { cn } from "@ai-matrx/design-system";
 import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
-import { formatJson } from "@host/utils/json/json-cleaner-utility";
+import { formatJson } from "@ai-matrx/kit/json-format";
 import { fetchFullAgent } from "../../../agents/redux/agent-definition/thunks";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "../../../agents/menu/agent-actions";

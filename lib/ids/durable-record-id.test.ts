@@ -1,5 +1,5 @@
 /**
- * THE durable-id seam (lib/ids/durable-record-id.ts).
+ * THE durable-id seam (@ai-matrx/kit/ids).
  *
  * 1. Behavior: every id the stream mints for a record the database never saw
  *    answers "no durable id"; a real row id passes through unchanged.
@@ -17,7 +17,7 @@ import {
   durableRecordId,
   isClientTempId,
   mintClientTempId,
-} from "./durable-record-id";
+} from "@ai-matrx/kit/ids";
 
 describe("durableRecordId", () => {
   it.each([
@@ -243,7 +243,7 @@ describe("client-temp id census", () => {
       if (rel === THIS_SEAM) continue;
       for (const line of mintOffenses(rel, text)) offenders.push(`${rel}:${line}`);
     }
-    // Remedy: mint through mintClientTempId (lib/ids/durable-record-id.ts).
+    // Remedy: mint through mintClientTempId (@ai-matrx/kit/ids).
     expect(offenders).toEqual([]);
   });
 

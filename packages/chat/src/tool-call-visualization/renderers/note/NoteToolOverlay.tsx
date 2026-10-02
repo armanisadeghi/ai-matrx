@@ -16,7 +16,7 @@ import type { ToolRendererProps } from "../../types";
 import { isTerminal } from "../_shared";
 import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
-import { formatAbsoluteDate, formatRelativeTime } from "@host/utils/datetime";
+import { formatAbsoluteDate, formatRelativeTime } from "@ai-matrx/kit/format";
 import { useOpenNotesWindow } from "../../../host/window-openers";
 
 import { useNoteToolData, type NoteToolMode } from "./useNoteToolData";

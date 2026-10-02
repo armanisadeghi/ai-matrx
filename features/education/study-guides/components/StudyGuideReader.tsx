@@ -61,7 +61,7 @@ import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   loadStudyGuide,
   loadStudyGuideIndex,

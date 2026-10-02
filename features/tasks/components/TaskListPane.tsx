@@ -52,7 +52,7 @@ import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInpu
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { formatDateOnly } from "@/utils/dateOnly";
+import { formatDateOnly } from "@ai-matrx/kit/dates";
 import {
   buildTaskListPayload,
   buildTaskRowPayload,

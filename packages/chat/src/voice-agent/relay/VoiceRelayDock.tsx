@@ -28,7 +28,7 @@ import {
 } from "./useVoiceRelaySession";
 import type { QuestionPacing } from "./types";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@host/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 export interface VoiceRelayDockProps {
   /** The brain — the agent this conversation belongs to. */

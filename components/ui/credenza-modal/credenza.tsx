@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { cn } from "@/styles/themes/utils";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useMediaQuery } from "@ai-matrx/kit/media-query";
 import {
   Dialog,
   DialogClose,

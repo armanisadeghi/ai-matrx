@@ -42,8 +42,8 @@
 import { createContext, useContext, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MoreHorizontal, type LucideIcon } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { useMediaQuery } from "@ai-matrx/kit/media-query";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import {

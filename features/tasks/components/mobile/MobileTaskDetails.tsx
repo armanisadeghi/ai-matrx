@@ -65,7 +65,7 @@ import { TaskProvenanceChip } from "../TaskProvenanceChip";
 import { TaskSnoozeButton } from "../TaskSnoozeButton";
 import { TaskEditorCopyButtonsForDraft } from "../editor/TaskEditorCopyButtons";
 import type { UpdateTaskInput } from "@/features/tasks/services/taskService";
-import { isValidDateOnly } from "@/utils/dateOnly";
+import { isValidDateOnly } from "@ai-matrx/kit/dates";
 import { toast } from "@/lib/toast";
 
 interface MobileTaskDetailsProps {

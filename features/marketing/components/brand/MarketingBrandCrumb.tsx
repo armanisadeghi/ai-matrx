@@ -61,7 +61,7 @@ import { marketingSeg } from "@/features/marketing/lib/keys";
 import { useAllBrandOptions, useBrandSites } from "@/features/marketing/data/hooks";
 import { brandSwitchHref } from "@/features/marketing/lib/brand-switch";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 
 const CRUMB_LINK =

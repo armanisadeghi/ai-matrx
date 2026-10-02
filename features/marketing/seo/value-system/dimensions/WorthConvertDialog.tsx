@@ -48,7 +48,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import { valueSurfaceQueryKeys } from "../rules/data";
 import { ImpactPanel } from "../rules/ImpactPanel";
 import { describeMultiplier, type BandMeta } from "../lib";

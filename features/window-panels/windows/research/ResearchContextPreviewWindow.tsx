@@ -24,7 +24,7 @@ import {
   TextSectionsWindow,
   type TextSection,
 } from "@/features/window-panels/windows/text-sections/TextSectionsWindow";
-import { formatChars, formatTokens } from "@/lib/tokens/estimate";
+import { formatChars, formatTokens } from "@ai-matrx/kit/tokens";
 import { getResourceManifest } from "@/features/research/service/resources";
 import { resolveBundle } from "@/features/research/resources/resolve";
 import { kindDef } from "@/features/research/resources/catalog";

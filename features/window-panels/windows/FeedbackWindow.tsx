@@ -62,7 +62,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
-import { useTextDraft } from "@/lib/drafts/useTextDraft";
+import { useTextDraft } from "@ai-matrx/kit/drafts";
 import {
   ensureOrganizationForWrite,
   isOrganizationSelectionCancelled,
@@ -78,7 +78,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useScreenCapture } from "@/hooks/useScreenCapture";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
@@ -90,7 +90,7 @@ import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import type { FeedbackSubject } from "@/features/overlays/openers/feedbackDialog";
 import { describeSubject, subjectMetadata } from "./feedback-subject";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

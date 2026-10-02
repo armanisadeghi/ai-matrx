@@ -9,7 +9,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";

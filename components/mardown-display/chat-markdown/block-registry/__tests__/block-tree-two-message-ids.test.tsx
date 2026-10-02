@@ -1,5 +1,5 @@
 /**
- * TWO MEANINGS, TWO FIELDS (lib/ids/durable-record-id.ts).
+ * TWO MEANINGS, TWO FIELDS (@ai-matrx/kit/ids).
  *
  * Every block BlockRenderer dispatches gets:
  *   - `messageId`        the TRANSCRIPT KEY, always present — UI keys, anchors,
@@ -87,7 +87,7 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 }));
 
 import { BlockRenderer } from "../BlockRenderer";
-import { mintClientTempId } from "@/lib/ids/durable-record-id";
+import { mintClientTempId } from "@ai-matrx/kit/ids";
 
 const noOp = () => {};
 

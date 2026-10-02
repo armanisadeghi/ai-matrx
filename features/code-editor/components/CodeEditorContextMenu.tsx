@@ -23,7 +23,7 @@ import {
   type CodeSelectionRange,
 } from '@/features/code/agent-context/buildCodeWorkspaceContextData';
 import type { EditorDiagnostic } from '@/features/code/redux/diagnosticsSlice';
-import { formatEditorSurroundContext } from '@/utils/format-editor-surround-context';
+import { formatEditorSurroundContext } from '@ai-matrx/kit/text';
 import type { ApplicationScope } from '@ai-matrx/chat/agents/utils/scope-mapping';
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the

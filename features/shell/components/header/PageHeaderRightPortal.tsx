@@ -11,7 +11,7 @@
 
 import { useEffect, useId, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { setPhonePageActionCount, usePhonePageActions } from "./phone-page-actions";
 import { PhoneSheetAction } from "./RouteHeader";
 import { flattenActions } from "./route-header-layout";

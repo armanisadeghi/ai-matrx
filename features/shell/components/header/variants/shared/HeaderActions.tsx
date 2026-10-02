@@ -23,7 +23,7 @@ import BottomSheet from "./BottomSheet";
 import GlassDropdown from "./GlassDropdown";
 import type { HeaderAction } from "../types";
 import type { DeclaresRouteHeaderActions } from "../../route-header-layout";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { usePhonePageActions } from "../../phone-page-actions";
 import { HeaderActionsSlot } from "../../HeaderActionsSlot";
 

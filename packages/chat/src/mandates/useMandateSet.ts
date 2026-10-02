@@ -2,7 +2,7 @@
 
 /** Resolve a set of mandate keys in parallel with independent per-key state. */
 import { useEffect, useState } from "react";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 import {
   onMandateCacheInvalidated,
   resolveMandate,

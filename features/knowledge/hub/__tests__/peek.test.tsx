@@ -39,7 +39,7 @@ jest.mock("next/navigation", () => {
     }),
   };
 });
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => true }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => true }));
 jest.mock("@/features/shell/components/header/RouteHeader", () => ({
   __esModule: true,
   default: ({ left, right }: { left: React.ReactNode; right: React.ReactNode }) => (

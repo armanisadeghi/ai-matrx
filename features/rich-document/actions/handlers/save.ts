@@ -5,7 +5,7 @@
 // because it hard-coded `entity_type: "cx_message"`; we generalize via
 // a source → entity_type map so any source can produce a task.
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import {
   FileText,
   Save,

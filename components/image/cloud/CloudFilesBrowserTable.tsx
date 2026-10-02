@@ -54,7 +54,7 @@ import {
   isVideoMime,
   resolveMime,
 } from "@/features/files/utils/file-types";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type {
   CloudFileRecord,
   CloudFolderRecord,

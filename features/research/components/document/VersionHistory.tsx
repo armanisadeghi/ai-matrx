@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@ai-matrx/kit/media-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useDocumentVersions } from '../../hooks/useResearchState';

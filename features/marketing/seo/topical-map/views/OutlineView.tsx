@@ -31,7 +31,7 @@ import { ClipboardFallbackDialog } from "@/components/dialogs/clipboard-fallback
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useOpenTopicPanel } from "@/features/overlays/openers/topicalMapTopicPanel";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";

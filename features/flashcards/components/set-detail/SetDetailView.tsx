@@ -70,7 +70,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAccess } from "@/utils/permissions/access";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { canEditAccess } from "@/utils/permissions/access-core";

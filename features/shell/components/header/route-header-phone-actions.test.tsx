@@ -20,7 +20,7 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let PHONE = true;
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => PHONE }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => PHONE }));
 jest.mock("./PageHeader", () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => <div data-test-page-header>{children}</div>,

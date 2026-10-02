@@ -51,7 +51,7 @@ import {
   type VaultBackupRestoreResult,
 } from "../vault-backup-service";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 const BACKUP_FILENAME = "matrx-vault-backup.matrxvault";
 

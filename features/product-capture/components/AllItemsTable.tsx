@@ -42,7 +42,7 @@ import {
 } from "../item-actions";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 import type { CaptureItem } from "../types";
 import { closeItem, deleteItem, listAllFiles, listAllItems } from "../service";

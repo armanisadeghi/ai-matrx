@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import FlexibleLoadingComponent from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultLoadingComponent";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
 import { PiMagicWandFill } from "react-icons/pi";
 import { isJsonObject, type JsonObject } from "@/types/json";

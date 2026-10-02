@@ -55,7 +55,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";

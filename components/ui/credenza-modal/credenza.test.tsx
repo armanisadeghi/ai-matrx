@@ -6,10 +6,10 @@ import {
   CredenzaContent,
   CredenzaTitle,
 } from "./credenza";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useMediaQuery } from "@ai-matrx/kit/media-query";
 
-jest.mock("@/hooks/use-media-query", () => ({
-  useMediaQuery: jest.fn(),
+jest.mock("@ai-matrx/kit/media-query", () => ({
+  ...jest.requireActual("@ai-matrx/kit/media-query"), useMediaQuery: jest.fn(),
 }));
 
 const mockedUseMediaQuery = jest.mocked(useMediaQuery);

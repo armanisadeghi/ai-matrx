@@ -25,7 +25,7 @@ jest.mock("@/lib/toast", () => ({
 }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => jest.fn() }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 jest.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenu: ({ children }: { children: ReactNode }) => <>{children}</>,
   DropdownMenuTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,

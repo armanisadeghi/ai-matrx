@@ -8,7 +8,7 @@
 // handler (code-splitting rule 6 — this module is reachable from every
 // RichDocument surface).
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import {
   BookOpen,
   Boxes,

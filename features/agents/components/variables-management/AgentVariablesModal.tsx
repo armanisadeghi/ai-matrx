@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Variable } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

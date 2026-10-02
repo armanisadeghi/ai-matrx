@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useWindowSize } from "@/hooks/usehooks";
+import { useWindowSize } from "@ai-matrx/kit/hooks";
 import FlashcardComponentDesktop from "./FlashcardComponentDesktop";
 import FlashcardComponentMobile from "./FlashcardComponentMobile";
 

@@ -21,7 +21,7 @@ import {
   useRefinableContent,
   type RefinableContent,
 } from "@/components/content-refine/useRefinableContent";
-import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
+import { payloadSafetyStore } from "@ai-matrx/kit/payload-safety";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";

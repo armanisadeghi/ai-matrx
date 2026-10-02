@@ -4,7 +4,7 @@ import { effectiveRowLabel, rowLabelText } from "@/features/data-tables/row-labe
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { nextSheetToolbarFit, type SheetToolbarFit } from "@/features/data-tables/sheet-toolbar-fit";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import AddColumnModal from "./AddColumnModal";
 import AddRowModal from "./AddRowModal";
 import EditRowModal from "./EditRowModal";

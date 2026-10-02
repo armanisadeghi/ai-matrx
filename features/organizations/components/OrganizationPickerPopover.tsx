@@ -31,7 +31,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
 

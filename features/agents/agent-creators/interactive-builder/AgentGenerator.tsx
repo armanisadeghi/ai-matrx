@@ -72,7 +72,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { AgentStreamingResponse } from "./AgentJsonDisplay";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 // =============================================================================
 // Error Boundary — crash-proof fallback to raw MarkdownStream

@@ -47,7 +47,7 @@ import MobileProjectSelector from "./MobileProjectSelector";
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
 import { ActiveScopeFilterChips } from "../TaskScopeFilter";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { formatDateOnly } from "@/utils/dateOnly";
+import { formatDateOnly } from "@ai-matrx/kit/dates";
 import {
   TASK_ROW_DOM_ATTR,
   TasksListContextMenu,

@@ -65,7 +65,7 @@ import { __resetOpeningSentMarks } from "../RoomOpening";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => true }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => true }));
 
 /** Not the subject: the chat surface itself. Its empty-state hero is asserted
  *  through the exact store fields `AgentEmptyMessageDisplay` reads. */

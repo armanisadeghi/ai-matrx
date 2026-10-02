@@ -4,7 +4,7 @@
 // The html-preview action's "save" path routes through ctx.sourceAdapter.edit
 // so it works on any source that supports editing.
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import { Eye, Globe, Mail } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";

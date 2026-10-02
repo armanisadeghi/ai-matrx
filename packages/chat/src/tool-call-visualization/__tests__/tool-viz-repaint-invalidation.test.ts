@@ -3,7 +3,7 @@
  *
  * These tests pin the load-bearing shape: the ubiquitous stream-effects module
  * (`toolStateEffects`) reaches the heavy renderer clusters ONLY by firing a
- * name through `lib/invalidation/invalidation-registry` — never by import.
+ * name through `@ai-matrx/kit/invalidation` — never by import.
  * The previous implementation's `await import()` edge from `toolStateEffects`
  * into the content-ir registry added +14 GB build RSS and OOM-killed 12
  * straight Vercel builds; the source-guard test below makes that regression
@@ -16,7 +16,7 @@ import {
   INVALIDATION_KEYS,
   fireInvalidation,
   registerInvalidationCallback,
-} from "@host/lib/invalidation/invalidation-registry";
+} from "@ai-matrx/kit/invalidation";
 import { featureRegExp } from "@host/scripts/lib/source-roots.cjs";
 
 // Keep the cache module light in jest: the compiler + fetch paths are not

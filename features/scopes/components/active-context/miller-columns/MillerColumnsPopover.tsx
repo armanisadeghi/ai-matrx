@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { ContextSheet } from "@/features/scopes/components/context-assignment/ContextSheet";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import {
   MillerColumns,

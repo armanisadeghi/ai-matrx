@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import {
   applyReconciliation,

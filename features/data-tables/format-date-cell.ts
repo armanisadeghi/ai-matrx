@@ -14,10 +14,10 @@
  *
  * FIX-7B fixed the same class in the shared primitive's formatter by
  * round-tripping a date-only string through a LOCAL `Date` instead of
- * `new Date(string)` (see `utils/dateOnly.ts`). This reuses that rule rather
+ * `new Date(string)` (see `@ai-matrx/kit/dates`). This reuses that rule rather
  * than inventing a third way to parse a date.
  */
-import { formatDateOnly } from "@/utils/dateOnly";
+import { formatDateOnly } from "@ai-matrx/kit/dates";
 
 export function formatDateCellDisplay(
   value: unknown,

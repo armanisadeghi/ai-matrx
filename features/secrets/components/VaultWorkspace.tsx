@@ -37,7 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useMediaQuery } from "@ai-matrx/kit/media-query";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
 import { useAppSelector } from "@/lib/redux/hooks";

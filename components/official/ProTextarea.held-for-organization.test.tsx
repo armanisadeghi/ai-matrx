@@ -107,7 +107,7 @@ jest.mock("@/utils/supabase/client", () => ({
   },
 }));
 
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 
 // The "…" menu's agent machinery is a different subsystem entirely; stubbing it
 // keeps this suite about the recorder path and nothing else.

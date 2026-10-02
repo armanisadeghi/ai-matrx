@@ -13,7 +13,7 @@ import type { SourceDeepLink } from "@/features/source-studio/sourceStudioModel"
 
 const noop = () => undefined;
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }) }));
-jest.mock("@/hooks/use-media-query", () => ({ useMediaQuery: () => true }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useMediaQuery: () => true }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() } }));
 let mockDoc: Record<string, unknown> = {};
 const mockVersion = {

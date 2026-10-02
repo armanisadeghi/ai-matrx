@@ -31,7 +31,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import AppLink from "@/components/navigation/AppLink";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";

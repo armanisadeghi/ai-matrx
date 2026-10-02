@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";

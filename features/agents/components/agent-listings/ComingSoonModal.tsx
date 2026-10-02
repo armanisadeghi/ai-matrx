@@ -1,6 +1,6 @@
 "use client";
 
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   Dialog,
   DialogContent,

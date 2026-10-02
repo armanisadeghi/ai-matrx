@@ -21,7 +21,7 @@ import {
 } from "../../messages/messages.slice";
 import { deleteMessage } from "../delete-message.thunk";
 import { editMessage } from "../edit-message.thunk";
-import { mintClientTempId } from "@host/lib/ids/durable-record-id";
+import { mintClientTempId } from "@ai-matrx/kit/ids";
 
 const rpc = jest.fn();
 

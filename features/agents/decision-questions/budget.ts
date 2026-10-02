@@ -28,7 +28,7 @@
 import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
 import { isDecisionModelCapability } from "@/features/ai-models/capabilities/types";
 import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
-import { estimateTokensForText } from "@/lib/tokens/estimate";
+import { estimateTokensForText } from "@ai-matrx/kit/tokens";
 import type { DecisionQuestionSpec } from "./types";
 
 export const DECISION_BUDGET_DEFAULTS = {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle, ChevronDown, ChevronUp, Loader2, AlertCircle, ExternalLink, BookOpen } from 'lucide-react';
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
 import InlineMarkdownRenderer from "@/components/mardown-display/markdown-classification/custom-views/common/InlineMarkdownRenderer";
 

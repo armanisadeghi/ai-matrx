@@ -64,7 +64,7 @@ import { CanvasPanePutAwayToggle } from "./CanvasHeaderToggle";
 import { syncCanvasItemToCloud } from "@/features/canvas/materialization/syncCanvasItemToCloud";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { CanvasArtifactDebugPanel } from "@/features/canvas/components/CanvasArtifactDebugPanel";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 // CanvasShareSheet pulls in markdown utilities and image picker — keep it
 // lazy so the canvas itself stays small on first paint.

@@ -63,7 +63,7 @@ import {
 } from "@/features/admin/applications/catalogs/schemas";
 import type { CatalogEntryRow } from "@/features/admin/applications/catalogs/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 interface CatalogKindTableProps {
   app: string;

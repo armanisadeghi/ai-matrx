@@ -17,7 +17,7 @@ import { ArrowLeftRight, Check, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 
 import { MermaidRenderer } from "../MermaidRenderer";

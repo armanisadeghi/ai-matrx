@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

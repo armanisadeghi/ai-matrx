@@ -30,7 +30,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, ChevronRight, Copy, Loader2 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   entityTokenForAgentScope,
   getPlacementTypeMeta,

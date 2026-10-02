@@ -17,7 +17,7 @@
 
 import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
-import { estimateTokensForText } from "@host/lib/tokens/estimate";
+import { estimateTokensForText } from "@ai-matrx/kit/tokens";
 
 // Flag keys, the stored flag shape and the compatibility modes are GENERATED
 // from aidream `matrx_ai/config/message_flags.py` (scripts/generate_types.py →

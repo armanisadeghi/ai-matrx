@@ -77,7 +77,7 @@ import {
  * features/agents/audits/04-legacy-obliteration-plan.md.
  */
 
-import { mintClientTempId } from "@host/lib/ids/durable-record-id";
+import { mintClientTempId } from "@ai-matrx/kit/ids";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
@@ -186,7 +186,7 @@ import {
 import { selectModelById } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
 import { getUserId } from "@host/utils/auth/getUserId";
-import { payloadSafetyStore } from "@host/lib/persistence/payloadSafetyStore";
+import { payloadSafetyStore } from "@ai-matrx/kit/payload-safety";
 import {
   startRequest as startNetRequest,
   setPhase as setNetPhase,
@@ -198,7 +198,7 @@ import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import type { ToolSpec } from "../../../types/tool-injection.types";
 import { isUiGateKey } from "@host/lib/redux/slices/agent-settings/ui-gates";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 // Model-gated UI flags that may ride flattened in the builder's working state
 // (e.g. `tools: { allowed: true }`, `image_urls: true`). They must not be
@@ -793,7 +793,7 @@ export const executeManualInstance = createAsyncThunk<
         if (resourceBlocks.length > 0) content.push(...resourceBlocks);
         // Never UUID-shaped: it has no row until `promoteMessageId` swaps in
         // the server id (and an incognito bubble never gets one), so no
-        // reader may mistake it for a durable message (lib/ids/durable-record-id.ts).
+        // reader may mistake it for a durable message (@ai-matrx/kit/ids).
         userMessageClientTempId = mintClientTempId("user", uuidv4());
         const nextPosition = selectNextMessagePosition(conversationId)(
           getState() as ChatRootState,

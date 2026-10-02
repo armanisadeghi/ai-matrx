@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { Card, CardTitle } from "@/components/ui/card";
 import { MobileOverlayWrapper } from '@/components/official/MobileOverlayWrapper';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@ai-matrx/kit/media-query';
 import { useCartesia } from '@/hooks/tts/useCartesia';
 import { VoiceOptions, VoiceSpeed } from '@/lib/cartesia/cartesia.types';
 import { AiVoice } from '@/types/aiAudioTypes';

@@ -31,7 +31,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   EMPTY_TREE_CHILDREN,

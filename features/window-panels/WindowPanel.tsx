@@ -64,7 +64,7 @@ import {
 } from "@/lib/redux/slices/windowManagerSlice";
 import type { GlobalLayoutType } from "./utils/windowArrangements";
 import { safeViewportDims } from "./utils/rectClamp";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { getStaticEntryByOverlayId } from "./registry/windowRegistryMetadata";
 import {

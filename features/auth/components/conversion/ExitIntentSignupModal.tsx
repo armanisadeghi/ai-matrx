@@ -17,7 +17,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useExitIntent } from "@/features/auth/hooks/useExitIntent";
 import { useUserType } from "@/features/auth/hooks/useUserType";
 import { cn } from "@/lib/utils";

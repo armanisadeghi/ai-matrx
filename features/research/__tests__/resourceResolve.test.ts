@@ -15,7 +15,7 @@
 import { parseManifest } from "../resources/manifest";
 import { applySelector } from "../resources/selector";
 import { planResolution, previewBundle } from "../resources/resolve";
-import { estimateTokens, charsForTokenBudget } from "@/lib/tokens/estimate";
+import { estimateTokens, charsForTokenBudget } from "@ai-matrx/kit/tokens";
 import type {
   ContextBundle,
   ManifestItemRaw,

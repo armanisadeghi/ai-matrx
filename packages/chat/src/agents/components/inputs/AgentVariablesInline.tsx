@@ -41,7 +41,7 @@ import { variableValueToDisplay, variableValueToInputText } from "../../utils/va
 import { readMediaVariableFileId } from "../../utils/media-variable-value";
 import { isMediaVariableType } from "../../types/agent-definition.types";
 import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
-import { calculateVisualViewportLift } from "@host/lib/dom/visual-viewport-lift";
+import { calculateVisualViewportLift } from "@ai-matrx/kit/dom";
 import { collapsedRowChoices, collapsedRowKind } from "./collapsed-row";
 import { RowChoicesButton } from "./RowChoicesButton";
 import { isControlVariable } from "@ai-matrx/agents";

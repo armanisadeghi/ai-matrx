@@ -6,7 +6,7 @@ import { cn } from "@ai-matrx/design-system";
 import {
   honestProgressSummary,
   type RunShape,
-} from "@host/lib/progress/honestSummary";
+} from "@ai-matrx/kit/progress";
 import { isJsonObject } from "@host/types/json";
 
 export type LiveRunProgressStatus =
@@ -26,14 +26,14 @@ export interface LiveRunProgressState {
   /**
    * What the person can do when a step fails. Optional: `honestProgressSummary`
    * supplies a sensible default, so a surface never ships a failure with no
-   * way out. See `lib/progress/honestSummary.ts`.
+   * way out. See `@ai-matrx/kit/progress`.
    */
   failureRemedy?: string;
   /**
    * Are these items ORDERED milestones or independent units over a pile?
    * Required, and for the same reason the items themselves are consulted at
    * all: over a fan-out, "Nothing after it will run" is simply false, and it
-   * was printed over fifteen files that ran fine (`lib/progress/honestSummary.ts`).
+   * was printed over fifteen files that ran fine (`@ai-matrx/kit/progress`).
    */
   shape: RunShape;
   items: LiveRunProgressItem[];

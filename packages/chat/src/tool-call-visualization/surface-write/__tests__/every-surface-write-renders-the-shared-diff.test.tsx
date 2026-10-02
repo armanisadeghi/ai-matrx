@@ -36,7 +36,7 @@ jest.mock("@host/lib/scoped-config/sessionKnob", () => ({
   getSessionKnob: () => undefined,
 }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));
-jest.mock("@host/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 jest.mock("../../db-renderer/toolRendererCache", () => ({
   getCachedToolRenderer: () => null,
   getCachedToolMeta: () => null,

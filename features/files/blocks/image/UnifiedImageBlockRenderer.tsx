@@ -67,7 +67,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { MediaLightbox } from "@ai-matrx/media/react";
 import { BlockShareBody, BlockSharePopover } from "../BlockSharePopover";
 import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";

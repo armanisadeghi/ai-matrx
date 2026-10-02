@@ -25,7 +25,7 @@ import {
   type HealthFinding,
 } from "@/features/mandates/code-references/health";
 import { plainFailureReason } from "@/lib/entity-list/failure";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const SEVERITY_CLASS: Record<HealthFinding["severity"], string> = {

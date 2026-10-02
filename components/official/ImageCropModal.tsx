@@ -32,7 +32,7 @@ import {
 import { ImageCropUploader } from '@/components/official/ImageCropUploader';
 import type { ImageUploaderResult } from '@/components/official/ImageAssetUploader';
 import type { AssetPreset, Visibility } from "@/features/files/types";
-import { useMediaQuery } from '@/hooks/use-media-query';
+import { useMediaQuery } from '@ai-matrx/kit/media-query';
 
 export interface ImageCropModalProps {
     open: boolean;

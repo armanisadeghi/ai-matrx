@@ -14,7 +14,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 import {
   Check,
   ChevronRight,

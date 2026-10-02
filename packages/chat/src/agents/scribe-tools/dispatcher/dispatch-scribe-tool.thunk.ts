@@ -14,7 +14,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../../store/root-state";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 import { submitToolResult } from "../../api/submit-tool-results";
 import { upsertToolLifecycle } from "../../redux/execution-system/active-requests/active-requests.slice";
 import { getScribeToolEntry } from "../tools/registry";

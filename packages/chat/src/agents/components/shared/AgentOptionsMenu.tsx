@@ -58,7 +58,7 @@ import {
 import { toast } from "../../../host/notify";
 import { cn } from "@ai-matrx/design-system";
 import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
   DropdownMenu,

@@ -36,8 +36,8 @@ import {
   Switch,
   cn,
 } from "@ai-matrx/design-system";
-import { formatChars, pagesPhrase } from "@/lib/tokens/estimate";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { formatChars, pagesPhrase } from "@ai-matrx/kit/tokens";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { createSourceRef, type SourceRef, type SourceRefOptions } from "@ai-matrx/agents/sources";
 import { SourcePartsPicker } from "./SourcePartsPicker";
 import { ARCHIVED_SOURCE_LABEL, RestoreSourceButton, isArchivedSource } from "../components/ArchivedSource";

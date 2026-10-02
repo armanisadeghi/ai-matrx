@@ -1316,12 +1316,6 @@
       "reason": "How long an error-capture flush waits for the browser to acquire any identity before giving up on recording; a boot-race resilience budget, not a business setting."
     },
     {
-      "file": "matrx-frontend/lib/drafts/useTextDraft.ts",
-      "name": "WRITE_DEBOUNCE_MS",
-      "kind": "ui-timing",
-      "reason": "Debounce before mirroring a text field's draft into sessionStorage; the same interaction-feel pattern used by other editors in this codebase."
-    },
-    {
       "file": "matrx-frontend/lib/entity-list/selection.ts",
       "name": "BULK_RESOLVE_PAGE_SIZE",
       "kind": "defensive-cap",

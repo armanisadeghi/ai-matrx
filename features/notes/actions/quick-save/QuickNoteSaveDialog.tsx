@@ -15,7 +15,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { Note } from "@/features/notes/types";
 import { QuickNoteSaveCore, type PostSaveAction } from "./QuickNoteSaveCore";
 

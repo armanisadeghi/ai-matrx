@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FileCode } from "lucide-react";
-import { keyEventInside, surfaceOwnsKey } from "@/utils/keyboard-scope";
+import { keyEventInside, surfaceOwnsKey } from "@ai-matrx/kit/keyboard-scope";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { codeFilesActions } from "@/features/code-files/redux/slice";

@@ -1,5 +1,5 @@
 "use client";
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import React, { useCallback } from "react";
 import { BlockComponents, LoadingComponents } from "./BlockComponentRegistry";
 import { resolveArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
@@ -471,7 +471,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // TWO MEANINGS, TWO FIELDS. `messageId` is the TRANSCRIPT KEY — always
   // present (a client-temp answer included) and used for UI keys, anchors,
   // canvas de-duplication and local state. `durableMessageId` is the DATABASE
-  // identity — null-filtered through the seam (lib/ids/durable-record-id.ts)
+  // identity — null-filtered through the seam (@ai-matrx/kit/ids)
   // and the only one a database read or write may use. A block that writes
   // provenance takes `durableMessageId`; never the transcript key.
   const durableMessageId = durableRecordId(messageId) ?? undefined;

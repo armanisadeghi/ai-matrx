@@ -20,7 +20,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn(), refresh: jest.fn() }) }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => mockMobile }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => mockMobile }));
 jest.mock("@/components/rich-content/RichContent", () => ({
   RichContent: ({ source }: { source: string }) => <span>{source}</span>,
 }));

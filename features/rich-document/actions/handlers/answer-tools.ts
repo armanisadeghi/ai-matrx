@@ -14,7 +14,7 @@
 //
 // Every action is ABSENT where it cannot work (visible → false) — never dead.
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import {
   FileInput,
   Loader2,

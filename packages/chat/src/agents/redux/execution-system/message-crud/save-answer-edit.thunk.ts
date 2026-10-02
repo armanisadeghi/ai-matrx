@@ -27,7 +27,7 @@
  * where history is rebuilt (matrx-ai `db/edited_answers.py`).
  */
 
-import { durableRecordId } from "@host/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { Json } from "@host/types/database.types";

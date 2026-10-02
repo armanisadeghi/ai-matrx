@@ -6809,10 +6809,6 @@
       "name": "MAX_UNPARSED_CHARS"
     },
     {
-      "file": "matrx-frontend/lib/dom/flash-attention.ts",
-      "name": "ATTENTION_MS"
-    },
-    {
       "file": "matrx-frontend/lib/durable-run/useDurableRun.ts",
       "name": "RECONNECT_BASE_DELAY_MS"
     },

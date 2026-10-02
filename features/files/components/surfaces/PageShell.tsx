@@ -27,7 +27,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { KEY_SCOPE_ATTR } from "@/utils/keyboard-scope";
+import { KEY_SCOPE_ATTR } from "@ai-matrx/kit/keyboard-scope";
 import { useRouter } from "next/navigation";
 import {
   useGroupRef,
@@ -61,7 +61,7 @@ import {
 } from "@/components/ui/resizable";
 import { pct } from "@/components/matrx/resizable/pct";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectActiveFileId,

@@ -77,7 +77,7 @@ import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import { RunStages } from "../components/RunStages";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 interface KnobState {
   rounds: number;

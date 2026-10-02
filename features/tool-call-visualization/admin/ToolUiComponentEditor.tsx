@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { ToolUiComponentRow } from "./types";
 import {
   getAllAvailableImports,

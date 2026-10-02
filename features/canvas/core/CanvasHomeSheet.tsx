@@ -19,7 +19,7 @@ import { Sheet, SheetContent, SheetTitle } from "@ai-matrx/design-system";
 import AppLink from "@/components/navigation/AppLink";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { closeCanvasHome, selectCanvasWidth } from "@/features/canvas/redux/canvasSlice";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { SavedCanvasItems } from "./SavedCanvasItems";
 
 /** The canvas's own width (the person's dragged width), so home and an item open the same size. */

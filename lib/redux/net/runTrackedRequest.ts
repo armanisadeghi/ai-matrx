@@ -22,7 +22,7 @@ import {
   type NetRequestPhase,
 } from "./netRequestsSlice";
 import { recordOutcome } from "./netHealthSlice";
-import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
+import { payloadSafetyStore } from "@ai-matrx/kit/payload-safety";
 import { isNetError, toNetError } from "@ai-matrx/data/net";
 
 export interface TrackedRequestContext {

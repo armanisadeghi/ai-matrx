@@ -48,7 +48,7 @@ import {
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../store/hooks";
-import { useMediaQueryState } from "@host/hooks/use-media-query";
+import { useMediaQueryState } from "@ai-matrx/kit/media-query";
 import { MatrxFloatingFrame } from "@host/components/matrx/resizable/MatrxFloatingFrame";
 import { DockedSidePanel } from "@host/components/official/side-panel/DockedSidePanel";
 import {

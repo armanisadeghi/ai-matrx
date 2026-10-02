@@ -10,7 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/use-toast";
 import { useAiAudio } from "@/features/audio/voice/AiVoicePage";
 import { AiVoice } from "@/types/aiAudioTypes";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { FloatingActionBar } from "./components/FloatingActionBar";
 import { DesktopSearchBar } from "./components/DesktopSearchBar";
 import { FilterModal } from "./components/FilterModal";

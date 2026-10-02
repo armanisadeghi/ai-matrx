@@ -28,7 +28,7 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { cn } from "@/lib/utils";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
-import { formatJson } from "@/utils/json/json-cleaner-utility";
+import { formatJson } from "@ai-matrx/kit/json-format";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";

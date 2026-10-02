@@ -1,7 +1,7 @@
 /**
  * LEGACY COMPATIBILITY WRAPPER
  *
- * All JSON extraction now lives in `utils/json/extract-json.ts`.
+ * All JSON extraction now lives in `@ai-matrx/kit/json-extract`.
  * This file re-exports the old interface shape so existing callers
  * continue to work without changes. New code should import from
  * `@/utils/json` directly.
@@ -11,8 +11,8 @@ import {
   extractAllJson,
   extractFirstJson,
   type ExtractedJson,
-} from "@host/utils/json/extract-json";
-import { findAllFencedBlocks } from "@host/utils/json/json-structural";
+} from "@ai-matrx/kit/json-extract";
+import { findAllFencedBlocks } from "@ai-matrx/kit/json-extract";
 
 // ── Legacy interface preserved for backward compat ──────────────────────────
 

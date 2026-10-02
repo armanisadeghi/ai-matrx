@@ -45,8 +45,8 @@ import {
   surfaceCheckState,
 } from "@ai-matrx/chat/surfaces/utils/surface-check-ledger";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { useMediaQuery } from "@ai-matrx/kit/media-query";
 import {
   SurfacesFilterBar,
   type SurfacesFilterState,

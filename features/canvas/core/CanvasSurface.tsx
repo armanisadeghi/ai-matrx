@@ -30,7 +30,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { CanvasPane } from "./CanvasPane";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 
 export const CANVAS_TOP_PANEL_ID = "canvas-top";

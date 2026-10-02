@@ -16,7 +16,7 @@ import {
   useTransform,
 } from "motion/react";
 import Link from "next/link";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 export interface BalancedFloatingDockProps {
   items: { label: string; icon: React.ReactNode; href: string }[];

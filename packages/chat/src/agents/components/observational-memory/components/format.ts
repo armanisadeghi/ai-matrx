@@ -5,7 +5,7 @@
  * prettified rounding — fractional cents and exact token counts matter.
  */
 
-import { parseTimestamp } from "@host/utils/datetime";
+import { parseTimestamp } from "@ai-matrx/kit/format";
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
 import { currentPointsRate } from "@host/components/cost/pointsRate";
 import { currentCostUnit } from "@host/components/cost/costUnit";

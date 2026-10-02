@@ -13,7 +13,7 @@
  * text-style inputs routed through VariableInputComponent.
  */
 
-import { datetimeLocalValue } from "@host/lib/dates/datetimeLocalValue";
+import { datetimeLocalValue } from "@ai-matrx/kit/dates";
 import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@host/components/official/ProTextarea";
 import { cn } from "@ai-matrx/design-system";

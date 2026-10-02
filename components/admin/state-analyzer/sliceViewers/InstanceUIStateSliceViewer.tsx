@@ -10,7 +10,7 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { InstanceUIStateList } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateList";
 import { InstanceUIStateCore } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateCore";
-import { formatJson } from "@/utils/json/json-cleaner-utility";
+import { formatJson } from "@ai-matrx/kit/json-format";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 
 // ─── Copy helper ──────────────────────────────────────────────────────────────

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, X, Tag, PanelLeft, Columns2 } from "lucide-react";
 import { MessageRole } from "@/features/message-templates/types/message-templates-db";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import MarkdownStream from "@/components/MarkdownStream";
 import { createTemplate, clearTemplateCache } from "@/features/message-templates/services/message-templates-service";
 import { useToast } from "@/components/ui/use-toast";

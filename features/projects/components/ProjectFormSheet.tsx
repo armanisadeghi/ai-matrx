@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { ProjectFormCoreProps } from "./ProjectFormCore";
 import { ProjectCreatePanel } from "./ProjectCreatePanel";
 import type { Project } from "../types";

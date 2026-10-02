@@ -19,7 +19,7 @@
  * preview text, dialogs, etc. We refuse to fire when:
  *   • The key was pressed outside this files surface (`scope`) — a board or
  *     a panel can mount several; an unfocused key inside a board tile or a
- *     window panel is the host's (utils/keyboard-scope.ts)
+ *     window panel is the host's (@ai-matrx/kit/keyboard-scope)
  *   • An input/textarea/contentEditable is focused
  *   • A dialog/alertdialog is open (Radix sets `aria-hidden` on
  *     background; we check `document.querySelector('[role="dialog"]')`)
@@ -34,7 +34,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { surfaceOwnsKey } from "@/utils/keyboard-scope";
+import { surfaceOwnsKey } from "@ai-matrx/kit/keyboard-scope";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectActiveFileId,

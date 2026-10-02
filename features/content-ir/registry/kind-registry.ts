@@ -26,7 +26,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
   INVALIDATION_KEYS,
   registerInvalidationCallback,
-} from "@/lib/invalidation/invalidation-registry";
+} from "@ai-matrx/kit/invalidation";
 import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   setJsonRootKeyLookup,

@@ -22,7 +22,7 @@
  * bodies stay mounted without a re-render.
  */
 
-import { durableRecordId } from "@host/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";

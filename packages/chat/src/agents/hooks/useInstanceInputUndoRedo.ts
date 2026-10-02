@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useCallback } from "react";
-import { keyEventInside } from "@host/utils/keyboard-scope";
+import { keyEventInside } from "@ai-matrx/kit/keyboard-scope";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   undoInputEdit,

@@ -50,7 +50,7 @@ import {
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { useUserOrganizations } from "@/features/organizations/hooks";
-import { parseDateOnly, toDateOnly, formatDateOnly } from "@/utils/dateOnly";
+import { parseDateOnly, toDateOnly, formatDateOnly } from "@ai-matrx/kit/dates";
 import { updateProject } from "../service";
 import type {
   Project,
@@ -124,7 +124,7 @@ export const PROJECT_PRIORITY_META: Record<
 
 const PRIORITY_ORDER: ProjectPriority[] = ["high", "medium", "low"];
 
-// Date-only (`yyyy-mm-dd`, no TZ shift) helpers now live in `@/utils/dateOnly`.
+// Date-only (`yyyy-mm-dd`, no TZ shift) helpers now live in `@ai-matrx/kit/dates`.
 const fmtDate = (v: string): string =>
   formatDateOnly(v, { month: "short", day: "numeric", year: "numeric" });
 

@@ -12,7 +12,7 @@
 // DRILLING.
 
 import React, { useCallback, useEffect, useRef } from "react";
-import { surfaceOwnsKey } from "@/utils/keyboard-scope";
+import { surfaceOwnsKey } from "@ai-matrx/kit/keyboard-scope";
 import { X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -37,7 +37,7 @@ import { NotePresenceBanner } from "./NotePresenceBanner";
 import { NoteVersionHistory } from "./NoteVersionHistory";
 import { NoteMetadataBar } from "./NoteMetadataBar";
 import { FolderQuickPick } from "./FolderQuickPick";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 
 export interface NotesWindowViewProps {

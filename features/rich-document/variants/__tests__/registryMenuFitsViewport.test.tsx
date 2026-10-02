@@ -42,8 +42,8 @@ async function flushMenuPositioning() {
   );
 }
 
-jest.mock("@/hooks/use-mobile", () => ({
-  useIsMobile: () => false,
+jest.mock("@ai-matrx/kit/media-query", () => ({
+  ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false,
 }));
 
 /** 768px viewport → 600px panel → ~17 rows of 32px, minus the header. */

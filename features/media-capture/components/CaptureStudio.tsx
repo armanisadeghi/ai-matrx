@@ -41,7 +41,7 @@ import {
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   createTrackedObjectUrl,
   revokeTrackedObjectUrl,

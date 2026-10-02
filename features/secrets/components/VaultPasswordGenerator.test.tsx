@@ -11,7 +11,7 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: { name: string }) =>
     selector.name === "selectUserId" ? actor.userId : actor.organizationId,
 }));
-jest.mock("@/hooks/use-media-query", () => ({ useMediaQuery: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useMediaQuery: () => false }));
 jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({ organizations: [] }),
 }));

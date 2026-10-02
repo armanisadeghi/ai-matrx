@@ -27,7 +27,7 @@ import { useCallback, useState } from "react";
 import { FileText, Loader2, MoreVertical } from "lucide-react";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   Dialog,

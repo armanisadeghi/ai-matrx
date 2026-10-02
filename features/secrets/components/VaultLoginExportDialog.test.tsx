@@ -48,8 +48,8 @@ jest.mock(
     }) => <div data-testid="organization-context-notice">{state}:{what}</div>,
   }),
 );
-jest.mock("@/hooks/use-media-query", () => ({
-  useMediaQuery: () => false,
+jest.mock("@ai-matrx/kit/media-query", () => ({
+  ...jest.requireActual("@ai-matrx/kit/media-query"), useMediaQuery: () => false,
 }));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({

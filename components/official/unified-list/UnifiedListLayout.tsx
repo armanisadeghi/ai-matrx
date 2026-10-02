@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import {
     AlertDialog,

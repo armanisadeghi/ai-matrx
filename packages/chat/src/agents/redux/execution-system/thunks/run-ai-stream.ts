@@ -92,7 +92,7 @@ import {
   readMatrxErrorCodeFromMessage,
   type MatrxLiveRunRejoin,
 } from "@ai-matrx/agents/matrx";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 /**
  * Thrown when the underlying fetch is aborted (user cancel, heartbeat-driven

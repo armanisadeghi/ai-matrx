@@ -20,7 +20,7 @@ import AdvancedMenu from "@host/components/official/AdvancedMenu";
 import { Pin, Copy } from "lucide-react";
 import { openActions } from "../useMessageListInteractions";
 
-jest.mock("@host/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 
 // jsdom has no ResizeObserver; the menu only uses it for its scroll fade.
 (globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {

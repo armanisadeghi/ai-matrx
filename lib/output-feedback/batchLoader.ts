@@ -9,7 +9,7 @@
 
 import { fetchOutputFeedbackForSubjects } from "./service";
 import { hydrateOutputFeedback, peekOutputFeedback } from "./store";
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 
 const MAX_IDS_PER_QUERY = 200;
 const BATCH_WINDOW_MS = 16;

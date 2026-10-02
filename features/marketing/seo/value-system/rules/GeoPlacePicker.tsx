@@ -26,7 +26,7 @@ import { Building2, Flag, Loader2, MapPin, Navigation, Search, X } from "lucide-
 import { cn } from "@/styles/themes/utils";
 import { Input } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import { geoPlaceSearchQueryKey, searchGeoPlaces } from "./data";
 import type { GeoPlace } from "./types";
 

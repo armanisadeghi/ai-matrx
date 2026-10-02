@@ -6,7 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/features/notes/types";
 import { QuickNoteSaveCore, type PostSaveAction } from "./QuickNoteSaveCore";

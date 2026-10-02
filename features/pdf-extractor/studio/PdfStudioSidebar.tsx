@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { ItemMenu, ItemContextMenu } from "@/components/official/item/ItemMenu";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { FileRowContextMenu } from "@/features/files/components/core/RowContextMenu/RowContextMenu";

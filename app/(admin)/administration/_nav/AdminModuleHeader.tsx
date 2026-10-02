@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useWindowSize } from "@/hooks/usehooks";
+import { useWindowSize } from "@ai-matrx/kit/hooks";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import ModuleHeaderMobileContent from "@/components/matrx/navigation/ModuleHeaderMobileContent";
 import type { ModulePage } from "@/components/matrx/navigation/types";

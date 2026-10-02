@@ -16,7 +16,7 @@ import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/redux/store";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { SettingsTree } from "@/components/official/settings/tree/SettingsTree";
 import { SettingsDrawerNav } from "@/components/official/settings/tree/SettingsDrawerNav";
 import { UniversalSettingsProvider } from "../universal/UniversalSettingsContext";

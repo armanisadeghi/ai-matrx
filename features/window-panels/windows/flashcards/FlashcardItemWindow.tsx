@@ -15,7 +15,7 @@ import {
   toFlashcardMobileCards,
   useFlashcardMobileViewState,
 } from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { ReviewResult } from "@/features/flashcards/types";
 import type { FaceImageRef } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";

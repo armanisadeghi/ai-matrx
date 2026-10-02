@@ -28,7 +28,7 @@ import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {

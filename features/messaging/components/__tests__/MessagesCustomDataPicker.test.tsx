@@ -30,8 +30,8 @@ const useRecordPage = jest.fn(
   }),
 );
 
-jest.mock("@/hooks/usehooks/useDebounce", () => ({
-  useDebounce: (value: string) => value,
+jest.mock("@ai-matrx/kit/hooks", () => ({
+  ...jest.requireActual("@ai-matrx/kit/hooks"), useDebounce: (value: string) => value,
 }));
 
 jest.mock("@ai-matrx/records/react", () => ({

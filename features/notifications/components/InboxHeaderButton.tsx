@@ -22,7 +22,7 @@ import { useEffect, useRef, useState } from "react";
 import { BellRingTapButton, BellTapButton } from "@ai-matrx/tap-target/buttons";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";

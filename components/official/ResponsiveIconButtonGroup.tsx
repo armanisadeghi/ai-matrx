@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { MoreHorizontal, LucideIcon } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import IconButton from "@/components/official/IconButton";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";

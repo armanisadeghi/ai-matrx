@@ -38,7 +38,7 @@ import {
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
-import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
+import { payloadSafetyStore } from "@ai-matrx/kit/payload-safety";
 import { resilientFetch } from "@ai-matrx/data/net";
 import { monitorStream } from "@ai-matrx/data/net";
 import {

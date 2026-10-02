@@ -1,6 +1,6 @@
 "use client";
 
-import { useMediaQueryState } from "@/hooks/use-media-query";
+import { useMediaQueryState } from "@ai-matrx/kit/media-query";
 import { TOUCH_ONLY_DEVICE_QUERY } from "./composerSubmit";
 
 /**

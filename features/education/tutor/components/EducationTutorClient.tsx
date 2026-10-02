@@ -97,7 +97,7 @@ import { TutorLanding } from "./TutorLanding";
 import { TutorTrustStrip } from "./TutorTrustStrip";
 import { TutorTurnTrust } from "./TutorTurnTrust";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import {

@@ -8,7 +8,7 @@ import {
   studyResultsByIndex,
   toFlashcardMobileCardsFromStudy,
 } from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useFlashcardStudy } from "../data/useFlashcardStudy";
 import { MatchingCardPlayer } from "./study/MatchingCardPlayer";
 import {

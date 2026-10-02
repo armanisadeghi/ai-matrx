@@ -33,7 +33,7 @@ import {
   BottomSheetBody,
   BottomSheetHeader,
 } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { ChatRoomClient } from "@ai-matrx/chat/agents/components/chat/ChatRoomClient";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { selectSubmissionPhase } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";

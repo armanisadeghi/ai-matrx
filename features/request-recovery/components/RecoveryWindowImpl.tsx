@@ -37,9 +37,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useRequestRecovery } from "../providers/RequestRecoveryProvider";
-import type { PayloadRecord } from "@/lib/persistence/payloadSafetyStore";
+import type { PayloadRecord } from "@ai-matrx/kit/payload-safety";
 import {
   buildHumanReadableRecoveryText,
   extractUserInput,

@@ -14,7 +14,7 @@ import { EditorView } from "@codemirror/view";
 
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { cn } from "@/lib/utils";
-import { formatJson } from "@/utils/json/json-cleaner-utility";
+import { formatJson } from "@ai-matrx/kit/json-format";
 
 export interface JsonEditorPaneProps {
   /** Source value rendered in the editor. Updated locally — only commits on blur. */

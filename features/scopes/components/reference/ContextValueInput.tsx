@@ -19,7 +19,7 @@
  * callers with an explicit Save button can pass the same setter to both.
  */
 
-import { datetimeLocalValue } from "@/lib/dates/datetimeLocalValue";
+import { datetimeLocalValue } from "@ai-matrx/kit/dates";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";

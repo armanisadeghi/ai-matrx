@@ -71,7 +71,7 @@ import { Twitter, Facebook, Linkedin } from "@/components/icons/brand-icons";
 import { useCanvasShare } from "@/hooks/canvas/useCanvasShare";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useToast } from "@/components/ui/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { CanvasType, CanvasVisibility } from "@/types/canvas-social";
 import { ShareCoverImagePicker } from "./ShareCoverImagePicker";
 import { ProTextarea } from "@/components/official/ProTextarea";

@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import { cn } from "@/lib/utils";
 import { searchPagesForMetaApply } from "@/features/marketing/data/service";
 import type { MetaApplyTarget } from "@/features/marketing/types";

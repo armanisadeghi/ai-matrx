@@ -41,8 +41,8 @@ import { RoomChatPane } from "../RoomChatPane";
 
 /** The one thing a test may decide for the layout: how wide the screen is. */
 const viewport = { mobile: true };
-jest.mock("@/hooks/use-mobile", () => ({
-  useIsMobile: () => viewport.mobile,
+jest.mock("@ai-matrx/kit/media-query", () => ({
+  ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => viewport.mobile,
 }));
 
 const SESSION_ID = "01039730-435d-4e8d-a34f-3537f254996f";

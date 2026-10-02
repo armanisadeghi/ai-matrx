@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HtmlPageRecord } from "@/features/html-pages/types";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import {
@@ -44,7 +44,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { useMeasure } from "@/hooks/usehooks";
+import { useMeasure } from "@ai-matrx/kit/hooks";
 import {
   countSeoCharacters,
   DESCRIPTION_LIMITS,

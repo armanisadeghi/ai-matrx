@@ -1,6 +1,6 @@
 "use client";
 
-import { durableRecordId } from "@host/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 
 /**
  * shareMessageAsWebpage — one-click "publish this response as a public

@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { fetchExportAdapters } from "../api";
 import type { ExportAdapter, ExportAdapterCatalog } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 function AdapterRow({ adapter }: { adapter: ExportAdapter }) {
   return (

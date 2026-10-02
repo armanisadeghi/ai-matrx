@@ -56,7 +56,7 @@ import {
   Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useModelFavorites } from "@/features/ai-models/hooks/useModelFavorites";

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { copyToClipboard } from "../utils/scraper-utils";
-import { formatJson } from "@/utils/json/json-cleaner-utility";
+import { formatJson } from "@ai-matrx/kit/json-format";
 import { CopyIcon, RefreshCw } from "lucide-react";
 
 // Helper functions for JSON navigation and display

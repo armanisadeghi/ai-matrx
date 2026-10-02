@@ -20,7 +20,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { EditableLabel } from "@ai-matrx/design-system";
 import { ItemMenu, ItemContextMenu } from "./ItemMenu";
 import {

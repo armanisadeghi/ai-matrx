@@ -19,7 +19,7 @@ import { Button, ErrorBox, Skeleton, cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
-import { estimateTokens, formatChars, formatTokens, pagesPhrase } from "@/lib/tokens/estimate";
+import { estimateTokens, formatChars, formatTokens, pagesPhrase } from "@ai-matrx/kit/tokens";
 import {
   deliveryPatch,
   deliverySwitchedNote,

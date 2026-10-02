@@ -17,7 +17,7 @@ import {
   createCmsPageScope,
   type CmsPageVersionEntry,
 } from "@/features/surfaces/manifests/cms-page.manifest";
-import { formatEditorSurroundContext } from "@/utils/format-editor-surround-context";
+import { formatEditorSurroundContext } from "@ai-matrx/kit/text";
 import type {
   ClientComponent,
   ClientPage,

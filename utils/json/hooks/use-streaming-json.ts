@@ -5,7 +5,7 @@ import {
   StreamingJsonTracker,
   type StreamingJsonState,
   type StreamingJsonTrackerOptions,
-} from "../streaming-json-tracker";
+} from "@ai-matrx/kit/json-extract";
 
 /**
  * React hook wrapper around StreamingJsonTracker.

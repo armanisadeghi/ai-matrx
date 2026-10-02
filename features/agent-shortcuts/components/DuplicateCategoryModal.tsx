@@ -30,7 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Copy, Loader2 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useToast } from "@/components/ui/use-toast";
 import { getPlacementTypeMeta, PLACEMENT_TYPES } from "../constants";
 import type { PlacementType } from "../constants";

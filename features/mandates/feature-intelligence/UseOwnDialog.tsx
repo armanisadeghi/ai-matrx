@@ -21,7 +21,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { HolderAssignment } from "@/features/bindings/HolderAssignment";
 import type { HolderDraft } from "@/features/bindings/ScopeHolderBar";
 import type { FeatureIntelligenceRow } from "./types";

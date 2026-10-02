@@ -21,7 +21,7 @@ import { hydrateConversationForReading } from "@ai-matrx/chat/agents/components/
 import { loadFullConversationHistory } from "@ai-matrx/chat/agents/conversation-export/load-full-history";
 import { setVisibleGroupLimit } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 import { findMessageGroup } from "./embedFor";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 const SURFACE_KEY = "knowledge-hub-peek";
 /** How long the transcript may take to draw the matched message (frames ≈ 4s). */

@@ -16,7 +16,7 @@ import { Search } from "lucide-react";
 import type { SourceRef } from "@ai-matrx/agents/sources";
 import { Button, Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
-import { formatChars } from "@/lib/tokens/estimate";
+import { formatChars } from "@ai-matrx/kit/tokens";
 import { findParts, isWordQuery, type SourcePart } from "@ai-matrx/agents/sources/runtime";
 import { useSourcePartsSearch } from "../sourceSetApi";
 

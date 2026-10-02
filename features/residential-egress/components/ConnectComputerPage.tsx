@@ -68,7 +68,7 @@ import {
   type EgressStatus,
 } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 function OsIcon({ os }: { os: string }) {
   const className = "h-4 w-4 shrink-0";

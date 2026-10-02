@@ -10,7 +10,7 @@ import { useAgentBuilderSurfaceScope } from "@ai-matrx/chat/agents/hooks/useAgen
 import { useAgentBuilderWriteHandlers } from "@ai-matrx/chat/agents/hooks/useAgentBuilderWriteHandlers";
 import { AGENT_BUILDER_CONTEXT_MENU_PROPS } from "@ai-matrx/chat/agents/agent-context/buildAgentBuilderContextData";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { MobileBuilderSkeleton } from "./AgentBuilderSkeletons";
 import { DebugSessionActivator } from "@ai-matrx/chat/agents/components/debug/DebugSessionActivator";
 

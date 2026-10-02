@@ -13,7 +13,7 @@
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { toast } from "@/lib/toast";
 import {
   Building2,

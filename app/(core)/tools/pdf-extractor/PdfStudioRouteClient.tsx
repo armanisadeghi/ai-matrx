@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Loader2, RotateCcw } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { PdfBatchExtractDebugTrigger } from "@/features/pdf-extractor/components/PdfBatchExtractDebugTrigger";
 import { useExistingPdfExtraction } from "@/features/pdf/hooks/useExistingPdfExtraction";
 import { Button } from "@/components/ui/button";

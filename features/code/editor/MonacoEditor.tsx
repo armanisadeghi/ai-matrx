@@ -9,7 +9,7 @@ import Editor, {
 // Monaco's editor type is pulled directly from @monaco-editor/react re-exports
 // where possible; the handful of shapes we need are narrowed locally.
 import { configureMonaco } from "./monaco-config";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useMonacoTheme } from "./useMonacoTheme";
 
 /** Minimal shape of the Monaco editor instance we need. Keeping this loose

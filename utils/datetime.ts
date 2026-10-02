@@ -25,7 +25,7 @@
  * `parseTimestamp` normalizes both forms: a naive (no-zone) string with a
  * time component is treated as UTC. A timezone-aware string is left
  * untouched. Date-only strings (`yyyy-mm-dd`, no time) are NOT a timestamp
- * concern — use `utils/dateOnly.ts` for calendar-day columns.
+ * concern — use `@ai-matrx/kit/dates` for calendar-day columns.
  *
  * For DISPLAY everything renders in the viewer's local timezone (relative
  * "ago" strings are timezone-agnostic by construction; absolute strings

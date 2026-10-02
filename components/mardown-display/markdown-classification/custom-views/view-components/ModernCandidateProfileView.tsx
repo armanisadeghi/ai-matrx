@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from '@/lib/toast';
 import { Plus, Minus, Briefcase, MapPin, DollarSign, Calendar, Award, MessageSquare } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@ai-matrx/kit/media-query';
 import DefaultErrorFallback from '@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback';
 import FlexibleLoadingComponent from '@/components/mardown-display/markdown-classification/custom-views/common/DefaultLoadingComponent';
 import { NonEditableContextMenu } from '@/features/context-menu-v3/NonEditableContextMenu';

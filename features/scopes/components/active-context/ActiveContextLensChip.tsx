@@ -12,7 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { ContextSheet } from "@/features/scopes/components/context-assignment/ContextSheet";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {

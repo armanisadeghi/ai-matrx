@@ -61,7 +61,7 @@ import { AddDimensionDialog } from "../pickers/AddDimensionDialog";
 import { useQuickAdd } from "../pickers/useQuickAdd";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import type { BandMeta } from "../lib";
 import type { ValueCombo } from "../types";
 import { ImpactPanel } from "./ImpactPanel";

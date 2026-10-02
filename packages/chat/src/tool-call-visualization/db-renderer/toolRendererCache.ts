@@ -17,7 +17,7 @@ import { compileSlotComponent } from "@host/features/agent-apps/utils/compile-sl
 import {
   INVALIDATION_KEYS,
   registerInvalidationCallback,
-} from "@host/lib/invalidation/invalidation-registry";
+} from "@ai-matrx/kit/invalidation";
 import type { ToolRendererProps } from "../types";
 import { fetchToolRendererRow } from "./fetchToolRendererRow";
 import { compileToolRenderer } from "./compileToolRenderer";

@@ -31,7 +31,7 @@ import { openAlchemySession } from "@host/components/agent-copy/alchemy-session"
 import { buildConversationMarkdown } from "./conversation-markdown";
 import { documentMarkdown } from "./document-markdown";
 import { loadFullConversationHistory } from "./load-full-history";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 // ─── The one source ──────────────────────────────────────────────────────────
 

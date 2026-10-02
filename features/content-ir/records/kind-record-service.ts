@@ -20,7 +20,7 @@
  * is that it is absent or honest — never a greyed-out button.
  */
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import { supabase } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";

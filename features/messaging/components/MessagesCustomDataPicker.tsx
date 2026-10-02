@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import { useFields, useRecordPage, useTable } from "@ai-matrx/records/react";
 import { fieldName, rowNameIn } from "@ai-matrx/records-ui";
 import { LoaderCircle, Search } from "lucide-react";

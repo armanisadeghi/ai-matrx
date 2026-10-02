@@ -6,7 +6,7 @@
 // record actions (highlight, comment, suggest, link) are simply absent there.
 
 import type { ContentSource } from "../types";
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 
 /** The saved record a host renders, when its ContentSource does not say (the studio's loaded document). */
 export interface AnnotationRecord {

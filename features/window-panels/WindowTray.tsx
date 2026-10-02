@@ -22,7 +22,7 @@
 import React, { useCallback, useRef } from "react";
 import { ChevronsUpDown, AppWindow } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   restoreWindow,

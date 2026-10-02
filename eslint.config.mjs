@@ -348,7 +348,7 @@ const matrxLintPlugin = {
         schema: [],
         messages: {
           banned:
-            "Do not import StreamingJsonTracker here. It is the streaming raw-text JSON scanner and belongs ONLY to the canonical extraction path (packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts), which feeds it the ANSWER-only text via deriveAnswerText — never raw chunks. For a one-shot parse of a string you already have, use extractFirstJson/extractAllJson from @/utils/json/extract-json. Spinning up a parallel scanner reintroduces the thinking-pollution bug this ban exists to kill.",
+            "Do not import StreamingJsonTracker here. It is the streaming raw-text JSON scanner and belongs ONLY to the canonical extraction path (packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts), which feeds it the ANSWER-only text via deriveAnswerText — never raw chunks. For a one-shot parse of a string you already have, use extractFirstJson/extractAllJson from @ai-matrx/kit/json-extract. Spinning up a parallel scanner reintroduces the thinking-pollution bug this ban exists to kill.",
         },
       },
       create(context) {
@@ -365,10 +365,17 @@ const matrxLintPlugin = {
           ImportDeclaration(node) {
             if (isAllowed) return;
             const src = node.source.value;
-            if (
-              typeof src === "string" &&
-              src.includes("utils/json/streaming-json-tracker")
-            ) {
+            if (typeof src !== "string") return;
+            // P12: the tracker lives in @ai-matrx/kit/json-extract beside the
+            // one-shot extractors, so the ban keys on the imported NAME there.
+            const importsTracker =
+              src === "@ai-matrx/kit/json-extract" &&
+              node.specifiers.some(
+                (s) =>
+                  s.type === "ImportSpecifier" &&
+                  (s.imported.name ?? s.imported.value) === "StreamingJsonTracker",
+              );
+            if (importsTracker || src.includes("utils/json/streaming-json-tracker")) {
               context.report({ node, messageId: "banned" });
             }
           },

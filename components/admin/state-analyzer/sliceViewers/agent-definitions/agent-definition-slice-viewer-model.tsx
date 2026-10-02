@@ -5,7 +5,7 @@ import type {
   AgentDefinitionRecord,
   AgentDefinitionSliceState,
 } from "@ai-matrx/chat/agents/types/agent-definition.types";
-import { formatJson } from "@/utils/json/json-cleaner-utility";
+import { formatJson } from "@ai-matrx/kit/json-format";
 
 export function safeFormat(value: unknown, space = 2): string {
   try {

@@ -135,7 +135,7 @@ export function describeRecurrenceRule(
   }
 }
 
-// yyyy-mm-dd helpers, no timezone shift (mirrors @/utils/dateOnly semantics)
+// yyyy-mm-dd helpers, no timezone shift (mirrors @ai-matrx/kit/dates semantics)
 function parseDateOnlyLocal(s: string): Date {
   const [y, m, d] = s.split("-").map((n) => parseInt(n, 10));
   return new Date(y, (m ?? 1) - 1, d ?? 1);

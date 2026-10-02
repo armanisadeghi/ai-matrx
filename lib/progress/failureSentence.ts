@@ -44,7 +44,7 @@
 // the other half of this rule (`DEFAULT_FAILURE_REMEDY`, and "a reassurance may
 // never contradict a red row") — one home for how a failing run talks.
 
-import { DEFAULT_FAILURE_REMEDY } from "./honestSummary";
+import { DEFAULT_FAILURE_REMEDY } from "@ai-matrx/kit/progress";
 
 /**
  * A parenthesised exception-class token, as every flattening `except` in the

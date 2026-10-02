@@ -33,8 +33,8 @@ import type {
   SourceFeature,
   RequestInitiation,
 } from "../../../types/instance.types";
-import { extractFirstJson } from "@host/utils/json/extract-json";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractFirstJson } from "@ai-matrx/kit/json-extract";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 import { destroyInstanceIfAllowed } from "../conversations/conversations.thunks";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";

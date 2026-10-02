@@ -11,7 +11,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { ExecutorSurfacesTable } from "@/features/tool-registry/executor-surfaces/components/ExecutorSurfacesTable";
 import { ExecutorSurfaceDetailPanel } from "@/features/tool-registry/executor-surfaces/components/ExecutorSurfaceDetailPanel";
 import {

@@ -57,7 +57,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import {
   AgentListDropdown,

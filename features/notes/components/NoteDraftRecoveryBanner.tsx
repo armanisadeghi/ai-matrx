@@ -44,7 +44,7 @@ import {
   type LocalDraft,
 } from "@ai-matrx/kit/drafts";
 import { formatRelativeTime } from "@/utils/datetime";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 function whenLabel(at: number): string {
   return formatRelativeTime(at, { style: "long", fallback: "moments ago" });

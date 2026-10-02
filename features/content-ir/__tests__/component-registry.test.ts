@@ -351,7 +351,7 @@ describe("ComponentRegistry — warm tier", () => {
 describe("D115 inversion — module init registers the kind-components invalidation", () => {
   it("fireInvalidation(kindComponents) forces a resolver refresh with no import edge from the firer", async () => {
     const { fireInvalidation, INVALIDATION_KEYS } =
-      await import("@/lib/invalidation/invalidation-registry");
+      await import("@ai-matrx/kit/invalidation");
     mockList.mockClear();
     mockList.mockResolvedValue([]);
 

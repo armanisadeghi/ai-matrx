@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { updateTopic } from "../../service";
 import type { TopicQuotaFields } from "../../types";
 import { QuotaSettingsSection } from "../overview/QuotaSettingsSection";

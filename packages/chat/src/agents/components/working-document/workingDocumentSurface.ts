@@ -16,7 +16,7 @@ import {
   countWords,
   findCurrentHeading,
 } from "@host/features/notes/utils/markdown-headings";
-import { formatEditorSurroundContext } from "@host/utils/format-editor-surround-context";
+import { formatEditorSurroundContext } from "@ai-matrx/kit/text";
 import { createConversationDocumentScope } from "@host/features/surfaces/manifests/_conversation-document.manifest";
 import type { WorkingDocumentBinding, WorkingDocumentKind } from "../../redux/execution-system/instance-working-document/instance-working-document.slice";
 import type { SourceFeature } from "../../types/instance.types";

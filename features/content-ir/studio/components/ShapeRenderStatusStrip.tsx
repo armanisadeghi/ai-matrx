@@ -50,7 +50,7 @@ import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLau
 import type { Json } from "@/types/database.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 interface ShapeRenderStatusStripProps {
   kind: string;

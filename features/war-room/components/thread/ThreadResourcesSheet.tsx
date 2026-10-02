@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import { Paperclip } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   Sheet,

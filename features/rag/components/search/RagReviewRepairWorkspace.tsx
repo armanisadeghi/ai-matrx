@@ -40,7 +40,7 @@ import { RagContentActions } from "@/features/rag/components/search/RagContentAc
 import { createRagAiCopyBundle } from "@/features/rag/components/search/ragAiCopy";
 import { hitViewFromSearchHit } from "@/features/rag/components/hit-card/adapters";
 import type { RagSearchHit } from "@/features/rag/api/search";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";

@@ -28,7 +28,7 @@ import {
   formatJson,
   formatJsonAtExpandDepth,
   getJsonStructuralDepth,
-} from "@/utils/json/json-cleaner-utility";
+} from "@ai-matrx/kit/json-format";
 import { cn } from "@/lib/utils";
 // FRAGMENTATION LAW: the three light panes are ONE inspector surface, always
 // reached beneath an existing ssr:false boundary (~14 admin/debug windows) —

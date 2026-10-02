@@ -33,7 +33,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFoldersMap } from "@/features/files/redux/selectors";
 import { useFolderContents } from "@/features/files/hooks/useFolderContents";

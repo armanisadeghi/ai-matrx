@@ -39,7 +39,7 @@ jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hook
 jest.mock("@/styles/themes/useThemeMode", () => ({
   useThemeMode: () => "light",
 }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }

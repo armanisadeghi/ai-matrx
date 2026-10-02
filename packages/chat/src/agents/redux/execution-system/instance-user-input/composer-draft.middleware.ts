@@ -33,7 +33,7 @@ import {
   writeComposerDraft,
 } from "./composer-draft-store";
 
-/** Same cadence as the dialog draft keeper (`lib/drafts/useTextDraft.ts`). */
+/** Same cadence as the dialog draft keeper (`@ai-matrx/kit/drafts (useTextDraft)`). */
 const WRITE_DEBOUNCE_MS = 400;
 
 const timers = new Map<string, ReturnType<typeof setTimeout>>();

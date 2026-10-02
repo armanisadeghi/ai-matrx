@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
-import { keyEventInside } from "@host/utils/keyboard-scope";
+import { keyEventInside } from "@ai-matrx/kit/keyboard-scope";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   undoAgentEdit,
@@ -148,7 +148,7 @@ export function useAgentUndoRedo({
   // Keyboard shortcuts — works on Mac (⌘Z / ⇧⌘Z) and Win/Linux (Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y)
   //
   // We intercept undo/redo inside this mount's `scope` (its textarea) —
-  // never page-wide (utils/keyboard-scope.ts). The
+  // never page-wide (@ai-matrx/kit/keyboard-scope). The
   // textarea content is driven by Redux state, so browser-native undo
   // would desync (it tracks DOM changes, not Redux). By calling
   // preventDefault() we suppress the browser's undo and dispatch our own.

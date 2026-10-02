@@ -21,7 +21,7 @@ import { ALCHEMY_GLYPH_PATHS } from "@ai-matrx/design-system/content-transfer/ic
 import { useMatrxTableRowAlchemy, useMatrxTableRowControls } from "@ai-matrx/design-system/data-table/host";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   DropdownMenu,
   DropdownMenuTrigger,

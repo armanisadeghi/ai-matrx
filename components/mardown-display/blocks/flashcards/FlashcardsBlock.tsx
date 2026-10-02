@@ -16,7 +16,7 @@ import { InlineArtifactDebugStrip } from "@/features/canvas/components/CanvasArt
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
 import { PrintOptionsDialog } from "@ai-matrx/print/react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useSearchParams } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/slices/userSlice";

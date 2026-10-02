@@ -39,7 +39,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useFileNode } from "@/features/files/hooks/useFileNode";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";

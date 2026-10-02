@@ -36,7 +36,7 @@ import { CalloutBanner } from "@/components/official/CalloutBanner";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { humanizeRelative } from "../../utils/triggerHumanize";
 import type { AgendaTask, AutoSuspendedBlock } from "../../types";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 interface Props {
   task: AgendaTask;

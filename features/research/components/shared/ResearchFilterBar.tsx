@@ -16,7 +16,7 @@ import {
   type FilterOption,
 } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
 
 export interface FilterDef {

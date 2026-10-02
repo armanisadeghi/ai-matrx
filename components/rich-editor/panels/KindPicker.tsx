@@ -25,7 +25,7 @@ import { Shapes } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { kindMarkdown } from "../core/commands";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 interface KindRow {
   id: string;

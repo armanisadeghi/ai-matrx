@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { getContentBodies } from "../service";
-import { estimateTokens } from "@/lib/tokens/estimate";
+import { estimateTokens } from "@ai-matrx/kit/tokens";
 import {
   applySnippetLengthLimit,
   normalizeSearchSnippets,

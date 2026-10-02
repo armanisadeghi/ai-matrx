@@ -55,7 +55,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { AlertCircle, Braces, Loader2, TriangleAlert } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

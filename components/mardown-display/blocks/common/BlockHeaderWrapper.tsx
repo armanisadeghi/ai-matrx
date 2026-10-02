@@ -16,7 +16,7 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
 
 export interface BlockHeaderWrapperProps {

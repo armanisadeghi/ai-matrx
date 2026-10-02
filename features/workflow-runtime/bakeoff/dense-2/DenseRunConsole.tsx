@@ -24,7 +24,7 @@ import { OctagonX, Pause, Play, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";

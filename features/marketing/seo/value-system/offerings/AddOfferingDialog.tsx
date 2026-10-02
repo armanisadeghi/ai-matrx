@@ -31,7 +31,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { searchOfferingTemplates, type CatalogOffering, type OfferingTemplate } from "./data";
 import { OFFERING_KIND_META, offeringKindLabel, type OfferingKindValue } from "./vocabulary";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 export type AddOfferingChoice =
   | { mode: "template"; templateId: string; name: string; reason: string }

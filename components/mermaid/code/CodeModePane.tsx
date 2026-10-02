@@ -13,7 +13,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import { linter, lintGutter, type Diagnostic as CmDiagnostic } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
 
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { cn } from "@/lib/utils";
 

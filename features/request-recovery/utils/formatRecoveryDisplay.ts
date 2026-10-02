@@ -1,4 +1,4 @@
-import type { PayloadRecord } from "@/lib/persistence/payloadSafetyStore";
+import type { PayloadRecord } from "@ai-matrx/kit/payload-safety";
 import { formatVariableDisplayLines } from "@ai-matrx/chat/agents/utils/variable-display-lines";
 
 function extractMessageText(content: unknown): string {

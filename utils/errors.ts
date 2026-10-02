@@ -1,68 +1,40 @@
 /**
- * utils/errors.ts — the two halves of an error's audience.
+ * utils/errors.ts — THE APP'S DOOR to the two halves of an error's audience.
  *
- * `extractErrorMessage` is for LOGS and the Error Inspector: every scrap of
- * PostgREST detail, because we are the reader.
+ * 🚨 THIS IS A DOOR, NOT A BODY. The bodies live in the packages and are
+ * re-exported here so this repo's ~500 `@/utils/errors` importers keep their
+ * import path:
+ *   - `extractErrorMessage` (LOGS and the Error Inspector: every scrap of
+ *     PostgREST detail) — `@ai-matrx/data/net`. The host body was deleted
+ *     2026-09-11 in the byte-size/error twins collapse.
+ *   - `operationFailed`, `makeAssertData`, `stripTerminalCodes`,
+ *     `humanizeBackendError` (what a PERSON reads) — `@ai-matrx/kit/errors`,
+ *     moved 2026-10-01 (chat-package independence P12).
+ * Never re-grow a body here; a fix goes into the package and is adopted.
+ * Guard: `pnpm check:package-twins`.
  *
- * `operationFailed` is for HUMANS: one plain sentence naming the action that
- * failed, with the raw error preserved as `cause` (devtools + the global
- * Supabase capture in `lib/diagnostics/supabaseErrorCapture.ts` already keep
- * the detail). Handing `error.message` straight to a user is the defect
- * `pnpm check:access-errors` counts — RLS codes, schema names, and PostgREST
- * prose are not sentences a person can act on.
- *
- * It deliberately does NOT say "please try again": a denial and a timeout are
- * indistinguishable here, and a retry that cannot succeed is the exact lie
- * `features/access-gate/` exists to kill. When the failure is a single-record
- * READ, don't use this at all — render `<AccessGate token id error/>`, which
- * asks the platform which of the four things actually happened.
+ * Handing `error.message` straight to a user is the defect
+ * `pnpm check:access-errors` counts. When the failure is a single-record READ,
+ * render `<AccessGate token id error/>` instead (features/access-gate/).
  */
 
 import { extractErrorMessage } from "@ai-matrx/data/net";
+import { makeAssertData } from "@ai-matrx/kit/errors";
 
-/**
- * A user-facing Error for a failed action. `action` completes the sentence
- * "We couldn't …" in the user's words — "join this class", not "call
- * edu_class_join".
- */
-export function operationFailed(action: string, cause?: unknown): Error {
-  return new Error(`We couldn't ${action}.`, cause ? { cause } : undefined);
-}
-
-/**
- * The asserter a data module uses to unwrap every PostgREST response it makes.
- *
- * Every `features/**\/data*.ts` in this repo had grown its own private
- * `assertData(data, error)` whose failure branch was `throw new
- * Error(error.message)` — ten identical copies handing RLS codes and PostgREST
- * prose to a person. This is the ONE of them: bind the module's action once,
- * override it at a call site whose sentence differs (a write inside a module of
- * reads), and the raw response still travels as `cause` for the inspector.
- *
- *   const assertData = makeAssertData("reach your Search Console data");
- *   const rows = assertData(response.data, response.error);
- *   assertData(saved.data, saved.error, "save that rule");
- *
- * A zero-row SINGLE-record read is not this — that is
- * `lib/records/recordUnavailable.ts` plus `<AccessGate token id/>`, which asks
- * the platform which of the four things actually happened.
- */
-export function makeAssertData(action: string) {
-  return function assertData<T>(
-    data: T | null,
-    error: unknown,
-    override?: string,
-  ): T {
-    if (error) throw operationFailed(override ?? action, error);
-    if (data === null) throw operationFailed(override ?? action);
-    return data;
-  };
-}
+export { extractErrorMessage };
+export {
+  humanizeBackendError,
+  makeAssertData,
+  operationFailed,
+  stripTerminalCodes,
+} from "@ai-matrx/kit/errors";
 
 /**
  * Postgres governance guards use a machine code before a sentence deliberately
  * written for the person making the change. Preserve only the allow-listed
  * codes; every other PostgREST failure keeps the calm generic action message.
+ * (Host-owned: it composes `@ai-matrx/data/net` with `@ai-matrx/kit/errors`,
+ * and kit may not import data.)
  */
 export function makeGovernedDataAsserter(
   action: string,
@@ -83,127 +55,4 @@ export function makeGovernedDataAsserter(
     }
     return assertData(data, error, override);
   };
-}
-
-/**
- * Safe string extraction for caught values (Supabase PostgrestError, axios,
- * FastAPI `detail` bodies). Avoids `String(err)` on plain objects, which yields
- * "[object Object]". For a Supabase PostgrestError the returned string carries
- * message, details, hint and code, so logs are immediately actionable.
- *
- * 🚨 THIS IS A DOOR, NOT A BODY. The logic lives in `@ai-matrx/data/net` and is
- * re-exported here so this repo's ~100 `@/utils/errors` importers keep their
- * import path. The host body was deleted 2026-09-11 in the byte-size/error
- * twins collapse: it was a near-byte copy of the package's — including the
- * 2026-08-31 FastAPI `detail` fix, which had to be written TWICE — and it had
- * already fallen behind on the package's nested-error lookup (a `{ error: {
- * message } }` envelope, which the host copy flattened to a JSON dump) and on
- * its `fallback` parameter. Never re-grow a body here; a fix goes into the
- * package and is adopted. Guard: `pnpm check:package-twins`.
- */
-export { extractErrorMessage };
-
-
-// eslint-disable-next-line no-control-regex -- stripping the raw control char is the point
-const ANSI_ESCAPE = /\u001b\[[0-?]*[ -/]*[@-~]/g;
-
-/**
- * Terminal colour/cursor codes out of text that is about to be SHOWN — a
- * server or ORM message logged for a terminal arrives with `ESC[31m…ESC[0m`
- * wrapped around it, and some transports drop the ESC byte and leave `[31m`.
- * Keeps every other character (newlines included); returns "" for empty input.
- */
-export function stripTerminalCodes(raw: string | null | undefined): string {
-  if (!raw) return "";
-  return raw.replace(ANSI_ESCAPE, "").replace(/\[\d{1,3}(?:;\d{1,3})*m/g, "");
-}
-
-/**
- * A BACKEND failure as a PERSON should read it.
- *
- * 🚨 Added 2026-08-30 after a crawl-sessions table rendered `session.error`
- * raw and showed the user a full server dump: ANSI colour codes, the ORM's
- * banner, the failing SQL, and a developer hint about `get_or_none()`. Several
- * other surfaces printed the same column the same way, and one of them had a
- * partial copy of this logic that only stripped the colour codes — so the SQL
- * still reached the screen.
- *
- * The durable row keeps every byte (that is what logs are for). This returns
- * the first real sentence; callers put the untouched text on `title` for
- * whoever needs it. Returns null when there is no error at all.
- */
-/**
- * Plain-English readings of the failure classes that actually reach our
- * screens. Each is an accurate paraphrase of the condition — never a guess at
- * WHY it happened, which only the logs can say. Anything unmatched keeps the
- * server's own sentence rather than being flattened into something vague.
- */
-const PLAIN_ENGLISH: ReadonlyArray<readonly [RegExp, string]> = [
-  [
-    /duplicate key value|unique constraint/i,
-    "It tried to save a record that already existed.",
-  ],
-  [
-    /violates foreign key constraint/i,
-    "It referred to something that no longer exists.",
-  ],
-  [
-    /violates (?:not-null|check) constraint/i,
-    "A required value was missing or out of range.",
-  ],
-  [
-    /statement timeout|query timed out|timeouterror|timed out/i,
-    "It took too long and was stopped.",
-  ],
-  [
-    /name or service not known|connection refused|unreachable|econnrefused|enotfound/i,
-    "A service it needed could not be reached.",
-  ],
-  [
-    /permission denied|not authorized|insufficient privilege|rls/i,
-    "It was not allowed to read or write something it needed.",
-  ],
-  [/rate limit|429|too many requests/i, "The provider was rate-limiting us."],
-];
-
-export function humanizeBackendError(
-  raw: string | null | undefined,
-  fallback = "It failed. The full technical detail is in the logs.",
-): string | null {
-  if (!raw) return null;
-  const clean = stripTerminalCodes(raw)
-    .replace(/-{6,}/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!clean) return null;
-
-  // Our ORM's banner puts the readable sentence after a labelled line; prefer
-  // it over the exception class and the SQL that follows.
-  const labelled = clean.match(
-    /(?:Database integrity error|DB error|Reason|message)\s*:\s*([^:]{8,240}?)(?:\s+(?:DETAIL|Hint|Query|Args|Operation)\b|$)/i,
-  );
-  // A recognized failure class reads as English; the exact text stays on the
-  // element's `title` for whoever needs it.
-  for (const [pattern, plain] of PLAIN_ENGLISH) {
-    if (pattern.test(clean)) return plain;
-  }
-
-  if (labelled?.[1]) return clampSentence(labelled[1], fallback);
-
-  // Otherwise drop a leading `SomeError:` prefix and everything from the first
-  // developer-facing section onward.
-  const withoutClass = clean.replace(/^\s*\w*(?:Error|Exception)\s*:\s*/i, "");
-  // A section is a HEADER (`DETAIL:`, `Query:`, `Traceback (…`), never the
-  // word inside a sentence: "readAllRows(x): query failed — …" was cut to
-  // "readAllRows(x):" and the person saw no reason at all (RC-B12 round 5).
-  const cut = withoutClass.split(
-    /\s+(?:(?:DETAIL|Detail|Hint|HINT|Query|QUERY|Args|ARGS|Operation|OPERATION)\s*:|Traceback\b)/,
-  )[0];
-  return clampSentence(cut || withoutClass, fallback);
-}
-
-function clampSentence(value: string, fallback: string): string {
-  const trimmed = value.replace(/[-\s]+$/, "").trim();
-  if (!trimmed) return fallback;
-  return trimmed.length > 200 ? `${trimmed.slice(0, 197)}...` : trimmed;
 }

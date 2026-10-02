@@ -7,7 +7,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { useMarkdownStreaming } from "@/components/markdown-core/streaming-context";

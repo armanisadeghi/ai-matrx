@@ -32,7 +32,7 @@ jest.mock("@/hooks/useToastManager", () => ({ useToastManager: () => ({ error: m
 jest.mock("@/components/content-refine/useRefinableContent", () => ({
   useRefinableContent: ({ initialContent }: { initialContent: string }) => ({ workingContent: mockWorkingContent, initialContent, resetTransforms: jest.fn() }),
 }));
-jest.mock("@/lib/persistence/payloadSafetyStore", () => ({ payloadSafetyStore: { savePending: mockSavePending } }));
+jest.mock("@ai-matrx/kit/payload-safety", () => ({ payloadSafetyStore: { savePending: mockSavePending } }));
 jest.mock("@/lib/redux/net/runTrackedRequest", () => ({ runTrackedRequest: mockRunTrackedRequest }));
 jest.mock("@/lib/organization/organization-gate", () => ({
   ensureOrganizationContext: mockEnsureOrganizationContext,

@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { getActiveAnnouncements } from "@/actions/feedback.actions";
 import { renderAnnouncementMessage } from "@/utils/render-announcement-message";
 import type {

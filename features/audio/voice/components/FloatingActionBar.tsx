@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 interface FloatingActionBarProps {
     searchValue: string;

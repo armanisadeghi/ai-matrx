@@ -86,7 +86,7 @@ import {
 import { cn } from "@/lib/utils";
 import { humanizeBackendError } from "@/utils/errors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 function scoreCell(row: LinkGapDomainRow) {
   return (

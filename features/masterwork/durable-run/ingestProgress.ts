@@ -39,7 +39,7 @@
 // of a run, because nothing here knows one.
 
 import { serverRefusal } from "@/lib/progress/failureSentence";
-import type { ProgressStep } from "@/lib/progress/honestSummary";
+import type { ProgressStep } from "@ai-matrx/kit/progress";
 
 /** One thing the run was handed, as it is rendered. */
 export interface ResourceProgress extends ProgressStep {

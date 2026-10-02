@@ -1,4 +1,4 @@
-import { useMeasure } from "@host/hooks/usehooks";
+import { useMeasure } from "@ai-matrx/kit/hooks";
 
 /**
  * Attach to a stable parent container to get its live width.

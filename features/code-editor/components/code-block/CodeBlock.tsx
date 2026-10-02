@@ -16,7 +16,7 @@ import CodeBlockHeader, {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import StickyButtons from "./StickyButtons";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 import { isCompleteHtmlDocument } from "@/features/html-pages/utils/html-preview-utils";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";

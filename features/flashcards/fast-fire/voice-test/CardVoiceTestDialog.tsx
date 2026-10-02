@@ -7,7 +7,7 @@
 // transform/perspective ancestors. Mic teardown on close via unmount cleanup.
 
 import { createPortal } from "react-dom";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { SingleCardVoiceTest } from "./SingleCardVoiceTest";

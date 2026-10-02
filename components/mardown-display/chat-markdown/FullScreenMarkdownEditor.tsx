@@ -29,7 +29,7 @@ import RichEditor, { type RichEditorController } from "@/components/rich-editor/
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   AlertTriangle,
   ChevronDown,

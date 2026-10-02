@@ -10,7 +10,7 @@
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { AnnotatedElement, AnnotationSidecarProvider, useOptionalSidecar, useSidecar } from "./AnnotationSidecar";
 import { AnnotationPanel } from "./AnnotationPanel";
 import { closeDock, isDockOpen, openDock, registerDock, setDockCount, subscribeDocks } from "./record-annotations-store";

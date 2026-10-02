@@ -17,8 +17,8 @@
 
 import { useCallback, useRef } from "react";
 import { toast } from "@/lib/toast";
-import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
-import type { PayloadKind } from "@/lib/persistence/payloadSafetyStore";
+import { payloadSafetyStore } from "@ai-matrx/kit/payload-safety";
+import type { PayloadKind } from "@ai-matrx/kit/payload-safety";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
 import type { NetRequestKind } from "@/lib/redux/net/netRequestsSlice";

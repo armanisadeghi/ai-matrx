@@ -27,7 +27,7 @@ import { useState, useSyncExternalStore, type SyntheticEvent } from "react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 
 const COARSE_POINTER_QUERY = "(pointer: coarse)";

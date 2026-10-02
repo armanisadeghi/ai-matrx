@@ -6,7 +6,7 @@ import { Handle } from "@/features/resizable-panels/Handle";
 import { PanelControlProvider } from "@/features/resizable-panels/PanelControlProvider";
 import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { SurfacesAgentHeaderControls } from "./SurfacesAgentHeaderControls";
 import { SurfacesListColumn } from "./columns/SurfacesListColumn";

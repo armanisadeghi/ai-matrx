@@ -1,6 +1,6 @@
 'use client';
 
-import { durableRecordId } from '@/lib/ids/durable-record-id';
+import { durableRecordId } from '@ai-matrx/kit/ids';
 
 /**
  * HTMLPageService

@@ -35,7 +35,7 @@ import {
   Shield,
   User,
 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";

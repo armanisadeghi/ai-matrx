@@ -54,7 +54,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 
 import {
@@ -140,7 +140,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 

@@ -39,7 +39,7 @@ import { invalidateConversationCache } from "./invalidate-conversation-cache.thu
 import { selectToolCallsForMessage } from "../observability/observability.selectors";
 import { patchToolCall } from "../observability/observability.slice";
 import { loadConversation } from "../thunks/load-conversation.thunk";
-import { durableRecordId } from "@host/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 
 interface DeleteMessageArgs {
   conversationId: string;

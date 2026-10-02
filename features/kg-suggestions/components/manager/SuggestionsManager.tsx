@@ -29,7 +29,7 @@ import {
   X,
 } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/utils/cn";
 import {
   UntrustedCount,

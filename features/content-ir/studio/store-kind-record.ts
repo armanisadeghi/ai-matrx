@@ -48,7 +48,7 @@
  * show (THE NOTHING-FAILS-SILENTLY LAW) and is captured to the error store.
  */
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { supabase } from "@/utils/supabase/client";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";

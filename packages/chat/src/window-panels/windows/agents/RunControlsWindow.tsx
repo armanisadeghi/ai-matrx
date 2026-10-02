@@ -19,7 +19,7 @@
 import { useState } from "react";
 import { useAppDispatch } from "../../../store/hooks";
 import { closeOverlay, CHAT_WINDOWS } from "../../../host/windows";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { useOverlaySurfaceRenderAck } from "@host/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";

@@ -18,7 +18,7 @@
  * can never drift.
  */
 
-import { durableRecordId } from "@host/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import { plainTitleFromMarkdown } from "@host/components/markdown-core/plain-title";
 import { cleanMarkdown } from "@host/utils/markdown-processors/clean-markdown-to-text";
 import { buildConversationMessageTitle } from "../../../utils/conversation-message-title";

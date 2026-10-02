@@ -13,7 +13,7 @@ import { operationFailed } from "@/utils/errors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { readAllRows } from "@ai-matrx/data/db";
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import type { Database } from "@/types/database.types";
 import {
   toOutputFeedbackRecord,

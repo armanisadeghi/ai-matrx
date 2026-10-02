@@ -28,7 +28,7 @@ import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
 import { Skeleton } from "@ai-matrx/design-system";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";

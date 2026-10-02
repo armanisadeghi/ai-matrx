@@ -48,7 +48,7 @@ import {
 } from "@ai-matrx/detail";
 import { detailPageHref } from "@/features/window-panels/detail/DetailHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 import { InfoHint } from "@/components/official/InfoHint";
 
 type FileRow = { id: string; file_name: string; mime_type: string | null };

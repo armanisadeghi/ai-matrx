@@ -18,7 +18,7 @@ import {
   DrawerFooter,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 interface AgentAppActionModalProps {
   open: boolean;

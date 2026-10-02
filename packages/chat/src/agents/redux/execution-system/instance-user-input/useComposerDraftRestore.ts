@@ -5,7 +5,7 @@
 // The composer's half of the durable draft. Mounted once by `AgentTextarea`, so
 // every surface that mounts the shared composer gets the restore.
 //
-// A SILENT RESTORE IS ITS OWN KIND OF LIE (the rule `lib/drafts/useTextDraft.ts`
+// A SILENT RESTORE IS ITS OWN KIND OF LIE (the rule `@ai-matrx/kit/drafts (useTextDraft)`
 // was written under): text the user did not just type appearing in their box
 // with no explanation is indistinguishable from a bug. So this reports it and
 // the composer says one quiet line. The same applies to the failure: when the

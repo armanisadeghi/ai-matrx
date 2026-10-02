@@ -42,7 +42,7 @@ import { loadProjectsWithTasks } from "@host/features/tasks/redux/thunks";
 import {
   INVALIDATION_KEYS,
   fireInvalidation,
-} from "@host/lib/invalidation/invalidation-registry";
+} from "@ai-matrx/kit/invalidation";
 
 /** The stream processor's dispatch is intentionally loose — it forwards
  *  actions AND thunks. This structural type matches what it actually is. */

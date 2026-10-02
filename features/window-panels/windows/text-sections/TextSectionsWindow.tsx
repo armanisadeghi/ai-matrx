@@ -34,7 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import MarkdownStream from "@/components/MarkdownStream";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
-import { formatChars } from "@/lib/tokens/estimate";
+import { formatChars } from "@ai-matrx/kit/tokens";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

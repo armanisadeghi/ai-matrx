@@ -37,7 +37,7 @@
  * reconcile-on-load pass make that acceptable for v1.
  */
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import type {
   CxContentBlock,
   CxTextContent,
@@ -108,7 +108,7 @@ export interface MaterializeBlocksResult {
  * as not-yet-persisted and skipped.
  */
 export function isRealSourceId(id: string | null | undefined): boolean {
-  // THE durable-id seam (lib/ids/durable-record-id.ts) — one rule, not two.
+  // THE durable-id seam (@ai-matrx/kit/ids) — one rule, not two.
   return durableRecordId(id) !== null;
 }
 

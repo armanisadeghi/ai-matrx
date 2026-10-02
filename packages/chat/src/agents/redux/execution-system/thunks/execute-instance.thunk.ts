@@ -24,7 +24,7 @@ import {
  *   8. Updates request status throughout
  */
 
-import { mintClientTempId } from "@host/lib/ids/durable-record-id";
+import { mintClientTempId } from "@ai-matrx/kit/ids";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type {
@@ -148,7 +148,7 @@ import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 import { persistInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
 import { persistConversationFlag } from "../conversations/surface-owns-output.persistence";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 /**
  * Build the three REQUIRED lifecycle fields for a first-turn request.
@@ -905,7 +905,7 @@ export const executeInstance = createAsyncThunk<
         content.push(...resourceBlocks);
         // Never UUID-shaped: it has no row until `promoteMessageId` swaps in
         // the server id (and an incognito bubble never gets one), so no
-        // reader may mistake it for a durable message (lib/ids/durable-record-id.ts).
+        // reader may mistake it for a durable message (@ai-matrx/kit/ids).
         userMessageClientTempId = mintClientTempId("user", uuidv4());
         const nextPosition = selectNextMessagePosition(conversationId)(stateAtSubmit);
         // Capture the TRUE per-turn context this message carried, frozen at

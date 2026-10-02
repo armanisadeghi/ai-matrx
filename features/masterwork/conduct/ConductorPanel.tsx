@@ -82,7 +82,7 @@ import { conductorOfferVariables } from "./offerVariables";
 import type { MasterworkConductOffer } from "@/types/python-generated/provision-offers";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 
 

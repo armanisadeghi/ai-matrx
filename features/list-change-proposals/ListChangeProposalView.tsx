@@ -64,7 +64,7 @@ import {
   type ProposalDecisions,
 } from "./decisions";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface ListChangeProposalViewProps {

@@ -9,7 +9,7 @@
 
 import type { OutputFeedbackSubject } from "@/lib/output-feedback/types";
 import type { ContentSource } from "./types";
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 
 export function outputFeedbackSubjectForSource(
   source: ContentSource,

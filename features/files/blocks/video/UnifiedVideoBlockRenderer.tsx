@@ -65,7 +65,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { BlockSharePopover } from "../BlockSharePopover";
 import { useVideoActions } from "./useVideoActions";
 import { useBlockMediaSource } from "../useBlockMediaSource";

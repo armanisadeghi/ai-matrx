@@ -23,7 +23,7 @@ jest.mock("next/dynamic", () => () => (props: { sourceFeature: string; extraSect
   const ReactModule = require("react");
   return ReactModule.createElement("div", { "data-testid": "alchemy-menu", "data-source": props.sourceFeature });
 });
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 jest.mock("@ai-matrx/chat/agents/hooks/useWidgetHandle", () => ({ useOptionalWidgetHandle: () => null }));
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

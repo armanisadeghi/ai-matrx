@@ -36,7 +36,7 @@ import {
   type TextDiffView,
 } from "@ai-matrx/diff/react";
 import MarkdownStream from "@host/components/MarkdownStream";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
 import { cn } from "@ai-matrx/design-system";
 

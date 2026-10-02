@@ -22,7 +22,7 @@ import React from "react";
 import { UploadCloud } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";

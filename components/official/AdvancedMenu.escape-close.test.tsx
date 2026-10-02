@@ -5,7 +5,7 @@ import { FileText } from "lucide-react";
 import AdvancedMenu from "./AdvancedMenu";
 
 jest.mock("@/components/ui/use-toast", () => ({ toast: jest.fn() }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;

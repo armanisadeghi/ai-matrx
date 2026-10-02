@@ -15,7 +15,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
-import { operationFailed } from "@host/utils/errors";
+import { operationFailed } from "@ai-matrx/kit/errors";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { clearMessages } from "../messages/messages.slice";

@@ -2,7 +2,7 @@
 import React, { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { createCardStyles } from "@/components/official/styles";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 interface SectionCardProps {
     title?: string;

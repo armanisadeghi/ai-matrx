@@ -2,7 +2,7 @@ import { dbRowToAgentDefinition } from "../redux/agent-definition/converters";
 import type { AgentDefinition } from "../types/agent-definition.types";
 import { supabase } from "@host/utils/supabase/client";
 import { recordUnavailable } from "@host/lib/records/recordUnavailable";
-import { operationFailed } from "@host/utils/errors";
+import { operationFailed } from "@ai-matrx/kit/errors";
 
 /**
  * Read the currently saved agent definition without hydrating Redux.

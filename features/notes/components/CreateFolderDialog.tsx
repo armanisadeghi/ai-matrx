@@ -23,7 +23,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { FOLDER_CATEGORIES } from "../constants/folderCategories";
 import { cn } from "@/lib/utils";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";

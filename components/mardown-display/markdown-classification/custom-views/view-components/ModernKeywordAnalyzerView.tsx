@@ -13,7 +13,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import FlexibleLoadingComponent from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultLoadingComponent";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
 import type { OutputNode } from "@/components/mardown-display/markdown-classification/processors/combined-processor-config-system/combined-processor";
 

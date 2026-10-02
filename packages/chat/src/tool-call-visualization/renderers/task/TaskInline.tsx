@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { SquareCheckBig, PanelRight, ExternalLink, Maximize2 } from "lucide-react";
 import { useEnsureTaskLoaded } from "@host/features/tasks/hooks/useEnsureTaskLoaded";
 import { useOpenTaskEditorWindow } from "../../../host/window-openers";
-import { formatDateOnly } from "@host/utils/dateOnly";
+import { formatDateOnly } from "@ai-matrx/kit/dates";
 import type { ToolRendererProps } from "../../types";
 import { parseSingleTask } from "./parseTask";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";

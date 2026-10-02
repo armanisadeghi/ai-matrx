@@ -48,7 +48,7 @@ import { selectShowUserMessageOptions } from "../../../redux/execution-system/in
 import { toast } from "../../../../host/notify";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
 import { openStructuredRawViewer } from "../message-options/openAssistantMessageEditor";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 import {
   USER_EDIT_ACTIONS,
   routeUserEditAction,

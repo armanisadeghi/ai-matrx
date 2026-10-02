@@ -33,7 +33,7 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 
 import {

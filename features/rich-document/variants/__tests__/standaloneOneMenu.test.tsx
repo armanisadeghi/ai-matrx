@@ -18,7 +18,7 @@ jest.mock("@ai-matrx/alchemy/react/bar", () => ({ ActionBar: () => null }));
 jest.mock("@ai-matrx/alchemy/react/overflow", () => ({ OverflowMenu: () => require("react").createElement("div", { "data-testid": "package-overflow" }) }));
 jest.mock("../../actions/provider", () => ({ ensureRichDocumentProvider: () => undefined }));
 jest.mock("../shared/AlchemyDocumentMenu", () => ({ AlchemyDocumentMenu: () => null }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => true }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => true }));
 
 import { ActionBar } from "../ActionBar";
 import { MenuVariant } from "../MenuVariant";

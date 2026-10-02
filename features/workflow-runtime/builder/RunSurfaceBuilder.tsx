@@ -20,7 +20,7 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";

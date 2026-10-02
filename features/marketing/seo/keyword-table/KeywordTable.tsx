@@ -47,7 +47,7 @@ import type {
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table/types";
 import { toast } from "@/lib/toast";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { FilterBar } from "@/features/marketing/search-console/components/FilterBar";
 import { RangeCompareControl } from "@/features/marketing/search-console/components/RangeCompareControl";

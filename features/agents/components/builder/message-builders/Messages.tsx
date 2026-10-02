@@ -16,7 +16,7 @@ import { MessageItem } from "@/features/agents/components/builder/message-builde
 import { exampleRuns, flagPreview } from "@ai-matrx/chat/agents/message-flags/flags";
 import { useMessageFlagProfile } from "@ai-matrx/chat/agents/message-flags/useMessageFlagProfile";
 import { MessageFlagsPreview } from "@ai-matrx/chat/agents/message-flags/MessageFlagsPreview";
-import { estimateTokensForText } from "@/lib/tokens/estimate";
+import { estimateTokensForText } from "@ai-matrx/kit/tokens";
 import { formatCount } from "@ai-matrx/kit/format";
 
 interface MessagesProps {

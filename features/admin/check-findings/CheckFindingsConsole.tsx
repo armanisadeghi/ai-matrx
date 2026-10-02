@@ -60,7 +60,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { formatCount, formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useNow } from "@/hooks/useNow";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {

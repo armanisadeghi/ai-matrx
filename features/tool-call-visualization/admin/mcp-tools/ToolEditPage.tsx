@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { formatToolTimestamp } from "./format";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { listServers, type McpServerRow } from "@/features/tool-registry/mcp-admin/services/mcpAdmin.service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {

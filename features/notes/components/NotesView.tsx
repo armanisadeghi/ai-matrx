@@ -15,7 +15,7 @@ import React, {
   useId,
 } from "react";
 import dynamic from "next/dynamic";
-import { surfaceOwnsKey } from "@/utils/keyboard-scope";
+import { surfaceOwnsKey } from "@ai-matrx/kit/keyboard-scope";
 import { initialTabsFromUrl } from "@/features/notes/initialTabsFromUrl";
 import { X } from "lucide-react";
 import { NOTE_VIEW_MODES } from "./NoteViewControls";
@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/resizable";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useParams, useSearchParams } from "next/navigation";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";

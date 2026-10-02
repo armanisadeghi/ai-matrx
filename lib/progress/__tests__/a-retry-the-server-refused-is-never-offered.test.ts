@@ -32,7 +32,7 @@
 
 import {
   DEFAULT_FAILURE_REMEDY,
-} from "../honestSummary";
+} from "@ai-matrx/kit/progress";
 import {
   namesAModulePath,
   namesATraceId,

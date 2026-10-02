@@ -25,7 +25,7 @@
  * data loses the record of a rejection, never a row.
  */
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import { mergeJsonColumn, asJsonObject } from "@ai-matrx/data/db";
 
 import { supabase } from "@/utils/supabase/client";

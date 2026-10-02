@@ -21,7 +21,7 @@ import type {
   TypedStreamEvent,
 } from "@/types/python-generated/stream-events";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 export type BlockProcessingMode = "json" | "stream";
 

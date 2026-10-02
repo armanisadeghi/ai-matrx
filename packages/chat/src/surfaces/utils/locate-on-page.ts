@@ -10,7 +10,7 @@
  * itself is the shared `flashAttention` cue, not a local ring.
  */
 
-import { flashAttention } from "@host/lib/dom/flash-attention";
+import { flashAttention } from "@ai-matrx/kit/dom";
 
 /* Chrome's smooth scroll is rAF-driven and finishes well inside this window for
    any realistic distance; the check below therefore never fires for a user. It
@@ -48,7 +48,7 @@ export function locateSurfaceValueOnPage(valueName: string): boolean {
     }
   }, SMOOTH_SETTLE_MS);
 
-  // ONE attention cue platform-wide — `lib/dom/flash-attention.ts`. A ring
+  // ONE attention cue platform-wide — `@ai-matrx/kit/dom`. A ring
   // that looks different here than everywhere else would teach people two
   // things instead of one.
   for (const el of matches) flashAttention(el);

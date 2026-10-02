@@ -31,7 +31,7 @@
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import { setActiveFileId } from "@/features/files/redux/slice";
 import { attachVirtualRoots } from "@/features/files/redux/virtual-thunks";

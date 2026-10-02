@@ -49,7 +49,7 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   DropdownMenu,
   DropdownMenuContent,

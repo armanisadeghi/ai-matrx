@@ -21,7 +21,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Button } from "@/components/ui/button";
 import { suggestDeckEdit } from "../service";
 import { ProTextarea } from "@/components/official/ProTextarea";

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Image, Rocket, ArrowRight, ExternalLink, Lightbulb, Loader2 } from 'lucide-react';
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
 
 interface AppSuggestion {

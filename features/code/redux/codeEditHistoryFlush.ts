@@ -16,7 +16,7 @@
  *     route change. Mounted once at the workspace root.
  */
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import { useEffect, useRef } from "react";
 import { useStore } from "react-redux";
 import { usePathname } from "next/navigation";

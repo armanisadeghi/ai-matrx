@@ -40,7 +40,7 @@ import {
 } from "../utils/noteLiveContent";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 function sinceLabel(from: number | null): string | null {
   if (!from) return null;

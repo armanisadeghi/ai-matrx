@@ -49,7 +49,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useHeavyHitterAccept } from "@/features/kg-suggestions/hooks/useHeavyHitterAccept";
 import type { KgSuggestionRow } from "@/features/kg-suggestions/types";

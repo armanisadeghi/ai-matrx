@@ -60,7 +60,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { sanitizeVariableName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {

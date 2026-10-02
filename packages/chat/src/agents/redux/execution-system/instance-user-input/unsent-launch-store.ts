@@ -28,7 +28,7 @@
 // sent conversation has a server row and is loaded, never relaunched.
 // ============================================================================
 
-import { DRAFT_TTL_MS } from "@host/lib/drafts/useTextDraft";
+import { DRAFT_TTL_MS } from "@ai-matrx/kit/drafts";
 import type { ResultDisplayMode } from "../../../utils/run-ui-utils";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 

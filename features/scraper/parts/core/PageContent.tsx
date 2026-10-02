@@ -17,7 +17,7 @@ import RawJSON from "../RawJSON";
 import RawJsonExplorer from "@/components/official/json-explorer/RawJsonExplorer";
 import FancyJsonExplorer from "../FancyJsonExplorer";
 import BookmarkViewer from "../BookmarkViewer";
-import { formatJson } from "@/utils/json/json-cleaner-utility";
+import { formatJson } from "@ai-matrx/kit/json-format";
 import SEOAnalysisPage from "@/features/scraper/parts/SEOAnalysisPage";
 import HeaderAnalysis from "../HeaderAnalysis";
 import FactChecker from "../agent-analysis/FactChecker";

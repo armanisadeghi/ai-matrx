@@ -63,7 +63,7 @@ import { __resetOpeningSentMarks } from "../RoomOpening";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => true }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => true }));
 
 /** Not the subject — but its PROPS are, so the stub records every mount. */
 const mountedChatProps: Array<Record<string, unknown>> = [];

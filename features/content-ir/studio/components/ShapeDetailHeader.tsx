@@ -23,7 +23,7 @@
 // was nothing to scroll. A control whose success looks identical to a broken
 // one IS a broken one.
 //
-// It now reveals AND flashes the editor (`lib/dom/flash-attention.ts`), so
+// It now reveals AND flashes the editor (`@ai-matrx/kit/dom`), so
 // every press produces a visible answer: from another tab it navigates and
 // lands on it, and on Preview it rings the panel it is talking about.
 
@@ -41,7 +41,7 @@ import {
   Table2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { revealAndFlash } from "@/lib/dom/flash-attention";
+import { revealAndFlash } from "@ai-matrx/kit/dom";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import type { Json } from "@/types/database.types";
 import {

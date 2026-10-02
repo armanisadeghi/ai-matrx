@@ -44,7 +44,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { useLaunchGate } from "@/lib/launch-gate/useLaunchGate";
-import { failureSummary } from "@/lib/progress/honestSummary";
+import { failureSummary } from "@ai-matrx/kit/progress";
 import {
   EMPTY_INGEST_PROGRESS,
   reduceIngestProgress,

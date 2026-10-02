@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useKgSuggestions } from "@/features/kg-suggestions/hooks/useKgSuggestions";
 import { KgSuggestionRowItem } from "./KgSuggestionRowItem";
 import {

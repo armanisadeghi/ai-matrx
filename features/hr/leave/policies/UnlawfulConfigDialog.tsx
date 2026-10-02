@@ -63,7 +63,7 @@ import type {
   LeaveSaveRefusal,
 } from "../manager/api/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 /** The jurisdictions named by a set of findings, in the order they were returned. */
 function jurisdictionsOf(findings: LeaveConfigViolation[]): string[] {

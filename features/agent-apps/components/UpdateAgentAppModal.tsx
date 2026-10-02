@@ -28,7 +28,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   agentAppAdminKpis,

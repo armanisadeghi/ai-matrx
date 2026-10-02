@@ -3,7 +3,7 @@
  * more. An undo shortcut a surface puts on `document` runs once PER MOUNT,
  * so one ⌘Z used to undo every mounted note / composer / agent message at
  * once (and steal ⌘Z from the board). Each mount must answer only keys
- * pressed inside its own editor (utils/keyboard-scope.ts).
+ * pressed inside its own editor (@ai-matrx/kit/keyboard-scope).
  *
  * Mounts two of each undo hook side by side, presses ⌘Z in ONE editor, and
  * asserts exactly one undo, for that editor only — and none at all when the
@@ -123,7 +123,7 @@ describe("surfaceOwnsKey — page-level surfaces", () => {
   }
 
   it("a standalone page answers an unfocused key; a board tile never does", async () => {
-    const { surfaceOwnsKey } = await import("@/utils/keyboard-scope");
+    const { surfaceOwnsKey } = await import("@ai-matrx/kit/keyboard-scope");
     const page = document.createElement("div");
     const tile = document.createElement("div");
     tile.setAttribute("data-spatial-body", "");

@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";

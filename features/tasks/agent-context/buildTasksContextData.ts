@@ -3,7 +3,7 @@ import { Save, Trash2, CheckCircle2, CircleDashed } from "lucide-react";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import { createTasksScope } from "@/features/surfaces/manifests/tasks.manifest";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
-import { formatEditorSurroundContext } from "@/utils/format-editor-surround-context";
+import { formatEditorSurroundContext } from "@ai-matrx/kit/text";
 import { isClosedStatus } from "@/features/tasks/constants/status";
 import type { TaskPriorityValue } from "@/features/tasks/constants/priority";
 import type { Project, TaskWithProject } from "@/features/tasks/types";

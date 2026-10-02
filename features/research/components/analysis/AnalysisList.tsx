@@ -6,7 +6,7 @@ import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import MarkdownStream from "@/components/markdown";
 import { Cost } from "@/components/cost/Cost";

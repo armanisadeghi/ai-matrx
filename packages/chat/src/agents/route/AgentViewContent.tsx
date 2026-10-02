@@ -81,7 +81,7 @@ import { agentDefinitionSummary } from "../format";
 import { agentHref } from "@host/features/agents/browse/agentPaths";
 import { buildSystemAgentAiPayload } from "./buildSystemAgentAiPayload";
 import { useAgentAddressViewer } from "../addressing/useAgentHref";
-import { asClause } from "@host/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
   if (!msg.content || !Array.isArray(msg.content)) return "";

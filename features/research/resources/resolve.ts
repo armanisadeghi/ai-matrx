@@ -22,7 +22,7 @@
  *      indication it was cut.
  */
 
-import { estimateTokens, charsForTokenBudget } from "@/lib/tokens/estimate";
+import { estimateTokens, charsForTokenBudget } from "@ai-matrx/kit/tokens";
 import { createResourceReference } from "@ai-matrx/chat/agents/agent-context/resource-reference";
 import {
   CATALOG,

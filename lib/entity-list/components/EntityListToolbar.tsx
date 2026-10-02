@@ -39,7 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { EntityColumnSpec } from "../columns";
 import type { EntityFacetSection, EntityScopeFacetSection } from "../config";

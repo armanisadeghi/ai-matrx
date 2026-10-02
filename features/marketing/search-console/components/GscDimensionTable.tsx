@@ -40,7 +40,7 @@ import {
   setGscKeywordClass,
   type GscClassRuling,
 } from "@/features/marketing/search-console/data-classification";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,

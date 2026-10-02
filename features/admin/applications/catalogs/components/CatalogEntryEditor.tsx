@@ -84,7 +84,7 @@ import type {
 import type { Json } from "@/types/database.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 interface CatalogEntryEditorProps {
   app: string;

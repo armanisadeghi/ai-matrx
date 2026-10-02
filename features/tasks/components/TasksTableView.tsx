@@ -69,7 +69,7 @@ import {
   formatRelativeTime,
   toEpochMs,
 } from "@/utils/datetime";
-import { formatDateOnly } from "@/utils/dateOnly";
+import { formatDateOnly } from "@ai-matrx/kit/dates";
 import type { TaskWithProject } from "@/features/tasks/types";
 import { toast } from "@/lib/toast";
 

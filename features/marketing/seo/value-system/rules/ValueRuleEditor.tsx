@@ -63,7 +63,7 @@ import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { AddDimensionDialog } from "../pickers/AddDimensionDialog";
 import { useQuickAdd } from "../pickers/useQuickAdd";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import {
   archiveRule,
   createValueRule,

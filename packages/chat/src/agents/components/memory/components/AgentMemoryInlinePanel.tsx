@@ -13,7 +13,7 @@
 
 import { ArrowLeft, AppWindow } from "lucide-react";
 import { useOpenAgentMemoryWindow } from "../../../../host/window-openers";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   ALL_MEMORIES_ID,
   NEW_MEMORY_ID,

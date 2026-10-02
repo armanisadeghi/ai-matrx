@@ -65,7 +65,7 @@ import {
   BottomSheetBody,
   BottomSheetHeader,
 } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,

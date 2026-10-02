@@ -282,7 +282,7 @@ export function hasContent(value: unknown): boolean {
 // JSON Close / Repair (used by streaming extraction)
 // =============================================================================
 
-import { computeClosingSequence } from "./json-structural";
+import { computeClosingSequence } from "@ai-matrx/kit/json-extract";
 
 export interface JsonCloseResult {
   closed: string;

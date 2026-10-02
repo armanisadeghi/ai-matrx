@@ -21,7 +21,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, MessagesSquare } from "lucide-react";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppSelector } from "../../../store/hooks";
 import {
   BottomSheet,

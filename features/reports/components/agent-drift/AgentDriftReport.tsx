@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useDriftReport } from "@ai-matrx/chat/agents/hooks/useDriftReport";
 import type { ReportSortKey } from "@/features/agents/redux/usages/usages.selectors";
 import { AgentUsagesEngine } from "@/features/agents/components/usages/AgentUsagesEngine";

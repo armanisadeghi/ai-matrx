@@ -32,7 +32,7 @@ import {
   DrawerTitle,
 } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppSelector } from "../../../../store/hooks";
 import { selectToolCallsForMessage } from "../../../redux/execution-system/observability/observability.selectors";
 

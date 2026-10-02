@@ -18,7 +18,7 @@ const mockPaste = jest.fn();
 jest.mock("../../../hooks/useResearchApi", () => ({
   useResearchApi: () => ({ pasteContent: mockPaste }),
 }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 jest.mock("@/components/ui/dialog", () => {
   const Pass = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
   return { Dialog: Pass, DialogContent: Pass, DialogHeader: Pass, DialogTitle: Pass };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useDebounce } from "@host/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import type { ConversationListItem } from "../../redux/conversation-list/conversation-list.types";
 import type { ConversationHistoryScopeState } from "../../redux/conversation-history/types";
 import {

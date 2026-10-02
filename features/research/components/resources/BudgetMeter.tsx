@@ -4,7 +4,7 @@
  * BUDGET METER — "will this fit, what does it cost, and what gets left out?"
  *
  * Every number is an ESTIMATE and says so. It comes from measured character
- * counts through the one shared estimator (`lib/tokens/estimate.ts`), which is
+ * counts through the one shared estimator (`@ai-matrx/kit/tokens`), which is
  * also what the resolver truncates with — so the bar you read and the cut the
  * run makes are the same arithmetic.
  *
@@ -32,7 +32,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { formatChars, formatTokens } from "@/lib/tokens/estimate";
+import { formatChars, formatTokens } from "@ai-matrx/kit/tokens";
 import { kindDef } from "../../resources/catalog";
 import type { PreviewKind } from "../../resources/resolve";
 

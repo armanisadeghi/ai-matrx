@@ -172,7 +172,7 @@ export function countInFlight(saveStates: Record<string, { kind: string }>): num
  *
  * The round-shaped `createSittingStore` above already held the rule; what was
  * missing was a shape a DIALOG could adopt in one call. `useTextDraft`
- * (`lib/drafts/useTextDraft.ts`) covers ONE plain text field and is still the
+ * (`@ai-matrx/kit/drafts (useTextDraft)`) covers ONE plain text field and is still the
  * right tool for that; this covers a whole lane's working state — the pasted
  * work AND its title AND the corrections already saved against it — which is
  * the thing an Expert actually loses when a laptop lid closes.

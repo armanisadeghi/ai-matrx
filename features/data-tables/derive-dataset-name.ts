@@ -8,7 +8,7 @@
  * 4. Generic fallback
  */
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 import { supabase } from "@/utils/supabase/client";
 import { convertCxContentToDisplay } from "@ai-matrx/chat/cx-chat/utils/cx-content-converter";
 import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";

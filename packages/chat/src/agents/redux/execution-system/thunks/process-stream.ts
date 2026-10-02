@@ -20,7 +20,7 @@ import type { ToolLifecycleStatus } from "../../../types/request.types";
 import { parseNdjsonStream } from "@host/lib/api/stream-parser";
 import { isStreamTransportLost, StreamTransportError } from "@host/lib/api/errors";
 import { monitorStream } from "@ai-matrx/data/net";
-import { mintClientTempId } from "@host/lib/ids/durable-record-id";
+import { mintClientTempId } from "@ai-matrx/kit/ids";
 import { withPerformedScript } from "../../../speech-script/types";
 import {
   isChunkEvent,
@@ -131,7 +131,7 @@ import {
 } from "../instance-context/sync-canvas-item-context.thunk";
 import { docKindForContextKey } from "../../../utils/workingDocumentContext";
 import { isCanvasItemContextKey } from "../../../utils/canvasItemContext";
-import { StreamingJsonTracker } from "@host/utils/json/streaming-json-tracker";
+import { StreamingJsonTracker } from "@ai-matrx/kit/json-extract";
 import { StreamBlockAccumulator } from "../utils/stream-block-accumulator";
 import { deriveAnswerText } from "../active-requests/active-requests.selectors";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
@@ -3594,7 +3594,7 @@ export async function processStream({
     //     persistence (store:true) and no cx_message(role=assistant) was
     //     announced, or the stream died before it arrived.
     // The client-temp id never reaches the database: every reader asks
-    // `durableRecordId` first (lib/ids/durable-record-id.ts).
+    // `durableRecordId` first (@ai-matrx/kit/ids).
     const conv = finalState.conversations.byConversationId[conversationId];
     (conv?.isEphemeral === true ? console.info : console.error)(
       `[stream:${requestId.slice(0, 8)}] no assistant reservation arrived but ${assistantBlocks.length} content block(s) were produced — committing to a client-temp message to avoid transcript loss. ` +

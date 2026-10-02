@@ -286,7 +286,7 @@ import {
   type DataTableWriteLiveState,
 } from "@/features/data-tables/hooks/useDataTableWriteHandlers";
 import { TableCopyControls } from "@/features/data-tables/components/TableCopyControls";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { SheetWithheldCell, withheldCellOf, type WithheldCells } from "@/features/data-tables/withheld-cells";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
@@ -2319,7 +2319,7 @@ const UserTableViewer = ({
         try {
           // `date` (grid-parity `formats.all`, defect #2): the stored value
           // is a calendar day with no time or zone — `formatDateCellDisplay`
-          // reuses `utils/dateOnly.ts` (the same rule FIX-7B applied to the
+          // reuses `@ai-matrx/kit/dates` (the same rule FIX-7B applied to the
           // shared primitive's formatter) so it never shifts a day early and
           // never grows a clock time. `datetime` is a real timestamp and
           // still gets the local-zone-plus-time rendering it always had.

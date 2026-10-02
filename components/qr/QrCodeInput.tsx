@@ -22,7 +22,7 @@ import { Camera, ImageUp, Loader2, ScanLine, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   decodeQrFromElement,
   decodeQrFromImageFile,

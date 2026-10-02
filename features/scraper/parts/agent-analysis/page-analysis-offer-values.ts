@@ -11,7 +11,7 @@
  * omitted — never sent as "" or null.
  */
 
-import { isoInstantWithOffset } from "@/lib/dates/isoInstantWithOffset";
+import { isoInstantWithOffset } from "@ai-matrx/kit/dates";
 import { SCRAPER_ANALYSIS_CONTENT_VARIABLE } from "@/features/scraper/constants/analysis-agents";
 import type { ScraperPageAnalysisOffer } from "@/types/python-generated/provision-offers";
 

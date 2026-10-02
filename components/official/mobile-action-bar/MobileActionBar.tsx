@@ -6,7 +6,7 @@ import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTrans
 import { Button } from "@/components/ui/button";
 import { TranscriptionResult } from "@/features/audio/types";
 import { toast } from "@/lib/toast";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { MobileActionBarProps } from "./types";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";

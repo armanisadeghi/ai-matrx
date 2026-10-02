@@ -6,10 +6,10 @@
 // undo from desynchronizing with Redux state — ONLY for keys pressed inside
 // this note's editor (`scope`). A board or a side panel mounts many notes
 // at once; an unscoped listener undid every one of them on a single ⌘Z and
-// stole ⌘Z from the board (utils/keyboard-scope.ts).
+// stole ⌘Z from the board (@ai-matrx/kit/keyboard-scope).
 
 import { useEffect, useCallback } from "react";
-import { keyEventInside } from "@/utils/keyboard-scope";
+import { keyEventInside } from "@ai-matrx/kit/keyboard-scope";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { undoNoteEdit, redoNoteEdit } from "../redux/slice";
 import {

@@ -87,7 +87,7 @@ import { useScheduleAlarmSource } from "./sources/useScheduleAlarmSource";
 import { useDatedChangeSource } from "./sources/useDatedChangeSource";
 import type { AttentionAction, AttentionItem } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 /** Every source's React Query key starts with this, so one invalidation wakes all. */
 export const ATTENTION_QUERY_PREFIX = ["admin-attention"] as const;

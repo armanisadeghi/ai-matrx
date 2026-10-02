@@ -32,7 +32,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 /** jsdom has no matchMedia; the breakpoint is not what this test is about. */
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => {} }),

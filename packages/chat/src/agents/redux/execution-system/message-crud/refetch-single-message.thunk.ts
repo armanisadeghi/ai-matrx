@@ -30,7 +30,7 @@ import { supabase } from "@host/utils/supabase/client";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { messageRowToRecord } from "../thunks/conversation-bundle";
-import { durableRecordId } from "@host/lib/ids/durable-record-id";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 
 interface RefetchSingleMessageArgs {
   conversationId: string;

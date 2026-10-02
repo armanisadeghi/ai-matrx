@@ -73,7 +73,7 @@ import {
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 const SOURCE_FEATURE = "masterwork" as const;
 /**

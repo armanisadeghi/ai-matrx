@@ -5,7 +5,7 @@ import {
   formatAbsoluteDate,
   formatRelativeTime,
   type TimestampInput,
-} from "@host/utils/datetime";
+} from "@ai-matrx/kit/format";
 
 interface MessageTimestampProps {
   timestamp: TimestampInput;

@@ -39,7 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";

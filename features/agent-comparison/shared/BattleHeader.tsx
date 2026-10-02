@@ -17,7 +17,7 @@
 
 import { useRef, type ReactNode } from "react";
 import type { ContentTransferController } from "@ai-matrx/design-system/content-transfer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Loader2, Play } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import HeaderActions from "@/features/shell/components/header/variants/shared/HeaderActions";

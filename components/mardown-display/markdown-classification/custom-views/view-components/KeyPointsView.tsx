@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ChevronRight, CheckCircle2, Info, Lightbulb, ArrowRight, Loader2 } from 'lucide-react';
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
 import MarkdownTextDisplay from "@/components/mardown-display/markdown-classification/custom-views/common/MarkdownTextDisplay";
 

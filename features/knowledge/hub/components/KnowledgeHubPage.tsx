@@ -61,7 +61,7 @@ import { Handle } from "@/features/resizable-panels/Handle";
 import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { recordToast, toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppSelector } from "@/lib/redux/hooks";

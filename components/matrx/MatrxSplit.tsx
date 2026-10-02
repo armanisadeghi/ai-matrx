@@ -11,7 +11,7 @@ import MarkdownStream, {
   type MarkdownStreamProps,
 } from "@/components/MarkdownStream";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Eye, PenLine } from "lucide-react";
 import {
   type ScrollEdgeIntent,

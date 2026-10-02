@@ -40,7 +40,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
 import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
-import { formatTokens } from "@/lib/tokens/estimate";
+import { formatTokens } from "@ai-matrx/kit/tokens";
 import {
   DndContext,
   PointerSensor,

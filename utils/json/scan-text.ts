@@ -44,8 +44,8 @@ import {
   type ExtractedJson,
   type JsonSource,
   type JsonValueType,
-} from "./extract-json";
-import { StreamingJsonTracker } from "./streaming-json-tracker";
+} from "@ai-matrx/kit/json-extract";
+import { StreamingJsonTracker } from "@ai-matrx/kit/json-extract";
 
 // =============================================================================
 // Public Types

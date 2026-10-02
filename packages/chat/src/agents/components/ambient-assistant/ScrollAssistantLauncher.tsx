@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { ScrollAssistantLauncherImplProps } from "./ScrollAssistantLauncherImpl";
 import { useAmbientAssistantSuppressed } from "./ambientAssistantSuppression";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "../../../host/notify";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppStore } from "../../../store/hooks";
 import {
   Drawer,

@@ -1,7 +1,7 @@
 /** The Fact Checker tab sends `current_time` — the exact instant, ISO-8601 with offset —
  *  so "recent", "currently" and "new" in a claim are judged against today, not the
  *  model's training cutoff. */
-import { isoInstantWithOffset } from "@/lib/dates/isoInstantWithOffset";
+import { isoInstantWithOffset } from "@ai-matrx/kit/dates";
 import { factCheckVariables } from "../page-analysis-offer-values";
 
 const ISO_WITH_OFFSET = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}(?:[+-]\d{2}:\d{2})$/;

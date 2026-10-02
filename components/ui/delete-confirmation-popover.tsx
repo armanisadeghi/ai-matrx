@@ -9,7 +9,7 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface DeleteConfirmationAnchorPoint {

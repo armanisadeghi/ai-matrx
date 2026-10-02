@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { DeleteConfirmationPopover } from "@/components/ui/delete-confirmation-popover";
 
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }

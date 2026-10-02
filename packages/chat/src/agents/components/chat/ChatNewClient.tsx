@@ -14,7 +14,7 @@ import {
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 import { useMandate } from "../../../mandates/useMandate";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@host/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 import { WorkspaceGate } from "@host/features/organizations/components/WorkspaceGate";
 import type { ComposerMode } from "../inputs/smart-input/composer/composer-types";
 

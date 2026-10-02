@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@ai-matrx/kit/media-query';
 import DefaultErrorFallback from '@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback';
 import { Loader2 } from 'lucide-react';
 

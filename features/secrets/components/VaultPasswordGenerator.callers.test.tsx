@@ -17,7 +17,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
-jest.mock("@/hooks/use-media-query", () => ({ useMediaQuery: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useMediaQuery: () => false }));
 jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({ organizations: [] }),
 }));

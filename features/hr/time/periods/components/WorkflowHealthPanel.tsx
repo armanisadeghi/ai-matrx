@@ -47,7 +47,7 @@ import {
   unreachableWords,
   isNotAttestedTerminal,
 } from "../workflowHealth";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 const HEALTH_TONE: Record<RowHealth, string> = {
   awaiting: "bg-primary/10 text-primary border-primary/30",

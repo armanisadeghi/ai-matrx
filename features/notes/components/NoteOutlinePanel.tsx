@@ -29,7 +29,7 @@ import {
 } from "@/lib/redux/slices/windowManagerSlice";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import { parseNoteOutline, type NoteOutlineItem } from "../utils/noteOutline";
 import { measureTextareaCharTop } from "../utils/textareaMeasure";
 import type { EditorMode } from "./NoteEditorCore";

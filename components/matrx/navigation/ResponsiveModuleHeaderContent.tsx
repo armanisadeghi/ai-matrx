@@ -1,6 +1,6 @@
 'use client';
 
-import { useWindowSize } from "@/hooks/usehooks";
+import { useWindowSize } from "@ai-matrx/kit/hooks";
 import ModuleHeaderDesktopContent from "./ModuleHeaderDesktopContent";
 import ModuleHeaderMobileContent from "./ModuleHeaderMobileContent";
 import { ModuleHeaderProps } from "./types";

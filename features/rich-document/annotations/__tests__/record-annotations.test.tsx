@@ -57,7 +57,7 @@ jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn(),
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({ EntityRef: () => null }));
 jest.mock("@/components/rich-content/RichContent", () => ({ RichContent: ({ source }: { source: string }) => <span>{source}</span> }));
 jest.mock("../LinkRecordSheet", () => ({ LinkRecordSheet: () => null }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 
 import { RecordAnnotations } from "../RecordAnnotations";
 import { AnnotationSidecarProvider, AnnotatedContent } from "../AnnotationSidecar";

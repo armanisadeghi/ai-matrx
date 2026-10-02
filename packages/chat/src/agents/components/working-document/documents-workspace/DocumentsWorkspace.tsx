@@ -39,7 +39,7 @@ import {
 } from "@host/features/surfaces/manifests/documents-workspace.manifest";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../../store/hooks";
-import { useIsMobile } from "@host/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   isScratchScope,
   scratchScopeId,

@@ -25,7 +25,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 
 import {

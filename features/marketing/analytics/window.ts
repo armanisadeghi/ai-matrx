@@ -267,7 +267,7 @@ function emptyTotals(): AnalyticsTotals {
 function addDays(isoDate: string, delta: number): string {
   const [y, m, d] = isoDate.split("-").map((part) => Number(part));
   // UTC arithmetic on a date-only column: a local-time Date would shift the day
-  // for every viewer west of UTC (utils/dateOnly.ts carries the same rule).
+  // for every viewer west of UTC (@ai-matrx/kit/dates carries the same rule).
   const stamp = Date.UTC(y, (m ?? 1) - 1, d ?? 1) + delta * 86_400_000;
   return new Date(stamp).toISOString().slice(0, 10);
 }

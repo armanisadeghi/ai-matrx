@@ -58,7 +58,7 @@ import {
 import { createMatrxTransport } from "@host/lib/api/matrx-transport";
 import { applyDesktopTargetToRequestBody } from "@host/lib/api/desktop-target-request";
 import type { components } from "@host/types/python-generated/api-types";
-import { extractErrorMessage } from "@host/utils/errors";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 export interface RunAgentArgs {
   /** Live agent id (UUID) or slug. */

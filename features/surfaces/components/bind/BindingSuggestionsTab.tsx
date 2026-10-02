@@ -45,7 +45,7 @@ import { cn } from "@/lib/utils";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
-import { asClause } from "@/lib/text/asClause";
+import { asClause } from "@ai-matrx/kit/text";
 
 export const BINDING_MAPPER_MANDATE_KEY = MANDATE_KEYS.surfaces_client__binding_mapper;
 

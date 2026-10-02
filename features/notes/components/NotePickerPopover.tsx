@@ -16,7 +16,7 @@ import { noteDisplayLabel } from "@/features/notes/format";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronRight, FileText, Loader2, Search } from "lucide-react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import { Input } from "@ai-matrx/design-system";
 import {

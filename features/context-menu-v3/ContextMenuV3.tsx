@@ -20,7 +20,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Slot } from "@radix-ui/react-slot";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";
 import {
   CONTEXT_MENU_SELECTION_HOST_KEY,

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useDebounce } from "@/hooks/usehooks";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import { CopyIcon, RefreshCw, BookmarkIcon, FileJson } from "lucide-react";
 import { IoBookmarks } from "react-icons/io5";
 import { Bookmark, PathArray, PathWithTypeInfo } from "../types";

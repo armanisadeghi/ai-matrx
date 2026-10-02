@@ -24,13 +24,13 @@
 // computed from the clock and never consulted the steps. So `steps` is a
 // REQUIRED input: an author cannot reach this sentence without handing over
 // the same collection their step list renders, and a failed step wins over
-// every time-based word here. See `lib/progress/honestSummary.ts`.
+// every time-based word here. See `@ai-matrx/kit/progress`.
 
 import {
   failureSummary,
   type ProgressStep,
   type RunShape,
-} from "./honestSummary";
+} from "@ai-matrx/kit/progress";
 
 const MINUTE_MS = 60_000;
 

@@ -14,7 +14,7 @@
 
 import React from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
   ContextAssignmentField,
   type ContextAssignmentFieldProps,
