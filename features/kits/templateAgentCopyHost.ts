@@ -8,10 +8,12 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
-import { duplicateAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { duplicateAgent, saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { nameCopiedAgent, writeAgent } from "./installer";
 import {
+  createTemplateAgentArchiver,
   createTemplateAgentCopier,
+  type TemplateAgentCopyPorts,
   type TemplateAgentCopier,
   type TemplateAgentCopyOptions,
 } from "./templateAgentCopy";
@@ -22,6 +24,22 @@ function messageOf(err: unknown): string {
     return (err as { message: string }).message;
   }
   return String(err);
+}
+
+/** Archive through the agents list's own Archive (`is_archived`), as kit removal does. */
+function archivePort(dispatch: AppDispatch): TemplateAgentCopyPorts["archive"] {
+  return async (agentId) => {
+    try {
+      await dispatch(saveAgentField({ agentId, field: "isArchived", value: true as never })).unwrap();
+    } catch (err) {
+      throw new Error(`The agent ${agentId} was not archived: ${messageOf(err)}`);
+    }
+  };
+}
+
+/** The `archiveAgent` to pass to `archiveTemplateInstall`. */
+export function templateAgentArchiver(dispatch: AppDispatch): (agentId: string) => Promise<void> {
+  return createTemplateAgentArchiver({ archive: archivePort(dispatch) });
 }
 
 /** The `copyAgent` to pass to `installTemplate`, running as the signed-in person. */
@@ -50,8 +68,9 @@ export function templateAgentCopier(dispatch: AppDispatch, options?: TemplateAge
           throw new Error(`Could not copy the agent: ${messageOf(err)}`);
         }
       },
-      name: (agentId, organizationId, base) => nameCopiedAgent(agentId, organizationId, base),
+      name: (agentId, organizationId, base, also) => nameCopiedAgent(agentId, organizationId, base, () => also),
       write: (agentId, what, build) => writeAgent(agentId, what, build),
+      archive: archivePort(dispatch),
       async recordsToolId() {
         const { data, error } = await supabase
           .schema("tool")

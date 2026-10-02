@@ -8,15 +8,25 @@
 //
 //   1. the platform agent the template names (its id, or its name in the system org)
 //   2. `agx_duplicate_agent` through the `duplicateAgent` thunk — the ONE fork, as the person
-//   3. named from the template (`nameCopiedAgent`: next free name, guarded write)
+//   3. named from the template (`nameCopiedAgent`: next free name, guarded write), its tags
+//      cleared in that same write (see TAGS below)
 //   4. each template variable bound to its installed table as a `merge_field`
 //      collection (the kit binding shape), its default cleared — the bound value is the truth
 //   5. the `records` tool attached, so the copy answers a sum or a count through
 //      `custom.record_aggregate` instead of adding rows up in its head (handoff Q6)
 //
-// A failure after the fork archives the copy (`deleted_at`, soft) and says so: the
-// template footprint only learns an agent id from a successful return, so a copy left
-// behind would be an orphan nobody can find.
+// THE ID IS NEVER LOST: the request's `onCreated(agentId)` is called the moment the fork
+// returns, so a failure after it still leaves the id on the template footprint (state
+// `failed`) for `archiveTemplateInstall` to archive through `templateAgentArchiver`. A
+// caller that passes no `onCreated` gets the copy archived here instead, and is told so.
+//
+// TAGS: `agx_duplicate_agent` copies the source's tags, and `agent.definition`'s AFTER
+// INSERT/UPDATE trigger `_tags_column_to_filing` files every tag as a scope in the copy's
+// organization (`platform.tag_scope_id` → a "tag" scope type + scopes, which write
+// through to the record store as a Tag table that refuses to archive). A template copy
+// carries no tags: they are cleared in the naming write, which soft-deletes the copy's tag
+// associations. The scopes the INSERT already filed stay — clearing tags host-side cannot
+// prevent them; only a fork that does not carry tags can (a store-side change).
 
 // This file holds no app imports (types only), so a node script can run the same
 // copier against the clone with its own ports; the browser wiring is
@@ -42,6 +52,8 @@ export interface TemplateAgentCopyRequest {
   platformAgentId: string | null;
   name: string;
   bindings: TemplateAgentBinding[];
+  /** Called with the copy's id the moment the fork returns, before anything else can fail. */
+  onCreated?: (agentId: string) => void;
 }
 
 export type TemplateAgentCopier = (request: TemplateAgentCopyRequest) => Promise<{ agentId: string }>;
@@ -120,14 +132,16 @@ export interface TemplateAgentCopyPorts {
   platformAgentIdByName(name: string): Promise<string>;
   /** `agx_duplicate_agent` into `organizationId`, as the person. Returns the copy's id. */
   duplicate(sourceAgentId: string, organizationId: string): Promise<string>;
-  /** Names the copy (next free name). Returns the name kept. */
-  name(agentId: string, organizationId: string, base: string): Promise<string>;
+  /** Names the copy (next free name), writing `also` in the same guarded write. Returns the name kept. */
+  name(agentId: string, organizationId: string, base: string, also: { tags: string[] }): Promise<string>;
   /** One guarded write to the copy. */
   write(
     agentId: string,
     what: string,
-    build: (current: AgentRow) => Partial<{ tools: string[]; variable_definitions: Json; deleted_at: string }>,
+    build: (current: AgentRow) => Partial<{ tools: string[]; variable_definitions: Json }>,
   ): Promise<void>;
+  /** Archives the copy (soft, restorable from the agents list's Archived view). */
+  archive(agentId: string): Promise<void>;
   /** The `records` tool's id, or null when it cannot be read. */
   recordsToolId(): Promise<string | null>;
 }
@@ -142,8 +156,10 @@ export function createTemplateAgentCopier(
   return async (request) => {
     const sourceId = request.platformAgentId ?? (await ports.platformAgentIdByName(request.platformAgent));
     const agentId = await ports.duplicate(sourceId, request.organizationId);
+    request.onCreated?.(agentId);
     try {
-      await ports.name(agentId, request.organizationId, request.name);
+      // No tags on a template copy (TAGS above).
+      await ports.name(agentId, request.organizationId, request.name, { tags: [] });
       const toolId = attachRecords ? await ports.recordsToolId() : null;
       if (attachRecords && !toolId) {
         throw new Error("The records tool could not be read, so the copy could not be given it.");
@@ -155,8 +171,11 @@ export function createTemplateAgentCopier(
       return { agentId };
     } catch (err) {
       const why = err instanceof Error ? err.message : String(err);
+      // The footprint holds the id: uninstall archives it. Archiving here too would be a
+      // second owner of the same row.
+      if (request.onCreated) throw err;
       try {
-        await ports.write(agentId, "archive the unfinished copy", () => ({ deleted_at: new Date().toISOString() }));
+        await ports.archive(agentId);
       } catch (archiveErr) {
         const a = archiveErr instanceof Error ? archiveErr.message : String(archiveErr);
         throw new Error(`${why} The unfinished copy ${agentId} could not be archived: ${a}`);
@@ -164,4 +183,9 @@ export function createTemplateAgentCopier(
       throw new Error(`${why} The unfinished copy was archived.`);
     }
   };
+}
+
+/** The `archiveAgent` to pass to `archiveTemplateInstall`. */
+export function createTemplateAgentArchiver(ports: Pick<TemplateAgentCopyPorts, "archive">): (agentId: string) => Promise<void> {
+  return (agentId) => ports.archive(agentId);
 }

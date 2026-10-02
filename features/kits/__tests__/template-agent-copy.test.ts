@@ -10,6 +10,7 @@
  */
 import {
   bindTemplateVariables,
+  createTemplateAgentArchiver,
   createTemplateAgentCopier,
   TEMPLATE_AGENT_COLLECTION_LIMIT,
   type TemplateAgentCopyPorts,
@@ -44,7 +45,7 @@ const SOURCE_DEFS = [
 ];
 
 function fakeDb(overrides: Partial<TemplateAgentCopyPorts> = {}) {
-  const rows = new Map<string, AgentRow & { name?: string; deleted_at?: string }>();
+  const rows = new Map<string, AgentRow & { name?: string; is_archived?: boolean }>();
   const calls: string[] = [];
   const ports: TemplateAgentCopyPorts = {
     async platformAgentIdByName(name) {
@@ -58,21 +59,26 @@ function fakeDb(overrides: Partial<TemplateAgentCopyPorts> = {}) {
       rows.set(id, {
         id,
         version: 1,
-        tags: null,
+        // agx_duplicate_agent carries the source's tags (the Chief of Staff's real ones).
+        tags: ["chief-of-staff", "personal-assistant", "sms-and-voice"],
         tools: [MEMORY_TOOL],
         variable_definitions: JSON.parse(JSON.stringify(SOURCE_DEFS)),
       });
       return id;
     },
-    async name(agentId, _org, base) {
+    async name(agentId, _org, base, also) {
       calls.push(`name:${base}`);
-      rows.get(agentId)!.name = base;
+      Object.assign(rows.get(agentId)!, { name: base, ...also });
       return base;
     },
     async write(agentId, what, build) {
       calls.push(`write:${what}`);
       const row = rows.get(agentId)!;
       Object.assign(row, build(row), { version: row.version + 1 });
+    },
+    async archive(agentId) {
+      calls.push(`archive:${agentId}`);
+      rows.get(agentId)!.is_archived = true;
     },
     async recordsToolId() {
       return RECORDS_TOOL;
@@ -95,7 +101,9 @@ describe("template agent copy", () => {
     const row = rows.get(agentId)!;
     expect(row.name).toBe("Linden Hollow Front Desk");
     expect(row.tools).toEqual([MEMORY_TOOL, RECORDS_TOOL]);
-    expect(row.deleted_at).toBeUndefined();
+    expect(row.is_archived).toBeUndefined();
+    // The source's tags would file scopes (a Tag table) in the installing org: none ride along.
+    expect(row.tags).toEqual([]);
 
     const defs = row.variable_definitions as Record<string, unknown>[];
     // The bound variable: the whole appointments table, default cleared, its other keys kept.
@@ -148,7 +156,7 @@ describe("template agent copy", () => {
       'The copied agent has no "visit schedule" input to connect. The unfinished copy was archived.',
     );
     const [row] = [...rows.values()];
-    expect(row!.deleted_at).toEqual(expect.any(String));
+    expect(row!.is_archived).toBe(true);
     expect((row!.variable_definitions as unknown[])).toEqual(SOURCE_DEFS);
   });
 
@@ -161,5 +169,23 @@ describe("template agent copy", () => {
   it("an unreadable records tool is a named failure, not a copy without it", async () => {
     const { ports } = fakeDb({ recordsToolId: async () => null });
     await expect(createTemplateAgentCopier(ports)(REQUEST)).rejects.toThrow(/records tool could not be read/);
+  });
+
+  it("onCreated hands the id over before anything can fail, and the footprint (not the copier) then owns the failed copy", async () => {
+    const { ports, rows, calls } = fakeDb({ recordsToolId: async () => null });
+    const created: string[] = [];
+    await expect(
+      createTemplateAgentCopier(ports)({ ...REQUEST, onCreated: (id) => created.push(id) }),
+    ).rejects.toThrow(/records tool could not be read/);
+    const [id] = [...rows.keys()];
+    expect(created).toEqual([id]);
+    expect(calls.some((c) => c.startsWith("archive:"))).toBe(false);
+  });
+
+  it("the archiver archives exactly the footprint's agent", async () => {
+    const { ports, rows } = fakeDb();
+    const { agentId } = await createTemplateAgentCopier(ports)(REQUEST);
+    await createTemplateAgentArchiver(ports)(agentId);
+    expect(rows.get(agentId)!.is_archived).toBe(true);
   });
 });
