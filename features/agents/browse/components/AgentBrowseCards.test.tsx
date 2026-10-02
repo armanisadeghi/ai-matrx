@@ -28,6 +28,24 @@ jest.mock("@/components/official/item/ItemMenu", () => ({
   ItemMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+jest.mock("@/components/official/entity-ref/AiIdentityRef", () => ({
+  AiModelRef: ({
+    modelId,
+    showClass,
+    offeringId,
+  }: {
+    modelId: string;
+    showClass?: boolean;
+    offeringId?: string | null;
+  }) => (
+    <span
+      data-model-ref={modelId}
+      data-show-class={String(Boolean(showClass))}
+      data-offering={offeringId ?? ""}
+    />
+  ),
+}));
+
 import { AgentBrowseCards } from "./AgentBrowseCards";
 
 const sharedAgent: AgentBrowseRow = {
@@ -111,4 +129,36 @@ describe("AgentBrowseCards", () => {
       expect(control?.classList.contains("sm:h-7")).toBe(false);
     }
   });
+
+  it.each([
+    // [row's offering_id, names the class?, pin handed to the model door]
+    ["29874e67-5683-40c2-9adb-fb797ea9a176", "true", "29874e67-5683-40c2-9adb-fb797ea9a176"],
+    [null, "true", ""],
+    [undefined, "false", ""],
+  ])(
+    "a card names the model with its class (offering_id %p)",
+    async (offeringId, showClass, pin) => {
+      const row =
+        offeringId === undefined
+          ? sharedAgent
+          : ({ ...sharedAgent, offering_id: offeringId } as AgentBrowseRow);
+      await act(async () =>
+        root.render(
+          <AgentBrowseCards
+            rows={[row]}
+            density="comfortable"
+            showOwner
+            menuFor={() => () => ({ sections: [] })}
+            onOpenActionModal={jest.fn()}
+            onToggleFavorite={jest.fn()}
+            hrefFor={() => "/agents/shared-agent"}
+          />,
+        ),
+      );
+      const ref = container.querySelector("[data-model-ref]");
+      expect(ref?.getAttribute("data-model-ref")).toBe("model-id");
+      expect(ref?.getAttribute("data-show-class")).toBe(showClass);
+      expect(ref?.getAttribute("data-offering")).toBe(pin);
+    },
+  );
 });

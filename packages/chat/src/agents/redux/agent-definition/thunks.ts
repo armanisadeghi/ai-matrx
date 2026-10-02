@@ -331,10 +331,18 @@ function mergeAgentSummaries(
         // `null` — absent, never silently coerced into a wrong level.
         accessLevel: toRegistryAccessLevel(row.accessLevel),
         sharedByEmail: row.sharedByEmail ?? undefined,
+        // The class pin, when the list read carries it (@ai-matrx/agents >= 0.40).
+        ...listOfferingPinOf(row),
       }),
     );
     dispatch(setAgentFetchStatus({ id: row.id, status: "list" }));
   }
+}
+
+/** `offeringId` of a catalog row → the registry's `listOfferingPin`; absent stays absent. */
+function listOfferingPinOf(row: AgentSummary): { listOfferingPin?: string | null } {
+  const { offeringId } = row as AgentSummary & { offeringId?: string | null };
+  return offeringId === undefined ? {} : { listOfferingPin: offeringId };
 }
 
 /**

@@ -302,7 +302,9 @@ export const selectAgentModelId = createSelector(
 export const selectAgentOfferingPin = createSelector(
   [selectAgentById, selectAgentReadyForCustomExecution],
   (record, settingsLoaded): string | null | undefined => {
-    if (!record || !settingsLoaded) return undefined;
+    if (!record) return undefined;
+    // A list read's pin (`listOfferingPin`) stands until settings load.
+    if (!settingsLoaded) return record.listOfferingPin;
     const pin = (record.settings as { offering_id?: unknown } | undefined)
       ?.offering_id;
     return typeof pin === "string" && pin !== "" ? pin : null;

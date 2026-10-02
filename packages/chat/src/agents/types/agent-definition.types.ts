@@ -449,6 +449,15 @@ export interface AgentDefinition {
   sharedByEmail: string | null; // null when isOwner = true or not yet loaded
 
   /**
+   * The agent's CLASS pin as a LIST read reports it (`offering_id` on
+   * agx_get_list / agx_get_list_full / agx_search / agx_list_scoped): a uuid,
+   * null (no pin — the preferred class runs), or absent when the read did not
+   * carry the column. Once settings load, `settings.offering_id` is the truth
+   * (`selectAgentOfferingPin`).
+   */
+  listOfferingPin?: string | null;
+
+  /**
    * Default Knowledge retrieval-boost for this agent's extracted content.
    *
    * Smallint, default 0. When this agent produces page-extraction
@@ -538,6 +547,8 @@ export interface AgentListRow {
   shared_by_email: string;
   /** Set only when this agent is an Orchestra. See `AgentOrchestraBadgeRow`. */
   orchestra: AgentOrchestraBadgeRow | null;
+  /** The agent's class pin (settings.offering_id); absent on a database without the column. */
+  offering_id?: string | null;
 }
 
 /**

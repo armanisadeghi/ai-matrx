@@ -38,6 +38,7 @@ export function AgentListHydrator({ seeds }: { seeds: AgentListRow[] }) {
           isOwner: row.is_owner,
           accessLevel: row.access_level,
           sharedByEmail: row.shared_by_email,
+          ...("offering_id" in row ? { listOfferingPin: row.offering_id ?? null } : {}),
         }),
       );
       dispatch(setAgentFetchStatus({ id: row.id, status: "list" }));
