@@ -4,7 +4,7 @@ import {
   HoverCard,
   HoverCardTrigger,
   HoverCardContent,
-} from "@host/components/ui/hover-card";
+} from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 
 /**

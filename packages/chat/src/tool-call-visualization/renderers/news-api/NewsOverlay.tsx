@@ -2,8 +2,8 @@
 
 import React, { useState, useMemo } from "react";
 import { Newspaper, Calendar, ExternalLink, Filter, SortAsc, AlertCircle, User } from "lucide-react";
-import { Button } from "@host/components/ui/button";
-import { Badge } from "@host/components/ui/badge";
+import { Button } from "@ai-matrx/design-system";
+import { Badge } from "@ai-matrx/design-system";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { getArg, resultAsObject } from "../_shared";

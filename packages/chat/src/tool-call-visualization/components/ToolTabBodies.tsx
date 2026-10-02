@@ -22,7 +22,7 @@
 import React, { useState } from "react";
 import { Check, CircleAlert, Copy, FileCode2, Route, Settings2 } from "lucide-react";
 
-import { Badge } from "@host/components/ui/badge";
+import { Badge } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
 import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";

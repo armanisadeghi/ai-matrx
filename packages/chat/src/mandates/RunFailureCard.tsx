@@ -20,7 +20,7 @@
 
 import { AlertTriangle } from "lucide-react";
 
-import { Badge } from "@host/components/ui/badge";
+import { Badge } from "@ai-matrx/design-system";
 import { ServerNotes } from "@host/components/official/ServerNotes";
 import { TextWithDoors } from "@host/components/official/entity-ref/TextWithDoors";
 import {

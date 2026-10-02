@@ -1,7 +1,7 @@
 "use client";
 
 import { PanelRight, ExternalLink } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 
 /**

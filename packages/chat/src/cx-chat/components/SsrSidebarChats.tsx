@@ -28,7 +28,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@host/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import { ShareModal } from "@host/features/sharing/components/ShareModal";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";

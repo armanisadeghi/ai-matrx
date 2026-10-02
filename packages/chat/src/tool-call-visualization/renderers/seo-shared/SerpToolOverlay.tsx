@@ -8,8 +8,8 @@ import {
   Filter,
   Info,
 } from "lucide-react";
-import { Button } from "@host/components/ui/button";
-import { Badge } from "@host/components/ui/badge";
+import { Button } from "@ai-matrx/design-system";
+import { Badge } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { SerpResult } from "@host/features/marketing/seo/serp/SerpResult";
 import { SerpSearchChrome } from "@host/features/marketing/seo/serp/SerpSearchChrome";

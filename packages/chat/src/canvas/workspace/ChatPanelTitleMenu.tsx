@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@host/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectConversationTitle } from "../../agents/redux/execution-system/conversations/conversations.selectors";
 import { selectConversationListItemById } from "../../agents/redux/conversation-list/conversation-list.selectors";

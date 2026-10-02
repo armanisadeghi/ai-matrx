@@ -13,8 +13,8 @@
 
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { RotateCcw } from "lucide-react";
-import { Button } from "@host/components/ui/button";
-import { Label } from "@host/components/ui/label";
+import { Button } from "@ai-matrx/design-system";
+import { Label } from "@ai-matrx/design-system";
 import { VOICE_INTRO_MANDATE_KEY } from "../../constants";
 import { useMandateAgentInstructions } from "../../agentInstructions";
 import { updateConfig } from "../../state/voiceAgentSlice";

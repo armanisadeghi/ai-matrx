@@ -16,8 +16,8 @@ import {
     Check,
     Shield,
 } from "lucide-react";
-import { Button } from "@host/components/ui/button";
-import { Badge } from "@host/components/ui/badge";
+import { Button } from "@ai-matrx/design-system";
+import { Badge } from "@ai-matrx/design-system";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { useOpenStructuredListManagerV2Window } from "@host/features/overlays/openers/structuredListManagerV2Window";

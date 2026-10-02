@@ -9,7 +9,7 @@
 
 import { BookMarked, DatabaseZap, TextCursorInput, type LucideIcon } from "lucide-react";
 import { cn } from "@host/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@host/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai-matrx/design-system";
 import type { FlagVerdict, MessageFlagKey, MessageFlags } from "./flags";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 

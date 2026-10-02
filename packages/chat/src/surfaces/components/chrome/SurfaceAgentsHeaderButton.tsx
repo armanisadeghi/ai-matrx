@@ -34,7 +34,7 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-} from "@host/components/ui/drawer";
+} from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { useOpenAuthGateDialog } from "@host/features/overlays/openers/authGate";
 import { GRID_COMPANION_ATTR } from "@host/features/data-tables/grid-companion";

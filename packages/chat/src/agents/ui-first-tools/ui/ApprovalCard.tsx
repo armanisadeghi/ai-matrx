@@ -39,9 +39,9 @@ import {
   Info,
   type LucideIcon,
 } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@host/components/ui/checkbox";
-import { Textarea } from "@host/components/ui/textarea";
+import { Textarea } from "@ai-matrx/design-system";
 import { ChangeDiff } from "@host/components/ui/change-diff";
 import KindInstanceRender from "@host/features/content-ir/studio/components/KindInstanceRender";
 import { StructuredValueView } from "@host/components/official/structured-value/StructuredValueView";

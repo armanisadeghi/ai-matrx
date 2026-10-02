@@ -27,7 +27,7 @@ import {
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
-} from "@host/components/ui/collapsible";
+} from "@ai-matrx/design-system";
 import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
 
 import type { ToolRendererProps } from "../../types";

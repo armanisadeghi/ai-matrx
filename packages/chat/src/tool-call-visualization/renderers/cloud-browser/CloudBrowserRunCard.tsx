@@ -10,7 +10,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { MediaRef } from "@host/features/files/types";
 import { useOpenCloudBrowserCanvas } from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";

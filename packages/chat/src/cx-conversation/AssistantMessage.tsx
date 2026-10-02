@@ -9,7 +9,7 @@ import {
   Check,
   Save,
 } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import MarkdownStream from "@host/components/MarkdownStream";
 import AudioOutputBlockSkeleton from "@host/components/mardown-display/blocks/audio/AudioOutputBlockSkeleton";
 import { useDomCapturePrint } from "../conversation/hooks/useDomCapturePrint";

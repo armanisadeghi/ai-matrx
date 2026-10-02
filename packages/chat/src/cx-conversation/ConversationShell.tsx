@@ -3,7 +3,7 @@
 import React, { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { X } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { MessageList } from "./MessageList";
 import { ConversationInput } from "./ConversationInput";
 import type { ConversationInputProps } from "./ConversationInput";

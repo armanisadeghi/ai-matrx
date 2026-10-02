@@ -37,7 +37,7 @@ import {
 import { cn } from "@host/lib/utils";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
-import { ToggleGroup, ToggleGroupItem } from "@host/components/ui/toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { upsertToolCall } from "../../agents/redux/execution-system/observability/observability.slice";
 import {

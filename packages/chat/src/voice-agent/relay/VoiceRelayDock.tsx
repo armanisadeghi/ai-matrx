@@ -18,7 +18,7 @@ import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectVoiceVoiceId } from "../state/selectors";
 import { LiveVoiceDoor } from "../components/LiveVoiceDoor";
 import { AudioLines } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useMandate } from "../../mandates/useMandate";
 import type { SourceFeature } from "@host/types/python-generated/source-attribution";
 import { VoiceRelayPanel } from "./VoiceRelayPanel";

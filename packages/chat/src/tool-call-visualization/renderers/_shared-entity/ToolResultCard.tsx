@@ -34,7 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@host/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 
 export interface ToolResultCardMenuItem {

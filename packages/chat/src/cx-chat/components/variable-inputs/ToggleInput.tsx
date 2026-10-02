@@ -1,5 +1,5 @@
 import React from 'react';
-import { Label } from '@host/components/ui/label';
+import { Label } from '@ai-matrx/design-system';
 import { Switch } from '@host/components/ui/switch';
 
 interface ToggleInputProps {

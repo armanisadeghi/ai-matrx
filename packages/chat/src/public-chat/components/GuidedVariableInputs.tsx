@@ -2,9 +2,9 @@
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
-import { Textarea } from "@host/components/ui/textarea";
+import { Textarea } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@host/components/ui/checkbox";
 import { Minus, Plus } from "lucide-react";
 import { formatText } from "@ai-matrx/kit/text-case";

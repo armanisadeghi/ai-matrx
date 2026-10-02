@@ -4,14 +4,14 @@
 // Picker for one of xAI's five voices. Reads + writes through Redux.
 
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@host/components/ui/select";
+} from "@ai-matrx/design-system";
 import { VOICES } from "../../constants";
 import { updateConfig } from "../../state/voiceAgentSlice";
 import { selectVoiceVoiceId } from "../../state/selectors";

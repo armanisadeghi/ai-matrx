@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Label } from '@host/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@host/components/ui/radio-group';
-import { Textarea } from '@host/components/ui/textarea';
+import { Label } from '@ai-matrx/design-system';
+import { RadioGroup, RadioGroupItem } from '@ai-matrx/design-system';
+import { Textarea } from '@ai-matrx/design-system';
 
 interface RadioGroupInputProps {
   value: string;

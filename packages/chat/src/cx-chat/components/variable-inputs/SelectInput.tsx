@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Label } from '@host/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@host/components/ui/select';
-import { Textarea } from '@host/components/ui/textarea';
+import { Label } from '@ai-matrx/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ai-matrx/design-system';
+import { Textarea } from '@ai-matrx/design-system';
 
 interface SelectInputProps {
   value: string;

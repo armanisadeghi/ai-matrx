@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Loader2, AlertTriangle, ExternalLink } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { ListDetailClient } from "@host/features/user-lists/components/ListDetailClient";

@@ -11,12 +11,15 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 
-jest.mock("@host/components/ui/tooltip", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual<Record<string, unknown>>("@ai-matrx/design-system"),
+  ...({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   TooltipContent: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="tooltip">{children}</div>
   ),
+}),
 }));
 
 import { MessageFlagToggles } from "../MessageFlagToggles";

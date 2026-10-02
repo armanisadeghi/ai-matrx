@@ -24,7 +24,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@host/components/ui/checkbox";
 import { cn } from "@host/lib/utils";

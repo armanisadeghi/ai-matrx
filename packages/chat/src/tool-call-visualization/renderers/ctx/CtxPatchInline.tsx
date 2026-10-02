@@ -16,7 +16,7 @@
 
 import React, { useMemo } from "react";
 import { CheckCircle2, FilePen } from "lucide-react";
-import { Badge } from "@host/components/ui/badge";
+import { Badge } from "@ai-matrx/design-system";
 
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";

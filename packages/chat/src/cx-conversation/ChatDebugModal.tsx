@@ -17,11 +17,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@host/components/ui/dialog";
-import { Label } from "@host/components/ui/label";
+} from "@ai-matrx/design-system";
+import { Label } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
-import { Separator } from "@host/components/ui/separator";
-import { Badge } from "@host/components/ui/badge";
+import { Separator } from "@ai-matrx/design-system";
+import { Badge } from "@ai-matrx/design-system";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { selectIsSuperAdminDebugger } from "@host/lib/redux/slices/userSlice";

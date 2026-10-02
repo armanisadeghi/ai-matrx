@@ -25,8 +25,8 @@ import {
 } from "lucide-react";
 import { Youtube } from "@host/components/icons/brand-icons";
 import { ParsedResource } from "./types";
-import { Badge } from "@host/components/ui/badge";
-import { Button } from "@host/components/ui/button";
+import { Badge } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { VideoPublishDate } from "@host/features/files/blocks/video/VideoPublishDate";
 

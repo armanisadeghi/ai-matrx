@@ -9,8 +9,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@host/components/ui/dropdown-menu";
-import { Button } from "@host/components/ui/button";
+} from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import type { ToolAccent } from "../../types";
 import { ToolGlyph } from "./ToolGlyph";

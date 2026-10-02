@@ -3,13 +3,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquarePlus, PanelLeft } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@host/components/ui/tooltip";
+} from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { useSidePanelSurface } from "@host/features/overlays/surfaces/SidePanelSurface";

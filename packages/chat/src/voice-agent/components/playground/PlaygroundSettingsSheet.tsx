@@ -22,7 +22,7 @@ import {
   type MouseEvent,
 } from "react";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Separator } from "@host/components/ui/separator";
+import { Separator } from "@ai-matrx/design-system";
 import { useSurfaceWriteHandlers } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import { CHAT_VOICE_SURFACE } from "@host/features/surfaces/manifests/chat-voice.manifest";
 import { useVoicePlaygroundWriteHandlers } from "../../hooks/useVoicePlaygroundWriteHandlers";

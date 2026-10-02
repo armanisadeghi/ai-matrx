@@ -16,7 +16,7 @@
 import React from "react";
 import { Columns3, Loader2 } from "lucide-react";
 
-import { Badge } from "@host/components/ui/badge";
+import { Badge } from "@ai-matrx/design-system";
 
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";

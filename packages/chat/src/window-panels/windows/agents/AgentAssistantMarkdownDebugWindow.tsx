@@ -3,14 +3,14 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import MarkdownStream from "@host/components/MarkdownStream";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@host/components/ui/select";
+} from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   clearAssistantMarkdownDrafts,

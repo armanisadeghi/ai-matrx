@@ -18,7 +18,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import { ToolCallVisualization } from "../components/ToolCallVisualization";
 import { SURFACE_WRITE_STEP } from "./readSurfaceWrite";

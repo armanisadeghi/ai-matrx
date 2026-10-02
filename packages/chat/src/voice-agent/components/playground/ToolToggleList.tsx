@@ -5,7 +5,7 @@
 // executed by xAI itself — we just declare them in session.update.
 
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
 import { selectVoiceTools } from "../../state/selectors";
 import { updateConfig } from "../../state/voiceAgentSlice";

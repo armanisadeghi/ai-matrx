@@ -31,7 +31,7 @@ import {
   Layers,
   type LucideIcon,
 } from "lucide-react";
-import { Badge } from "@host/components/ui/badge";
+import { Badge } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 
 import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue";

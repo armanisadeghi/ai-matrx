@@ -38,7 +38,7 @@ import {
     Layers,
     ArrowRight,
 } from "lucide-react";
-import { Badge } from "@host/components/ui/badge";
+import { Badge } from "@ai-matrx/design-system";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectIsLatestToolActivity } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { ToolRendererProps } from "../../types";

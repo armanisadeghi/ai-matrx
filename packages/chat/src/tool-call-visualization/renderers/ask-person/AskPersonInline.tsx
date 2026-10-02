@@ -23,7 +23,7 @@
 import React from "react";
 import { HandHelping } from "lucide-react";
 
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppDispatch } from "@host/lib/redux/hooks";
 import { rereadAndFollow } from "../../../agents/runtime-reconnect/reread-and-follow";
 import { ActionRequestInlineAnswer } from "@host/features/action-requests/components/ActionRequestInlineAnswer";

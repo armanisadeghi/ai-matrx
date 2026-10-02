@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,

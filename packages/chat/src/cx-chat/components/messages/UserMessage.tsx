@@ -13,7 +13,7 @@ import {
   Paperclip,
 } from "lucide-react";
 import { Youtube } from "@host/components/icons/brand-icons";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   parseResourcesFromMessage,
   extractMessageWithoutResources,

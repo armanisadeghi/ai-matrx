@@ -7,7 +7,7 @@ import {
   selectDisplayName,
   selectProfilePhoto,
 } from "@host/lib/redux/slices/userSlice";
-import { Avatar, AvatarFallback, AvatarImage } from "@host/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@ai-matrx/design-system";
 import { LogIn, UserPlus, ChevronRight } from "lucide-react";
 import { useLoginHref } from "@host/hooks/auth/useLoginHref";
 // THE package initials formatter (`@ai-matrx/kit/format`, census H1
