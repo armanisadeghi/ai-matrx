@@ -33,7 +33,7 @@ import type { EntityTypeToken } from "@ai-matrx/associations";
  * the guard fails if the map ever grows past it, if an entry's token is no
  * longer a listed entity, or if an entry's token has GAINED a door (a stale
  * entry hides the very door it claims is missing). Per
- * `common-docs/policies/unfinished-work-alarm.md`, an unmeasured entry means a
+ * `common-docs/policies/reality-is-the-referee.md`, an unmeasured entry means a
  * door is presumed OWED — never that the entity is dead or deliberately closed.
  *
  * Guard: `features/scopes/registry/every-listed-entity-has-a-door.test.ts`.

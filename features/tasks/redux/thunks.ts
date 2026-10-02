@@ -576,7 +576,7 @@ export const moveTaskThunk = createAsyncThunk<
  * list row, its context menu, the details panel, both mobile surfaces, the
  * subtask rows) destroyed the row on a single click with no question at all.
  * One door, one question, and the question names the consequence:
- * `common-docs/policies/destructive-and-expensive-actions.md`.
+ * `common-docs/policies/no-dead-ends.md`.
  */
 export const deleteTaskThunk = createAsyncThunk<
   void,

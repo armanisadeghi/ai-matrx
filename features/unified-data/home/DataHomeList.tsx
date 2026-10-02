@@ -7,7 +7,7 @@
 // no title search and no cards. This mounts the shell — the same one /agents/all uses — over one
 // row type with a `kind` column, served in hand from the home's one door (`custom.data_home`).
 //
-// The two organization concepts never touch (common-docs/policies/active-org-is-never-a-list-filter.md):
+// The two organization concepts never touch (common-docs/policies/access-ladder.md):
 // the shell's organization filter (`?org_filter=`, All organizations every visit) narrows the list;
 // the ACTIVE organization is only where New table lands (the page header, and the making controls
 // in the footer). Nothing in this file reads the active organization for a read.

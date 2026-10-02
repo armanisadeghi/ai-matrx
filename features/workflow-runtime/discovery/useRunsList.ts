@@ -42,7 +42,7 @@ export interface UseRunsListOptions {
 export function useRunsList({ definitionId }: UseRunsListOptions = {}): RunsListState {
   const dispatch = useAppDispatch();
   // 🚨 A LIST IS DECIDED BY ACCESS, NEVER BY THE SELECTED ORGANIZATION
-  // (common-docs/policies/access-belongs-to-the-person.md). `GET /runs` answers
+  // (common-docs/policies/access-ladder.md). `GET /runs` answers
   // the person's runs in EVERY organization with none selected (callApi sends
   // a read without one), so this list never waits for, gates on, or refetches
   // with the header's organization. Arman, 2026-09-25: "I can't find my

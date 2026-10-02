@@ -11,7 +11,7 @@
 // itself. One file = one registration and one switch read (`MakeMount`), the TryEverythingScreen
 // pattern.
 //
-// THE TWO ORGANIZATIONS (policies/active-org-is-never-a-list-filter.md):
+// THE TWO ORGANIZATIONS (policies/access-ladder.md):
 //   · reads — Recent and "Which table" — walk EVERY organization the person reaches (the data home's
 //     one call with no organization), and every row names its organization;
 //   · a builder mounts in the organization of the TABLE chosen in step 1 — never silently the

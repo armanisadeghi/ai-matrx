@@ -35,7 +35,7 @@ export interface ServerTimer {
 }
 
 // UNFINISHED, NOT DEAD. This timer has no importers yet — it is waiting to be
-// wired into the SSR shell, not abandoned (/policies/unfinished-work-alarm.md).
+// wired into the SSR shell, not abandoned (/policies/reality-is-the-referee.md).
 // Its old `SSR_TIMING=1` switch is gone: an env var may not control behaviour
 // (Arman, 2026-09-10). When this is wired up, the on/off switch becomes a knob
 // under platform > observability, beside `platform.debug.config_parity_shadow`.

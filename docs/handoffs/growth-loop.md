@@ -81,7 +81,7 @@ Full detail and evidence in **STATE.md §4.4**. In priority order:
   **Read the table comments before writing** — a stage attempt stores a POINTER `(ref_kind, ref_id)`
   and no stage state; a new stage store is ONE row in `stage_ref_kind`, never a new column.
 - **Method:** THE REACHABILITY LADDER — exists → reachable → deployed → exercised → produced
-  (`common-docs/policies/unfinished-work-alarm.md`). **If you cannot name the caller, it is not done.**
+  (`common-docs/policies/reality-is-the-referee.md`). **If you cannot name the caller, it is not done.**
 - **Auditor:** `common-docs/systems/marketing/growth-loop/CODEX_OPERATOR.md`.
 - Test login: `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`. Dev server: `pnpm preview:start` (port 3001).
 

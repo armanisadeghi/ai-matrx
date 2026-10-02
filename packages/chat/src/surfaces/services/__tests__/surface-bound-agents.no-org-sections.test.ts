@@ -1,4 +1,4 @@
-// Law: common-docs/policies/active-org-is-never-a-list-filter.md rule 3 — organizations are never
+// Law: common-docs/policies/access-ladder.md rule 3 — organizations are never
 // sections. Agents bound at organization tier in DIFFERENT organizations fold into ONE "My Orgs"
 // section, each carrying its organization as a label.
 const inQuery = jest.fn();

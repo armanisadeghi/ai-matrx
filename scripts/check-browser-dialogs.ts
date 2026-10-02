@@ -12,7 +12,7 @@
  *     `<ConfirmDialog />` from `@/components/ui/confirm-dialog`. The
  *     description must NAME THE CONSEQUENCE — what is lost, what is
  *     duplicated, what it costs — per
- *     ../../common-docs/policies/destructive-and-expensive-actions.md. A bare
+ *     ../../common-docs/policies/no-dead-ends.md. A bare
  *     "Are you sure?" satisfies neither law.
  *   • a message → `toast.*` from `@/lib/toast` (never bare `sonner`).
  *   • a text input → `<TextInputDialog />`.
@@ -338,7 +338,7 @@ function main(): number {
     "\nWhy, beyond style: a native confirm() raised from inside an open Radix Dialog\n" +
       "cannot render at all — the dialog holds body pointer-events at none, so the\n" +
       "button reads as dead and the handler never continues. See CLAUDE.md\n" +
-      '"Browser dialogs are banned" and common-docs/policies/destructive-and-expensive-actions.md.\n',
+      '"Browser dialogs are banned" and common-docs/policies/no-dead-ends.md.\n',
   );
   return strict ? 1 : 0;
 }

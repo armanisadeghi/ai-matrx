@@ -4,7 +4,7 @@
  * Arman, 2026-09-25: "our workflow system is nearly completely broken and I
  * can't find my workflows because it's filtering by org. For someone like me
  * who has 6 orgs, that's not a very convenient thing." Law:
- * common-docs/policies/access-belongs-to-the-person.md.
+ * common-docs/policies/access-ladder.md.
  *
  * `useRunsList` and `useWaitingRuns` used to wait for a selected organization
  * (and render "choose one" without it), then re-read every time the header's

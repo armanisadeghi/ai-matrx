@@ -1,4 +1,4 @@
-// Law: common-docs/policies/active-org-is-never-a-list-filter.md rule 4 — every save carries an
+// Law: common-docs/policies/access-ladder.md rule 4 — every save carries an
 // explicit organization_id; the database never picks one.
 const rpc = jest.fn();
 jest.mock("@/utils/supabase/client", () => ({

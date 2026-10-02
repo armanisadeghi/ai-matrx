@@ -6,7 +6,7 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 - File only defects you can't fully fix in the moment, and only UNRELATED findings — a bug related to your current task gets **fixed**, not filed. Enough context to act cold: what, where, the fix.
 - **Claim the next free ID by grepping `^### D` first — then confirm it is genuinely free.** An entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered. Past collisions: two D138s, D150s, D167s, D183s, D184s — and the D184→D193 / D183→D194 renumbers then landed on numbers that were **already taken**, so D193/D194/D195/D219 each named two entries. All cleared 2026-08-21 by moving the _uncited_ namesake to a free ID (D242–D246) — the entry other docs cite always keeps its number. **Grep before you claim, and take the next ID above the current maximum, not above the last entry in the file:** `grep -oE '^### \**D[0-9]+' FOUND_DEFECTS.md | grep -oE '[0-9]+' | sort -n | tail -1`, then add 1.
-- 🚨 **This ledger's IDs are `D<n>`. aidream's are `AD<n>`** (adopted 2026-08-22). Across repos write `matrx-frontend D184` / `aidream AD57` — a bare `D<n>` always means THIS file, so never use one for an aidream defect. **A defect spanning both repos keeps ONE number — this file's** — and aidream files its half as `AD<n> — D<n> remainder: …` (live example: `aidream AD108` = this file's D158). Full body: `../common-docs/policies/defect-ownership.md` § Entry IDs.
+- 🚨 **This ledger's IDs are `D<n>`. aidream's are `AD<n>`** (adopted 2026-08-22). Across repos write `matrx-frontend D184` / `aidream AD57` — a bare `D<n>` always means THIS file, so never use one for an aidream defect. **A defect spanning both repos keeps ONE number — this file's** — and aidream files its half as `AD<n> — D<n> remainder: …` (live example: `aidream AD108` = this file's D158). Full body: `../common-docs/policies/reality-is-the-referee.md` § Entry IDs.
 - **When you fix one: collapse it to a one-line bullet in Resolved (title + date + commit/file pointer) — or delete it outright.** No histories, no verification narratives, no journeys. An entry earns lines only while it is open.
 - Keep open entries compressed to load-bearing facts: what's broken, exact paths, the fix, who decides. A partially-fixed entry keeps only the open remainder.
 - CLAUDE.md links here. Read both before touching files, media, or persistence.
@@ -535,7 +535,7 @@ test's header — the break itself is untouched).
 Fix: whoever owns the barcode-preview surface either lands the manifest file or
 removes the import and its registry entry. It is NOT safe to delete on sight —
 an unreferenced-looking manifest is unfinished work, not dead work
-(`../common-docs/policies/unfinished-work-alarm.md`), and the import's presence
+(`../common-docs/policies/reality-is-the-referee.md`), and the import's presence
 says someone meant to write it.
 
 ### D330 — `AttachableAvailability` no longer extends the generated MCP availability shape (2026-09-17)
@@ -963,7 +963,7 @@ Two traps for whoever works this, so a naive re-scan doesn't reintroduce false p
   through that sandbox, not by any real screen.
 
 Workspace rule applies: unreferenced means unfinished, never deletable on sight
-(`common-docs/policies/unfinished-work-alarm.md`). This is a census-and-converge item, not a delete
+(`common-docs/policies/reality-is-the-referee.md`). This is a census-and-converge item, not a delete
 list — work it as: pick the one live sidebar/select/spinner implementation and retire its
 duplicates' *usages* (never just the files), and finish adopting `matrx/dialog.tsx` where the
 window-panel system needs popout dialogs. Owner: whoever owns `components/ui`.
@@ -1409,7 +1409,7 @@ only `p_search`:
 - `mnd_list_scope_counts(p_search)` — hardcodes `SELECT 'mine' … FROM mnd_list_scoped('mine',
   …)`. The frontend no longer calls it at all (the tabs count each home through the list door's
   own `total_count`), so it is now an unreferenced DB function. **Do not delete it on that
-  basis** — `../common-docs/policies/unfinished-work-alarm.md`.
+  basis** — `../common-docs/policies/reality-is-the-referee.md`.
 
 Fix: add `p_home text DEFAULT 'all'` to `mnd_list_facets` with the same predicate and refusal
 `mnd_list_scoped` uses, then pass the active tab's home from `fetchMandateFacets`; decide
@@ -3828,7 +3828,7 @@ Never hand-write a per-table guard — add the column to that set. Migrations
 **OPEN — parts vs whole things, with both of its complete forms written down.** A piece of a bigger
 thing (a page inside a website; ~162 tables) can still be permanently deleted at edit level, while a
 whole thing needs full. Left alone deliberately. Per
-`common-docs/policies/decisions-must-be-complete.md`, the question is NOT which direction: if pieces
+`common-docs/policies/talk-to-arman-like-a-person.md`, the question is NOT which direction: if pieces
 stay deletable at edit level we owe a **notification to the parent's owner** so wrong deletions get
 caught; if not, we owe a **"Request deletion" path** to whoever can decide. Either is correct.
 Neither is correct alone.

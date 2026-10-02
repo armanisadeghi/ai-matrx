@@ -355,7 +355,7 @@ can't live in the agent's head"). Two planes, two paths:
   terminal resolver reads `fn_value_levels`, so scoring and the editor cannot
   resolve different ladders.
   🚨 **This is platform doctrine for EVERY marketing setting, not just this
-  one:** `../../../common-docs/policies/settings-ladder.md`. Read it before
+  one:** `../../../common-docs/policies/limits-are-knobs-agents-set-them.md`. Read it before
   adding any configurable number, threshold or default anywhere in marketing.
 - **Site bands** — `features/marketing/seo/value-system/vocabulary/BandVocabularyEditor.tsx`,
   opened from "How value is computed" on the workbench. Adopt-then-edit: the platform

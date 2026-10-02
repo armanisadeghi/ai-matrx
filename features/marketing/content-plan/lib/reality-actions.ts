@@ -5,7 +5,7 @@
  *
  * Both actions are offered in two places — the reality card and the pipeline
  * rail's step runners — and both are governed by the destructive/expensive
- * click law (`common-docs/policies/destructive-and-expensive-actions.md`):
+ * click law (`common-docs/policies/no-dead-ends.md`):
  * publishing makes a page visible to the public internet, rewriting throws
  * away whatever a human has unsaved in the CMS editor. The confirmations live
  * here, not at the call sites, so the two paths cannot drift apart — the rail

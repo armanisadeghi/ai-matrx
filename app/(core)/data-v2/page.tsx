@@ -58,7 +58,7 @@ function UnifiedDataPage() {
   const active = useOrganizationRequired();
   /**
    * TWO ORGANIZATION CONCEPTS THAT NEVER TOUCH (Arman, 2026-09-30,
-   * common-docs/policies/active-org-is-never-a-list-filter.md).
+   * common-docs/policies/access-ladder.md).
    *
    * THE ORGANIZATION FILTER is the page's own control (the shell's `EntityOrgFilter`, right end of
    * the lane row). It lives only in the address — `?org_filter=<id>` — starts at All organizations

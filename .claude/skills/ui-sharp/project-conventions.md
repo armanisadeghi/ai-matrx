@@ -13,7 +13,7 @@ This skill extends the **official Next.js best practices guide**. Read that firs
 
 > **Shared UI surface rules:** The platform-wide rules for one coherent control, icon/title
 > rows, shared route navigation, intentional spacing, tap targets, and live responsive
-> certification live in [common-docs/policies/ui-surface-rules.md](/policies/ui-surface-rules.md).
+> certification live in [common-docs/policies/no-dead-ends.md](/policies/no-dead-ends.md).
 > Read and apply that policy before changing any page or shared UI primitive; this file
 > supplies the frontend-specific mechanics and migration notes.
 

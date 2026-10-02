@@ -2,7 +2,7 @@
 
 Sibling of aidream's `scripts/FEATURE.md` § "The ship path"; the doctrine is
 Arman's (2026-09-19/20) and identical in both repos. Cross-repo policy:
-`../../../common-docs/policies/deployment-is-the-deploy-agents-job.md`.
+`../../../common-docs/policies/reality-is-the-referee.md`.
 
 ## The one rule
 

@@ -136,7 +136,7 @@ export interface EntityBulkActionConfirm {
   /**
    * 🚨 NAMES THE CONSEQUENCE — what is lost, duplicated, spent or sent, and how
    * many times. A generic "Are you sure?" fails the destructive-and-expensive
-   * click law (`common-docs/policies/destructive-and-expensive-actions.md`).
+   * click law (`common-docs/policies/no-dead-ends.md`).
    */
   description: string;
   confirmLabel?: string;

@@ -8,7 +8,7 @@
 // THE DEFECT THIS CLOSES (Arman, 2026-09-30): that picker listed `client.tableList()` of a records
 // provider bound to the ACTIVE organization — one organization's tables, silently — while the data
 // home lists every table the person can see across all her organizations. Law:
-// common-docs/policies/active-org-is-never-a-list-filter.md — reads ignore the active organization.
+// common-docs/policies/access-ladder.md — reads ignore the active organization.
 //
 // THE LIST is `custom.data_home_tables()` with no organization — the data home's own door: every
 // Table the person may open in every organization she can reach, a Table shared with her from an

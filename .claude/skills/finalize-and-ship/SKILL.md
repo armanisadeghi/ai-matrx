@@ -55,7 +55,7 @@ apply an unrelated pending backlog as release preparation.
 
 ## Scheduled release owners
 
-The September 12 pre-production [release policy](../../../../common-docs/policies/deployment-is-the-deploy-agents-job.md)
+The September 12 pre-production [release policy](../../../../common-docs/policies/reality-is-the-referee.md)
 is authoritative. Integrate once, perform prescribed preparation once, dispatch and
 return. No unconditional type-generation/type-check or local build gate. Preserve real
 organization authorization and hosted build/startup acceptance. A previous failed build

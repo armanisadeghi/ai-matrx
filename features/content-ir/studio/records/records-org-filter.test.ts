@@ -1,6 +1,6 @@
 // The page's organization filter narrows EVERY lane of the kind-records list —
 // Mine as well as My Orgs — and is never the active organization
-// (common-docs /policies/active-org-is-never-a-list-filter.md). The builder
+// (common-docs /policies/access-ladder.md). The builder
 // below records every filter the reader sends, so the assertions read the
 // query the database would have run.
 

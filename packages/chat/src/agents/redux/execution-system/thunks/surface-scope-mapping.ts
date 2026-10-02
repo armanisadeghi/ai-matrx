@@ -8,7 +8,7 @@
  * organization bindings, user binding, then shortcut mappings.
  *
  * A REQUIRED VALUE THE PAGE CANNOT FILL OFFERS, NEVER BLOCKS (Arman,
- * 2026-09-27; `common-docs/policies/validation-offers-never-blocks.md`). When
+ * 2026-09-27; `common-docs/policies/limits-are-knobs-agents-set-them.md`). When
  * a required surface value is absent (e.g. "Translate to Spanish" with nothing
  * selected) or a required prompt_user value cannot be asked for:
  *   - interactive display → ONE small dialog names the missing value, lets the

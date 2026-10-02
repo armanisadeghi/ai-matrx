@@ -35,7 +35,7 @@ type PanelPosition = "left" | "right" | "top" | "bottom";
  * - `"floating"` — THE LIGHTWEIGHT WINDOW: a draggable, freely resizable
  *   frame that becomes a bottom drawer below 768 without unmounting its body.
  *   This is the sanctioned host for a picker or a form under
- *   `common-docs/policies/every-picker-takes-new-input.md` §4.
+ *   `common-docs/policies/no-dead-ends.md` §4.
  *
  * There is ONE family, not two: one component, one `open`/`onOpenChange`
  * contract, one Escape and focus contract, one portal. Which presentation a

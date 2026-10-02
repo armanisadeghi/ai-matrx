@@ -1,6 +1,6 @@
 /**
  * Mounted: the header's ACTIVE organization is never a list filter
- * (policies/active-org-is-never-a-list-filter.md). The hub is mounted on live (non-sample) data with a
+ * (policies/access-ladder.md). The hub is mounted on live (non-sample) data with a
  * recording search runner; the person switches the active organization in the header; the hub's
  * request and its rows must be exactly what they were. Only the page's own organization filter
  * (?org_filter=) may change what is asked. The same mount proves the filter's per-organization counts

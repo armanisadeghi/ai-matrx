@@ -4,7 +4,7 @@
  * Owner ruling (Arman, 2026-09-25): a Holder whose output kind / required keys
  * / inputs do not match its mandate is SAVED — "it can warn, make things red,
  * scream and go crazy, but it cannot block"
- * (common-docs/policies/validation-offers-never-blocks.md). The server
+ * (common-docs/policies/limits-are-knobs-agents-set-them.md). The server
  * (aidream `bindings.py`, `ContractCheck`) persists its verdict on the row it
  * wrote:
  *

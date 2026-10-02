@@ -9,7 +9,7 @@
 // and stops four times for a person's review.
 //
 // Inline, never a modal. The start button states what it spends before it
-// runs (policies/destructive-and-expensive-actions.md); nothing is scheduled.
+// runs (policies/no-dead-ends.md); nothing is scheduled.
 
 import { useMutation } from "@tanstack/react-query";
 import { ClipboardList, Loader2 } from "lucide-react";

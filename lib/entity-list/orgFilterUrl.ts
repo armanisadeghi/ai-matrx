@@ -14,7 +14,7 @@
 // The param is `?org_filter=` — absent means All organizations, the default on
 // every load. 🚨 Never `?org=` (that one switches the ACTIVE organization), and
 // never seeded from, synced with, or written to the active organization
-// (common-docs /policies/active-org-is-never-a-list-filter.md).
+// (common-docs /policies/access-ladder.md).
 
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { useListSearchParams } from "./useListSearchParams";

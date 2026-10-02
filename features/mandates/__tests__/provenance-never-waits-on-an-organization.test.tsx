@@ -6,7 +6,7 @@
  * `useMandateProvenance` returned early while no org was selected, and
  * `loading` starts `true`, so the panel never left its loading line and the
  * request never left the browser — access belongs to the person
- * (common-docs/policies/access-belongs-to-the-person.md), so reading must go.
+ * (common-docs/policies/access-ladder.md), so reading must go.
  *
  * Asserted on the wire (the `callApi` request) and on what the hook reports:
  * with NO organization the request is made, and the server's answer — a

@@ -1047,7 +1047,7 @@ module in the folder + the two deleted filenames).
 
 ONE shared check (aidream `POST /crm/pitch-advisories`, `aidream/services/pitch_advisories/FEATURE.md`) returns
 E1–E17 warnings `{rule, severity info|warn|strong, message, offer}` — never a refusal
-(`common-docs/policies/validation-offers-never-blocks.md`). ONE component, `PitchAdvisoryPanel`, renders them
+(`common-docs/policies/limits-are-knobs-agents-set-them.md`). ONE component, `PitchAdvisoryPanel`, renders them
 above the action button on: `SingleSendDialog` (single_send), the Activate step of `OutreachListsPage` via
 `PitchAdvisoryConfirmDialog` (list_send), `ChaseboxDraftDialog` (chasebox_review), the Press Room
 `SourceRequestRail` "Mark submitted" (source_request), and `ReputationWorkspace` CaseCard's Complete (crisis_publish —

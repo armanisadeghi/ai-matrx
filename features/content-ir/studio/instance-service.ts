@@ -450,7 +450,7 @@ export async function listKindInstances(
   //   2. the RECORD STORE, read per organization (each org that keeps its kind records there
   //      answers through its own kind-record Table, as this person) — HOW an instance lives
   //      there: see `listFromRecordStore`.
-  // The active organization plays no part in a list (policies/active-org-is-never-a-list-filter.md).
+  // The active organization plays no part in a list (policies/access-ladder.md).
   const { data: def, error: defError } = await supabase
     .schema("content_ir")
     .from("kind_definition")

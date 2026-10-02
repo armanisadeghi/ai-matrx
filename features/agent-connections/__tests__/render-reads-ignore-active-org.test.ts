@@ -1,4 +1,4 @@
-// Law: common-docs/policies/active-org-is-never-a-list-filter.md — the "Organization" view scope
+// Law: common-docs/policies/access-ladder.md — the "Organization" view scope
 // names where a NEW render block is filed; it never narrows what the window lists.
 const eq = jest.fn();
 const builder: Record<string, unknown> = {};

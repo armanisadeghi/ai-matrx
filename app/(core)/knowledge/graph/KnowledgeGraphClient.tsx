@@ -7,7 +7,7 @@
 // is read too) — a slug is resolved to its org id. With none set the graph is
 // ALL organizations (the backend org-wide query returns the union of the
 // person's visible orgs plus the global corpus). The header's ACTIVE org never
-// narrows this graph (policies/active-org-is-never-a-list-filter.md).
+// narrows this graph (policies/access-ladder.md).
 
 "use client";
 

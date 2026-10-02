@@ -1,6 +1,6 @@
 /**
  * check:no-active-org-in-reads — THE ACTIVE ORGANIZATION IS NEVER A LIST FILTER.
- * Law (Arman, 2026-09-30): common-docs/policies/active-org-is-never-a-list-filter.md.
+ * Law (Arman, 2026-09-30): common-docs/policies/access-ladder.md.
  *
  * THE DEFECT THAT OPENED THE CLASS (lane ORG-FILTER-CLASS). The agent builder's "Fill
  * automatically → From my data" table picker listed the tables of a records provider bound to the
@@ -359,9 +359,9 @@ export function scanSource(file: string, text: string, derived: ReadonlySet<stri
     findings.push({ file, line: line + 1, text: (raw[line] ?? "").trim(), why, key: base });
   };
   const WHY_FILE =
-    "reads the ACTIVE organization in a file that lists things — reads ignore the active organization (policies/active-org-is-never-a-list-filter.md). Narrow with the shell's EntityOrgFilter (?org_filter=, default All organizations), or, when this read only addresses a write or server call, say so: // org-filter: write-target|server-call|default-for-new <reason>";
+    "reads the ACTIVE organization in a file that lists things — reads ignore the active organization (policies/access-ladder.md). Narrow with the shell's EntityOrgFilter (?org_filter=, default All organizations), or, when this read only addresses a write or server call, say so: // org-filter: write-target|server-call|default-for-new <reason>";
   const WHY_SITE =
-    "an active-organization value reaches a read here (select / rpc / list fetch / query key / filter) — reads ignore the active organization (policies/active-org-is-never-a-list-filter.md). Use the person's chosen ?org_filter= (default All organizations), or annotate THIS call: // org-filter: write-target|server-call|default-for-new <reason of 12+ characters> (an annotation on the source line covers nothing after it)";
+    "an active-organization value reaches a read here (select / rpc / list fetch / query key / filter) — reads ignore the active organization (policies/access-ladder.md). Use the person's chosen ?org_filter= (default All organizations), or annotate THIS call: // org-filter: write-target|server-call|default-for-new <reason of 12+ characters> (an annotation on the source line covers nothing after it)";
   const badNote = (cls: string) =>
     `org-filter annotation must name write-target | server-call | default-for-new and a reason of 12+ characters (got "${cls}")`;
 

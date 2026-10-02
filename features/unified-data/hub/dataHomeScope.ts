@@ -27,7 +27,7 @@
 import type { VisibilityLane } from "@ai-matrx/records-ui";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-// THE SHELL'S LANES (Arman, 2026-09-30, common-docs/policies/active-org-is-never-a-list-filter.md):
+// THE SHELL'S LANES (Arman, 2026-09-30, common-docs/policies/access-ladder.md):
 // All | Mine | My team | My Orgs | Shared | Public | System — the same words, in the same order, as
 // every other list (`lib/list-scope` ListScopeKind; model /agents/all). All = Mine ∪ My team ∪ My Orgs
 // ∪ Shared; Public and System are discovery lanes, never folded into All.
@@ -159,7 +159,7 @@ export function emptyInScope(
   return `No ${capabilityTitle.toLowerCase()} under ${DATA_HOME_SCOPE_TITLE[scope]}. ${why}`;
 }
 
-// ── THE ORGANIZATION FILTER (Arman, 2026-09-30, common-docs/policies/active-org-is-never-a-list-filter.md)
+// ── THE ORGANIZATION FILTER (Arman, 2026-09-30, common-docs/policies/access-ladder.md)
 //
 // Two organization concepts that never touch. The ACTIVE organization (the shell's switcher) is only
 // where a new table is made; the ORGANIZATION FILTER is this page's own control (the shell's

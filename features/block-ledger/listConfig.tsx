@@ -34,7 +34,7 @@ import {
  * `selectAllMatching` is deliberately OFF. Retrying re-fetches real pages and
  * spends the organization's scraper budget; "everything matching" over a register
  * that can hold thousands is one click from a bill nobody chose
- * (`common-docs/policies/destructive-and-expensive-actions.md`). A person who
+ * (`common-docs/policies/no-dead-ends.md`). A person who
  * genuinely wants a hundred can tick a page of a hundred and see the number in the
  * confirm before it runs.
  */

@@ -37,7 +37,7 @@ import type {
 } from "../../data/types";
 
 // Table stakes: a countdown/typed answers never vanish on a reload mid-taking
-// (`common-docs/policies/table-stakes-are-never-a-question.md`). One snapshot
+// (`common-docs/policies/talk-to-arman-like-a-person.md`). One snapshot
 // per assessment id in sessionStorage — cleared the moment the taking
 // finishes so a later fresh attempt never resumes a stale one.
 const SNAPSHOT_PREFIX = "edu-assessment-taking:";

@@ -8,7 +8,7 @@
 //                            when = now(), and exactly which warnings the person saw)
 //
 // A report NEVER refuses. Every surface renders it with <PitchAdvisoryPanel> above its action
-// button and lets the action run (common-docs/policies/validation-offers-never-blocks.md).
+// button and lets the action run (common-docs/policies/limits-are-knobs-agents-set-them.md).
 
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { apiPost } from "@/lib/api/typed-client";

@@ -13,7 +13,7 @@
 //      its organization; one flat list, never grouped by organization;
 //   2. the organization filter is the SHELL'S (`EntityOrgFilter`) on the Table row: it starts on
 //      All organizations every time, narrows the list to the one organization chosen, and is never
-//      remembered (law: common-docs/policies/active-org-is-never-a-list-filter.md);
+//      remembered (law: common-docs/policies/access-ladder.md);
 //   3. the active organization is not an input: switching it changes nothing here.
 //
 // RED on HEAD: the picker read `useTables()` of a provider bound to the active organization.

@@ -1897,7 +1897,7 @@
       "allow": [
         {
           "file": "components/ui/loaders/select.tsx",
-          "reason": "A DIFFERENT capability: a self-contained loading/error-aware select CONTROL with its own label/description/icon/size/variant API, not the Radix Select primitive family. It has zero importers today; per common-docs/policies/unfinished-work-alarm.md only Arman may name it dead, so it is allowed here rather than deleted."
+          "reason": "A DIFFERENT capability: a self-contained loading/error-aware select CONTROL with its own label/description/icon/size/variant API, not the Radix Select primitive family. It has zero importers today; per common-docs/policies/reality-is-the-referee.md only Arman may name it dead, so it is allowed here rather than deleted."
         }
       ]
     },

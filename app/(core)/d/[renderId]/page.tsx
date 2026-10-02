@@ -11,7 +11,7 @@
 // link failed for its own author whenever another organization happened to be
 // selected, with a sentence guessing that it "may have been made in a different
 // organization". Access is decided by the PERSON, never by the selection
-// (common-docs/policies/organization-is-the-container.md rule 5): the door
+// (common-docs/policies/access-ladder.md rule 5): the door
 // finds the document by its id alone and answers which organization it lives
 // in. The page opens it and names that organization in its "Made … in" line.
 // It offers no organization switch (Arman, 2026-09-26): the document is frozen

@@ -47,7 +47,7 @@ export interface WaitingRunsState {
 export function useWaitingRuns(): WaitingRunsState {
   const dispatch = useAppDispatch();
   // 🚨 A LIST IS DECIDED BY ACCESS, NEVER BY THE SELECTED ORGANIZATION
-  // (common-docs/policies/access-belongs-to-the-person.md): `GET /runs/waiting`
+  // (common-docs/policies/access-ladder.md): `GET /runs/waiting`
   // answers the person's waiting runs in EVERY organization with none
   // selected, so this inbox never waits for or refetches with the header's.
   const [rows, setRows] = useState<WaitingRunRow[]>([]);

@@ -1,5 +1,5 @@
 /**
- * The hub's organization filter (Arman 2026-09-30, policies/active-org-is-never-a-list-filter.md):
+ * The hub's organization filter (Arman 2026-09-30, policies/access-ladder.md):
  * a fresh load sends no org filter; `?org_filter=<id>` narrows every section and count through the one
  * query the runner receives; the header's active organization never reaches a read.
  */

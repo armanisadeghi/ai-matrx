@@ -37,7 +37,7 @@ export interface ApplyListScopeOpts {
   /**
    * THE ORGANIZATION FILTER (`EntityListQuery.orgId`; null = All organizations). It narrows
    * EVERY lane — never the active organization (common-docs
-   * /policies/active-org-is-never-a-list-filter.md).
+   * /policies/access-ladder.md).
    */
   organizationId?: string | null;
 }

@@ -1,5 +1,5 @@
 /**
- * The organization filter reaches EVERY lane of the Transcripts view (policies/active-org-is-never-a-list-filter.md,
+ * The organization filter reaches EVERY lane of the Transcripts view (policies/access-ladder.md,
  * "Server contract for list RPCs": p_org_id applies to every lane, counts and facets included). It used to
  * ride only on the "orgs" lane, so "Mine", "Shared" and "Public" ignored the filter while wearing it.
  */

@@ -10,7 +10,7 @@ description: "(core) route header and body-height conformance via PageHeader. Us
 For the cross-page composition rules that accompany this header contract (one
 coherent control, icon/title rows, intentional spacing, tap targets, and no
 competing route menus), also read the shared policy at
-`/policies/ui-surface-rules.md`.
+`/policies/no-dead-ends.md`.
 
 ## The mental model (one paragraph)
 

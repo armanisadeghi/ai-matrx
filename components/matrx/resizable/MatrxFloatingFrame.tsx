@@ -7,7 +7,7 @@
  * more lightweight version of the window panel … doesn't minimize and stuff
  * like that but carries the basics of dragging"*. It exists so a picker or a
  * form never has to live in a blocking modal
- * (`common-docs/policies/every-picker-takes-new-input.md` §4).
+ * (`common-docs/policies/no-dead-ends.md` §4).
  *
  * It is NOT a second floating-surface family. It is one more presentation of
  * the panel host this repo already has in 59 files; the host routes to it on

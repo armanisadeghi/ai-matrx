@@ -5,7 +5,7 @@
  *
  * A hosted Claude Code run happens in a Matrx Sandbox we started, so the user
  * must be able to stop it — and the control must say what stopping ends, not
- * ask a generic "Are you sure?" (`common-docs/policies/destructive-and-expensive-actions.md`).
+ * ask a generic "Are you sure?" (`common-docs/policies/no-dead-ends.md`).
  * A plain cancel gets no confirm dialog; it gets an honest sentence.
  *
  * Law 4 — absent or honest, never dead. Cancel needs the sandbox's run id,

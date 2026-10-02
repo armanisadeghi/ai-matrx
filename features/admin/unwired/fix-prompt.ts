@@ -4,7 +4,7 @@ export function finishWiringPrompt(finding: UnwiredFinding): string {
   return [
     "Finish this purpose-built but unwired artifact. It is UNFINISHED WORK, never a disposal candidate.",
     "",
-    "Read /Users/armanisadeghi/code/common-docs/policies/unfinished-work-alarm.md first.",
+    "Read /Users/armanisadeghi/code/common-docs/policies/reality-is-the-referee.md first.",
     "",
     `Repository: ${finding.repository}`,
     `Source:     ${finding.file}:${finding.line}`,

@@ -14,7 +14,7 @@
  * model's details, an app's contract): that reader gets a signed-out door
  * (e.g. `ai.model_public`), because hiding or degrading a feature to route
  * around a defect is forbidden
- * (common-docs/policies/fix-the-defect-never-hide-the-feature.md).
+ * (common-docs/policies/no-dead-ends.md).
  */
 
 import { supabase } from "@/utils/supabase/client";

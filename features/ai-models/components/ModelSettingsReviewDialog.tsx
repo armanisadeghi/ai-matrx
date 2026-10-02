@@ -15,7 +15,7 @@
  * that the new model may not take ("if an agent has X, change it to Y"). They
  * are unticked offers: Apply always runs, with or without them. An admin
  * replacing a model is never stopped by validation — see
- * common-docs/policies/validation-offers-never-blocks.md.
+ * common-docs/policies/limits-are-knobs-agents-set-them.md.
  */
 
 import { useEffect, useRef, useState } from "react";

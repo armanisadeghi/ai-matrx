@@ -41,7 +41,7 @@ export interface AttentionAction {
   variant?: "default" | "destructive" | "outline" | "secondary";
   /**
    * A destructive/expensive click states its consequence first
-   * (common-docs/policies/destructive-and-expensive-actions.md): what fires,
+   * (common-docs/policies/no-dead-ends.md): what fires,
    * when, and what happens if the cause is not fixed.
    */
   confirm?: {

@@ -387,7 +387,7 @@ const homeInFlight = new Map<string, Promise<LoadedBoard>>();
 /**
  * Your HOME board: `settings.home === true`, made by you, not deleted — in ANY of your
  * organizations (the active organization never decides which board you open; law:
- * common-docs/policies/active-org-is-never-a-list-filter.md). The oldest one wins. When there is
+ * common-docs/policies/access-ladder.md). The oldest one wins. When there is
  * none, "My board" is created in `organizationId` — the organization new work is filed in
  * (a write target); null → the organization gate asks the person, and this continues with their
  * answer (or rejects with `OrganizationSelectionCancelled`).

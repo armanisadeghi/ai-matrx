@@ -2,7 +2,7 @@
  * features/audio/transcriptionSpendGate.ts — THE one gate between "the person
  * picked an audio file" and "we spend money transcribing it".
  *
- * THE EXPENSIVE-CLICK LAW (`common-docs/policies/destructive-and-expensive-actions.md`,
+ * THE EXPENSIVE-CLICK LAW (`common-docs/policies/no-dead-ends.md`,
  * and the repo's UI standards): a click that spends states its consequence
  * FIRST. A nine-hour audiobook that begins transcribing the instant it finishes
  * uploading is a silent spend, and "Are you sure?" would not fix it — the

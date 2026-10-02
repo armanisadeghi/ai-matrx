@@ -907,7 +907,7 @@ export function accountHealth({
 
 /**
  * The sentence a Revoke control must state BEFORE it runs — what actually
- * stops, named (`common-docs/policies/destructive-and-expensive-actions.md`).
+ * stops, named (`common-docs/policies/no-dead-ends.md`).
  * A generic "Are you sure?" fails that policy.
  */
 export function revokeConsequence(

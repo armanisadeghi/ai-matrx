@@ -196,7 +196,7 @@ function UnavailableActions({
 
 /**
  * 🚨 A DESTRUCTIVE OR IRREVERSIBLE CLICK NAMES ITS CONSEQUENCE FIRST
- * (`common-docs/policies/destructive-and-expensive-actions.md`). Neither of these
+ * (`common-docs/policies/no-dead-ends.md`). Neither of these
  * is a generic "Are you sure?": each one says what is lost, what is kept, and
  * what happens in Google — which is nothing, ever.
  */

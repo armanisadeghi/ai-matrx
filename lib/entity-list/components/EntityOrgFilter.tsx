@@ -3,7 +3,7 @@
 // lib/entity-list/components/EntityOrgFilter.tsx
 //
 // THE ORGANIZATION FILTER — the list's second axis (Arman 2026-09-30, common-docs
-// /policies/active-org-is-never-a-list-filter.md).
+// /policies/access-ladder.md).
 //
 //   All | Mine | My team | My Orgs | Shared | Public | System      [ All organizations ▾ ]
 //

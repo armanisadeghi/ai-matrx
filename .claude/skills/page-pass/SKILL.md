@@ -56,7 +56,7 @@ procedure — open it only when you are doing that job or the check fails.
    repo). A behavior or bug fix that leaves the look unchanged: fix it and prove it
    live on a few of those pages. A change to how it LOOKS: ask Arman first, one
    simple question with the full page list and before/after links (law:
-   `common-docs/policies/canonicalize-without-destroying.md`); if it suits your page
+   `common-docs/policies/no-dead-ends.md`); if it suits your page
    and not the others, make it an option for your page, never the new default. Run that
    component's tests (`npx jest <its dir>`; menus: `npx jest features/context-menu-v3`,
    which runs the heading check). If it belongs on the server (a read wrongly gated,

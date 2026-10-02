@@ -3,7 +3,7 @@
 // features/hr/shared/hrScope.tsx
 //
 // THE ONE PLACE HR LISTS SPAN EMPLOYERS (Arman, 2026-09-30 — common-docs
-// /policies/active-org-is-never-a-list-filter.md; the header of `useHrContext.ts`
+// /policies/access-ladder.md; the header of `useHrContext.ts`
 // states the whole rule).
 //
 //   • A LIST a person browses reads every employer in `scope.employers` through

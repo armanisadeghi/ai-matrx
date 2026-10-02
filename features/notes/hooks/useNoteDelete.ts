@@ -19,7 +19,7 @@
 // (`requestDelete`) and a busy flag. THEY NEVER RENDER A DIALOG AGAIN.
 //
 // The copy is consequence-first per
-// common-docs/policies/destructive-and-expensive-actions.md: it names the note
+// common-docs/policies/no-dead-ends.md: it names the note
 // by title, says the tab closes, and — because that is the honest fact, not a
 // softener — names the two ways back (the Undo toast, and Trash).
 

@@ -3,7 +3,7 @@
 // features/mandates/feature-intelligence/OutputMismatchNotice.tsx
 //
 // WHEN A CHOICE MAY NOT FIT, SAY SO — AND OFFER THE FIX. Validation offers,
-// never blocks (common-docs/policies/validation-offers-never-blocks.md): a
+// never blocks (common-docs/policies/limits-are-knobs-agents-set-them.md): a
 // person or an organization chose an agent whose declared output lacks keys
 // the job expects. Since aidream 1363 that choice is NEVER set aside — it
 // decides and it runs, and the ladder carries `output_warning` on that rung.

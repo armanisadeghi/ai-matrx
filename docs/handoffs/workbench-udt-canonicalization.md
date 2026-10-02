@@ -62,7 +62,7 @@ Remaining, by weight:
 - `features/structured-lists/StructuredListManagerV1.tsx` (13) — **check first whether V1/V2/V3 are
   three live variants or two dead ones.** Three managers for one table smells like the
   component-duplication class; if V1/V2 are unreferenced, that is an unfinished-work question for
-  Arman, NOT a delete-on-sight (see `policies/unfinished-work-alarm.md`).
+  Arman, NOT a delete-on-sight (see `policies/reality-is-the-referee.md`).
 - `features/structured-lists/useStructuredLists.ts` (10)
 - `features/user-lists/actions/list-actions.ts` (7), `features/user-lists/service.ts` (6)
 - `features/canvas/services/canvasArtifactService.ts` (6)

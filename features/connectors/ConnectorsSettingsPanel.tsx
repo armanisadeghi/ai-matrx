@@ -276,7 +276,7 @@ function ProviderConnectorsPanel({
       rollout: state.rollout,
     });
     // A destructive click STATES ITS CONSEQUENCE, by name — never a generic
-    // "Are you sure?" (common-docs/policies/destructive-and-expensive-actions.md).
+    // "Are you sure?" (common-docs/policies/no-dead-ends.md).
     const ok = await confirm({
       title: `Disconnect ${account.label}?`,
       description: revokeConsequence(

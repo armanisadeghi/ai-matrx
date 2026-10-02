@@ -418,7 +418,7 @@ export function hubHref(s: HubState): string {
 // ─── Organization filter ────────────────────────────────────────────────────
 
 /**
- * The hub's ORGANIZATION FILTER (Arman 2026-09-30, policies/active-org-is-never-a-list-filter.md).
+ * The hub's ORGANIZATION FILTER (Arman 2026-09-30, policies/access-ladder.md).
  * `query.organizations` holds organization ids the person picked in the toolbar dropdown, kept in
  * the URL as `?org_filter=<id>` and in saved views as ids. Empty = All organizations, the default on
  * every load. It is NEVER derived from the header's active organization: that one only says where

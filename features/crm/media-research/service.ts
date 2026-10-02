@@ -11,7 +11,7 @@
 // Nothing paid runs until the person presses "Run it" on the preview. Above the
 // cap the preview carries a strong warning with one-click smaller options, and
 // the run still goes ahead as asked when the person confirms
-// (common-docs/policies/validation-offers-never-blocks.md).
+// (common-docs/policies/limits-are-knobs-agents-set-them.md).
 
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import type {

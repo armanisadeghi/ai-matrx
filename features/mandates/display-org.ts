@@ -2,7 +2,7 @@
 //
 // THE ORGANIZATION A MANDATE DISPLAY RESOLVES "WHO FULFILS THIS" IN.
 //
-// Active-org law (common-docs/policies/active-org-is-never-a-list-filter.md) and
+// Active-org law (common-docs/policies/access-ladder.md) and
 // its mandates ruling: on any list or display, resolution follows the page's
 // organization filter (`?org_filter=`) when one is set, else the mandate's OWN
 // home organization — never the active organization. The active organization is

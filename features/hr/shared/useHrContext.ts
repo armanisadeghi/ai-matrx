@@ -3,7 +3,7 @@
 // THE EMPLOYER RESOLUTION HOOK. Every `/hr/*` surface stands on this.
 //
 // 🚨 HR LISTS SPAN EMPLOYERS; HR AGGREGATES AND ACTIONS BELONG TO ONE.
-// (Arman, 2026-09-30 — common-docs /policies/active-org-is-never-a-list-filter.md;
+// (Arman, 2026-09-30 — common-docs /policies/access-ladder.md;
 // this replaces the older "never filter an HR list to all my orgs" rule.)
 //
 //   LISTS a person browses (employees, leave requests, relations cases, verifications,

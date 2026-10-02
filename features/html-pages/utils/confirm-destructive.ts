@@ -7,7 +7,7 @@
 // in either component — two surfaces stating the same consequence two
 // different ways is how a confirmation stops being true.
 //
-// Law: common-docs/policies/destructive-and-expensive-actions.md
+// Law: common-docs/policies/no-dead-ends.md
 
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 

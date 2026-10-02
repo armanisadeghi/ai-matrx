@@ -14,7 +14,7 @@
  * person can see across ALL her organizations (`useTablesEverywhere` → custom.data_home_tables),
  * with the shell's organization filter (`EntityOrgFilter`) on the Table row — All organizations
  * on every open, never remembered, never the active organization (law:
- * common-docs/policies/active-org-is-never-a-list-filter.md). It used to list only the ACTIVE
+ * common-docs/policies/access-ladder.md). It used to list only the ACTIVE
  * organization's tables — a silent filter. The chosen
  * Table's details are read in the organization the Table lives in (`CustomDataRecordsScope`).
  * Contract: `common-docs/projects/data-kits/PLAN.md` § P1.

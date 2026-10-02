@@ -1,6 +1,6 @@
 /**
  * READING ONE THING NEVER WAITS ON THE SELECTED ORGANIZATION (Arman,
- * 2026-09-23 — common-docs/policies/access-belongs-to-the-person.md §4, §7.4).
+ * 2026-09-23 — common-docs/policies/access-ladder.md §4, §7.4).
  *
  * A workflow's run form, what it makes, and what a job asks for are each read
  * by id; the server checks the PERSON's access and never the selection, and

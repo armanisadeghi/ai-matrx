@@ -29,7 +29,7 @@ interface ScopedQueryArgs {
 /**
  * The scope filter on a Supabase select against platform.categories / skill.render_definition.
  *
- * READS IGNORE THE ACTIVE ORGANIZATION (law: common-docs/policies/active-org-is-never-a-list-filter.md).
+ * READS IGNORE THE ACTIVE ORGANIZATION (law: common-docs/policies/access-ladder.md).
  * The window's "Organization" view scope resolves to the ACTIVE organization for WRITES
  * (`stampScopeForWrite` — where a new block is filed); it must never narrow what is listed, or
  * definitions in the person's other organizations vanish. So no scope narrows a read: RLS plus

@@ -21,7 +21,7 @@ description: "Custom-entry fix for pickers with no way to add a choice (Select, 
 moment in the whole product.** Refusing it converts an advocate into silent
 churn, and nobody ever files a ticket saying so.
 
-Doctrine: **THE PLATFORM POLICY** `common-docs/policies/every-picker-takes-new-input.md`
+Doctrine: **THE PLATFORM POLICY** `common-docs/policies/no-dead-ends.md`
 (promoted 2026-09-18 from P23 in the SEO keyword decisions; P11 is its "platform-governed" exception). Detector: `pnpm check:picker-add`.
 Out of scope: choosing WHAT a picker should offer — that is the feature's own
 doctrine.

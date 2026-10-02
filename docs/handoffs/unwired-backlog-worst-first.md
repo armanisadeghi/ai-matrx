@@ -7,7 +7,7 @@ repos: [matrx-frontend, aidream]
 # Handoff — the unwired backlog, worst-first
 
 **Scoreboard:** `/administration/reporting/unwired`
-**Governing law:** `/Users/armanisadeghi/code/common-docs/policies/unfinished-work-alarm.md` — nothing may be
+**Governing law:** `/Users/armanisadeghi/code/common-docs/policies/reality-is-the-referee.md` — nothing may be
 deleted, dropped, or "cleaned up" on an agent's authority. Finish it, or report what finishing takes.
 
 The nine largest findings of 2026-08-14 are worked through. **Arman ruled on all six blocked items on

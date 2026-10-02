@@ -5,7 +5,7 @@
 // The open gate of a panel design run, as a review card (brief: "The four
 // gates, and where they live in our UI").
 //
-// 🚨 YOUR OK NEVER BLOCKS (policies/validation-offers-never-blocks.md). Every
+// 🚨 YOUR OK NEVER BLOCKS (policies/limits-are-knobs-agents-set-them.md). Every
 // card offers Approve · Edit · Continue without approving, inline — never a
 // modal, never a disabled-looking control. Continuing leaves the panel
 // provisional and says so next to the button.

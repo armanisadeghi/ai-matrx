@@ -191,7 +191,7 @@ export function CalendarEventUnavailableSection() {
 
 /**
  * 🚨 A DESTRUCTIVE OR IRREVERSIBLE CLICK NAMES ITS CONSEQUENCE FIRST
- * (`common-docs/policies/destructive-and-expensive-actions.md`). Mirrors the
+ * (`common-docs/policies/no-dead-ends.md`). Mirrors the
  * Doc record's `KeepAndArchiveActions` (`documents/GoogleDocumentPanel.tsx`) —
  * same server pair, same confirm-first shape, calendar's own words: what stops
  * refreshing, what stays, and that nothing in Google Calendar changes either

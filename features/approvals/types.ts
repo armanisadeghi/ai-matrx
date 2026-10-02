@@ -46,7 +46,7 @@ export type ApprovalRowFamily = "approval_proposal" | "keyword_meaning";
 
 /**
  * The five autonomy modes, verbatim from
- * common-docs `/policies/human-in-the-loop-autonomy-modes.md`. The list is
+ * common-docs `/policies/limits-are-knobs-agents-set-them.md`. The list is
  * CLOSED until amended there (rule 7) — never add a sixth value here.
  */
 export type AutonomyMode = "mode_1" | "mode_2" | "mode_3" | "mode_4" | "mode_5";

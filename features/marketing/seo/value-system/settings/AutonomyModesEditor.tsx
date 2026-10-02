@@ -4,7 +4,7 @@
  * Autonomy modes (KI-044) — how much rope each AI step gets, at any rung of the
  * settings ladder (platform → organization → brand → site).
  *
- * Policy: /policies/human-in-the-loop-autonomy-modes.md — five modes, a platform
+ * Policy: /policies/limits-are-knobs-agents-set-them.md — five modes, a platform
  * default, and the tiers below may override it.
  *
  * A capability whose running code doesn't consult this setting yet is marked

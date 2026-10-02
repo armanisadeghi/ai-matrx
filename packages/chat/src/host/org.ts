@@ -9,7 +9,7 @@
  * changed only its import specifier.
  *
  * THE ACTIVE ORGANIZATION IS WHERE WRITES GO AND WHICH ORG A SERVER CALL RUNS
- * IN. It is never a list filter (common-docs/policies/active-org-is-never-a-list-filter.md).
+ * IN. It is never a list filter (common-docs/policies/access-ladder.md).
  * It is carried, never rebuilt: an organization the caller already holds wins
  * outright, and nothing here ever picks one for the person
  * (common-docs/policies/context-is-carried-never-rebuilt.md).

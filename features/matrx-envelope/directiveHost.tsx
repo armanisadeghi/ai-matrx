@@ -138,7 +138,7 @@ function requireStore() {
  * `confirmDirective` directly and already carries the server-composed
  * consequence sentence), so an agent proposal is not asked twice.
  *
- * Law: common-docs/policies/destructive-and-expensive-actions.md — a generic
+ * Law: common-docs/policies/no-dead-ends.md — a generic
  * "Are you sure?" fails; the sentence has to name what changes.
  */
 function ask(request: DirectiveAskRequest): Promise<boolean> {

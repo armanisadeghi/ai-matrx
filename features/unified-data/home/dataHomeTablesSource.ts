@@ -4,7 +4,7 @@
 // table, form, dashboard … the person may open, in every organization she reaches —
 // `custom.data_home`, built into rows by the home's own builder (dataHomeRows.ts), so a hit's
 // address, kind word and organization are exactly the row the data home lists. Never filtered by
-// the active organization (common-docs/policies/active-org-is-never-a-list-filter.md): the bar
+// the active organization (common-docs/policies/access-ladder.md): the bar
 // names each hit's organization instead.
 //
 // CACHED FOR THE TAB: one read per person, kept for DATA_HOME_TABLES_FRESH_MS; an older answer is

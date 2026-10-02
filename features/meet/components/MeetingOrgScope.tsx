@@ -3,7 +3,7 @@
 // features/meet/components/MeetingOrgScope.tsx
 //
 // AN EXISTING MEETING RUNS IN ITS OWN ORGANIZATION, NEVER THE ACTIVE ONE
-// (`common-docs/policies/active-org-is-never-a-list-filter.md`, rule 5).
+// (`common-docs/policies/access-ladder.md`, rule 5).
 //
 // The app-wide `<MeetHost>` is bound to the ACTIVE organization — the place new
 // meetings are created. A record surface for a meeting in ANOTHER organization

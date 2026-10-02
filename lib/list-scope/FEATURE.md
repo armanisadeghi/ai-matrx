@@ -13,7 +13,7 @@ record — that is the record's access level (law:
 
 ## Two axes, never mixed — and never the active organization
 
-Law: `common-docs/policies/active-org-is-never-a-list-filter.md` (Arman, 2026-09-30).
+Law: `common-docs/policies/access-ladder.md` (Arman, 2026-09-30).
 
 | Axis | Answers | State | URL | Sent as |
 |---|---|---|---|---|

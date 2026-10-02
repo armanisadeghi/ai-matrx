@@ -48,7 +48,7 @@ interface AddScopeModalProps {
    * Where the form is shown. `"docked"` is what every live call site has
    * always had; `"floating"` puts the SAME form body in the lightweight
    * window (drag, resize, the page behind stays live) — the shape
-   * `common-docs/policies/every-picker-takes-new-input.md` §4 asks for.
+   * `common-docs/policies/no-dead-ends.md` §4 asks for.
    * The body below is identical either way; only the host changes.
    */
   presentation?: PanelPresentation;

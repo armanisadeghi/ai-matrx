@@ -66,7 +66,7 @@ function tableIdOf(source: NodeSource): string | null {
  * a new table is filed in the active organization). Never for choosing one: the list of tables a
  * person can pick is every table across all her organizations (`TablesAcrossOrganizations`), and
  * a table or record once picked reads as its OWN organization (`useUnifiedTable`). Law:
- * common-docs/policies/active-org-is-never-a-list-filter.md.
+ * common-docs/policies/access-ladder.md.
  */
 function WorkingOrganizationRecords({ children }: { children: ReactNode }) {
   const userId = useAppSelector(selectUserId);

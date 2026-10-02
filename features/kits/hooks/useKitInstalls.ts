@@ -4,7 +4,7 @@
 // person belongs to (or the one the page's organization filter names).
 //
 // This is a LIST read: the active organization is never an input (common-docs
-// /policies/active-org-is-never-a-list-filter.md). Each install carries its own
+// /policies/access-ladder.md). Each install carries its own
 // organization id; every action on an install (update, remove, open its tables)
 // runs in THAT organization, never in whichever one is active.
 

@@ -185,7 +185,7 @@ export async function copySiteMeaning(input: {
 // ── Autonomy modes (KI-044) ────────────────────────────────────────────────
 // Which of the five human-in-the-loop modes each AI step runs in. A setting, so
 // it rides the same ladder: platform → organization → brand → site.
-// Policy: /policies/human-in-the-loop-autonomy-modes.md — four modes shipped
+// Policy: /policies/limits-are-knobs-agents-set-them.md — four modes shipped
 // 2026-08-25 and `off` was added by Arman's amendment the same day.
 
 export type AutonomyMode =

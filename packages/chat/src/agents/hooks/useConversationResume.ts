@@ -32,7 +32,7 @@
 //
 // Steps 4 and 5 are why "just call loadConversation" is not resuming. They are
 // table stakes, not features — see
-// common-docs/policies/table-stakes-are-never-a-question.md.
+// common-docs/policies/talk-to-arman-like-a-person.md.
 
 import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppStore } from "../../store/hooks";

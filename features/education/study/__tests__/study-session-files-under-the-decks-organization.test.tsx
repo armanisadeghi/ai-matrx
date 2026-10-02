@@ -1,6 +1,6 @@
 /**
  * A study session files under the DECK's own organization — never the one the
- * person happens to have selected (common-docs /policies/active-org-is-never-a-list-filter.md,
+ * person happens to have selected (common-docs /policies/access-ladder.md,
  * law 3: an existing record's org travels with the write). Each set-based
  * study mode hands `createSession` the loaded deck's `organization_id`; the
  * cross-deck modes hand it the first card's.

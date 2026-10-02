@@ -1,7 +1,7 @@
 # Built-and-unwired detector — `pnpm check:unwired`
 
 **Status:** Live (2026-08-13) · **Scoreboard:** `/administration/reporting/unwired`
-**Governing law:** `/Users/armanisadeghi/code/common-docs/policies/unfinished-work-alarm.md`
+**Governing law:** `/Users/armanisadeghi/code/common-docs/policies/reality-is-the-referee.md`
 
 Purpose-built code with no runtime consumer is **unfinished work a previous builder was interrupted before wiring**. That is the only permitted reading. This detector makes the work visible, ranks the largest buried investment first, and tells the next builder what remains to connect. It never produces a disposal list and never recommends discarding a finding.
 

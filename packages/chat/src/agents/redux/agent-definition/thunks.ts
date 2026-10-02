@@ -165,7 +165,7 @@ export function assertOwnedLiveAgentToolAssignment(
 ): void {
   // The agent's OWN organization decides nothing here: an owner can change the tools of their
   // agent wherever it lives, whichever organization is active (law: the active organization is
-  // never a filter — common-docs/policies/active-org-is-never-a-list-filter.md).
+  // never a filter — common-docs/policies/access-ladder.md).
   if (row.created_by !== userId) {
     throw new AgentToolAssignmentError("Only the agent owner can change its tools.");
   }

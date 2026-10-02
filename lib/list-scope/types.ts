@@ -43,7 +43,7 @@
 // changes the declared query, never silently reinterprets RLS output.
 //
 // TWO AXES, NEVER MIXED (Arman 2026-09-30, common-docs
-// /policies/active-org-is-never-a-list-filter.md). The LANE (this union) says HOW
+// /policies/access-ladder.md). The LANE (this union) says HOW
 // I can see a record. WHICH ORGANIZATION it is in is a separate axis — the
 // page's organization filter, `EntityListQuery.orgId` (URL `?org_filter=`, null = All
 // organizations) — and it narrows EVERY lane. A lane carries no organization id.

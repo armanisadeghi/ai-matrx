@@ -162,7 +162,7 @@ Three systems model "here is something you could do": **assists**
   gap text called it "a dead `extend.wbx_seo_audit`". It is a registered
   canonical entity (`@ai-matrx/associations` vocabulary), RLS-applied
   and schema-moved on purpose, with zero runtime consumers — which under
-  `/policies/unfinished-work-alarm.md` means **a previous agent was
+  `/policies/reality-is-the-referee.md` means **a previous agent was
   interrupted**, not that nobody wants it. Recommending its deletion is
   forbidden until Arman names it dead in writing. Sounding the alarm: the
   Chrome-extension SEO audit surface it was built for was never finished.

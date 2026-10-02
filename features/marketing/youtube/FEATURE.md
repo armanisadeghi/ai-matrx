@@ -103,7 +103,7 @@ binding's three answers, and the panel in every state.
   (the earliest discovery, because the binding stores exactly one
   `connection_id`). The press now goes through `confirm()` and states, before
   anything is written, what every later refresh will read, on whose account, and
-  what it overwrites — `common-docs/policies/destructive-and-expensive-actions.md`.
+  what it overwrites — `common-docs/policies/no-dead-ends.md`.
   The button's accessible name carries all three facts. Guards: new
   `__tests__/the-bind-candidates-are-tellable-apart.test.ts` over the derivation,
   plus four cases in `the-panel-is-honest-in-every-state.test.tsx` (distinct

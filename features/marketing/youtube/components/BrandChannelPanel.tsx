@@ -217,7 +217,7 @@ function VideoRow({ video }: { video: YouTubeVideoRow }) {
  * discovered through (`../candidates.ts`, which also collapses one channel seen
  * through several accounts into one row that says so), and the press names what
  * binding makes the refresh read and write, and on whose account
- * (`common-docs/policies/destructive-and-expensive-actions.md`).
+ * (`common-docs/policies/no-dead-ends.md`).
  */
 function ChannelBindControl({
   brandId,

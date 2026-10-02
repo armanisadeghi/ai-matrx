@@ -14,7 +14,7 @@
 # green box as one that reached production. Nothing downstream ever looked: the
 # reader of that banner is now the *Matrx frontend release watch* deploy agent,
 # and the only escalation in
-# common-docs/policies/deployment-is-the-deploy-agents-job.md (pushed work still
+# common-docs/policies/reality-is-the-referee.md (pushed work still
 # not live after 60 minutes) depends on somebody noticing the gap the green box
 # hid. Law 4: nothing fails silently; a screen is absent or honest, never a lie.
 #

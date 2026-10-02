@@ -66,7 +66,7 @@ export interface TakeTrackingSnapshotInput {
 /**
  * Take a fresh snapshot. The caller states the consequence BEFORE calling this — it spends a
  * Google Tag Manager request and one live fetch of the site
- * (`common-docs/policies/destructive-and-expensive-actions.md`).
+ * (`common-docs/policies/no-dead-ends.md`).
  */
 export async function takeTrackingSnapshot(
   input: TakeTrackingSnapshotInput,

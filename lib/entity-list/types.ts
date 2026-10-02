@@ -60,7 +60,7 @@ export interface EntityListQuery {
    * the counts, and is sent to every list RPC as `p_org_id`
    * (`listOrgParam(query)`). It never initializes from, syncs with, or writes
    * to the ACTIVE organization (common-docs
-   * /policies/active-org-is-never-a-list-filter.md).
+   * /policies/access-ladder.md).
    */
   orgId: string | null;
   search: string;

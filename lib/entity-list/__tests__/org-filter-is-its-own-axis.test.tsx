@@ -1,6 +1,6 @@
 /**
  * THE ORGANIZATION FILTER IS ITS OWN AXIS — AND NEVER THE ACTIVE ORGANIZATION
- * (Arman 2026-09-30, common-docs /policies/active-org-is-never-a-list-filter.md).
+ * (Arman 2026-09-30, common-docs /policies/access-ladder.md).
  *
  * 🚨 THE DEFECT CLASS. Lists narrowed by the active organization (the global
  * switcher), so records in a person's other organizations vanished. The repair

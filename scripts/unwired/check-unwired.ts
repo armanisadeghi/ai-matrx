@@ -55,7 +55,7 @@ function parseArgs(): Args {
   pnpm check:unwired --strict    opt-in exit 1 when findings exist
   pnpm check:unwired --debug     trace scan progress to stderr
 
-Law:        common-docs/policies/unfinished-work-alarm.md
+Law:        common-docs/policies/reality-is-the-referee.md
 Contract:   scripts/unwired/FEATURE.md
 Scoreboard: /administration/reporting/unwired`);
     process.exit(0);
@@ -218,7 +218,7 @@ function printReport(report: UnwiredReport, stale: UnwiredAllowlistEntry[], limi
   console.log(`${BOLD}${report.totals.findings} finding(s), ${report.totals.lines.toLocaleString()} implicated lines, ranked largest first.${NC}`);
   console.log("Someone built each artifact on purpose and was interrupted before its runtime path was complete.");
   console.log("The permitted response is to hunt its intent and finish it. Never recommend discarding a finding.");
-  console.log("Law: common-docs/policies/unfinished-work-alarm.md\n");
+  console.log("Law: common-docs/policies/reality-is-the-referee.md\n");
   const shown = limit === 0 ? report.findings : report.findings.slice(0, limit);
   for (const finding of shown) {
     console.log(`${CYAN}${BOLD}[${finding.lines.toLocaleString()} lines] ${finding.repository} · ${DETECTOR_TITLES[finding.detector]}${NC}`);

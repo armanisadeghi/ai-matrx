@@ -641,7 +641,7 @@ export interface PromptsPreferences {
   /**
    * Keep a typed-but-unsent composer message through a reload and put it back,
    * per conversation. Default ON — never losing user input is table stakes
-   * (`common-docs/policies/table-stakes-are-never-a-question.md`); the knob
+   * (`common-docs/policies/talk-to-arman-like-a-person.md`); the knob
    * exists for shared or kiosk-ish machines where a draft left in the tab's
    * storage is unwanted. Read through `isDraftRestoreEnabled`, which treats a
    * MISSING key as ON so the default never depends on a preferences backfill.

@@ -1,6 +1,6 @@
 // features/unified-data/hub/__tests__/the-organization-filter-is-the-address-and-nothing-else.test.ts
 //
-// THE LAW (Arman, 2026-09-30, common-docs/policies/active-org-is-never-a-list-filter.md): the data
+// THE LAW (Arman, 2026-09-30, common-docs/policies/access-ladder.md): the data
 // home's organization filter lives only in the address (`?org_filter=`), starts at All organizations
 // on every visit, is never remembered and never set from the active organization.
 //
