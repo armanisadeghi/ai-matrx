@@ -107,7 +107,7 @@ import { OrganizationRequiredNotice } from "@/features/organizations/components/
 import { usePodcastCastPreview } from "../usePodcastCastPreview";
 import {
   getPodcastSourceReadiness,
-  isFinishedPodcastScript,
+  finishedScriptSpeakers,
 } from "../sourceReadiness";
 import { SpeakerCastEditor } from "./SpeakerCastEditor";
 import type {
@@ -317,11 +317,13 @@ export function GeneratorForm({
       drafts: speakerDrafts,
       voices,
       preview: castPreview.preview ?? null,
-      sourceIsFinishedScript:
-        activeSource.control !== "urls" &&
-        isFinishedPodcastScript(
-          activeSource.control === "resolve" ? resolvedText : text,
-        ),
+      finishedScriptSpeakers: finishedScriptSpeakers(
+        activeSource.control === "urls"
+          ? null
+          : activeSource.control === "resolve"
+            ? resolvedText
+            : text,
+      ),
     });
     if (cast) body.speakers = cast;
     if (activeSource.control === "urls") {

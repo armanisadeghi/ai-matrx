@@ -83,7 +83,7 @@ describe("castToSend", () => {
 
   it("lets a finished script's own speakers be the cast when no host was edited", () => {
     expect(
-      castToSend({ hostCount: 2, drafts: {}, voices, preview, sourceIsFinishedScript: true }),
+      castToSend({ hostCount: 2, drafts: {}, voices, preview, finishedScriptSpeakers: ["Maya", "Daniel"] }),
     ).toBeUndefined();
   });
 
@@ -93,19 +93,33 @@ describe("castToSend", () => {
       drafts: { 0: { name: "Maya" }, 1: { name: "Daniel" } },
       voices,
       preview,
-      sourceIsFinishedScript: true,
+      finishedScriptSpeakers: ["Maya", "Daniel"],
     });
     expect(cast?.map((s) => s.name)).toEqual(["Maya", "Daniel"]);
   });
 
+  // Break named (review 2026-10-01): editing ONE host on a pasted script
+  // filled the other slot from the preview ("Leo") and GATE 2 refused it.
+  it("fills the hosts the person did not rename from the script's own labels", () => {
+    const cast = castToSend({
+      hostCount: 2,
+      drafts: { 1: { voice: "Kore" } },
+      voices,
+      preview,
+      finishedScriptSpeakers: ["Maya", "Daniel"],
+    });
+    expect(cast?.map((s) => s.name)).toEqual(["Maya", "Daniel"]);
+    expect(cast?.[1].voice).toBe("Kore");
+  });
+
   it("keeps the previewed cast for a source the script writer will voice", () => {
-    const cast = castToSend({ hostCount: 2, drafts: {}, voices, preview, sourceIsFinishedScript: false });
+    const cast = castToSend({ hostCount: 2, drafts: {}, voices, preview, finishedScriptSpeakers: null });
     expect(cast?.map((s) => s.name)).toEqual(["Zara", "Leo"]);
   });
 
   it("sends nothing when the preview is unavailable", () => {
     expect(
-      castToSend({ hostCount: 2, drafts: {}, voices, preview: null, sourceIsFinishedScript: false }),
+      castToSend({ hostCount: 2, drafts: {}, voices, preview: null, finishedScriptSpeakers: null }),
     ).toBeUndefined();
   });
 });

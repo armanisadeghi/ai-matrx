@@ -5,6 +5,8 @@
 // generation work, but does not pre-judge externally prepared topic or file
 // sources.
 
+import { parseScript } from "./script";
+
 export const MIN_PODCAST_CONTENT_CHARS = 1000;
 
 export interface PodcastSourceReadiness {
@@ -21,6 +23,13 @@ interface PodcastSourceRequest {
  *  ARE the cast, so the server never needs a cast chosen for it. */
 export function isFinishedPodcastScript(content: unknown): boolean {
   return typeof content === "string" && hasNonemptyDialogueBlock(content);
+}
+
+/** A finished script's speakers in first-appearance order, or null when the
+ *  source is not a finished script (the server then resolves the cast). */
+export function finishedScriptSpeakers(content: unknown): string[] | null {
+  if (!isFinishedPodcastScript(content)) return null;
+  return parseScript(content as string).speakers;
 }
 
 function hasNonemptyDialogueBlock(content: string): boolean {

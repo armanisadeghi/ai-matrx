@@ -96,21 +96,33 @@ export function buildCast(
  * cast PREVIEW for it (names the person never chose) made GATE 2 refuse the
  * pasted script — "Requested speaker(s) ['Zara', 'Leo'] never speak in the
  * script" (2026-10-01). So for a finished script the cast rides along only when
- * the person edited a host; every other source keeps the previewed cast, since
- * that is what the script writer is told to voice.
+ * the person edited a host, and every slot they did NOT rename takes the
+ * script's own label (first-appearance order), never the preview's name —
+ * editing one host's voice must not re-introduce "Zara" for the other.
+ * Every other source keeps the previewed cast, since that is what the script
+ * writer is told to voice.
  */
 export function castToSend(args: {
   hostCount: number;
   drafts: Record<number, SpeakerDraft>;
   voices: Voice[];
   preview: { provider: VoiceProvider; speakers: PodcastSpeaker[] } | null;
-  sourceIsFinishedScript: boolean;
+  /** The finished script's speakers in first-appearance order, or null when the source is not a finished script. */
+  finishedScriptSpeakers: string[] | null;
 }): PodcastSpeaker[] | undefined {
-  const { hostCount, drafts, voices, preview, sourceIsFinishedScript } = args;
+  const { hostCount, drafts, voices, preview, finishedScriptSpeakers } = args;
   if (!preview) return undefined;
   const edited = Object.values(drafts).some(
     (draft) => !!draft && (!!draft.name?.trim() || !!draft.voice || !!draft.gender),
   );
-  if (sourceIsFinishedScript && !edited) return undefined;
-  return buildCast(hostCount, drafts, voices, preview.provider, preview.speakers);
+  if (finishedScriptSpeakers && !edited) return undefined;
+  const defaults = finishedScriptSpeakers
+    ? preview.speakers.map((speaker, index) => {
+        const label = finishedScriptSpeakers[index];
+        // The preview's gender belonged to the preview's NAME; the server
+        // resolves a script label's gender itself.
+        return label ? { name: label, voice: speaker.voice } : speaker;
+      })
+    : preview.speakers;
+  return buildCast(hostCount, drafts, voices, preview.provider, defaults);
 }
