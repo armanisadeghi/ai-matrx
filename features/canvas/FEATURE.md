@@ -20,6 +20,7 @@ the rules an agent editing THIS directory must obey.
 | App binding: Redux key `canvasHost`, open-drop reporting                       | `host/CanvasHostProvider.tsx`                                                                    |
 | Placement: fixed right column, `--shell-canvas-w`, surface emitter             | `host/ShellCanvasColumn.tsx`, `host/canvas-host.css`, `host/canvasSurfaceScope.ts`               |
 | Every content type as a kind (icon, restore, keep-alive, header action, menu)  | `host/artifactKinds.tsx`                                                                         |
+| Every tool as a kind (Quick Chat/Notes/Tasks/Data/Scribe, Scratchpad, Documents, Agent context, Note knowledge) — one list; each kind beside its feature | `host/toolKinds.tsx`, `host/conversation/`, opener core `host/toolCanvas.ts` |
 | Artifact item data + identity keys                                             | `host/artifactItem.ts`                                                                           |
 | THE way app code opens content                                                 | `host/useArtifactCanvas.ts` (+ `hooks/useCanvas.ts`, `useOpenArtifactInCanvas`, `useOpenCanvasItem`) |
 | Artifact tab body (CanvasBody / source, share sheet, debug panel)              | `host/ArtifactCanvasView.tsx`, `host/artifactPanels.ts`                                          |
@@ -163,6 +164,13 @@ the rules an agent editing THIS directory must obey.
 path updates the node's `STATE.md` in the same session.
 
 ## Change log
+
+- `2026-10-02` — **The quick tools are canvas tabs.** Quick Chat, Quick Notes, Quick Tasks, the
+  Scratchpad, Quick Data, Quick Scribe, a conversation's Documents, "what the agent receives" and a
+  note's knowledge base each became one kind (`host/toolKinds.tsx`), opened through
+  `openToolInCanvas` (`host/toolCanvas.ts`); their ten side-panel overlays are deleted. The chat
+  package's `quickChat` / `contextPreviewPanel` window ids are canvas-hosted in `ChatHostAdapter`.
+  Guard: `__tests__/quick-tools-open-as-canvas-tabs.test.tsx`.
 
 - `2026-10-01` — **The canvas is the `@ai-matrx/canvas` column.** The overlay side sheet
   (`CanvasSideSheet*`, `CanvasSurface`, `CanvasPane`, `CanvasNavigation`, `CanvasHomeSheet`,

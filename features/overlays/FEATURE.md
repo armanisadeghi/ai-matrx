@@ -80,7 +80,7 @@ features/overlays/
 ├── OverlayController.tsx       # The single mount point. ~2,300 lines, intentionally explicit. Hand-maintained.
 ├── catalogue.ts                # Render-free metadata for every overlay.
 ├── surfaces/
-│   └── SidePanelSurface.tsx    # Quick Access panel chrome: desktop delegates to `MatrxDynamicPanelHost` (repositionable, non-blocking); mobile uses bottom Drawer. Content can grow the panel via `useSidePanelSurface().requestWidthBoost(px)`.
+│   └── SidePanelSurface.tsx    # Side-panel chrome: desktop delegates to `MatrxDynamicPanelHost` (repositionable, non-blocking); mobile uses bottom Drawer. Content can grow the panel via `useSidePanelSurface().requestWidthBoost(px)`. The Quick Access tools are canvas tabs, not side panels (`features/canvas/host/toolKinds.tsx`).
 └── openers/
     ├── <overlayId>.tsx         # One file per overlay. Each exports useOpenX() + <XController />.
     └── …                       # ~111 files.
@@ -366,6 +366,7 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- 2026-10-02 — **Ten side-panel overlays became canvas tabs and are deleted:** `quickChat`, `quickChatWindow`, `quickNotes`, `quickTasks`, `quickData`, `quickScribe`, `scratchpadPanel`, `workingDocumentPanel`, `contextPreviewPanel`, `noteKnowledgePanel` (catalogue, controller blocks, openers, registry metadata). Their kinds and openers: `features/canvas/host/toolKinds.tsx`.
 - 2026-09-30 — **Page-bound overlays close on navigation.** Catalogue field `closesOnNavigation` marks a window that shows a piece of the page that opened it; `useCloseOverlaysOnNavigation` (mounted once in the OverlayController) dispatches `closeOverlaysBoundToPage` on every pathname change. First member: `flashcardItemWindow` (a deck card kept floating over Study). Every other overlay still survives navigation. Guard `__tests__/pageBoundOverlaysCloseOnNavigation.test.ts` (red on a no-op reducer).
 
 - **2026-09-12** — **Fullscreen editor saves settle before close.** `callbackManager.triggerGroupCommand` awaits one durable `fullScreenEditor` command and retains it on rejection; `disposeFullScreenEditorCallbackGroup` releases it on every terminal bridge or imperative-handle path. The markdown and HTML editors share `FullScreenOverlay`'s pending/error/retry boundary; pending work hides the canonical close affordance. Public content-action saves reject synchronous returns before wrapper code can acknowledge them. Rich-document save adapters return actual promises and rethrow failures. Covered by callback settlement and rendered overlay/editor/bridge tests.

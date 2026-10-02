@@ -1,204 +1,37 @@
 # Quick Actions Feature
 
-The quick sheets (Chat, Data) and the full-screen utilities hub. Their door is the account menu's **Quick Access** group (`QUICK_ACCESS_ITEMS` in `features/shell/components/header/header-right-menu/userMenuItems.constants.ts`); the header dropdown that duplicated it was deleted on 2026-09-30.
+Verified against code 2026-10-02.
 
-## 📁 Structure
+The quick tools — Quick Chat, Quick Notes, Quick Tasks, the Scratchpad, Quick Data, Quick Scribe — are
+**canvas tabs** (Arman, 2026-10-02). Their door is the account menu's **Quick Access** group
+(`QUICK_ACCESS_ITEMS` in `features/shell/components/header/header-right-menu/userMenuItems.constants.ts`:
+a `canvasTool` row opens a tab through `CanvasToolMenuItem`); `useQuickActions()` opens the same tabs from
+code (the right-click menu's Quick Actions). Chat History, Quick Files and the Utilities Hub stay windows.
 
-```
-features/quick-actions/
-├── components/
-│   ├── UtilitiesOverlay.tsx    # Full-screen tabbed utilities hub
-│   ├── QuickChatSheet.tsx      # AI chat interface
-│   └── QuickDataSheet.tsx      # Data tables viewer
-├── index.ts                     # Public exports
-└── README.md                    # This file
-```
+## Rules
 
-## 🎯 Components
+- **A quick tool is ONE canvas kind beside its feature**, registered from `features/canvas/host/toolKinds.tsx`.
+  Never a side panel, never a second floating surface over the canvas.
+- **The body is the tool's canonical component**, lazy-loaded; the tab header carries its controls
+  (`HeaderAction` / `menuItems`) — the body never draws a second title bar.
+- **Every opener goes through `openToolInCanvas`** (`features/canvas/host/toolCanvas.ts`): announce a
+  drop, and an open tab keeps its data unless the caller replaces it.
+- **Quick Chat runs the chat package's `QuickChatSheet`** (`AgentConversationColumn` + `useAgentLauncher`
+  + `resumeConversation` — exactly `/chat`) with `chrome="host"`; the tab remembers the conversation once
+  it has a message, so a reload resumes it.
 
-### UtilitiesOverlay
+## Map
 
-Full-screen tabbed overlay for extended work with multiple tools.
+| Tool | Kind id · key | Kind file | Body |
+|---|---|---|---|
+| Quick Chat | `quick-chat` · `default` (a handed-off conversation: its id) | `canvas/quickChatKind.tsx` | `@ai-matrx/chat/quick-actions/components/QuickChatSheet` |
+| Quick Data | `quick-data` · `default` | `canvas/quickDataKind.tsx` | `components/QuickDataSheet.tsx` |
+| Scratchpad | `global-scratchpad` · `default` | `canvas/scratchpadKind.tsx` | chat package `ScratchpadQuickPanel` (+ `ScratchpadSwitcherMenu` in the header) |
+| Quick Notes | `quick-notes` · `default` | `features/notes/canvas/quickNotesKind.tsx` | `features/notes/actions/QuickNotesSheet.tsx` |
+| Quick Tasks | `quick-tasks` · `default` | `features/tasks/canvas/quickTasksKind.tsx` | `features/tasks/components/QuickTasksSheet.tsx` |
+| Quick Scribe | `quick-scribe` · `default` (not restored) | `features/transcript-studio/canvas/quickScribeKind.tsx` | `features/transcript-studio/components/QuickScribeSheet.tsx` |
 
-**Tabs:**
-- Notes
-- Tasks
-- Chat
-- Data
+`components/UtilitiesOverlay.tsx` is the full-screen Utilities Hub; its Chat and Data tabs render the same
+`QuickChatSheet` (inline chrome) and `QuickDataSheet`.
 
-**Usage:**
-```tsx
-import { UtilitiesOverlay } from '@/features/quick-actions';
-
-<UtilitiesOverlay 
-    isOpen={isOpen}
-    onClose={onClose}
-    initialTab="notes" // optional: 'notes' | 'tasks' | 'chat' | 'data'
-/>
-```
-
-### QuickChatSheet
-
-AI conversation interface using PromptRunnerModal with a specific chat prompt.
-
-**Features:**
-- AI-powered conversations
-- "New Chat" button to start fresh
-- State preservation between sessions
-- Automatic prompt loading
-
-**Usage:**
-```tsx
-import { QuickChatSheet } from '@/features/quick-actions';
-
-<QuickChatSheet onClose={handleClose} />
-```
-
-### QuickDataSheet
-
-User-generated table viewer with selection and management capabilities.
-
-**Features:**
-- Table selector dropdown
-- Auto-selects first table
-- Full table viewing and editing
-- "Open in New Tab" functionality
-- State preservation
-
-**Usage:**
-```tsx
-import { QuickDataSheet } from '@/features/quick-actions';
-
-<QuickDataSheet onClose={handleClose} />
-```
-
-## 🔧 Adding New Quick Actions
-
-### 1. Create Your Component
-
-Create your feature component (e.g., in its own feature directory or as a QuickXSheet component here).
-
-### 2. Add to QuickActionsMenu
-
-Edit `components/QuickActionsMenu.tsx`:
-
-```typescript
-// Add state
-const [isMyFeatureOpen, setIsMyFeatureOpen] = useState(false);
-
-// Add menu item
-<DropdownMenuItem
-    onClick={() => setIsMyFeatureOpen(true)}
-    className="cursor-pointer"
->
-    <MyIcon className="h-4 w-4 mr-2" />
-    <div className="flex flex-col">
-        <span>My Feature</span>
-        <span className="text-xs text-zinc-500">Brief description</span>
-    </div>
-</DropdownMenuItem>
-
-// Add FloatingSheet
-<FloatingSheet
-    isOpen={isMyFeatureOpen}
-    onClose={() => setIsMyFeatureOpen(false)}
-    title="My Feature"
-    description="Feature description"
-    position="right"
-    width="xl"
-    height="full"
-    closeOnBackdropClick={true}
-    closeOnEsc={true}
-    showCloseButton={true}
->
-    <MyFeatureSheet onClose={() => setIsMyFeatureOpen(false)} />
-</FloatingSheet>
-```
-
-### 3. Add to UtilitiesOverlay (Optional)
-
-If your feature benefits from a full-screen tab view:
-
-Edit `components/UtilitiesOverlay.tsx`:
-
-```typescript
-{
-    id: 'myfeature',
-    label: (
-        <div className="flex items-center gap-2">
-            <MyIcon className="h-4 w-4" />
-            <span>My Feature</span>
-        </div>
-    ) as any,
-    content: (
-        <div className="h-full">
-            <MyFeatureComponent />
-        </div>
-    ),
-}
-```
-
-## 🎨 Design Patterns
-
-### State Preservation
-
-All FloatingSheet components maintain their state when closed/reopened. The sheet becomes invisible but doesn't unmount, preserving:
-- Form inputs
-- Scroll positions
-- Selected items
-- Conversation history
-
-### Consistent UX
-
-All quick sheets follow the same pattern:
-- Right-side positioning
-- XL width, full height
-- Backdrop click to close
-- ESC key to close
-- Show close button
-- Compact header with actions
-
-### Component Reusability
-
-The quick actions feature reuses existing components:
-- **Notes**: `QuickNotesSheet` from `@/features/notes`
-- **Tasks**: `QuickTasksSheet` from `@/features/tasks`
-- **Chat**: Custom wrapper around `PromptRunnerModal`
-- **Data**: Custom wrapper around `UserTableViewer`
-
-## 📦 Public API
-
-```typescript
-// Main components
-export { QuickActionsMenu } from './components/QuickActionsMenu';
-export { UtilitiesOverlay } from './components/UtilitiesOverlay';
-
-// Quick sheet components
-export { QuickChatSheet } from './components/QuickChatSheet';
-export { QuickDataSheet } from './components/QuickDataSheet';
-```
-
-## 🔗 Integration
-
-The QuickActionsMenu is integrated into:
-- `components/layout/new-layout/MobileLayout.tsx`
-- `components/layout/new-layout/DesktopLayout.tsx`
-
-## ✨ Benefits of This Structure
-
-1. **Centralized**: All quick actions in one feature directory
-2. **Discoverable**: Easy to find and understand
-3. **Maintainable**: Clear separation of concerns
-4. **Scalable**: Simple pattern for adding new actions
-5. **Consistent**: Follows established feature structure
-
-## 🚀 Future Enhancements
-
-Potential additions:
-- Calendar quick view
-- Recent files
-- Bookmarks/favorites
-- Quick commands palette
-- Search interface
-- Settings quick access
-
+Guard: `features/canvas/__tests__/quick-tools-open-as-canvas-tabs.test.tsx`.
