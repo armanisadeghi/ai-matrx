@@ -24,6 +24,7 @@
 import React from "react";
 // disaster
 import StoreProvider from "@/providers/StoreProvider";
+import { CanvasHostProvider } from "@/features/canvas/host/CanvasHostProvider";
 // disaster
 // ONE tooltip provider. Two used to be mounted here, because
 // `@ai-matrx/tap-target` shipped its own Tooltip and therefore resolved a
@@ -181,6 +182,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
   return (
     <ReactQueryProvider>
       <StoreProvider initialState={initialReduxState}>
+        <CanvasHostProvider>
         <ChatHostAdapter>
         <ChatSurfaceRegistrations />
         <AssociationsHost>
@@ -315,6 +317,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
           </DetailHost>
         </AssociationsHost>
         </ChatHostAdapter>
+        </CanvasHostProvider>
       </StoreProvider>
     </ReactQueryProvider>
   );

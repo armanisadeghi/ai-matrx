@@ -1,0 +1,63 @@
+/*
+ * The app's placement of @ai-matrx/canvas and its token values.
+ *
+ * Placement: the canvas column is fixed to the right edge, full height. The
+ * shell root (and the public / link layouts) give up exactly
+ * --shell-canvas-w on the right, so the header and the page END at the canvas
+ * edge — the canvas owns its own strip of the top of the window and never
+ * covers the header or fights a page for space.
+ */
+
+:root {
+  --mxc-bg: hsl(var(--card));
+  --mxc-header-bg: hsl(var(--card));
+  --mxc-fg: hsl(var(--foreground));
+  --mxc-muted: hsl(var(--muted-foreground));
+  --mxc-border: hsl(var(--border));
+  --mxc-hover: hsl(var(--muted) / 0.7);
+  --mxc-tab-active-bg: hsl(var(--muted));
+  --mxc-accent: hsl(var(--primary));
+  --mxc-accent-soft: hsl(var(--primary) / 0.25);
+  --mxc-accent-fg: hsl(var(--primary-foreground));
+  --mxc-danger: hsl(var(--destructive));
+  --mxc-header-h: var(--shell-header-h, 2.75rem);
+  /* Above the shell's own glass chrome, below dialogs and toasts. */
+  --mxc-mobile-z: 9000;
+}
+
+.shell-canvas-column {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  height: 100dvh;
+  z-index: 45;
+}
+
+.shell-root {
+  right: var(--shell-canvas-w, 0px);
+}
+
+[data-public-layout],
+[data-link-layout] {
+  margin-right: var(--shell-canvas-w, 0px);
+}
+
+:root[data-canvas-fullscreen] .shell-root,
+:root[data-canvas-fullscreen] [data-public-layout],
+:root[data-canvas-fullscreen] [data-link-layout] {
+  visibility: hidden;
+}
+
+/* Phones: the canvas is a full-screen layer, so the page keeps its width. */
+@media (max-width: 767px) {
+  :root {
+    --shell-canvas-w: 0px !important;
+  }
+
+  :root[data-canvas-fullscreen] .shell-root,
+  :root[data-canvas-fullscreen] [data-public-layout],
+  :root[data-canvas-fullscreen] [data-link-layout] {
+    visibility: visible;
+  }
+}

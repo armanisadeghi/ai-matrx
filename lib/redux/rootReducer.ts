@@ -39,6 +39,7 @@ import voicePadReducer from "./slices/voicePadSlice";
 import { chatReducers } from "@ai-matrx/chat/store/slices";
 import windowManagerReducer from "./slices/windowManagerSlice";
 import canvasReducer from "@/features/canvas/redux/canvasSlice";
+import { canvasReducer as canvasHostReducer } from "@ai-matrx/canvas";
 import textDiffReducer from "./slices/textDiffSlice";
 import noteVersionsReducer from "./slices/noteVersionsSlice";
 import notesReducer from "@/features/notes/redux/slice";
@@ -124,7 +125,6 @@ import taskUiReducer from "@/features/tasks/redux/taskUiSlice";
 import quickTasksWindowReducer from "@/features/tasks/redux/quickTasksWindowSlice";
 import taskAssociationsReducer from "@/features/tasks/redux/taskAssociationsSlice";
 
-import { default as proposedDirectivesReducer } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
 import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
 import { default as workflowRunsReducer } from "@/features/workflow-runtime/redux/workflow-runs.slice";
 import { default as netRequestsReducer } from "@/lib/redux/net/netRequestsSlice";
@@ -168,6 +168,8 @@ export const slimReducerMap = {
 
   // Canvas and Artifacts system ----------
   canvas: canvasReducer,
+  // THE canvas (@ai-matrx/canvas): column, panes, tabs, items, width.
+  canvasHost: canvasHostReducer,
   // Artifact tracking — universal registry for all AI-generated content
   artifacts: artifactsReducer,
   // HTML pages — editor session state + page catalog
@@ -274,7 +276,6 @@ export const slimReducerMap = {
   quickTasksWindow: quickTasksWindowReducer,
   taskAssociations: taskAssociationsReducer,
 
-  proposedDirectives: proposedDirectivesReducer,
   editorState: editorStateReducer,
 
   workflowRuns: workflowRunsReducer,

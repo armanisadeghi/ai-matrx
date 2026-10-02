@@ -1,199 +1,28 @@
 "use client";
 
 /**
- * Canvas open/close control in the shell header — one of the three fixed
- * header controls (features/shell/FEATURE.md § The header right set).
- * Replaces the bottom-right CanvasReopenChip pill.
+ * The phone overflow sheet's Canvas row, on top of @ai-matrx/canvas. The
+ * desktop header uses the package's own `CanvasToggle` directly.
  */
 
-import { useCallback, useMemo } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  closeCanvas,
-  closeCanvasHome,
-  openCanvasHome,
-  selectCanvasAvailabilityKnown,
-  selectCanvasHomeOpen,
-  selectCanvasIsAvailable,
-  selectCanvasIsOpen,
-  selectCanvasItems,
-  selectCurrentItemId,
-  setCurrentItem,
-} from "@/features/canvas/redux/canvasSlice";
-import {
-  LayersTapButton,
-  PanelRightTapButton,
-} from "@ai-matrx/tap-target/buttons";
+import { selectCanvasActiveItem, selectCanvasIsOpen, selectCanvasItemCount } from "@ai-matrx/canvas";
+import { getCanvasKind, itemTitle, useCanvas, useCanvasState } from "@ai-matrx/canvas/react";
 
-/** The canvas control's state and actions — shared by the header button and the phone overflow. */
 export function useCanvasHeaderToggle() {
-  const dispatch = useAppDispatch();
-  const isOpen = useAppSelector(selectCanvasIsOpen);
-  const isAvailable = useAppSelector(selectCanvasIsAvailable);
-  const availabilityKnown = useAppSelector(selectCanvasAvailabilityKnown);
-  const items = useAppSelector(selectCanvasItems);
-  const currentItemId = useAppSelector(selectCurrentItemId);
-  const homeOpen = useAppSelector(selectCanvasHomeOpen);
-
-  const headlineTitle = useMemo(() => {
-    if (items.length === 0) return "Canvas";
-    const sorted = [...items].sort((a, b) => b.timestamp - a.timestamp);
-    const title = sorted[0]?.content.metadata?.title;
-    return typeof title === "string" ? title : "Canvas";
-  }, [items]);
-
-  const reopen = useCallback(() => {
-    // Nothing on the canvas: its home (saved items, the Board) — never a dead click.
-    if (items.length === 0) {
-      dispatch(openCanvasHome());
-      return;
-    }
-    const sorted = [...items].sort((a, b) => b.timestamp - a.timestamp);
-    const reopenId = currentItemId ?? sorted[0]!.id;
-    dispatch(setCurrentItem(reopenId));
-  }, [dispatch, items, currentItemId]);
-
-  const putAway = useCallback(() => {
-    dispatch(closeCanvas());
-    dispatch(closeCanvasHome());
-  }, [dispatch]);
-
+  const canvas = useCanvas();
+  const isOpen = useCanvasState(selectCanvasIsOpen);
+  const itemCount = useCanvasState(selectCanvasItemCount);
+  const active = useCanvasState(selectCanvasActiveItem);
+  const headlineTitle = active ? itemTitle(active, getCanvasKind(active.kind)) : "Canvas";
   return {
-    /** Something is on screen — the item canvas OR its home. */
-    isOpen: isOpen || homeOpen,
-    /** Only the home is on screen (an offered item does not replace it). */
-    homeOnly: homeOpen && !isOpen,
-    isAvailable,
-    availabilityKnown,
-    itemCount: items.length,
-    headlineTitle,
-    reopen,
-    putAway,
-  };
-}
-
-/**
- * THE SLOT IS PART OF THE HEADER, NOT PART OF THE CANVAS.
- *
- * Exactly one tap box — the pill plus one gap, the same expression
- * `.matrx-tap-target` itself uses (40px), so the reserved box and the real
- * control are identical to the pixel.
- */
-const CANVAS_HEADER_SLOT_BOX = {
-  width: "calc(var(--matrx-tap-pill-size) + var(--matrx-tap-gap))",
-  height: "calc(var(--matrx-tap-pill-size) + var(--matrx-tap-gap))",
-} as const;
-
-/** The empty canvas opens its home: saved items and the Board. */
-export const CANVAS_EMPTY_TOOLTIP = "Canvas — your saved items and Board";
-
-/**
- * Shell header — the canvas control.
- *
- * WHEREVER THE CANVAS IS AVAILABLE, THE SLOT IS ALWAYS RESERVED AND ALWAYS
- * HOLDS THE CONTROL. Availability is a route fact (`CanvasSideSheet` raises
- * it on mount, lowers it on unmount), so the box exists from first paint and
- * never changes size afterwards. Only the control's STATE changes:
- *
- *   itemCount 0        → the button opens the canvas HOME (saved items, Board)
- *   itemCount > 0 shut → the button opens the canvas (most recent item)
- *   itemCount > 0 open → the button is pressed and puts the canvas away
- *
- * WHY THE FIXED BOX: unmounting the element pulled every button to its left
- * 44px sideways — measured live on production 2026-09-18 (review row
- * 34bfd1e8): Records 1043.39 → 999.39, Canvas 1132 → 1088, Conversation
- * actions 1164 → 1120, Agents for this page 1192 → 1148 — the shift the owner
- * named on 2026-09-16 (*"causes a shift in the top header buttons"*).
- *
- * WHY A DISABLED BUTTON AND NOT AN INERT SPACER (2026-09-19): the owner's
- * ruling for the whole header set — *"never hiding things and only disabling
- * when inactive"*. A disabled control that names its reason is honest; an
- * invisible box teaches nobody where the canvas lives.
- *
- * Guard: `features/canvas/__tests__/canvas-header-slot-reserved.test.tsx`.
- */
-export function CanvasShellHeaderToggle({
-  reserveUntilKnown = false,
-}: {
-  /** The AppShell header passes this: its routes ALWAYS mount the canvas
-   *  front door (DeferredIslands), just after hydration. */
-  reserveUntilKnown?: boolean;
-} = {}) {
-  const {
     isOpen,
-    homeOnly,
-    isAvailable,
-    availabilityKnown,
+    /** The canvas is mounted in every layout that has a header, so it is always reachable. */
+    isAvailable: true,
+    availabilityKnown: true,
+    homeOnly: false,
     itemCount,
     headlineTitle,
-    reopen,
-    putAway,
-  } = useCanvasHeaderToggle();
-
-  // THE SERVER DRAWS THE CONTROL (2026-09-27). Every shell route mounts the
-  // canvas front door, but only after hydration (DeferredIslands), so the
-  // server and the first frames saw "unavailable" and the button popped in —
-  // shifting the whole header, title included, by 44px. Until availability is
-  // KNOWN the control renders in its empty state, which is exactly
-  // what it becomes once the empty canvas reports in. It still leaves when a
-  // surface explicitly reports the canvas unavailable.
-  if (!isAvailable && (availabilityKnown || !reserveUntilKnown)) return null;
-
-  const state = itemCount === 0 ? "empty" : isOpen ? "open" : "closed";
-  const ariaLabel =
-    state === "empty" || homeOnly
-      ? isOpen
-        ? "Close canvas"
-        : "Open canvas"
-      : state === "open"
-        ? `Put away canvas — ${headlineTitle}`
-        : `Open canvas — ${headlineTitle}`;
-  const tooltip =
-    homeOnly
-      ? "Close canvas"
-      : state === "empty"
-        ? CANVAS_EMPTY_TOOLTIP
-      : state === "open"
-        ? `Put away canvas — ${headlineTitle} (⌘\\)`
-        : `Open canvas — ${headlineTitle} (⌘\\)`;
-
-  return (
-    <div
-      className="relative shrink-0"
-      style={CANVAS_HEADER_SLOT_BOX}
-      data-canvas-header-slot="control"
-      data-canvas-header-slot-state={state}
-    >
-      <LayersTapButton
-        onClick={isOpen ? putAway : reopen}
-        ariaLabel={ariaLabel}
-        tooltip={tooltip}
-        className={state !== "empty" || isOpen ? "text-primary" : undefined}
-      />
-      {itemCount > 1 && (
-        <span
-          className="pointer-events-none absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold leading-none text-primary-foreground"
-          aria-hidden
-        >
-          {itemCount}
-        </span>
-      )}
-    </div>
-  );
-}
-
-/** Canvas pane header — put away (panel slides right). */
-export function CanvasPanePutAwayToggle({
-  onPutAway,
-}: {
-  onPutAway: () => void;
-}) {
-  return (
-    <PanelRightTapButton
-      onClick={onPutAway}
-      ariaLabel="Put away canvas"
-      tooltip="Put away canvas (⌘\\)"
-      className="text-primary"
-    />
-  );
+    reopen: () => canvas.show(),
+    putAway: () => canvas.hide(),
+  };
 }

@@ -22,14 +22,11 @@
  * same thing.
  */
 
-import { useCallback, useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useState } from "react";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { useCanvasOpenGuard } from "./useCanvasOpenGuard";
-import {
-  openArtifactInCanvas,
-  type CanvasContentType,
-} from "@/features/canvas/redux/canvasSlice";
+import type { CanvasContentType } from "@/features/canvas/canvasContent";
+import { useArtifactCanvas } from "@/features/canvas/host/useArtifactCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
@@ -45,12 +42,11 @@ export interface OpenCanvasItemInput {
 }
 
 export function useOpenCanvasItem() {
-  const dispatch = useAppDispatch();
+  const canvas = useArtifactCanvas();
   const { ensureCanvasReachable } = useCanvasOpenGuard();
   const [busy, setBusy] = useState(false);
 
-  const openItem = useCallback(
-    async (input: OpenCanvasItemInput): Promise<boolean> => {
+  const openItem = async (input: OpenCanvasItemInput): Promise<boolean> => {
       if (!ensureCanvasReachable(input.title)) return false;
 
       if (!isMaterializedArtifactId(input.artifactId)) {
@@ -91,8 +87,7 @@ export function useOpenCanvasItem() {
           });
         }
 
-        dispatch(
-          openArtifactInCanvas({
+        canvas.openPointer({
             artifactId: input.artifactId,
             type: artifactDef.canvasType,
             metadata: {
@@ -100,15 +95,12 @@ export function useOpenCanvasItem() {
               title: title ?? undefined,
               canvasItemId: input.artifactId,
             },
-          }),
-        );
+          });
         return true;
       } finally {
         setBusy(false);
       }
-    },
-    [dispatch, ensureCanvasReachable],
-  );
+    };
 
   return { openItem, busy };
 }

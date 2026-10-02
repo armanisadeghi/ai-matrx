@@ -27,6 +27,7 @@ import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCook
 import { ShellChromeRouteSync } from "@/features/shell/components/ShellChromeMode";
 import { shellChromeAttributes } from "@/features/shell/constants/canvas-chrome-routes";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
+import { ShellCanvasColumn } from "@/features/canvas/host/ShellCanvasColumn";
 import type { UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
 // CJS flag — also read by next.config.js to alias Sidebar/etc. to stubs.
@@ -93,6 +94,10 @@ export default function AppShell({
           />
         </div>
       </SettingsRouteProvider>
+
+      {/* THE canvas: its own full-height column on the right edge; the shell
+          root shrinks by --shell-canvas-w so header and page end at its edge. */}
+      <ShellCanvasColumn />
 
       <GlassPortal>
         <MobileDock isAuthenticated={isAuthenticated} />

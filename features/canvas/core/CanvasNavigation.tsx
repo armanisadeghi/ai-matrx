@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { CanvasItem } from "@/features/canvas/redux/canvasSlice";
-import { titleToString } from "./CanvasBody";
+import { titleToString } from "@/features/canvas/canvasContent";
 import { NewDiagramMenuItems } from "@/components/mermaid/workbench/NewDiagramMenu";
 import {
   Tooltip,

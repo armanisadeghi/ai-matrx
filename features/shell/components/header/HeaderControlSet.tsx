@@ -1,4 +1,4 @@
-import { CanvasShellHeaderToggle } from "@/features/canvas/core/CanvasHeaderToggle";
+import { CanvasToggle } from "@ai-matrx/canvas/react";
 import { SurfaceAgentsHeaderButton } from "@ai-matrx/chat/surfaces/components/chrome/SurfaceAgentsHeaderButton";
 import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
 import { MessagesHeaderButton } from "@/features/messaging/components/shell/MessagesHeaderButton";
@@ -26,7 +26,7 @@ export function HeaderControlSet({ isAuthenticated }: { isAuthenticated: boolean
       <div className="shell-header-secondary" data-header-control-set>
         <CommandBarHeaderButton isAuthenticated={isAuthenticated} />
         <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
-        <CanvasShellHeaderToggle reserveUntilKnown />
+        <CanvasToggle />
         <MessagesHeaderButton isAuthenticated={isAuthenticated} />
         <InboxHeaderButton isAuthenticated={isAuthenticated} />
       </div>

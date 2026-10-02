@@ -7,7 +7,7 @@ import { Download, LogIn } from "lucide-react";
 import { PublicHeaderAuth } from "./PublicHeaderAuth";
 import { PublicHeaderFeedback } from "./PublicHeaderFeedback";
 import { PublicHeaderThemeToggle } from "./PublicHeaderThemeToggle";
-import { CanvasShellHeaderToggle } from "@/features/canvas/core/CanvasHeaderToggle";
+import { CanvasToggle } from "@ai-matrx/canvas/react";
 import {
   PUBLIC_HEADER_ICON_BUTTON,
   PUBLIC_HEADER_ROW,
@@ -114,7 +114,7 @@ export function PublicHeader() {
             <PublicHeaderThemeToggle />
           </Suspense>
 
-          <CanvasShellHeaderToggle />
+          <CanvasToggle />
 
           <Suspense fallback={<AuthFallback />}>
             <PublicHeaderAuth />

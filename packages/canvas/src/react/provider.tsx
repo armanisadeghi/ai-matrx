@@ -135,6 +135,19 @@ export function useCanvasState<T>(selector: (state: CanvasState) => T): T {
   );
 }
 
+const NO_SUBSCRIPTION = () => () => undefined;
+
+/**
+ * Like useCanvasState, but safe outside a provider: returns `fallback` there.
+ * For components that may render in a tree with no canvas (a bare test, an
+ * embed). `fallback` must be referentially stable (a primitive or null).
+ */
+export function useOptionalCanvasState<T>(selector: (state: CanvasState) => T, fallback: T): T {
+  const store = useContext(CanvasContext)?.controller.store;
+  const read = () => (store ? selector(store.getState()) : fallback);
+  return useSyncExternalStore(store ? store.subscribe : NO_SUBSCRIPTION, read, read);
+}
+
 /** Re-renders when kinds register, so late-registered kinds appear. */
 export function useCanvasKinds(): readonly AnyCanvasKind[] {
   useSyncExternalStore(subscribeCanvasKinds, getCanvasKindsVersion, getCanvasKindsVersion);

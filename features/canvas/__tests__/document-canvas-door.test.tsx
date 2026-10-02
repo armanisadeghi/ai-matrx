@@ -46,7 +46,8 @@ import {
   isPersistableCanvasType,
   type CanvasContent,
 } from "@/features/canvas/redux/canvasSlice";
-import { CanvasBody, getDefaultTitle } from "@/features/canvas/core/CanvasBody";
+import { CanvasBody } from "@/features/canvas/core/CanvasBody";
+import { getDefaultTitle } from "@/features/canvas/canvasContent";
 import { canvasTypeHasSource } from "@/features/canvas/core/canvasSource";
 import { shouldShowCanvasSwitcher } from "@/features/canvas/core/canvasSwitcher";
 import {

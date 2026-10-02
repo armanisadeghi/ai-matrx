@@ -10,6 +10,7 @@ export {
   useCanvas,
   useOptionalCanvas,
   useCanvasState,
+  useOptionalCanvasState,
   useCanvasKinds,
   useCanvasKind,
   useCanvasHostPorts,

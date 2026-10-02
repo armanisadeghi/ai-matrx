@@ -1,14 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useState } from "react";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { useCanvasOpenGuard } from "./useCanvasOpenGuard";
-import {
-  openArtifactInCanvas,
-  type CanvasContentType,
-  type ArtifactDebugTrace,
-} from "@/features/canvas/redux/canvasSlice";
+import type { ArtifactDebugTrace, CanvasContentType } from "@/features/canvas/canvasContent";
+import { useArtifactCanvas } from "@/features/canvas/host/useArtifactCanvas";
 import {
   ensureArtifactPersisted,
   type EnsureArtifactResult,
@@ -30,15 +26,14 @@ export interface OpenArtifactInCanvasInput {
  * Materializes on demand when the UUID doesn't exist yet.
  */
 export function useOpenArtifactInCanvas() {
-  const dispatch = useAppDispatch();
+  const canvas = useArtifactCanvas();
   const { ensureCanvasReachable } = useCanvasOpenGuard();
   const [busy, setBusy] = useState(false);
   const [lastResult, setLastResult] = useState<EnsureArtifactResult | null>(
     null,
   );
 
-  const openArtifact = useCallback(
-    async (input: OpenArtifactInCanvasInput): Promise<EnsureArtifactResult> => {
+  const openArtifact = async (input: OpenArtifactInCanvasInput): Promise<EnsureArtifactResult> => {
       // No canvas surface on this route → say so instead of persisting an
       // artifact and dispatching it into a pane that will never mount.
       if (!ensureCanvasReachable(input.title)) {
@@ -87,8 +82,7 @@ export function useOpenArtifactInCanvas() {
           wasCreated: result.wasCreated,
         };
 
-        dispatch(
-          openArtifactInCanvas({
+        canvas.openPointer({
             artifactId: result.artifactId,
             type: input.canvasType,
             metadata: {
@@ -107,16 +101,13 @@ export function useOpenArtifactInCanvas() {
               sourceMessageId: input.messageId ?? undefined,
             },
             artifactDebug: debugTrace,
-          }),
-        );
+          });
 
         return result;
       } finally {
         setBusy(false);
       }
-    },
-    [dispatch, ensureCanvasReachable],
-  );
+    };
 
   return { openArtifact, busy, lastResult };
 }

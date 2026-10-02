@@ -22,7 +22,7 @@ import type {
   CanvasItem,
   CanvasRenderMode,
 } from "@/features/canvas/redux/canvasSlice";
-import { titleToString } from "@/features/canvas/core/CanvasBody";
+import { titleToString } from "@/features/canvas/canvasContent";
 
 /**
  * The durable `canvas_items` UUID for an open item, or undefined while the

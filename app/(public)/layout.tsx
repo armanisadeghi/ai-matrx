@@ -2,7 +2,7 @@ import React from "react";
 
 import { PublicHeader } from "@/components/matrx/PublicHeader";
 import { PublicFooter } from "@/components/matrx/PublicFooter";
-import { CanvasSideSheet } from "@/features/canvas/core/CanvasSideSheet";
+import { ShellCanvasColumn } from "@/features/canvas/host/ShellCanvasColumn";
 import { Providers } from "@/app/Providers";
 
 export default function PublicLayout({
@@ -24,7 +24,7 @@ export default function PublicLayout({
           heavy canvas core loads only when a canvas item exists — never
           statically import CanvasSideSheetImpl here (build-graph leak on
           every anonymous page; eslint bans it). */}
-      <CanvasSideSheet />
+      <ShellCanvasColumn />
     </Providers>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 
 // NOTE: Voice-pad-slice overlays (`voicePad`, `voicePadAdvanced`, `transcriptionCleanup`)
 // are mounted exclusively by the unified window registry now. The legacy
@@ -17,11 +16,6 @@ import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 // `app/DeferredSingletons.tsx` via `LazyMessagingIsland` so they work on
 // every authenticated route.
 
-// CanvasSideSheet is the canvas front door (thin shell — availability flag +
-// ⌘\ shortcut). It owns the dynamic({ssr:false}) boundary for the heavy canvas
-// core itself and only fetches that chunk once a canvas item exists, so we
-// import it statically here instead of stacking a second dynamic() around it.
-import { CanvasSideSheet } from "@/features/canvas/core/CanvasSideSheet";
 // ⌘K "Search your knowledge" — a keydown listener and the overlay opener,
 // nothing else. The bar itself loads behind the overlay controller's single
 // lazy edge the first time it opens.
@@ -33,8 +27,6 @@ const WindowTraySync = dynamic(
 );
 
 export default function DeferredIslands() {
-  const ready = useIdleReady();
-
   return (
     <>
       {/* Window geometry must listen before idle work: a viewport can shrink
@@ -42,7 +34,6 @@ export default function DeferredIslands() {
           reachable even if no later resize event occurs. */}
       <WindowTraySync />
       <CommandBarHotkey />
-      {ready && <CanvasSideSheet />}
     </>
   );
 }

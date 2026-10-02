@@ -39,7 +39,7 @@
 import React from "react";
 
 import { Providers } from "@/app/Providers";
-import { CanvasSideSheet } from "@/features/canvas/core/CanvasSideSheet";
+import { ShellCanvasColumn } from "@/features/canvas/host/ShellCanvasColumn";
 
 export default function LinkLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -50,7 +50,7 @@ export default function LinkLayout({ children }: { children: React.ReactNode }) 
       {/* The `(link)` group has no shell, so — like `(public)/layout.tsx` — its
           layout mounts the ONE canvas front door (lazy: nothing loads until an
           item exists). Agent output on `/p/<slug>` opens INTO it. */}
-      <CanvasSideSheet />
+      <ShellCanvasColumn />
     </Providers>
   );
 }

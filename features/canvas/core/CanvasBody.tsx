@@ -19,13 +19,13 @@
  *   - Remember: renderers MUST handle partial state during streaming.
  */
 
-import React, { isValidElement } from "react";
+import React from "react";
 import dynamic from "next/dynamic";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { isScratchScope } from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
-import type { CanvasContent } from "@/features/canvas/redux/canvasSlice";
+import type { CanvasContent } from "@/features/canvas/canvasContent";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import {
   isMaterializedArtifactId,
@@ -281,77 +281,6 @@ function PersistedArtifactCanvasBody({
       />
     </div>
   );
-}
-
-/** Convert a possibly-ReactNode title to plain text for fallback uses. */
-export function titleToString(
-  title: string | React.ReactNode | undefined,
-): string {
-  if (!title) return "";
-  if (typeof title === "string") return title;
-  if (typeof title === "number") return String(title);
-  if (typeof title === "boolean") return String(title);
-  if (Array.isArray(title)) {
-    return title.map(titleToString).filter(Boolean).join(" ");
-  }
-  if (isValidElement(title)) {
-    const children = (title.props as { children?: React.ReactNode })?.children;
-    if (children) {
-      const extracted = titleToString(children);
-      if (extracted) return extracted;
-    }
-    return "Canvas Content";
-  }
-  return "Canvas Content";
-}
-
-/** Canonical fallback titles per type. */
-export function getDefaultTitle(type: string): string {
-  const titles: Record<string, string> = {
-    quiz: "Quiz",
-    presentation: "Presentation",
-    iframe: "Web View",
-    html: "HTML View",
-    code: "Code Viewer",
-    image: "Image",
-    diagram: "Diagram",
-    comparison: "Comparison",
-    timeline: "Timeline",
-    research: "Research",
-    troubleshooting: "Troubleshooting",
-    "decision-tree": "Decision Tree",
-    flashcards: "Flashcards",
-    recipe: "Recipe",
-    resources: "Resources",
-    progress: "Progress Tracker",
-    math_problem: "Math Problem",
-    mermaid: "Diagram",
-    code_preview: "Code Preview",
-    code_edit_error: "Code Edit Error",
-    // Both render the multi-document DocumentsWorkspace, whose tab strip names
-    // each doc (Working document / Scratchpad) — so the pane title is the
-    // neutral container label, never a third repeat of the tab.
-    working_document: "Documents",
-    scratchpad: "Documents",
-    cloud_browser: "Cloud Browser",
-    sandbox: "Sandbox",
-    udt_document: "Document",
-    topical_map: "Topical map",
-  };
-  return titles[type] || "Canvas View";
-}
-
-/** Short subtitle per type — surfaces as the kind-of-thing label. */
-export function getSubtitle(type: string): string | undefined {
-  const subtitles: Record<string, string> = {
-    quiz: "Interactive quiz",
-    presentation: "Slideshow presentation",
-    code: "Code snippet",
-    diagram: "Interactive diagram",
-    mermaid: "Editable diagram",
-    math_problem: "Step-by-step solution",
-  };
-  return subtitles[type];
 }
 
 function renderContent(content: CanvasContent): React.ReactNode {

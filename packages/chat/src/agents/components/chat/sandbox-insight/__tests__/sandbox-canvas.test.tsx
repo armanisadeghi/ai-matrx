@@ -34,7 +34,8 @@ import {
   isPersistableCanvasType,
   type CanvasContent,
 } from "@host/features/canvas/redux/canvasSlice";
-import { CanvasBody, getDefaultTitle } from "@host/features/canvas/core/CanvasBody";
+import { CanvasBody } from "@host/features/canvas/core/CanvasBody";
+import { getDefaultTitle } from "@host/features/canvas/canvasContent";
 import {
   buildSandboxCanvasContent,
   decideSandboxCanvasAction,

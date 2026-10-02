@@ -1,0 +1,218 @@
+"use client";
+
+/**
+ * Registers every canvas content type as an `@ai-matrx/canvas` kind. The
+ * Record over CanvasContentType makes this exhaustive: a new content type
+ * that is not registered here is a type error, never a tab that cannot render.
+ */
+
+import {
+  BarChart3,
+  BookOpen,
+  Brain,
+  Calculator,
+  ChefHat,
+  ClipboardList,
+  Cloud,
+  Code,
+  Columns3,
+  Eye,
+  FileCode,
+  FileDiff,
+  FileText,
+  GitBranch,
+  Globe,
+  Image as ImageIcon,
+  Layers,
+  LayoutList,
+  ListChecks,
+  ListTree,
+  Map as MapIcon,
+  Network,
+  NotebookPen,
+  Presentation,
+  Shapes,
+  Table,
+  Terminal,
+  Bug,
+  Timer,
+  Wrench,
+  Workflow,
+  Captions,
+  Share2,
+  type LucideIcon,
+} from "lucide-react";
+import { TapTargetButton } from "@ai-matrx/tap-target";
+import {
+  defineCanvasKind,
+  registerCanvasKinds,
+  type AnyCanvasKind,
+  type CanvasKindProps,
+  type CanvasMenuItem,
+} from "@ai-matrx/canvas/react";
+import type { CanvasJson } from "@ai-matrx/canvas";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
+import { toast } from "@/lib/toast";
+import {
+  getDefaultTitle,
+  isPersistableCanvasType,
+  titleToString,
+  type CanvasContentType,
+} from "@/features/canvas/canvasContent";
+import { canvasTypeHasSource } from "@/features/canvas/core/canvasSource";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { contentOf, readArtifactItemData, type ArtifactItemData } from "./artifactItem";
+import { openArtifactPanel, toggleArtifactPanel, useArtifactPanel } from "./artifactPanels";
+
+const ICONS: Record<CanvasContentType, LucideIcon> = {
+  quiz: ListChecks,
+  presentation: Presentation,
+  iframe: Globe,
+  html: FileCode,
+  code: Code,
+  image: ImageIcon,
+  diagram: Network,
+  comparison: Columns3,
+  timeline: Timer,
+  research: BookOpen,
+  troubleshooting: Wrench,
+  "decision-tree": GitBranch,
+  flashcards: Layers,
+  recipe: ChefHat,
+  resources: LayoutList,
+  code_preview: FileCode,
+  code_edit_error: FileCode,
+  progress: ClipboardList,
+  math_problem: Calculator,
+  mermaid: Workflow,
+  svg: Shapes,
+  chart: BarChart3,
+  map: MapIcon,
+  stats: BarChart3,
+  diff: FileDiff,
+  questionnaire: ClipboardList,
+  react: Code,
+  table: Table,
+  transcript: Captions,
+  structured_info: FileText,
+  tree: ListTree,
+  tasks: ListChecks,
+  working_document: NotebookPen,
+  scratchpad: NotebookPen,
+  cloud_browser: Cloud,
+  udt_document: FileText,
+  sandbox: Terminal,
+  topical_map: Brain,
+};
+
+/**
+ * Live surfaces whose body is a running session (a pty, a browser run, an
+ * editor with callbacks) cannot come back after a reload. Pointer surfaces
+ * (documents, topical maps, working documents) can — their truth is a row.
+ */
+const NOT_RESTORABLE: ReadonlySet<CanvasContentType> = new Set([
+  "code_preview",
+  "code_edit_error",
+  "cloud_browser",
+  "sandbox",
+]);
+
+/** Live, stateful bodies stay mounted while their tab is in the background. */
+const KEEP_ALIVE: ReadonlySet<CanvasContentType> = new Set(["cloud_browser", "sandbox", "working_document", "scratchpad"]);
+
+const loadView = () => import("./ArtifactCanvasView");
+
+function ArtifactHeaderAction({ item, canvas }: CanvasKindProps) {
+  const isAdmin = useAppSelector(selectIsAdminDebugger);
+  const panel = useArtifactPanel(item.id);
+  const data = readArtifactItemData(item.data);
+  if (!data) return null;
+  const type = contentOf(data).type;
+  const hasSource = canvasTypeHasSource(type);
+  const showingSource = data.view === "source";
+  return (
+    <>
+      {hasSource ? (
+        <TapTargetButton
+          ariaLabel={showingSource ? "Show preview" : "Show source"}
+          icon={showingSource ? <Eye className="h-4 w-4" /> : <Code className="h-4 w-4" />}
+          onClick={() => canvas.update(item.id, { data: { ...data, view: showingSource ? "preview" : "source" } })}
+        />
+      ) : null}
+      {isAdmin ? (
+        <TapTargetButton
+          ariaLabel={panel === "debug" ? "Hide artifact debug" : "Artifact debug"}
+          icon={<Bug className={panel === "debug" ? "h-4 w-4 text-amber-600 dark:text-amber-400" : "h-4 w-4"} />}
+          onClick={() => toggleArtifactPanel(item.id, "debug")}
+        />
+      ) : null}
+    </>
+  );
+}
+
+async function saveToCloud(props: CanvasKindProps, data: ArtifactItemData) {
+  const content = contentOf(data);
+  const { syncCanvasItemToCloud } = await import("@/features/canvas/materialization/syncCanvasItemToCloud");
+  const title = titleToString(content.metadata?.title) || getDefaultTitle(content.type);
+  const outcome = await syncCanvasItemToCloud({
+    content,
+    item: { savedItemId: data.savedItemId ?? undefined },
+    title,
+  });
+  if (!outcome.ok) {
+    toast.error(outcome.error);
+    return;
+  }
+  const artifactId = outcome.result.artifactId;
+  if (artifactId) {
+    const next: CanvasJson = { ...data, savedItemId: artifactId };
+    props.canvas.update(props.item.id, { data: next });
+  }
+  toast.success(outcome.result.wasCreated ? "Saved to the cloud" : "Already saved");
+}
+
+function artifactMenu(props: CanvasKindProps): readonly CanvasMenuItem[] {
+  const data = readArtifactItemData(props.item.data);
+  if (!data) return [];
+  const content = contentOf(data);
+  if (!isPersistableCanvasType(content.type)) return [];
+  const savedId = content.metadata?.canvasItemId ?? data.savedItemId;
+  const saved = isMaterializedArtifactId(savedId);
+  const entries: CanvasMenuItem[] = [];
+  if (!saved) {
+    entries.push({ id: "save", label: "Save to cloud", icon: <Cloud />, onSelect: () => void saveToCloud(props, data) });
+  }
+  if (saved && savedId) {
+    entries.push({
+      id: "open-page",
+      label: "Open full page",
+      icon: <Globe />,
+      onSelect: () => window.open(`/artifacts/${savedId}`, "_blank", "noopener"),
+    });
+  }
+  entries.push({ id: "share", label: "Share", icon: <Share2 />, onSelect: () => openArtifactPanel(props.item.id, "share") });
+  return entries;
+}
+
+export const ARTIFACT_CANVAS_KINDS: readonly AnyCanvasKind[] = (Object.keys(ICONS) as CanvasContentType[]).map((type) =>
+  defineCanvasKind<CanvasJson>({
+    id: type,
+    label: getDefaultTitle(type),
+    icon: ICONS[type],
+    load: loadView,
+    title: (data) => {
+      const parsed = readArtifactItemData(data);
+      const title = parsed ? titleToString(contentOf(parsed).metadata?.title) : "";
+      return title || getDefaultTitle(type);
+    },
+    restore: !NOT_RESTORABLE.has(type),
+    keepAlive: KEEP_ALIVE.has(type),
+    HeaderAction: ArtifactHeaderAction,
+    menuItems: artifactMenu,
+  }),
+);
+
+export function registerArtifactCanvasKinds(): () => void {
+  return registerCanvasKinds(ARTIFACT_CANVAS_KINDS);
+}
