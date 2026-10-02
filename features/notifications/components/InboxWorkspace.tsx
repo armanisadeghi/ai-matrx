@@ -269,7 +269,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
       doneAllRead();
     } else if (lower === "e" && current && triage && tab !== "done") {
       rowHandlers.onDone(current);
-    } else if (lower === "u" && current) {
+    } else if (lower === "u" && current && (current.unread > 0 || triage)) {
       handlers.onToggleRead(current);
     } else if (lower === "h" && current && triage && tab !== "done") {
       setSnoozeOpen(true);

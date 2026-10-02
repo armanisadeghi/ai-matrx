@@ -161,7 +161,7 @@ export function NoticeRow({
   const onTouchEnd = () => {
     if (!swipe) return;
     if (dx <= -80 && triage) handlers.onDone(group);
-    else if (dx >= 80) handlers.onToggleRead(group);
+    else if (dx >= 80 && (unread || triage)) handlers.onToggleRead(group);
     start.current = null;
     setDx(0);
   };
@@ -177,10 +177,13 @@ export function NoticeRow({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuItem onSelect={() => handlers.onToggleRead(group)}>
-          {unread ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-          {unread ? "Mark read" : "Mark unread"}
-        </DropdownMenuItem>
+        {unread || triage ? (
+          // Mark unread needs the triage door; absent until it is on this database.
+          <DropdownMenuItem onSelect={() => handlers.onToggleRead(group)}>
+            {unread ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+            {unread ? "Mark read" : "Mark unread"}
+          </DropdownMenuItem>
+        ) : null}
         {hasLink ? (
           <DropdownMenuItem onSelect={() => handlers.onOpenInNewTab(group)}>
             <ExternalLink className="mr-2 h-4 w-4" />

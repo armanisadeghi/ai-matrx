@@ -108,10 +108,12 @@ export function NoticeDetail({
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
-        <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" onClick={() => handlers.onToggleRead(group)} title="Toggle read (U)">
-          {unread ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          {unread ? "Mark read" : "Mark unread"}
-        </Button>
+        {unread || triage ? (
+          <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" onClick={() => handlers.onToggleRead(group)} title="Toggle read (U)">
+            {unread ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            {unread ? "Mark read" : "Mark unread"}
+          </Button>
+        ) : null}
         <span className="flex-1" />
         <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handlers.onMuteType(group)} title="Turn off this type" aria-label="Turn off this type">
           <BellOff className="h-4 w-4" />
