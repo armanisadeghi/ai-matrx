@@ -124,6 +124,39 @@ Visible effect: every toolbar and form row in the app becomes 28px and evenly sp
 
 **Persistence for the board:** the custom-data probe showed storage works, but the page-level primitive (`ensureTable` + `useAppTable`) is missing. It is filed as its own task, and the board stays on local storage plus Markdown export until it lands.
 
+## 1d. Sets, not single picks (owner, 2026-10-02)
+
+Unifying means one system, not one option. When a job genuinely has two or three right answers, the system ships all of them as named variants, each with a one-line rule for when to use it. Without that, agents hand-roll the missing ones. The best references (GitHub, Stripe, Linear, Apple) all work this way.
+
+**Delete, three tiers** (board D6b):
+
+| Tier | When to use it |
+|---|---|
+| **Quiet** | The default: a quiet trash glyph. The item is archived, and the toast offers Undo. |
+| **Confirm** | Permanent, or it affects other people. A dialog names the cost ("Removes 214 responses for 3 people"), then a red button. |
+| **Danger zone** | Irreversible and account-level. A red section, in settings only. |
+
+**Loading** (D11) is likewise a set: a region-shaped skeleton, an inline spinner inside a busy control, and the live window for AI.
+
+**Toast — one component, four layers** (owner spec, prototype on the board). The component carries the intelligence; a developer only passes props.
+
+1. **Always:** message, close, and a small copy-for-AI glyph. That is the Alchemy idea in its simplest form: one button, no menu. It copies an XML block with the route, message, kind and time automatically, plus an optional developer `aiContext`.
+2. **Optional detail:** on hover or click, the toast opens a thin popover in the agent peek style.
+3. **Optional:** open the detail as a window panel. There is exactly one way to do this, and it looks the same everywhere.
+4. **Optional:** a route for the detail, opened in a new tab only. A toast never navigates the current page.
+
+**Components to bring into the standard system** (inventory, then the same treatment as the controls):
+- the thin peek popover (`features/organizations/peek/*`, the agent peek in `features/agents/orchestras/components/AgentPeekButton.tsx`);
+- window panels (`features/window-panels`);
+- the flexible side drawer (`components/matrx/resizable/MatrxDynamicPanelHost.tsx`, 61 importers);
+- the toast above.
+
+Each gets one canonical component, one density, and the tap geometry for its controls. The toast's layers 2 and 3 use the peek and the window panel, so all three stay one family.
+
+**Tap group fix** (design-system 0.50.13):
+- A selected or hovered pill inside a group is inset 2px on every side (it was 3px at the ends and 2px top and bottom), and it is fill-only, so there is one outline, not two.
+- The dense-table scope now recomputes the group pill size; until now group pills filled a table's capsule with no inset.
+
 ## 2. Mechanism per drift category
 
 Mechanism key: **A** = close the component · **B** = add the missing variant · **C** = enforce mechanically · **D** = instruct.
