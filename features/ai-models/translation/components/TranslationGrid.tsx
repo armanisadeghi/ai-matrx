@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@ai-matrx/design-system";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import { readTranslationBundle } from "../data";
 import {
@@ -177,6 +178,7 @@ export default function TranslationGrid() {
   const modality = readModality(searchParams.get("modality"));
   const [target, setTarget] = useState<EditorTarget | null>(null);
   const [membersOf, setMembersOf] = useState<GridColumn | null>(null);
+  const isMobile = useIsMobile();
 
   const query = useQuery({
     queryKey: TRANSLATION_GRID_QUERY_KEY,
@@ -251,11 +253,25 @@ export default function TranslationGrid() {
     ),
   ];
 
-  const tabControl = (
+  const setTab = (v: string) => setParam("tab", v === "needs" ? null : v);
+  const tabControl = isMobile ? (
+    <Select value={tab} onValueChange={setTab}>
+      <SelectTrigger className="h-8 w-44 text-xs" aria-label="View">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {TABS.map((t) => (
+          <SelectItem key={t} value={t}>
+            {TAB_LABEL[t]} · {counts[t]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  ) : (
     <SegmentedControl
       size="sm"
       value={tab}
-      onValueChange={(v) => setParam("tab", v === "needs" ? null : v)}
+      onValueChange={setTab}
       data={TABS.map((t) => ({
         value: t,
         label: (

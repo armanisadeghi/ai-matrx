@@ -185,14 +185,17 @@ async function readSettings(): Promise<TranslationSetting[]> {
 
 /** The whole grid's read. `absent` when the translation tables are not on this database. */
 export async function readTranslationBundle(): Promise<TranslationRead> {
-  let cells: TranslationCellRow[];
-  try {
-    cells = await readCells();
-  } catch (error) {
-    if (isAbsentRelationError(error)) return { status: "absent" };
-    throw error;
+  // Probe with a plain read first: `readAllRows` rewraps a failure as a bare
+  // Error and drops the PostgREST code, so "the table is not here" could never
+  // be told apart from a real failure through it.
+  const probe = await ai().from("translation_cell").select("id").limit(1);
+  if (probe.error) {
+    // PGRST205 = "not in the schema cache" (the table does not exist here).
+    if (isAbsentRelationError(probe.error) || probe.status === 404) return { status: "absent" };
+    throw probe.error;
   }
-  const [compiled, profiles, apis, offerings, settings] = await Promise.all([
+  const [cells, compiled, profiles, apis, offerings, settings] = await Promise.all([
+    readCells(),
     readCompiled(),
     readProfiles(),
     readApis(),
