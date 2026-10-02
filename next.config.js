@@ -228,16 +228,24 @@ console.log(
 // When (dev) is included, `tsx` is listed FIRST so any plain page.tsx wins over
 // a page.dev.tsx in the same directory — guard for stray duplicates from
 // partial renames. No directory currently has both; this is defensive.
-// THE LAB (app/(lab)): `*.lab.tsx` pages are admitted in every profile that
-// includes (dev), so `/lab/<name>` previews on the local server inside the
-// normal root layout. Only the lab profile admits `*.labroot.tsx` — its own
-// thin root layout — and nothing else.
+// THE LAB (app/(lab)): `*.lab.tsx` pages are admitted by every `next dev`
+// (the shared preview runs the `core` profile) and by every profile that
+// includes (dev), so `/lab/<name>` previews locally inside the normal root
+// layout. Only the lab profile admits `*.labroot.tsx` — its own thin root
+// layout — and nothing else. Production main/admin builds never see them.
+const LAB_PAGES = ["lab.tsx", "lab.ts"];
+const ADMIT_LAB = INCLUDE_DEV || process.env.NODE_ENV !== "production";
 const pageExtensions =
   MATRX_PROFILE === "lab"
-    ? ["lab.tsx", "lab.ts", "labroot.tsx"]
-    : INCLUDE_DEV
-      ? ["tsx", "ts", "jsx", "js", "dev.tsx", "dev.ts", "lab.tsx", "lab.ts"]
-      : ["tsx", "ts", "jsx", "js"];
+    ? [...LAB_PAGES, "labroot.tsx"]
+    : [
+        "tsx",
+        "ts",
+        "jsx",
+        "js",
+        ...(INCLUDE_DEV ? ["dev.tsx", "dev.ts"] : []),
+        ...(ADMIT_LAB ? LAB_PAGES : []),
+      ];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
