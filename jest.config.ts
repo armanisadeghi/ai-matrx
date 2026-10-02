@@ -168,6 +168,8 @@ const config: Config = {
     // because the published files are ESM).
     // chat package (packages/chat): the package's own subpaths, and its single tie back to the app.
     "^@ai-matrx/chat/(.*)$": "<rootDir>/packages/chat/src/$1",
+    "^@ai-matrx/canvas$": "<rootDir>/packages/canvas/src/index.ts",
+    "^@ai-matrx/canvas/react$": "<rootDir>/packages/canvas/src/react.ts",
     "^@host/(.*)$": "<rootDir>/$1",
     "^@ai-matrx/([^/]+)/package\\.json$":
       "<rootDir>/node_modules/@ai-matrx/$1/package.json",

@@ -24,6 +24,15 @@
       "@ai-matrx/chat/*": [
         "./packages/chat/src/*"
       ],
+      "@ai-matrx/canvas": [
+        "./packages/canvas/src/index.ts"
+      ],
+      "@ai-matrx/canvas/react": [
+        "./packages/canvas/src/react.ts"
+      ],
+      "@ai-matrx/canvas/*": [
+        "./packages/canvas/src/*"
+      ],
       "@host/*": [
         "./*"
       ],
@@ -123,6 +132,15 @@
       "paths": {
         "@ai-matrx/chat/*": [
           "./packages/chat/src/*"
+        ],
+        "@ai-matrx/canvas": [
+          "./packages/canvas/src/index.ts"
+        ],
+        "@ai-matrx/canvas/react": [
+          "./packages/canvas/src/react.ts"
+        ],
+        "@ai-matrx/canvas/*": [
+          "./packages/canvas/src/*"
         ],
         "@host/*": [
           "./*"

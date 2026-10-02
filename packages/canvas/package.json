@@ -1,0 +1,26 @@
+{
+  "name": "@ai-matrx/canvas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The AI Matrx canvas: one docked right-hand column that owns its strip of the window's top edge, with split panes, tabs, full screen, a one-call kind registry, identity (the same thing never opens twice), Redux-compatible state and persistence. Runs in Next.js, Vite and Electron hosts.",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react.ts",
+    "./styles.css": "./src/styles.css",
+    "./tokens.css": "./src/tokens.css",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@ai-matrx/design-system": "latest",
+    "@ai-matrx/tap-target": "latest"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "sideEffects": [
+    "*.css"
+  ]
+}
