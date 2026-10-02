@@ -91,6 +91,7 @@ export function MeetingLayout({
   headerControls,
   preJoinControls,
   endedControls,
+  onLeave,
 }: {
   roomName: RoomName;
   meetingId: string;
@@ -106,12 +107,33 @@ export function MeetingLayout({
   preJoinControls?: ReactNode;
   /** Drawn in the top-right corner over an ENDED meeting's record. */
   endedControls?: ReactNode;
+  /**
+   * Called once when the person LEAVES the room (connected → left), from
+   * either layout's Leave. A host that embeds the room (a meeting tile on the
+   * Board) goes back to the meeting's home; the durable link passes none and
+   * stays on the package's screen.
+   */
+  onLeave?: () => void;
 }) {
   const snapshot = useMeetSnapshot();
   const [layout, setLayout] = useMeetingLayoutPreference();
   const phase = snapshot?.phase ?? "idle";
   const inRoom = phase === "connected" || phase === "reconnecting";
   const ended = (snapshot?.meeting ?? meeting).endedAt !== null;
+
+  // Left means "was in the room, now is not": a fresh pre-join that starts
+  // at `left` (the store remembers a previous call) is not a leave.
+  const wasInRoom = useRef(false);
+  useEffect(() => {
+    if (inRoom) {
+      wasInRoom.current = true;
+      return;
+    }
+    if (phase === "left" && wasInRoom.current) {
+      wasInRoom.current = false;
+      onLeave?.();
+    }
+  }, [inRoom, phase, onLeave]);
 
   const [roomRef, barHeight] = useControlBarHeight(inRoom && layout !== "board");
   const phoneOffset = phoneSwitchOffset(barHeight);

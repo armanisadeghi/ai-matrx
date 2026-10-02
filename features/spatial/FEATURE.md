@@ -360,6 +360,8 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
+- 2026-10-02 — Meeting tile: Join/Rejoin runs the live room inside the tile (the board stays); Leave
+  returns to the meeting's home; the tile is held awake while the room is up (`MeetingBody`).
 - 2026-10-02 — Stability round: tile lifecycle (opt-in sleep), full screen moves the card, per-tile
   hooks, one tile per record, agent undo never re-parks, close-safe saves, the camera follows only
   keyboard focus, a press on empty board blurs the tile's field. Root causes of the pan freeze and the

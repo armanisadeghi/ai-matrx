@@ -26,6 +26,7 @@ chrome, and the routes.
 | The Invite panel (link, invitation, calendar, invite people) | [`components/invite/`](./components/invite/) (`MeetingInviteButton`, `MeetingInviteDialog`); text + calendar event in [`lib/invitation.ts`](./lib/invitation.ts); calendar links/.ics in [`../../lib/calendar/eventLinks.ts`](../../lib/calendar/eventLinks.ts) |
 | The meeting RECORD after `ended_at` | the package's `<MeetingRecordView>`, routed to by `<MeetingRoom>` — nothing here |
 | Room ⇄ Board layout choice (connected phase only; per viewer, this browser) | [`components/MeetingLayout.tsx`](./components/MeetingLayout.tsx) |
+| One meeting, one box: the home and the live room in the same place (Board meeting tile) — Join switches to `MeetingSurface chrome="embedded"` (stage contained by `--mx-meet-height: 100%`, @ai-matrx/meet 0.7.78), Leave or Details returns; the home stays mounted so its agent surface keeps answering | [`components/MeetingHomeAndRoom.tsx`](./components/MeetingHomeAndRoom.tsx) |
 | The Board layout — spatial board + floating people strip + live meeting-notes tiles | [`components/board/`](./components/board/) (`MeetingBoard`, `PeopleStrip`, `MeetingNotesBodies`, `LayoutSwitch`) |
 | aidream base URL | [`lib/meetBaseUrl.ts`](./lib/meetBaseUrl.ts) |
 | Stylesheets (tokens → brand → structure) | `app/layout.tsx` imports 1 and 3; the brand map is the `--mx-meet-*` block in `app/globals.css` |
@@ -275,6 +276,8 @@ with its answer, and the whiteboard as it was left, read through the package's
 Census: `common-docs/systems/communications/meet/PARITY.md` § Wave 5.
 
 ## Change log
+
+- 2026-10-02 — The live room joins IN PLACE on a Board meeting tile (`MeetingHomeAndRoom`; `MeetingDetail onJoin`, `MeetingSurface chrome="embedded" onLeave`, `MeetingLayout onLeave`); /meetings/[id] still goes to /meet/[slug].
 
 - 2026-09-29 — Meet wave 5: record Activity tab (polls, Q&A, whiteboard); the in-room activities come with `@ai-matrx/meet`.
 

@@ -151,6 +151,7 @@ export function MeetingDetail({
   section: routeSection,
   chrome = "page",
   onMeeting,
+  onJoin,
 }: {
   meetingId: string;
   at: string | null;
@@ -164,6 +165,12 @@ export function MeetingDetail({
   chrome?: "page" | "embedded";
   /** Told the meeting each time it is (re)read or saved — a host's title. */
   onMeeting?: (meeting: MeetingRecord) => void;
+  /**
+   * Join / Start / Rejoin / Open record in place: a host that runs the room
+   * itself (a meeting tile on the Board) takes the press. Without it the
+   * press goes to the meeting's room page.
+   */
+  onJoin?: (meeting: MeetingRecord) => void;
 }) {
   const embedded = chrome === "embedded";
   const [localSection, setLocalSection] = useState<string | null>(null);
@@ -436,7 +443,7 @@ export function MeetingDetail({
           : "Join",
       icon: Video,
       primary: true,
-      onPress: () => void run("join", meeting),
+      onPress: () => (onJoin ? onJoin(meeting) : void run("join", meeting)),
     });
   }
   const headerActions = isMobile
@@ -1039,9 +1046,10 @@ function SettingsSection({
       toast.success("Saved.");
     } catch (thrown) {
       toast.error(errorSentence(thrown));
-    } finally {
-      setSaving(null);
     }
+    // After, not `finally`: the catch never rethrows, and a `finally` makes
+    // the React Compiler skip this whole component.
+    setSaving(null);
   };
   const disabled = saving !== null;
   return (

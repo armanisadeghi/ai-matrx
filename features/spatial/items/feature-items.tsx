@@ -52,7 +52,8 @@ import { roomColorOf, roomIconOf } from "@/features/war-room/components/room/roo
 import type { WarRoomSession } from "@/features/war-room/types";
 // Meeting
 import { useMeetingsDirectory } from "@/features/meet/hooks/useMeetingsDirectory";
-import { MeetingDetail } from "@/features/meet/components/manage/MeetingDetail";
+import { MeetingHomeAndRoom } from "@/features/meet/components/MeetingHomeAndRoom";
+import { useSpatialStore } from "../engine/react";
 import { MeetingFormDialog } from "@/features/meet/components/manage/MeetingFormDialog";
 import { useMeetingActions } from "@/features/meet/hooks/useMeetingActions";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
@@ -571,21 +572,30 @@ function MeetingCreateDialog({ onPick, onCancel }: PickerProps) {
  * A meeting on the board: the meeting's own home (`MeetingDetail`, the body of
  * /meetings/[id]) — details, guests, occurrences, settings and the record,
  * with every action — in its embedded chrome, under the meeting's own agent
- * surface (which `MeetingDetail` mounts itself).
+ * surface (which `MeetingDetail` mounts itself). Join runs the live room IN
+ * the tile (`MeetingHomeAndRoom`): the board stays, Leave returns to the
+ * home. The saved source stays the meeting reference; a reload opens the home
+ * (a call needs the person's own click).
+ *
+ * While the room is up the tile is held awake, so a call keeps running while
+ * the person pans away. The hold lives here, not in a `Keep`: only the body
+ * knows the room is open, and a body that holds is never put to sleep.
  */
-function MeetingBody({ source, title, onSource }: ItemBodyProps) {
+function MeetingBody({ tileId, source, title, onSource }: ItemBodyProps) {
   const id = entityIdOf(source);
   const [recordTitle, setRecordTitle] = useState<string | null>(null);
+  const [inRoom, setInRoom] = useState(false);
+  const board = useSpatialStore();
   useAdoptTitle(source, title, recordTitle, onSource);
+  useEffect(() => (inRoom ? board.holdAwake(tileId) : undefined), [inRoom, board, tileId]);
   if (!id) return <NoRecordBody what="meeting" href="/meetings" label="Your meetings" />;
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <MeetingDetail
+      <MeetingHomeAndRoom
+        key={id}
         meetingId={id}
-        at={null}
-        section={null}
-        chrome="embedded"
         onMeeting={(m) => setRecordTitle(m.title)}
+        onRoomChange={setInRoom}
       />
     </div>
   );

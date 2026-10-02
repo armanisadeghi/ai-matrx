@@ -138,3 +138,59 @@ describe("the Room | Board switch on a phone", () => {
     }
   });
 });
+
+describe("MeetingLayout onLeave", () => {
+  function mount(onLeave: () => void) {
+    const container = document.createElement("div");
+    document.body.append(container);
+    let root!: Root;
+    const draw = () =>
+      root.render(
+        <MeetingLayout
+          roomName={"room-1" as RoomName}
+          meetingId="m-1"
+          slug="m-1"
+          meeting={meeting}
+          onLeave={onLeave}
+        />,
+      );
+    act(() => {
+      root = createRoot(container);
+      draw();
+    });
+    return {
+      rerender: () => act(() => draw()),
+      unmount: () => {
+        act(() => root.unmount());
+        container.remove();
+      },
+    };
+  }
+
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("fires once when the person leaves the room (connected → left)", () => {
+    const onLeave = jest.fn();
+    mockPhase = "connected";
+    const view = mount(onLeave);
+    expect(onLeave).not.toHaveBeenCalled();
+    mockPhase = "left";
+    view.rerender();
+    expect(onLeave).toHaveBeenCalledTimes(1);
+    view.rerender();
+    expect(onLeave).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it("does not fire for a pre-join that starts at `left` (a previous call)", () => {
+    const onLeave = jest.fn();
+    mockPhase = "left";
+    const view = mount(onLeave);
+    mockPhase = "idle";
+    view.rerender();
+    expect(onLeave).not.toHaveBeenCalled();
+    view.unmount();
+  });
+});

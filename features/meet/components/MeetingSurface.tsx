@@ -18,7 +18,15 @@
 // `authenticated`, which is what makes the guest lane real. A slug that does
 // not resolve says so, with what to do about it; it never spins.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   MeetProvider,
   asMeetingId,
@@ -28,7 +36,7 @@ import {
 } from "@ai-matrx/meet/react";
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
 import { supabase } from "@/utils/supabase/client";
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button, Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { meetBaseUrl } from "@/features/meet/lib/meetBaseUrl";
@@ -61,9 +69,64 @@ type Resolution =
   | { readonly state: "ready"; readonly meeting: MeetingRecord }
   | { readonly state: "failed"; readonly message: string; readonly remedy: string; readonly detail: string };
 
-function Centered({ children }: { children: React.ReactNode }) {
+/**
+ * EMBEDDED — the room runs inside a host's box (a meeting tile on the Board)
+ * instead of owning the viewport. Every screen fills that box (the package's
+ * `--mx-meet-height`, @ai-matrx/meet 0.7.78), nothing touches the address
+ * bar, and `onLeave` takes the host back to the meeting's home — after Leave,
+ * or from the Back control before joining.
+ */
+const EmbeddedContext = createContext<{ onLeave: () => void } | null>(null);
+
+const CONTAINED: CSSProperties = { "--mx-meet-height": "100%" } as CSSProperties;
+
+/** The box every room screen draws into: the viewport, or the host's box. */
+function Stage({ children }: { children: React.ReactNode }) {
+  const embedded = useContext(EmbeddedContext);
+  return embedded ? (
+    <div className="h-full w-full" style={CONTAINED}>
+      {children}
+    </div>
+  ) : (
+    <div className="h-dvh w-full">{children}</div>
+  );
+}
+
+/** Back to the meeting's home — drawn only when embedded. */
+function BackToMeeting({ tone = "stage" }: { tone?: "stage" | "page" }) {
+  const embedded = useContext(EmbeddedContext);
+  if (!embedded) return null;
   return (
-    <div className="flex h-dvh w-full items-center justify-center bg-textured p-6">
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      onClick={embedded.onLeave}
+      className={
+        tone === "stage"
+          ? "gap-1.5 text-[color:var(--mx-meet-stage-text)] hover:bg-white/15 hover:text-[color:var(--mx-meet-stage-text)]"
+          : "gap-1.5"
+      }
+    >
+      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+      Details
+    </Button>
+  );
+}
+
+function Centered({ children }: { children: React.ReactNode }) {
+  const embedded = useContext(EmbeddedContext) !== null;
+  return (
+    <div
+      className={`relative flex w-full items-center justify-center bg-textured p-6 ${
+        embedded ? "h-full" : "h-dvh"
+      }`}
+    >
+      {embedded ? (
+        <div className="absolute left-3 top-3">
+          <BackToMeeting tone="page" />
+        </div>
+      ) : null}
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm">
         {children}
       </div>
@@ -74,10 +137,36 @@ function Centered({ children }: { children: React.ReactNode }) {
 export function MeetingSurface({
   slug,
   isAuthenticated,
+  chrome = "page",
+  onLeave,
+}: {
+  slug: string;
+  isAuthenticated: boolean;
+  /**
+   * `page` — the durable link (/meet/[slug]): the stage owns the viewport.
+   * `embedded` — inside a host's box (a meeting tile on the Board); requires
+   * `onLeave`.
+   */
+  chrome?: "page" | "embedded";
+  /** Embedded: the person left the room or went back to the meeting's home. */
+  onLeave?: () => void;
+}) {
+  const embedded = chrome === "embedded" && onLeave !== undefined ? { onLeave } : null;
+  return (
+    <EmbeddedContext.Provider value={embedded}>
+      <MeetingSurfaceBody slug={slug} isAuthenticated={isAuthenticated} />
+    </EmbeddedContext.Provider>
+  );
+}
+
+function MeetingSurfaceBody({
+  slug,
+  isAuthenticated,
 }: {
   slug: string;
   isAuthenticated: boolean;
 }) {
+  const embedded = useContext(EmbeddedContext) !== null;
   const [resolution, setResolution] = useState<Resolution>({ state: "loading" });
   // The page's server auth value is a safe first-render snapshot, not a
   // permanent client identity. GlobalAuthSync resolves the browser session
@@ -99,7 +188,8 @@ export function MeetingSurface({
     void (byId ? repository.meeting(asMeetingId(slug)) : repository.meetingBySlug(slug))
       .then((meeting) => {
         if (!live) return;
-        if (byId) window.history.replaceState(null, "", `/meet/${meeting.slug}`);
+        // Embedded, the address bar belongs to the host (the Board).
+        if (byId && !embedded) window.history.replaceState(null, "", `/meet/${meeting.slug}`);
         setResolution({ state: "ready", meeting });
       })
       .catch((thrown: unknown) => {
@@ -126,7 +216,7 @@ export function MeetingSurface({
     return () => {
       live = false;
     };
-  }, [slug]);
+  }, [slug, embedded]);
 
   if (resolution.state === "loading") {
     return (
@@ -245,8 +335,9 @@ function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
   // Back from "Create free account" with `?claim=1`: the guest's attendance
   // joins the new account, then the record re-reads as theirs.
   const claimGeneration = useGuestClaimOnArrival(meeting);
+  const embedded = useContext(EmbeddedContext);
   return (
-    <div className="h-dvh w-full">
+    <Stage>
       {/* NO CONSENT BANNER HERE. `<MeetingRoom>` renders the package's own
           notice for every participant since @ai-matrx/meet 0.3.0 (D10) — the
           host stand-in that used to live in this file was deleted in the same
@@ -269,10 +360,13 @@ function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
         // invited person.
         preJoinControls={
           <>
+            <BackToMeeting />
             <PreJoinRsvp meeting={meeting} />
             <MeetingInviteButton meeting={meeting} signedIn />
           </>
         }
+        endedControls={embedded ? <BackToMeeting /> : undefined}
+        onLeave={embedded?.onLeave}
         headerControls={
           <span className="inline-flex items-center gap-2">
             <MeetingInviteButton meeting={meeting} signedIn />
@@ -289,7 +383,7 @@ function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
           </span>
         }
       />
-    </div>
+    </Stage>
   );
 }
 
@@ -312,6 +406,7 @@ function GuestRoom({
   offerAccount?: boolean;
 }) {
   const store = useAppStore();
+  const embedded = useContext(EmbeddedContext);
   const [typedName, setTypedName] = useState("");
   // 🚨 AN ENDED MEETING NEVER ASKS FOR A NAME (MRI-D2). There is no room to
   // announce anybody into; the link resolves to the record. The provider still
@@ -378,7 +473,7 @@ function GuestRoom({
       accessToken={noSession}
       onDiagnostic={onDiagnostic}
     >
-      <div className="h-dvh w-full">
+      <Stage>
         <MeetingLayout
           roomName={meeting.roomName}
           meetingId={meeting.id}
@@ -387,11 +482,23 @@ function GuestRoom({
           // A guest can pass the link on too; granting needs an account, so
           // the panel shows them the link, the invitation and the calendar.
           headerControls={<MeetingInviteButton meeting={meeting} signedIn={false} />}
-          preJoinControls={<MeetingInviteButton meeting={meeting} signedIn={false} />}
+          preJoinControls={
+            <>
+              <BackToMeeting />
+              <MeetingInviteButton meeting={meeting} signedIn={false} />
+            </>
+          }
           // After the meeting: an offer to keep the notes, never a gate.
-          endedControls={offerAccount ? <KeepNotesPrompt slug={slug} /> : undefined}
+          endedControls={
+            offerAccount ? (
+              <KeepNotesPrompt slug={slug} />
+            ) : embedded ? (
+              <BackToMeeting />
+            ) : undefined
+          }
+          onLeave={embedded?.onLeave}
         />
-      </div>
+      </Stage>
     </MeetProvider>
   );
 }
