@@ -42,6 +42,11 @@ export interface CanvasControllerOptions {
   readonly isKnownKind?: ((kind: string) => boolean) | undefined;
   readonly onError?: CanvasErrorSink | undefined;
   readonly saveDelayMs?: number | undefined;
+  /**
+   * Whether a remembered "open" may be restored right now. A host returns
+   * false where an open canvas would take the whole screen (a phone).
+   */
+  readonly mayRestoreOpen?: (() => boolean) | undefined;
 }
 
 export interface CanvasController {
@@ -49,6 +54,8 @@ export interface CanvasController {
   getState(): CanvasState;
   open(input: CanvasOpenInput): CanvasItemId | null;
   update(itemId: CanvasItemId, patch: { data?: CanvasJson | undefined; title?: string | null | undefined }): boolean;
+  /** Gives an item a new identity in place (a draft that was saved and now has a durable id). */
+  rekey(itemId: CanvasItemId, key: string): CanvasItemId | null;
   close(itemId: CanvasItemId): void;
   closeOthers(itemId: CanvasItemId): void;
   activate(itemId: CanvasItemId): void;
@@ -64,6 +71,14 @@ export interface CanvasController {
   setWidth(width: number): void;
   /** Is this exact thing on the canvas right now? */
   has(kind: string, key: string): boolean;
+  /**
+   * Is a canvas column on screen? A store can exist in a layout that shows no
+   * column (a kiosk, a meeting stage); opening there must be refused aloud.
+   */
+  isPresented(): boolean;
+  /** Called by a column on mount; returns the unmount callback. */
+  registerPresentation(): () => void;
+  subscribePresentation(listener: () => void): () => void;
   /** Loads the persisted snapshot and starts autosave. Returns a disposer. */
   start(): () => void;
 }
@@ -73,6 +88,12 @@ export function createCanvasController(options: CanvasControllerOptions): Canvas
   const onError = options.onError ?? consoleCanvasErrorSink;
   const isRestorable = options.isRestorable ?? (() => true);
   const dispatch = (action: CanvasAction) => store.dispatch(action);
+
+  let presentations = 0;
+  const presentationListeners = new Set<() => void>();
+  const notifyPresentation = () => {
+    for (const listener of [...presentationListeners]) listener();
+  };
 
   const controller: CanvasController = {
     store,
@@ -108,6 +129,12 @@ export function createCanvasController(options: CanvasControllerOptions): Canvas
       dispatch(canvasActions.update(itemId, patch));
       return true;
     },
+    rekey(itemId, key) {
+      const item = store.getState().items[itemId];
+      if (!item) return null;
+      dispatch(canvasActions.rekey(itemId, key));
+      return canvasItemId(item.kind, key);
+    },
     close: (itemId) => dispatch(canvasActions.closeItem(itemId)),
     closeOthers: (itemId) => dispatch(canvasActions.closeOthers(itemId)),
     activate: (itemId) => dispatch(canvasActions.activate(itemId)),
@@ -122,6 +149,22 @@ export function createCanvasController(options: CanvasControllerOptions): Canvas
     setFullscreen: (fullscreen) => dispatch(canvasActions.setFullscreen(fullscreen)),
     setWidth: (width) => dispatch(canvasActions.setWidth(width)),
     has: (kind, key) => canvasItemId(kind, key) in store.getState().items,
+    isPresented: () => presentations > 0,
+    registerPresentation() {
+      presentations += 1;
+      notifyPresentation();
+      let done = false;
+      return () => {
+        if (done) return;
+        done = true;
+        presentations -= 1;
+        notifyPresentation();
+      };
+    },
+    subscribePresentation(listener) {
+      presentationListeners.add(listener);
+      return () => presentationListeners.delete(listener);
+    },
     start() {
       let disposed = false;
       let timer: ReturnType<typeof setTimeout> | null = null;
@@ -141,8 +184,14 @@ export function createCanvasController(options: CanvasControllerOptions): Canvas
         }
       };
 
+      // A host store dispatches constantly (streaming, typing). Only a change
+      // to the CANVAS state reschedules the save, or a busy app starves it.
+      let seen = store.getState();
       const unsubscribe = store.subscribe(() => {
         if (!persistence || disposed) return;
+        const current = store.getState();
+        if (current === seen) return;
+        seen = current;
         if (timer) clearTimeout(timer);
         timer = setTimeout(save, options.saveDelayMs ?? 250);
       });
@@ -156,7 +205,12 @@ export function createCanvasController(options: CanvasControllerOptions): Canvas
           .then(() => persistence.load())
           .then(
             (snapshot) => {
-              if (!disposed) dispatch(canvasActions.hydrate(snapshot));
+              if (disposed) return;
+              const openedThisSession = store.getState().isOpen;
+              dispatch(canvasActions.hydrate(snapshot));
+              if (!openedThisSession && options.mayRestoreOpen && !options.mayRestoreOpen() && store.getState().isOpen) {
+                dispatch(canvasActions.setOpen(false));
+              }
             },
             (error: unknown) => {
               onError({ code: "persistence-load", message: "The saved canvas layout could not be read.", detail: error });

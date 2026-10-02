@@ -63,7 +63,7 @@ import {
 } from "@/features/canvas/canvasContent";
 import { canvasTypeHasSource } from "@/features/canvas/core/canvasSource";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
-import { contentOf, readArtifactItemData, type ArtifactItemData } from "./artifactItem";
+import { artifactKey, contentOf, readArtifactItemData, type ArtifactItemData } from "./artifactItem";
 import { openArtifactPanel, toggleArtifactPanel, useArtifactPanel } from "./artifactPanels";
 
 const ICONS: Record<CanvasContentType, LucideIcon> = {
@@ -169,6 +169,9 @@ async function saveToCloud(props: CanvasKindProps, data: ArtifactItemData) {
   if (artifactId) {
     const next: CanvasJson = { ...data, savedItemId: artifactId };
     props.canvas.update(props.item.id, { data: next });
+    // The tab now IS that artifact: give it the artifact's identity, so opening
+    // the saved artifact from anywhere focuses this tab instead of a second one.
+    props.canvas.rekey(props.item.id, artifactKey(content, artifactId));
   }
   toast.success(outcome.result.wasCreated ? "Saved to the cloud" : "Already saved");
 }

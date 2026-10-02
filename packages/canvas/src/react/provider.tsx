@@ -50,6 +50,17 @@ interface CanvasContextValue {
   readonly ports: CanvasHostPorts;
 }
 
+/** Phones show an open canvas full screen; a remembered "open" never takes over a phone on load. */
+const PHONE_MAX_WIDTH = 767;
+const isPhoneViewport = () => typeof window !== "undefined" && window.innerWidth <= PHONE_MAX_WIDTH;
+
+/** Escape belongs to a menu, dialog or listbox when one has focus. */
+function escapeBelongsElsewhere(event: KeyboardEvent): boolean {
+  if (event.defaultPrevented) return true;
+  const active = typeof document === "undefined" ? null : document.activeElement;
+  return !!active?.closest?.('[role="menu"], [role="dialog"], [role="alertdialog"], [role="listbox"]');
+}
+
 const CanvasContext = createContext<CanvasContextValue | null>(null);
 
 export interface CanvasProviderProps extends CanvasHostPorts {
@@ -77,6 +88,7 @@ export function CanvasProvider({
       store: store ?? createCanvasStore(),
       persistence: persistence === undefined ? createLocalStorageCanvasPersistence() : persistence,
       isRestorable: (kind) => getCanvasKind(kind)?.restore !== false,
+      mayRestoreOpen: () => !isPhoneViewport(),
       onError,
     }),
   );
@@ -86,10 +98,11 @@ export function CanvasProvider({
   useEffect(() => {
     if (!hotkeys) return;
     const onKey = (event: KeyboardEvent) => {
+      if (!controller.isPresented()) return; // no column here — the shortcut has nothing to show
       if (event.key === "\\" && (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey) {
         event.preventDefault();
         controller.toggle();
-      } else if (event.key === "Escape" && controller.getState().isFullscreen) {
+      } else if (event.key === "Escape" && controller.getState().isFullscreen && !escapeBelongsElsewhere(event)) {
         controller.setFullscreen(false);
       }
     };
@@ -123,6 +136,24 @@ export function useOptionalCanvas(): CanvasController | null {
 
 export function useCanvasHostPorts(): CanvasHostPorts {
   return useCanvasContext().ports;
+}
+
+/** Registers a mounted canvas column with the controller for its lifetime. */
+export function useRegisterCanvasPresence(): void {
+  const controller = useContext(CanvasContext)?.controller;
+  useEffect(() => controller?.registerPresentation(), [controller]);
+}
+
+const noPresence = () => () => undefined;
+
+/** True when a canvas column is on screen in this tree — the ONE availability answer. */
+export function useCanvasIsPresented(): boolean {
+  const controller = useContext(CanvasContext)?.controller;
+  return useSyncExternalStore(
+    controller ? controller.subscribePresentation : noPresence,
+    () => controller?.isPresented() ?? false,
+    () => false,
+  );
 }
 
 /** Subscribes to a slice of canvas state. The selector must return stable values. */

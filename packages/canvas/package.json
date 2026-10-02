@@ -13,8 +13,8 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@ai-matrx/design-system": "latest",
-    "@ai-matrx/tap-target": "latest"
+    "@ai-matrx/tap-target": "latest",
+    "@radix-ui/react-dropdown-menu": "latest"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

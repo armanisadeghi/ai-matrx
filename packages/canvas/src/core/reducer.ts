@@ -10,13 +10,14 @@
  */
 
 import { canvasItemId, paneIdFromSeq, splitIdFromSeq } from "./ids";
-import { isValidLayout, listPaneIds, removePane, resizeSplit, splitPane } from "./layout";
+import { isValidLayout, listPaneIds, normalizeSizes, removePane, resizeSplit, splitPane } from "./layout";
 import {
   CANVAS_DEFAULT_WIDTH,
   CANVAS_MIN_WIDTH,
   type CanvasItem,
   type CanvasItemId,
   type CanvasJson,
+  type CanvasLayoutNode,
   type CanvasOpenInput,
   type CanvasOrientation,
   type CanvasPane,
@@ -30,6 +31,7 @@ const P = "matrxCanvas/";
 export type CanvasAction =
   | { type: `${typeof P}open`; payload: CanvasOpenInput & { now: number } }
   | { type: `${typeof P}update`; payload: { itemId: CanvasItemId; data?: CanvasJson | undefined; title?: string | null | undefined; now: number } }
+  | { type: `${typeof P}rekey`; payload: { itemId: CanvasItemId; key: string } }
   | { type: `${typeof P}closeItem`; payload: { itemId: CanvasItemId } }
   | { type: `${typeof P}closeOthers`; payload: { itemId: CanvasItemId } }
   | { type: `${typeof P}activate`; payload: { itemId: CanvasItemId } }
@@ -51,6 +53,8 @@ export const canvasActions = {
     type: `${P}update`,
     payload: { itemId, ...patch, now: Date.now() },
   }),
+  /** Gives an item a new identity in place (e.g. a draft that was just saved and now has an id). */
+  rekey: (itemId: CanvasItemId, key: string): CanvasAction => ({ type: `${P}rekey`, payload: { itemId, key } }),
   closeItem: (itemId: CanvasItemId): CanvasAction => ({ type: `${P}closeItem`, payload: { itemId } }),
   closeOthers: (itemId: CanvasItemId): CanvasAction => ({ type: `${P}closeOthers`, payload: { itemId } }),
   activate: (itemId: CanvasItemId): CanvasAction => ({ type: `${P}activate`, payload: { itemId } }),
@@ -207,19 +211,33 @@ export function sanitizeCanvasSnapshot(raw: unknown): CanvasState | null {
   }
   const focused = s.focusedPaneId && paneIds.has(s.focusedPaneId) ? s.focusedPaneId : listPaneIds(s.layout)[0];
   if (!focused) return null;
-  const seq = typeof s.seq === "number" && Number.isFinite(s.seq) ? s.seq : paneIds.size + 1;
+  const layout = normalizeLayout(s.layout);
+  // seq must stay ahead of every id already minted, or the next split collides.
+  const seq = Math.max(typeof s.seq === "number" && Number.isFinite(s.seq) ? s.seq : 0, highestIdNumber(layout));
   return {
     version: 1,
     isOpen: s.isOpen === true,
-    isFullscreen: s.isFullscreen === true,
+    // Full screen is a moment, not a preference: a reload never starts there.
+    isFullscreen: false,
     width: clampWidth(typeof s.width === "number" ? s.width : CANVAS_DEFAULT_WIDTH),
-    layout: s.layout,
+    layout,
     panes,
     items,
     focusedPaneId: focused,
     seq,
     hydrated: true,
   };
+}
+
+function normalizeLayout(node: CanvasLayoutNode): CanvasLayoutNode {
+  if (node.type === "pane") return node;
+  return { ...node, sizes: normalizeSizes(node.sizes, node.children.length), children: node.children.map(normalizeLayout) };
+}
+
+function highestIdNumber(node: CanvasLayoutNode): number {
+  const own = Number((node.type === "pane" ? node.paneId : node.id).split("-").pop());
+  const mine = Number.isFinite(own) ? own : 0;
+  return node.type === "pane" ? mine : Math.max(mine, ...node.children.map(highestIdNumber));
 }
 
 // ── reducer ────────────────────────────────────────────────────────────────
@@ -271,6 +289,27 @@ export function canvasReducer(state: CanvasState = createInitialCanvasState(), a
         },
       };
     }
+    case `${P}rekey`: {
+      const { itemId, key } = action.payload;
+      const item = state.items[itemId];
+      if (!item || item.key === key) return state;
+      const nextId = canvasItemId(item.kind, key);
+      // The new identity is already open elsewhere: keep that one, drop this.
+      if (state.items[nextId]) return canvasReducer(canvasReducer(state, canvasActions.closeItem(itemId)), canvasActions.activate(nextId));
+      const items = { ...state.items, [nextId]: { ...item, id: nextId, key } };
+      delete items[itemId];
+      const panes: Record<string, CanvasPane> = {};
+      for (const pane of Object.values(state.panes)) {
+        panes[pane.id] = pane.itemIds.includes(itemId)
+          ? {
+              ...pane,
+              itemIds: pane.itemIds.map((id) => (id === itemId ? nextId : id)),
+              activeItemId: pane.activeItemId === itemId ? nextId : pane.activeItemId,
+            }
+          : pane;
+      }
+      return { ...state, items, panes };
+    }
     case `${P}closeItem`: {
       const { itemId } = action.payload;
       if (!state.items[itemId]) return state;
@@ -302,6 +341,8 @@ export function canvasReducer(state: CanvasState = createInitialCanvasState(), a
       const { itemId, toPaneId, index } = action.payload;
       const from = paneOf(state, itemId);
       if (!from || !state.panes[toPaneId]) return state;
+      // Dropped back onto its own pane with no position: nothing moved.
+      if (from.id === toPaneId && index === undefined) return state.focusedPaneId === toPaneId ? state : { ...state, focusedPaneId: toPaneId };
       let next = from.id === toPaneId ? state : detachItem(state, itemId);
       next = insertInto(next, toPaneId, itemId, true, index);
       next = { ...next, focusedPaneId: toPaneId };

@@ -10,7 +10,7 @@
  * in <CanvasFrame>.
  */
 
-import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import {
   CANVAS_MIN_WIDTH,
@@ -23,19 +23,40 @@ import {
 } from "../index";
 import { CanvasPaneView } from "./CanvasPane";
 import { PanelRightIcon } from "./icons";
-import { useCanvas, useCanvasState } from "./provider";
+import { useCanvas, useCanvasState, useRegisterCanvasPresence } from "./provider";
 
 /** Room always left for the app beside the canvas (desktop). */
 const MIN_MAIN_WIDTH = 420;
+
+function subscribeViewport(listener: () => void) {
+  window.addEventListener("resize", listener);
+  return () => window.removeEventListener("resize", listener);
+}
+
+/** The window's width, live; 0 during server render. */
+function useViewportWidth(): number {
+  return useSyncExternalStore(subscribeViewport, () => window.innerWidth, () => 0);
+}
+
+/**
+ * The stored width, fitted to the window right now: the app beside the canvas
+ * always keeps MIN_MAIN_WIDTH. A width remembered on a wide monitor never
+ * crushes the app on a laptop.
+ */
+function fitWidth(width: number, viewport: number): number {
+  if (viewport <= 0) return width;
+  return Math.max(CANVAS_MIN_WIDTH, Math.min(width, viewport - MIN_MAIN_WIDTH));
+}
 
 /** The column's rendered width in px: 0 when put away, null when full screen. */
 export function useCanvasColumnWidth(): number | null {
   const isOpen = useCanvasState(selectCanvasIsOpen);
   const isFullscreen = useCanvasState(selectCanvasIsFullscreen);
   const width = useCanvasState(selectCanvasWidth);
+  const viewport = useViewportWidth();
   if (!isOpen) return 0;
   if (isFullscreen) return null;
-  return width;
+  return fitWidth(width, viewport);
 }
 
 export interface CanvasColumnProps {
@@ -50,10 +71,13 @@ export function CanvasColumn({ className, style, onLiveWidth }: CanvasColumnProp
   const isFullscreen = useCanvasState(selectCanvasIsFullscreen);
   const width = useCanvasState(selectCanvasWidth);
   const layout = useCanvasState(selectCanvasLayout);
+  const viewport = useViewportWidth();
   const [dragWidth, setDragWidth] = useState<number | null>(null);
+  useRegisterCanvasPresence();
 
   if (!isOpen) return null;
-  const shown = dragWidth ?? width;
+  const fitted = fitWidth(width, viewport);
+  const shown = dragWidth ?? fitted;
 
   return (
     <aside
@@ -64,7 +88,7 @@ export function CanvasColumn({ className, style, onLiveWidth }: CanvasColumnProp
     >
       {!isFullscreen ? (
         <WidthHandle
-          width={width}
+          width={fitted}
           onDrag={(next) => {
             setDragWidth(next);
             onLiveWidth?.(next);
@@ -224,7 +248,7 @@ export function CanvasToggle({ className }: { className?: string }) {
         icon={<PanelRightIcon />}
         onClick={() => canvas.toggle()}
       />
-      {count > 1 && !isOpen ? <span className="mxc-toggle-badge">{count}</span> : null}
+      {count > 0 && !isOpen ? <span className="mxc-toggle-badge">{count}</span> : null}
     </span>
   );
 }

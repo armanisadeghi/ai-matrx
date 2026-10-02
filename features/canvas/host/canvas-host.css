@@ -31,7 +31,14 @@
   right: 0;
   bottom: 0;
   height: 100dvh;
-  z-index: 45;
+}
+
+/* Desktop: beside the shell chrome. Phones keep the package's full-screen
+   layer value (--mxc-mobile-z), so this must not apply below 768px. */
+@media (min-width: 768px) {
+  .shell-canvas-column {
+    z-index: 45;
+  }
 }
 
 .shell-root {

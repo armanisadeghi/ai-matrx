@@ -10,6 +10,8 @@ import {
   Component,
   Suspense,
   lazy,
+  useEffect,
+  useRef,
   useState,
   type ComponentType,
   type DragEvent,
@@ -17,13 +19,7 @@ import {
   type ReactNode,
 } from "react";
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@ai-matrx/design-system";
+import * as Menu from "@radix-ui/react-dropdown-menu";
 import type { CanvasItem, CanvasItemId, CanvasPaneId } from "../index";
 import { selectCanvasPaneCount } from "../index";
 import {
@@ -32,6 +28,7 @@ import {
   MaximizeIcon,
   MinimizeIcon,
   MoreIcon,
+  PanelRightIcon,
   PopOutIcon,
   SplitDownIcon,
   SplitRightIcon,
@@ -50,6 +47,11 @@ function kindComponent(kind: AnyCanvasKind): ComponentType<CanvasKindProps> {
   const resolved = holder[LAZY];
   if (!resolved) throw new Error(`[@ai-matrx/canvas] kind "${kind.id}" has nothing to render.`);
   return resolved;
+}
+
+/** Forgets a kind's cached lazy component so "Try again" re-runs a failed chunk load. */
+function resetKindComponent(kind: AnyCanvasKind | undefined) {
+  if (kind) delete (kind as AnyCanvasKind & { [LAZY]?: unknown })[LAZY];
 }
 
 export function itemTitle(item: CanvasItem, kind: AnyCanvasKind | undefined): string {
@@ -142,8 +144,8 @@ function PaneHeader({
   return (
     <header className="mxc-pane-header">
       <div className="mxc-tabs" role="tablist" aria-label="Canvas tabs">
-        {itemIds.map((itemId) => (
-          <Tab key={itemId} itemId={itemId} active={itemId === activeItemId} />
+        {itemIds.map((itemId, index) => (
+          <Tab key={itemId} itemId={itemId} paneId={paneId} index={index} active={itemId === activeItemId} />
         ))}
       </div>
       <div className="mxc-pane-actions">
@@ -155,6 +157,12 @@ function PaneHeader({
           onClick={() => canvas.setFullscreen(!isFullscreen)}
         />
         <TapTargetButtonTransparent
+          className="mxc-phone-only"
+          ariaLabel="Hide canvas"
+          icon={<PanelRightIcon />}
+          onClick={() => canvas.hide()}
+        />
+        <TapTargetButtonTransparent
           ariaLabel={paneCount > 1 ? "Close pane" : "Close canvas"}
           icon={<CloseIcon />}
           onClick={() => canvas.closePane(paneId)}
@@ -164,15 +172,30 @@ function PaneHeader({
   );
 }
 
-function Tab({ itemId, active }: { itemId: CanvasItemId; active: boolean }) {
+function Tab({
+  itemId,
+  paneId,
+  index,
+  active,
+}: {
+  itemId: CanvasItemId;
+  paneId: CanvasPaneId;
+  index: number;
+  active: boolean;
+}) {
   const canvas = useCanvas();
   const item = useCanvasState((s) => s.items[itemId]);
   const kind = useCanvasKind(item?.kind ?? "");
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (active) ref.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [active]);
   if (!item) return null;
   const Icon = kind?.icon;
   const title = itemTitle(item, kind);
   return (
     <div
+      ref={ref}
       className="mxc-tab"
       role="tab"
       aria-selected={active}
@@ -183,6 +206,17 @@ function Tab({ itemId, active }: { itemId: CanvasItemId; active: boolean }) {
       onDragStart={(event) => {
         event.dataTransfer.setData(DRAG_MIME, itemId);
         event.dataTransfer.effectAllowed = "move";
+      }}
+      onDragOver={(event) => {
+        if (event.dataTransfer.types.includes(DRAG_MIME)) event.preventDefault();
+      }}
+      onDrop={(event) => {
+        const dragged = event.dataTransfer.getData(DRAG_MIME) as CanvasItemId;
+        if (!dragged) return;
+        // Dropped ON a tab: take that tab's place (the pane-level drop is skipped).
+        event.preventDefault();
+        event.stopPropagation();
+        if (dragged !== itemId) canvas.moveItem(dragged, paneId, index);
       }}
       onClick={() => canvas.activate(itemId)}
       onAuxClick={(event) => {
@@ -231,40 +265,49 @@ function PaneMenu({
   const itemEntries = [...kindItems, ...hostItems];
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <Menu.Root>
+      <Menu.Trigger asChild>
         <TapTargetButtonTransparent ariaLabel="More" icon={<MoreIcon />} />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="mxc-menu">
-        {itemEntries.map((entry) => (
-          <DropdownMenuItem key={entry.id} onSelect={entry.onSelect} className={entry.destructive ? "mxc-menu-destructive" : undefined}>
-            {entry.icon}
-            {entry.label}
-          </DropdownMenuItem>
-        ))}
-        {itemEntries.length > 0 ? <DropdownMenuSeparator /> : null}
-        <DropdownMenuItem onSelect={() => canvas.splitPane(paneId, "horizontal", moveId)}>
-          <SplitRightIcon />
-          Split right
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => canvas.splitPane(paneId, "vertical", moveId)}>
-          <SplitDownIcon />
-          Split down
-        </DropdownMenuItem>
-        {activeItem && ports.popOut ? (
-          <DropdownMenuItem onSelect={() => ports.popOut?.(activeItem)}>
-            <PopOutIcon />
-            Pop out
-          </DropdownMenuItem>
-        ) : null}
-        {activeItem && canSplitMove ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => canvas.closeOthers(activeItem.id)}>Close other tabs</DropdownMenuItem>
-          </>
-        ) : null}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content align="end" sideOffset={4} className="mxc-menu">
+          {itemEntries.map((entry) => (
+            <Menu.Item
+              key={entry.id}
+              onSelect={entry.onSelect}
+              className="mxc-menu-item"
+              data-destructive={entry.destructive ? "" : undefined}
+            >
+              {entry.icon}
+              {entry.label}
+            </Menu.Item>
+          ))}
+          {itemEntries.length > 0 ? <Menu.Separator className="mxc-menu-separator" /> : null}
+          <Menu.Item className="mxc-menu-item" onSelect={() => canvas.splitPane(paneId, "horizontal", moveId)}>
+            <SplitRightIcon />
+            Split right
+          </Menu.Item>
+          <Menu.Item className="mxc-menu-item" onSelect={() => canvas.splitPane(paneId, "vertical", moveId)}>
+            <SplitDownIcon />
+            Split down
+          </Menu.Item>
+          {activeItem && ports.popOut ? (
+            <Menu.Item className="mxc-menu-item" onSelect={() => ports.popOut?.(activeItem)}>
+              <PopOutIcon />
+              Pop out
+            </Menu.Item>
+          ) : null}
+          {activeItem && canSplitMove ? (
+            <>
+              <Menu.Separator className="mxc-menu-separator" />
+              <Menu.Item className="mxc-menu-item" onSelect={() => canvas.closeOthers(activeItem.id)}>
+                Close other tabs
+              </Menu.Item>
+            </>
+          ) : null}
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 
@@ -294,7 +337,7 @@ function ItemBody({
   return (
     <div className="mxc-item" hidden={!isActive} data-kind={item.kind}>
       {kind ? (
-        <ItemBoundary item={item} onClose={() => canvas.close(item.id)}>
+        <ItemBoundary item={item} onClose={() => canvas.close(item.id)} onRetry={() => resetKindComponent(kind)}>
           <Suspense fallback={<div className="mxc-loading" aria-busy="true" />}>
             <KindRender kind={kind} props={{ item, data: item.data, paneId, isFocused, canvas }} />
           </Suspense>
@@ -333,6 +376,7 @@ function ItemProblem({ message, onClose, onRetry }: { message: string; onClose: 
 interface BoundaryProps {
   item: CanvasItem;
   onClose: () => void;
+  onRetry: () => void;
   children: ReactNode;
 }
 
@@ -353,7 +397,10 @@ class ItemBoundary extends Component<BoundaryProps, { error: Error | null }> {
         <ItemProblem
           message="This item failed to load."
           onClose={this.props.onClose}
-          onRetry={() => this.setState({ error: null })}
+          onRetry={() => {
+            this.props.onRetry();
+            this.setState({ error: null });
+          }}
         />
       );
     }

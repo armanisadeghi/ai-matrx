@@ -8,7 +8,7 @@
  */
 
 import { selectCanvasActiveItem, selectCanvasIsOpen, type CanvasController, type CanvasItemId } from "@ai-matrx/canvas";
-import { useOptionalCanvas, useOptionalCanvasState } from "@ai-matrx/canvas/react";
+import { useCanvasIsPresented, useOptionalCanvas, useOptionalCanvasState } from "@ai-matrx/canvas/react";
 import { reportCanvasOpenDrop, titleForDrop } from "@/features/canvas/openRequest";
 import type { ArtifactDebugTrace, CanvasContent, CanvasContentType } from "@/features/canvas/canvasContent";
 import { artifactOpenInput, contentOf, readArtifactItemData, type ArtifactOpenOptions } from "./artifactItem";
@@ -40,7 +40,8 @@ export function openArtifactContent(
     reportCanvasOpenDrop({ reason: "no-content", requested, detail: `type ${content.type} arrived with no data` });
     return null;
   }
-  if (!canvas) {
+  // A provider with no column on screen (kiosk, meeting stage) cannot show anything.
+  if (!canvas || !canvas.isPresented()) {
     reportCanvasOpenDrop({ reason: "canvas-unavailable", requested });
     return null;
   }
@@ -49,6 +50,7 @@ export function openArtifactContent(
 
 export function useArtifactCanvas() {
   const canvas = useOptionalCanvas();
+  const isPresented = useCanvasIsPresented();
   const isOpen = useCanvasStateSafe();
   const activeContent = useActiveContent();
 
@@ -71,7 +73,7 @@ export function useArtifactCanvas() {
   const offer = (content: CanvasContent): CanvasItemId | null => openContent(content, { quiet: true });
 
   return {
-    isAvailable: canvas !== null,
+    isAvailable: isPresented,
     isOpen,
     /** The content of the tab the person is looking at, if it is an artifact. */
     activeContent,

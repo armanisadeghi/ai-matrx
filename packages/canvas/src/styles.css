@@ -320,13 +320,48 @@
   color: var(--mxc-muted);
 }
 
-.mxc-menu svg {
-  width: 1rem;
-  height: 1rem;
+.mxc-menu {
+  z-index: var(--mxc-menu-z, 10000);
+  min-width: 11rem;
+  padding: 0.25rem;
+  border: 1px solid var(--mxc-border);
+  border-radius: 0.625rem;
+  background: var(--mxc-bg);
+  color: var(--mxc-fg);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.35);
+  font-size: 0.8125rem;
 }
 
-.mxc-menu-destructive {
+.mxc-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4375rem 0.5rem;
+  border-radius: 0.375rem;
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mxc-menu-item[data-highlighted] {
+  background: var(--mxc-hover);
+}
+
+.mxc-menu-item[data-destructive] {
   color: var(--mxc-danger);
+}
+
+.mxc-menu-item svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--mxc-muted);
+}
+
+.mxc-menu-separator {
+  height: 1px;
+  margin: 0.25rem 0;
+  background: var(--mxc-border);
 }
 
 .mxc-toggle {
@@ -372,8 +407,17 @@
   display: none;
 }
 
+/* Phone-only controls (hide the canvas without closing a single tab). */
+.mxc-phone-only {
+  display: none !important;
+}
+
 /* Phones: the canvas is a full-screen layer over the app. */
 @media (max-width: 767px) {
+  .mxc-phone-only {
+    display: inline-flex !important;
+  }
+
   .mxc-column {
     position: fixed;
     inset: 0;

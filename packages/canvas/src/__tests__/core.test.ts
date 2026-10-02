@@ -139,3 +139,90 @@ describe("controller refusals are loud", () => {
     expect(controller.getState().items).toEqual({});
   });
 });
+
+describe("review fixes (2026-10-02)", () => {
+  it("rekey gives a saved draft its durable identity in place", () => {
+    let s = run(open("draft"), open("other"));
+    s = canvasReducer(s, canvasActions.rekey(canvasItemId("doc", "draft"), "artifact:1"));
+    const pane = s.panes[s.focusedPaneId];
+    expect(pane?.itemIds).toEqual([canvasItemId("doc", "artifact:1"), canvasItemId("doc", "other")]);
+    expect(s.items[canvasItemId("doc", "draft")]).toBeUndefined();
+    // Re-opening by the durable key focuses it — no duplicate.
+    s = canvasReducer(s, open("artifact:1"));
+    expect(Object.keys(s.items)).toHaveLength(2);
+  });
+
+  it("rekey onto an identity already open keeps that tab and drops the draft", () => {
+    let s = run(open("draft"), open("artifact:1"));
+    s = canvasReducer(s, canvasActions.rekey(canvasItemId("doc", "draft"), "artifact:1"));
+    expect(Object.keys(s.items)).toEqual([canvasItemId("doc", "artifact:1")]);
+  });
+
+  it("dropping a tab back onto its own pane does not reorder it", () => {
+    const s0 = run(open("a"), open("b"), canvasActions.activate(canvasItemId("doc", "a")));
+    const s = canvasReducer(s0, canvasActions.moveItem(canvasItemId("doc", "b"), s0.focusedPaneId));
+    expect(s.panes[s.focusedPaneId]?.itemIds).toEqual(s0.panes[s0.focusedPaneId]?.itemIds);
+  });
+
+  it("a restored snapshot never starts full screen, renormalizes sizes, and keeps seq ahead of its ids", () => {
+    const s0 = run(open("a"), open("b", { target: "split-right" }), canvasActions.setFullscreen(true));
+    if (s0.layout.type !== "split") throw new Error("expected split");
+    const corrupt = { ...s0, seq: 0, layout: { ...s0.layout, sizes: [3, 1] } };
+    const restored = sanitizeCanvasSnapshot(JSON.parse(JSON.stringify(corrupt)));
+    if (!restored || restored.layout.type !== "split") throw new Error("expected split");
+    expect(restored.isFullscreen).toBe(false);
+    expect(restored.layout.sizes.reduce((a, b) => a + b, 0)).toBeCloseTo(1);
+    const next = canvasReducer(restored, open("c", { target: "split-down" }));
+    expect(new Set(listPaneIds(next.layout)).size).toBe(3);
+  });
+
+  it("autosave is not starved by host dispatches that do not touch the canvas", async () => {
+    jest.useFakeTimers();
+    try {
+      const saves: CanvasState[] = [];
+      let canvasState = createInitialCanvasState();
+      let other = 0;
+      const listeners = new Set<() => void>();
+      const host = {
+        getState: () => canvasState,
+        dispatch: (a: Parameters<typeof canvasReducer>[1]) => {
+          canvasState = canvasReducer(canvasState, a);
+          listeners.forEach((l) => l());
+        },
+        subscribe: (l: () => void) => {
+          listeners.add(l);
+          return () => listeners.delete(l);
+        },
+      };
+      const controller = createCanvasController({
+        store: host,
+        persistence: { load: () => null, save: (s) => void saves.push(s) },
+        saveDelayMs: 250,
+      });
+      controller.start();
+      await Promise.resolve();
+      await Promise.resolve();
+      controller.open({ kind: "doc", key: "a", data: null });
+      // An unrelated slice dispatching every 100ms (streaming) must not keep pushing the save back.
+      for (let i = 0; i < 10; i++) {
+        other += 1;
+        listeners.forEach((l) => l());
+        jest.advanceTimersByTime(100);
+      }
+      expect(other).toBe(10);
+      expect(saves.length).toBeGreaterThan(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("a controller reports whether a column is on screen", () => {
+    const controller = createCanvasController({ store: createCanvasStore() });
+    expect(controller.isPresented()).toBe(false);
+    const off = controller.registerPresentation();
+    expect(controller.isPresented()).toBe(true);
+    off();
+    off();
+    expect(controller.isPresented()).toBe(false);
+  });
+});
