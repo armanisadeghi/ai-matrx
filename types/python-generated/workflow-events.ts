@@ -382,7 +382,7 @@ export interface NodeStreamEvent {
   node_id: string | null;
   dispatch_id?: string;
   item_index?: number;
-  kind: "chunk" | "reasoning" | "phase" | "tool" | "warning" | "record_update" | "resource_changed" | "render_block";
+  kind: "chunk" | "reasoning" | "phase" | "tool" | "warning" | "record_update" | "resource_changed" | "render_block" | "media";
   delta: string;
   stream_seq: number;
   ts: string;
