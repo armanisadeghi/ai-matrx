@@ -1,18 +1,18 @@
 /**
  * features/page-extraction/api/stream.ts
  *
- * NDJSON SSE client for `POST /page-extraction/runs/stream`. Mirrors the
- * shape of `features/rag/api/ingest.ts` so the wire-format adapter logic
- * stays consistent across streaming endpoints.
+ * NDJSON client for `POST /page-extraction/runs/stream`, over the one server
+ * stream door (`postNdjson`). An HTTP failure before the stream opens arrives
+ * as a `stream.error` event carrying the server's own sentence.
  */
 
-import { buildHeaders, postJson, resolveBaseUrl } from "@/lib/python-client";
+import { postJson, postNdjson } from "@/lib/python-client";
 import { coerceToRowList } from "@/features/page-extraction/utils/columns";
 import type {
   ExtractionStreamEvent,
   RunExtractionRequest,
 } from "@/features/page-extraction/types";
-import { streamErrorText } from "@ai-matrx/agents/matrx";
+import { getUserMessage, streamErrorText } from "@ai-matrx/agents/matrx";
 
 const RUN_STREAM_PATH = "/page-extraction/runs/stream";
 
@@ -30,44 +30,16 @@ export async function* runExtractionStream(
   body: RunExtractionRequest,
   opts: { signal?: AbortSignal } = {},
 ): AsyncGenerator<ExtractionStreamEvent, void, void> {
-  const { headers } = await buildHeaders({ signal: opts.signal }, true);
-  const response = await fetch(`${resolveBaseUrl()}${RUN_STREAM_PATH}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-    signal: opts.signal,
-  });
-  if (!response.ok || !response.body) {
-    yield {
-      event: "stream.error",
-      data: { message: `HTTP ${response.status}` },
-    };
-    return;
-  }
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-  let buffer = "";
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += value;
-      let nl = buffer.indexOf("\n");
-      while (nl !== -1) {
-        const line = buffer.slice(0, nl).trim();
-        buffer = buffer.slice(nl + 1);
-        if (line.length > 0) {
-          const translated = parseLine(line);
-          if (translated) yield translated;
-        }
-        nl = buffer.indexOf("\n");
-      }
-    }
-    if (buffer.trim().length > 0) {
-      const translated = parseLine(buffer);
+    for await (const envelope of postNdjson(RUN_STREAM_PATH, body, {
+      signal: opts.signal,
+    })) {
+      const translated = translateEnvelope(envelope);
       if (translated) yield translated;
     }
-  } finally {
-    reader.releaseLock();
+  } catch (error) {
+    if (opts.signal?.aborted) return;
+    yield { event: "stream.error", data: { message: getUserMessage(error) } };
   }
 }
 
@@ -102,16 +74,10 @@ export async function cancelRun(runId: string): Promise<void> {
 //
 // The hook + UI think in discriminated namespaced events.
 // ---------------------------------------------------------------------------
-function parseLine(line: string): ExtractionStreamEvent | null {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(line);
-  } catch {
-    return null;
-  }
-  if (!raw || typeof raw !== "object") return null;
-  const env = raw as { event?: string; data?: unknown };
-
+function translateEnvelope(env: {
+  event: string;
+  data?: unknown;
+}): ExtractionStreamEvent | null {
   if (env.event === "error") {
     const d = (env.data ?? {}) as { message?: string; error_type?: string };
     return {

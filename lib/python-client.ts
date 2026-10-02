@@ -54,11 +54,8 @@ import {
   relationPathFromUrl,
 } from "@/lib/diagnostics/capturePythonClientError";
 import { captureStreamEvent } from "@/lib/diagnostics/captureStreamError";
-import {
-  expandCompactEvent,
-  isCompactEvent,
-  type TypedStreamEvent,
-} from "@ai-matrx/agents/generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
+import { parseMatrxNdjsonResponse } from "@ai-matrx/agents/matrx";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ---------------------------------------------------------------------------
@@ -743,12 +740,12 @@ export async function* postNdjson<B = unknown>(
     "postNdjson",
     "POST",
   );
-  let stream: NonNullable<Response["body"]>;
+  let response: Response;
   let requestId: string | undefined;
   try {
     const built = await buildHeaders(opts, true);
     requestId = built.requestId;
-    const response = await fetch(url, {
+    response = await fetch(url, {
       method: "POST",
       headers: built.headers,
       body: JSON.stringify(body),
@@ -756,57 +753,22 @@ export async function* postNdjson<B = unknown>(
     });
     if (!response.ok || !response.body) throw await parseHttpError(response);
     requestId = response.headers.get("x-request-id") ?? requestId;
-    stream = response.body;
   } catch (err) {
     failClient(err, "POST", path, url, requestId);
   }
-  const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
-  let buffer = "";
+  // THE shared NDJSON parser (`@ai-matrx/agents/matrx`): compact lines are
+  // expanded, torn lines skipped, a body that breaks mid-run is a classified
+  // `StreamTransportError`, and an abort ends the iteration quietly.
+  const parsed = parseMatrxNdjsonResponse(response, opts.signal);
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += value;
-      let nl = buffer.indexOf("\n");
-      while (nl !== -1) {
-        const line = buffer.slice(0, nl).trim();
-        buffer = buffer.slice(nl + 1);
-        if (line.length > 0) {
-          const evt = parseNdjsonLine(line);
-          if (evt) {
-            captureStreamEvent(evt, { requestId });
-            yield evt;
-          }
-        }
-        nl = buffer.indexOf("\n");
-      }
-    }
-    const tail = buffer.trim();
-    if (tail.length > 0) {
-      const evt = parseNdjsonLine(tail);
-      if (evt) {
-        captureStreamEvent(evt, { requestId });
-        yield evt;
-      }
+    for await (const envelope of parsed.events) {
+      const evt = envelope as TypedStreamEvent;
+      captureStreamEvent(evt, { requestId });
+      yield evt;
     }
   } catch (err) {
     failClient(err, "POST", path, url, requestId);
-  } finally {
-    reader.releaseLock();
   }
-}
-
-function parseNdjsonLine(line: string): TypedStreamEvent | null {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(line);
-  } catch {
-    return null; // torn or non-JSON line — skip, never crash the stream
-  }
-  if (!raw || typeof raw !== "object") return null;
-  if (isCompactEvent(raw)) return expandCompactEvent(raw);
-  if (!("event" in raw)) return null;
-  return raw as TypedStreamEvent;
 }
 
 /** PATCH JSON. */

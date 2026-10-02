@@ -8,7 +8,7 @@
  * Consumed by the multi-tab Knowledge search experience in
  * `features/rag/components/search/`.
  */
-import { buildHeaders, getJson, postJson, resolveBaseUrl } from "@/lib/python-client";
+import { getJson, postJson, postNdjson } from "@/lib/python-client";
 import { adminDoorOpen, adminDoorPath } from "@/lib/api/adminDoor";
 import { apiPost } from "@/lib/api/typed-client";
 import type { components } from "@ai-matrx/agents/generated/api-types";
@@ -149,49 +149,15 @@ export async function* ragDiagnoseStream(
   body: DiagnoseRequest,
   opts: { signal?: AbortSignal } = {},
 ): AsyncGenerator<DiagnoseEvent, void, void> {
-  const url = `${resolveBaseUrl()}${adminDoorPath("/rag/search-lab/diagnose/stream")}`;
-  const { headers } = await buildHeaders({ signal: opts.signal }, true);
-  const res = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-    signal: opts.signal,
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Diagnose stream failed: ${res.status} ${text}`);
-  }
-  if (!res.body) throw new Error("No response body");
-
-  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-  let buf = "";
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += value;
-      let nl = buf.indexOf("\n");
-      while (nl >= 0) {
-        const raw = buf.slice(0, nl).trim();
-        buf = buf.slice(nl + 1);
-        nl = buf.indexOf("\n");
-        if (!raw) continue;
-        try {
-          const env = JSON.parse(raw) as {
-            event?: string;
-            data?: { kind?: string } & Record<string, unknown>;
-          };
-          const payload = env.data;
-          if (payload && typeof payload === "object" && "kind" in payload) {
-            yield payload as DiagnoseEvent;
-          }
-        } catch {
-          // ignore non-JSON lines (heartbeats etc.)
-        }
-      }
+  for await (const envelope of postNdjson(
+    adminDoorPath("/rag/search-lab/diagnose/stream"),
+    body,
+    { signal: opts.signal },
+  )) {
+    const payload = envelope.data as unknown;
+    if (payload && typeof payload === "object" && "kind" in payload) {
+      yield payload as DiagnoseEvent;
     }
-  } finally {
-    reader.releaseLock();
   }
 }
 

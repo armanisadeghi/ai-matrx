@@ -18,11 +18,8 @@
  * This module flattens that into a typed stream the UI can render.
  */
 
-import {
-  buildHeaders,
-  getJson,
-  resolveBaseUrl,
-} from "@/lib/python-client";
+import { getJson, postNdjson } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 
 export type StageName = "extract" | "clean" | "chunk" | "embed" | "run_all";
 
@@ -123,58 +120,25 @@ export async function* runStageStream(
   opts: { signal?: AbortSignal } = {},
 ): AsyncGenerator<StageStreamEvent, void, void> {
   const path = stage === "run_all" ? `run-all` : stage; // extract | clean | chunk | embed
-  const url = `${resolveBaseUrl()}/rag/library/${encodeURIComponent(processedDocumentId)}/${path}`;
-
-  const { headers } = await buildHeaders({ signal: opts.signal }, true);
-  const response = await fetch(url, {
-    method: "POST",
-    headers,
-    signal: opts.signal,
-  });
-  if (!response.ok || !response.body) {
-    yield {
-      event: "stage.error",
-      data: { message: `HTTP ${response.status}` },
-    };
-    return;
-  }
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-  let buffer = "";
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += value;
-      let nl = buffer.indexOf("\n");
-      while (nl !== -1) {
-        const line = buffer.slice(0, nl).trim();
-        buffer = buffer.slice(nl + 1);
-        if (line.length > 0) {
-          const ev = parseLine(line);
-          if (ev) yield ev;
-        }
-        nl = buffer.indexOf("\n");
-      }
-    }
-    if (buffer.trim().length > 0) {
-      const ev = parseLine(buffer);
+    for await (const envelope of postNdjson(
+      `/rag/library/${encodeURIComponent(processedDocumentId)}/${path}`,
+      undefined,
+      { signal: opts.signal },
+    )) {
+      const ev = parseEnvelope(envelope);
       if (ev) yield ev;
     }
-  } finally {
-    reader.releaseLock();
+  } catch (error) {
+    if (opts.signal?.aborted) return;
+    yield { event: "stage.error", data: { message: getUserMessage(error) } };
   }
 }
 
-function parseLine(line: string): StageStreamEvent | null {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(line);
-  } catch {
-    return null;
-  }
-  if (!raw || typeof raw !== "object") return null;
-
-  const env = raw as { event?: string; data?: Record<string, unknown> };
+function parseEnvelope(env: {
+  event: string;
+  data?: unknown;
+}): StageStreamEvent | null {
   const evName = typeof env.event === "string" ? env.event : "";
   const data = (env.data ?? {}) as Record<string, unknown>;
 

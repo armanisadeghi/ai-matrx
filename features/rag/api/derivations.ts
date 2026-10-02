@@ -23,12 +23,8 @@
  * event so the runner never paints a cancelled op red.
  */
 
-import {
-  buildHeaders,
-  getJson,
-  postJson,
-  resolveBaseUrl,
-} from "@/lib/python-client";
+import { getJson, postJson, postNdjson } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 
 // ---------------------------------------------------------------------------
 // Kinds
@@ -350,52 +346,23 @@ export async function* runDeriveStream(
   // reset=true forces a clean rebuild (clears the set, then rebuilds). Omitted
   // (the default) RESUMES — already-done sections are skipped server-side, so a
   // re-run after an interruption never re-pays for completed work.
-  const url =
-    `${resolveBaseUrl()}/rag/library/${encodeURIComponent(
+  const path =
+    `/rag/library/${encodeURIComponent(
       processedDocumentId,
     )}/derive/${encodeURIComponent(kind)}` + (opts.reset ? "?reset=true" : "");
 
-  const { headers } = await buildHeaders({ signal: opts.signal }, true);
-  const response = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      rebuild_confirmation_token: opts.rebuildConfirmationToken ?? null,
-    }),
-    signal: opts.signal,
-  });
-  if (!response.ok || !response.body) {
-    yield {
-      event: "derive.error",
-      data: { kind, message: `HTTP ${response.status}` },
-    };
-    return;
-  }
-
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-  let buffer = "";
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += value;
-      let nl = buffer.indexOf("\n");
-      while (nl !== -1) {
-        const line = buffer.slice(0, nl).trim();
-        buffer = buffer.slice(nl + 1);
-        if (line.length > 0) {
-          const ev = parseLine(line, kind);
-          if (ev) yield ev;
-        }
-        nl = buffer.indexOf("\n");
-      }
-    }
-    if (buffer.trim().length > 0) {
-      const ev = parseLine(buffer, kind);
+    for await (const envelope of postNdjson(
+      path,
+      { rebuild_confirmation_token: opts.rebuildConfirmationToken ?? null },
+      { signal: opts.signal },
+    )) {
+      const ev = parseEnvelope(envelope, kind);
       if (ev) yield ev;
     }
-  } finally {
-    reader.releaseLock();
+  } catch (error) {
+    if (opts.signal?.aborted) return;
+    yield { event: "derive.error", data: { kind, message: getUserMessage(error) } };
   }
 }
 
@@ -406,16 +373,10 @@ function asNumber(v: unknown, fallback = 0): number {
   return typeof v === "number" && Number.isFinite(v) ? v : fallback;
 }
 
-function parseLine(line: string, kind: DeriveKind): DeriveStreamEvent | null {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(line);
-  } catch {
-    return null;
-  }
-  if (!raw || typeof raw !== "object") return null;
-
-  const env = raw as { event?: string; data?: Record<string, unknown> };
+function parseEnvelope(
+  env: { event: string; data?: unknown },
+  kind: DeriveKind,
+): DeriveStreamEvent | null {
   const evName = asString(env.event);
   const data = (env.data ?? {}) as Record<string, unknown>;
 

@@ -16,7 +16,8 @@
  * UI renders as a per-stage progress bar (fetch → extract → cleanup →
  * chunk → embed → upsert → complete). Cancelable via AbortController.
  */
-import { buildHeaders, postJson, resolveBaseUrl } from "@/lib/python-client";
+import { postJson, postNdjson } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 
 export interface IngestResponse {
   source_kind: string;
@@ -131,48 +132,18 @@ export async function* ingestFileStream(
     source_id: fileId,
     force: opts.force ?? false,
   };
-  // Reuse the same auth/CSRF/baseUrl plumbing as the JSON helpers.
-  // The JSON helpers throw on non-OK; we want the stream to emit a
-  // structured error event before terminating, so we open the fetch
-  // ourselves but pull the headers from the same factory.
-  const { headers } = await buildHeaders({ signal: opts.signal }, true);
-  const response = await fetch(`${resolveBaseUrl()}/rag/ingest/stream`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-    signal: opts.signal,
-  });
-  if (!response.ok || !response.body) {
-    yield {
-      event: "rag.ingest.error",
-      data: { message: `HTTP ${response.status}` },
-    };
-    return;
-  }
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-  let buffer = "";
+  // The one server stream door: an HTTP failure before the stream opens is
+  // reported as a `rag.ingest.error` event carrying the server's sentence.
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += value;
-      let nl = buffer.indexOf("\n");
-      while (nl !== -1) {
-        const line = buffer.slice(0, nl).trim();
-        buffer = buffer.slice(nl + 1);
-        if (line.length > 0) {
-          const translated = parseLine(line);
-          if (translated) yield translated;
-        }
-        nl = buffer.indexOf("\n");
-      }
-    }
-    if (buffer.trim().length > 0) {
-      const translated = parseLine(buffer);
+    for await (const envelope of postNdjson("/rag/ingest/stream", body, {
+      signal: opts.signal,
+    })) {
+      const translated = parseEnvelope(envelope);
       if (translated) yield translated;
     }
-  } finally {
-    reader.releaseLock();
+  } catch (error) {
+    if (opts.signal?.aborted) return;
+    yield { event: "rag.ingest.error", data: { message: getUserMessage(error) } };
   }
 }
 
@@ -191,15 +162,10 @@ export async function* ingestFileStream(
 // hook consumes. Returns null for envelopes we don't care about (phase
 // markers, etc.) — the loop just skips those.
 // ---------------------------------------------------------------------------
-function parseLine(line: string): IngestStreamEvent | null {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(line);
-  } catch {
-    return null;
-  }
-  if (!raw || typeof raw !== "object") return null;
-  const env = raw as { event?: string; data?: unknown };
+function parseEnvelope(env: {
+  event: string;
+  data?: unknown;
+}): IngestStreamEvent | null {
 
   // Stream-level error (matrx-connect ERROR event) — maps directly.
   if (env.event === "error") {

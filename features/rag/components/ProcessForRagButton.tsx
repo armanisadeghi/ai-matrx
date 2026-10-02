@@ -24,7 +24,7 @@ import type {
   IngestProgress,
   IngestRequestBody,
 } from "@/features/rag/api/ingest";
-import { parseNdjsonStream } from "@/lib/api/stream-parser";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 import { cn } from "@/lib/utils";
 
@@ -96,38 +96,25 @@ function useSourceIngest({
       try {
         // The streaming helper in `rag-ingest.ts` is hard-coded to
         // `cld_file`. Notes / code use the same `/knowledge/ingest/stream`
-        // endpoint with a different `source_kind`. We POST directly and
-        // route the response through `parseNdjsonStream` — the same
-        // platform primitive every other NDJSON consumer uses — instead
-        // of hand-rolling another buffer-and-split loop.
-        const { buildHeaders, resolveBaseUrl } =
-          await import("@/lib/python-client");
-        const { headers } = await buildHeaders({ signal: ac.signal }, true);
+        // endpoint with a different `source_kind`, through the one server
+        // stream door (`postNdjson`) — an HTTP failure throws the server's
+        // classified error, caught below.
+        const { postNdjson } = await import("@/lib/python-client");
         const body: IngestRequestBody = {
           source_kind: sourceKind,
           source_id: sourceId,
           field_id: fieldId ?? null,
           force: opts.force ?? false,
         };
-        const response = await fetch(`${resolveBaseUrl()}/knowledge/ingest/stream`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(body),
-          signal: ac.signal,
-        });
-        if (!response.ok || !response.body) {
-          setStatus("error");
-          setError(`HTTP ${response.status}`);
-          return;
-        }
 
         // The Knowledge ingest endpoint emits custom event names
         // (`rag.ingest.progress` / `.complete` / `.error`) — not the
-        // standard Matrx envelope set — so we walk the raw generator and
-        // narrow the event names by hand. `TypedStreamEvent` only covers
-        // the standard envelopes, hence the cast to the wire shape.
-        const { events } = parseNdjsonStream(response, ac.signal);
-        for await (const typedEvt of events) {
+        // standard Matrx envelope set — so we narrow the event names by
+        // hand. `TypedStreamEvent` only covers the standard envelopes,
+        // hence the cast to the wire shape.
+        for await (const typedEvt of postNdjson("/knowledge/ingest/stream", body, {
+          signal: ac.signal,
+        })) {
           const evt = typedEvt as unknown as {
             event: string;
             data: unknown;
@@ -156,7 +143,7 @@ function useSourceIngest({
       } catch (err) {
         if (ac.signal.aborted) return;
         setStatus("error");
-        setError(err instanceof Error ? err.message : "Ingest failed");
+        setError(getUserMessage(err));
       }
     },
     [sourceKind, sourceId, fieldId],

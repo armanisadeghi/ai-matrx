@@ -8,9 +8,7 @@
  */
 
 import { ENDPOINTS } from "@/lib/api/endpoints";
-import { parseHttpError } from "@/lib/api/errors";
-import { parseNdjsonStream } from "@/lib/api/stream-parser";
-import { buildHeaders, postNdjson, resolveBaseUrl } from "@/lib/python-client";
+import { postNdjson } from "@/lib/python-client";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { ImageDocumentDetectedData } from "@ai-matrx/agents/generated/stream-events";
 
@@ -205,24 +203,10 @@ export async function createScanPdf(
     signal,
   }: CreateScanPdfCallbacks = {},
 ): Promise<ScanPdfResult> {
-  const { headers } = await buildHeaders({}, true);
-  const response = await fetch(
-    `${resolveBaseUrl()}${ENDPOINTS.pdf.fromImages}`,
-    {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-      signal,
-    },
-  );
-  if (!response.ok) {
-    const apiError = await parseHttpError(response);
-    throw new Error(apiError.userMessage);
-  }
-
   let result: ScanPdfResult | null = null;
-  const { events } = parseNdjsonStream(response, signal);
-  for await (const event of events) {
+  for await (const event of postNdjson(ENDPOINTS.pdf.fromImages, payload, {
+    signal,
+  })) {
     if (event.event === "info") {
       const msg = event.data.user_message ?? event.data.system_message;
       if (msg) onProgress?.(msg);
