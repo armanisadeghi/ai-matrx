@@ -51,6 +51,7 @@ import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDi
 import {
   DirectiveRecordLink,
   appliedRecords,
+  useDirectiveRecordName,
   directiveConsequenceDialog,
 } from "@/features/matrx-envelope/components/DirectiveConsequence";
 
@@ -424,7 +425,21 @@ export function closeDirectiveItemWindow(instanceId: string): void {
   );
 }
 
-function renderCopy({ label, value, kind, size }: DirectiveCopyProps) {
+/**
+ * A record row's copy control, labelled by the record's live name — the same
+ * one the row shows — and "this task" (the package's type-generic label) while
+ * it loads, never an id (G9).
+ */
+function RecordCopy({ props }: { props: DirectiveCopyProps & { record: NonNullable<DirectiveCopyProps["record"]> } }) {
+  const { name } = useDirectiveRecordName(props.record.noun, props.record.id, props.label);
+  return <ItemCopy {...props} label={name ?? props.label} />;
+}
+
+function renderCopy(props: DirectiveCopyProps) {
+  return props.record ? <RecordCopy props={{ ...props, record: props.record }} /> : <ItemCopy {...props} />;
+}
+
+function ItemCopy({ label, value, kind, size }: DirectiveCopyProps) {
   return (
     <CopyButtons
       label={label}
