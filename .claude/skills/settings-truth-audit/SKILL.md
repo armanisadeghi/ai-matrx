@@ -19,7 +19,7 @@ Arman, 2026-09-25, after two wrong answers about voice: *"The core problem is no
 fucks to go get the facts."* The voice area had five pickers in four stores; three of them were
 read by nothing, one claimed to apply "everywhere", none played a sample, and the Chrome extension
 used a hardcoded voice. Worked example — read it once:
-`common-docs/operations/for-arman/2026-09-25/voice-census.md`.
+for-Arman hand-over 2026-09-25 · voice-census.md (deleted in d0e885c98).
 
 Every step ends on a check. The report is the census table plus the fixes, never prose.
 

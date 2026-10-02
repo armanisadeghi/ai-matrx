@@ -2,7 +2,7 @@
 
 The brand's tree of subjects, and the plan for getting its website there. Product truth,
 rulings and build units live in `common-docs` (`inbox/topical-map-app-requirements.md`,
-`operations/for-arman/2026-09-16/topical-map-placement.md`); this file is only what an agent
+for-Arman hand-over 2026-09-16 · topical-map-placement.md (deleted in d0e885c98)); this file is only what an agent
 touching THIS code must not get wrong.
 
 ## Where it lives

@@ -3,7 +3,7 @@
 > 🚨 **REDIRECTED 2026-09-17 — `CFL-059`. Do not build the remaining steps of this proposal.**
 > **This document says:** `web.brand_offering` is the ONLY company-offering identity, and the way
 > to fix `seo.topic` is to move company offerings into it.
-> **[The topic-tree census](/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-17/topic-tree-census-and-collapse.md) and Arman's 2026-09-17 ruling say:** the SEO topical map
+> **The topic-tree census (for-Arman hand-over 2026-09-17 · topic-tree-census-and-collapse.md (deleted in d0e885c98)) and Arman's 2026-09-17 ruling say:** the SEO topical map
 > (`seo.map_topic`) is the platform's ONE topic primitive, and `web.brand_offering` is itself one
 > of the duplicate trees that collapses into it — all 161 of its rows have an exact name twin in
 > `seo.topic`, and one scheduled run writes both tables every morning 0.4 s apart.

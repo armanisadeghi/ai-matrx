@@ -1,7 +1,7 @@
 # FEATURE.md — rich-document annotation sidecar
 
 **Status:** `active` (passage writes gated) · **Tier:** `1` · **Last updated:** `2026-09-27`
-**Register:** common-docs `projects/rich-content-unification/REGISTER.md` row RC-B11 · **Contract:** common-docs `operations/for-arman/2026-09-23/content-annotations-storage-brief.md` + STORE-DESIGN §3.19
+**Register:** common-docs `projects/rich-content-unification/REGISTER.md` row RC-B11 · **Contract:** common-docs for-Arman hand-over 2026-09-23 · content-annotations-storage-brief.md (deleted in d0e885c98) + STORE-DESIGN §3.19
 
 ## Purpose
 

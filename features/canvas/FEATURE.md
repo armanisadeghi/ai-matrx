@@ -430,7 +430,7 @@ path updates the node's `STATE.md` in the same session.
   slice is deliberately not persisted while the reveal memory is, so "already
   revealed → nothing to do" stranded the record. `canvasHoldsOtherContent` and
   `alreadyAutoOpened → "offer"` are those two fixes, each with its own guard.
-  Evidence: `common-docs/operations/for-arman/2026-09-15/document-canvas-door/`.
+  Evidence: for-Arman hand-over 2026-09-15 · document-canvas-door/ (deleted in d0e885c98).
 
 - `2026-09-14` — **the docked canvas' own chrome can never scroll off the top,
   and `Source` shows the item's real source.** The pane header and the
