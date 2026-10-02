@@ -80,6 +80,10 @@ import {
 import { isOwnEcho, ledgerSize } from "./request-ledger";
 import { loadUserFileTree, reconcileTree } from "./thunks";
 import {
+  isDocumentHidden,
+  onceDocumentVisible,
+} from "@/lib/dom/document-visibility";
+import {
   isUserVisibleFileRow,
   isUserVisibleFolderPath,
 } from "@/features/files/utils/user-visible";
@@ -219,6 +223,7 @@ const cloudFilesChannel = defineChannelNamespace({
 export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
   let stopChannel: (() => void) | null = null;
   let subscribedUserId: string | null = null;
+  let cancelDeferredBackfill: (() => void) | null = null;
 
   // Local typed dispatcher — `store.dispatch` comes in through the plain
   // `Middleware` API type, which doesn't know about thunk middleware; this
@@ -227,6 +232,8 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
   const dispatch = store.dispatch as AppDispatch;
 
   function teardown(): void {
+    cancelDeferredBackfill?.();
+    cancelDeferredBackfill = null;
     if (stopChannel) {
       stopChannel();
       stopChannel = null;
@@ -301,7 +308,9 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
           rowId,
           onChange: ({ payload }) =>
             handlePermissionPayload(
-              payload as unknown as RealtimePostgresChangesPayload<Record<string, unknown>>,
+              payload as unknown as RealtimePostgresChangesPayload<
+                Record<string, unknown>
+              >,
             ),
         },
         // Share links — canonical platform.share_links. RLS (owner-only
@@ -314,14 +323,21 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
           rowId,
           onChange: ({ payload }) =>
             handleShareLinkPayload(
-              payload as unknown as RealtimePostgresChangesPayload<Record<string, unknown>>,
+              payload as unknown as RealtimePostgresChangesPayload<
+                Record<string, unknown>
+              >,
             ),
         },
       ],
       onStatusChange: (status) => {
         dispatch(
           setRealtimeStatus({
-            status: status === "connected" ? "subscribed" : status === "connecting" ? "connecting" : "errored",
+            status:
+              status === "connected"
+                ? "subscribed"
+                : status === "connecting"
+                  ? "connecting"
+                  : "errored",
             userId: subscribedUserId,
           }),
         );
@@ -338,17 +354,33 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
       // still in flight reads post-subscribe state, so firing here would only
       // duplicate the RPC it is racing.
       onBackfill: () => {
-        const now = Date.now();
-        if (
-          initialSnapshotDoneAt !== null &&
-          now - lastReconcileAt >= RECONCILE_COOLDOWN_MS &&
-          ledgerSize() === 0
-        ) {
-          lastReconcileAt = now;
-          void dispatch(reconcileTree({ userId }));
+        // A hidden tab (asleep, network frozen) must not start a whole-tree
+        // reload nobody is watching — it stalls and times out unfelt (class
+        // sec_d904494698f4). One deferred backfill runs when the tab returns.
+        if (isDocumentHidden()) {
+          if (!cancelDeferredBackfill) {
+            cancelDeferredBackfill = onceDocumentVisible(() => {
+              cancelDeferredBackfill = null;
+              backfill();
+            });
+          }
+          return;
         }
+        backfill();
       },
     }));
+
+    function backfill(): void {
+      const now = Date.now();
+      if (
+        initialSnapshotDoneAt !== null &&
+        now - lastReconcileAt >= RECONCILE_COOLDOWN_MS &&
+        ledgerSize() === 0
+      ) {
+        lastReconcileAt = now;
+        void dispatch(reconcileTree({ userId }));
+      }
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -407,9 +439,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // user owns it, or it's already in the store (it arrived through the
     // listing-gated tree RPC — i.e. an explicit grant).
     const alreadyInStore = Boolean(
-      (store.getState() as StateWithCloudFiles).cloudFiles.filesById[
-        newRow.id
-      ],
+      (store.getState() as StateWithCloudFiles).cloudFiles.filesById[newRow.id],
     );
     // component-created-by-ok: files.files / files.folders are entities — created_by is the file's or folder's owner (the listing gate)
     if (newRow.created_by !== subscribedUserId && !alreadyInStore) return;
@@ -418,9 +448,8 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // the PK on UPDATE/DELETE, so the previous parent must come from OUR
     // store, never from diffing old-vs-new payload rows.
     const oldParent =
-      (
-        store.getState() as StateWithCloudFiles
-      ).cloudFiles.filesById[file.id]?.parentFolderId ?? null;
+      (store.getState() as StateWithCloudFiles).cloudFiles.filesById[file.id]
+        ?.parentFolderId ?? null;
 
     dispatch(upsertFile(file));
 
@@ -494,9 +523,9 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // REPLICA IDENTITY DEFAULT: `payload.old` is PK-only — read the previous
     // parent from our store (see the file handler above).
     const oldParent =
-      (
-        store.getState() as StateWithCloudFiles
-      ).cloudFiles.foldersById[folder.id]?.parentId ?? null;
+      (store.getState() as StateWithCloudFiles).cloudFiles.foldersById[
+        folder.id
+      ]?.parentId ?? null;
 
     dispatch(upsertFolder(folder));
 

@@ -57,6 +57,14 @@ it("closes the first identity before a same-turn replacement", async () => {
   expect(stopB).toHaveBeenCalledTimes(1);
 });
 
+type SpecFactory = Parameters<typeof subscribeToRealtimeManager>[0];
+/** The channel spec the middleware registered; onBackfill fired as a reconnect. */
+function specOf(factory: SpecFactory) {
+  const spec = factory({} as Parameters<SpecFactory>[0]);
+  const ctx = { reason: "reconnect", topic: "cloud:x", gapMs: null } as const;
+  return { onBackfill: () => void spec.onBackfill?.(ctx) };
+}
+
 describe("background backfill while the tab is hidden", () => {
   let visibility: DocumentVisibilityState = "visible";
   beforeAll(() =>
@@ -82,7 +90,7 @@ describe("background backfill while the tab is hidden", () => {
     await Promise.resolve();
     await Promise.resolve();
     invoke({ type: "tree-loaded" }); // the initial snapshot resolved
-    const spec = subscribe.mock.calls[0][0]() as { onBackfill: () => void };
+    const spec = specOf(subscribe.mock.calls[0][0]);
 
     setVisibility("hidden");
     spec.onBackfill();
@@ -106,7 +114,7 @@ describe("background backfill while the tab is hidden", () => {
     await Promise.resolve();
     await Promise.resolve();
     invoke({ type: "tree-loaded" });
-    const spec = subscribe.mock.calls.at(-1)![0]() as { onBackfill: () => void };
+    const spec = specOf(subscribe.mock.calls.at(-1)![0]);
     setVisibility("hidden");
     spec.onBackfill();
     invoke(detachCloudFilesRealtime());

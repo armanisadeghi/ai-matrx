@@ -462,6 +462,10 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
   (`cloudFiles/loadUserFileTree`, 7h-old hidden tab) was its own 20s load
   timeout disguised as an abort — it now rejects as a named `TimeoutError`
   (`features/files/redux/file-tree-timeout.ts`) and is still captured.
+  A timeout while the tab is HIDDEN is not a failure: the load waits for the
+  tab to return and retries once (`runWithFileTreeLoadTimeout`), and the
+  realtime backfill defers its whole-tree reconcile until visible
+  (`lib/dom/document-visibility.ts`).
 - 2026-10-01 — A scheduled resume retry is not an error. `resumeInstance`
   rejects with `originalErrorName: "ResumeRetryScheduled"` when it has already
   queued its own bounded retry (stream still closing, 409 resume_conflict);

@@ -1,4 +1,7 @@
-import { isDocumentHidden, whenDocumentVisible } from "@/lib/dom/document-visibility";
+import {
+  isDocumentHidden,
+  whenDocumentVisible,
+} from "@/lib/dom/document-visibility";
 
 /**
  * A gallery may wait for a real tree read, but it must never own an endless
@@ -33,7 +36,9 @@ const HIDDEN_STALL_NAME = "FileTreeHiddenStall";
  * returns (class sec_d904494698f4: a 7h hidden tab reported as an error).
  */
 function hiddenStall(): Error {
-  const error = new Error("The file library load paused while the tab was hidden.");
+  const error = new Error(
+    "The file library load paused while the tab was hidden.",
+  );
   error.name = HIDDEN_STALL_NAME;
   return error;
 }
@@ -43,7 +48,9 @@ function hiddenStall(): Error {
  * diagnostics treat it as one. The tree goes back to idle and reloads on use.
  */
 export function fileTreeLoadDeferredError(): Error {
-  const error = new Error("The file library load was deferred while the tab was hidden.");
+  const error = new Error(
+    "The file library load was deferred while the tab was hidden.",
+  );
   error.name = "AbortError";
   return error;
 }

@@ -83,8 +83,8 @@ import {
   runFileTreeSessionOperation,
 } from "./file-tree-auth-boundary";
 import {
-  createFileTreeLoadTimeout,
-  fileTreeLoadTimeoutError,
+  isFileTreeLoadDeferred,
+  runWithFileTreeLoadTimeout,
 } from "./file-tree-timeout";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
 import { invalidateOfficeExtraction } from "@/features/files/hooks/office-extraction-cache";
@@ -286,7 +286,6 @@ export const loadUserFileTree = createAsyncThunk<
 
   const run = (async () => {
     dispatch(setTreeStatus({ status: "loading" }));
-    const { controller, dispose: disposeTimeout } = createFileTreeLoadTimeout();
 
     // RPC contract (migration 014, 2026-05-17): identity-locked to
     // `auth.uid()`, returns owner OR explicit-grant rows only (no public
@@ -300,29 +299,40 @@ export const loadUserFileTree = createAsyncThunk<
     // handles them fast and parallelism would just contend for the
     // same connection.
     try {
-      const rows: ReturnType<typeof parseCloudTreeRows> = [];
-      for (let page = 0; page < TREE_MAX_PAGES; page += 1) {
-        const { data, error } = await runFileTreeSessionOperation(() =>
-          supabase
-            .rpc("get_user_file_tree", {
-              p_user_id: userId,
-              p_limit: TREE_PAGE_SIZE,
-              p_offset: page * TREE_PAGE_SIZE,
-              p_include_folders: true,
-              p_include_deleted: false,
-            })
-            .abortSignal(controller.signal),
-        );
+      // Bounded per attempt; a timeout in a hidden tab waits for the person to
+      // return and retries instead of failing (see file-tree-timeout.ts).
+      const rows = await runWithFileTreeLoadTimeout(async (signal) => {
+        const rows: ReturnType<typeof parseCloudTreeRows> = [];
+        for (let page = 0; page < TREE_MAX_PAGES; page += 1) {
+          const { data, error } = await runFileTreeSessionOperation(() =>
+            supabase
+              .rpc("get_user_file_tree", {
+                p_user_id: userId,
+                p_limit: TREE_PAGE_SIZE,
+                p_offset: page * TREE_PAGE_SIZE,
+                p_include_folders: true,
+                p_include_deleted: false,
+              })
+              .abortSignal(signal),
+          );
 
-        if (error) {
-          dispatch(setTreeStatus({ status: "error", error: error.message }));
-          throw error;
+          if (error) {
+            // An aborted page is the timeout's call, not a server failure:
+            // the runner decides (retry on return, or TimeoutError).
+            if (!signal.aborted) {
+              dispatch(
+                setTreeStatus({ status: "error", error: error.message }),
+              );
+            }
+            throw error;
+          }
+
+          const pageRows = parseCloudTreeRows(data);
+          rows.push(...pageRows);
+          if (pageRows.length < TREE_PAGE_SIZE) break;
         }
-
-        const pageRows = parseCloudTreeRows(data);
-        rows.push(...pageRows);
-        if (pageRows.length < TREE_PAGE_SIZE) break;
-      }
+        return rows;
+      });
 
       // Every field pushed below is always set from the non-optional
       // `CloudTreeRow` columns — narrowed here so the tree-spine reconstruction
@@ -508,20 +518,18 @@ export const loadUserFileTree = createAsyncThunk<
         }),
       );
     } catch (error) {
-      // The only abort on this request is our own load timeout — reject with
-      // the named TimeoutError (not postgrest's stringified "AbortError: …"),
-      // so the capture middleware reports it as the failure it is.
-      const failure = controller.signal.aborted
-        ? fileTreeLoadTimeoutError()
-        : error;
+      // A load deferred by a hidden tab is not a failure: back to idle, and
+      // the next consumer reloads. A visible timeout arrives as TimeoutError.
+      if (isFileTreeLoadDeferred(error)) {
+        dispatch(setTreeStatus({ status: "idle" }));
+        throw error;
+      }
       const message =
-        failure instanceof Error
-          ? failure.message
+        error instanceof Error
+          ? error.message
           : "Could not load your file library.";
       dispatch(setTreeStatus({ status: "error", error: message }));
-      throw failure;
-    } finally {
-      disposeTimeout();
+      throw error;
     }
   })();
 
