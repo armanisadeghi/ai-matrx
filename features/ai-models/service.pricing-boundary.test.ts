@@ -1,8 +1,17 @@
 const mockOrder = jest.fn();
 
+// Pricing is read through ai.offering_admin_columns (admin-only column), so the
+// RPC answers with the pricing of the rows the table read returned.
+const mockRpc = async () => {
+  const last = await mockOrder.mock.results.at(-1)?.value;
+  const rows = ((last as { data?: Array<{ id: string; pricing: unknown }> } | undefined)?.data ?? []);
+  return { error: null, data: rows.map(({ id, pricing }) => ({ id, pricing })) };
+};
+
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
     schema: () => ({
+      rpc: () => mockRpc(),
       from: () => ({
         select: () => ({
           is: () => ({

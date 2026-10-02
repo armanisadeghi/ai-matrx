@@ -393,7 +393,7 @@ export default function ControlRuleRow({
               </>
             )}
 
-            {readOnlyRuleFields(editedRule).map(({ field, value }) => (
+            {readOnlyRuleFields(effectiveMerged).map(({ field, value }) => (
               <React.Fragment key={field}>
                 <span className="text-[10px] text-muted-foreground font-mono">
                   {field}
