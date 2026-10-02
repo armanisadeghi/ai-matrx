@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
+import { resolveKnobLadder } from "@/lib/scoped-config/ladder";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
@@ -122,6 +123,10 @@ export default function PersonalConfigTab() {
                   knob={knob}
                   scopeKind="user"
                   scopeId={userId}
+                  // The same ladder the universal pane hands its rows: without
+                  // it every row fell back to a raw text box (a model setting
+                  // showed a uuid, with no picker and no class choice).
+                  ladder={resolveKnobLadder(knob, "user")}
                   organizationId={organizationId ?? ""}
                   blastRadius="Applies only to you, in this organization."
                   onChanged={refresh}
