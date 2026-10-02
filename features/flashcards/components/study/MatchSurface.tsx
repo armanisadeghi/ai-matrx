@@ -8,6 +8,7 @@
 
 "use client";
 
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import {
@@ -25,7 +26,8 @@ import { cn } from "@/lib/utils";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useMatchGame } from "../../data/useMatchGame";
 import { StudyDeckHeader } from "./StudyDeckHeader";
-import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
+import CardFaceBlock from "@/components/mardown-display/blocks/flashcards/CardFaceBlock";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -47,7 +49,7 @@ export function MatchSurface({ setId }: { setId: string }) {
         />
       </PageHeader>
       <div className="h-full overflow-y-auto overscroll-contain bg-background">
-        <div className="mx-auto max-w-3xl px-2 pb-safe pt-14 sm:px-6">
+        <div className="mx-auto max-w-4xl px-2 pb-safe pt-14 sm:px-6">
           {game.loading ? (
             <div className="flex h-64 items-center justify-center">
               <MatrxMiniLoader />
@@ -77,6 +79,7 @@ export function MatchSurface({ setId }: { setId: string }) {
               elapsedMs={game.elapsedMs}
               attempts={game.attempts}
               totalCards={game.totalCards}
+              pairPicker={<PairCountPicker game={game} />}
               onPlayAgain={game.restart}
               onBackToSet={() => router.push(`${EDU_BASE}/${setId}`)}
             />
@@ -92,17 +95,23 @@ export function MatchSurface({ setId }: { setId: string }) {
 function Board({ game }: { game: ReturnType<typeof useMatchGame> }) {
   return (
     <>
-      <div className="mb-4 flex items-center justify-between text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1">
-          <Target className="h-3.5 w-3.5" />
-          {game.matchedCardIds.size}/{game.totalCards} matched
-        </span>
-        <span className="inline-flex items-center gap-1 tabular-nums">
-          <Timer className="h-3.5 w-3.5" />
-          {formatDurationMs(game.elapsedMs, { style: "clock" })}
-        </span>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-muted-foreground">
+        <PairCountPicker game={game} />
+        <div className="flex items-center gap-4">
+          <span className="inline-flex items-center gap-1">
+            <Target className="h-3.5 w-3.5" />
+            {game.matchedCardIds.size}/{game.totalCards} matched
+          </span>
+          <span className="inline-flex items-center gap-1 tabular-nums">
+            <Timer className="h-3.5 w-3.5" />
+            {formatDurationMs(game.elapsedMs, { style: "clock" })}
+          </span>
+        </div>
       </div>
 
+      {/* Every tile is the same fixed size at every width: the grid columns
+          share the width equally and each tile has one fixed height. A long
+          face scrolls inside its tile instead of stretching the row. */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
         {game.tiles.map((tile) => {
           const matched = game.matchedCardIds.has(tile.cardId);
@@ -115,7 +124,7 @@ function Board({ game }: { game: ReturnType<typeof useMatchGame> }) {
               disabled={matched}
               onClick={() => game.selectTile(tile.id)}
               className={cn(
-                "flex min-h-[84px] items-center justify-center rounded-lg border p-2.5 text-center text-xs font-medium leading-snug transition-all",
+                "flex h-32 min-w-0 flex-col overflow-hidden rounded-lg border text-center text-xs font-medium leading-snug transition-all sm:h-36",
                 matched &&
                   "border-green-500/40 bg-green-50/60 text-green-700/60 opacity-0 dark:bg-green-950/20 dark:text-green-400/50",
                 !matched &&
@@ -129,7 +138,12 @@ function Board({ game }: { game: ReturnType<typeof useMatchGame> }) {
                   "border-red-500/60 bg-red-50 text-red-900 dark:bg-red-950/30 dark:text-red-200",
               )}
             >
-              <CardFaceContent content={tile.text} variant="inline" />
+              {/* The face renders through the flip card's own renderer. */}
+              <span className="block h-full w-full overflow-y-auto overscroll-contain p-2.5 scrollbar-thin">
+                <span className="flex min-h-full w-full flex-col justify-center">
+                  <CardFaceBlock content={tile.text} />
+                </span>
+              </span>
             </button>
           );
         })}
@@ -138,16 +152,50 @@ function Board({ game }: { game: ReturnType<typeof useMatchGame> }) {
   );
 }
 
+/** Pairs per round. Hidden when the deck offers one choice or none. */
+function PairCountPicker({ game }: { game: ReturnType<typeof useMatchGame> }) {
+  if (game.pairCountChoices.length < 2) return null;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground">Pairs</span>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        value={String(game.pairCount)}
+        onValueChange={(next) => {
+          const count = Number(next);
+          if (next && count !== game.pairCount) game.setPairCount(count);
+        }}
+        aria-label="Pairs per round"
+      >
+        {game.pairCountChoices.map((n) => (
+          <ToggleGroupItem
+            key={n}
+            value={String(n)}
+            aria-label={`${n} pairs`}
+            className="h-11 min-w-11 px-2 tabular-nums sm:h-8 sm:min-w-8"
+          >
+            {n}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </div>
+  );
+}
+
 function CompletionScreen({
   elapsedMs,
   attempts,
   totalCards,
+  pairPicker,
   onPlayAgain,
   onBackToSet,
 }: {
   elapsedMs: number;
   attempts: number;
   totalCards: number;
+  pairPicker: ReactNode;
   onPlayAgain: () => void;
   onBackToSet: () => void;
 }) {
@@ -158,13 +206,7 @@ function CompletionScreen({
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Trophy className="h-7 w-7" />
       </div>
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">Board cleared</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Matched all {totalCards} pairs in{" "}
-          {formatDurationMs(elapsedMs, { style: "clock" })}.
-        </p>
-      </div>
+      <h2 className="text-lg font-semibold text-foreground">Board cleared</h2>
       <div className="grid w-full grid-cols-3 gap-2 text-center">
         <Stat
           label="Time"
@@ -173,6 +215,7 @@ function CompletionScreen({
         <Stat label="Attempts" value={`${attempts}`} />
         <Stat label="Accuracy" value={`${accuracy}%`} />
       </div>
+      {pairPicker}
       <div className="flex w-full flex-col gap-2 sm:flex-row">
         <Button variant="outline" className="flex-1" onClick={onPlayAgain}>
           <RotateCcw className="mr-1.5 h-4 w-4" />

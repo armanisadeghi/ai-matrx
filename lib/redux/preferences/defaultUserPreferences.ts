@@ -138,6 +138,7 @@ export const defaultUserPreferences: UserPreferences = {
     targetScore: 80,
     primaryAudioVoice: "default",
     primaryTutorPersona: "default",
+    matchPairCount: 8,
   },
   tutor: {
     // Must match DEFAULT_TUTOR_SETTINGS in features/education/tutor/settings.ts.
