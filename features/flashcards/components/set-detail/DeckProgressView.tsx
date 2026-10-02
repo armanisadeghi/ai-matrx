@@ -352,7 +352,17 @@ function DeckProgressBody({
                         className="line-clamp-1"
                       />
                     </span>
-                    <MasteryTierPill mastery={m} className="shrink-0" />
+                    {/* A card just missed can still read high recall (FSRS
+                        resets on review), so a flagged card says how often
+                        it was missed instead of a "Mastered" pill that
+                        contradicts the list it sits in. */}
+                    {m.struggle_flag && (m.lapses ?? 0) > 0 ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded border border-red-300 bg-red-50 px-1.5 text-xs font-medium text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+                        Missed {m.lapses}×
+                      </span>
+                    ) : (
+                      <MasteryTierPill mastery={m} className="shrink-0" />
+                    )}
                   </button>
                 </li>
               );
@@ -378,10 +388,16 @@ function DeckProgressBody({
                 tickLine={false}
                 axisLine={false}
                 fontSize={11}
-                tickFormatter={(id: string) =>
-                  chartData.find((d) => d.id === id)?.label ?? ""
-                }
-                minTickGap={8}
+                tickFormatter={(id: string) => {
+                  // A date labels only the first session of its day, so a
+                  // busy day reads once instead of "Oct 2" five times.
+                  const i = chartData.findIndex((d) => d.id === id);
+                  if (i < 0) return "";
+                  return i > 0 && chartData[i - 1].label === chartData[i].label
+                    ? ""
+                    : chartData[i].label;
+                }}
+                interval={0}
               />
               <YAxis
                 tickLine={false}
