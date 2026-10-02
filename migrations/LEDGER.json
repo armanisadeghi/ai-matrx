@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T17:35:45.175Z",
+  "generated_at": "2026-10-02T17:48:03.706Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3127,6 +3127,12 @@
       "filename": "inspectortails_the_context_door_reads_the_triple_from_the_record_it_opened.sql",
       "checksum": "364ccadbad6213d80e0566fc33c8358c4598dc7f16437f19ec6048655a7c235f",
       "applied_at": "2026-09-25 13:51:33.271074+00"
+    },
+    "migrations/campaign/integration_w15_a_list_narrows_to_one_dimension_value.sql": {
+      "source": "matrx-frontend",
+      "filename": "integration_w15_a_list_narrows_to_one_dimension_value.sql",
+      "checksum": "c3dc68181c0c01e0eeb0a49c6e890c171ebea6fa64df9c70c766a13df6e71a58",
+      "applied_at": "2026-10-02 17:47:59.966581+00"
     },
     "migrations/campaign/invitedelivery_admission_is_the_ladder_not_the_membership_row.sql": {
       "source": "matrx-frontend",

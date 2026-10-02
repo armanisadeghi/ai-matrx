@@ -57,7 +57,7 @@ $fn$;
 comment on function platform.list_dimension_match(jsonb, text, uuid) is
   'The list shell''s Dimension filter: true when p_filters carries no __dimension, else when the row has a live association edge to one of its values (today: target_type scope). Lane 9 switches the source here, once.';
 
-revoke all on function platform.list_dimension_match(jsonb, text, uuid) from public;
+-- No REVOKE needed: the ddl_guard closes EXECUTE for anon at a function's birth.
 grant execute on function platform.list_dimension_match(jsonb, text, uuid) to authenticated, service_role;
 
 do $patch$
