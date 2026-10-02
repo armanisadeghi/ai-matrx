@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T18:39:54.497Z",
+  "generated_at": "2026-10-02T18:42:21.041Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4477,6 +4477,12 @@
       "filename": "scopesaccess_the_kernel_lists_scopes_from_the_store.sql",
       "checksum": "2b501cc3ac6b4a4b676348e023b76c3db71fac132183a1fff062b3cc39eea47d",
       "applied_at": "2026-09-30 02:57:27.30551+00"
+    },
+    "migrations/campaign/scopesd1d2_the_values_read_never_cuts_a_long_value_and_reads_only_what_holds_one.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesd1d2_the_values_read_never_cuts_a_long_value_and_reads_only_what_holds_one.sql",
+      "checksum": "2f68cfbac370105a319b7017a2191afd34e17e44b09f11033d8e096f8fddb26b",
+      "applied_at": "2026-10-02 18:42:19.327839+00"
     },
     "migrations/campaign/scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql": {
       "source": "matrx-frontend",
