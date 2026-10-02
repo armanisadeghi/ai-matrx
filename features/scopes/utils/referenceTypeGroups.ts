@@ -32,11 +32,39 @@ export const BASICS_GROUP = "__basics__";
 const ACRONYM_MAX = 3;
 
 /**
+ * Schemas a person thinks of as ONE group, folded into the schema whose
+ * display name they read. Storage splits these for engineering reasons; a
+ * person does not (G5 review, 2026-10-02):
+ *   - `workbench` → `workspace`: a Note sat under "Workbench" while its Task
+ *     sat under "Workspace";
+ *   - `marketing` → `web`: "Marketing" and "Marketing & Web" were two groups.
+ * An admin-assigned chooser bucket (`reference_category`) still wins over this.
+ */
+const PERSON_GROUP_SCHEMA: Readonly<Record<string, string>> = {
+  workbench: "workspace",
+  marketing: "web",
+};
+
+/** The five entities a registry label can carry; a label is text, never HTML. */
+const HTML_ENTITIES: Readonly<Record<string, string>> = {
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'",
+};
+
+/** Decode HTML entities a stored label picked up ("Marketing &amp; Web"). */
+export function decodeLabelEntities(raw: string): string {
+  return raw.replace(/&(?:amp|lt|gt|quot|#39);/g, (m) => HTML_ENTITIES[m] ?? m);
+}
+
+/**
  * Title Case for a group label: every word starts upper-case; a word that is
  * already upper-case (AI, CRM, PDF) is kept; joiners ("&", "and") stay.
  */
 export function titleCaseGroupLabel(raw: string): string {
-  return raw
+  return decodeLabelEntities(raw)
     .replace(/[_-]+/g, " ")
     .trim()
     .split(/\s+/)
@@ -56,7 +84,7 @@ export function referenceTypeGroupKey(token: string): string {
   if (category && REFERENCE_CATEGORY_DISPLAY[category]?.isActive) {
     return `cat:${category}`;
   }
-  return `schema:${meta.schema}`;
+  return `schema:${PERSON_GROUP_SCHEMA[meta.schema] ?? meta.schema}`;
 }
 
 /** The human label of a group key, always Title Case. */

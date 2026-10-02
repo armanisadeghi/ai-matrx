@@ -16,7 +16,11 @@ import {
   referenceTypeGroup,
   titleCaseGroupLabel,
 } from "@/features/scopes/utils/referenceTypeGroups";
-import { visibleReferenceTypeTokens } from "@/features/matrx-envelope/components/reference-picker/referencePickerTypes";
+import {
+  allTypesToggleLabel,
+  referenceTypeDisplayLabel,
+  visibleReferenceTypeTokens,
+} from "@/features/matrx-envelope/components/reference-picker/referencePickerTypes";
 
 const pickable = Object.values(ENTITY_TYPE_METADATA)
   .filter((m) => m.referencePickable)
@@ -55,7 +59,8 @@ describe("reference type groups", () => {
 
 describe("the types a person is offered", () => {
   const seed = readFileSync(
-    join(process.cwd(), "migrations/reference_picker_hidden_types_knob.sql"),
+    // The knob's CURRENT starting value (the newest seed of the row).
+    join(process.cwd(), "migrations/reference_picker_hidden_types_people_words.sql"),
     "utf8",
   );
   const hidden = JSON.parse(/'(\[[^']*\])'::jsonb/.exec(seed)![1]!) as string[];
@@ -84,5 +89,64 @@ describe("the types a person is offered", () => {
     for (const kept of ["note", "task", "project", "conversation", "file", "url", "agent"]) {
       expect(visible).toContain(kept);
     }
+  });
+});
+
+/**
+ * G5 review (2026-10-02, nightly clone): "All types" still read like storage —
+ * "Entity", "Processed document", "Saved Result", "Scope", "Canvas Comment",
+ * "Shared Canvas Item", "Workflow Trigger"; "Marketing" and "Marketing &amp;
+ * Web" were two groups (one printing a literal entity); Note sat under
+ * "Workbench" while Task sat under "Workspace"; "Careers portal" beside
+ * "Agent Template"; and the count read 114 then 88.
+ */
+describe("the words a person reads in All types", () => {
+  const seed = readFileSync(
+    join(process.cwd(), "migrations/reference_picker_hidden_types_people_words.sql"),
+    "utf8",
+  );
+  const hidden = JSON.parse(/'(\[[^']*\])'::jsonb/.exec(seed)![1]!) as string[];
+  const isComponent = (t: string) =>
+    t in ENTITY_TYPE_METADATA &&
+    ENTITY_TYPE_METADATA[t as keyof typeof ENTITY_TYPE_METADATA].isComponent;
+  const visible = visibleReferenceTypeTokens(tokens, hidden, isComponent);
+
+  it("no visible type carries a storage word", () => {
+    const storageWords = [
+      "Entity",
+      "Processed Document",
+      "Saved Result",
+      "Scope",
+      "Canvas Comment",
+      "Shared Canvas Item",
+      "Workflow Trigger",
+    ];
+    const labels = visible.map(referenceTypeDisplayLabel);
+    for (const word of storageWords) expect(labels).not.toContain(word);
+    // The things a person references keep a product name.
+    expect(referenceTypeDisplayLabel("party")).toBe("Contact");
+    expect(referenceTypeDisplayLabel("scope")).toBe("Record");
+  });
+
+  it("every visible type name is Title Case", () => {
+    for (const t of visible) {
+      for (const word of referenceTypeDisplayLabel(t).split(" ")) {
+        expect(word.charAt(0)).toBe(word.charAt(0).toUpperCase());
+      }
+    }
+    expect(referenceTypeDisplayLabel("hr_careers_portal")).toBe("Careers Portal");
+  });
+
+  it("one marketing group, decoded; notes and tasks share a group", () => {
+    expect(titleCaseGroupLabel("Marketing &amp; Web")).toBe("Marketing & Web");
+    expect(referenceTypeGroup("marketing_initiative")).toBe(referenceTypeGroup("web_site"));
+    expect(referenceTypeGroup("note")).toBe(referenceTypeGroup("task"));
+    const groups = new Set(visible.map(referenceTypeGroup));
+    for (const g of groups) expect(g).not.toMatch(/&[a-z#0-9]+;/);
+  });
+
+  it("the All types count never shows a number that will change", () => {
+    expect(allTypesToggleLabel(114, false)).toBe("All types");
+    expect(allTypesToggleLabel(88, true)).toBe("All types (88)");
   });
 });

@@ -41,7 +41,6 @@ import {
   listableTokens,
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
-import { referenceTypeLabel } from "@/features/scopes/utils/referenceCell";
 import { createEntityRow } from "@/features/scopes/service/entityRows";
 import { referenceTypeGroup } from "@/features/scopes/utils/referenceTypeGroups";
 import { CATALOG_ALIASES } from "@/features/matrx-envelope/catalog-nouns.generated";
@@ -65,8 +64,9 @@ import {
 } from "@/features/directive-catalog/schemaFields";
 import { SchemaFieldsForm } from "@/features/directive-catalog/components/SchemaFieldsForm";
 import {
-  FRIENDLY_REFERENCE_TYPE_LABELS,
   INLINE_CREATE_REFERENCE_TYPES,
+  allTypesToggleLabel,
+  referenceTypeDisplayLabel,
   visibleReferenceTypeTokens,
   wireItems,
   type ReferenceDelivery,
@@ -102,8 +102,7 @@ interface TypeOption {
 }
 
 function typeOption(token: string): TypeOption {
-  const label =
-    FRIENDLY_REFERENCE_TYPE_LABELS[token] ?? referenceTypeLabel(token);
+  const label = referenceTypeDisplayLabel(token);
   // The group is the ONE grouping every type chooser shares (admin chooser
   // bucket → schema display name), never the catalogue's `family`, which is
   // empty for most types and left ~90 of 116 under "Other".
@@ -327,6 +326,7 @@ export function ReferencePickerBody({
         all={visible}
         common={common}
         commonLoading={commonLoading || hiddenLoading}
+        allSettled={!hiddenLoading}
         commonUnavailable={Boolean(commonError)}
         onChoose={(option) => {
           setDirectiveClass("reference");
@@ -401,6 +401,7 @@ function TypeStep({
   all,
   common,
   commonLoading,
+  allSettled,
   commonUnavailable,
   onChoose,
   onCancel,
@@ -409,6 +410,8 @@ function TypeStep({
   common: TypeOption[];
   /** The curated tier is still being read from the knob. */
   commonLoading: boolean;
+  /** The hidden-types knob has answered, so `all.length` is final. */
+  allSettled: boolean;
   /** The knob is missing/malformed: run uncurated, with everything expanded. */
   commonUnavailable: boolean;
   onChoose: (option: TypeOption) => void;
@@ -488,7 +491,7 @@ function TypeStep({
               ) : (
                 <ChevronRight className="h-3.5 w-3.5" />
               )}
-              All types ({all.length})
+              {allTypesToggleLabel(all.length, allSettled)}
             </button>
             {showAll &&
               grouped.map((g) => (

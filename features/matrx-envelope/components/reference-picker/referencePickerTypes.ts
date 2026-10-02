@@ -8,6 +8,9 @@
  */
 
 import type { DirectiveClass } from "@ai-matrx/content-ir";
+import { GENERIC_PARTY_WORDS } from "@/features/crm/party-words";
+import { referenceTypeLabel } from "@/features/scopes/utils/referenceCell";
+import { titleCaseGroupLabel } from "@/features/scopes/utils/referenceTypeGroups";
 
 /** How the picked reference leaves the picker. */
 export type ReferenceDelivery = "insert" | "copy";
@@ -35,15 +38,44 @@ export interface ReferencePick {
  */
 
 /**
- * Friendly names for the common tier where the registry label is not the
- * word users use. Everything else falls through to `referenceTypeLabel`.
+ * The product's own word where the registry label is a storage word. Every
+ * name here already ships elsewhere — nothing is coined:
+ *   - `party` → the CRM's generic word for a person or company record
+ *     (`features/crm/party-words.ts`), never the registry's "Entity";
+ *   - `scope` → **Record**, the Data Doctrine's canonical word for one row of a
+ *     scope type (vocabulary: "Scope → Record", 2026-09-10).
+ * Everything else falls through to `referenceTypeLabel`.
  */
 export const FRIENDLY_REFERENCE_TYPE_LABELS: Readonly<Record<string, string>> = {
   conversation: "Chat",
   udt_document: "Document",
   dataset: "Table",
   url: "Web link",
+  party: GENERIC_PARTY_WORDS.singular,
+  scope: "Record",
 };
+
+/**
+ * THE name a type chooser shows for a type: the product word, in Title Case
+ * like its group headings — the registry mixes "Careers portal" with
+ * "Agent Template", and one list must read one way.
+ */
+export function referenceTypeDisplayLabel(token: string): string {
+  const raw = FRIENDLY_REFERENCE_TYPE_LABELS[token] ?? referenceTypeLabel(token);
+  return raw
+    .split(/\s+/)
+    .map((word) => (word.includes("-") ? word : titleCaseGroupLabel(word)))
+    .join(" ");
+}
+
+/**
+ * The "All types" toggle. The count appears only once the hidden-types knob
+ * has answered — a number that drops from 114 to 88 a beat later is a number
+ * that lied (G5 review, 2026-10-02).
+ */
+export function allTypesToggleLabel(count: number, settled: boolean): string {
+  return settled ? `All types (${count})` : "All types";
+}
 
 /**
  * Classes whose items are a WRITE PAYLOAD (the record's fields), not an
