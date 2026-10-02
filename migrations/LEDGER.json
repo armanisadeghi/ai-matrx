@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T23:07:24.365Z",
+  "generated_at": "2026-10-02T23:26:08.523Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3301,6 +3301,24 @@
       "filename": "kerneltails_the_kernel_fingerprint_names_the_comment_ruling.sql",
       "checksum": "bb5f522c0ba1a46a38fd25f7cce1f31686ac302bb364e392a082f71d3410a148",
       "applied_at": "2026-09-25 22:48:23.008208+00"
+    },
+    "migrations/campaign/kindsglue_a_no_kind_activates_without_saying_what_it_is.sql": {
+      "source": "matrx-frontend",
+      "filename": "kindsglue_a_no_kind_activates_without_saying_what_it_is.sql",
+      "checksum": "bbe6782b7b609720c3ade806037aa00098f7a326a7d7ece6d3b1570b7dcc4802",
+      "applied_at": "2026-10-02 23:25:28.018784+00"
+    },
+    "migrations/campaign/kindsglue_b_every_kind_says_what_its_output_is.sql": {
+      "source": "matrx-frontend",
+      "filename": "kindsglue_b_every_kind_says_what_its_output_is.sql",
+      "checksum": "292fb1063be058c38e46305e5b01c2a21b3b5cc66f7e4b79819acf4683af0aaa",
+      "applied_at": "2026-10-02 23:25:48.787109+00"
+    },
+    "migrations/campaign/kindsglue_e_the_reviewed_dispositions.sql": {
+      "source": "matrx-frontend",
+      "filename": "kindsglue_e_the_reviewed_dispositions.sql",
+      "checksum": "fe193faaf218f9992ea468e585971904b590c6c4bed5ff10b6c4860dabbe7c60",
+      "applied_at": "2026-10-02 23:26:06.898523+00"
     },
     "migrations/campaign/knobguard2_the_archive_door_asks_the_same_predicate.sql": {
       "source": "matrx-frontend",
