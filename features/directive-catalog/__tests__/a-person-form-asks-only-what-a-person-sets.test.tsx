@@ -211,6 +211,7 @@ describe("a write form speaks the record's own words", () => {
   it("repeat is the task editor's repeat picker, never a text box", () => {
     const rule = form("task", "title", TASK_STATUS).find((f) => f.key === "recurrence_rule")!;
     expect(rule.kind).toBe("recurrence");
+    expect(rule.label).toBe("Repeat");
     const container = document.createElement("div");
     const root = createRoot(container);
     act(() => {

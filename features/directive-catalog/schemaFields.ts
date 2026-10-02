@@ -323,6 +323,9 @@ export function deriveSchemaFields(
       label:
         key === titleColumn
           ? "Title"
+          : // The task editor's own word for its repeat control.
+            kind === "recurrence"
+            ? "Repeat"
           : // The record an update/delete acts on is named by its type ("Task"),
             // never by the storage word "id".
             key === "id" && recordToken
