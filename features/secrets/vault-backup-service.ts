@@ -5,6 +5,11 @@ import { createClient } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 
 import type { components } from "@ai-matrx/agents/generated/api-types";
+import {
+  buildMatrxRequestUrl,
+  extractMatrxErrorCode,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 
 import type { VaultExpectedActor } from "./vault-service";
 
@@ -89,10 +94,7 @@ async function failureCode(response: Response): Promise<VaultBackupErrorCode> {
           ? body.detail
           : null;
       if (
-        (detail &&
-          typeof detail === "object" &&
-          "code" in detail &&
-          detail.code === "recent_auth_required") ||
+        extractMatrxErrorCode({ detail }) === "recent_auth_required" ||
         (typeof detail === "string" &&
           (detail.startsWith("recent authentication is required") ||
             detail.startsWith("authentication within the last ")))
@@ -143,8 +145,8 @@ async function authorizedRequest(
   );
   let response: Response;
   try {
-    response = await fetch(
-      `${resolveServiceBaseUrl("aidream")}/api/vault${path}`,
+    response = await sendMatrxRequest(
+      buildMatrxRequestUrl(resolveServiceBaseUrl("aidream"), `/api/vault${path}`),
       {
         method: "POST",
         headers,

@@ -349,7 +349,9 @@ def door_answers(member: Seat, fx: dict) -> dict:
     out["Q8"] = _num(_one(_agg(member, V, [{"op": "count"}]), "count"))
     rows = _agg(member, V, [{"op": "count"}], group_by=["visit_date"])
     out["Q9"] = rows if isinstance(rows, dict) else {r["groups"]["visit_date"]: r["measures"]["count"] for r in rows}
-    rows = _agg(member, V, [{"op": "sum", "key": "copay"}], group_by=["patient"], limit=5)
+    # Top N BY THE MEASURE: the door's `order` on the measure (VISION-REACH W2); without it the door
+    # orders groups by row count, which is a different question.
+    rows = _agg(member, V, [{"op": "sum", "key": "copay", "order": "desc"}], group_by=["patient"], limit=5)
     out["Q10"] = rows if isinstance(rows, dict) else [(names.get(r["groups"]["patient"], r["groups"]["patient"]), _num(r["measures"]["sum_copay"])) for r in rows]
     return out
 

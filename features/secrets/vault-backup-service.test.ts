@@ -79,7 +79,7 @@ describe("vault backup transport", () => {
     );
     await previewVaultBackup(["item-1"], actor);
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://selected-localhost:8000/api/vault/backups/preview",
+      "http://selected-localhost:8000/vault/backups/preview",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ item_ids: ["item-1"] }),

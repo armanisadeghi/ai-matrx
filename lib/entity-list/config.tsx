@@ -322,6 +322,15 @@ export interface EntityListConfig<TRow> {
   registryToken?: string;
 
   /**
+   * THE DIMENSION FILTER (lane 3 INTEGRATION, W1.5; ./dimensionFilter.ts). True when this surface's
+   * list RPC applies `platform.list_dimension_match` to `p_filters.__dimension` — then the header shows
+   * the Dimension control beside the organization filter. Required on every config (guard
+   * `pnpm check:list-dimension-filter`): `false` names a list whose server does not narrow by it yet,
+   * so the control is absent rather than dead.
+   */
+  dimensionFilter?: boolean;
+
+  /**
    * The surface's HONEST default narrowing — where an untouched page starts and
    * where "Clear filters" returns to.
    *

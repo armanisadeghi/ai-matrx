@@ -17,6 +17,11 @@ import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { makeAssertData } from "@/utils/errors";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import {
+  buildMatrxRequestUrl,
+  extractMatrxErrorCode,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
+import {
   ensureOrganizationContext,
   ensureOrganizationForRequest,
 } from "@/lib/organization/organization-gate";
@@ -90,6 +95,52 @@ const assertVaultData = makeAssertData("load your vault");
 
 function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
+}
+
+/**
+ * The ONE vault send. The vault keeps its own header policy — the verified
+ * bearer from `authHeaders` (the token checked is the token sent) and the
+ * frozen organization — so it does not go through the browser-session door;
+ * URL assembly and the send are the core's. The raw response comes back
+ * whatever its status for the domain mapping below.
+ */
+function vaultRequest(
+  path: string,
+  init: RequestInit,
+  auth: Record<string, string>,
+  organizationId: string,
+): Promise<Response> {
+  return sendMatrxRequest(buildMatrxRequestUrl(backendBase(), `/api/vault${path}`), {
+    ...init,
+    headers: applyOrganizationContextHeader(
+      { ...auth, ...(init.headers as Record<string, string> | undefined) },
+      organizationId,
+    ),
+  });
+}
+
+/** The code of the hand-raised `{ detail: { code } }` shape only — never a
+ * top-level code — for the gates that are defined on that nesting. */
+function detailErrorCode(body: unknown): string | null {
+  return body && typeof body === "object" && "detail" in body
+    ? extractMatrxErrorCode({ detail: body.detail })
+    : null;
+}
+
+/** The root `{ code }` only — a nested `detail.code` from a source route must
+ * never pass a gate defined on the root envelope. */
+function rootErrorCode(body: unknown): string | null {
+  return body && typeof body === "object" && "code" in body
+    ? extractMatrxErrorCode({ code: body.code })
+    : null;
+}
+
+async function readJsonOrNull(resp: Response): Promise<unknown> {
+  try {
+    return (await resp.json()) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 export type VaultExpectedActor = {
@@ -403,36 +454,18 @@ async function exportFailureCode(
   // browser reads. Never match server prose, which is neither a stable wire
   // contract nor a safe place for sensitive diagnostics.
   if (resp.status === 401) {
-    try {
-      const body: unknown = await resp.json();
-      if (
-        body &&
-        typeof body === "object" &&
-        "code" in body &&
-        body.code === "recent_auth_required"
-      ) {
-        return "recent_auth_required";
-      }
-    } catch {
-      // An unparseable response is not evidence of the reauthentication gate.
+    // An unparseable response is not evidence of the reauthentication gate.
+    if (rootErrorCode(await readJsonOrNull(resp)) === "recent_auth_required") {
+      return "recent_auth_required";
     }
     return "request_rejected";
   }
   if (resp.status === 404) return "missing_or_forbidden";
   if (resp.status === 413) return "limit_exceeded";
   if (resp.status === 409) {
-    try {
-      const body: unknown = await resp.json();
-      if (
-        body &&
-        typeof body === "object" &&
-        "code" in body &&
-        body.code === "preview_stale"
-      ) {
-        return "preview_stale";
-      }
-    } catch {
-      // The status is still a safe value-free export failure.
+    // An unparseable body: the status is still a safe value-free export failure.
+    if (rootErrorCode(await readJsonOrNull(resp)) === "preview_stale") {
+      return "preview_stale";
     }
     return "export_unavailable";
   }
@@ -449,16 +482,19 @@ async function vaultExportResponse(
     expectedActor,
     () => new VaultLoginExportTransportError("context_changed"),
   );
-  const headers = applyOrganizationContextHeader(auth, organizationId);
   let resp: Response;
   try {
-    resp = await fetch(`${backendBase()}/api/vault${path}`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-      signal,
-      cache: "no-store",
-    });
+    resp = await vaultRequest(
+      path,
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+        signal,
+        cache: "no-store",
+      },
+      auth,
+      organizationId,
+    );
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === "AbortError")
       throw cause;
@@ -504,25 +540,10 @@ function restoreFailureCode(
   status: number,
   body: unknown,
 ): VaultRestoreTransportError["code"] {
-  if (
-    status === 403 &&
-    body &&
-    typeof body === "object" &&
-    "code" in body &&
-    body.code === "recent_auth_required"
-  ) {
+  if (status === 403 && rootErrorCode(body) === "recent_auth_required") {
     return "recent_auth_required";
   }
-  if (
-    status === 503 &&
-    body &&
-    typeof body === "object" &&
-    "detail" in body &&
-    body.detail &&
-    typeof body.detail === "object" &&
-    "code" in body.detail &&
-    body.detail.code === "native_passkeys_unavailable"
-  ) {
+  if (status === 503 && detailErrorCode(body) === "native_passkeys_unavailable") {
     return "native_recovery_unavailable";
   }
   return "request_rejected";
@@ -563,18 +584,18 @@ export async function restoreVaultItem(
     expectedActor,
     () => new VaultRestoreTransportError("context_changed"),
   );
-  const headers = applyOrganizationContextHeader(auth, organizationId);
   let response: Response;
   try {
-    response = await fetch(
-      `${backendBase()}/api/vault/items/${encodeURIComponent(itemId)}/restore`,
+    response = await vaultRequest(
+      `/items/${encodeURIComponent(itemId)}/restore`,
       {
         method: "POST",
-        headers,
         body: JSON.stringify({ deletion_id: deletionId }),
         signal,
         cache: "no-store",
       },
+      auth,
+      organizationId,
     );
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === "AbortError")
@@ -584,24 +605,16 @@ export async function restoreVaultItem(
   await assertVaultRestoreActor(expectedActor);
   if (!response.ok) {
     if ([408, 429, 500, 502, 503, 504].includes(response.status)) {
-      let body: unknown = null;
-      try {
-        body = await response.json();
-      } catch {
-        // The status remains enough to distinguish a safe exact retry.
-      }
+      // An unreadable body: the status remains enough for a safe exact retry.
+      const body = await readJsonOrNull(response);
       const code = restoreFailureCode(response.status, body);
       if (code === "native_recovery_unavailable") {
         throw new VaultRestoreTransportError(code);
       }
       throw new VaultRestoreTransportError("retryable");
     }
-    let body: unknown = null;
-    try {
-      body = await response.json();
-    } catch {
-      // The HTTP status still provides the safe retry distinction above.
-    }
+    // An unreadable body: the HTTP status still gives the safe distinction above.
+    const body = await readJsonOrNull(response);
     throw new VaultRestoreTransportError(
       restoreFailureCode(response.status, body),
     );
@@ -637,16 +650,14 @@ async function vaultFetch<T>(
   const suppliedHeaders = Object.fromEntries(
     new Headers(init?.headers).entries(),
   );
-  const headers = applyOrganizationContextHeader(
-    { ...auth, ...suppliedHeaders },
-    organizationId,
-  );
   let resp: Response;
   try {
-    resp = await fetch(`${backendBase()}/api/vault${path}`, {
-      ...init,
-      headers,
-    });
+    resp = await vaultRequest(
+      path,
+      { ...init, headers: suppliedHeaders },
+      auth,
+      organizationId,
+    );
   } catch {
     if (frozenImport) throw new VaultImportTransportError("retryable");
     throw new Error(
@@ -660,16 +671,12 @@ async function vaultFetch<T>(
       if (resp.status === 401) {
         throw new VaultImportTransportError("context_changed");
       }
-      let receiptCode: unknown = null;
-      try {
-        const body: unknown = await resp.json();
-        receiptCode =
-          body && typeof body === "object" && "error" in body
-            ? (body.error as { code?: unknown } | null)?.code
-            : null;
-      } catch {
-        // An unreadable error body cannot prove a receipt-specific condition.
-      }
+      // An unreadable error body cannot prove a receipt-specific condition.
+      const receiptBody = await readJsonOrNull(resp);
+      const receiptCode =
+        receiptBody && typeof receiptBody === "object" && "error" in receiptBody
+          ? rootErrorCode(receiptBody.error)
+          : null;
       if (resp.status === 403 && receiptCode === "idempotency_context_denied")
         throw new VaultImportTransportError("context_changed");
       if (resp.status === 409 && receiptCode === "idempotency_key_conflict")
@@ -685,20 +692,13 @@ async function vaultFetch<T>(
       resp.status === 401 &&
       (path.endsWith("/reveal") || path.endsWith("/password-history/restore"))
     ) {
-      let body: unknown;
-      try {
-        body = await resp.json();
-      } catch {
-        // Authentication failures outside the recency gate stay generic.
-      }
+      // Authentication failures outside the recency gate stay generic.
+      const body = await readJsonOrNull(resp);
       const detail =
         body && typeof body === "object" && "detail" in body
           ? body.detail
           : null;
-      const recentAuthCode =
-        detail && typeof detail === "object" && "code" in detail
-          ? detail.code
-          : null;
+      const recentAuthCode = detailErrorCode(body);
       if (
         recentAuthCode === "recent_auth_required" ||
         (typeof detail === "string" &&
@@ -715,24 +715,21 @@ async function vaultFetch<T>(
           : "Your Matrx session was not accepted. Sign in again, then retry this Vault action.",
       );
     }
-    // The server's own plain sentence (detail.user_message) when it sent one.
-    let userMessage: string | null = null;
-    try {
-      const body: unknown = await resp.json();
-      const detail =
-        body && typeof body === "object" && "detail" in body
-          ? (body as { detail: unknown }).detail
-          : null;
-      if (
-        detail &&
-        typeof detail === "object" &&
-        typeof (detail as { user_message?: unknown }).user_message === "string"
-      ) {
-        userMessage = (detail as { user_message: string }).user_message;
-      }
-    } catch {
-      // No readable body: the status line below is all there is.
-    }
+    // The server's own plain sentence (detail.user_message) when it sent one;
+    // no readable body leaves the status line. Only that field — never other
+    // server prose — reaches the Vault UI.
+    const failureBody = await readJsonOrNull(resp);
+    const failureDetail =
+      failureBody && typeof failureBody === "object" && "detail" in failureBody
+        ? failureBody.detail
+        : null;
+    const userMessage =
+      failureDetail &&
+      typeof failureDetail === "object" &&
+      "user_message" in failureDetail &&
+      typeof failureDetail.user_message === "string"
+        ? failureDetail.user_message
+        : null;
     throw new Error(userMessage ?? `Vault request failed (${resp.status})`);
   }
   if (resp.status === 204) return undefined as T;

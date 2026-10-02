@@ -35,6 +35,11 @@ import "server-only";
 // change shows up here as a type error rather than as a wrong screen.
 
 import { AIDREAM_PRODUCTION_URL, ENDPOINTS } from "@/lib/api/endpoints";
+import {
+  buildMatrxRequestUrl,
+  extractMatrxErrorCode,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE RENDER SPEC — aidream's, carried whole
@@ -346,7 +351,7 @@ export interface ActionRequestRemint {
  * silently in production.
  */
 function door(path: string): string {
-  return `${AIDREAM_PRODUCTION_URL}${path}`;
+  return buildMatrxRequestUrl(AIDREAM_PRODUCTION_URL, path);
 }
 
 function headersFor(accessToken: string | null): HeadersInit {
@@ -368,7 +373,7 @@ export async function openActionRequest(
   token: string,
   accessToken: string | null,
 ): Promise<ActionRequestOpen> {
-  const response = await fetch(door(ENDPOINTS.actionRequests.open), {
+  const response = await sendMatrxRequest(door(ENDPOINTS.actionRequests.open), {
     method: "POST",
     headers: headersFor(accessToken),
     body: JSON.stringify({ token }),
@@ -403,7 +408,7 @@ export async function completeActionRequest(args: {
   authenticatorSecret?: string | null;
   origin?: string | null;
 }): Promise<ActionRequestCompleteResult> {
-  const response = await fetch(door(ENDPOINTS.actionRequests.complete), {
+  const response = await sendMatrxRequest(door(ENDPOINTS.actionRequests.complete), {
     method: "POST",
     headers: headersFor(args.accessToken),
     body: JSON.stringify({
@@ -437,7 +442,7 @@ export async function remintActionRequest(
   token: string,
   accessToken: string | null,
 ): Promise<ActionRequestRemint> {
-  const response = await fetch(door(ENDPOINTS.actionRequests.remint), {
+  const response = await sendMatrxRequest(door(ENDPOINTS.actionRequests.remint), {
     method: "POST",
     headers: headersFor(accessToken),
     body: JSON.stringify({ token }),
@@ -470,7 +475,7 @@ async function refusalFrom(response: Response): Promise<ActionRequestRefusal> {
     ActionRequestRefusal
   > | null;
   return {
-    code: body?.code ?? "refused",
+    code: extractMatrxErrorCode(body) ?? "refused",
     message: body?.message ?? GENERIC_REFUSAL,
     remedy: body?.remedy ?? null,
   };

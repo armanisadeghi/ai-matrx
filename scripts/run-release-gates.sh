@@ -822,6 +822,14 @@ if $STRICT; then
         # file outside providers/google-provider/ naming a raw provider
         # authorization primitive. Static, offline, no credentials.
         "Google authorization windows (a raw provider call bypassing the one-window gate)|pnpm check:google-auth-gate"
+        # ONE REQUEST PIPELINE TO THE PYTHON SERVER (P9c, 2026-10-02). Every
+        # server call rides @ai-matrx/agents/matrx through the host doors
+        # (lib/python-client, callApi, matrx-transport, stream-parser); a file
+        # that resolves the server's base URL and fetches it, or splits its
+        # NDJSON itself, is a copy that drifts. Allowlist only shrinks
+        # (scripts/server-pipeline-allowlist.json). A SIGNAL: static, offline.
+        "Python-server calls outside the one request pipeline|pnpm check:server-pipeline"
+        "Server request pipeline guard self-test|pnpm check:server-pipeline:self-test"
         # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
         # registers its fixed jobs in the top Agents menu. Advisory: backlog is 40
         # surfaces deep and a release must not stall on someone else's page.
@@ -1417,6 +1425,14 @@ else
         # file outside providers/google-provider/ naming a raw provider
         # authorization primitive. Static, offline, no credentials.
         "Google authorization windows (a raw provider call bypassing the one-window gate)|pnpm check:google-auth-gate"
+        # ONE REQUEST PIPELINE TO THE PYTHON SERVER (P9c, 2026-10-02). Every
+        # server call rides @ai-matrx/agents/matrx through the host doors
+        # (lib/python-client, callApi, matrx-transport, stream-parser); a file
+        # that resolves the server's base URL and fetches it, or splits its
+        # NDJSON itself, is a copy that drifts. Allowlist only shrinks
+        # (scripts/server-pipeline-allowlist.json). A SIGNAL: static, offline.
+        "Python-server calls outside the one request pipeline|pnpm check:server-pipeline"
+        "Server request pipeline guard self-test|pnpm check:server-pipeline:self-test"
         # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
         # registers its fixed jobs in the top Agents menu. Advisory: backlog is 40
         # surfaces deep and a release must not stall on someone else's page.

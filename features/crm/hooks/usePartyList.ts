@@ -23,6 +23,9 @@ import type {
 } from "../types";
 import { DEFAULT_PARTY_QUERY } from "../types";
 import { useCrmContext } from "./useCrmContext";
+import type { StandardFieldColumn } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
+
+const NO_CUSTOM_FIELDS: readonly StandardFieldColumn[] = [];
 
 export interface UsePartyListResult {
   query: PartyListQuery;
@@ -49,7 +52,11 @@ export interface UsePartyListResult {
   removeRow: (id: string) => void;
 }
 
-export function usePartyList(opts: PartySortOpts): UsePartyListResult {
+export function usePartyList(
+  opts: PartySortOpts,
+  /** The party token's custom fields (the generic column source) — filters, sort and search reach them. */
+  customFields: readonly StandardFieldColumn[] = NO_CUSTOM_FIELDS,
+): UsePartyListResult {
   // The organization filter is URL state (`?org_filter=`, absent = All
   // organizations) — never local state, never the active organization. The
   // rest of the query stays local and always starts clean.
@@ -101,7 +108,7 @@ export function usePartyList(opts: PartySortOpts): UsePartyListResult {
     async function run() {
       try {
         const [page, scopeCounts] = await Promise.all([
-          fetchPartyPage(query, opts, resolvedCtx),
+          fetchPartyPage(query, opts, resolvedCtx, customFields),
           // ONE round trip, org labels included — no ctx needed (D139).
           fetchPartyScopeCounts(query),
         ]);
@@ -126,7 +133,7 @@ export function usePartyList(opts: PartySortOpts): UsePartyListResult {
       }
     }
     return () => clearTimeout(timer);
-  }, [ctx, query, opts.sort, opts.direction, opts.pageSize, generation]);  
+  }, [ctx, query, opts.sort, opts.direction, opts.pageSize, generation, customFields]);  
 
   const setQuery = useCallback((patch: Partial<PartyListQuery>) => {
     const { orgId, ...rest } = patch;

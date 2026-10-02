@@ -344,6 +344,8 @@ export interface PartyListFilters {
   written_by?: WrittenByFilter;
   updated_at?: DateBucket;
   created_at?: DateBucket;
+  /** The organization's custom fields, by field key (lane 7 wave 2 — the generic column source). */
+  custom?: import("@/features/unified-data/standard-field-columns/standardFieldColumns").CustomFieldFilters;
 }
 
 /** Active records vs the trash (soft-deleted, restorable). */

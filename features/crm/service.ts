@@ -80,6 +80,13 @@ function pgError(error: { message?: string; code?: string }): Error {
 // this is where every existing caller reaches for it.
 import { normalizeMediumValue } from "./normalize";
 import { readListRpc } from "@/lib/entity-list/readListRpc";
+import {
+  applyCustomFieldFilters,
+  customFieldOrderColumn,
+  customFieldSearchClauses,
+  type CustomFieldPredicateBuilder,
+  type StandardFieldColumn,
+} from "@/features/unified-data/standard-field-columns/standardFieldColumns";
 export { normalizeMediumValue };
 
 // ── List page ───────────────────────────────────────────────────────────────
@@ -119,15 +126,7 @@ const EMPLOYER_EMBED =
  * embed select and the outreach list flow's id-only select). PostgREST builder
  * methods return `this`, which satisfies the recursive `Q`.
  */
-type PartyPredicateBuilder<Q> = {
-  is(column: string, value: null): Q;
-  not(column: string, operator: string, value: unknown): Q;
-  eq(column: string, value: unknown): Q;
-  in(column: string, values: readonly unknown[]): Q;
-  ilike(column: string, pattern: string): Q;
-  gte(column: string, value: string): Q;
-  or(filters: string): Q;
-};
+type PartyPredicateBuilder<Q> = CustomFieldPredicateBuilder<Q>;
 
 /**
  * Apply the FULL party-list predicate set (canonical, view, scope, kind facet,
@@ -139,6 +138,8 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
   builder: Q,
   query: PartyListQuery,
   ctx: CrmQueryContext,
+  /** The organization's custom fields of `party` (the generic column source) — filters and search reach them. */
+  customFields: readonly StandardFieldColumn[] = [],
 ): Q {
   // Merge losers stay live on purpose (unmerge needs them); lists show only
   // canonical records.
@@ -222,8 +223,10 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
     q = q.eq("created_by_tier", "ai").eq("updated_by_tier", "human");
   if (f.updated_at) q = q.gte("updated_at", bucketSince(f.updated_at));
   if (f.created_at) q = q.gte("created_at", bucketSince(f.created_at));
+  // Custom fields (lane 7 wave 2): server predicates on the row's own `custom_fields`.
+  q = applyCustomFieldFilters(q, f.custom, customFields);
 
-  // Search across the human identity columns.
+  // Search across the human identity columns and the custom fields' words.
   const term = sanitizeSearch(query.search);
   if (term) {
     q = q.or(
@@ -232,6 +235,7 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
         `legal_name.ilike.%${term}%`,
         `primary_domain.ilike.%${term}%`,
         `job_title.ilike.%${term}%`,
+        ...customFieldSearchClauses(customFields, term),
       ].join(","),
     );
   }
@@ -242,6 +246,7 @@ export async function fetchPartyPage(
   query: PartyListQuery,
   opts: PartySortOpts,
   ctx: CrmQueryContext,
+  customFields: readonly StandardFieldColumn[] = [],
 ): Promise<{ rows: PartyListRow[]; total: number }> {
   let q = applyPartyListPredicates(
     supabase
@@ -250,17 +255,21 @@ export async function fetchPartyPage(
       .select(EMPLOYER_EMBED, { count: "exact" }),
     query,
     ctx,
+    customFields,
   );
 
-  // Sort — DB columns only, whitelisted; stale stored keys fall back rather
-  // than erroring. EVERY order ends in `id` (total order — rows can never
-  // vanish across pages; see project_unstable_pagination_class).
+  // Sort — DB columns only, whitelisted, or a custom field (`cf:<key>`, ordered
+  // on its jsonb value, empties last); stale stored keys fall back rather than
+  // erroring. EVERY order ends in `id` (total order — rows can never vanish
+  // across pages; see project_unstable_pagination_class).
+  const customOrder = customFieldOrderColumn(opts.sort);
   const sortKey = (PARTY_SORT_KEYS as readonly string[]).includes(opts.sort)
     ? opts.sort
     : "updated_at";
-  q = q
-    .order(sortKey, { ascending: opts.direction === "asc" })
-    .order("id", { ascending: true });
+  q = (customOrder
+    ? q.order(customOrder, { ascending: opts.direction === "asc", nullsFirst: false })
+    : q.order(sortKey, { ascending: opts.direction === "asc" })
+  ).order("id", { ascending: true });
 
   const from = (query.page - 1) * opts.pageSize;
   // `.returns<>` because postgrest-js cannot infer the column-as-target embed
@@ -273,6 +282,28 @@ export async function fetchPartyPage(
   if (error) throw pgError(error);
 
   return { rows: data ?? [], total: count ?? 0 };
+}
+
+/**
+ * How many parties the list's query matches — the same predicates as the page,
+ * no rows. Group headers ask this per value so a group never counts one page.
+ */
+export async function countPartyList(
+  query: PartyListQuery,
+  ctx: CrmQueryContext,
+  customFields: readonly StandardFieldColumn[] = [],
+): Promise<number> {
+  const { count, error } = await applyPartyListPredicates(
+    supabase
+      .schema("crm")
+      .from("party")
+      .select("id", { count: "exact", head: true }),
+    query,
+    ctx,
+    customFields,
+  );
+  if (error) throw pgError(error);
+  return count ?? 0;
 }
 
 /**

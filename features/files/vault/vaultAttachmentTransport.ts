@@ -10,6 +10,11 @@ import { createClient } from "@/utils/supabase/client";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import {
+  buildMatrxRequestUrl,
+  parseHttpError,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 
 export const MAX_VAULT_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
@@ -35,16 +40,19 @@ async function authorizationHeader(
   );
 }
 
-async function responseError(response: Response): Promise<Error> {
-  let detail = "";
-  try {
-    const body = (await response.json()) as { detail?: unknown };
-    detail =
-      typeof body.detail === "string" ? body.detail : JSON.stringify(body);
-  } catch {
-    detail = await response.text().catch(() => "");
-  }
-  return new Error(detail || `HTTP ${response.status}`);
+/** Vault byte send: this module's own bearer + organization headers, the
+ * core's URL assembly and send; a non-2xx throws the one classified
+ * BackendApiError. */
+async function vaultBytesRequest(
+  path: string,
+  init: RequestInit & { method: string },
+): Promise<Response> {
+  const response = await sendMatrxRequest(
+    buildMatrxRequestUrl(backendBase(), `/api/vault/items/${path}`),
+    { ...init, headers: await authorizationHeader(init.method) },
+  );
+  if (!response.ok) throw await parseHttpError(response);
+  return response;
 }
 
 export async function uploadVaultAttachment<T>(
@@ -61,11 +69,10 @@ export async function uploadVaultAttachment<T>(
   form.set("label", metadata.label);
   form.set("description", metadata.description ?? "");
   form.set("handling", metadata.handling);
-  const response = await fetch(
-    `${backendBase()}/api/vault/items/${encodeURIComponent(itemId)}/attachments`,
-    { method: "POST", headers: await authorizationHeader("POST"), body: form },
+  const response = await vaultBytesRequest(
+    `${encodeURIComponent(itemId)}/attachments`,
+    { method: "POST", body: form },
   );
-  if (!response.ok) throw await responseError(response);
   return (await response.json()) as T;
 }
 
@@ -80,11 +87,10 @@ export async function replaceVaultAttachment<T>(
   }
   const form = new FormData();
   form.set("file", file);
-  const response = await fetch(
-    `${backendBase()}/api/vault/items/${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}/file`,
-    { method: "PUT", headers: await authorizationHeader("PUT"), body: form },
+  const response = await vaultBytesRequest(
+    `${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}/file`,
+    { method: "PUT", body: form },
   );
-  if (!response.ok) throw await responseError(response);
   return (await response.json()) as T;
 }
 
@@ -93,11 +99,10 @@ export async function downloadVaultAttachment(
   attachmentId: string,
   fallbackFileName: string,
 ): Promise<void> {
-  const response = await fetch(
-    `${backendBase()}/api/vault/items/${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}/download`,
-    { headers: await authorizationHeader("GET"), cache: "no-store" },
+  const response = await vaultBytesRequest(
+    `${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}/download`,
+    { method: "GET", cache: "no-store" },
   );
-  if (!response.ok) throw await responseError(response);
   const blob = await response.blob();
   const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");

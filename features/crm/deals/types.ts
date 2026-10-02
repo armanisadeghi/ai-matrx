@@ -199,6 +199,8 @@ export interface DealListFilters {
   expected_close_date?: DealDateBucket;
   updated_at?: DealDateBucket;
   created_at?: DealDateBucket;
+  /** The organization's custom fields, by field key (lane 7 wave 2 — the generic column source). */
+  custom?: import("@/features/unified-data/standard-field-columns/standardFieldColumns").CustomFieldFilters;
 }
 
 export type DealListView = "active" | "trash";

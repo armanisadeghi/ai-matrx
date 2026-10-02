@@ -24,7 +24,11 @@ import {
   type DirectiveApplyStateRequest,
   type DirectiveApplyStateResult,
 } from "@/features/directive-catalog/types";
-import { parseHttpError } from "@/lib/api/errors";
+import {
+  buildMatrxRequestUrl,
+  readMatrxJsonResponse,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 
@@ -72,6 +76,22 @@ async function authedDirectiveHeaders(
 const trimRoot = (baseUrl: string): string =>
   baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 
+/** Own header policy (person-write organization gate, caller-resolved base),
+ * so the core sends: URL assembly, the send, and one classified
+ * BackendApiError for any non-2xx. */
+async function postDirective(
+  url: string,
+  headers: Record<string, string>,
+  body: unknown,
+): Promise<unknown> {
+  const response = await sendMatrxRequest(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  return readMatrxJsonResponse<unknown>(response);
+}
+
 /**
  * Fetch the live directive catalog from `baseUrl`. Throws a structured Error on a
  * missing base, a non-2xx response, or a malformed payload (loud failure — the
@@ -86,10 +106,9 @@ export async function fetchDirectiveCatalog(
       "No backend base URL configured. Set the active server (apiConfigSlice) / NEXT_PUBLIC_BACKEND_URL_* env var.",
     );
   }
-  const root = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-  const url = `${root}${ENDPOINTS_DIRECTIVES.catalog}`;
+  const url = buildMatrxRequestUrl(trimRoot(baseUrl), ENDPOINTS_DIRECTIVES.catalog);
 
-  const response = await fetch(url, { method: "GET", signal });
+  const response = await sendMatrxRequest(url, { method: "GET" }, { signal });
   if (!response.ok) {
     throw new Error(
       `Directive catalog request failed: HTTP ${response.status} ${response.statusText} (${url})`,
@@ -129,21 +148,15 @@ export async function executeDirective(
       "Not signed in — an action write needs an authenticated session.",
     );
   }
-  const url = `${trimRoot(baseUrl)}${ENDPOINTS_DIRECTIVES.execute}`;
+  const url = buildMatrxRequestUrl(trimRoot(baseUrl), ENDPOINTS_DIRECTIVES.execute);
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: await authedDirectiveHeaders(token),
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    // One parser for every backend refusal: the person reads `userMessage`,
-    // the technical `detail` stays behind it. (A hand-rolled `String(detail)`
-    // here printed "[object Object]" for FastAPI's structured detail.)
-    throw await parseHttpError(response);
-  }
-
-  const payload: unknown = await response.json();
+  // One parser for every backend refusal: the person reads `userMessage`,
+  // the technical `detail` stays behind it.
+  const payload = await postDirective(
+    url,
+    await authedDirectiveHeaders(token),
+    body,
+  );
   if (!isDirectiveApplyResult(payload)) {
     throw new Error(
       `Execute response was malformed (missing type / applied / receipts) from ${url}`,
@@ -177,18 +190,13 @@ export async function confirmDirective(
       "Not signed in — confirming an action needs an authenticated session.",
     );
   }
-  const url = `${trimRoot(baseUrl)}${ENDPOINTS_DIRECTIVES.confirm}`;
+  const url = buildMatrxRequestUrl(trimRoot(baseUrl), ENDPOINTS_DIRECTIVES.confirm);
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: await authedDirectiveHeaders(token),
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    throw await parseHttpError(response);
-  }
-
-  const payload: unknown = await response.json();
+  const payload = await postDirective(
+    url,
+    await authedDirectiveHeaders(token),
+    body,
+  );
   if (!isDirectiveConfirmResult(payload)) {
     throw new Error(
       `Confirm response was malformed (missing type / proposal_id / receipts) from ${url}`,
@@ -234,16 +242,13 @@ export async function fetchDirectiveApplyState(
       "Not signed in — reading what this conversation's actions did needs an authenticated session.",
     );
   }
-  const url = `${trimRoot(baseUrl)}${ENDPOINTS_DIRECTIVES.applyState}`;
+  const url = buildMatrxRequestUrl(trimRoot(baseUrl), ENDPOINTS_DIRECTIVES.applyState);
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: await authedDirectiveHeaders(token, options),
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) throw await parseHttpError(response);
-
-  const payload: unknown = await response.json();
+  const payload = await postDirective(
+    url,
+    await authedDirectiveHeaders(token, options),
+    body,
+  );
   if (!isDirectiveApplyStateResult(payload)) {
     throw new Error(
       `The apply-state response was malformed (missing conversation_id / shells) from ${url}`,

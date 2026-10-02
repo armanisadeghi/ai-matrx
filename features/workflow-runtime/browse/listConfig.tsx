@@ -105,6 +105,8 @@ export const workflowListConfig: EntityListConfig<WorkflowBrowseRow> = {
   surfaceKey: "workflows-browse",
   // DD-137c / §3.3: where this list OPENS comes from platform.entity_types, never a literal.
   registryToken: "workflow",
+  // The list RPC applies platform.list_dimension_match (lib/entity-list/dimensionFilter.ts).
+  dimensionFilter: true,
   entityLabel: { singular: "workflow", plural: "workflows" },
   // A registered FEATURE_META key (see
   // features/agents/redux/conversation-history/source-registry.ts). Type-checking

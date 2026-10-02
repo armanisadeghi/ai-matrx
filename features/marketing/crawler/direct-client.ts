@@ -11,6 +11,7 @@ import { supabase } from "@/utils/supabase/client";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
+import { sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { isJsonRecord, type CrawlEvent } from "@/features/marketing/types";
 import type { CrawlRenderMode } from "@/features/marketing/crawler/crawl-options";
 
@@ -372,6 +373,11 @@ export class CrawlAlreadyRunningError extends Error {
   }
 }
 
+/**
+ * The scraper service keeps its own `/api/scraper/...` prefix, so this URL is
+ * assembled here rather than by `buildMatrxRequestUrl` (which strips `/api`
+ * for aidream routes); the send itself is the core's `sendMatrxRequest`.
+ */
 export function crawlerCommandUrl(path: string): string {
   return `${scraperOrigin()}/api/scraper/crawler/${path.replace(/^\/+/, "")}`;
 }
@@ -497,7 +503,7 @@ async function streamCommand(
   callbacks: CrawlStreamCallbacks = {},
 ): Promise<CrawlStreamResult> {
   const token = await bearerToken();
-  const response = await fetch(crawlerCommandUrl(path), {
+  const response = await sendMatrxRequest(crawlerCommandUrl(path), {
     method: "POST",
     headers: await organizationContextHeaders(
       {
@@ -698,7 +704,7 @@ export function rescrapeSite(
 
 export async function cancelCrawl(sessionId: string): Promise<void> {
   const token = await bearerToken();
-  const response = await fetch(
+  const response = await sendMatrxRequest(
     crawlerCommandUrl(`sessions/${sessionId}/cancel`),
     {
       method: "POST",

@@ -13,6 +13,11 @@
 import { createClient } from "../../host/db";
 import type { McpToolSchema } from "./mcp-client/tool-discovery";
 import { productionUrl } from "../../host/server/endpoints";
+import {
+  buildMatrxRequestUrl,
+  readMatrxJsonResponse,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "../../host/server/organization-context";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { AttachableAvailability } from "@host/features/connectors/attachable-resources";
@@ -56,27 +61,19 @@ async function mcpFetch<T>(
   explicitOrganizationId?: string,
 ): Promise<T> {
   const headers = await authHeaders(init?.method ?? "GET", explicitOrganizationId);
+  // THE shared request pipeline (`@ai-matrx/agents/matrx`): the URL, the
+  // send, and the one error classifier — the server's own sentence.
   let resp: Response;
   try {
-    resp = await fetch(`${backendBase()}/api/mcp-connections${path}`, {
-      ...init,
-      headers: { ...headers, ...init?.headers },
-    });
-  } catch {
+    resp = await sendMatrxRequest(
+      buildMatrxRequestUrl(backendBase(), `/api/mcp-connections${path}`),
+      { ...init, headers: { ...headers, ...init?.headers } },
+    );
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
     throw new Error("MCP service unreachable — the backend must be online");
   }
-  if (!resp.ok) {
-    let detail: string | undefined;
-    try {
-      const body = (await resp.json()) as { detail?: unknown };
-      detail =
-        typeof body.detail === "string" ? body.detail : JSON.stringify(body);
-    } catch {
-      detail = await resp.text().catch(() => undefined);
-    }
-    throw new Error(detail || `HTTP ${resp.status}`);
-  }
-  return (await resp.json()) as T;
+  return readMatrxJsonResponse<T>(resp);
 }
 
 // ── Types (wire shapes of the aidream router — no token ever crosses) ─────

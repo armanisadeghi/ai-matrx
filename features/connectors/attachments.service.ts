@@ -26,6 +26,11 @@
 import { createClient } from "@/utils/supabase/client";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import {
+  buildMatrxRequestUrl,
+  extractMatrxErrorMessage,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import type { paths } from "@ai-matrx/agents/generated/api-types";
 import type {
@@ -126,22 +131,28 @@ async function failureMessage(
   path: string,
 ): Promise<string> {
   const text = await resp.text().catch(() => "");
-  let detail: unknown;
+  let body: unknown;
   try {
-    detail = text ? (JSON.parse(text) as { detail?: unknown }).detail : undefined;
+    body = text ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    detail = undefined;
+    body = undefined;
   }
-  if (typeof detail === "string" && detail.trim()) return detail;
-  if (detail && typeof detail === "object") {
-    const { message, remedy } = detail as { message?: unknown; remedy?: unknown };
-    if (typeof message === "string" && message.trim()) {
-      return typeof remedy === "string" && remedy.trim()
-        ? `${message} ${remedy}`
-        : message;
-    }
-    return JSON.stringify(detail);
+  const detail =
+    body && typeof body === "object" && "detail" in body
+      ? (body as { detail?: unknown }).detail
+      : undefined;
+  // The core reads the sentence; aidream's attachment errors add a `remedy`.
+  const message = detail ? extractMatrxErrorMessage({ detail }) : undefined;
+  if (message) {
+    const remedy =
+      detail && typeof detail === "object"
+        ? (detail as { remedy?: unknown }).remedy
+        : undefined;
+    return typeof remedy === "string" && remedy.trim()
+      ? `${message} ${remedy}`
+      : message;
   }
+  if (detail && typeof detail === "object") return JSON.stringify(detail);
   return `HTTP ${resp.status} from ${method} /api${path}`;
 }
 
@@ -150,10 +161,10 @@ async function attachFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = await authHeaders(method);
   let resp: Response;
   try {
-    resp = await fetch(`${AIDREAM_PRODUCTION_URL}/api${path}`, {
-      ...init,
-      headers: { ...headers, ...init?.headers },
-    });
+    resp = await sendMatrxRequest(
+      buildMatrxRequestUrl(AIDREAM_PRODUCTION_URL, `/api${path}`),
+      { ...init, headers: { ...headers, ...init?.headers } },
+    );
   } catch {
     throw new Error(
       "The attachments service is unreachable — the backend must be online.",

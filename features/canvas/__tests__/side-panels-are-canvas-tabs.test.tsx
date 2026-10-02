@@ -58,6 +58,7 @@ import TopicalMapTopicPanel from "@/features/window-panels/windows/marketing/Top
 import { KgSuggestionsNavButton } from "@/features/kg-suggestions/components/KgSuggestionsNavButton";
 import { MatrxDataTableHost } from "@/components/official/MatrxDataTableHost";
 import { useMatrxDataTableHost } from "@ai-matrx/design-system/data-table/host";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 
 function makeStore() {
   return configureStore({
@@ -208,6 +209,54 @@ describe("every data table's row detail is a canvas tab", () => {
     expect(tabs[0]?.title).toBe("Acme Corp");
     m.unmount();
     expect(ids(store)).toEqual([]);
+  });
+});
+
+describe("clicking the same row again brings its background tab forward", () => {
+  it("a real MatrxDataTable re-click on the shown row focuses its tab", () => {
+    const store = makeStore();
+    const api: { canvas: ReturnType<typeof useCanvas> | null } = { canvas: null };
+    function Probe() {
+      useCanvasProbe(api);
+      return null;
+    }
+    type Row = { id: string; name: string };
+    const rows: Row[] = [
+      { id: "r1", name: "Acme Corp" },
+      { id: "r2", name: "Globex" },
+    ];
+    const m = mount(
+      store,
+      <MatrxDataTableHost>
+        <Probe />
+        <MatrxDataTable<Row>
+          data={rows}
+          columns={[{ accessorKey: "name", header: "Name" }]}
+          getRowId={(row) => row.id}
+          pageSize={0}
+          window={{ enabled: false }}
+        />
+      </MatrxDataTableHost>,
+    );
+    const activeItem = () => {
+      const state = canvasOf(store);
+      return state.panes[state.focusedPaneId]?.activeItemId ?? null;
+    };
+    const cell = () => m.container.querySelector('tr[data-row-id="r1"] td:last-child') as HTMLElement;
+
+    act(() => cell().click());
+    const panel = ids(store).find((id) => id.startsWith(`${PAGE_PANEL_KIND}::`));
+    expect(panel).toBeDefined();
+    expect(activeItem()).toBe(panel);
+
+    // Another tab comes forward; the row's tab sits in the background.
+    act(() => void openCanvasItem(api.canvas, userJourneyOpenInput({ rowId: "row-7", name: "Dana Reyes" })));
+    expect(activeItem()).toBe(`${USER_JOURNEY_KIND}::row-7`);
+
+    // The same row, clicked again: its tab must come forward.
+    act(() => cell().click());
+    expect(activeItem()).toBe(panel);
+    m.unmount();
   });
 });
 

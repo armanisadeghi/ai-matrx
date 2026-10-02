@@ -18,6 +18,11 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { resolveBackendForConversation } from "../thunks/resolve-base-url";
 import { clearCacheBypass } from "./cache-bypass.slice";
+import {
+  buildMatrxRequestUrl,
+  executeMatrxCall,
+  normalizeMatrxError,
+} from "@ai-matrx/agents/matrx";
 
 interface InvalidateArgs {
   conversationId: string;
@@ -45,26 +50,25 @@ export const invalidateConversationCache = createAsyncThunk<
     if (!backend) {
       return rejectWithValue({ message: "No backend URL configured" });
     }
-    const baseUrl = backend.baseUrl;
-    const headers = backend.headers;
-
+    // THE shared request pipeline (`@ai-matrx/agents/matrx`): the URL, the
+    // execution and the one error classifier; this thunk supplies only the
+    // conversation's resolved backend.
     try {
-      const res = await fetch(
-        `${baseUrl}/cx/conversations/${conversationId}/invalidate-cache`,
-        { method: "POST", headers },
-      );
-      if (!res.ok) {
-        return rejectWithValue({
-          message: `Invalidate cache failed: ${res.status} ${res.statusText}`,
-        });
+      const result = await executeMatrxCall({
+        url: buildMatrxRequestUrl(
+          backend.baseUrl,
+          "/cx/conversations/{conversation_id}/invalidate-cache",
+          { conversation_id: conversationId },
+        ),
+        method: "POST",
+        headers: backend.headers,
+        body: undefined,
+      });
+      if (result.error) {
+        return rejectWithValue({ message: result.error.message });
       }
     } catch (err) {
-      return rejectWithValue({
-        message:
-          err instanceof Error
-            ? err.message
-            : `Invalidate cache failed: unknown error`,
-      });
+      return rejectWithValue({ message: normalizeMatrxError(err).message });
     }
 
     // The standalone call covers whatever bust flags were pending; drop them.

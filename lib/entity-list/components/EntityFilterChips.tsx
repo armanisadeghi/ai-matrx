@@ -11,6 +11,7 @@
 import { X } from "lucide-react";
 import type { EntityColumnSpec } from "../columns";
 import { NONE_VALUE, type EntityFilters } from "../types";
+import { DIMENSION_FILTER_KEY } from "../dimensionFilter";
 
 interface Props<TRow> {
   columns: EntityColumnSpec<TRow>[];
@@ -46,8 +47,8 @@ export function EntityFilterChips<TRow>({
   toggles,
   onFiltersChange,
 }: Props<TRow>) {
-  const entries = Object.entries(filters);
-  // The organization filter is its own visible control on the lane row; it gets no second chip.
+  // The organization and Dimension filters are their own visible controls on the lane row; no second chip.
+  const entries = Object.entries(filters).filter(([id]) => id !== DIMENSION_FILTER_KEY);
   if (entries.length === 0) return null;
   const without = (id: string) => {
     const next = { ...filters };

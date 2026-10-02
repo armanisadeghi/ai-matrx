@@ -147,6 +147,8 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
   surfaceKey: "agents-browse",
   // DD-137c / §3.3: where this list OPENS comes from platform.entity_types, never a literal.
   registryToken: "agent",
+  // The list RPC applies platform.list_dimension_match (lib/entity-list/dimensionFilter.ts).
+  dimensionFilter: true,
   entityLabel: { singular: "agent", plural: "agents" },
   // "agents-other", NOT "agent". Both type-check — `SourceFeature` is generated
   // from the backend's union — but only registered keys exist in `FEATURE_META`

@@ -15,6 +15,11 @@ import {
 import type { ChatRootState } from "../../../store/root-state";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { selectOrganizationId } from "../../../host/org";
+import {
+  buildMatrxRequestUrl,
+  readMatrxJsonResponse,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 
 export type InvalidateAgentCacheResponse =
   components["schemas"]["InvalidateAgentCacheResponse"];
@@ -78,44 +83,24 @@ export async function postInvalidateAgentCache(
   headers: Record<string, string>,
   options?: { keepalive?: boolean; isVersion?: boolean },
 ): Promise<InvalidateAgentCacheResponse> {
-  const params = new URLSearchParams();
-  if (options?.isVersion) {
-    params.set("is_version", "true");
-  }
-  const query = params.toString();
-  const url = `${baseUrl}/ai/agents/${encodeURIComponent(agentId)}/invalidate-cache${
-    query ? `?${query}` : ""
-  }`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers,
-    keepalive: options?.keepalive ?? false,
-  });
-
-  if (!response.ok) {
-    let detail = `${response.status} ${response.statusText}`;
-    try {
-      const body: unknown = await response.json();
-      if (body && typeof body === "object") {
-        const record = body as Record<string, unknown>;
-        const nested =
-          record.detail && typeof record.detail === "object"
-            ? (record.detail as Record<string, unknown>)
-            : null;
-        const message =
-          (typeof record.message === "string" && record.message) ||
-          (typeof nested?.message === "string" && nested.message) ||
-          (typeof record.detail === "string" && record.detail);
-        if (message) detail = message;
-      }
-    } catch {
-      // Keep the status-line fallback.
-    }
-    throw new Error(detail);
-  }
-
-  const data = (await response.json()) as InvalidateAgentCacheResponse;
+  // THE shared request pipeline (`@ai-matrx/agents/matrx`): the URL, the
+  // send (keepalive rides through), and the one error classifier.
+  const response = await sendMatrxRequest(
+    buildMatrxRequestUrl(
+      baseUrl,
+      "/ai/agents/{agent_id}/invalidate-cache",
+      { agent_id: agentId },
+      options?.isVersion ? { is_version: "true" } : undefined,
+    ),
+    {
+      method: "POST",
+      headers,
+      keepalive: options?.keepalive ?? false,
+    },
+  );
+  const data = await readMatrxJsonResponse<InvalidateAgentCacheResponse>(
+    response,
+  );
   if (!data.cleared) {
     throw new Error("Server did not confirm cache clearance.");
   }

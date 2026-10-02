@@ -12,6 +12,11 @@ import type {
   BingSiteBinding,
 } from "@/features/marketing/bing/types";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import {
+  buildMatrxRequestUrl,
+  extractMatrxErrorMessage,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 
@@ -162,7 +167,7 @@ async function aidreamPost(
   } = await supabase.auth.getSession();
   if (!session?.access_token)
     throw new Error("Sign in to manage Bing Webmaster.");
-  const response = await fetch(`${backendBase()}${path}`, {
+  const response = await sendMatrxRequest(buildMatrxRequestUrl(backendBase(), path), {
     method: "POST",
     headers: await organizationContextHeaders(
       {
@@ -177,13 +182,9 @@ async function aidreamPost(
     const payload = (await response.json().catch(() => ({}))) as {
       detail?: unknown;
     };
-    const detail =
-      typeof payload.detail === "string"
-        ? payload.detail
-        : typeof (payload.detail as { message?: unknown })?.message === "string"
-          ? ((payload.detail as { message: string }).message as string)
-          : fallback;
-    throw new Error(detail);
+    throw new Error(
+      extractMatrxErrorMessage({ detail: payload.detail }) ?? fallback,
+    );
   }
   return response;
 }
@@ -209,8 +210,13 @@ export async function startBingOAuth(
   if (owner.type === "organization") {
     query.set("organization_id", owner.organizationId);
   }
-  const response = await fetch(
-    `${backendBase()}/api/bing-integrations/authorize-url?${query.toString()}`,
+  const response = await sendMatrxRequest(
+    buildMatrxRequestUrl(
+      backendBase(),
+      "/api/bing-integrations/authorize-url",
+      undefined,
+      Object.fromEntries(query),
+    ),
     {
       // A GET, but the person pressed Connect: it asks.
       headers: await organizationContextHeaders(
@@ -224,9 +230,8 @@ export async function startBingOAuth(
       detail?: unknown;
     };
     throw new Error(
-      typeof payload.detail === "string"
-        ? payload.detail
-        : "Unable to start Bing sign-in.",
+      extractMatrxErrorMessage({ detail: payload.detail }) ??
+        "Unable to start Bing sign-in.",
     );
   }
   const body = (await response.json()) as { authorization_url?: unknown };

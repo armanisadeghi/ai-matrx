@@ -11,6 +11,7 @@
 // hand-edited blob resolves to the default query instead of throwing a list
 // page away.
 
+import { parseCustomFieldFilters } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
 import type { Database } from "@/types/database.types";
 import { makeScope, type ListScopeKind } from "@/lib/list-scope/types";
 import type {
@@ -118,6 +119,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function parseFilters(raw: unknown): PartyListFilters {
   if (!isRecord(raw)) return {};
   const out: PartyListFilters = {};
+  // Custom-field filters ride along (lane 7 wave 2), read defensively.
+  const custom = parseCustomFieldFilters(raw.custom);
+  if (custom) out.custom = custom;
   for (const key of Object.keys(raw)) {
     if (!(PARTY_COLUMN_FILTER_KEYS as readonly string[]).includes(key)) continue;
     const value = raw[key];
@@ -303,5 +307,7 @@ export function describeDefinition(definition: SavedViewDefinition): string {
   }
   if (f.updated_at) parts.push(`updated ${f.updated_at}`);
   if (f.created_at) parts.push(`created ${f.created_at}`);
+  const customCount = Object.keys(f.custom ?? {}).length;
+  if (customCount) parts.push(`${customCount} custom field${customCount === 1 ? "" : "s"}`);
   return parts.join(" · ");
 }

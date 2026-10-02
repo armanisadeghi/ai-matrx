@@ -4,13 +4,15 @@
 // {text, present, row_count, total_rows, truncated, override_policy, absent_reason,
 // notes, withheld, trace} (aidream `api/routers/agent_variable_bindings.py`). The route is new; until the
 // generated API types carry it (`pnpm sync-types` from the aidream checkout), it is
-// called through the same auth + base-URL plumbing `callApi` uses, and its answer is
+// called through the host door (`requestRaw`: auth, organization, base URL), and its answer is
 // READ DEFENSIVELY. A 404 is a STATE ("the server binding is not deployed yet"),
 // never a fake preview.
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
-import { resolveAuth, resolveBaseUrl, waitForAuthReady } from "@/lib/api/call-api";
+import { waitForAuthReady } from "@/lib/api/call-api";
+import { requestRaw } from "@/lib/python-client";
+import { extractMatrxErrorMessage } from "@ai-matrx/agents/matrx";
 import { BINDING_PREVIEW_PATH } from "./constants";
 import type { BindingPreview, MergeFieldBinding } from "./types";
 
@@ -50,23 +52,6 @@ export function readPreview(body: unknown): BindingPreview | null {
   };
 }
 
-/** The server's own sentence for a refusal: `detail` (string or FastAPI's list), or the envelope's message. */
-function refusalSentence(body: unknown): string | null {
-  if (!isRecord(body)) return null;
-  const d = body.detail;
-  if (typeof d === "string" && d) return d;
-  if (Array.isArray(d)) {
-    const parts = d
-      .map((x) => (isRecord(x) ? `${Array.isArray(x.loc) ? x.loc.join(".") + ": " : ""}${String(x.msg ?? "")}` : String(x)))
-      .filter(Boolean);
-    if (parts.length) return parts.join("; ");
-  }
-  if (isRecord(d) && typeof d.message === "string") return d.message;
-  if (isRecord(body.error) && typeof body.error.message === "string") return body.error.message;
-  if (typeof body.message === "string") return body.message;
-  return null;
-}
-
 export function previewBinding(
   organizationId: string,
   binding: MergeFieldBinding,
@@ -74,17 +59,24 @@ export function previewBinding(
 ): ThunkAction<Promise<PreviewAnswer>, RootState, unknown, UnknownAction> {
   return async (_dispatch, getState) => {
     await waitForAuthReady(getState);
-    const state = getState();
-    const { headers } = resolveAuth(state);
     let response: Response;
     try {
-      response = await fetch(`${resolveBaseUrl(state)}${BINDING_PREVIEW_PATH}`, {
-        method: "POST",
-        // The server's auth middleware reads the organization from this header; the body
-        // names it too (the route's own contract). Both carry the one the person SET.
-        headers: { ...headers, "X-Organization-Id": organizationId },
-        body: JSON.stringify({ organization_id: organizationId, binding, ...(variableName ? { variable_name: variableName } : {}) }),
-      });
+      response = await requestRaw(
+        BINDING_PREVIEW_PATH,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ organization_id: organizationId, binding, ...(variableName ? { variable_name: variableName } : {}) }),
+        },
+        {
+          // The server's auth middleware reads the organization from the header; the body
+          // names it too (the route's own contract). Both carry the one the person SET.
+          organizationId,
+          allowHttpError: true,
+          // "Not deployed yet" is a state this panel draws, not a failure.
+          expectedErrorStatuses: [404, 405],
+        },
+      );
     } catch (err) {
       return { state: "error", message: `The server could not be reached: ${err instanceof Error ? err.message : String(err)}` };
     }
@@ -102,7 +94,7 @@ export function previewBinding(
       body = null;
     }
     if (!response.ok) {
-      return { state: "error", message: `${refusalSentence(body) ?? "The server refused the preview"} (HTTP ${response.status})` };
+      return { state: "error", message: `${extractMatrxErrorMessage(body) ?? "The server refused the preview"} (HTTP ${response.status})` };
     }
     const preview = readPreview(body);
     if (!preview) return { state: "error", message: "The server answered, but not in the shape a preview has." };

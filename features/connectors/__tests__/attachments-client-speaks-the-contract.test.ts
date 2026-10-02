@@ -85,7 +85,7 @@ describe("conversation attachments client — routes", () => {
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(
-      `${AIDREAM_PRODUCTION_URL}/api/conversations/conv%201/attachments`,
+      `${AIDREAM_PRODUCTION_URL}/conversations/conv%201/attachments`,
     );
     expect(url).not.toContain("/api/ai/conversations/");
     expect((init?.headers as Record<string, string>).Authorization).toBe(
@@ -110,8 +110,8 @@ describe("conversation attachments client — routes", () => {
     await detachConversationResource("c1", "a/1");
 
     expect(fetchMock.mock.calls.map(([url, init]) => `${init?.method} ${url}`)).toEqual([
-      `POST ${AIDREAM_PRODUCTION_URL}/api/conversations/c1/attachments`,
-      `DELETE ${AIDREAM_PRODUCTION_URL}/api/conversations/c1/attachments/a%2F1`,
+      `POST ${AIDREAM_PRODUCTION_URL}/conversations/c1/attachments`,
+      `DELETE ${AIDREAM_PRODUCTION_URL}/conversations/c1/attachments/a%2F1`,
     ]);
   });
 
@@ -119,7 +119,7 @@ describe("conversation attachments client — routes", () => {
     respond(200, "[]");
     await fetchAttachableResources({ provider: "google", query: "q", live: true });
     expect(fetchMock.mock.calls[0][0]).toBe(
-      `${AIDREAM_PRODUCTION_URL}/api/connections/resources?provider=google&q=q&live=true`,
+      `${AIDREAM_PRODUCTION_URL}/connections/resources?provider=google&q=q&live=true`,
     );
   });
 });

@@ -27,6 +27,11 @@ import type {
 } from "./types";
 
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import {
+  buildMatrxRequestUrl,
+  parseMatrxNdjsonResponse,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 
 /**
@@ -75,7 +80,7 @@ async function seoRequest<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
-  const response = await fetch(`${normalizedBaseUrl(serverUrl)}${path}`, {
+  const response = await sendMatrxRequest(buildMatrxRequestUrl(normalizedBaseUrl(serverUrl), path), {
     ...init,
     headers: await organizationContextHeaders(
       {
@@ -112,7 +117,7 @@ async function seoStreamTerminal<T>(
    */
   signal?: AbortSignal,
 ): Promise<T> {
-  const response = await fetch(`${normalizedBaseUrl(serverUrl)}${path}`, {
+  const response = await sendMatrxRequest(buildMatrxRequestUrl(normalizedBaseUrl(serverUrl), path), {
     method: "POST",
     headers: await organizationContextHeaders(
       {
@@ -133,14 +138,12 @@ async function seoStreamTerminal<T>(
     throw new SeoApiError(response.status, detail);
   }
   if (!response.body) throw new Error("SEO server returned no command stream.");
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
   let result: T | null = null;
   let streamError: string | null = null;
-  const consumeLine = (line: string) => {
-    if (!line.trim()) return;
-    const envelope = JSON.parse(line) as Record<string, unknown>;
+  let malformed: unknown = null;
+  // A Matrx envelope carries its payload in `data`; a bare line (no `event`)
+  // is the payload itself — the core hands those to `onUnknownEnvelope`.
+  const consume = (envelope: Record<string, unknown>) => {
     const data =
       envelope.data && typeof envelope.data === "object"
         ? (envelope.data as Record<string, unknown>)
@@ -151,19 +154,24 @@ async function seoStreamTerminal<T>(
       streamError = JSON.stringify(data.error ?? data);
     }
   };
-  while (true) {
-    const chunk = await reader.read();
-    buffer += decoder.decode(chunk.value ?? new Uint8Array(), {
-      stream: !chunk.done,
-    });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      consumeLine(line);
-    }
-    if (chunk.done) break;
+  const { events } = parseMatrxNdjsonResponse(response, signal, {
+    onUnknownEnvelope: (value) => {
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        consume(value as Record<string, unknown>);
+      }
+    },
+    onMalformedLine: (issue) => {
+      malformed ??= issue.error;
+    },
+  });
+  for await (const envelope of events) {
+    consume(envelope as unknown as Record<string, unknown>);
   }
-  consumeLine(buffer);
+  // The core ends an aborted read quietly; the caller's abort still rejects.
+  if (signal?.aborted) {
+    throw signal.reason ?? new DOMException("Aborted", "AbortError");
+  }
+  if (malformed) throw malformed;
   if (streamError) throw new Error(streamError);
   if (result === null)
     throw new Error(`SEO command ended without ${terminalKind}.`);
@@ -171,7 +179,9 @@ async function seoStreamTerminal<T>(
 }
 
 export async function checkSeoHealth(serverUrl: string): Promise<JsonValue> {
-  const response = await fetch(`${normalizedBaseUrl(serverUrl)}/health/ready`);
+  const response = await sendMatrxRequest(
+    buildMatrxRequestUrl(normalizedBaseUrl(serverUrl), "/health/ready"),
+  );
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     throw new SeoApiError(response.status, payload as JsonValue);

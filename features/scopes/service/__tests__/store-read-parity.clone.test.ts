@@ -27,13 +27,32 @@
  *   1. "measures her tree" — the tree loads on both paths, the seat belongs to at least one
  *      organization and sees at least one scope on the old path, and no reader failed on either path.
  *      Anything else is UNMEASURED and fails with a plain sentence.
- *   2. "store equals old" — zero non-clock value differences, every reader.
+ *   2. "store equals old" — zero real differences (what reaches a screen; see below), every reader.
  * Each seat runs on freshly loaded modules (jest.resetModules), so no module cache — the membership
  * read caches for 4 s by container type alone — can hand one seat the other's organizations.
  *
  * The guard's own proof: PARITY_PLANT=empty-memberships makes `mbr_for_user` answer no rows on both
  * paths (in memory, through the client this suite owns — no file and no row is touched); test 1 must
  * go RED for both seats. PARITY_PLANT=memberships-fail makes it fail on both paths; RED too.
+ *
+ * IT COMPARES WHAT REACHES A SCREEN (lane SCOPES-ON-THE-STORE O7, 2026-10-02). Every field is compared,
+ * except the declared list below — each one a field no screen and no web agent path reads (grep
+ * evidence beside it) — and three normalizations, each tied to how the screens read the value:
+ *   - a ```matrx reference fence is compared by what the screens parse out of it
+ *     (`parseReferenceCellValue`: its type and its items — ids, file ids, labels, in order), never by
+ *     its bytes (indentation, key order, the legacy `__kind` shell);
+ *   - a key the OLD path does not select at all, answered `null` by the store, is the same empty cell;
+ *   - a list the screens draw in `sort_order` (scope types, context items) must come from the store in
+ *     `sort_order`; the old path names no order there (no ORDER BY, by id, or ties in heap order).
+ * A value list (`values`) is never drawn in its own order: every screen joins it to the items by
+ * `context_item_id` (contextValuesSlice, useScopeTypeTables, ContextInspector, resolveSuggestionTarget).
+ * Each excluded or normalized difference is still counted and written to PARITY_OUT; only real ones fail.
+ * The harness refuses (UNMEASURED) a seat that compared no value cell — exclusions never make it vacuous.
+ * Plants proving the comparison still bites (in memory, through the suite's own client — no file, no
+ * row): PARITY_PLANT=value-text (the store answers every text value with a word added), fence-label
+ * (every reference label the store names is renamed), type-order (the store answers each organization's
+ * scope types reversed). Each must go RED on test 2, naming the planted class.
+ * PARITY_SEATS=member (or admin) runs one seat.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -48,14 +67,69 @@ const LOCAL = envFile("../../../../.env.local");
 const CLONE = envFile("../../../../.env.clone.local");
 const URL_ = CLONE.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const KEY = CLONE.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+const ONLY_SEATS = (process.env.PARITY_SEATS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 const SEATS = [
   { seat: "admin", email: LOCAL.AI_ADMIN_USERNAME ?? "", password: LOCAL.AI_ADMIN_PASSWORD ?? "" },
   { seat: "member", email: "test@test.com", password: process.env.SEAT_PASSWORD ?? "" },
-];
+].filter((s) => ONLY_SEATS.length === 0 || ONLY_SEATS.includes(s.seat));
+if (SEATS.length === 0) throw new Error(`PARITY_SEATS=${ONLY_SEATS.join(",")} names no seat this suite knows (admin, member).`);
 const READY = Boolean(URL_ && KEY && /nwvv|supabase\.co/.test(URL_) && !/matrxserver/.test(URL_) && SEATS.every((s) => s.email && s.password));
 const describeClone = READY ? describe : describe.skip;
 const PLANT = process.env.PARITY_PLANT ?? "";
-if (PLANT && !["empty-memberships", "memberships-fail"].includes(PLANT)) throw new Error(`PARITY_PLANT=${PLANT} is not a plant this suite knows.`);
+const STORE_PLANTS = ["value-text", "fence-label", "type-order"];
+if (PLANT && !["empty-memberships", "memberships-fail", ...STORE_PLANTS].includes(PLANT)) throw new Error(`PARITY_PLANT=${PLANT} is not a plant this suite knows.`);
+
+/**
+ * THE STORE-SIDE PLANTS (proof that what is compared still bites): a store door's answer is changed in
+ * memory, after the database answered and before the adapter reads it. Only the doors named here.
+ */
+type DoorAnswer = { data: unknown; error: unknown };
+function plantStoreAnswer(door: string, res: DoorAnswer): DoorAnswer {
+  if (res.error || res.data == null) return res;
+  if (PLANT === "value-text" && door === "context_values" && Array.isArray(res.data)) {
+    // A text value the person typed comes back with a word added: what a screen prints changes.
+    return {
+      ...res,
+      data: (res.data as Array<Record<string, unknown>>).map((row) => {
+        const field = (row.field ?? {}) as { type?: string };
+        const v = row.value;
+        return typeof v === "string" && !v.startsWith("```") && field.type !== "relation" ? { ...row, value: `${v} (planted)` } : row;
+      }),
+    };
+  }
+  if (PLANT === "fence-label" && door === "context_values" && Array.isArray(res.data)) {
+    // Every name the store gives a referenced scope is a different name: the chip's text changes.
+    return {
+      ...res,
+      data: (res.data as Array<Record<string, unknown>>).map((row) => {
+        const labels = row.labels as Record<string, string> | null | undefined;
+        if (!labels || Object.keys(labels).length === 0) return row;
+        return { ...row, labels: Object.fromEntries(Object.keys(labels).map((k) => [k, "Planted Name"])) };
+      }),
+    };
+  }
+  if (PLANT === "type-order" && door === "context_tree" && typeof res.data === "object") {
+    // The tree's scope types come back reversed: EntityScopeTagger draws them in this order.
+    const tree = res.data as { types?: unknown[] };
+    return { ...res, data: { ...tree, types: [...(tree.types ?? [])].reverse() } };
+  }
+  return res;
+}
+function plantedSchema(schemaClient: unknown): unknown {
+  const sc = schemaClient as Record<string | symbol, unknown>;
+  return new Proxy(sc, {
+    get: (t, prop) => {
+      const v = t[prop];
+      if (prop === "rpc") {
+        return (fn: string, args?: unknown, opts?: unknown) => {
+          const q = (v as (...a: unknown[]) => PromiseLike<DoorAnswer>).call(t, fn, args, opts);
+          return Promise.resolve(q).then((r) => plantStoreAnswer(fn, r));
+        };
+      }
+      return typeof v === "function" ? (v as (...a: unknown[]) => unknown).bind(t) : v;
+    },
+  });
+}
 
 // The one client every module under test reads through, swapped per seat.
 // One client for both seats (signed out and in again between them): modules read `supabase.auth` at load.
@@ -71,7 +145,14 @@ jest.mock("@/utils/supabase/client", () => ({
         const c = holder.client as unknown as Record<string | symbol, unknown>;
         // THE PLANT (proof of the zero-organization guard): the membership read answers nothing, or
         // fails, on BOTH paths. In memory only.
-        if (prop === "rpc" && PLANT) {
+        if (prop === "schema" && STORE_PLANTS.includes(PLANT)) {
+          // Only the store's own schema: the old path's `context.*` reads are never touched.
+          return (name: string) => {
+            const sc = (c.schema as (n: string) => unknown).call(c, name);
+            return name === "custom" ? plantedSchema(sc) : sc;
+          };
+        }
+        if (prop === "rpc" && PLANT && !STORE_PLANTS.includes(PLANT)) {
           return (fn: string, args?: unknown, opts?: unknown) => {
             if (fn !== "mbr_for_user") return (c.rpc as (...a: unknown[]) => unknown).call(c, fn, args, opts);
             if (PLANT === "empty-memberships") return Promise.resolve({ data: [], error: null, count: null, status: 200, statusText: "OK" });
@@ -100,8 +181,12 @@ jest.mock("@/utils/supabase/adminLane", () => ({ browserAdminLaneOpen: () => fal
 /* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any */
 let scopesService: any = null;
 let __setScopesReadFromStoreForTests: (v: boolean | null) => void = () => undefined;
+// The screens' own reader of a reference cell (ContextValueDisplay, summarizeContextCell) — not the SUT.
+// Loaded with the modules (it imports the service, which reads the mocked client at load).
+let parseReferenceCellValue: (t: string | null | undefined) => { type: string; items: unknown[] } | null = () => null;
 function loadFreshModules() {
   jest.resetModules();
+  parseReferenceCellValue = require("@/features/scopes/utils/referenceCell").parseReferenceCellValue;
   scopesService = require("@/features/scopes/service/scopesService").scopesService;
   __setScopesReadFromStoreForTests = require("@/features/scopes/service/scopesReadKnob").__setScopesReadFromStoreForTests;
 }
@@ -134,18 +219,81 @@ function unmeasured(seat: string, t: { oldOk: boolean; storeOk: boolean; oldErro
 // Keys the store answers from its own clock, by ruling — compared, reported apart, never a defect.
 const CLOCK_KEYS = new Set(["created_at", "updated_at", "fetched_at", "status_updated_at", "last_fed_at"]);
 
-type Diff = { reader: string; arg: string; path: string; old: unknown; store: unknown; clock: boolean };
+/**
+ * BOOKKEEPING — fields NO screen and no web agent path reads (lane SCOPES-ON-THE-STORE O7, 2026-10-02).
+ * Each was traced from the service to every reader: features/scopes, features/scope-system, the chat
+ * lens and context inspector (packages/chat/src/agents/components/context-items, context-preview),
+ * ContextAssignmentField, ActiveContextTree, EntityScopeTagger, the org scopes page, kg-suggestions,
+ * surfaces manifests. A difference here is counted and written out, never failed. Never widen a row:
+ * a field earns a row only with its grep evidence.
+ */
+const BOOKKEEPING: Array<{ readers: RegExp; path: RegExp; why: string }> = [
+  {
+    // `rg -n "item\??\.version|it\.version"` over features/ packages/chat/src components/ app/: no scope
+    // reader; the only `.version` reads in features/scopes + scope-system are a VALUE's (EditScopeValueSheet
+    // "v{row.version}", ContextValueRow, scopeContextView) — values stay compared.
+    readers: /^listContextItems(ForTypes)?$/,
+    path: /^\.items\[[^\]]+\]\.version$/,
+    why: "a context item's version: no screen or agent reads it (the store's Field edit counter)",
+  },
+  {
+    // `rg -n "updated_by" features/scopes features/scope-system packages/chat/src/agents/components`:
+    // only the adapter's own `updated_by: null` and test fixtures.
+    readers: /^listContextItems(ForTypes)?$/,
+    path: /^\.items\[[^\]]+\]\.updated_by$/,
+    why: "a context item's updated_by: no screen or agent reads it",
+  },
+  {
+    // `rg -n "authored_by"` (minus migrations, generated types, tests): the service's selects, the
+    // adapter, the type, and setContextValue's optimistic `authored_by: null` — a writer, never a reader.
+    readers: /^(listContextValues|listContextValuesForScopes|resolveContextCell)$/,
+    path: /^(\.values\[[^\]]+\]|\.value)\.authored_by$/,
+    why: "a value's authored_by: no screen or agent reads it",
+  },
+];
+
+/** The lists the screens draw in `sort_order` (stable sorts; EntityScopeTagger draws the tree's types as answered). */
+const SORT_ORDER_LISTS = new Set(["scope_types", "items"]);
+/** The lists no screen draws in their own order: every reader joins values to items by context_item_id. */
+const UNORDERED_LISTS = new Set(["values"]);
+
+type DiffKind = "value" | "clock" | "bookkeeping" | "fence-spelling" | "screen-order" | "value-list-order" | "absent-vs-null";
+type Diff = { reader: string; arg: string; path: string; old: unknown; store: unknown; kind: DiffKind; clock: boolean };
+type Stats = { leaves: number; valueCells: number };
 
 function strip(v: unknown): unknown {
   return v;
 }
 
-function diff(reader: string, arg: string, a: unknown, b: unknown, p: string, out: Diff[]) {
-  if (Object.is(a, b)) return;
-  const key = p.split(".").pop()?.replace(/\[\d+\]$/, "") ?? "";
+function bookkeeping(reader: string, p: string): boolean {
+  return BOOKKEEPING.some((b) => b.readers.test(reader) && b.path.test(p));
+}
+
+/** A reference fence, as the screens read it (`parseReferenceCellValue`), with each item's keys in one order. */
+function fenceMeaning(text: string): string | null {
+  const parsed = parseReferenceCellValue(text);
+  if (!parsed) return null;
+  const items = parsed.items.map((it) => {
+    const o = it as unknown as Record<string, unknown>;
+    return Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
+  });
+  return JSON.stringify({ type: parsed.type, items });
+}
+
+function push(out: Diff[], d: Omit<Diff, "clock">) {
+  out.push({ ...d, clock: d.kind === "clock" });
+}
+
+function diff(reader: string, arg: string, a: unknown, b: unknown, p: string, out: Diff[], stats: Stats) {
+  if (/\.values\[[^\]]+\]$/.test(p) && a && b && typeof a === "object" && typeof b === "object") stats.valueCells += 1;
+  if (Object.is(a, b)) {
+    if (a === null || typeof a !== "object") stats.leaves += 1;
+    return;
+  }
+  const key = p.split(".").pop()?.replace(/\[[^\]]+\]$/, "") ?? "";
   if (Array.isArray(a) && Array.isArray(b)) {
     if (a.length !== b.length) {
-      out.push({ reader, arg, path: `${p}.length`, old: a.length, store: b.length, clock: false });
+      push(out, { reader, arg, path: `${p}.length`, old: a.length, store: b.length, kind: "value" });
     }
     // Align lists of rows by id where they have one, so an order difference is named as such.
     const ids = (x: unknown[]) => x.map((e) => (e && typeof e === "object" && "id" in (e as object) ? String((e as { id: unknown }).id) : null));
@@ -153,26 +301,65 @@ function diff(reader: string, arg: string, a: unknown, b: unknown, p: string, ou
     const bi = ids(b);
     if (ai.every((x) => x) && bi.every((x) => x)) {
       if (ai.join() !== bi.join() && [...ai].sort().join() === [...bi].sort().join()) {
-        out.push({ reader, arg, path: `${p}#order`, old: ai.slice(0, 12), store: bi.slice(0, 12), clock: false });
+        // The order a screen shows: a value list not at all; a sort_order list must come from the
+        // store in sort_order (per scope type) — the order the people who arranged it set, and the
+        // order ActiveContextTree / the quick pick / EntityScopeTagger draw as answered. The old path
+        // names no order there to keep (listContextItems: no ORDER BY; ForTypes: by id; scope types:
+        // ORDER BY sort_order alone, ties in heap order), and every element's sort_order is compared
+        // as a field. Anything else: exactly.
+        const inSortOrder = (x: unknown[]) => {
+          const last = new Map<string, number>();
+          for (const e of x) {
+            const o = e as { sort_order?: unknown; scope_type_id?: unknown };
+            if (typeof o.sort_order !== "number") return false;
+            const g = String(o.scope_type_id ?? "");
+            if ((last.get(g) ?? -Infinity) > o.sort_order) return false;
+            last.set(g, o.sort_order);
+          }
+          return true;
+        };
+        const kind: DiffKind = UNORDERED_LISTS.has(key)
+          ? "value-list-order"
+          : SORT_ORDER_LISTS.has(key) && inSortOrder(b)
+            ? "screen-order"
+            : "value";
+        push(out, { reader, arg, path: `${p}#order`, old: ai.slice(0, 12), store: bi.slice(0, 12), kind });
       }
       const bm = new Map(b.map((e, i) => [bi[i]!, e]));
       const am = new Map(a.map((e, i) => [ai[i]!, e]));
       for (const [id, e] of am) {
-        if (!bm.has(id)) out.push({ reader, arg, path: `${p}[${id}]`, old: summary(e), store: "(missing)", clock: false });
-        else diff(reader, arg, e, bm.get(id), `${p}[${id}]`, out);
+        if (!bm.has(id)) push(out, { reader, arg, path: `${p}[${id}]`, old: summary(e), store: "(missing)", kind: "value" });
+        else diff(reader, arg, e, bm.get(id), `${p}[${id}]`, out, stats);
       }
-      for (const [id, e] of bm) if (!am.has(id)) out.push({ reader, arg, path: `${p}[${id}]`, old: "(missing)", store: summary(e), clock: false });
+      for (const [id, e] of bm) if (!am.has(id)) push(out, { reader, arg, path: `${p}[${id}]`, old: "(missing)", store: summary(e), kind: "value" });
       return;
     }
-    for (let i = 0; i < Math.max(a.length, b.length); i += 1) diff(reader, arg, a[i], b[i], `${p}[${i}]`, out);
+    for (let i = 0; i < Math.max(a.length, b.length); i += 1) diff(reader, arg, a[i], b[i], `${p}[${i}]`, out, stats);
     return;
   }
   if (a && b && typeof a === "object" && typeof b === "object") {
     const keys = new Set([...Object.keys(a as object), ...Object.keys(b as object)]);
-    for (const k of keys) diff(reader, arg, (a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], `${p}.${k}`, out);
+    for (const k of keys) diff(reader, arg, (a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], `${p}.${k}`, out, stats);
     return;
   }
-  out.push({ reader, arg, path: p, old: strip(a), store: strip(b), clock: CLOCK_KEYS.has(key) });
+  stats.leaves += 1;
+  let kind: DiffKind = CLOCK_KEYS.has(key) ? "clock" : bookkeeping(reader, p) ? "bookkeeping" : "value";
+  // The old path never selected this column; the store answers it empty. Same empty cell on screen.
+  // (Only that direction: a store that drops a column the old path answered stays a difference.)
+  if (kind === "value" && a === undefined && b === null) kind = "absent-vs-null";
+  // A reference fence: what the screens parse out of it, not its bytes.
+  if (kind === "value" && key === "value_text" && typeof a === "string" && typeof b === "string") {
+    const fa = fenceMeaning(a);
+    const fb = fenceMeaning(b);
+    if (fa !== null && fb !== null) {
+      if (fa === fb) kind = "fence-spelling";
+      else {
+        push(out, { reader, arg, path: p, old: JSON.parse(fa), store: JSON.parse(fb), kind: "value" });
+        return;
+      }
+    }
+  }
+  push(out, { reader, arg, path: p, old: strip(a), store: strip(b), kind });
 }
 
 function summary(e: unknown): unknown {
@@ -195,7 +382,12 @@ async function both<T>(fn: () => Promise<T>): Promise<{ old: T; store: T; oldMs:
 }
 
 const REPORT: Record<string, unknown> = { url_ref: URL_.replace(/^https:\/\/([a-z]+)\..*$/, "$1"), plant: PLANT || null, seats: {} };
-const VERDICT: Record<string, { refusal: string | null; valueDiffs: number; byReader: Record<string, { value: number; clock: number }> }> = {};
+const VERDICT: Record<string, { refusal: string | null; valueDiffs: number; byReader: Record<string, { value: number; clock: number }>; byClass: Record<string, number> }> = {};
+
+/** A difference's class: its reader and its path with every row id folded (`.values[].value_text`). */
+function classOf(d: Diff): string {
+  return `${d.reader} ${d.path.replace(/\[[^\]]+\]/g, "[]")}`;
+}
 
 describeClone("the store read path equals the old path on the clone", () => {
   jest.setTimeout(1_800_000);
@@ -209,6 +401,7 @@ describeClone("the store read path equals the old path on the clone", () => {
       holder.userId = auth.user.id;
 
       const diffs: Diff[] = [];
+      const stats: Stats = { leaves: 0, valueCells: 0 };
       const timings: Record<string, { old: number; store: number; calls: number }> = {};
       const errors: Failure[] = [];
       const run = async <T,>(reader: string, arg: string, fn: () => Promise<T>) => {
@@ -224,7 +417,7 @@ describeClone("the store read path equals the old path on the clone", () => {
           errors.push({ reader, arg, old: o?.ok === false ? o.error : "ok", store: st?.ok === false ? st.error : "ok" });
           return r;
         }
-        diff(reader, arg, o?.data ?? r.old, st?.data ?? r.store, "", diffs);
+        diff(reader, arg, o?.data ?? r.old, st?.data ?? r.store, "", diffs, stats);
         return r;
       };
 
@@ -276,28 +469,44 @@ describeClone("the store read path equals the old path on the clone", () => {
       }
       await run("listContextItemsForTypes", "all", () => scopesService.listContextItemsForTypes(allTypes));
 
+      // Only a real difference counts as `value`; every other kind is counted apart, never failed.
       const byReader: Record<string, { value: number; clock: number }> = {};
+      const byKind: Record<string, number> = {};
+      const byClass: Record<string, number> = {};
       for (const d of diffs) {
+        byKind[d.kind] = (byKind[d.kind] ?? 0) + 1;
         const r = (byReader[d.reader] ??= { value: 0, clock: 0 });
-        if (d.clock) r.clock += 1;
-        else r.value += 1;
+        if (d.kind === "clock") r.clock += 1;
+        else if (d.kind === "value") {
+          r.value += 1;
+          byClass[classOf(d)] = (byClass[classOf(d)] ?? 0) + 1;
+        }
       }
+      const real = diffs.filter((d) => d.kind === "value");
       const treeErrorsExcluded = errors.filter((e) => e.reader !== "getScopeTree");
       const refusal = unmeasured(
         s.seat,
         { oldOk: treeOld?.ok !== false, storeOk: treeStore?.ok !== false, oldError: treeOld?.error, storeError: treeStore?.error, old: count(oldOrgs), store: count(storeOrgs) },
         treeErrorsExcluded,
-      );
-      VERDICT[s.seat] = { refusal, valueDiffs: diffs.filter((d) => !d.clock).length, byReader };
+      ) ?? (stats.valueCells === 0
+        ? `UNMEASURED: no value cell was compared for ${s.seat} (${stats.leaves} fields compared) — with none, "no difference" says nothing.`
+        : null);
+      VERDICT[s.seat] = { refusal, valueDiffs: real.length, byReader, byClass };
       (REPORT.seats as Record<string, unknown>)[s.seat] = {
         user: holder.userId,
         refusal,
         tree: { old: count(oldOrgs), store: count(storeOrgs) },
         timings,
         errors,
+        compared: stats,
+        byKind,
+        byClass,
         byReader,
-        diffs: diffs.filter((d) => !d.clock),
-        clockSample: diffs.filter((d) => d.clock).slice(0, 20),
+        diffs: real,
+        // Excluded or normalized differences, each named by its kind — the reader can re-judge any of them.
+        notCounted: diffs.filter((d) => d.kind !== "value" && d.kind !== "clock"),
+        bookkeepingRules: BOOKKEEPING.map((b) => ({ readers: String(b.readers), path: String(b.path), why: b.why })),
+        clockSample: diffs.filter((d) => d.kind === "clock").slice(0, 20),
       };
       await client.auth.signOut();
       if (refusal) throw new Error(refusal);
@@ -307,7 +516,7 @@ describeClone("the store read path equals the old path on the clone", () => {
       const v = VERDICT[s.seat];
       if (!v) throw new Error(`UNMEASURED: ${s.seat}'s readers never ran.`);
       if (v.refusal) throw new Error(v.refusal);
-      const named = Object.entries(v.byReader).filter(([, n]) => n.value > 0).map(([r, n]) => `${r} ${n.value}`).join(", ");
+      const named = Object.entries(v.byClass).sort((x, y) => y[1] - x[1]).map(([c, n]) => `${c} ${n}`).join("; ");
       if (v.valueDiffs > 0) throw new Error(`${s.seat}: ${v.valueDiffs} value differences between the old and store paths (${named}); PARITY_OUT has each one.`);
     });
   }

@@ -43,6 +43,11 @@ import type {
 } from "./schedulerApi.types";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import {
+  buildMatrxRequestUrl,
+  extractMatrxErrorCode,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 // 🚨 THE GATE, NOT THE BARE KERNEL (SOURCE-KEY, 2026-09-24). This client used
 // to read `requireOrganizationContext` directly — fail-closed and SYNCHRONOUS,
 // so a signed-in person with no workspace selected got a bare toast
@@ -100,7 +105,9 @@ async function request<T>(
   init: RequestInit & { method: string },
   organizationId?: string,
 ): Promise<T> {
-  const res = await fetch(`${baseUrl()}${path}`, {
+  // Own header policy (a read never carries the selected organization), so
+  // not the browser-session door; URL assembly and the send are the core's.
+  const res = await sendMatrxRequest(buildMatrxRequestUrl(baseUrl(), path), {
     ...init,
     headers: {
       ...(await authHeaders(init.method, organizationId)),
@@ -125,8 +132,8 @@ async function request<T>(
       technical: `${init.method} ${path} ${res.status}${detail}`,
     });
     // Carry the server's wire code so callers can tell "organization_required" apart.
-    const wireCode = (body as { code?: unknown } | null)?.code;
-    if (typeof wireCode === "string") (refused as { code?: string }).code = wireCode;
+    const wireCode = extractMatrxErrorCode(body);
+    if (wireCode) (refused as { code?: string }).code = wireCode;
     throw refused;
   }
   return (await res.json()) as T;

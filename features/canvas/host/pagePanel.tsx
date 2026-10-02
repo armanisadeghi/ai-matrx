@@ -17,7 +17,8 @@
  * header is the only chrome — no second title bar.
  *
  * Lifecycle, owned here once:
- *  - mount opens (or focuses) the tab; a canvas that is not on screen is
+ *  - mount opens (or focuses) the tab, and so does every later `openRequest`
+ *    (a repeat open of the same thing); a canvas that is not on screen is
  *    announced through `openCanvasItem` and the page is told it closed;
  *  - the person closing the tab calls the page's `onClose`;
  *  - the page unmounting (navigating away) closes the tab — its content is
@@ -126,6 +127,12 @@ export interface CanvasPagePanelProps {
   description?: ReactNode;
   headerActions?: ReactNode;
   onClose: () => void;
+  /**
+   * Moves on every open request from the page, including a repeat open of the
+   * thing already shown (a data table re-clicking the same row). A change
+   * brings this tab forward, even when the title did not move.
+   */
+  openRequest?: number;
   children: ReactNode;
 }
 
@@ -141,6 +148,7 @@ export function CanvasPagePanel({
   description,
   headerActions,
   onClose,
+  openRequest,
   children,
 }: CanvasPagePanelProps) {
   const canvas = useOptionalCanvas();
@@ -189,6 +197,17 @@ export function CanvasPagePanel({
     if (canvas.getState().items[itemId]?.title === title) return;
     canvas.open({ kind: PAGE_PANEL_KIND, key, title });
   }, [canvas, itemId, key, title]);
+
+  // The page asked to open again (the same row clicked while its tab sat in
+  // the background): the title did not move, so the effect above stays quiet.
+  // The mount already opened the tab, so only a later change counts.
+  const seenRequest = useRef(openRequest);
+  useEffect(() => {
+    if (openRequest === seenRequest.current) return;
+    seenRequest.current = openRequest;
+    if (!canvas || !canvas.getState().items[itemId]) return;
+    canvas.open({ kind: PAGE_PANEL_KIND, key, title: latest.current.title });
+  }, [canvas, itemId, key, openRequest]);
 
   const slot = useBodySlot(itemId);
   const richTitle = isValidElement(titleNode) ? titleNode : null;

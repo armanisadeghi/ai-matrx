@@ -72,6 +72,15 @@ import { buildDealColumns } from "./columns";
 import { DealCreateDialog } from "./DealCreateDialog";
 import { DealsBoard } from "./DealsBoard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  customFiltersToTable,
+  keyOfColumnId,
+  splitCustomFilters,
+  type StandardFieldColumn,
+} from "@/features/unified-data/standard-field-columns/standardFieldColumns";
+import { useStandardFieldColumns } from "@/features/unified-data/standard-field-columns/useStandardFieldColumns";
+import { useServerGroupCounts } from "@/features/unified-data/standard-field-columns/useServerGroupCounts";
+import { countDealList } from "../../deals/service";
 
 const SURFACE_KEY = "crm-deals";
 const SURFACE_DEFAULTS = {
@@ -83,7 +92,10 @@ const SURFACE_DEFAULTS = {
 /** Table `columnFilters` → the service's typed filter bag. */
 function fromTableFilters(state: ColumnFiltersState): DealListFilters {
   const out: DealListFilters = {};
-  for (const [id, f] of Object.entries(state)) {
+  // Custom-field columns (`cf:<key>`) carry their filter as the table states it.
+  const { custom, rest } = splitCustomFilters(state);
+  if (Object.keys(custom).length) out.custom = custom;
+  for (const [id, f] of Object.entries(rest)) {
     if (!f) continue;
     if (f.kind === "text" && f.value?.trim() && id === "name") {
       out.name = f.value.trim();
@@ -125,7 +137,16 @@ function toTableFilters(filters: DealListFilters): ColumnFiltersState {
     out.updated_at = { kind: "select", value: filters.updated_at };
   if (filters.created_at)
     out.created_at = { kind: "select", value: filters.created_at };
+  Object.assign(out, customFiltersToTable(filters.custom));
   return out;
+}
+
+/** One custom value of a deal row (`custom_fields` is a jsonb document). */
+function customFieldValue(row: DealListRow, key: string): unknown {
+  const doc = row.custom_fields;
+  return doc && typeof doc === "object" && !Array.isArray(doc)
+    ? (doc as Record<string, unknown>)[key]
+    : undefined;
 }
 
 type BoardState = {
@@ -142,11 +163,49 @@ export function DealsPage() {
   const requestedMode = searchParams.get("mode");
 
   const { prefs, setPrefs } = useListViewPrefs(SURFACE_KEY, SURFACE_DEFAULTS);
-  const list = useDealList({
-    sort: prefs.sort,
-    direction: prefs.direction as DealSortDirection,
-    pageSize: prefs.pageSize,
-  });
+  // CUSTOM FIELDS ARE COLUMNS (lane 7 wave 2): the same generic source the
+  // people list uses, over the `crm_deal` token.
+  const [dealFields, setDealFields] = useState<readonly StandardFieldColumn[]>([]);
+  const list = useDealList(
+    {
+      sort: prefs.sort,
+      direction: prefs.direction as DealSortDirection,
+      pageSize: prefs.pageSize,
+    },
+    dealFields,
+  );
+  const customColumns = useStandardFieldColumns<DealListRow>("crm_deal", list.ctx?.orgIds);
+  useEffect(() => {
+    setDealFields(customColumns.fields);
+  }, [customColumns.fields]);
+  const [groupColumnId, setGroupColumnId] = useState<string | null>(null);
+  const activeGroup =
+    groupColumnId && customColumns.groupableColumnIds.includes(groupColumnId)
+      ? groupColumnId
+      : null;
+  const groupKey = activeGroup ? keyOfColumnId(activeGroup) : null;
+  const groupCounts = useServerGroupCounts(
+    activeGroup,
+    groupKey
+      ? list.rows.map((row) => customColumns.labelOf(activeGroup!, customFieldValue(row, groupKey)) ?? null)
+      : [],
+    JSON.stringify(list.query),
+    (columnId, value) => {
+      const key = keyOfColumnId(columnId);
+      if (!key || !list.ctx) return Promise.resolve(0);
+      return countDealList(
+        {
+          ...list.query,
+          filters: {
+            ...list.query.filters,
+            custom: { ...list.query.filters.custom, [key]: { kind: "select", value, values: [value] } },
+          },
+        },
+        list.ctx,
+        customColumns.fields,
+      );
+    },
+  );
   const {
     pipelines,
     stageById,
@@ -575,7 +634,7 @@ export function DealsPage() {
             <div className="flex h-full min-h-0 flex-col">
               <MatrxDataTable<DealListRow>
                 data={list.rows}
-                columns={columns}
+                columns={[...columns, ...customColumns.columns]}
                 getRowId={(row) => row.id}
                 isLoading={list.isLoading}
                 isFetching={list.isFetching}
@@ -621,6 +680,23 @@ export function DealsPage() {
                     },
                   ],
                 }}
+                {...(customColumns.groupableColumnIds.length
+                  ? {
+                      grouping: {
+                        columnId: activeGroup,
+                        onColumnIdChange: setGroupColumnId,
+                        groupableColumnIds: customColumns.groupableColumnIds,
+                        rowNoun: "deal",
+                        readCell: (row: DealListRow, columnId: string) => {
+                          const key = keyOfColumnId(columnId);
+                          return key
+                            ? (customColumns.labelOf(columnId, customFieldValue(row, key)) ?? null)
+                            : null;
+                        },
+                        groupFacts: groupCounts.groupFacts,
+                      },
+                    }
+                  : {})}
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
                 getRowHref={(row) => `/crm/deals/${row.id}`}
@@ -646,7 +722,8 @@ export function DealsPage() {
                   humanRow: (row) =>
                     `${row.name} — ${stageById.get(row.stage_id)?.name ?? "unknown stage"}`,
                   showRow: false,
-                  showToolbar: false,
+                  // The toolbar's "Copy or export", custom-field columns included.
+                  showToolbar: true,
                 }}
                 emptyState={{
                   icon: <Handshake className="h-6 w-6 text-muted-foreground" />,

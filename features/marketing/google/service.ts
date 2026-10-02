@@ -31,6 +31,7 @@ import {
 } from "@/features/marketing/google/health";
 import { readAllRows } from "@ai-matrx/data/db";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import { operationFailed } from "@/utils/errors";
@@ -526,7 +527,7 @@ export async function postGoogleBackend(
       );
     }
   }
-  const response = await fetch(`${backendBase()}${path}`, {
+  const response = await sendMatrxRequest(buildMatrxRequestUrl(backendBase(), path), {
     method: "POST",
     headers: await organizationContextHeaders(
       {
@@ -557,7 +558,7 @@ export async function getGoogleBackend(
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Sign in to manage Google.");
-  const response = await fetch(`${backendBase()}${path}`, {
+  const response = await sendMatrxRequest(buildMatrxRequestUrl(backendBase(), path), {
     method: "GET",
     headers: await organizationContextHeaders(
       { Authorization: `Bearer ${session.access_token}` },

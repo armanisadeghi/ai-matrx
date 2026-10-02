@@ -12,12 +12,16 @@
 import type { ChatRootState } from "../../store/root-state";
 import { selectEndpointOverrideConfig } from "../../host/server/api-config";
 import { resolveEndpointPath } from "@ai-matrx/agents/matrx";
-import { ENDPOINTS } from "@ai-matrx/agents/matrx";
+import {
+  buildMatrxRequestUrl,
+  ENDPOINTS,
+  getUserMessage,
+  readMatrxJsonResponse,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 import { resolveBackendForConversation } from "../redux/execution-system/thunks/resolve-base-url";
 import { assembleManualRequest } from "../redux/execution-system/thunks/execute-manual-instance.thunk";
 import type { PromptPreview } from "./types";
-
-const trimRoot = (baseUrl: string): string => baseUrl.replace(/\/+$/, "");
 
 export async function requestPromptPreview(
   state: ChatRootState,
@@ -52,7 +56,6 @@ export async function requestPromptPreview(
     ENDPOINTS.ai.manual,
     selectEndpointOverrideConfig(state),
   );
-  const url = `${trimRoot(backend.baseUrl)}${path}`;
 
   // Dry-run + ephemeral: full assembly, no LLM turn, nothing persisted.
   // `store:false` is what makes it write nothing — `dry_run` only says "don't
@@ -66,24 +69,19 @@ export async function requestPromptPreview(
     store: false,
   };
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: backend.headers,
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    let detail = `${response.status} ${response.statusText}`;
-    try {
-      const err: unknown = await response.json();
-      if (err && typeof err === "object" && "detail" in err) {
-        detail = String((err as { detail: unknown }).detail);
-      }
-    } catch {
-      // non-JSON error body — keep the status line
-    }
-    throw new Error(`Prompt preview failed: ${detail}`);
+  // THE shared request pipeline (`@ai-matrx/agents/matrx`): the URL, the
+  // send, and the one error classifier — the server's own sentence.
+  const response = await sendMatrxRequest(
+    buildMatrxRequestUrl(backend.baseUrl.replace(/\/+$/, ""), path),
+    {
+      method: "POST",
+      headers: backend.headers,
+      body: JSON.stringify(body),
+    },
+  );
+  try {
+    return await readMatrxJsonResponse<PromptPreview>(response);
+  } catch (error) {
+    throw new Error(`Prompt preview failed: ${getUserMessage(error)}`);
   }
-
-  return (await response.json()) as PromptPreview;
 }

@@ -55,7 +55,12 @@ import {
 } from "@/lib/diagnostics/capturePythonClientError";
 import { captureStreamEvent } from "@/lib/diagnostics/captureStreamError";
 import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
-import { parseMatrxNdjsonResponse } from "@ai-matrx/agents/matrx";
+import {
+  buildMatrxRequestUrl,
+  parseMatrxNdjsonResponse,
+  readMatrxJsonResponse,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ---------------------------------------------------------------------------
@@ -167,7 +172,10 @@ function buildAndLogTargetUrl(
   source: string,
   method: string,
 ): string {
-  const url = `${resolveBaseUrlForPath(path, override, method)}${path}`;
+  const url = buildMatrxRequestUrl(
+    resolveBaseUrlForPath(path, override, method),
+    path,
+  );
   logApiTarget(url, {
     source: `python-client.${source}`,
     method,
@@ -259,46 +267,6 @@ function waitForGetRetry(signal: AbortSignal | undefined): Promise<void> {
     };
     signal.addEventListener("abort", onAbort, { once: true });
   });
-}
-
-/**
- * `fetch` with a hard timeout that composes with the caller's abort signal. On
- * timeout it throws a loud, retryable BackendApiError (never hangs). A genuine
- * caller-initiated abort propagates unchanged.
- */
-async function fetchWithTimeout(
-  url: string,
-  init: RequestInit,
-  callerSignal: AbortSignal | undefined,
-  timeoutMs: number,
-): Promise<Response> {
-  const controller = new AbortController();
-  const onCallerAbort = () => controller.abort();
-  if (callerSignal) {
-    if (callerSignal.aborted) controller.abort();
-    else callerSignal.addEventListener("abort", onCallerAbort, { once: true });
-  }
-  let timedOut = false;
-  const timer = setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, timeoutMs);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } catch (e) {
-    if (timedOut) {
-      throw new BackendApiError({
-        code: "request_timeout",
-        detail: `${init.method ?? "GET"} ${url} exceeded ${timeoutMs}ms`,
-        userMessage: "The request timed out — please retry.",
-        status: 504,
-      });
-    }
-    throw e; // genuine caller abort or network error
-  } finally {
-    clearTimeout(timer);
-    if (callerSignal) callerSignal.removeEventListener("abort", onCallerAbort);
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -606,7 +574,7 @@ export async function requestRaw(
   try {
     const built = await buildHeaders(opts, false, method);
     requestId = built.requestId;
-    const response = await fetch(url, {
+    const response = await sendMatrxRequest(url, {
       ...init,
       headers: {
         ...built.headers,
@@ -656,24 +624,19 @@ export async function getJson<T>(
     const { headers, requestId } = await buildHeaders(opts, false, "GET");
     let response: Response;
     try {
-      response = await fetchWithTimeout(
-        url,
-        { method: "GET", headers },
-        opts.signal,
-        opts.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS,
-      );
+      response = await sendMatrxRequest(url, { method: "GET", headers }, {
+        signal: opts.signal,
+        timeoutMs: opts.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS,
+      });
     } catch (error) {
       if (!isRetryableGetTransportError(error, opts.signal)) throw error;
       await waitForGetRetry(opts.signal);
-      response = await fetchWithTimeout(
-        url,
-        { method: "GET", headers },
-        opts.signal,
-        opts.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS,
-      );
+      response = await sendMatrxRequest(url, { method: "GET", headers }, {
+        signal: opts.signal,
+        timeoutMs: opts.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS,
+      });
     }
-    if (!response.ok) throw await parseHttpError(response);
-    const data = (await response.json()) as T;
+    const data = await readMatrxJsonResponse<T>(response);
     return { data, meta: meta(response, requestId) };
   } catch (err) {
     if (opts.captureErrors === false) throw err;
@@ -695,14 +658,13 @@ export async function postJson<T, B = unknown>(
   );
   try {
     const { headers, requestId } = await buildHeaders(opts, true);
-    const response = await fetch(url, {
+    const response = await sendMatrxRequest(url, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
       signal: opts.signal,
     });
-    if (!response.ok) throw await parseHttpError(response);
-    const data = (await response.json()) as T;
+    const data = await readMatrxJsonResponse<T>(response);
     return { data, meta: meta(response, requestId) };
   } catch (err) {
     if (opts.captureErrors === false) throw err;
@@ -745,7 +707,7 @@ export async function* postNdjson<B = unknown>(
   try {
     const built = await buildHeaders(opts, true);
     requestId = built.requestId;
-    response = await fetch(url, {
+    response = await sendMatrxRequest(url, {
       method: "POST",
       headers: built.headers,
       body: JSON.stringify(body),
@@ -785,14 +747,13 @@ export async function patchJson<T, B = unknown>(
   );
   try {
     const { headers, requestId } = await buildHeaders(opts, true);
-    const response = await fetch(url, {
+    const response = await sendMatrxRequest(url, {
       method: "PATCH",
       headers,
       body: JSON.stringify(body),
       signal: opts.signal,
     });
-    if (!response.ok) throw await parseHttpError(response);
-    const data = (await response.json()) as T;
+    const data = await readMatrxJsonResponse<T>(response);
     return { data, meta: meta(response, requestId) };
   } catch (err) {
     failClient(err, "PATCH", path, url);
@@ -814,14 +775,13 @@ export async function putJson<T, B = unknown>(
   );
   try {
     const { headers, requestId } = await buildHeaders(opts, true);
-    const response = await fetch(url, {
+    const response = await sendMatrxRequest(url, {
       method: "PUT",
       headers,
       body: JSON.stringify(body),
       signal: opts.signal,
     });
-    if (!response.ok) throw await parseHttpError(response);
-    const data = (await response.json()) as T;
+    const data = await readMatrxJsonResponse<T>(response);
     return { data, meta: meta(response, requestId) };
   } catch (err) {
     failClient(err, "PUT", path, url);
@@ -836,7 +796,7 @@ export async function del<T = null>(
   const url = buildAndLogTargetUrl(path, opts.baseUrlOverride, "del", "DELETE");
   try {
     const { headers, requestId } = await buildHeaders(opts, false);
-    const response = await fetch(url, {
+    const response = await sendMatrxRequest(url, {
       method: "DELETE",
       headers,
       signal: opts.signal,
@@ -868,7 +828,7 @@ export async function delJson<T = null, B = unknown>(
   );
   try {
     const { headers, requestId } = await buildHeaders(opts, true);
-    const response = await fetch(url, {
+    const response = await sendMatrxRequest(url, {
       method: "DELETE",
       headers,
       body: JSON.stringify(body),
@@ -907,10 +867,12 @@ export async function postMultipart<T>(
       body: form,
     } satisfies RequestInit;
     const response = opts.timeoutMs
-      ? await fetchWithTimeout(url, init, opts.signal, opts.timeoutMs)
-      : await fetch(url, { ...init, signal: opts.signal });
-    if (!response.ok) throw await parseHttpError(response);
-    const data = (await response.json()) as T;
+      ? await sendMatrxRequest(url, init, {
+        signal: opts.signal,
+        timeoutMs: opts.timeoutMs,
+      })
+      : await sendMatrxRequest(url, { ...init, signal: opts.signal });
+    const data = await readMatrxJsonResponse<T>(response);
     return { data, meta: meta(response, requestId) };
   } catch (err) {
     if (opts.captureErrors === false) throw err;
@@ -1119,7 +1081,7 @@ export async function downloadBlob(
   opts: RequestOptions = {},
 ): Promise<{ blob: Blob; meta: ResponseMeta; filename: string | null }> {
   const { headers, requestId } = await buildHeaders(opts, false, "GET");
-  const response = await fetch(
+  const response = await sendMatrxRequest(
     buildAndLogTargetUrl(path, opts.baseUrlOverride, "downloadBlob", "GET"),
     { method: "GET", headers, signal: opts.signal },
   );

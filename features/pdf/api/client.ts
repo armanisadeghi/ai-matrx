@@ -22,6 +22,11 @@ import { useApiAuth } from "@/hooks/useApiAuth";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import {
+  buildMatrxRequestUrl,
+  extractMatrxErrorMessage,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 
 type PdfEndpoint = typeof ENDPOINTS.pdf;
 export type PdfEndpointKey = {
@@ -73,22 +78,8 @@ export async function pdfErrorFromResponse(
   const raw = await response.text().catch(() => response.statusText);
   let detail = raw;
   try {
-    const parsed: unknown = JSON.parse(raw);
-    if (parsed && typeof parsed === "object") {
-      const obj = parsed as Record<string, unknown>;
-      if (Array.isArray(obj.detail)) {
-        detail = obj.detail
-          .map((d) => {
-            const item = d as { loc?: unknown[]; msg?: string };
-            const loc = Array.isArray(item.loc) ? item.loc.join(".") : "";
-            return loc ? `${loc}: ${item.msg ?? ""}` : (item.msg ?? "");
-          })
-          .filter(Boolean)
-          .join("; ");
-      } else {
-        detail = String(obj.user_message ?? obj.message ?? obj.detail ?? raw);
-      }
-    }
+    // The core reads the envelope, structured detail and 422 field lists.
+    detail = extractMatrxErrorMessage(JSON.parse(raw) as unknown) ?? raw;
   } catch {
     // not JSON — keep raw text
   }
@@ -107,7 +98,7 @@ export function usePdfClient(): PdfClient {
   }
 
   function buildUrl(endpoint: PdfEndpointKey | (string & {})): string {
-    return `${backendUrl}${endpointPath(endpoint)}`;
+    return buildMatrxRequestUrl(`${backendUrl}`, endpointPath(endpoint));
   }
 
   async function authHeaders(): Promise<Record<string, string>> {
@@ -134,7 +125,7 @@ export function usePdfClient(): PdfClient {
     endpoint: PdfEndpointKey,
     body: unknown,
   ): Promise<T> {
-    const response = await fetch(buildUrl(endpoint), {
+    const response = await sendMatrxRequest(buildUrl(endpoint), {
       method: "POST",
       headers: await jsonHeaders(),
       body: JSON.stringify(body),
@@ -149,7 +140,7 @@ export function usePdfClient(): PdfClient {
     endpoint: PdfEndpointKey,
     body: unknown,
   ): Promise<PdfBinaryResult> {
-    const response = await fetch(buildUrl(endpoint), {
+    const response = await sendMatrxRequest(buildUrl(endpoint), {
       method: "POST",
       headers: await jsonHeaders(),
       body: JSON.stringify(body),
@@ -178,7 +169,7 @@ export function usePdfClient(): PdfClient {
   }
 
   async function getJson<T = unknown>(endpoint: PdfEndpointKey): Promise<T> {
-    const response = await fetch(buildUrl(endpoint), {
+    const response = await sendMatrxRequest(buildUrl(endpoint), {
       method: "GET",
       headers: await authHeaders(),
     });

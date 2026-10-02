@@ -16,6 +16,11 @@ import type {
   AuthenticatorEntry,
 } from "./authenticator-types";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import {
+  buildMatrxRequestUrl,
+  readMatrxJsonResponse,
+  sendMatrxRequest,
+} from "@ai-matrx/agents/matrx";
 
 function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
@@ -59,28 +64,19 @@ async function authFetch<T>(path: string, init?: RequestInit): Promise<T> {
   );
   let resp: Response;
   try {
-    resp = await fetch(`${backendBase()}/api/authenticator${path}`, {
-      ...init,
-      headers,
-    });
+    resp = await sendMatrxRequest(
+      buildMatrxRequestUrl(backendBase(), `/api/authenticator${path}`),
+      { ...init, headers },
+    );
   } catch {
     throw new Error(
       "Authenticator service unreachable — enrollment needs the backend online",
     );
   }
-  if (!resp.ok) {
-    let detail: string | undefined;
-    try {
-      const body = (await resp.json()) as { detail?: unknown };
-      detail =
-        typeof body.detail === "string" ? body.detail : JSON.stringify(body);
-    } catch {
-      detail = await resp.text().catch(() => undefined);
-    }
-    throw new Error(detail || `HTTP ${resp.status}`);
-  }
+  // A non-2xx becomes the one classified BackendApiError (its message is the
+  // server's user sentence); a 204 has no body.
   if (resp.status === 204) return undefined as T;
-  return (await resp.json()) as T;
+  return readMatrxJsonResponse<T>(resp);
 }
 
 /** Every account the signed-in user holds an authenticator for. Metadata only. */

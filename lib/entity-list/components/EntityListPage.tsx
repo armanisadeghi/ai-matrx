@@ -60,6 +60,8 @@ import { countActiveFilters } from "../types";
 import { EditRowRegistry } from "../editRowRegistry";
 import { EntityScopeTabs, scopeKindLabel } from "./EntityScopeTabs";
 import { EntityOrgFilter } from "./EntityOrgFilter";
+import { EntityDimensionFilter } from "./EntityDimensionFilter";
+import { dimensionValueOf, withDimensionValue } from "../dimensionFilter";
 import { DEFAULT_LIST_KNOB_KEY, ORG_FILTER_FEATURE } from "@/lib/list-scope";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { EntityListToolbar } from "./EntityListToolbar";
@@ -370,6 +372,13 @@ export function EntityListPage<TRow>({
       pageSize,
     },
   });
+  // THE DIMENSION FILTER shows where the surface's server honours it, on personal-seat lists only (its
+  // Values are the viewer's own organizations' Dimensions; an admin page never acts as the viewer). A
+  // Value the address carries always shows, so the narrowing is never invisible.
+  const dimensionOffered =
+    (Boolean(config.dimensionFilter) &&
+      visibleScopes.some((kind) => PERSONAL_SEAT_SCOPES.includes(kind))) ||
+    Boolean(dimensionValueOf(list.query.filters));
 
   // TYPED TOKENS BECOME FILTERS once finished (config.searchTokens): `kind:form ` moves out of the
   // text and into the filter bag in one step, so it shows as a chip and in the column header.
@@ -1233,12 +1242,28 @@ export function EntityListPage<TRow>({
             )}
           </div>
           {oneHeaderRow ? <div className="min-w-0 flex-1 [&_[data-entity-list-toolbar]]:flex-nowrap">{renderToolbar()}</div> : null}
+          {/* THE DIMENSION FILTER (./EntityDimensionFilter): only where the surface's server honours it. */}
+          {dimensionOffered && !(phoneSearching && !dimensionValueOf(list.query.filters)) && (
+            <div
+              data-entity-list-dimension=""
+              className={cn(
+                "flex min-w-0 items-center sm:ml-auto sm:shrink-0",
+                dimensionValueOf(list.query.filters) ? "max-sm:flex-1" : "max-sm:flex-none",
+              )}
+            >
+              <EntityDimensionFilter
+                valueId={dimensionValueOf(list.query.filters)}
+                onChange={(valueId) => list.setFilters(withDimensionValue(list.query.filters, valueId))}
+              />
+            </div>
+          )}
           {/* A narrowing the address carries is always visible and clearable, knob or not. */}
           {(orgFilterOffered || Boolean(list.query.orgId)) && !(phoneSearching && !list.query.orgId) && (
             <div
               data-entity-list-org=""
               className={cn(
-                "flex min-w-0 items-center sm:ml-auto sm:shrink-0",
+                "flex min-w-0 items-center sm:shrink-0",
+                !dimensionOffered && "sm:ml-auto",
                 list.query.orgId ? "max-sm:flex-1" : "max-sm:flex-none",
               )}
             >

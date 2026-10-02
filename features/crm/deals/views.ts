@@ -7,6 +7,7 @@
 // the generic bar + service in `saved-views/` serve both through a codec.
 
 import type { SavedViewCodec } from "../saved-views/service";
+import { parseCustomFieldFilters } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
 import type {
   DealDateBucket,
   DealListFilters,
@@ -51,6 +52,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function parseFilters(raw: unknown): DealListFilters {
   if (!isRecord(raw)) return {};
   const out: DealListFilters = {};
+  // Custom-field filters ride along (lane 7 wave 2), read defensively.
+  const custom = parseCustomFieldFilters(raw.custom);
+  if (custom) out.custom = custom;
   if (typeof raw.name === "string" && raw.name.trim()) out.name = raw.name.trim();
   if (Array.isArray(raw.stage_id)) {
     const ids = raw.stage_id.filter((v): v is string => typeof v === "string");

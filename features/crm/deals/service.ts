@@ -16,6 +16,13 @@
 // OR deals in one of my organizations — like the outreach-list console. It is
 // a sales floor's work console, not a browse surface.
 
+import {
+  applyCustomFieldFilters,
+  customFieldOrderColumn,
+  customFieldSearchClauses,
+  type CustomFieldPredicateBuilder,
+  type StandardFieldColumn,
+} from "@/features/unified-data/standard-field-columns/standardFieldColumns";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import type { CrmQueryContext } from "../types";
@@ -69,16 +76,7 @@ function sanitizeSearch(value: string): string {
   return value.trim().replace(/[,()]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-type DealPredicateBuilder<Q> = {
-  is(column: string, value: null): Q;
-  not(column: string, operator: string, value: unknown): Q;
-  eq(column: string, value: unknown): Q;
-  in(column: string, values: readonly unknown[]): Q;
-  ilike(column: string, pattern: string): Q;
-  gte(column: string, value: string): Q;
-  lte(column: string, value: string): Q;
-  or(filters: string): Q;
-};
+type DealPredicateBuilder<Q> = CustomFieldPredicateBuilder<Q>;
 
 /**
  * The FULL deal-list predicate set (scope, view, pipeline, facets, column
@@ -89,6 +87,8 @@ export function applyDealListPredicates<Q extends DealPredicateBuilder<Q>>(
   builder: Q,
   query: DealListQuery,
   ctx: CrmQueryContext,
+  /** The `crm_deal` token's custom fields (the generic column source). */
+  customFields: readonly StandardFieldColumn[] = [],
 ): Q {
   let q =
     query.view === "trash"
@@ -129,9 +129,18 @@ export function applyDealListPredicates<Q extends DealPredicateBuilder<Q>>(
   if (f.updated_at) q = q.gte("updated_at", bucketSince(f.updated_at));
   if (f.created_at) q = q.gte("created_at", bucketSince(f.created_at));
 
+  // Custom fields (lane 7 wave 2): server predicates on the row's `custom_fields`.
+  q = applyCustomFieldFilters(q, f.custom, customFields);
+
   const term = sanitizeSearch(query.search);
   if (term) {
-    q = q.or(`name.ilike.%${term}%,description.ilike.%${term}%`);
+    q = q.or(
+      [
+        `name.ilike.%${term}%`,
+        `description.ilike.%${term}%`,
+        ...customFieldSearchClauses(customFields, term),
+      ].join(","),
+    );
   }
   return q;
 }
@@ -141,24 +150,44 @@ export async function fetchDealPage(
   query: DealListQuery,
   opts: DealSortOpts,
   ctx: CrmQueryContext,
+  customFields: readonly StandardFieldColumn[] = [],
 ): Promise<{ rows: DealListRow[]; total: number }> {
   let q = applyDealListPredicates(
     crm().from("deal").select(PARTY_EMBED, { count: "exact" }),
     query,
     ctx,
+    customFields,
   );
+  const customOrder = customFieldOrderColumn(opts.sort);
   const sortKey = (DEAL_SORT_KEYS as readonly string[]).includes(opts.sort)
     ? opts.sort
     : "updated_at";
-  q = q
-    .order(sortKey, { ascending: opts.direction === "asc" })
-    .order("id", { ascending: true });
+  q = (customOrder
+    ? q.order(customOrder, { ascending: opts.direction === "asc", nullsFirst: false })
+    : q.order(sortKey, { ascending: opts.direction === "asc" })
+  ).order("id", { ascending: true });
   const from = (query.page - 1) * opts.pageSize;
   const { data, error, count } = await q
     .range(from, from + opts.pageSize - 1)
     .returns<DealListRow[]>();
   if (error) throw pgError(error);
   return { rows: data ?? [], total: count ?? 0 };
+}
+
+/** How many deals the list's query matches — the page's predicates, no rows (group counts). */
+export async function countDealList(
+  query: DealListQuery,
+  ctx: CrmQueryContext,
+  customFields: readonly StandardFieldColumn[] = [],
+): Promise<number> {
+  const { count, error } = await applyDealListPredicates(
+    crm().from("deal").select("id", { count: "exact", head: true }),
+    query,
+    ctx,
+    customFields,
+  );
+  if (error) throw pgError(error);
+  return count ?? 0;
 }
 
 /** Kanban cap: a board renders whole columns, so the fetch is bounded loudly. */

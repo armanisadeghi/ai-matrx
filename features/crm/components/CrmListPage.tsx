@@ -122,8 +122,25 @@ import { CRM_SURFACE_NAME } from "@/features/surfaces/manifests/crm.manifest";
 import { buildCrmListContextData } from "../agent-context/buildCrmListContextData";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  customFiltersToTable,
+  keyOfColumnId,
+  splitCustomFilters,
+  type StandardFieldColumn,
+} from "@/features/unified-data/standard-field-columns/standardFieldColumns";
+import { useStandardFieldColumns } from "@/features/unified-data/standard-field-columns/useStandardFieldColumns";
+import { useServerGroupCounts } from "@/features/unified-data/standard-field-columns/useServerGroupCounts";
+import { countPartyList } from "../service";
 
 const SURFACE_KEY = "crm-parties";
+
+/** One custom value of a party row (`custom_fields` is a jsonb document). */
+function customFieldValue(row: PartyListRow, key: string): unknown {
+  const doc = row.custom_fields;
+  return doc && typeof doc === "object" && !Array.isArray(doc)
+    ? (doc as Record<string, unknown>)[key]
+    : undefined;
+}
 const SURFACE_DEFAULTS = {
   version: 1,
   sort: "updated_at",
@@ -146,7 +163,10 @@ function lastMatch(
 /** Table `columnFilters` → the service's typed filter bag. */
 function fromTableFilters(state: ColumnFiltersState): PartyListFilters {
   const out: PartyListFilters = {};
-  for (const [id, f] of Object.entries(state)) {
+  // Custom-field columns (`cf:<key>`) carry their filter as the table states it.
+  const { custom, rest } = splitCustomFilters(state);
+  if (Object.keys(custom).length) out.custom = custom;
+  for (const [id, f] of Object.entries(rest)) {
     if (!f) continue;
     if (f.kind === "text" && f.value?.trim()) {
       if (id === "display_name") out.display_name = f.value.trim();
@@ -225,6 +245,7 @@ function toTableFilters(filters: PartyListFilters): ColumnFiltersState {
     out.updated_at = { kind: "select", value: filters.updated_at };
   if (filters.created_at)
     out.created_at = { kind: "select", value: filters.created_at };
+  Object.assign(out, customFiltersToTable(filters.custom));
   return out;
 }
 
@@ -540,11 +561,58 @@ export function CrmListPage({
   ]);
   const { prefs, setPrefs } = useListViewPrefs(SURFACE_KEY, SURFACE_DEFAULTS);
 
-  const list = usePartyList({
-    sort: prefs.sort,
-    direction: prefs.direction,
-    pageSize: prefs.pageSize,
-  });
+  // CUSTOM FIELDS ARE COLUMNS (lane 7 wave 2): the generic source over the
+  // `party` token, across the organizations this list spans. Its merged fields
+  // feed the list's server predicates; they lag the source by one render because
+  // the source needs the list's own organizations first.
+  const [partyFields, setPartyFields] = useState<readonly StandardFieldColumn[]>([]);
+  const list = usePartyList(
+    {
+      sort: prefs.sort,
+      direction: prefs.direction,
+      pageSize: prefs.pageSize,
+    },
+    partyFields,
+  );
+  const customColumns = useStandardFieldColumns<PartyListRow>("party", list.ctx?.orgIds);
+  useEffect(() => {
+    setPartyFields(customColumns.fields);
+  }, [customColumns.fields]);
+  const tableColumns = [...PARTY_COLUMNS, ...customColumns.columns];
+
+  // GROUP BY a custom field: the table groups the page it holds; every header's
+  // count is the whole result's, asked of the same query plus that value.
+  const [groupColumnId, setGroupColumnId] = useState<string | null>(null);
+  const activeGroup =
+    groupColumnId && customColumns.groupableColumnIds.includes(groupColumnId)
+      ? groupColumnId
+      : null;
+  const groupKey = activeGroup ? keyOfColumnId(activeGroup) : null;
+  const groupCounts = useServerGroupCounts(
+    activeGroup,
+    groupKey
+      ? list.rows.map((row) => customColumns.labelOf(activeGroup!, customFieldValue(row, groupKey)) ?? null)
+      : [],
+    JSON.stringify(list.query),
+    (columnId, value) => {
+      const key = keyOfColumnId(columnId);
+      if (!key || !list.ctx) return Promise.resolve(0);
+      return countPartyList(
+        {
+          ...list.query,
+          filters: {
+            ...list.query.filters,
+            custom: {
+              ...list.query.filters.custom,
+              [key]: { kind: "select", value, values: [value] },
+            },
+          },
+        },
+        list.ctx,
+        customColumns.fields,
+      );
+    },
+  );
   // New records land in the EXPLICIT active org — never a personal-workspace
   // fallback (a record silently stamped personal is the incident documented in
   // PartyCreateForm). With none selected the create form refuses and says so,
@@ -1183,7 +1251,7 @@ export function CrmListPage({
             <div className="flex h-full min-h-0 flex-col">
               <MatrxDataTable<PartyListRow>
                 data={list.rows}
-                columns={PARTY_COLUMNS}
+                columns={tableColumns}
                 getRowId={(row) => row.id}
                 isLoading={list.isLoading}
                 isFetching={list.isFetching}
@@ -1241,6 +1309,25 @@ export function CrmListPage({
                   ],
                 }}
                 // Row click opens the record; the "…" menu is the ONE row affordance.
+                {...(customColumns.groupableColumnIds.length
+                  ? {
+                      grouping: {
+                        columnId: activeGroup,
+                        onColumnIdChange: setGroupColumnId,
+                        groupableColumnIds: customColumns.groupableColumnIds,
+                        rowNoun: "record",
+                        // Group by what a person reads, so a choice stored as its key
+                        // and as its label is one group.
+                        readCell: (row: PartyListRow, columnId: string) => {
+                          const key = keyOfColumnId(columnId);
+                          return key
+                            ? (customColumns.labelOf(columnId, customFieldValue(row, key)) ?? null)
+                            : null;
+                        },
+                        groupFacts: groupCounts.groupFacts,
+                      },
+                    }
+                  : {})}
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
                 onRowOpen={openRow}
@@ -1272,7 +1359,9 @@ export function CrmListPage({
                   humanRow: (row) =>
                     `${row.display_name} (${row.party_kind === "person" ? "person" : "company"})${row.job_title ? ` — ${row.job_title}` : ""}${row.employer ? ` @ ${row.employer.display_name}` : ""}`,
                   showRow: false,
-                  showToolbar: false,
+                  // The toolbar's "Copy or export" — the table's own export of the
+                  // columns on screen, custom fields included (lane 7 wave 2).
+                  showToolbar: true,
                 }}
                 // read-gate-exempt: list.error swaps this for the failed-read state below and the banner above names the failure once
                 emptyState={

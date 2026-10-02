@@ -13,6 +13,9 @@ import type { CrmQueryContext } from "../types";
 import type { DealListQuery, DealListRow, DealSortOpts } from "./types";
 import { DEFAULT_DEAL_QUERY } from "./types";
 import { useCrmContext } from "../hooks/useCrmContext";
+import type { StandardFieldColumn } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
+
+const NO_CUSTOM_FIELDS: readonly StandardFieldColumn[] = [];
 
 export interface UseDealListResult {
   query: DealListQuery;
@@ -28,7 +31,11 @@ export interface UseDealListResult {
   removeRow: (id: string) => void;
 }
 
-export function useDealList(opts: DealSortOpts): UseDealListResult {
+export function useDealList(
+  opts: DealSortOpts,
+  /** The `crm_deal` token's custom fields (the generic column source). */
+  customFields: readonly StandardFieldColumn[] = NO_CUSTOM_FIELDS,
+): UseDealListResult {
   const [query, setQueryState] = useState<DealListQuery>(DEFAULT_DEAL_QUERY);
   const [rows, setRows] = useState<DealListRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -51,7 +58,7 @@ export function useDealList(opts: DealSortOpts): UseDealListResult {
     }, 200);
     async function run() {
       try {
-        const page = await fetchDealPage(query, opts, resolvedCtx);
+        const page = await fetchDealPage(query, opts, resolvedCtx, customFields);
         if (generationRef.current !== gen) return;
         setRows(page.rows);
         setTotal(page.total);
@@ -67,7 +74,7 @@ export function useDealList(opts: DealSortOpts): UseDealListResult {
       }
     }
     return () => clearTimeout(timer);
-  }, [ctx, query, opts.sort, opts.direction, opts.pageSize, generation]);
+  }, [ctx, query, opts.sort, opts.direction, opts.pageSize, generation, customFields]);
 
   const setQuery = useCallback((patch: Partial<DealListQuery>) => {
     setQueryState((prev) => ({

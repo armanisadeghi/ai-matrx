@@ -136,7 +136,7 @@ describe("Google backend transport — organization gate", () => {
       action: "star",
     });
     const [modifyUrl, modifyInit] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(modifyUrl).toContain("/api/google-integrations/gmail/modify");
+    expect(modifyUrl).toContain("/google-integrations/gmail/modify");
     expect(JSON.parse(modifyInit.body as string)).toMatchObject({
       connection_id: "personal-connection",
       message_id: "message-1",

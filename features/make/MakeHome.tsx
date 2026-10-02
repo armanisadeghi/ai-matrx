@@ -99,6 +99,7 @@ export function MakeMount({ organizationId, children }: { organizationId: string
   });
   if (campaign.state !== "on") return <UnifiedDataSwitchNotice gate={campaign} what="Data records" />;
   return (
+    // org-filter: write-target the mount is where the made thing lives: the chosen table's organization, or where new things are saved
     <RecordsMount
       letTheStoreDecideRights
       config={{ dataSource, actor: personActor(userId), organizationId, realtime }}

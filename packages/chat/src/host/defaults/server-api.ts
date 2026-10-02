@@ -28,6 +28,8 @@ import {
   type MatrxTransport,
   type ProviderSessionFailure,
   type ProviderSessionFailureVerdict,
+  sendMatrxRequest,
+  type MatrxQueryParams,
 } from "@ai-matrx/agents/matrx";
 import type { MatrxStreamEnvelope } from "@ai-matrx/agents/stream/ndjson";
 import type {
@@ -121,31 +123,35 @@ function trimSlash(url: string): string {
   return url.replace(/\/+$/, "");
 }
 
+/** A path template filled from its params (a missing param refuses loudly). */
 function fillPath(template: string, params?: Record<string, string | number>): string {
-  return template.replace(/\{([^}]+)\}/g, (_, key: string) => {
-    const value = params?.[key];
-    if (value === undefined) {
-      throw new Error(`Missing path parameter "${key}" for "${template}".`);
-    }
-    return encodeURIComponent(String(value));
-  });
+  const missing = [...template.matchAll(/\{([^}]+)\}/g)]
+    .map((m) => m[1])
+    .filter((key) => params?.[key] === undefined);
+  if (missing.length > 0) {
+    throw new Error(`Missing path parameter "${missing[0]}" for "${template}".`);
+  }
+  return buildMatrxRequestUrl(
+    "",
+    template,
+    Object.fromEntries(Object.entries(params ?? {}).map(([k, v]) => [k, String(v)])),
+  );
 }
 
-function withQuery(
-  path: string,
-  query?: Record<string, string | number | boolean | null | undefined | readonly unknown[]>,
-): string {
-  if (!query) return path;
-  const qs = new URLSearchParams();
+/** The bare host's query shape for the core builder ("" means "not set"). */
+function queryParams(
+  query: Record<string, string | number | boolean | null | undefined | readonly unknown[]>,
+): MatrxQueryParams {
+  const out: MatrxQueryParams = {};
   for (const [key, value] of Object.entries(query)) {
-    const values = Array.isArray(value) ? value : [value];
-    for (const item of values) {
-      if (item === null || item === undefined || item === "") continue;
-      qs.append(key, String(item));
-    }
+    if (value === "") continue;
+    out[key] = Array.isArray(value)
+      ? value
+          .filter((v) => v !== null && v !== undefined && v !== "")
+          .map((v) => String(v))
+      : (value as MatrxQueryParams[string]);
   }
-  const text = qs.toString();
-  return text ? `${path}${path.includes("?") ? "&" : "?"}${text}` : path;
+  return out;
 }
 
 async function errorFromResponse(response: Response, path: string): Promise<MatrxApiError> {
@@ -176,19 +182,28 @@ export function createDefaultServerApi(host: () => ServerHostView) {
   async function send(
     method: HttpMethod,
     path: string,
-    init: { body?: unknown; signal?: AbortSignal; accept?: string } = {},
+    init: {
+      body?: unknown;
+      signal?: AbortSignal;
+      accept?: string;
+      query?: MatrxQueryParams;
+    } = {},
   ): Promise<Response> {
     const headers: Record<string, string> = {
       ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}),
       Accept: init.accept ?? "application/json",
       ...(await policyHeaders()),
     };
-    const response = await fetch(`${baseUrl()}${path}`, {
-      method,
-      headers,
-      ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
-      ...(init.signal ? { signal: init.signal } : {}),
-    });
+    // THE shared request pipeline (`@ai-matrx/agents/matrx`): URL and send.
+    const response = await sendMatrxRequest(
+      buildMatrxRequestUrl(baseUrl(), path, undefined, init.query),
+      {
+        method,
+        headers,
+        ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
+      },
+      init.signal ? { signal: init.signal } : {},
+    );
     if (!response.ok) throw await errorFromResponse(response, path);
     return response;
   }
@@ -197,11 +212,12 @@ export function createDefaultServerApi(host: () => ServerHostView) {
     method: HttpMethod,
     path: string,
     body?: unknown,
-    opts: { signal?: AbortSignal } = {},
+    opts: { signal?: AbortSignal; query?: MatrxQueryParams } = {},
   ): Promise<{ data: T; meta: { requestId: string | null; status: number } }> {
     const response = await send(method, path, {
       ...(body !== undefined ? { body } : {}),
       ...(opts.signal ? { signal: opts.signal } : {}),
+      ...(opts.query ? { query: opts.query } : {}),
     });
     const data = (response.status === 204 ? null : await response.json()) as T;
     return { data, meta: { requestId: response.headers.get("X-Request-ID"), status: response.status } };
@@ -386,7 +402,11 @@ export function createDefaultServerApi(host: () => ServerHostView) {
     apiGet: <T = unknown>(
       path: string,
       opts?: { signal?: AbortSignal; query?: Record<string, string | number | boolean | null | undefined | readonly unknown[]> },
-    ) => json<T>("GET", withQuery(path, opts?.query), undefined, opts?.signal ? { signal: opts.signal } : {}),
+    ) =>
+      json<T>("GET", path, undefined, {
+        ...(opts?.signal ? { signal: opts.signal } : {}),
+        ...(opts?.query ? { query: queryParams(opts.query) } : {}),
+      }),
     apiPost: <T = unknown>(path: string, body: unknown, opts?: { signal?: AbortSignal }) =>
       json<T>("POST", path, body, opts?.signal ? { signal: opts.signal } : {}),
     apiPatch: <T = unknown>(path: string, body: unknown, opts?: { signal?: AbortSignal }) =>
