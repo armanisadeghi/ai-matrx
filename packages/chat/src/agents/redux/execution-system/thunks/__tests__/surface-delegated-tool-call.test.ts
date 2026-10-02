@@ -48,13 +48,11 @@ jest.mock("../../../../api/submit-tool-results", () => ({
     return () => undefined;
   },
 }));
-jest.mock("sonner", () => ({
-  // Callable with error+warning: @ai-matrx/kit's createMatrxToast refuses a
-  // non-callable toast object at module load.
-  toast: Object.assign(jest.fn(), {
+jest.mock("../../../../../host/notify", () => ({
+  toast: {
     error: mockToastError,
     warning: jest.fn(),
-  }),
+  },
 }));
 jest.mock("../dispatch-widget-action.thunk", () => ({
   dispatchWidgetAction: mockExecutor("widget"),

@@ -6,6 +6,9 @@
  */
 
 jest.mock("uuid", () => ({ v4: () => "uuid-stub" }));
+jest.mock("../../../../../host/notify", () => ({
+  toast: { error: jest.fn(), success: jest.fn(), info: jest.fn(), warning: jest.fn() },
+}));
 
 const mockFetchSurfaceBindingLayers = jest.fn();
 jest.mock("../../../../../surfaces/services/bind-agent-to-surface.service", () => ({

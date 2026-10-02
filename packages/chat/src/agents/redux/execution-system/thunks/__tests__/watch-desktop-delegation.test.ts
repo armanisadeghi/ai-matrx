@@ -89,13 +89,11 @@ jest.mock("../resume-instance.thunk", () => ({
       return { unwrap: () => Promise.resolve({ requestId: "req_resume" }) };
     },
 }));
-jest.mock("sonner", () => ({
-  // Callable with error+warning: @ai-matrx/kit's createMatrxToast refuses a
-  // non-callable toast object at module load.
-  toast: Object.assign(jest.fn(), {
+jest.mock("../../../../../host/notify", () => ({
+  toast: {
     error: mockToastError,
     warning: jest.fn(),
-  }),
+  },
 }));
 
 import { configureStore } from "@reduxjs/toolkit";
