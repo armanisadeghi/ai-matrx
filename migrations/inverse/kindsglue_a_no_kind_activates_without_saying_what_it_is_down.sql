@@ -1,9 +1,22 @@
 -- INVERSE of migrations/campaign/kindsglue_a_no_kind_activates_without_saying_what_it_is.sql (lane KINDS-GLUE): the
 -- activation gate exactly as it was on production 2026-10-02 before the file (pg_get_functiondef), and the close-on-declare
--- trigger removed. Refusal rows the up file resolved stay resolved (they were true closures).
+-- trigger made inert (its function returns at once). The trigger itself stays: DROP TRIGGER takes ACCESS EXCLUSIVE on
+-- content_ir.kind_definition, which every catalog read waits behind (measured: lock timeout on the clone). Refusal rows
+-- the up file resolved stay resolved (they were true closures).
+-- based-on: content_ir._kinds_glue_close_undeclared_refusals() 6e5468269058a9762d360573b8a997cbb8f16d2664a7bde7c456f83208896f8c
+-- based-on: content_ir.evaluate_kind_activation(uuid) e0d7ce42277dd328888d5bd7112e079e67fdd66b8e469f342b9f55d161d9a7c3
+-- lane: KINDS-GLUE
 
-drop trigger if exists _kinds_glue_close_undeclared_refusals on content_ir.kind_definition;
-drop function if exists content_ir._kinds_glue_close_undeclared_refusals();
+create or replace function content_ir._kinds_glue_close_undeclared_refusals()
+ returns trigger
+ language plpgsql
+ security definer
+ set search_path to ''
+as $function$
+begin
+    return null;
+end;
+$function$;
 
 CREATE OR REPLACE FUNCTION content_ir.evaluate_kind_activation(p_kind_definition_id uuid)
  RETURNS jsonb

@@ -20,7 +20,7 @@
 -- Already-active undeclared kinds are not deactivated by this file (the leg gates activation, it does not sweep);
 -- they are declared by kindsglue_b. Locks: pg_proc row locks; CREATE TRIGGER takes SHARE ROW EXCLUSIVE on
 -- content_ir.kind_definition for the statement (blocks concurrent writes to that small registry table only, not
--- reads); the sweep updates ops.system_error rows of kind 'kinds' only.
+-- reads; no DROP TRIGGER, whose ACCESS EXCLUSIVE would block reads); the sweep updates ops.system_error rows of kind 'kinds' only.
 -- based-on: content_ir.evaluate_kind_activation(uuid) 8f2f40886b8d7572fd9356e92078fb4a34c64cba367319b16e2a2763e9f73725
 -- lane: KINDS-GLUE
 -- INVERSE: migrations/inverse/kindsglue_a_no_kind_activates_without_saying_what_it_is_down.sql
@@ -304,10 +304,20 @@ $function$;
 
 revoke all on function content_ir._kinds_glue_close_undeclared_refusals() from public, anon, authenticated;
 
-drop trigger if exists _kinds_glue_close_undeclared_refusals on content_ir.kind_definition;
-create trigger _kinds_glue_close_undeclared_refusals
-    after insert or update of metadata on content_ir.kind_definition
-    for each row execute function content_ir._kinds_glue_close_undeclared_refusals();
+-- Created only when absent (the inverse leaves it in place, inert), so a re-apply never needs a DROP.
+do $trigger$
+begin
+    if not exists (
+        select 1 from pg_trigger
+         where tgrelid = 'content_ir.kind_definition'::regclass
+           and tgname = '_kinds_glue_close_undeclared_refusals'
+    ) then
+        create trigger _kinds_glue_close_undeclared_refusals
+            after insert or update of metadata on content_ir.kind_definition
+            for each row execute function content_ir._kinds_glue_close_undeclared_refusals();
+    end if;
+end
+$trigger$;
 
 -- 3. The sweep: kinds declared by hand after their output was lost still carry open refusal rows.
 update ops.system_error se
