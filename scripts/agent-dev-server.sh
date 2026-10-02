@@ -920,8 +920,11 @@ open_page_connections() { # open_page_connections <pid>
     printf '%s\n' "$MATRX_PREVIEW_OPEN_CONNECTIONS_OVERRIDE"
     return 0
   fi
+  # The sockets belong to the `next-server` CHILD of the recorded pid, so count the server
+  # side by port: rows whose local address is this port (the client side would show the
+  # browser's ephemeral port). The pid argument is kept for the call shape.
   local n
-  n="$(lsof -nP -a -p "$1" -iTCP:"$PORT" -sTCP:ESTABLISHED 2>/dev/null | awk 'NR > 1' | wc -l | tr -d ' ')"
+  n="$(lsof -nP -iTCP:"$PORT" -sTCP:ESTABLISHED 2>/dev/null | awk -v port=":$PORT->" 'NR > 1 && index($9, port) > 0' | wc -l | tr -d ' ')"
   [[ "$n" =~ ^[0-9]+$ ]] && printf '%s\n' "$n" || printf '0\n'
 }
 
