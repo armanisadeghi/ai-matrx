@@ -62,6 +62,13 @@ stale text. By construction a batched tile renders once per interval instead of 
   whose mount effect resets itself loses work. Label and image sleep today; chat, note, document, file
   and table are still to be checked. What must outlive a sleeping body (a chat's live run, holding the
   tile awake while the agent works) is the type's `Keep`, mounted outside the boundary.
+- **Nothing inside a tile takes over the board** (`engine/tile-navigation.tsx`). A tile body sees a
+  board-provided app router; a page it opens (router push, link, `location.assign`, form) lands ON the
+  board as a Page tile (`BoardNavigationContext`), else in a new tab — never in this one. A meeting
+  tile's Rejoin used to replace the board with the meeting room (2026-10-02).
+- **Any page of the app is a Page tile** (`items/page-items.tsx`): the app's own page framed from its
+  origin, its shell chrome dropped (`<html data-board-embed>`, styles/shell.css §13d). The fallback
+  until a feature is a native item; its agent surface stays inside the frame (known gap).
 - **Full screen MOVES the card element** into the focus layer and back (`moveBefore` where available);
   it never renders the card in a second place (that remounted editors and reloaded iframes).
 - **Per-tile hooks only** (`useIsSelected/Focused/Editing(id)`, `useIsLiveTile(id)`, `useTileLife(id)`):
@@ -359,6 +366,9 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-10-02 — A tile never navigates the board away: pages it opens land on the board as Page
+  tiles (or a new tab); Page tiles put any app page on the board with the shell chrome dropped.
 
 - 2026-10-02 — Meeting tile: Join/Rejoin runs the live room inside the tile (the board stays); Leave
   returns to the meeting's home; the tile is held awake while the room is up (`MeetingBody`).
