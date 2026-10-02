@@ -9,7 +9,7 @@ export default function ColorTestPage() {
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Tailwind 4 Color & Interaction Test</h1>
-          <p className="text-muted-foreground">Comprehensive test for colors, hover states, and interactions</p>
+          <p className="text-muted-foreground">Colors, hover states, and interactions</p>
         </div>
 
         {/* Gray Color Palette Test */}

@@ -142,6 +142,7 @@
     "ship:init": "tsx scripts/matrx/ship.ts init",
     "ship:setup": "tsx scripts/matrx/ship.ts setup",
     "ship:history": "tsx scripts/matrx/ship.ts history",
+    "ship:demos": "bash scripts/ship-demos.sh",
     "find-circular": "npx madge --circular --extensions ts,tsx --ts-config tsconfig.json lib/redux/ 2>&1",
     "find-circular:count": "npx madge --circular --extensions ts,tsx --ts-config tsconfig.json lib/redux/ 2>&1 | grep 'Found'",
     "check:surface-impact": "tsx scripts/check-surface-impact.ts",
