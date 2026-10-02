@@ -1,4 +1,4 @@
--- chair-step: this GRANTs EXECUTE on ONE new function, custom.table_duplicate(uuid, boolean, text, uuid), to `authenticated`, after declaring it in platform.client_callable_door (signed-in callers only; anon gains nothing). It also REVOKEs PUBLIC's implicit EXECUTE on the new internal helper custom._uuid_remap(jsonb, jsonb), so no client can call it. Nothing else is granted, revoked, dropped or rewritten: the file adds custom._uuid_remap(jsonb, jsonb) (internal, no client grant) and custom.table_duplicate, touches no table, column, trigger or policy, and writes no row except the one door-register row. No strong lock: CREATE FUNCTION and one INSERT into the register.
+-- chair-step: this GRANTs EXECUTE on ONE new function, custom.table_duplicate(uuid, boolean, text, uuid), to `authenticated`, after declaring it in platform.client_callable_door (signed-in callers only; anon gains nothing). It also REVOKEs PUBLIC's implicit EXECUTE on the two new internal helpers, custom._uuid_remap(jsonb, jsonb) and custom._copied_metadata(jsonb), so no client can call them. Nothing else is granted, revoked, dropped or rewritten: the file adds custom._uuid_remap(jsonb, jsonb) and custom._copied_metadata(jsonb) (internal, no client grant) and custom.table_duplicate, touches no table, column, trigger or policy, and writes no row except the one door-register row. No strong lock: CREATE FUNCTION and one INSERT into the register.
 -- lock: custom
 -- lane: TABLE-ACTIONS
 --
@@ -18,8 +18,8 @@
 --     under a new name ("<name> (copy)", "(copy 2)", … when the name is taken in that
 --     organization) and a new slug;
 --   · every live Field (archived ones stay behind), with new ids;
---   · every choice list a Field uses, as a NEW choice list (its options keep their words, their
---     stable keys and their order), so editing the copy's choices never edits the original's;
+--   · every choice list a Field uses, as a NEW choice list (its own Table, Fields and options:
+--     words, colours, stable keys and order), so editing the copy's choices never edits the original's;
 --   · every live saved view of the Table, with its filters, sorts and layout;
 --   · with p_with_records, every live record (archived and quarantined ones stay behind).
 --
@@ -89,6 +89,28 @@ revoke execute on function custom._uuid_remap(jsonb, jsonb) from public;
 comment on function custom._uuid_remap(jsonb, jsonb) is
   'TABLE-ACTIONS. Rewrites every id in a document that the map names (old id -> new id), in values and in object keys; every other id is left as it was. Internal to custom.table_duplicate; no client grant.';
 
+create or replace function custom._copied_metadata(p_meta jsonb)
+returns jsonb
+language sql
+stable
+set search_path to 'pg_catalog'
+as $function$
+  -- What a copy of a record keeps of its metadata: only the system keys the platform registers
+  -- for record-store rows (platform.metadata_reserved_keys, token 'record' — an option's stable
+  -- key and position, a pick-list mark), minus where the ORIGINAL was moved in from, which is
+  -- not true of the copy. Anything else a row picked up is not the copy's to carry.
+  select coalesce(jsonb_object_agg(e.key, e.value), '{}'::jsonb)
+    from jsonb_each(coalesce(p_meta, '{}'::jsonb)) e
+   where e.key <> 'moved_from'
+     and exists (select 1 from platform.metadata_reserved_keys k
+                  where k.table_token = 'record' and k.key = e.key);
+$function$;
+
+revoke execute on function custom._copied_metadata(jsonb) from public;
+
+comment on function custom._copied_metadata(jsonb) is
+  'TABLE-ACTIONS. The metadata a copied record-store row keeps: registered system keys only (platform.metadata_reserved_keys, token record), never moved_from. Internal to custom.table_duplicate; no client grant.';
+
 create or replace function custom.table_duplicate(
   p_table_id        uuid,
   p_with_records    boolean default false,
@@ -104,11 +126,12 @@ declare
   -- checks, history capture, relation edges, outbox). Measured on the nightly copy 2026-10-02,
   -- set-based, from admin@admin.com's authenticated seat: ~5.5 ms a record on a one-column table
   -- (300 records 1.65 s), ~20 ms a record on a ten-column table with two links and two choice
-  -- lists (20 records +0.4 s over the 1.4 s structure copy). A client call is cancelled at
-  -- ~8 s, so 200 keeps a wide table's whole copy inside one call. Above it the person is told,
-  -- never left with half a table. (custom.table_archive pages for the same reason; a paged copy
-  -- is the follow-up if 200 proves too few.)
-  c_most_records constant integer := 200;
+  -- lists (20 records +0.4 s over a 1.4-4 s structure copy, the spread being the copy's load).
+  -- A client call is cancelled at 8 s (authenticated's statement_timeout), so 100 keeps a wide
+  -- table's whole copy inside one call with room to spare. Above it the person is told, never
+  -- left with half a table. (custom.table_archive pages for the same reason; a paged copy is
+  -- the follow-up if 100 proves too few.)
+  c_most_records constant integer := 100;
   v_me         uuid := custom.query_principal();
   v_opens      jsonb;
   v_id         uuid;
@@ -129,6 +152,7 @@ declare
   v_cross      record;
   v_opt        record;
   v_new_opts   uuid;
+  v_home       uuid;
   v_fields     integer := 0;
   v_lists      integer := 0;
   v_choices    integer := 0;
@@ -139,6 +163,8 @@ declare
   v_left_records bigint;
   v_event      uuid;
   v_self_keys  text[] := array[]::text[];
+  v_dead_keys  text[] := array[]::text[];
+  v_opt_dead   text[];
 begin
   if v_me is null then
     raise exception 'Sign in to duplicate a table.' using errcode = '42501';
@@ -299,42 +325,78 @@ begin
          and r.deleted_at is null and coalesce(r.metadata ->> 'quarantine', 'false') <> 'true'), '{}'::jsonb);
   end if;
 
-  -- EVERY CHOICE LIST, AS A NEW ONE. Made through custom._options_table_for (the builder every
-  -- list column's choices come from), then filled with the source's live options: the same
-  -- words, the same stable keys (record values store the key, so they stay valid unchanged) and
-  -- the same order.
+  -- EVERY CHOICE LIST, AS A NEW ONE. A choice list is itself a Table (FLD-5) whose records are
+  -- the options, so it is copied the same way as the Table: its own Table record (in a Home of
+  -- its own, as custom._options_table_for makes one), its Fields (a list may carry more than a
+  -- title — "name" and "color" are common), and its live options with their words, colours,
+  -- stable keys and order. Record values store the option's key, so they stay valid unchanged;
+  -- editing the copy's choices never edits the original's.
   for v_opt in
-    select distinct on (f.data -> 'config' ->> 'options_table_id')
-           (f.data -> 'config' ->> 'options_table_id')::uuid as opts_id,
-           coalesce(nullif(f.data ->> 'label', ''), f.data ->> 'key') as label
+    select distinct o.id as opts_id, o.data as opts_data, o.metadata as opts_meta, o.shown_to as opts_shown_to
       from custom.record f
+      join custom.record o
+        on o.organization_id = v_from and o.id = (f.data -> 'config' ->> 'options_table_id')::uuid
+       and o.table_id = custom.table_kernel_id() and o.data_class = 'table'
      where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
        and f.data_class <> 'kernel' and f.deleted_at is null
        and f.data ->> 'entity_definition_id' = v_id::text
        and nullif(f.data -> 'config' ->> 'options_table_id', '') is not null
-     order by f.data -> 'config' ->> 'options_table_id', coalesce((f.data ->> 'sort')::integer, 0)
   loop
-    v_new_opts := custom._options_table_for(v_to, v_opt.label, '[]'::jsonb);
+    v_new_opts := gen_random_uuid();
     v_lists := v_lists + 1;
     v_map := v_map || jsonb_build_object(v_opt.opts_id::text, v_new_opts::text);
-    with src as (
-      select o.id, gen_random_uuid() as new_id, o.data, o.metadata, o.shown_to
-        from custom.record o
-       where o.organization_id = v_from and o.table_id = v_opt.opts_id
-         and o.data_class = 'record' and o.deleted_at is null
-    ), ins as (
-      insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
-      select s.new_id, v_to, v_new_opts, 'record', s.data - '_values', s.metadata - 'moved_from',
-             s.shown_to
-        from src s
-      returning 1
-    )
-    select v_map || coalesce((select jsonb_object_agg(s.id::text, s.new_id::text) from src s), '{}'::jsonb)
-      into v_map;
+    v_map := v_map || coalesce((
+      select jsonb_object_agg(x.id::text, gen_random_uuid()::text)
+        from custom.record x
+       where x.organization_id = v_from
+         and ((x.table_id = custom.field_kernel_id() and x.data_class <> 'kernel' and x.deleted_at is null
+               and x.data ->> 'entity_definition_id' = v_opt.opts_id::text)
+              or (x.table_id = v_opt.opts_id and x.data_class = 'record' and x.deleted_at is null))), '{}'::jsonb);
+
+    insert into custom.record (organization_id, table_id, data)
+    values (v_to, custom.person_kernel_id(),
+            jsonb_build_object('name', coalesce(nullif(v_opt.opts_data ->> 'name', ''), 'Choices') || ' Home'))
+    returning id into v_home;
+
+    insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
+    values (v_new_opts, v_to, custom.table_kernel_id(), 'table',
+            custom._uuid_remap(v_opt.opts_data, v_map)
+              || jsonb_build_object(
+                   'parent_id', v_home::text,
+                   'slug', left(regexp_replace(coalesce(nullif(v_opt.opts_data ->> 'slug', ''), 'choices'),
+                                               '_[0-9a-f]{16,}$', '')
+                                || '_' || replace(gen_random_uuid()::text, '-', ''), 48)),
+            custom._copied_metadata(v_opt.opts_meta), v_opt.opts_shown_to);
+
+    insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
+    select (v_map ->> x.id::text)::uuid, v_to, x.table_id, x.data_class,
+           custom._uuid_remap(x.data, v_map), custom._copied_metadata(x.metadata), x.shown_to
+      from custom.record x
+     where x.organization_id = v_from and x.table_id = custom.field_kernel_id()
+       and x.data_class <> 'kernel' and x.deleted_at is null
+       and x.data ->> 'entity_definition_id' = v_opt.opts_id::text
+     order by coalesce((x.data ->> 'sort')::integer, 0), x.created_at;
+
+    -- A value kept under an ARCHIVED column has no column in the copy: it stays behind with it.
+    select coalesce(array_agg(distinct d.data ->> 'key'), array[]::text[]) into v_opt_dead
+      from custom.record d
+     where d.organization_id = v_from and d.table_id = custom.field_kernel_id()
+       and d.data_class <> 'kernel' and d.deleted_at is not null
+       and d.data ->> 'entity_definition_id' = v_opt.opts_id::text
+       and not exists (select 1 from custom.record l
+                        where l.organization_id = v_from and l.table_id = custom.field_kernel_id()
+                          and l.data_class <> 'kernel' and l.deleted_at is null
+                          and l.data ->> 'entity_definition_id' = v_opt.opts_id::text
+                          and l.data ->> 'key' = d.data ->> 'key');
+    insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
+    select (v_map ->> x.id::text)::uuid, v_to, v_new_opts, 'record',
+           custom._uuid_remap(x.data - '_values' - v_opt_dead, v_map), custom._copied_metadata(x.metadata), x.shown_to
+      from custom.record x
+     where x.organization_id = v_from and x.table_id = v_opt.opts_id
+       and x.data_class = 'record' and x.deleted_at is null
+     order by x.created_at, x.id;
     get diagnostics v_k = row_count;
-    v_choices := v_choices + (select count(*) from custom.record o
-                               where o.organization_id = v_to and o.table_id = v_new_opts
-                                 and o.data_class = 'record' and o.deleted_at is null);
+    v_choices := v_choices + v_k;
   end loop;
 
   -- THE TABLE RECORD. Its settings and look, remapped; a person's copy, so never the app's.
@@ -349,13 +411,13 @@ begin
   end if;
   insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
   values (v_new, v_to, custom.table_kernel_id(), 'table', v_data,
-          v_src.metadata - 'moved_from' - 'older_shares_seen', v_src.shown_to);
+          custom._copied_metadata(v_src.metadata), v_src.shown_to);
 
   -- THE FIELDS, in two statements: the stored ones first, then the ones worked out from them
   -- (a formula's guard reads the Fields it names, so they have to be there).
   insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
   select (v_map ->> f.id::text)::uuid, v_to, f.table_id, f.data_class,
-         custom._uuid_remap(f.data, v_map), f.metadata - 'moved_from', f.shown_to
+         custom._uuid_remap(f.data, v_map), custom._copied_metadata(f.metadata), f.shown_to
     from custom.record f
    where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
      and f.data_class <> 'kernel' and f.deleted_at is null
@@ -365,7 +427,7 @@ begin
   get diagnostics v_k = row_count; v_fields := v_k;
   insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
   select (v_map ->> f.id::text)::uuid, v_to, f.table_id, f.data_class,
-         custom._uuid_remap(f.data, v_map), f.metadata - 'moved_from', f.shown_to
+         custom._uuid_remap(f.data, v_map), custom._copied_metadata(f.metadata), f.shown_to
     from custom.record f
    where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
      and f.data_class <> 'kernel' and f.deleted_at is null
@@ -403,10 +465,21 @@ begin
        and f.data_class <> 'kernel' and f.deleted_at is null
        and f.data ->> 'entity_definition_id' = v_id::text
        and f.data ->> 'relation_target' = v_id::text;
+    -- A value kept under an ARCHIVED column has no column in the copy: it stays behind with it.
+    select coalesce(array_agg(distinct d.data ->> 'key'), array[]::text[]) into v_dead_keys
+      from custom.record d
+     where d.organization_id = v_from and d.table_id = custom.field_kernel_id()
+       and d.data_class <> 'kernel' and d.deleted_at is not null
+       and d.data ->> 'entity_definition_id' = v_id::text
+       and not exists (select 1 from custom.record l
+                        where l.organization_id = v_from and l.table_id = custom.field_kernel_id()
+                          and l.data_class <> 'kernel' and l.deleted_at is null
+                          and l.data ->> 'entity_definition_id' = v_id::text
+                          and l.data ->> 'key' = d.data ->> 'key');
 
     insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
     select (v_map ->> r.id::text)::uuid, v_to, v_new, 'record',
-           custom._uuid_remap(r.data - '_values', v_map) - v_self_keys, r.metadata - 'moved_from',
+           custom._uuid_remap(r.data - '_values' - v_dead_keys, v_map) - v_self_keys, custom._copied_metadata(r.metadata),
            r.shown_to
       from custom.record r
      where r.organization_id = v_from and r.table_id = v_id and r.data_class = 'record'
@@ -492,7 +565,7 @@ values
          'null_rule', jsonb_build_object('says', 'Say which table to duplicate.', 'sqlstate', '22004')),
        'p_with_records', jsonb_build_object(
          'type', 'boolean', 'position', 2, 'optional', true, 'sql_default', 'false',
-         'check', 'A choice: copy the live records too (at most 200, else refused 54000 by name).',
+         'check', 'A choice: copy the live records too (at most 100, else refused 54000 by name).',
          'foreign', jsonb_build_object('not_an_id', true),
          'null_rule', jsonb_build_object('means', 'false')),
        'p_name', jsonb_build_object(
