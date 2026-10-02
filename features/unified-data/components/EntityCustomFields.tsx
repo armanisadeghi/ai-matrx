@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 // features/unified-data/components/EntityCustomFields.tsx
 //
 // THE ONE LINE A STANDARD ENTITY PAGE ADDS (SCR-12 / REC-40 / REC-34).
@@ -31,12 +31,14 @@ import { useRef } from "react";
 // copied them, and the third would have copied them differently.
 
 import { CustomFieldsSection, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { askAsMember } from "@/features/organizations/organizationsIAmIn";
+import { mayReadAsMember } from "@/features/organizations/organizationsIAmIn";
 import {
   CUSTOM_FIELDS_VALUE_NAME,
   customFieldsScopeValue,
@@ -89,16 +91,41 @@ export function EntityCustomFields({
     [CUSTOM_FIELDS_VALUE_NAME]: customFieldsScopeValue(),
   }));
   const organizationId = rowOrganizationId ?? null;
+  // Whether she is a member of the ROW's organization: `null` until asked.
+  const [member, setMember] = useState<boolean | null>(null);
   // ONE switch: does this organization keep its data in the record store? Set
   // once, for everybody, on the unified data ramp screen (lane NAV-FIX).
   const campaign = useUnifiedDataCampaign({
     organizationId,
     // Member-only door: a record shared from an organization she is not in is
-    // treated as OFF without a request (it was a 403 on every load).
-    storeSwitch: (organization) =>
-      askAsMember(organization, () => UNIFIED_DATA_CAMPAIGN.enabled(organization), false),
+    // not asked about (it was a 403 on every load), and that answer is kept apart
+    // from "switched off" so the section never claims a switch nobody read.
+    storeSwitch: async (organization) => {
+      const isMember = organization ? await mayReadAsMember(organization) : true;
+      setMember(isMember);
+      return isMember ? UNIFIED_DATA_CAMPAIGN.enabled(organization) : false;
+    },
   });
-  if (!campaign.on || !organizationId) return null;
+  if (!organizationId || member === false) return null;
+  // 🚨 ITEM 13 (lane 7 STANDARD-TABLES): the section never silently vanishes because the
+  // organization's store switch is off or could not be read — it says which, in one line.
+  // (Retiring the switch itself is lane 6's.)
+  if (campaign.state === "off" || campaign.state === "unavailable") {
+    return (
+      <section className={cn("flex min-w-0 items-center gap-2 text-xs", className)} data-entity-custom-fields={campaign.state}>
+        <h3 className="text-sm font-medium">{title ?? "Custom fields"}</h3>
+        <span className="text-muted-foreground">
+          {campaign.state === "off" ? "Off for this organization" : "Couldn't check this organization"}
+        </span>
+        {campaign.state === "unavailable" ? (
+          <Button size="sm" variant="ghost" className="ml-auto" onClick={campaign.retry}>
+            Retry
+          </Button>
+        ) : null}
+      </section>
+    );
+  }
+  if (!campaign.on) return null;
   return (
     <RecordsMount
       letTheStoreDecideRights
