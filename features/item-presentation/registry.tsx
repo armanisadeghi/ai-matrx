@@ -175,7 +175,9 @@ export type ItemOpenKind =
   | { kind: "google_document" }
   | { kind: "calendar_event" }
   | { kind: "web_site" }
-  | { kind: "web_youtube_video" };
+  | { kind: "web_youtube_video" }
+  // A stored transcript — the Detail record (2026-09-30).
+  | { kind: "transcript" };
 
 // ---------------------------------------------------------------------------
 // Enrichment helpers
@@ -995,6 +997,36 @@ export const FALLBACK_CONFIG: ItemTypeConfig = {
     ring: "ring-zinc-500/20",
   },
 };
+
+/**
+ * Opener kinds `useOpenItemPresentation` routes to a bespoke window that loads
+ * the record itself. Every other kind opens the Detail primitive.
+ */
+const OWN_WINDOW_OPEN_KINDS: ReadonlySet<ItemOpenKind["kind"]> = new Set([
+  "agent",
+  "note",
+  "conversation",
+  "file",
+  "structured_list",
+  "picklist",
+  "web_site",
+]);
+
+/**
+ * True when opening this type shows the RECORD — a bespoke window, or the
+ * Detail primitive with a source to read (`detailSource` / `refineDetail`).
+ * False for a seed-only Detail (`session`): it names the record and shows
+ * nothing of it, the "0 Words, 0 Characters" class. A door that lands there
+ * must take the entity's address (route / peek) instead.
+ */
+export function opensTheRecord(config: ItemTypeConfig): boolean {
+  if (!config.open) return false;
+  return (
+    OWN_WINDOW_OPEN_KINDS.has(config.open.kind) ||
+    !!config.detailSource ||
+    !!config.refineDetail
+  );
+}
 
 /**
  * Resolve a type string to its config. Returns the FALLBACK_CONFIG (with the

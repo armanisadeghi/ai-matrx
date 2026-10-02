@@ -11,14 +11,15 @@
  *
  *   - the NAME — `useResolvedReferenceLabel` (THE one live reference-label
  *     resolver, catalog-derived for every registered noun) + `referenceChipLabel`;
- *   - the DOOR — `getReferenceResolver(noun).openItemType/openId` into
- *     `useOpenItemPresentation` (the same path a reference chip opens through).
+ *   - the DOOR — `useReferenceDoor` (`referenceDoor`: in-place window →
+ *     peek/route → honest name), the same path a reference chip opens through.
  *
  * A noun with no resolver renders its fallback as plain text — honest, never a
  * control that looks clickable and does nothing.
  */
 
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import {
@@ -37,14 +38,13 @@ import {
 } from "@ai-matrx/content-ir-react";
 import type { ConfirmOptions } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
-import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
+import { useReferenceDoor } from "@/features/matrx-envelope/components/useReferenceDoor";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 import {
   getReferenceResolver,
   referenceChipLabel,
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
-import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** The live name of `{noun, id}`, or `fallback` until/unless it resolves. */
 export function useDirectiveRecordName(noun: string, id: string, fallback: string) {
@@ -70,17 +70,13 @@ export function DirectiveRecordName({
 
 /** The `renderRecord` seam: a row's target, or a record the apply wrote. */
 export function DirectiveRecordLink({ noun, id, fallback, context, trashed }: DirectiveRecordProps) {
-  const open = useOpenItemPresentation();
   const { name, loading } = useDirectiveRecordName(noun, id, fallback);
+  // The same door ladder every reference chip climbs (`referenceDoor`).
+  const door = useReferenceDoor(noun, { id }, name);
 
   if (context === "dialog") {
     return <b className="font-semibold text-foreground">{name}</b>;
   }
-
-  const resolver = getReferenceResolver(noun);
-  const openType = resolver?.openItemType;
-  const openId = resolver?.openId({ id });
-  const canOpen = !!openType && !!openId && isUuidShape(openId);
 
   const label = (
     <>
@@ -90,26 +86,32 @@ export function DirectiveRecordLink({ noun, id, fallback, context, trashed }: Di
     </>
   );
 
-  if (!canOpen) {
+  if (!door.canOpen) {
     return (
       <span className="inline-flex min-w-0 items-center gap-1 font-medium text-foreground">{label}</span>
     );
   }
 
+  const linkClass = cn(
+    "inline-flex min-w-0 max-w-full items-center gap-1 rounded px-1 py-0.5 text-left font-medium",
+    context === "applied"
+      ? "text-primary underline-offset-2 hover:underline"
+      : "text-foreground hover:bg-accent hover:text-accent-foreground",
+  );
+  if (door.primaryHref) {
+    return (
+      <Link href={door.primaryHref} title={door.title} className={linkClass}>
+        {label}
+      </Link>
+    );
+  }
   return (
-    <button
-      type="button"
-      onClick={() => open(openType, openId, { name })}
-      title={`Open ${name}`}
-      className={cn(
-        "inline-flex min-w-0 max-w-full items-center gap-1 rounded px-1 py-0.5 text-left font-medium",
-        context === "applied"
-          ? "text-primary underline-offset-2 hover:underline"
-          : "text-foreground hover:bg-accent hover:text-accent-foreground",
-      )}
-    >
-      {label}
-    </button>
+    <>
+      <button type="button" onClick={door.activate} title={door.title} className={linkClass}>
+        {label}
+      </button>
+      {door.peek}
+    </>
   );
 }
 

@@ -48,6 +48,7 @@ jest.mock("@ai-matrx/detail/react", () => ({
 import { useOpenItemPresentation } from "../useOpenItemPresentation";
 import type { ItemType } from "../types";
 import { getReferenceResolver } from "@/features/matrx-envelope/referenceResolvers";
+import { referenceDoor } from "@/features/matrx-envelope/referenceDoor";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -101,7 +102,6 @@ describe("census: each reference type the picker offers first opens its record",
     ["dataset", { id: ID }, () => openDetail],
     ["transcript", { id: ID }, () => openDetail],
     ["transcript_segment", { transcript_id: ID, segment_index: "0" }, () => openDetail],
-    ["transcript_session", { id: ID }, () => openDetail],
     ["file", { file_id: ID }, () => openFile],
     ["agent", { id: ID }, () => openAgent],
   ];
@@ -115,6 +115,13 @@ describe("census: each reference type the picker offers first opens its record",
     expect(await openWith(openType)).toBe(true);
     expect(expected()).toHaveBeenCalledTimes(1);
     expect(openNoteInfo).not.toHaveBeenCalled();
+  });
+
+  it("a studio session opens its studio page — never a seed-only Detail panel", () => {
+    const door = referenceDoor("transcript_session", { id: ID });
+    expect(door).toEqual(
+      expect.objectContaining({ kind: "address", href: `/transcripts/studio?session=${ID}` }),
+    );
   });
 
   it("a transcript opens as a transcript record — never the file preview", async () => {

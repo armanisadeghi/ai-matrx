@@ -13,10 +13,13 @@
 
 import { FileText, Link2, Loader2, X } from "lucide-react";
 import { cn } from "@/utils/cn";
+import Link from "next/link";
 import {
+  coerceRefToStrings,
   referenceChipLabel,
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
+import { useReferenceDoor } from "@/features/matrx-envelope/components/useReferenceDoor";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 
 export interface ReferencePickerChipProps {
@@ -43,6 +46,9 @@ export function ReferencePickerChip({
       ? hints.url
       : referenceChipLabel(display);
   const Icon = type === "url" ? Link2 : type === "file" ? FileText : null;
+  // The name is the door (THE DOOR LAW) — the same ladder as the read-only chip.
+  const door = useReferenceDoor(type, coerceRefToStrings(item, `${type} picker chip`), label);
+  const nameClass = "truncate rounded-sm hover:underline underline-offset-2";
 
   return (
     <span
@@ -52,9 +58,20 @@ export function ReferencePickerChip({
       )}
     >
       {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-      <span className="truncate" title={display}>
-        {label}
-      </span>
+      {door.primaryHref ? (
+        <Link href={door.primaryHref} className={nameClass} title={door.title}>
+          {label}
+        </Link>
+      ) : door.canOpen ? (
+        <button type="button" onClick={door.activate} className={cn(nameClass, "min-w-0 text-left")} title={door.title}>
+          {label}
+        </button>
+      ) : (
+        <span className="truncate" title={display}>
+          {label}
+        </span>
+      )}
+      {door.peek}
       {status === "loading" && (
         <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
       )}

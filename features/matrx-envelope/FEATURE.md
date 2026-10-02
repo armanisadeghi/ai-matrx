@@ -136,13 +136,24 @@ render through the SAME live chip renderer.
   openItemType, openId(ref) }`, reading FLAT ids (`ref.list_id`, `ref.table_id`, …).
   `resolveValue` fetches the LIVE value from Supabase (never throws; returns `undefined` on miss
   → chip falls back to the item's display hint); `openItemType` is the `item-presentation`
-  `KnownItemType` reused for click-to-open, `openId` is the underlying entity (picklist / table,
-  NOT the cell). All 7 record types registered (+ `dataset_cell` alias): `structured_list`/`_group`/
+  `KnownItemType` reused for click-to-open (optional — omit it and the door derives from
+  `opensTable`, the `"schema.table"` the record lives in), `openId` is the underlying entity
+  (picklist / table, NOT the cell). All 7 record types registered (+ `dataset_cell` alias): `structured_list`/`_group`/
   `_item` through the list doors (`get_structured_list_for_selection`, `get_user_list_with_items`);
   `table`/`table_schema`/`table_column`/`table_row`/`table_cell` through the record store's data seam
   (`locateTable` → `features/data-tables/service`). `url` is registered too
   but returns the URL/label as-is (`resolveValue` is a no-op — nothing to look up). Adding a reference
   type = one entry here.
+- `referenceDoor.ts` + `components/useReferenceDoor.tsx` — **THE DOOR of every reference** (chip,
+  directive record link, authored picker chip). Ladder, the same one `RecordDoor` climbs (R35):
+  `open` (an item type opens the record IN PLACE and loads it — `opensTheRecord` in
+  `item-presentation/registry.tsx`: a bespoke window, or Detail with `detailSource`/`refineDetail`)
+  → `address` (the entity registry's peek, else its route, via `resolveEntityDoors`) → `none`
+  (an honest name, never a button). The item type comes from `recordTableTarget(opensTable)`,
+  never `noun as KnownItemType`. Chips with a route also offer open-in-new-tab on hover.
+  Guard: `__tests__/every-reference-chip-opens-its-record.test.ts` — every catalog noun, alias
+  and bespoke noun has a resolver and a real door; `NO_DOOR_YET` (shrink-only) names the 10
+  title-less child rows with no route or peek anywhere.
 - `MatrxEnvelopeBlock.tsx` — the ```matrx fence renderer, and **the prefix-DEFAULT
   component** for every `directive_v1_*` shape (not a parallel dispatch entry): (1) parse +
   `decodeDirective` (bad JSON / no reserved `__kind` → raw `<pre>`, never throws; a
@@ -286,6 +297,8 @@ silently drops items the server would have happily applied.
   composers (notes, tasks, comments).
 
 ## Change Log
+
+- 2026-10-02 — **Every reference chip opens the record it names.** Root cause of the reviewer's Note defect (a chip opening the Note-info stats panel, "0 Words, 0 Characters") was a door chosen by a hand-cast item type that nobody checked against what that type opens; the note branch itself was fixed 2026-09-30. Census of all 159 nouns found the class: ≈90 catalog nouns (tool, skill, workflow, crm_deal, hr_*, research_*, …) cast to unregistered item types → enabled chips whose click did nothing; 8 education nouns opened the FILE preview with a non-file id; studio sessions opened a seed-only Detail panel; `organization` and `conversation_value` chips were disabled. New `referenceDoor` derives the door from the record's table (in-place opener that loads the record → peek → route → honest name) and is shared by `ReferenceChip`, `DirectiveRecordLink` and `ReferencePickerChip` (whose name is now a door too). Guard `__tests__/every-reference-chip-opens-its-record.test.ts`: 118 of 159 red on the old door model, 159 green after.
 
 - 2026-09-30 — **Every action the server supports is real in the reference picker.** Create/Update were greyed out ("not available from this picker yet"); they now open a form generated from the server's item schema (`features/directive-catalog/components/SchemaFieldsForm.tsx`). Create skips the search; Update searches the record, then sends only the fields set; Delete is unchanged. Each inserts a button that asks before it runs. `wireItems` (`referencePickerTypes.ts`) strips the display `label` from identity items only — a note's title column IS `label`, so payloads stay verbatim. Also fixed: the action list spun on "Loading actions…" forever (its effect listed its own loading state as a dependency and cancelled its own request), so no action beyond Link was ever reachable; it now reads the one `useDirectiveNoun` hook.
 

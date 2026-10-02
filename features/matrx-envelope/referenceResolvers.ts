@@ -75,8 +75,17 @@ export interface ReferenceResolver {
     supabase: SupabaseClient,
     ref: Record<string, string>,
   ) => Promise<string | undefined>;
-  /** The item-presentation type to reuse for opening the underlying entity. */
-  openItemType: KnownItemType;
+  /**
+   * The item-presentation type that opens the underlying entity, when it is
+   * not the type the `opensTable` already names (a list ITEM opens its list).
+   * Omit it and the door derives from `opensTable` — never cast a noun.
+   */
+  openItemType?: KnownItemType;
+  /**
+   * `"schema.table"` of the record `openId` names. `referenceDoor` derives
+   * the item type and the entity's address (route / peek) from it.
+   */
+  opensTable?: string;
   /** The id of the underlying entity to open (the picklist / dataset, not the cell). */
   openId: (ref: Record<string, string>) => string | undefined;
 }
@@ -108,7 +117,7 @@ function firstField(
 }
 
 interface RecordResolverConfig {
-  openItemType: KnownItemType;
+  openItemType?: KnownItemType;
   table: string;
   /**
    * Non-`public` Postgres schema `table` lives in, if any. Reached via
@@ -175,6 +184,7 @@ function createStoreRecordResolver(config: {
 function createRecordResolver(config: RecordResolverConfig): ReferenceResolver {
   return {
     openItemType: config.openItemType,
+    opensTable: `${config.schema ?? "public"}.${config.table}`,
     openId: (ref) => ref.id,
     resolveValue: async (supabase, ref) => {
       if (!ref.id) return undefined;
@@ -449,16 +459,6 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     bodyFields: ["description"],
   }),
 
-  organization: {
-    ...createRecordResolver({
-      openItemType: "scope",
-      table: "organizations",
-      select: "name, description",
-      titleFields: ["name"],
-      bodyFields: ["description"],
-    }),
-    openId: () => undefined,
-  },
   // The scope read switch (lane SCOPES-WEB-REVERT): OFF (default) reads the context tables, as
   // before lane SCOPES-READS-WEB; ON resolves through the record store.
   scope_type: scopesReadFromStore()
@@ -549,14 +549,12 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     bodyFields: ["description"],
   }),
   transcript_session: createRecordResolver({
-    openItemType: "session",
     table: "studio_sessions",
     schema: "transcripts",
     select: "title",
     titleFields: ["title"],
   }),
   studio_session: createRecordResolver({
-    openItemType: "session",
     table: "studio_sessions",
     schema: "transcripts",
     select: "title",
@@ -597,10 +595,11 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     },
   },
 
-  /** Transcript materialized from / linked to a studio session. */
+  /** Transcript materialized from / linked to a studio session — opens THE TRANSCRIPT. */
   session_transcript: {
-    openItemType: "session",
-    openId: (ref) => ref.session_id,
+    openItemType: "transcript",
+    opensTable: "transcripts.transcripts",
+    openId: (ref) => ref.transcript_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.transcript_id) return undefined;
       const { data, error } = await supabase
@@ -722,7 +721,6 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
 
   // ── Education (education schema) ───────────────────────────────────────────
   fc_card: createRecordResolver({
-    openItemType: "file",
     schema: "education",
     table: "fc_card",
     select: "front, back, topic",
@@ -730,7 +728,6 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     bodyFields: ["back"],
   }),
   fc_set: createRecordResolver({
-    openItemType: "file",
     schema: "education",
     table: "fc_set",
     select: "name, description, topic",
@@ -738,7 +735,6 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     bodyFields: ["description"],
   }),
   fc_detail: createRecordResolver({
-    openItemType: "file",
     schema: "education",
     table: "fc_detail",
     select: "kind, text",
@@ -746,7 +742,6 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     bodyFields: ["text"],
   }),
   quiz_session: createRecordResolver({
-    openItemType: "file",
     schema: "education",
     table: "quiz_sessions",
     select: "title, category",
@@ -754,7 +749,6 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     bodyFields: ["category"],
   }),
   study_session: createRecordResolver({
-    openItemType: "file",
     schema: "education",
     table: "study_session",
     select: "mode, status",
@@ -762,7 +756,6 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     bodyFields: ["status"],
   }),
   study_goal: createRecordResolver({
-    openItemType: "file",
     schema: "education",
     table: "study_goal",
     select: "title, status",
@@ -770,7 +763,6 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     bodyFields: ["status"],
   }),
   study_attempt: createRecordResolver({
-    openItemType: "file",
     schema: "education",
     table: "study_attempt",
     select: "method, result",
@@ -778,7 +770,6 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     bodyFields: ["result"],
   }),
   item_mastery: createRecordResolver({
-    openItemType: "file",
     schema: "education",
     table: "item_mastery",
     select: "item_type, last_result",
@@ -794,8 +785,10 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
    * the FE can't scope a lookup — the key alone is the display.
    */
   conversation_value: {
-    openItemType: "message",
-    openId: () => undefined,
+    // Opens the conversation the value was stored in.
+    openItemType: "conversation",
+    opensTable: "chat.conversation",
+    openId: (ref) => ref.conversation_id,
     resolveValue: async (supabase, ref) => {
       const key = stringify(ref.key);
       if (!key) return stringify(ref.label);
@@ -821,7 +814,6 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
    * never through the item-presentation opener. `openItemType` is unused here.
    */
   url: {
-    openItemType: "file",
     openId: () => undefined,
     resolveValue: async (_supabase, ref) => stringify(ref.label) ?? ref.url,
   },
@@ -854,7 +846,10 @@ function derivedResolver(noun: string): ReferenceResolver | undefined {
     ? [entry.title_column, ...COMMON_TITLE_FIELDS]
     : COMMON_TITLE_FIELDS;
   return {
-    openItemType: noun as KnownItemType,
+    // The door derives from the TABLE (`referenceDoor`), never `noun as
+    // KnownItemType`: ≈90 nouns have no item type and that cast made every one
+    // an enabled chip whose click did nothing.
+    opensTable: `${schema}.${table}`,
     openId: (ref) => ref.id,
     resolveValue: async (supabase, ref) => {
       if (!ref.id || !isUuidShape(ref.id)) return stringify(ref.label);

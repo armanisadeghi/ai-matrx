@@ -56,7 +56,16 @@ const BESPOKE_WINDOW_KINDS = new Set([
  * `hrefFor` or a peek for the token turns its row red here until it is removed.
  */
 const NO_DOOR_YET: Readonly<Record<string, string>> = {
-  // filled from the census run — see FEATURE.md "Reference doors"
+  fc_detail: "title-less child row: no title_column, hrefFor or peek in platform.entity_types",
+  item_mastery: "title-less child row: no title_column, hrefFor or peek in platform.entity_types",
+  research_analysis: "title-less child row: no title_column, hrefFor or peek in platform.entity_types",
+  research_content: "title-less child row: no title_column, hrefFor or peek in platform.entity_types",
+  research_keyword: "title-less child row: no title_column, hrefFor or peek in platform.entity_types",
+  research_media: "title-less child row: no title_column, hrefFor or peek in platform.entity_types",
+  research_synthesis: "title-less child row: no title_column, hrefFor or peek in platform.entity_types",
+  study_attempt: "title-less child row: no title_column, hrefFor or peek in platform.entity_types",
+  study_session: "title-less child row: no title_column, hrefFor or peek in platform.entity_types",
+  wc_claim: "title-less child row: no title_column, hrefFor or peek in platform.entity_types",
 };
 
 const NOUNS = [
@@ -92,7 +101,8 @@ describe("every reference noun has a resolver and a real door", () => {
         BESPOKE_WINDOW_KINDS.has(config.open!.kind) || !!config.detailSource || !!config.refineDetail;
       expect({ noun, loads }).toEqual({ noun, loads: true });
       // …of the SAME table the chip names (education → file preview was a lie).
-      const opens = resolver!.opensTable;
+      const opens =
+        resolver!.opensTable ?? CATALOG_NOUNS[CATALOG_ALIASES[noun] ?? noun]?.table;
       if (opens && config.detailSource && door.id === REF.id) {
         const src = `${config.detailSource.schemaName ?? "public"}.${config.detailSource.table}`;
         expect({ noun, table: src }).toEqual({ noun, table: opens });

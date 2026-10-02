@@ -43,10 +43,12 @@ import {
   Layers,
   Tag,
   Box,
+  ExternalLink,
 } from "lucide-react";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
+import { useReferenceDoor } from "@/features/matrx-envelope/components/useReferenceDoor";
 import {
   type DirectiveRenderer,
   registerDirectiveRenderer,
@@ -54,7 +56,6 @@ import {
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 import {
   coerceRefToStrings,
-  getReferenceResolver,
   referenceChipLabel,
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
@@ -64,7 +65,6 @@ import {
 // the renderer's whole graph — framer-motion included — across all of them.
 // Method B (`code-splitting` skill): id → chunk; never a static value import.
 import dynamic from "next/dynamic";
-import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const CreateProjectWithTasksRenderer = dynamic(
   () =>
@@ -162,56 +162,82 @@ function chipIcon(type: string): ComponentType<{ className?: string }> {
  * shows SOMETHING (the item's display hint while loading / on miss).
  */
 function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
-  const open = useOpenItemPresentation();
   // The canonical item IS flat — identity ids live at the top level. Coerce the
   // whole item to string fields (resolvers read only the id keys they need).
   const ref = coerceRefToStrings(item, `${type} chip`);
-  const resolver = getReferenceResolver(type);
   const { display, status } = useResolvedReferenceLabel(item, type);
   // A chip is a NAME: record resolvers return "heading\nbody" — print the
   // heading, keep the whole value for the tooltip.
   const label = referenceChipLabel(display);
+  // THE DOOR LAW: the one ladder (in-place window → peek/route → honest name),
+  // shared with every other surface that names a referenced record.
+  const door = useReferenceDoor(type, ref, label);
 
   const Icon = chipIcon(type);
 
-  // `url` has no Matrx-owned entity to open in a window panel — it opens the
-  // link itself in a new tab, bypassing the item-presentation opener.
+  // `url` has no Matrx-owned entity — it opens the link itself in a new tab.
   const isExternalUrl = type === "url" && typeof ref.url === "string";
-  const openId = resolver?.openId(ref);
-  const openType = resolver?.openItemType;
-  const canOpen =
-    isExternalUrl || (!!openId && !!openType && isUuidShape(openId));
+  const canOpen = isExternalUrl || door.canOpen;
 
-  const handleClick = () => {
-    if (isExternalUrl) {
-      window.open(ref.url, "_blank", "noopener,noreferrer");
-      return;
-    }
-    if (canOpen && openId && openType) {
-      open(openType, openId, { name: label });
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={!canOpen}
-      title={isExternalUrl ? ref.url : canOpen ? `Open ${openType}` : label}
-      className={cn(
-        "inline-flex items-center gap-1 rounded-md border border-border",
-        "bg-muted px-2 py-0.5 text-sm text-foreground align-middle min-w-0 max-w-full",
-        canOpen
-          ? "cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
-          : "cursor-default",
-      )}
-    >
+  const chipClass = cn(
+    "inline-flex items-center gap-1 rounded-md border border-border",
+    "bg-muted px-2 py-0.5 text-sm text-foreground align-middle min-w-0 max-w-full",
+    canOpen &&
+      "cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors",
+  );
+  const body = (
+    <>
       <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       <span className="truncate">{label}</span>
       {status === "loading" ? (
         <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
       ) : null}
-    </button>
+    </>
+  );
+
+  // No door anywhere on the platform: an honest name, never a dead button.
+  if (!canOpen) {
+    return (
+      <span className={chipClass} title={display}>
+        {body}
+      </span>
+    );
+  }
+
+  return (
+    <span className="group/ref-chip inline-flex max-w-full items-center gap-0.5 align-middle">
+      {!isExternalUrl && door.primaryHref ? (
+        <Link href={door.primaryHref} title={door.title} className={chipClass}>
+          {body}
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={() =>
+            isExternalUrl
+              ? window.open(ref.url, "_blank", "noopener,noreferrer")
+              : door.activate()
+          }
+          title={isExternalUrl ? ref.url : door.title}
+          className={chipClass}
+        >
+          {body}
+        </button>
+      )}
+      {!isExternalUrl && door.newTabHref ? (
+        <a
+          href={door.newTabHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`Open ${label} in a new tab`}
+          aria-label={`Open ${label} in a new tab`}
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/ref-chip:opacity-100 [@media(pointer:coarse)]:hidden"
+        >
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      ) : null}
+      {door.peek}
+    </span>
   );
 }
 
