@@ -182,6 +182,43 @@ describe("a token the auth authority cannot verify is ended, not retried", () =>
     expect(h.signOut).not.toHaveBeenCalled();
     expect(navigations).toHaveLength(0);
   });
+
+  it("never signs out a session the authority still verifies, whatever PostgREST said", async () => {
+    const served = { data: [], error: null, status: 200 };
+    const h = makeHarness([REFUSED_UNVERIFIABLE, served], null);
+    h.attach();
+
+    await expect(h.rpc("mbr_for_user")).resolves.toEqual(served);
+    expect(h.getClaims).toHaveBeenCalled();
+    expect(h.signOut).not.toHaveBeenCalled();
+    expect(navigations).toHaveLength(0);
+  });
+
+  it("on sign-in already (a proxy bounce), adds the notice once and never loops", async () => {
+    window.history.replaceState(null, "", "/login?redirectTo=%2Fdashboard");
+    try {
+      const h = makeHarness([REFUSED_UNVERIFIABLE], BAD_JWT);
+      h.attach();
+      await h.rpc("mbr_for_user");
+      expect(navigations).toHaveLength(1);
+      const params = new URLSearchParams(navigations[0].split("?")[1]);
+      expect(navigations[0].startsWith("/login?")).toBe(true);
+      expect(params.get("redirectTo")).toBe("/dashboard");
+      expect(params.get("error")).toBe(UNVERIFIABLE_SESSION_NOTICE);
+
+      // The page that carries the notice: a surviving cookie must not navigate again.
+      window.history.replaceState(null, "", navigations[0]);
+      resetSessionBarrierForTests();
+      resetUnverifiableSessionForTests((href) => navigations.push(href));
+      const again = makeHarness([REFUSED_UNVERIFIABLE], BAD_JWT);
+      again.attach();
+      await again.rpc("mbr_for_user");
+      expect(again.signOut).toHaveBeenCalledTimes(1);
+      expect(navigations).toHaveLength(1);
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
+  });
 });
 
 describe("the classifiers", () => {

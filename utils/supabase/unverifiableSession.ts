@@ -147,11 +147,20 @@ export function endUnverifiableSession(
     } catch {
       /* the redirect still happens; a stale cookie is re-checked there */
     }
-    // Already on sign-in: the session is gone, and navigating again could only
-    // loop if a cookie outlived the sign-out.
-    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-      navigateTo(unverifiableSessionLoginHref(window.location.pathname, window.location.search));
+    if (typeof window === "undefined") return;
+    const { pathname, search } = window.location;
+    if (pathname !== "/login") {
+      navigateTo(unverifiableSessionLoginHref(pathname, search));
+      return;
     }
+    // Already on sign-in (the proxy bounced a protected route there before the
+    // browser could tell): add the notice once, keeping the destination. A page
+    // that already carries it never navigates, so a cookie that outlived the
+    // sign-out cannot loop.
+    const params = new URLSearchParams(search);
+    if (params.get("error") === UNVERIFIABLE_SESSION_NOTICE) return;
+    params.set("error", UNVERIFIABLE_SESSION_NOTICE);
+    navigateTo(`/login?${params.toString()}`);
   })();
   return ending;
 }

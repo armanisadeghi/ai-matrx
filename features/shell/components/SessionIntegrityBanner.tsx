@@ -39,6 +39,10 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/utils/supabase/client";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import { sessionIntegrityNotice } from "./sessionIntegrityNotice";
+import {
+  confirmUnverifiableSession,
+  endUnverifiableSession,
+} from "@/utils/supabase/unverifiableSession";
 
 interface SessionIntegrityBannerProps {
   /**
@@ -79,8 +83,21 @@ export default function SessionIntegrityBanner({
   useEffect(() => {
     let live = true;
     // getSession() re-reads the cookie store; no network round-trip.
-    void supabase.auth.getSession().then(({ data }) => {
-      if (live) setClientHasSession(Boolean(data.session?.user));
+    void supabase.auth.getSession().then(async ({ data }) => {
+      const hasSession = Boolean(data.session?.user);
+      // The server saw nobody while this tab has a session. When the reason is
+      // a token this auth authority can never verify (minted by another
+      // project — live vs the nightly clone), "cookies inconsistent" is the
+      // wrong sentence and signing in is the only repair: end it and say so
+      // (unverifiableSession.ts). An outage or a good token falls through.
+      if (hasSession && (await confirmUnverifiableSession(supabase.auth))) {
+        void endUnverifiableSession(supabase.auth, {
+          door: "SessionIntegrityBanner",
+          via: "claims",
+        });
+        return;
+      }
+      if (live) setClientHasSession(hasSession);
     });
     return () => {
       live = false;
