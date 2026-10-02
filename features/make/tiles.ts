@@ -24,8 +24,16 @@ export type MakeFlow = "table" | "form" | "booking" | "checklist" | "dashboard" 
 /** The store's kind word for the icon (`features/unified-data/home/dataHomeColumns.tsx` KindIcon). */
 export type MakeKind = "table" | "form" | "booking" | "checklist" | "dashboard" | "portal" | "list";
 
+/**
+ * Where a tile comes from. `store` = something the record store makes (wave 1's seven). `platform`
+ * = a platform feature (CRM, agent builder …) — /make is the first step toward ONE start page that
+ * mixes a person's own data with platform features (Arman, 2026-10-02); none ship in wave 1.
+ */
+export type MakeTileSource = "store" | "platform";
+
 export interface MakeTile {
   id: MakeFlow;
+  source: MakeTileSource;
   label: string;
   /** ≤ 60 characters, one line. */
   what: string;
@@ -44,6 +52,7 @@ export const MAKE_TILES: readonly MakeTile[] = [
     id: "table",
     label: "Table",
     what: "Rows and columns for anything you track",
+    source: "store",
     flow: "table",
     kind: "table",
     champion: "Airtable Home — start from scratch, a template or an import",
@@ -53,6 +62,7 @@ export const MAKE_TILES: readonly MakeTile[] = [
     id: "form",
     label: "Form",
     what: "Anyone with the link can answer",
+    source: "store",
     flow: "form",
     kind: "form",
     champion: "Typeform, Tally",
@@ -62,6 +72,7 @@ export const MAKE_TILES: readonly MakeTile[] = [
     id: "booking",
     label: "Booking page",
     what: "Let people pick a time with you",
+    source: "store",
     flow: "booking",
     kind: "booking",
     champion: "Calendly",
@@ -71,6 +82,7 @@ export const MAKE_TILES: readonly MakeTile[] = [
     id: "checklist",
     label: "Checklist",
     what: "Steps that start on every new record",
+    source: "store",
     flow: "checklist",
     kind: "checklist",
     champion: "Process Street",
@@ -80,6 +92,7 @@ export const MAKE_TILES: readonly MakeTile[] = [
     id: "dashboard",
     label: "Dashboard",
     what: "Charts over one table's records",
+    source: "store",
     flow: "dashboard",
     kind: "dashboard",
     champion: "Airtable Interfaces",
@@ -89,6 +102,7 @@ export const MAKE_TILES: readonly MakeTile[] = [
     id: "portal",
     label: "Client portal",
     what: "Clients sign in and see only their own",
+    source: "store",
     flow: "portal",
     kind: "portal",
     champion: "Softr client portals",
@@ -98,6 +112,7 @@ export const MAKE_TILES: readonly MakeTile[] = [
     id: "list",
     label: "Pick list",
     what: "One list of choices, used everywhere",
+    source: "store",
     flow: "list",
     kind: "list",
     champion: "Airtable single select, Notion select options",

@@ -1,88 +1,9 @@
--- chair-step: it CREATES one internal helper (custom._ctx_agent_cell: SECURITY INVOKER, STABLE, no client EXECUTE) and REPLACES the bodies of two lane-9 scope doors, custom.context_values and custom.context_resolve, with their signatures, security, search_path and grants unchanged. Additive only: custom.context_values gains a `whole_value` key on a row whose cell holds only the first words of a text kept as a file (and answers a text still waiting for its file whole), and reads through custom.read_records_by_ids only the records that can hold a value; custom.context_resolve gains `whole_value` on such a cell and binding and hands the first words with the file NAMED (custom.agent_context_value, as custom.resolve_context already does) instead of the first words alone. No table, index, policy, grant or data row is touched. Every other answer is the same (scripts/campaign-tests/scopesd1d2_a_long_scope_value_is_never_cut_red_green.sql; scopesd1d2_same_answer.mjs: both seats, memos on and off, hashed before and after).
+-- chair-step: the inverse of scopesd1d2_the_values_read_never_cuts_a_long_value_and_reads_only_what_holds_one.sql — restores the bodies of custom.context_values and custom.context_resolve as they stood on production 2026-10-02 (pg_get_functiondef, byte for byte) and drops the internal helper custom._ctx_agent_cell. No table, index, policy, grant or data row is touched.
 -- lane: SCOPES-ON-THE-STORE
--- based-on: custom.context_values(uuid[]) 58cdcbd50ce78f364666fab10d28147ae82e01fde0da9efef4eeb2961853d2b9
--- based-on: custom.context_resolve(jsonb) 4d494ba73f85aadd43cdc026f824da94cbefb9a92f79d5f0b197b64689d0e519
+-- based-on: custom.context_values(uuid[]) 1e606e26c51cc6abe406c4225b1ceac24425102eb85e0de19500dc653c08ab99
+-- based-on: custom.context_resolve(jsonb) f57c19e4d35df7947b366aca4dab271a73ae031d6ae21086479c8bad68b4f868
 -- lock: custom
---
--- Inverse: migrations/inverse/scopesd1d2_the_values_read_never_cuts_a_long_value_and_reads_only_what_holds_one_down.sql.
---
--- THE USE CASE. Castellano & Reyes, LLP keeps a workers' compensation matter as a scope; its
--- official QME report is a 139,950-character text, over the store's 100,000-byte ceiling for one
--- value, so the store keeps it as a file (ebad7d37…) and the cell holds its first 1000 characters.
---   D1. custom.context_values — what every scope screen reads a scope's values through — answered
---       those 1000 characters with no file named, and the web adapter had nothing to open: with the
---       store read switch on, the matter page would show 1000 characters of the report and nothing
---       saying the rest exists. custom.context_resolve (the merge-field resolver's one-call read of a
---       turn's bound cells, live for organizations on custom/consumer_context_enabled) answered the
---       same 1000 characters to the agent. The agent's main hand-off, custom.resolve_context, was
---       already right (the file named, the store's client hands the whole text: byte-identical to the
---       old hand-off, sha256 ddbcdf4e…, clone 2026-10-02) and is not touched.
---   D2. custom.context_values took ~2 ms a scope (200 scopes ~400 ms for test@test.com on the clone)
---       against the old values read's ~0.7 ms: every scope of the call went through the ladder and
---       the read mask (custom.read_records_by_ids), though most hold no value at all (683 scopes, 19
---       values), and the Table list was asked once per Table instead of once per organization.
---
--- ── custom._ctx_agent_cell — ONE CELL OF A SCOPE AS AN AGENT IS HANDED IT (new, internal) ───────────
-CREATE OR REPLACE FUNCTION custom._ctx_agent_cell(p_doc jsonb, p_raw jsonb, p_key text, p_org uuid, p_rec uuid, p_cap bigint)
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE
- SET search_path TO 'pg_catalog'
-AS $function$
--- SCOPES-D1 (lane 9, 2026-10-02). `p_doc` is the record as the read door answered it for the person;
--- `p_raw` its own `_values` / `_sources` stamps. Answers {value[, whole_value]}:
---   * a value kept as a file: custom.agent_context_value's answer — the first words, the file NAMED,
---     `whole_value.expand` asking the store's client for the whole text (or, over the organization's
---     cap, the start and the file, announced) — exactly what custom.resolve_context hands;
---   * a text still waiting for its file (`pending`): the whole text from the store's waiting row
---     (or its start and where the rest is, over the cap); if that row is gone, the first words and a
---     sentence saying the rest is still being saved — never the first words alone;
---   * anything else: the value unchanged.
-declare
-  v_val   jsonb := p_doc -> p_key;
-  v_src   jsonb;
-  v_whole text;
-begin
-  if jsonb_typeof(v_val) is distinct from 'string' then
-    return jsonb_build_object('value', v_val);
-  end if;
-  if custom.whole_value_pointer_of(p_doc -> '_values', p_doc -> '_sources', p_key) is not null then
-    return custom.agent_context_value(p_doc, p_key, 'text', p_org, p_rec, coalesce(p_cap, 0));
-  end if;
-  v_src := p_raw -> '_sources' -> (p_raw -> '_values' -> p_key ->> 'src');
-  if v_src ->> 'kind' is distinct from 'whole_value_in_file' or coalesce(v_src ->> 'file_id', '') <> '' then
-    return jsonb_build_object('value', v_val);
-  end if;
-  select p.whole_text into v_whole
-    from custom.whole_value_parked p
-   where p.organization_id = p_org and p.record_id = p_rec and p.field_key = p_key
-     and p.sha256 = v_src ->> 'sha256';
-  if v_whole is null then
-    return jsonb_build_object(
-      'value', to_jsonb((v_val #>> '{}') || E'…\n\n' || format(
-        '[This is the start of a %s-character text that is still being saved as a file. The whole value is the "%s" field of record %s; read it again in a moment for all of it.]',
-        coalesce(v_src ->> 'chars', '?'), p_key, p_rec)),
-      'whole_value', jsonb_build_object('kind', 'whole_value_in_file', 'pending', true, 'expand', false,
-        'chars', v_src -> 'chars', 'bytes', v_src -> 'bytes', 'sha256', v_src -> 'sha256',
-        'record_id', p_rec, 'key', p_key));
-  end if;
-  if coalesce(p_cap, 0) > 0 and octet_length(v_whole) > p_cap then
-    return jsonb_build_object(
-      'value', to_jsonb(custom.text_head_bytes(v_whole, p_cap) || E'…\n\n' || format(
-        '[This value is %s bytes, over this organization''s limit of %s bytes for one value handed to an agent, so only its start is here. The whole value is the "%s" field of record %s.]',
-        octet_length(v_whole), p_cap, p_key, p_rec)),
-      'whole_value', jsonb_build_object('kind', 'capped_in_record', 'pending', true, 'expand', false,
-        'record_id', p_rec, 'key', p_key, 'bytes', octet_length(v_whole), 'cap_bytes', p_cap));
-  end if;
-  return jsonb_build_object('value', to_jsonb(v_whole),
-    'whole_value', jsonb_build_object('kind', 'whole_value_in_file', 'pending', true, 'in_value', true,
-      'expand', false, 'chars', length(v_whole), 'sha256', v_src -> 'sha256', 'record_id', p_rec, 'key', p_key));
-end;
-$function$;
 
-REVOKE ALL ON FUNCTION custom._ctx_agent_cell(jsonb, jsonb, text, uuid, uuid, bigint) FROM PUBLIC, anon, authenticated, service_role;
-
--- ── custom.context_values ─────────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION custom.context_values(p_scope_ids uuid[])
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -96,12 +17,6 @@ declare
   v_ids    uuid[];
   v_grp    record;
   v_out    jsonb := '[]'::jsonb;
-  -- SCOPES-D2 (lane 9): the Table list asked once per organization, for the Tables of this call
-  v_todo   jsonb := '[]'::jsonb;
-  v_among  jsonb;
-  v_listed text[] := '{}'::text[];   -- 'organization:Table' (a record id is unique only within its organization)
-  v_g      jsonb;
-  v_o      text;
 begin
   select coalesce(array_agg(distinct i), '{}'::uuid[]) into v_ids
     from unnest(coalesce(p_scope_ids, '{}'::uuid[])) i where i is not null;
@@ -118,91 +33,27 @@ begin
   -- custom.read_records_by_ids (the one ladder, the one read mask), so a key the caller may not see
   -- is simply absent. Beside each value: its version, when it was set, the source it came from and
   -- the old value id the copy carried (the Record's own value stamps).
-  --
-  -- SCOPES-D2 (lane 9, 2026-10-02): ONLY THE RECORDS THAT CAN HOLD A VALUE ARE READ. A scope answers
-  -- a row here only for a value Field of its Table (a Field that is not one of the scope's own
-  -- columns — those carry v5 ids) whose key its document holds, non-null. Most scopes hold none (a
-  -- member's 683 scopes hold 19 values), yet every one was read through the ladder and the mask.
-  -- So a record goes to custom.read_records_by_ids only when its stored data could produce such a
-  -- row: a non-null value under one of those keys, or a `_computed` / `_derived` block, or its Table
-  -- has a Field worked out at read time (lookup / rollup / formula). Anything else can only produce
-  -- nothing, so leaving it out changes no answer (scopesd1d2_same_answer.mjs: memos on and off, both
-  -- seats, hashed before and after). The wall is still met for every organization asked about, in the
-  -- same order, before anything is read. Then the Table list is asked once per organization for the
-  -- Tables this call reads (custom.tables_listed_among: query_visible_ids' answer restricted to them),
-  -- with every organization and its Tables named in the statement memo first
-  -- ('custom.kernel_among_batch:<person>', as custom.context_tree names them — STORE-READ-PERF-6), so
-  -- the one ladder's Table walk is asked once for all of them; the name is dropped before any record
-  -- is read.
   for v_grp in
-    with g as materialized (
-      select r.organization_id as org, r.table_id as tbl, r.id, r.data
-        from custom.record r
-        join custom.record t
-          on t.organization_id = r.organization_id and t.id = r.table_id
-         and t.table_id = v_tables and t.deleted_at is null and t.data ->> 'kept_for' = 'context'
-       where r.id = any (v_ids) and r.deleted_at is null
-    ),
-    k as materialized (
-      select x.organization_id as org, x.data ->> 'entity_definition_id' as tbl,
-             array_agg(x.data ->> 'key') as keys,
-             bool_or(custom.parity_type(x.data) in ('lookup', 'rollup', 'formula')) as computed
-        from custom.record x
-       where x.organization_id in (select distinct g.org from g)
-         and x.table_id = v_fields and x.deleted_at is null
-         and x.data ->> 'entity_definition_id' in (select distinct g.tbl::text from g)
-         and substr(x.id::text, 15, 1) <> '5'
-       group by 1, 2
-    ),
-    s as (
-      select g.org, g.tbl, array_agg(g.id) as ids,
-             coalesce(array_agg(g.id) filter (where k.org is not null and (
-                        k.computed
-                     or exists (select 1 from unnest(k.keys) kk
-                                 where coalesce(jsonb_typeof(g.data -> kk), 'null') <> 'null')
-                     or coalesce(g.data -> '_computed', '{}'::jsonb) not in ('{}'::jsonb, 'null'::jsonb)
-                     or coalesce(g.data -> '_derived', '{}'::jsonb) not in ('{}'::jsonb, 'null'::jsonb))),
-                      '{}'::uuid[]) as held
-        from g left join k on k.org = g.org and k.tbl = g.tbl::text
-       group by g.org, g.tbl
-    )
-    select s.org, s.tbl, s.ids, s.held
-      from s
-     order by s.org, s.tbl
+    select r.organization_id as org, r.table_id as tbl, array_agg(r.id) as ids
+      from custom.record r
+      join custom.record t
+        on t.organization_id = r.organization_id and t.id = r.table_id
+       and t.table_id = v_tables and t.deleted_at is null and t.data ->> 'kept_for' = 'context'
+     where r.id = any (v_ids) and r.deleted_at is null
+     group by 1, 2
   loop
     continue when not (iam.has_org_access(v_grp.org) or custom.portal_admits(v_grp.org));
     perform custom.assert_client_may_reach(v_grp.org, 'custom.context_values');
-    continue when cardinality(v_grp.held) = 0;
-    v_todo := v_todo || jsonb_build_array(jsonb_build_object('org', v_grp.org, 'tbl', v_grp.tbl, 'held', to_jsonb(v_grp.held)));
-  end loop;
-  if jsonb_array_length(v_todo) = 0 then
-    return v_out;
-  end if;
-
-  -- STORE-READ-PERF-5: the Table list asked among these Tables, not every Table of the organization;
-  -- SCOPES-D2: once per organization, every organization's walk asked in one pass.
-  select jsonb_object_agg(o.org, o.tbls) into v_among
-    from (select t ->> 'org' as org, jsonb_agg(distinct t -> 'tbl') as tbls
-            from jsonb_array_elements(v_todo) t group by 1) o;
-  perform platform.memo_k_put('custom.kernel_among_batch:' || v_me::text, v_among::text);
-  for v_o in select jsonb_object_keys(v_among) loop
-    v_listed := v_listed || coalesce((select array_agg(v_o || ':' || v::text) from custom.tables_listed_among(
-                  v_o::uuid, array(select jsonb_array_elements_text(v_among -> v_o)::uuid)) v), '{}'::text[]);
-  end loop;
-  perform platform.memo_k_drop('custom.kernel_among_batch:' || v_me::text);
-
-  for v_g in select t from jsonb_array_elements(v_todo) t loop
-    continue when not ((v_g ->> 'org') || ':' || (v_g ->> 'tbl') = any (v_listed));
-    select (v_g ->> 'org')::uuid as org, (v_g ->> 'tbl')::uuid as tbl,
-           array(select jsonb_array_elements_text(v_g -> 'held')::uuid) as held
-      into v_grp;
+    -- STORE-READ-PERF-5: the Table list asked about this one Table (custom.tables_listed_among:
+    -- query_visible_ids' own answer, restricted to it), not every Table of the organization.
+    continue when not exists (select 1 from custom.tables_listed_among(v_grp.org, array[v_grp.tbl]) v where v = v_grp.tbl);
     v_out := v_out || coalesce((
       with d as materialized (
-        select x.id, x.document from custom.read_records_by_ids(v_grp.org, v_grp.tbl, v_grp.held, false) x
+        select x.id, x.document from custom.read_records_by_ids(v_grp.org, v_grp.tbl, v_grp.ids, false) x
       ),
       h as materialized (
         select r.id, r.data -> '_values' as stamps, r.data -> '_sources' as sources, r.updated_at
-          from custom.record r where r.organization_id = v_grp.org and r.id = any (v_grp.held)
+          from custom.record r where r.organization_id = v_grp.org and r.id = any (v_grp.ids)
       ),
       f as materialized (
         select x.id, x.data, x.metadata from custom.record x
@@ -213,43 +64,9 @@ begin
       v as materialized (
         select d.id as scope_id, f.id as item_id, f.data ->> 'key' as key, f.data as fdoc, f.metadata as fmeta,
                d.document -> (f.data ->> 'key') as value,
-               h.stamps -> (f.data ->> 'key') as stamp, h.sources, h.updated_at,
-               d.document -> '_values' as dvals, d.document -> '_sources' as dsrcs
+               h.stamps -> (f.data ->> 'key') as stamp, h.sources, h.updated_at
           from d join h on h.id = d.id
           join f on d.document ? (f.data ->> 'key') and jsonb_typeof(d.document -> (f.data ->> 'key')) <> 'null'
-      ),
-      -- SCOPES-D1 (lane 9, 2026-10-02): A TEXT KEPT AS A FILE IS NEVER ANSWERED AS ITS FIRST WORDS ALONE.
-      -- The cell of a value over the store's ceiling holds its first 1000 characters; the whole text
-      -- is a file. The read door's document names that file for a Field the caller may see
-      -- (custom.with_whole_value_pointers), so the row carries it as `whole_value` (the file fields of
-      -- the pointer only, custom.whole_value_pointer_of) and the screen opens the whole text. A text
-      -- written but still waiting for its file (`pending`: the follower attaches it within seconds) is
-      -- answered WHOLE from the store's own waiting row, and says so (`whole_value.in_value`).
-      w as materialized (
-        select v.*,
-               case when jsonb_typeof(v.value) = 'string' then
-                 coalesce(custom.whole_value_pointer_of(v.dvals, v.dsrcs, v.key),
-                          case when v.sources -> (v.stamp ->> 'src') ->> 'kind' = 'whole_value_in_file'
-                                and coalesce(v.sources -> (v.stamp ->> 'src') ->> 'file_id', '') = ''
-                               then jsonb_strip_nulls(jsonb_build_object(
-                                      'kind', 'whole_value_in_file', 'pending', true,
-                                      'bytes', v.sources -> (v.stamp ->> 'src') -> 'bytes',
-                                      'chars', v.sources -> (v.stamp ->> 'src') -> 'chars',
-                                      'sha256', v.sources -> (v.stamp ->> 'src') -> 'sha256',
-                                      'shown_chars', v.sources -> (v.stamp ->> 'src') -> 'shown_chars',
-                                      'mime', v.sources -> (v.stamp ->> 'src') -> 'mime'))
-                          end)
-               end as whole
-          from v
-      ),
-      wv as materialized (
-        select w.*,
-               case when (w.whole ->> 'pending')::boolean then
-                 (select p.whole_text from custom.whole_value_parked p
-                   where p.organization_id = v_grp.org and p.record_id = w.scope_id and p.field_key = w.key
-                     and p.sha256 = w.whole ->> 'sha256')
-               end as parked
-          from w
       ),
       -- The names of the scopes a reference points at, for its chip — only scopes the caller sees
       -- (the one ladder's level on each, custom.levels_of, asked once for all of them).
@@ -275,8 +92,7 @@ begin
            and (lv.l -> x.id::text ->> 'l') is not null
       )
       select jsonb_agg(jsonb_build_object(
-               'scope_id', v.scope_id, 'context_item_id', v.item_id, 'key', v.key,
-               'value', case when v.parked is not null then to_jsonb(v.parked) else v.value end,
+               'scope_id', v.scope_id, 'context_item_id', v.item_id, 'key', v.key, 'value', v.value,
                'field', jsonb_build_object(
                  'type', v.fdoc -> 'type', 'multi', v.fdoc -> 'multi', 'format', v.fdoc -> 'format',
                  'display_format', v.fdoc -> 'display_format', 'config', v.fdoc -> 'config',
@@ -295,19 +111,14 @@ begin
                'files', (select jsonb_object_agg(n.id, n.file_id) from names n
                           where n.file_id is not null and v.fdoc ->> 'type' = 'relation'
                             and (n.id::text = v.value #>> '{}'
-                                 or (jsonb_typeof(v.value) = 'array' and v.value ? n.id::text))))
-             || case when v.whole is null then '{}'::jsonb
-                     else jsonb_build_object('whole_value',
-                            v.whole || case when v.parked is not null then '{"in_value": true}'::jsonb else '{}'::jsonb end)
-                end)
-        from wv v), '[]'::jsonb);
+                                 or (jsonb_typeof(v.value) = 'array' and v.value ? n.id::text)))))
+        from v), '[]'::jsonb);
   end loop;
   return v_out;
 end;
 $function$
 ;
 
--- ── custom.context_resolve ────────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION custom.context_resolve(p_bindings jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -348,11 +159,6 @@ declare
   v_progress     boolean;
   v_dep          jsonb;
   v_blocked      boolean;
-  -- SCOPES-D1 (lane 9): a value kept as a file, or still waiting for its file, is never handed cut
-  v_raw          jsonb;
-  v_cap          bigint;
-  v_caps         jsonb := '{}'::jsonb;
-  v_ac           jsonb;
 begin
   -- THE PERSON FIRST. There is no organization argument any more: each record names its own
   -- organization (custom.where_id_opens reads it from the record), so a turn whose scopes live
@@ -438,24 +244,13 @@ begin
     v_scope_map := v_scope_map || jsonb_build_object(v_rec::text, v_rec);
     v_hidden := coalesce(v_doc -> '_hidden', '{}'::jsonb);
     v_values := '{}'::jsonb;
-    -- SCOPES-D1: the record's own value stamps say which cell holds only the first words of a
-    -- text kept as a file (or still waiting for its file); the organization's cap on one value
-    -- handed to an agent is read once per organization, as custom.resolve_context reads it.
-    select jsonb_build_object('_values', r.data -> '_values', '_sources', r.data -> '_sources')
-      into v_raw
-      from custom.record r where r.organization_id = v_org and r.id = v_rec;
-    if not v_caps ? v_org::text then
-      v_caps := v_caps || jsonb_build_object(v_org::text, custom.agent_context_value_cap(v_org));
-    end if;
-    v_cap := (v_caps ->> v_org::text)::bigint;
 
     begin
       for v_row in
         select * from custom.record_values_versioned(v_org, v_rec)
       loop
-        v_ac := custom._ctx_agent_cell(v_doc, v_raw, v_row.field_key, v_org, v_rec, v_cap);
         v_values := v_values || jsonb_build_object(v_row.field_key, jsonb_build_object(
-          'value',         v_ac -> 'value',
+          'value',         v_doc -> v_row.field_key,
           'field_id',      v_row.field_id,
           'value_version', v_row.value_version,
           'written_at',    v_row.written_at,
@@ -463,22 +258,19 @@ begin
           'actor',         v_row.actor,
           'source',        v_row.source,
           'masked',        v_hidden ? v_row.field_key,
-          'mask_reason',   v_hidden -> v_row.field_key ->> 'reason')
-          || case when v_ac ? 'whole_value' then jsonb_build_object('whole_value', v_ac -> 'whole_value') else '{}'::jsonb end);
+          'mask_reason',   v_hidden -> v_row.field_key ->> 'reason'));
       end loop;
     exception when others then
       select coalesce(jsonb_object_agg(e.key, jsonb_build_object(
-               'value',         e.ac -> 'value',
+               'value',         e.value,
                'field_id',      null,
                'value_version', null,
                'written_at',    null,
                'absent_reason', format('the store did not let this principal read value versions (%s) — the value is the read door''s and its version is unknown rather than guessed', sqlerrm),
                'masked',        v_hidden ? e.key,
-               'mask_reason',   v_hidden -> e.key ->> 'reason')
-               || case when e.ac ? 'whole_value' then jsonb_build_object('whole_value', e.ac -> 'whole_value') else '{}'::jsonb end), '{}'::jsonb)
+               'mask_reason',   v_hidden -> e.key ->> 'reason')), '{}'::jsonb)
         into v_values
-        from (select j.key, custom._ctx_agent_cell(v_doc, v_raw, j.key, v_org, v_rec, v_cap) as ac
-                from jsonb_each(v_doc - '_hidden' - '_alternates' - '_retired') j) e;
+        from jsonb_each(v_doc - '_hidden' - '_alternates' - '_retired') e;
     end;
 
     v_records := v_records || jsonb_build_object(v_rec::text, v_values);
@@ -542,7 +334,7 @@ begin
     v_fresh := v_verdict ->> 'freshness';
     v_stale := v_verdict ->> 'stale_note';
 
-    v_out := v_out || (jsonb_build_object(
+    v_out := v_out || jsonb_build_object(
       'key',           v_key,
       'scope_id',      v_binding -> 'scope_id',
       'record_id',     v_rec,
@@ -562,10 +354,7 @@ begin
       -- off these rows. Leaving it out made `v_pending` a map of empty arrays, so every
       -- binding looked ready at once and the order was whatever `jsonb_object_keys`
       -- happened to answer — which the seat suite caught as `2 < 0`.
-      'depends_on',    coalesce(v_binding -> 'depends_on', '[]'::jsonb))
-      -- SCOPES-D1: a value kept as a file names its file (whole_value), so the store's client hands
-      -- the whole text (matrx_records RecordStore.context_resolve) — never the first words alone.
-      || case when v_cell ? 'whole_value' then jsonb_build_object('whole_value', v_cell -> 'whole_value') else '{}'::jsonb end);
+      'depends_on',    coalesce(v_binding -> 'depends_on', '[]'::jsonb));
   end loop;
 
   -- ── 4. `depends_on` ORDER, AND A CYCLE NAMED RATHER THAN LOOPED ───────────────────────
@@ -629,3 +418,4 @@ end;
 $function$
 ;
 
+DROP FUNCTION IF EXISTS custom._ctx_agent_cell(jsonb, jsonb, text, uuid, uuid, bigint);

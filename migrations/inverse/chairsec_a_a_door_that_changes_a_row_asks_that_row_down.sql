@@ -1,6 +1,11 @@
 -- chair-step: the inverse of chairsec_a_a_door_that_changes_a_row_asks_that_row.sql. It puts the five
 -- custom.* door bodies (dashboard_declare, dashboard_run, dashboards, doc_template_save, rule_declare)
 -- back byte for byte as they were on production 2026-10-02 before that file ran. No grants change.
+-- based-on: custom.dashboard_declare(uuid, uuid, text, jsonb, jsonb, uuid) d1e43105a9bf97e89a7f42f44df871d505906b37f329c8bda8035caea4db88f2
+-- based-on: custom.dashboard_run(uuid, uuid, jsonb, jsonb, text) 9a2045b51d771437611196533cda6d7e1cec098eab9ccd95565270e5c97f0964
+-- based-on: custom.dashboards(uuid, uuid) 71baa63ad4e6c3530847e5b8b4faa2d039dc1eaad4645da3d35a231f9fbfc4d1
+-- based-on: custom.doc_template_save(uuid, uuid, text, text, uuid) 80df3351909c073cd2b51ddf3bc3f40d538db7a06bd1edfed403e66bd8c443c8
+-- based-on: custom.rule_declare(uuid, jsonb, uuid) 3d872cc65cf4ff3e290113bbec4f7206c5e9c3b4e7c598cbd4814f955488d880
 
 CREATE OR REPLACE FUNCTION custom.dashboard_declare(p_organization_id uuid, p_table_id uuid, p_name text, p_blocks jsonb DEFAULT '[]'::jsonb, p_presentation jsonb DEFAULT '{}'::jsonb, p_dashboard_id uuid DEFAULT NULL::uuid)
  RETURNS uuid

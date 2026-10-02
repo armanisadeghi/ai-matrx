@@ -121,6 +121,92 @@ comment on function communication.notice_lapsed(jsonb) is
   'True when a notification row''s metadata.soft_expires_at (zoned ISO 8601) has passed: the notice '
   'stays readable but stops counting as unread. Malformed or absent = never lapses.';
 
+-- ── 1d. a newer notice SUPERSEDES the older ones ───────────────────────────────────────────
+-- When a meeting is re-announced (updated, moved, cancelled) for a person, everything they were
+-- told about it before LAPSES — never deleted, never hidden — so exactly one notice stays unread:
+-- the newest. One call, three facts: delivered DMs get `soft_expires_at = now()`; DM legs still
+-- waiting in the queue carry the lapse in `metadata.dm.soft_expires_at`, so they arrive lapsed;
+-- in-app notices carry it in `metadata.soft_expires_at` (the bell reads `notice_lapsed`).
+-- An instant already in the past is never moved later. Server-only.
+create or replace function communication.lapse_superseded_notices(
+  p_target_kind text, p_target_id uuid, p_recipient_user_id uuid, p_event_keys jsonb)
+ returns integer
+ language plpgsql
+ security definer
+ set search_path to ''
+as $function$
+declare
+  v_now  timestamptz := now();
+  v_iso  text := to_char(now() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"');
+  v_n    integer := 0;
+  v_rows integer;
+begin
+  if p_target_kind is null or p_target_id is null or p_recipient_user_id is null
+     or jsonb_typeof(p_event_keys) is distinct from 'array' then
+    raise exception 'lapse_superseded_notices needs a target, a recipient and a JSON array of event keys' using errcode = '22004';
+  end if;
+
+  update communication.dm_messages m
+     set soft_expires_at = v_now
+   where m.client_message_id in (
+           select 'notification:' || n.id::text
+             from communication.notification n
+            where n.target_kind = p_target_kind
+              and n.target_id = p_target_id
+              and n.recipient_user_id = p_recipient_user_id
+              and n.channel = 'dm'
+              and n.event_key in (select jsonb_array_elements_text(p_event_keys))
+              and n.created_at < v_now)
+     and m.client_message_id like 'notification:%'
+     and m.deleted_at is null
+     and (m.soft_expires_at is null or m.soft_expires_at > v_now);
+  get diagnostics v_rows = row_count;
+  v_n := v_n + v_rows;
+
+  update communication.notification n
+     set metadata = case n.channel
+                      when 'dm' then jsonb_set(coalesce(n.metadata, '{}'::jsonb), '{dm}',
+                                               coalesce(n.metadata -> 'dm', '{}'::jsonb)
+                                                 || jsonb_build_object('soft_expires_at', v_iso))
+                      else coalesce(n.metadata, '{}'::jsonb)
+                             || jsonb_build_object('soft_expires_at', v_iso)
+                    end
+   where n.target_kind = p_target_kind
+     and n.target_id = p_target_id
+     and n.recipient_user_id = p_recipient_user_id
+     and n.event_key in (select jsonb_array_elements_text(p_event_keys))
+     and n.created_at < v_now
+     and n.deleted_at is null
+     and ((n.channel = 'in_app' and not communication.notice_lapsed(n.metadata))
+          or (n.channel = 'dm' and n.status in ('pending', 'render_pending', 'in_progress')
+              and not communication.notice_lapsed(n.metadata -> 'dm')));
+  get diagnostics v_rows = row_count;
+  return v_n + v_rows;
+end
+$function$;
+
+comment on function communication.lapse_superseded_notices(text, uuid, uuid, jsonb) is
+  'A newer notice supersedes the older ones: lapses (never deletes) every earlier DM and in-app '
+  'notice this person got about this target for these events. Server-only.';
+
+revoke all on function communication.lapse_superseded_notices(text, uuid, uuid, jsonb)
+  from public, anon, authenticated;
+grant execute on function communication.lapse_superseded_notices(text, uuid, uuid, jsonb) to service_role;
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+values
+  ('communication', 'lapse_superseded_notices',
+   pg_get_function_identity_arguments('communication.lapse_superseded_notices(text, uuid, uuid, jsonb)'::regprocedure),
+   array['text','uuid','uuid','jsonb']::regtype[]::oid[],
+   'p_target_id + p_target_kind name the object the notices are about; p_recipient_user_id the '
+   'person whose own notices lapse. Only that person''s rows change, and only to stop counting as unread.',
+   'dm_soft_expiry_and_dm_pairs_with_email.sql',
+   'server_only: aidream Meet calls it when it re-announces a meeting to an invitee; a client could '
+   'mark another person''s notices read, so no client may call it.',
+   false, false)
+on conflict (schema_name, function_name, identity_argtypes) do nothing;
+
 -- ── 2. THE PAIRING RULE ───────────────────────────────────────────────────────────────────
 -- The person's own choice about the DM leg of ONE notice, nearest rung first: this
 -- organization's row, else their latest row anywhere (the same ladder notification_user_channels
@@ -281,11 +367,24 @@ begin
     ) w;
 
   -- `||` is the ladder: a user key overwrites its channel, and a user key the rung above never
-  -- mentioned is ADDED — which is how a person turns a channel ON. THE PAIRING RULE is applied to
-  -- the result, so no rung can produce an email without its DM (and a person's "no DM" takes the
-  -- email with it).
+  -- mentioned is ADDED — which is how a person turns a channel ON.
+  --
+  -- THE PAIRING RULE, both directions (owner ruling 2026-10-02):
+  --   * the DM pairs with the email the ORGANIZATION would send — so a person who turns only the
+  --     EMAIL off still gets the DM ("it's ok to DM someone but not email them");
+  --   * a person who turns the DM off turns the email off too (email requires DM).
+  -- So the rule is applied to the ladder WITHOUT the person's email switch, and that switch is laid
+  -- on top: off is off; on is on only through the rule again (never an email without its DM).
   v_out := communication.notification_pair_channels(
-             p_event_key, p_organization_id, p_user, v_base || v_user);
+             p_event_key, p_organization_id, p_user, v_base || (v_user - 'email'));
+  if v_user ? 'email' then
+    if v_user -> 'email' = 'true'::jsonb then
+      v_out := communication.notification_pair_channels(
+                 p_event_key, p_organization_id, p_user, v_out || '{"email": true}'::jsonb);
+    else
+      v_out := v_out || '{"email": false}'::jsonb;
+    end if;
+  end if;
 
   -- ── THE ⚖ FLOOR (SPEC-NOTIFICATIONS §7.1). The user tier "may not silence a ⚖ event entirely".
   -- Checked ONCE, after both rungs AND the pairing rule (whose "email follows DM off" could

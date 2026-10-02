@@ -50,7 +50,7 @@
 --
 -- ATOMIC PER CALL, RESUMABLE ACROSS CALLS. A person's statement ceiling is 8 s (role
 -- `authenticated`), and a six-table template measured 12.8 s in one statement (lane 8, clone,
--- 2026-10-02). So one call runs steps until `p_budget_ms` (default 6000) is spent, inside ONE
+-- 2026-10-02). So one call runs steps until `p_budget_ms` (default 4000) is spent, inside ONE
 -- subtransaction: either every step of that call lands and the install row moves forward, or
 -- none does and the install row records the refusal verbatim. `done: false` means "call again";
 -- the next call resumes at the next step with the same ids. A small template finishes in one call
@@ -272,7 +272,10 @@ begin
     raise exception 'A template may only call the store''s own doors, and "%" is not one of them.', coalesce(p_door, '(none)')
       using errcode = '42501', hint = 'The closed list is custom._template_doors(). A template that needs another door waits for it to be added there.';
   end if;
-  select p.oid, p.proargnames, p.proargtypes::oid[], p.proretset
+  -- proargtypes is an oidvector, indexed from 0; unnest it so v_types lines up with proargnames.
+  select p.oid, p.proargnames,
+         (select array_agg(u.t order by u.n) from unnest(p.proargtypes) with ordinality as u(t, n)),
+         p.proretset
     into v_proc, v_names, v_types, v_set
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace and p.proname = p_door;
@@ -350,6 +353,7 @@ declare
   v_spec    jsonb := p_spec - 'installPlan' - 'card' - 'organizationId';
   v_bad     text;
   v_row     custom.template;
+  v_id      uuid;
   v_created boolean;
 begin
   if p_scope is null or p_scope not in ('org', 'platform') then
@@ -412,8 +416,8 @@ begin
      set scope = excluded.scope, spec_version = excluded.spec_version, card = excluded.card,
          spec = excluded.spec, plan = excluded.plan, declared_by = excluded.declared_by,
          retired_at = null, updated_at = now()
-  returning t.* into v_row;
-  v_created := v_row.created_at = v_row.updated_at;   -- an update moves updated_at; an insert sets both to now()
+  returning t.id, (t.xmax = 0) into v_id, v_created;   -- xmax = 0: this statement inserted the row
+  select * into v_row from custom.template t where t.id = v_id;
 
   return jsonb_build_object('template_id', v_row.id, 'catalogue_id', v_row.catalogue_id,
                             'version', v_row.template_version, 'scope', v_row.scope,
@@ -505,7 +509,7 @@ comment on function custom.templates(jsonb) is
   'Chair (v6) — the template gallery: the latest version of each template the caller may see (platform templates to every signed-in person, an organization''s templates to its members), card fields only (name, persona, business, vertical, industry, job, audience, teaches, strengths, requires, footprint, preview image) — never the spec, the plan or a row. Filters: industry, job, teaches, strength, q, scope, organization_id; installed_in marks the cards already installed there.';
 
 -- ── e. INSTALL ───────────────────────────────────────────────────────────────────────────────────
-create or replace function custom.template_install(p_organization_id uuid, p_template_id uuid, p_budget_ms integer default 6000)
+create or replace function custom.template_install(p_organization_id uuid, p_template_id uuid, p_budget_ms integer default 4000)
  returns jsonb
  language plpgsql
  security definer
@@ -530,13 +534,14 @@ declare
   v_el      jsonb;
   v_m       jsonb;
   v_t0      timestamptz := clock_timestamp();
-  v_budget  integer := least(greatest(coalesce(p_budget_ms, 6000), 0), 600000);
+  v_budget  integer := least(greatest(coalesce(p_budget_ms, 4000), 0), 600000);
   v_tz      text;
   v_state   text;
   v_msg     text;
   v_code    text;
   v_hint    text;
   v_detail  text;
+  v_where   text;
 begin
   perform custom.assert_store_door(p_organization_id, 'custom.template_install');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.template_install');
@@ -634,11 +639,12 @@ begin
     returning * into v_i;
   exception when others then
     -- Everything THIS call did is rolled back; what earlier calls made stays listed in `made`.
-    get stacked diagnostics v_msg = message_text, v_code = returned_sqlstate, v_hint = pg_exception_hint, v_detail = pg_exception_detail;
+    get stacked diagnostics v_msg = message_text, v_code = returned_sqlstate, v_hint = pg_exception_hint, v_detail = pg_exception_detail, v_where = pg_exception_context;
     update custom.template_install i
        set state = 'refused',
            refusal = jsonb_build_object('step', v_k, 'label', v_steps -> v_k ->> 'label', 'door', 'custom.' || (v_steps -> v_k ->> 'door'),
-                                        'code', v_code, 'message', v_msg, 'hint', nullif(v_hint, ''), 'detail', nullif(v_detail, '')),
+                                        'code', v_code, 'message', v_msg, 'hint', nullif(v_hint, ''), 'detail', nullif(v_detail, ''),
+                                        'where', left(nullif(v_where, ''), 2000)),
            ms = i.ms + (extract(epoch from clock_timestamp() - v_t0) * 1000)::integer,
            calls = i.calls + 1, updated_at = now()
      where i.id = v_i.id
@@ -698,7 +704,7 @@ comment on function custom.template_install_note(uuid, uuid, text, uuid, text) i
 -- take is archived after the person passes the same rung (custom.assert_client_may_change on its
 -- table); a Home or a seeded file record through custom.record_delete. An agent is named, not
 -- archived (the agent screens archive agents). Budgeted like install: done=false means call again.
-create or replace function custom.template_uninstall(p_organization_id uuid, p_install_id uuid, p_budget_ms integer default 6000)
+create or replace function custom.template_uninstall(p_organization_id uuid, p_install_id uuid, p_budget_ms integer default 4000)
  returns jsonb
  language plpgsql
  security definer
@@ -711,7 +717,7 @@ declare
   v_tbl    uuid;
   v_r      jsonb;
   v_t0     timestamptz := clock_timestamp();
-  v_budget integer := least(greatest(coalesce(p_budget_ms, 6000), 0), 600000);
+  v_budget integer := least(greatest(coalesce(p_budget_ms, 4000), 0), 600000);
   v_arch   jsonb;
   v_left   jsonb := '[]'::jsonb;
   v_done   boolean := true;
@@ -743,7 +749,7 @@ begin
     case v_kind
       when 'table' then
         loop
-          v_r := custom.table_archive(p_organization_id, v_id, 200, true);
+          v_r := custom.table_archive(p_organization_id, v_id, 10, true);   -- small chunks (the interim installer's ARCHIVE_CHUNK): a call stays inside the 8 s ceiling
           exit when coalesce((v_r ->> 'done')::boolean, false) or coalesce((v_r ->> 'table_archived')::boolean, false);
           if extract(epoch from clock_timestamp() - v_t0) * 1000 > v_budget then
             v_done := false;
@@ -752,12 +758,16 @@ begin
         end loop;
         exit when not v_done;
         v_arch := v_arch || jsonb_build_array(jsonb_build_object('kind', v_kind, 'id', v_id, 'title', v_m ->> 'title', 'event', v_r ->> 'archive_event'));
-      when 'dashboard' then
-        perform custom.dashboard_delete(p_organization_id, v_id);
-        v_arch := v_arch || jsonb_build_array(jsonb_build_object('kind', v_kind, 'id', v_id, 'title', v_m ->> 'title'));
-      when 'document' then
-        perform custom.doc_template_delete(p_organization_id, v_id);
-        v_arch := v_arch || jsonb_build_array(jsonb_build_object('kind', v_kind, 'id', v_id, 'title', v_m ->> 'title'));
+      when 'dashboard', 'document' then
+        -- Both are records of the store; one already archived (by hand, or with its table) is left as it is.
+        if exists (select 1 from custom.record r where r.organization_id = p_organization_id and r.id = v_id and r.deleted_at is null) then
+          if v_kind = 'dashboard' then
+            perform custom.dashboard_delete(p_organization_id, v_id);
+          else
+            perform custom.doc_template_delete(p_organization_id, v_id);
+          end if;
+          v_arch := v_arch || jsonb_build_array(jsonb_build_object('kind', v_kind, 'id', v_id, 'title', v_m ->> 'title'));
+        end if;
       when 'portal' then
         perform custom.portal_archive(p_organization_id, v_id, v_m ->> 'title', 'The template that made it was uninstalled.');
         v_arch := v_arch || jsonb_build_array(jsonb_build_object('kind', v_kind, 'id', v_id, 'title', v_m ->> 'title'));
@@ -807,19 +817,33 @@ comment on function custom.template_uninstall(uuid, uuid, integer) is
   'Chair (v6) — archive everything one install made (delete means archive): tables through custom.table_archive (records, fields, views, rules, pick lists with them), dashboards, documents and portals through their archive doors, forms and views the table did not take after the caller passes custom.assert_client_may_change, Homes and seeded file records through custom.record_delete. The agent is named in answer.left. Budgeted: done=false means call again. custom.template_restore brings back exactly what it archived.';
 
 -- ── g. RESTORE ───────────────────────────────────────────────────────────────────────────────────
-create or replace function custom.template_restore(p_organization_id uuid, p_install_id uuid, p_budget_ms integer default 6000)
+-- Brings back what uninstall archived, oldest first, each item in its own subtransaction: a table
+-- whose rows point at a table not back yet is refused by the store ("Appointment is required"), so
+-- it waits for the next pass instead of stopping the rest. Budgeted: done=false means call again;
+-- an item no pass can bring back is answered as the refusal, verbatim.
+create or replace function custom.template_restore(p_organization_id uuid, p_install_id uuid, p_budget_ms integer default 4000)
  returns jsonb
  language plpgsql
  security definer
  set search_path to 'pg_catalog'
 as $function$
 declare
-  v_i      custom.template_install;
-  v_a      jsonb;
-  v_id     uuid;
-  v_tbl    uuid;
-  v_kind   text;
-  v_title  text;
+  v_i        custom.template_install;
+  v_a        jsonb;
+  v_id       uuid;
+  v_tbl      uuid;
+  v_kind     text;
+  v_title    text;
+  v_left     jsonb;
+  v_next     jsonb;
+  v_progress boolean;
+  v_t0       timestamptz := clock_timestamp();
+  v_budget   integer := least(greatest(coalesce(p_budget_ms, 4000), 0), 600000);
+  v_out      boolean := false;
+  v_msg      text;
+  v_code     text;
+  v_hint     text;
+  v_refusal  jsonb;
 begin
   perform custom.assert_store_door(p_organization_id, 'custom.template_restore');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.template_restore');
@@ -837,42 +861,75 @@ begin
     raise exception 'This template has been installed again since, so the earlier install cannot be brought back beside it.' using errcode = '55000';
   end if;
 
-  -- Oldest first: the Home before its tables, a table before the views and forms on it.
-  for v_a in select x from jsonb_array_elements(v_i.archived) with ordinality as e(x, n) order by n desc loop
-    v_kind := v_a ->> 'kind';
-    v_id := (v_a ->> 'id')::uuid;
-    v_title := v_a ->> 'title';
-    case v_kind
-      when 'table', 'record' then
-        if exists (select 1 from custom.record r where r.organization_id = p_organization_id and r.id = v_id and r.deleted_at is not null) then
-          perform custom.record_restore(p_organization_id, v_id);
-        end if;
-      when 'dashboard' then perform custom.dashboard_restore(p_organization_id, v_id);
-      when 'document' then perform custom.doc_template_restore(p_organization_id, v_id);
-      when 'portal' then perform custom.portal_restore(p_organization_id, v_id, v_title);
-      when 'form' then
-        select f.table_id into v_tbl from custom.anon_form f where f.organization_id = p_organization_id and f.id = v_id;
-        perform custom.assert_client_may_change(p_organization_id, v_tbl, 'custom.template_restore');
-        update custom.anon_form f set deleted_at = null, updated_at = now(), updated_by = auth.uid()
-         where f.organization_id = p_organization_id and f.id = v_id;
-      when 'view' then
-        select v.subject_id into v_tbl from platform.saved_view v where v.organization_id = p_organization_id and v.id = v_id;
-        perform custom.assert_client_may_change(p_organization_id, v_tbl, 'custom.template_restore');
-        update platform.saved_view v set deleted_at = null, updated_at = now(), updated_by = auth.uid()
-         where v.organization_id = p_organization_id and v.id = v_id;
-      else null;
-    end case;
+  -- `archived` lists newest-archived first; restore runs the other way (the Home before its tables).
+  select coalesce(jsonb_agg(x order by n desc), '[]'::jsonb) into v_left
+    from jsonb_array_elements(v_i.archived) with ordinality as e(x, n);
+
+  loop
+    v_progress := false;
+    v_next := '[]'::jsonb;
+    for v_a in select x from jsonb_array_elements(v_left) x loop
+      if v_out or extract(epoch from clock_timestamp() - v_t0) * 1000 > v_budget then
+        v_out := true;
+        v_next := v_next || jsonb_build_array(v_a);
+        continue;
+      end if;
+      v_kind := v_a ->> 'kind';
+      v_id := (v_a ->> 'id')::uuid;
+      v_title := v_a ->> 'title';
+      begin
+        case v_kind
+          when 'table', 'record' then
+            if exists (select 1 from custom.record r where r.organization_id = p_organization_id and r.id = v_id and r.deleted_at is not null) then
+              perform custom.record_restore(p_organization_id, v_id);
+            end if;
+          when 'dashboard' then perform custom.dashboard_restore(p_organization_id, v_id);
+          when 'document' then perform custom.doc_template_restore(p_organization_id, v_id);
+          when 'portal' then perform custom.portal_restore(p_organization_id, v_id, v_title);
+          when 'form' then
+            select f.table_id into v_tbl from custom.anon_form f where f.organization_id = p_organization_id and f.id = v_id;
+            perform custom.assert_client_may_change(p_organization_id, v_tbl, 'custom.template_restore');
+            update custom.anon_form f set deleted_at = null, updated_at = now(), updated_by = auth.uid()
+             where f.organization_id = p_organization_id and f.id = v_id;
+          when 'view' then
+            select v.subject_id into v_tbl from platform.saved_view v where v.organization_id = p_organization_id and v.id = v_id;
+            perform custom.assert_client_may_change(p_organization_id, v_tbl, 'custom.template_restore');
+            update platform.saved_view v set deleted_at = null, updated_at = now(), updated_by = auth.uid()
+             where v.organization_id = p_organization_id and v.id = v_id;
+          else null;
+        end case;
+        v_progress := true;
+      exception when others then
+        get stacked diagnostics v_msg = message_text, v_code = returned_sqlstate, v_hint = pg_exception_hint;
+        v_refusal := jsonb_build_object('kind', v_kind, 'id', v_id, 'title', v_title, 'code', v_code,
+                                        'message', v_msg, 'hint', nullif(v_hint, ''));
+        v_next := v_next || jsonb_build_array(v_a);
+      end;
+    end loop;
+    v_left := v_next;
+    exit when v_out or not v_progress or jsonb_array_length(v_left) = 0;
   end loop;
 
+  -- Back in `archived` order (newest first), so a later call or uninstall reads it the same way.
+  select coalesce(jsonb_agg(x order by n desc), '[]'::jsonb) into v_left
+    from jsonb_array_elements(v_left) with ordinality as e(x, n);
   update custom.template_install i
-     set state = 'installed', archived = '[]'::jsonb, uninstalled_at = null, uninstalled_by = null, updated_at = now()
+     set archived = v_left,
+         state = case when jsonb_array_length(v_left) = 0 then 'installed' else i.state end,
+         uninstalled_at = case when jsonb_array_length(v_left) = 0 then null else i.uninstalled_at end,
+         uninstalled_by = case when jsonb_array_length(v_left) = 0 then null else i.uninstalled_by end,
+         updated_at = now()
    where i.id = v_i.id
   returning * into v_i;
-  return custom._template_answer(v_i, jsonb_build_object('restored', true));
+  return custom._template_answer(v_i, jsonb_build_object(
+           'restored', jsonb_array_length(v_left) = 0,
+           'done', jsonb_array_length(v_left) = 0,
+           'waiting', jsonb_array_length(v_left),
+           'refusal', case when not v_out and jsonb_array_length(v_left) > 0 then v_refusal end));
 end;
 $function$;
 comment on function custom.template_restore(uuid, uuid, integer) is
-  'Chair (v6) — bring back everything custom.template_uninstall archived for one install (tables with their records through custom.record_restore, dashboards, documents, portals, forms, views), and mark the install installed again. Refused when the same template has been installed again since.';
+  'Chair (v6) — bring back everything custom.template_uninstall archived for one install (tables with their records through custom.record_restore, dashboards, documents, portals, forms, views), each in its own subtransaction so a table waiting on another is retried after it; budgeted (done=false means call again). Refused when the same template has been installed again since.';
 
 -- ── THE DOORS ────────────────────────────────────────────────────────────────────────────────────
 revoke all on function custom.template_declare(text, jsonb) from public, anon;

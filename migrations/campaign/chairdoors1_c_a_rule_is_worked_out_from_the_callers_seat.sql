@@ -1,5 +1,6 @@
 -- chair-step: this replaces the body of custom.rule_eval (same signature, still SECURITY INVOKER), CREATES one helper custom._rule_eval_seated (SECURITY DEFINER), declares both and history.capture_is_open in platform.client_callable_door, and GRANTs EXECUTE on the three to `authenticated`. rule_eval's store-internal path (called by the store's own doors as the owner) is unchanged; a signed-in caller is sent through the helper, which decides the organization, Table and record as the read doors do and counts only records she may see. history.capture_is_open's body is unchanged (it reads one organization setting). No table, policy, index or data row is touched.
 -- lane: CHAIR-DOORS-1 (asked by v6 lane 11 AUTOMATIONS-AND-PAGES, need 5)
+-- based-on: custom.rule_eval(uuid, jsonb, jsonb, jsonb) fdff75976ad3b1e61c1276581f25f11c260d8d997b99939d055b5e9f07729640
 --
 -- A RULE IS WORKED OUT FROM THE CALLER'S SEAT. Before this file custom.rule_eval could not be executed by a
 -- signed-in caller, and granting it alone would not have been enough: it is SECURITY INVOKER and every

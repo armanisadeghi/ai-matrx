@@ -102,7 +102,7 @@ const FORMULAS: string[] = [
   "{Visit fee} * (2",
 ];
 
-type Val = string | number | boolean | null;
+type Val = string | number | boolean | null | Val[];
 type Outcome = { ok: true; value: Val } | { ok: false; error: string };
 
 /** The Services each visit carried — a many-choice column added for ARRAYJOIN. */
@@ -150,10 +150,49 @@ function nth(text: string, old: string, neu: string, which: number): string {
 const h12 = (d: Date) => (d.getUTCHours() % 12 === 0 ? 12 : d.getUTCHours() % 12);
 
 /**
+ * DATETIME_FORMAT, every specifier of Airtable's "Supported format specifiers for DATETIME_FORMAT"
+ * (moment.js, English, UTC), written out by hand from that table for three moments:
+ *   Tuesday 22 September 2026 17:05:09.123Z — day 265, en week 39 (weeks start Sunday, the week
+ *     holding 1 January is week 1), ISO week 39, Q3, unix 1790096709;
+ *   Sunday 20 September 2026 00:30:00Z — weekday 0, en week 39 but ISO week 38, k = 24;
+ *   Monday 29 December 2025 12:00Z — en and ISO week 1 of week-year 2026.
+ */
+const TUESDAY = "2026-09-22T17:05:09.123Z";
+const SUNDAY = "2026-09-20T00:30:00Z";
+const YEAR_END = "2025-12-29T12:00:00Z";
+const DATETIME_TOKENS: [string, string, string?][] = [
+  ["M", "9"], ["Mo", "9th"], ["MM", "09"], ["MMM", "Sep"], ["MMMM", "September"],
+  ["Q", "3"], ["Qo", "3rd"],
+  ["D", "22"], ["Do", "22nd"], ["DD", "22"], ["DDD", "265"], ["DDDo", "265th"], ["DDDD", "265"],
+  ["d", "2"], ["do", "2nd"], ["dd", "Tu"], ["ddd", "Tue"], ["dddd", "Tuesday"], ["e", "2"], ["E", "2"],
+  ["w", "39"], ["wo", "39th"], ["ww", "39"], ["W", "39"], ["Wo", "39th"], ["WW", "39"],
+  ["YY", "26"], ["YYYY", "2026"], ["gg", "26"], ["gggg", "2026"], ["GG", "26"], ["GGGG", "2026"],
+  ["A", "PM"], ["a", "pm"], ["H", "17"], ["HH", "17"], ["h", "5"], ["hh", "05"], ["k", "17"], ["kk", "17"],
+  ["m", "5"], ["mm", "05"], ["s", "9"], ["ss", "09"],
+  ["S", "1"], ["SS", "12"], ["SSS", "123"], ["SSSS", "1230"], ["SSSSSSSSS", "123000000"],
+  ["Z", "+00:00"], ["ZZ", "+0000"], ["X", "1790096709"], ["x", "1790096709123"],
+  ["LT", "5:05 PM"], ["LTS", "5:05:09 PM"], ["L", "09/22/2026"], ["l", "9/22/2026"],
+  ["LL", "September 22, 2026"], ["ll", "Sep 22, 2026"],
+  ["LLL", "September 22, 2026 5:05 PM"], ["lll", "Sep 22, 2026 5:05 PM"],
+  ["LLLL", "Tuesday, September 22, 2026 5:05 PM"], ["llll", "Tue, Sep 22, 2026 5:05 PM"],
+  // the shapes the verifier caught, and the escapes
+  ["h:m:s", "5:5:9"], ["DDDD [of the year]", "265 of the year"], ["Qo [quarter] YYYY", "3rd quarter 2026"],
+  ["[Week] w [of] gggg", "Week 39 of 2026"], ["YYYY-MM-DDTHH:mm:ssZ", "2026-09-22T17:05:09+00:00"],
+  ["\\\\Q Q", "Q 3"], ["dddd [at] LT", "Tuesday at 5:05 PM"],
+  // Sunday, just after midnight
+  ["d", "0", SUNDAY], ["do", "0th", SUNDAY], ["e", "0", SUNDAY], ["E", "7", SUNDAY], ["dd", "Su", SUNDAY],
+  ["w", "39", SUNDAY], ["W", "38", SUNDAY], ["k", "24", SUNDAY], ["kk", "24", SUNDAY], ["h", "12", SUNDAY],
+  ["H", "0", SUNDAY], ["A", "AM", SUNDAY], ["LTS", "12:30:00 AM", SUNDAY],
+  // the last Monday of 2025 is week 1 of 2026
+  ["YYYY", "2025", YEAR_END], ["w", "1", YEAR_END], ["gggg", "2026", YEAR_END], ["gg", "26", YEAR_END],
+  ["W", "1", YEAR_END], ["GGGG", "2026", YEAR_END], ["Wo", "1st", YEAR_END],
+];
+
+/**
  * VIEWS-AND-FIELDS F4: the seven, each answer worked out here from the row (Airtable's behaviour)
  * and each refusal in the store's own words. `type` is the kind formula_parse must report.
  */
-const STORE_ONLY: { text: string; expect: (r: Row) => Outcome; type?: string }[] = [
+const STORE_ONLY: { text: string; expect: (r: Row) => Outcome; type?: string; once?: boolean }[] = [
   { text: 'SWITCH({Visit status}, "No-show", "Call owner", "Completed", "Send invoice", "Hold chart")', type: "text",
     expect: (r) => ok(r.visit_status === "No-show" ? "Call owner" : r.visit_status === "Completed" ? "Send invoice" : "Hold chart") },
   { text: 'SWITCH({Species}, "Dog", 15, "Cat", 12)', type: "number",
@@ -163,12 +202,28 @@ const STORE_ONLY: { text: string; expect: (r: Row) => Outcome; type?: string }[]
     // deposit of 0 meets BLANK() first and "Waived" is never reached: SWITCH order matters.
     expect: (r) => ok(r.deposit === null || r.deposit === undefined || r.deposit === 0 ? "Take deposit" : "On file") },
   { text: 'FIND("-", {Owner phone})', type: "number", expect: (r) => ok(str(r.owner_phone).indexOf("-") + 1) },
-  { text: 'FIND("5", {Owner phone}, 4)', type: "number", expect: (r) => ok(str(r.owner_phone).indexOf("5", 3) + 1) },
+  // Airtable's startFromPosition defaults to 0 and is JavaScript indexOf's start (characters
+  // skipped); the answer counts from 1 and 0 means not found.
+  { text: 'FIND("5", {Owner phone}, 4)', type: "number", expect: (r) => ok(str(r.owner_phone).indexOf("5", 4) + 1) },
+  { text: 'FIND("5", {Owner phone}, 0)', expect: (r) => ok(str(r.owner_phone).indexOf("5", 0) + 1) },
+  { text: 'FIND("(", {Owner phone}, 1)', expect: (r) => ok(str(r.owner_phone).indexOf("(", 1) + 1) },
+  { text: 'FIND("1", {Owner phone}, 99)', expect: (r) => ok(str(r.owner_phone).indexOf("1", 99) + 1) },
+  { text: 'FIND("", {Owner phone}, 3)', expect: (r) => ok(str(r.owner_phone).indexOf("", 3) + 1) },
   { text: 'FIND("dog", {Patient})', expect: (r) => ok(str(r.patient).indexOf("dog") + 1) },
   { text: 'SUBSTITUTE({Owner phone}, "-", ".")', type: "text", expect: (r) => ok(str(r.owner_phone).split("-").join(".")) },
   { text: 'SUBSTITUTE({Owner phone}, "4", "#", 2)', expect: (r) => ok(nth(str(r.owner_phone), "4", "#", 2)) },
   { text: 'REGEX_MATCH({Patient}, "^[A-M]")', type: "boolean", expect: (r) => ok(/^[A-M]/.test(str(r.patient))) },
   { text: 'REGEX_MATCH({Desk notes}, "(?i)no-show")', expect: (r) => ok(/no-show/i.test(str(r.desk_notes))) },
+  // RE2, Airtable's engine: \b is a word boundary (in Postgres it would be a backspace), \p{…}
+  // classes, named groups.
+  { text: 'REGEX_MATCH({Desk notes}, "\\\\bcheck\\\\b")', expect: (r) => ok(/\bcheck\b/.test(str(r.desk_notes))) },
+  { text: 'REGEX_MATCH({Desk notes}, "\\\\Bcheck")', expect: (r) => ok(/\Bcheck/.test(str(r.desk_notes))) },
+  { text: 'REGEX_MATCH({Patient}, "^\\\\p{Lu}\\\\p{Ll}+ \\\\(")', expect: (r) => ok(/^\p{Lu}\p{Ll}+ \(/u.test(str(r.patient))) },
+  { text: 'REGEX_MATCH({Patient}, "^[\\\\p{L} ]+$")', expect: (r) => ok(/^[\p{L} ]+$/u.test(str(r.patient))) },
+  { text: 'REGEX_MATCH({Owner phone}, "\\\\P{N}")', expect: (r) => ok(/\P{N}/u.test(str(r.owner_phone))) },
+  { text: 'REGEX_MATCH({Owner phone}, "^(?P<area>\\\\(541\\\\)) ")', expect: (r) => ok(/^(\(541\)) /.test(str(r.owner_phone))) },
+  { text: 'REGEX_MATCH({Owner phone}, "\\\\Q(541)\\\\E")', expect: (r) => ok(str(r.owner_phone).includes("(541)")) },
+  { text: 'REGEX_MATCH({Desk notes}, "TPLO\\\\z")', expect: (r) => ok(/TPLO$/.test(str(r.desk_notes))) },
   { text: 'DATETIME_FORMAT({Visit date}, "dddd, MMMM D, YYYY")', type: "text",
     expect: (r) => { const d = visit(r); return ok(`${DAYS[d.getUTCDay()]}, ${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`); } },
   { text: 'DATETIME_FORMAT({Visit date}, "M/D/YY [at] h:mm A")',
@@ -181,8 +236,20 @@ const STORE_ONLY: { text: string; expect: (r: Row) => Outcome; type?: string }[]
   { text: "ARRAYJOIN({Services})", type: "text", expect: (r) => ok((SERVICES[str(r.patient)] ?? []).join(", ")) },
   { text: 'ARRAYJOIN({Services}, " + ")', expect: (r) => ok((SERVICES[str(r.patient)] ?? []).join(" + ")) },
   { text: "ARRAYJOIN({Species})", expect: (r) => ok(str(r.species)) },
+  // Airtable keeps empty items in ARRAYJOIN (JavaScript's join) and leaves removing them to
+  // ARRAYCOMPACT, which drops null and "" but keeps false, 0 and text of spaces.
+  { text: `ARRAYJOIN('["Ice", "", null, "Heat"]', "|")`, once: true, expect: () => ok(["Ice", "", null, "Heat"].join("|")) },
+  { text: `ARRAYJOIN(ARRAYCOMPACT('["Ice", "", null, "Heat"]'), "|")`, once: true, expect: () => ok("Ice|Heat") },
+  { text: `ARRAYCOMPACT('["Ice", "", null, " ", false, 0, "Heat"]')`, once: true, expect: () => ok(["Ice", " ", false, 0, "Heat"]) },
+  { text: "ARRAYCOMPACT({Services})", expect: (r) => ok(SERVICES[str(r.patient)] ?? []) },
+  { text: "ARRAYJOIN(ARRAYCOMPACT({Services}), \"; \")", expect: (r) => ok((SERVICES[str(r.patient)] ?? []).join("; ")) },
   // the refusals
   { text: 'REGEX_MATCH({Patient}, "([A-Z")', expect: () => no('`REGEX_MATCH` cannot read the pattern "([A-Z".') },
+  { text: 'REGEX_MATCH({Patient}, "(o)\\\\1")', expect: () => no('`REGEX_MATCH` does not support backreferences such as "\\1".') },
+  { text: 'REGEX_MATCH({Patient}, "Moose(?= )")', expect: () => no('`REGEX_MATCH` does not support lookahead or lookbehind such as "(?=".') },
+  { text: 'REGEX_MATCH({Patient}, "(?<!Big )Moose")', expect: () => no('`REGEX_MATCH` does not support lookahead or lookbehind such as "(?<!".') },
+  { text: 'REGEX_MATCH({Patient}, "\\\\p{Greek}")', expect: () => no('`REGEX_MATCH` does not know the character class "\\p{Greek}". Use L, Lu, Ll, N, Nd or P.') },
+  { text: 'REGEX_MATCH({Patient}, "\\\\mMoose")', expect: () => no('`REGEX_MATCH` cannot read the pattern "\\mMoose".') },
   { text: 'SUBSTITUTE({Owner phone}, "4", "#", 0)', expect: () => no("`SUBSTITUTE` counts which one to replace from 1, but was given 0.") },
   { text: 'FIND("5", {Owner phone}, "third")', expect: () => no('`FIND` needs a number, but got "third".') },
   { text: "WORKDAY({Desk notes}, 2)",
@@ -193,6 +260,11 @@ const STORE_ONLY: { text: string; expect: (r: Row) => Outcome; type?: string }[]
   { text: 'FIND("-")', expect: () => no("`FIND` was given 1 value. Use FIND(part, text, start?).") },
   { text: "SWITCH({Species})", expect: () => no("`SWITCH` was given 1 value. Use SWITCH(value, match, result, …, otherwise?).") },
   { text: "ARRAYJOIN()", expect: () => no("`ARRAYJOIN` was given 0 values. Use ARRAYJOIN(values, separator?).") },
+  ...DATETIME_TOKENS.map(([format, want, at]) => ({
+    text: `DATETIME_FORMAT("${at ?? TUESDAY}", "${format}")`,
+    once: true,
+    expect: () => ok(want),
+  })),
 ];
 
 function targetFromArgv(): "clone" | "branch" {
@@ -204,6 +276,7 @@ function targetFromArgv(): "clone" | "branch" {
 
 function same(a: Outcome, b: Outcome): boolean {
   if (!a.ok || !b.ok) return !a.ok && !b.ok && a.error === b.error;
+  if (Array.isArray(a.value) || Array.isArray(b.value)) return JSON.stringify(a.value) === JSON.stringify(b.value);
   if (typeof a.value === "number" && typeof b.value === "number") {
     return Math.abs(a.value - b.value) <= 1e-9 * Math.max(1, Math.abs(a.value));
   }
@@ -223,6 +296,10 @@ async function main() {
   try {
     await client.query("begin");
     await client.query("set local statement_timeout = '120s'");
+    // The writes below say who is writing, the way every server door does: the platform's actor
+    // declaration, transaction-local (platform.declared_actor_tier reads app.actor_tier; the
+    // record store's custom.actor_word refuses an undeclared write since ONE-HOME's actor change).
+    await client.query("select set_config('app.actor_tier', 'system', true)");
     await client.query(readFileSync(resolve(ROOT, "scripts/campaign-tests/_gridprim_clinic.sql"), "utf8"));
     const gp = Object.fromEntries(
       (await client.query<{ k: string; v: string }>("select k, v::text from gp")).rows.map((r) => [r.k, r.v]),
@@ -330,7 +407,7 @@ async function main() {
         storeOnlyFailures++;
         console.log(`\x1b[31m[TYPE]\x1b[0m ${c.text}  ·  expected ${c.type}, the store says ${parsed.result_type}`);
       }
-      for (const rec of records) {
+      for (const rec of c.once ? records.slice(0, 1) : records) {
         const row = rowsOld[rec.id]!;
         const want = c.expect(row);
         let got: Outcome;
@@ -370,7 +447,7 @@ async function main() {
     console.log(`\x1b[31m${failures} of ${compared} answers DISAGREE (the older grid or the expected answer vs the store).\x1b[0m`);
     process.exit(1);
   }
-  console.log(`\x1b[32mPARITY — ${FORMULAS.length} formulas × 10 appointments the same from the older grid and from the store, and ${STORE_ONLY.length} formulas of the seven newer functions × 10 the same as worked out here: ${compared} answers.\x1b[0m`);
+  console.log(`\x1b[32mPARITY — ${FORMULAS.length} formulas × 10 appointments the same from the older grid and from the store, and ${STORE_ONLY.length} formulas of the eight newer functions × 10 the same as worked out here: ${compared} answers.\x1b[0m`);
 }
 
 main().catch((e) => {

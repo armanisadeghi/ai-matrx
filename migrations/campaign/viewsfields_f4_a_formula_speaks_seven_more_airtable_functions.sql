@@ -1,10 +1,11 @@
 -- target: branch,production
 -- additive: yes
---   It ADDS two helpers, `custom._fx_datetime_format` and `custom._fx_workday`, and REPLACES
---   three bodies, each declared below with the body it was written against:
---   `custom.formula_node_kinds` lists seven more functions; `custom.formula_eval` works them out;
---   `custom._fxp_type` answers SWITCH's kind from its results. The parser needs no change: it
---   reads a function name as `fx.<name>` from the list. Rules inherit the seven through
+--   It ADDS five helpers — `custom._fx_ordinal`, `custom._fx_datetime_format`, `custom._fx_regex`,
+--   `custom._fx_items`, `custom._fx_workday` — and REPLACES three bodies, each declared below
+--   with the body it was written against: `custom.formula_node_kinds` lists eight more
+--   functions; `custom.formula_eval` works them out; `custom._fxp_type` answers SWITCH's kind
+--   from its results. The parser needs no change: it
+--   reads a function name as `fx.<name>` from the list. Rules inherit them through
 --   `custom.rule_node_kinds`, which reads the list where it is kept. No table, column, trigger,
 --   policy, grant or row of anybody's data is touched. The inverse is
 --   `migrations/inverse/viewsfields_f4_a_formula_speaks_seven_more_airtable_functions_down.sql`.
@@ -14,27 +15,32 @@
 -- based-on: custom.formula_eval(uuid, jsonb, jsonb, jsonb) 8ee93bf164be8212b5cfd46f1d29b498ee6342068211dd41c35a0309c545626f
 -- based-on: custom._fxp_type(jsonb, jsonb) c5214493965f9ea03062a4cc2eab50bc857c2bc634bdb683337e75f9af19cb22
 --
--- LANE 10 VIEWS-AND-FIELDS, sublane F4 — SEVEN MORE OF AIRTABLE'S FORMULA FUNCTIONS.
+-- LANE 10 VIEWS-AND-FIELDS, sublane F4 — EIGHT MORE OF AIRTABLE'S FORMULA FUNCTIONS (the seven
+-- asked for and ARRAYCOMPACT, ARRAYJOIN's partner). The file name keeps "seven": it is the name
+-- the chair's apply command and the clone ledger already carry.
 --
 -- Champion: Airtable's formula field reference. Each function takes Airtable's arguments in
 -- Airtable's order and answers what Airtable answers:
 --   SWITCH(value, match, result, …, otherwise?)  lazy, like IF: only what is needed is worked out
---   FIND(part, text, start?)                     1-based, 0 when absent, case-sensitive
+--   FIND(part, text, start?)                     1-based, 0 when absent, case-sensitive; start is
+--                                                JavaScript indexOf's (0-based, default 0)
 --   SUBSTITUTE(text, old, new, which?)           every occurrence, or only the which-th
---   REGEX_MATCH(text, pattern)                   yes/no; a pattern that is not one is refused by name
+--   REGEX_MATCH(text, pattern)                   yes/no, RE2 syntax: backreferences and lookaround are
+--                                                refused by name, \p{…} classes become POSIX classes
 --   DATETIME_FORMAT(date, format?)               Airtable's (moment's) tokens, UTC, [literal] text;
 --                                                no format = the ISO text the language writes dates as
 --   WORKDAY(start, days, holidays?)              skips Saturday, Sunday and each listed date
 --                                                (comma-separated ISO dates, as Airtable takes them)
---   ARRAYJOIN(values, separator?)                a many-value column's items, ", " between by default
--- Postgres regular expressions stand in for RE2; the common syntax is the same.
+--   ARRAYJOIN(values, separator?)                a many-value column's items, ", " between by default;
+--                                                empty items stay (Airtable leaves that to ARRAYCOMPACT)
+--   ARRAYCOMPACT(values)                         the list without null and "" items
 --
 -- LOCKS. create function / create or replace function only. Not window-class.
 
 set local statement_timeout = '60s';
 
 -- ═════════════════════════════════════════════════════════════════════════════════════════
--- THE VOCABULARY — the 42 rows as they were, and seven more
+-- THE VOCABULARY — the 42 rows as they were, and eight more
 -- ═════════════════════════════════════════════════════════════════════════════════════════
 
 create or replace function custom.formula_node_kinds()
@@ -75,12 +81,13 @@ as $fn$
     ('fx.dateadd',     3, 3,    'date',    'DATEADD(date, count, ''days'' | ''months'' | ''years'')', 'The date moved forward by that many units. Use a negative count to go back.'),
     -- VIEWS-AND-FIELDS F4: seven of Airtable's functions, in Airtable's argument order
     ('fx.switch',      2, null, 'unknown', 'SWITCH(value, match, result, …, otherwise?)', 'The result beside the first match for the value, else the last value.'),
-    ('fx.find',        2, 3,    'number',  'FIND(part, text, start?)',        'Where the part first starts in the text, from 1; 0 when absent. Case counts.'),
+    ('fx.find',        2, 3,    'number',  'FIND(part, text, start?)',        'Where the part first appears, counting from 1, or 0; a start skips that many characters.'),
     ('fx.substitute',  3, 4,    'text',    'SUBSTITUTE(text, old, new, which?)', 'The text with every old part replaced, or only the numbered one.'),
     ('fx.regex_match', 2, 2,    'boolean', 'REGEX_MATCH(text, pattern)',      'Yes when the text matches the pattern.'),
-    ('fx.datetime_format', 1, 2, 'text',   'DATETIME_FORMAT(date, ''MMM D, YYYY'')', 'The date written in the format given, in UTC.'),
+    ('fx.datetime_format', 1, 2, 'text',   'DATETIME_FORMAT(date, format?)', 'The date written in the format given, such as ''MMM D, YYYY'', in UTC.'),
     ('fx.workday',     2, 3,    'date',    'WORKDAY(start, days, holidays?)', 'The date that many working days on, skipping weekends and the holidays listed.'),
     ('fx.arrayjoin',   1, 2,    'text',    'ARRAYJOIN(values, separator?)',   'Every value of a list as one piece of text, ", " between them unless told.'),
+    ('fx.arraycompact', 1, 1,   'unknown', 'ARRAYCOMPACT(values)',            'The list without its empty values.'),
     -- the operators
     ('fx.add',         2, 2,    'number',  'a + b',  'A sum. An empty value counts as 0.'),
     ('fx.sub',         2, 2,    'number',  'a - b',  'A difference. An empty value counts as 0.'),
@@ -106,6 +113,20 @@ $fn$;
 -- DATETIME_FORMAT's tokens and WORKDAY's calendar
 -- ═════════════════════════════════════════════════════════════════════════════════════════
 
+create function custom._fx_ordinal(p_n integer)
+returns text
+language sql
+immutable
+set search_path to 'pg_catalog'
+as $fn$
+  -- English ordinals, as moment.js writes them: 1st 2nd 3rd 4th … 11th 12th 13th … 21st.
+  select p_n::text || case when abs(p_n) % 100 between 11 and 13 then 'th'
+                           when abs(p_n) % 10 = 1 then 'st'
+                           when abs(p_n) % 10 = 2 then 'nd'
+                           when abs(p_n) % 10 = 3 then 'rd'
+                           else 'th' end
+$fn$;
+
 create function custom._fx_datetime_format(p_ts timestamp, p_format text)
 returns text
 language plpgsql
@@ -113,18 +134,30 @@ immutable
 set search_path to 'pg_catalog'
 as $fn$
 declare
-  c_tokens constant text[] := array['YYYY', 'MMMM', 'dddd', 'MMM', 'ddd', 'SSS',
-                                    'YY', 'MM', 'DD', 'Do', 'HH', 'hh', 'mm', 'ss',
-                                    'M', 'D', 'H', 'h', 'A', 'a', 'X', 'x', 'Z'];
-  v_out text := '';
-  v_tok text;
-  v_one text;
-  i     integer := 1;
-  j     integer;
-  n     integer := char_length(p_format);
+  -- Every specifier of Airtable's "Supported format specifiers for DATETIME_FORMAT" (moment.js),
+  -- longest first so `DDDD` is never read as `DD` + `DD`, and `Mo` never as `M` + "o".
+  -- Anything else is written as it is — moment.js does the same with a character that starts no
+  -- specifier — and text in [brackets], or one character after a backslash, is written as it is.
+  c_tokens constant text[] := array[
+    'SSSSSSSSS', 'SSSSSSSS', 'SSSSSSS', 'SSSSSS',
+    'GGGGG', 'ggggg', 'SSSSS',
+    'MMMM', 'DDDD', 'DDDo', 'dddd', 'YYYY', 'gggg', 'GGGG', 'LLLL', 'llll', 'SSSS',
+    'MMM', 'DDD', 'ddd', 'LTS', 'LLL', 'lll', 'SSS',
+    'Mo', 'MM', 'Qo', 'Do', 'DD', 'do', 'dd', 'wo', 'ww', 'Wo', 'WW', 'YY', 'gg', 'GG',
+    'HH', 'hh', 'kk', 'mm', 'ss', 'SS', 'ZZ', 'LT', 'LL', 'll',
+    'M', 'Q', 'D', 'd', 'e', 'E', 'w', 'W', 'A', 'a', 'H', 'h', 'k', 'm', 's', 'S', 'Z', 'X', 'x', 'L', 'l'];
+  v_out  text := '';
+  v_tok  text;
+  v_one  text;
+  i      integer := 1;
+  j      integer;
+  n      integer := char_length(p_format);
+  v_dow  integer := extract(dow from p_ts)::integer;        -- 0 = Sunday
+  v_sat  date    := p_ts::date + (6 - extract(dow from p_ts)::integer);
+  v_week integer := (extract(doy from v_sat)::integer - 1) / 7 + 1;   -- en: the week holding 1 January is week 1
+  v_wyr  integer := extract(year from v_sat)::integer;
+  v_ms   text    := lpad(((extract(microseconds from p_ts)::bigint / 1000) % 1000)::text, 3, '0');
 begin
-  -- Airtable's format specifiers (moment.js tokens), longest first, case-sensitive; text in
-  -- [brackets] is written as it is; every other character is written as it is. Always UTC.
   while i <= n loop
     if substr(p_format, i, 1) = '[' then
       j := strpos(substr(p_format, i + 1), ']');
@@ -133,6 +166,11 @@ begin
         i := i + j + 1;
         continue;
       end if;
+    end if;
+    if substr(p_format, i, 1) = '\' and i < n then
+      v_out := v_out || substr(p_format, i + 1, 1);
+      i := i + 2;
+      continue;
     end if;
     v_tok := null;
     foreach v_one in array c_tokens loop
@@ -146,30 +184,76 @@ begin
       i := i + 1;
       continue;
     end if;
-    v_out := v_out || case v_tok
-      when 'YYYY' then to_char(p_ts, 'YYYY')
-      when 'YY'   then to_char(p_ts, 'YY')
-      when 'MMMM' then to_char(p_ts, 'FMMonth')
-      when 'MMM'  then to_char(p_ts, 'Mon')
-      when 'MM'   then to_char(p_ts, 'MM')
-      when 'M'    then to_char(p_ts, 'FMMM')
-      when 'DD'   then to_char(p_ts, 'DD')
-      when 'D'    then to_char(p_ts, 'FMDD')
-      when 'Do'   then to_char(p_ts, 'FMDDth')
-      when 'dddd' then to_char(p_ts, 'FMDay')
-      when 'ddd'  then to_char(p_ts, 'Dy')
-      when 'HH'   then to_char(p_ts, 'HH24')
-      when 'H'    then to_char(p_ts, 'FMHH24')
-      when 'hh'   then to_char(p_ts, 'HH12')
-      when 'h'    then to_char(p_ts, 'FMHH12')
-      when 'mm'   then to_char(p_ts, 'MI')
-      when 'ss'   then to_char(p_ts, 'SS')
-      when 'SSS'  then to_char(p_ts, 'MS')
-      when 'A'    then to_char(p_ts, 'AM')
-      when 'a'    then lower(to_char(p_ts, 'AM'))
-      when 'X'    then trunc(extract(epoch from p_ts))::bigint::text
-      when 'x'    then trunc(extract(epoch from p_ts) * 1000)::bigint::text
-      when 'Z'    then '+00:00'
+    v_out := v_out || case
+      -- the presets (en)
+      when v_tok = 'LT'   then custom._fx_datetime_format(p_ts, 'h:mm A')
+      when v_tok = 'LTS'  then custom._fx_datetime_format(p_ts, 'h:mm:ss A')
+      when v_tok = 'L'    then custom._fx_datetime_format(p_ts, 'MM/DD/YYYY')
+      when v_tok = 'l'    then custom._fx_datetime_format(p_ts, 'M/D/YYYY')
+      when v_tok = 'LL'   then custom._fx_datetime_format(p_ts, 'MMMM D, YYYY')
+      when v_tok = 'll'   then custom._fx_datetime_format(p_ts, 'MMM D, YYYY')
+      when v_tok = 'LLL'  then custom._fx_datetime_format(p_ts, 'MMMM D, YYYY h:mm A')
+      when v_tok = 'lll'  then custom._fx_datetime_format(p_ts, 'MMM D, YYYY h:mm A')
+      when v_tok = 'LLLL' then custom._fx_datetime_format(p_ts, 'dddd, MMMM D, YYYY h:mm A')
+      when v_tok = 'llll' then custom._fx_datetime_format(p_ts, 'ddd, MMM D, YYYY h:mm A')
+      -- month, quarter
+      when v_tok = 'M'    then to_char(p_ts, 'FMMM')
+      when v_tok = 'Mo'   then custom._fx_ordinal(extract(month from p_ts)::integer)
+      when v_tok = 'MM'   then to_char(p_ts, 'MM')
+      when v_tok = 'MMM'  then to_char(p_ts, 'Mon')
+      when v_tok = 'MMMM' then to_char(p_ts, 'FMMonth')
+      when v_tok = 'Q'    then to_char(p_ts, 'Q')
+      when v_tok = 'Qo'   then custom._fx_ordinal(extract(quarter from p_ts)::integer)
+      -- day of month, day of year
+      when v_tok = 'D'    then to_char(p_ts, 'FMDD')
+      when v_tok = 'Do'   then custom._fx_ordinal(extract(day from p_ts)::integer)
+      when v_tok = 'DD'   then to_char(p_ts, 'DD')
+      when v_tok = 'DDD'  then to_char(p_ts, 'FMDDD')
+      when v_tok = 'DDDo' then custom._fx_ordinal(extract(doy from p_ts)::integer)
+      when v_tok = 'DDDD' then to_char(p_ts, 'DDD')
+      -- day of week
+      when v_tok in ('d', 'e') then v_dow::text
+      when v_tok = 'do'   then custom._fx_ordinal(v_dow)
+      when v_tok = 'dd'   then left(to_char(p_ts, 'FMDay'), 2)
+      when v_tok = 'ddd'  then to_char(p_ts, 'Dy')
+      when v_tok = 'dddd' then to_char(p_ts, 'FMDay')
+      when v_tok = 'E'    then to_char(p_ts, 'ID')
+      -- week of year (en: weeks start Sunday) and ISO week
+      when v_tok = 'w'    then v_week::text
+      when v_tok = 'wo'   then custom._fx_ordinal(v_week)
+      when v_tok = 'ww'   then lpad(v_week::text, 2, '0')
+      when v_tok = 'W'    then to_char(p_ts, 'FMIW')
+      when v_tok = 'Wo'   then custom._fx_ordinal(extract(week from p_ts)::integer)
+      when v_tok = 'WW'   then to_char(p_ts, 'IW')
+      -- years
+      when v_tok = 'YY'   then to_char(p_ts, 'YY')
+      when v_tok = 'YYYY' then to_char(p_ts, 'YYYY')
+      when v_tok = 'gg'   then right(lpad(v_wyr::text, 2, '0'), 2)
+      when v_tok = 'gggg' then lpad(v_wyr::text, 4, '0')
+      when v_tok = 'ggggg' then lpad(v_wyr::text, 5, '0')
+      when v_tok = 'GG'   then right(to_char(p_ts, 'IYYY'), 2)
+      when v_tok = 'GGGG' then to_char(p_ts, 'IYYY')
+      when v_tok = 'GGGGG' then lpad(to_char(p_ts, 'FMIYYY'), 5, '0')
+      -- time of day
+      when v_tok = 'A'    then to_char(p_ts, 'AM')
+      when v_tok = 'a'    then lower(to_char(p_ts, 'AM'))
+      when v_tok = 'H'    then to_char(p_ts, 'FMHH24')
+      when v_tok = 'HH'   then to_char(p_ts, 'HH24')
+      when v_tok = 'h'    then to_char(p_ts, 'FMHH12')
+      when v_tok = 'hh'   then to_char(p_ts, 'HH12')
+      when v_tok = 'k'    then (case when extract(hour from p_ts) = 0 then 24 else extract(hour from p_ts)::integer end)::text
+      when v_tok = 'kk'   then lpad((case when extract(hour from p_ts) = 0 then 24 else extract(hour from p_ts)::integer end)::text, 2, '0')
+      when v_tok = 'm'    then to_char(p_ts, 'FMMI')
+      when v_tok = 'mm'   then to_char(p_ts, 'MI')
+      when v_tok = 's'    then to_char(p_ts, 'FMSS')
+      when v_tok = 'ss'   then to_char(p_ts, 'SS')
+      -- fractions of a second: milliseconds, cut short or padded with zeros as moment.js does
+      when v_tok like 'S%' then rpad(left(v_ms, char_length(v_tok)), char_length(v_tok), '0')
+      -- the zone: this language writes every date in UTC
+      when v_tok = 'Z'    then '+00:00'
+      when v_tok = 'ZZ'   then '+0000'
+      when v_tok = 'X'    then floor(extract(epoch from p_ts))::bigint::text
+      when v_tok = 'x'    then floor(extract(epoch from p_ts) * 1000)::bigint::text
     end;
     i := i + char_length(v_tok);
   end loop;
@@ -178,7 +262,168 @@ end
 $fn$;
 
 comment on function custom._fx_datetime_format(timestamp, text) is
-  'VIEWS-AND-FIELDS F4: DATETIME_FORMAT''s writer — Airtable''s format tokens (YYYY YY MMMM MMM MM M DD D Do dddd ddd HH H hh h mm ss SSS A a X x Z) mapped to to_char, [literal] text kept, UTC.';
+  'VIEWS-AND-FIELDS F4: DATETIME_FORMAT''s writer — every specifier of Airtable''s supported list (moment.js, en, UTC), the L/LL/LLL/LLLL/LT/LTS presets, [literal] text and \x escapes; any other character is written as it is.';
+
+create function custom._fx_regex(p_pattern text, p_fn text)
+returns text
+language plpgsql
+immutable
+set search_path to 'pg_catalog'
+as $fn$
+declare
+  -- RE2 (Airtable's engine) read into a Postgres regular expression. What RE2 does not have —
+  -- backreferences, lookaround, the Postgres-only escapes — is refused by name instead of being
+  -- quietly answered; RE2's \b, \B, \z, named groups, \Q…\E and \p{…} classes are translated.
+  v_out  text := '';
+  i      integer := 1;
+  n      integer := char_length(coalesce(p_pattern, ''));
+  c      text;
+  v_nxt  text;
+  v_in   boolean := false;   -- inside [ … ]
+  v_name text;
+  v_cls  text;
+  j      integer;
+begin
+  while i <= n loop
+    c := substr(p_pattern, i, 1);
+    if c = '\' and i < n then
+      v_nxt := substr(p_pattern, i + 1, 1);
+      if v_nxt ~ '[1-9]' then
+        raise exception '`%` does not support backreferences such as "\%".', p_fn, v_nxt using errcode = '22023';
+      elsif v_nxt in ('p', 'P') then
+        if substr(p_pattern, i + 2, 1) = '{' then
+          j := strpos(substr(p_pattern, i + 3), '}');
+          if j = 0 then
+            raise exception '`%` cannot read the pattern "%".', p_fn, p_pattern using errcode = '22023';
+          end if;
+          v_name := substr(p_pattern, i + 3, j - 1);
+          i := i + 3 + j;
+        else
+          v_name := substr(p_pattern, i + 2, 1);
+          i := i + 3;
+        end if;
+        v_cls := case v_name when 'L' then 'alpha' when 'Lu' then 'upper' when 'Ll' then 'lower'
+                             when 'N' then 'digit' when 'Nd' then 'digit' when 'P' then 'punct' end;
+        if v_cls is null then
+          raise exception '`%` does not know the character class "\%{%}". Use L, Lu, Ll, N, Nd or P.', p_fn, v_nxt, v_name
+            using errcode = '22023';
+        end if;
+        if v_in and v_nxt = 'P' then
+          raise exception '`%` cannot use "\P{%}" inside [ ]. Write [^…] instead.', p_fn, v_name using errcode = '22023';
+        end if;
+        v_out := v_out || case when v_in then '[:' || v_cls || ':]'
+                               when v_nxt = 'P' then '[^[:' || v_cls || ':]]'
+                               else '[[:' || v_cls || ':]]' end;
+        continue;
+      elsif v_nxt = 'Q' and not v_in then
+        j := strpos(substr(p_pattern, i + 2), '\E');
+        v_name := case when j = 0 then substr(p_pattern, i + 2) else substr(p_pattern, i + 2, j - 1) end;
+        v_out := v_out || regexp_replace(v_name, '([^[:alnum:][:space:]_])', '\\\1', 'g');
+        i := case when j = 0 then n + 1 else i + 2 + j + 1 end;
+        continue;
+      elsif v_nxt in ('m', 'M', 'y', 'Y', 'Z') then
+        raise exception '`%` cannot read the pattern "%".', p_fn, p_pattern using errcode = '22023';
+      elsif v_nxt = 'b' and not v_in then
+        v_out := v_out || '\y';
+      elsif v_nxt = 'B' and not v_in then
+        v_out := v_out || '\Y';
+      elsif v_nxt = 'z' and not v_in then
+        v_out := v_out || '\Z';
+      else
+        v_out := v_out || c || v_nxt;
+      end if;
+      i := i + 2;
+      continue;
+    end if;
+    if v_in then
+      if c = ']' then v_in := false; end if;
+      v_out := v_out || c;
+      i := i + 1;
+      continue;
+    end if;
+    if c = '[' then
+      v_in := true;
+      v_out := v_out || c;
+      i := i + 1;
+      -- a ] straight after [ or [^ is a character, not the end
+      if substr(p_pattern, i, 1) = '^' then v_out := v_out || '^'; i := i + 1; end if;
+      if substr(p_pattern, i, 1) = ']' then v_out := v_out || ']'; i := i + 1; end if;
+      continue;
+    end if;
+    if c = '(' and substr(p_pattern, i + 1, 1) = '?' then
+      v_nxt := substr(p_pattern, i + 2, 2);
+      if left(v_nxt, 1) in ('=', '!') or v_nxt in ('<=', '<!') then
+        raise exception '`%` does not support lookahead or lookbehind such as "(?%".', p_fn,
+          case when left(v_nxt, 1) in ('=', '!') then left(v_nxt, 1) else v_nxt end using errcode = '22023';
+      end if;
+      if v_nxt = 'P<' or left(v_nxt, 1) = '<' then
+        -- a named group (?P<name>…) or (?<name>…) is an ordinary group here
+        j := strpos(substr(p_pattern, i), '>');
+        if j = 0 then
+          raise exception '`%` cannot read the pattern "%".', p_fn, p_pattern using errcode = '22023';
+        end if;
+        v_out := v_out || '(';
+        i := i + j;
+        continue;
+      end if;
+    end if;
+    v_out := v_out || c;
+    i := i + 1;
+  end loop;
+  return v_out;
+end
+$fn$;
+
+comment on function custom._fx_regex(text, text) is
+  'VIEWS-AND-FIELDS F4: an RE2 pattern (Airtable''s engine) as a Postgres regular expression. Backreferences, lookaround and Postgres-only escapes are refused by name; \b \B \z, named groups, \Q…\E and \p{L|Lu|Ll|N|Nd|P} are translated.';
+
+create function custom._fx_items(p_organization_id uuid, p_node jsonb, p_values jsonb, p_context jsonb)
+returns jsonb
+language plpgsql
+stable
+set search_path to 'pg_catalog'
+as $fn$
+declare
+  v_a    jsonb;
+  v_type text;
+begin
+  -- The items of a list value, as a person reads them: a many-choice column's own labels, a
+  -- link's titles, any other list as it is (or its JSON text), one value as a list of one. An
+  -- empty item stays in the list as null — ARRAYJOIN keeps it, ARRAYCOMPACT drops it.
+  if jsonb_typeof(p_node) = 'object' and p_node ? 'field' and not (p_node ? 'op') then
+    v_a := custom.rule_eval(p_organization_id, p_node, p_values, coalesce(p_context, '{}'::jsonb));
+    select f.data ->> 'type' into v_type
+      from custom.record f
+     where f.organization_id = p_organization_id and f.id = (p_node ->> 'field')::uuid
+       and f.table_id = custom.field_kernel_id();
+  else
+    v_a := custom.formula_eval(p_organization_id, p_node, p_values, p_context);
+    if jsonb_typeof(v_a) = 'string' and btrim(v_a #>> '{}') like '[%' then
+      begin
+        v_a := (v_a #>> '{}')::jsonb;
+      exception when others then
+        null;   -- text that only starts like a list is one value
+      end;
+    end if;
+  end if;
+  if v_a is null or jsonb_typeof(v_a) = 'null' then
+    return '[]'::jsonb;
+  end if;
+  if jsonb_typeof(v_a) <> 'array' then
+    v_a := jsonb_build_array(v_a);
+  end if;
+  if v_type in ('list', 'relation') then
+    return coalesce((select jsonb_agg(case when custom._fx_blank(u.x) then 'null'::jsonb
+                                           else to_jsonb(custom.field_words(p_organization_id, (p_node ->> 'field')::uuid, u.x)) end
+                                      order by u.i)
+                       from jsonb_array_elements(v_a) with ordinality u(x, i)), '[]'::jsonb);
+  end if;
+  return v_a;
+end
+$fn$;
+
+comment on function custom._fx_items(uuid, jsonb, jsonb, jsonb) is
+  'VIEWS-AND-FIELDS F4: the items of a list value for ARRAYJOIN and ARRAYCOMPACT — choice and link columns as their words, empty items kept as null.';
 
 create function custom._fx_workday(p_start timestamp, p_days integer, p_holidays jsonb)
 returns timestamp
@@ -225,7 +470,7 @@ comment on function custom._fx_workday(timestamp, integer, jsonb) is
   'VIEWS-AND-FIELDS F4: WORKDAY''s calendar — the date p_days working days from p_start (negative goes back), skipping Saturday, Sunday and every listed holiday; the start is never counted.';
 
 -- ═════════════════════════════════════════════════════════════════════════════════════════
--- custom.formula_eval — the evaluator, with the seven
+-- custom.formula_eval — the evaluator, with the eight
 -- ═════════════════════════════════════════════════════════════════════════════════════════
 
 create or replace function custom.formula_eval(p_organization_id uuid, p_expr jsonb, p_values jsonb,
@@ -348,29 +593,23 @@ begin
     return 'null'::jsonb;
   elsif v_op = 'fx.arrayjoin' then
     -- ARRAYJOIN(values, separator?) reads a COLUMN's stored list, not its words joined already:
-    -- a many-choice column is each choice's own label, a link each record's own title. Any other
-    -- value is a list when it is one (or JSON text of one), else a list of one. Empty items are
-    -- left out, so a list with a gap never prints ", ,".
+    -- a many-choice column is each choice's own label, a link each record's own title. An empty
+    -- item stays, as an empty piece between two separators — Airtable leaves removing them to
+    -- ARRAYCOMPACT.
     v_s := case when v_n > 1
                 then custom._fx_text(custom.formula_eval(p_organization_id, v_args -> 1, p_values, p_context))
                 else ', ' end;
-    v_one := v_args -> 0;
-    v_type := null;
-    if jsonb_typeof(v_one) = 'object' and v_one ? 'field' and not (v_one ? 'op') then
-      v_a := custom.rule_eval(p_organization_id, v_one, p_values, coalesce(p_context, '{}'::jsonb));
-      select f.data ->> 'type' into v_type
-        from custom.record f
-       where f.organization_id = p_organization_id and f.id = (v_one ->> 'field')::uuid
-         and f.table_id = custom.field_kernel_id();
-    else
-      v_a := custom.formula_eval(p_organization_id, v_one, p_values, p_context);
-      if jsonb_typeof(v_a) = 'string' and btrim(v_a #>> '{}') like '[%' then
-        begin
-          v_a := (v_a #>> '{}')::jsonb;
-        exception when others then
-          null;   -- text that only starts like a list is one value
-        end;
-      end if;
+    v_a := custom._fx_items(p_organization_id, v_args -> 0, p_values, p_context);
+    return to_jsonb(coalesce((select string_agg(custom._fx_text(u.x), v_s order by u.i)
+                                from jsonb_array_elements(v_a) with ordinality u(x, i)), ''));
+  elsif v_op = 'fx.arraycompact' then
+    -- ARRAYCOMPACT(values): the list without empty items (null and ""). false, 0 and text of
+    -- spaces stay, as in Airtable.
+    v_a := custom._fx_items(p_organization_id, v_args -> 0, p_values, p_context);
+    return coalesce((select jsonb_agg(u.x order by u.i)
+                       from jsonb_array_elements(v_a) with ordinality u(x, i)
+                      where not custom._fx_blank(u.x)), '[]'::jsonb);
+  end if;
     end if;
     if custom._fx_blank(v_a) then
       return '""'::jsonb;
@@ -486,18 +725,18 @@ begin
                        else v_d1.ts + make_interval(years => v_x::integer) end;
       return to_jsonb(custom._fx_iso(v_ts, v_d1.date_only));
     when 'fx.find' then
-      -- FIND(part, text, start?): where the part first starts, counting from 1; 0 when it is not
-      -- there. Upper and lower case differ, as in Airtable. A start of 0 or 1 searches from the
-      -- first character.
+      -- FIND(part, text, start?): Airtable's startFromPosition, which defaults to 0, is
+      -- JavaScript's indexOf start — the number of characters skipped before the search. The
+      -- answer counts from 1, and 0 means the part is not there. Upper and lower case differ.
       v_s := custom._fx_text(v_a);
       v_t := custom._fx_text(v_b);
-      v_x := case when v_n > 2 then greatest(trunc(custom._fx_num(v_vals[3], '`FIND`')), 1) else 1 end;
-      v_x := least(v_x, char_length(v_t) + 1);
+      v_x := case when v_n > 2 then greatest(trunc(custom._fx_num(v_vals[3], '`FIND`')), 0) else 0 end;
+      v_x := least(v_x, char_length(v_t));
       if v_s = '' then
-        return to_jsonb(v_x);
+        return to_jsonb(v_x + 1);
       end if;
-      v_k := strpos(substr(v_t, v_x::integer), v_s);
-      return to_jsonb(case when v_k = 0 then 0 else v_k + v_x::integer - 1 end);
+      v_k := strpos(substr(v_t, v_x::integer + 1), v_s);
+      return to_jsonb(case when v_k = 0 then 0 else v_k + v_x::integer end);
     when 'fx.substitute' then
       -- SUBSTITUTE(text, old, new, which?): every `old` replaced, or only the which-th one.
       v_s := custom._fx_text(v_a);
@@ -528,13 +767,23 @@ begin
       end loop;
       return to_jsonb(v_s);
     when 'fx.regex_match' then
-      -- REGEX_MATCH(text, pattern). A pattern that is not a regular expression is refused by
-      -- name, never with the database's own message.
+      -- REGEX_MATCH(text, pattern), read as RE2 reads it (custom._fx_regex). A pattern the
+      -- database still cannot read, one too complex, or one that runs past the statement's time
+      -- is said in a plain sentence; a timeout keeps its own sqlstate so a reader still treats
+      -- it as a cancelled read, never as an empty cell.
+      v_t := custom._fx_regex(custom._fx_text(v_b), 'REGEX_MATCH');
       begin
-        return to_jsonb(custom._fx_text(v_a) ~ custom._fx_text(v_b));
-      exception when invalid_regular_expression then
-        raise exception '`REGEX_MATCH` cannot read the pattern "%".', custom._fx_text(v_b)
-          using errcode = '22023';
+        return to_jsonb(custom._fx_text(v_a) ~ v_t);
+      exception
+        when invalid_regular_expression then
+          raise exception '`REGEX_MATCH` cannot read the pattern "%".', custom._fx_text(v_b)
+            using errcode = '22023';
+        when program_limit_exceeded then
+          raise exception '`REGEX_MATCH` cannot work out a pattern this complex: "%".', custom._fx_text(v_b)
+            using errcode = '22023';
+        when query_canceled then
+          raise exception '`REGEX_MATCH` took too long on this text. Try a simpler pattern.'
+            using errcode = '57014';
       end;
     when 'fx.datetime_format' then
       select * into v_d1 from custom._fx_date(v_a, '`DATETIME_FORMAT`');

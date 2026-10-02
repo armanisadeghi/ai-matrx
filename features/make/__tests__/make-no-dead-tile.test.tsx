@@ -160,6 +160,7 @@ const PLANTED: MakeTile = {
   id: "pipeline" as MakeTile["id"],
   label: "Pipeline board",
   what: "Cards you drag through stages",
+  source: "store",
   flow: "pipeline" as MakeTile["flow"],
   kind: "table",
   champion: "Trello",
@@ -187,4 +188,9 @@ it("self-test: a planted tile with no flow is named dead", async () => {
 
 it("every tile's secondary line fits its 60-character slot", () => {
   for (const tile of MAKE_TILES) expect(tile.what.length).toBeLessThanOrEqual(60);
+});
+
+it("wave 1 ships the seven store tiles and no platform tile", () => {
+  expect(MAKE_TILES.map((t) => t.id)).toEqual(["table", "form", "booking", "checklist", "dashboard", "portal", "list"]);
+  expect(MAKE_TILES.every((t) => t.source === "store")).toBe(true);
 });

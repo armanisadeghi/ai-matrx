@@ -1,6 +1,7 @@
 -- chair-step: the inverse of lane12_c_an_ensured_table_says_what_differs_from_its_spec.sql. It restores the body of custom.table_ensure(uuid, jsonb) as read from the clone on 2026-10-02 before that file (sha256 20e5a19d6d58a48b8344771306979089bd103a349ff80266589f637b799307ae): the answer loses `drift` and a spec that differs from a stored column is again ignored without a word. Same signature, grants and security; nothing else is touched.
 -- lane: PLATFORM-APP-DATA (v6 lane 12)
 -- lock: custom
+-- based-on: custom.table_ensure(uuid, jsonb) be376c8ab01e14fd61a21ffb5ede4cfe3fc27b205911b7dcdc343b2d4ff757dd
 
 set local lock_timeout = '2s';
 

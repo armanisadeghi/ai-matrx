@@ -1,5 +1,7 @@
 -- chair-step: body replacements of two existing functions, custom.io_import_begin and custom.io_import_rows (same signatures, same SECURITY DEFINER, same grants): the importer accepts p_format 'rows' beside csv and xlsx, and keeps a typed value typed for that format. No table, grant, policy or data row is touched.
 -- lane: CHAIR-DOORS-1 (asked by v6 lane 4 KINDS-GLUE, need N2)
+-- based-on: custom.io_import_begin(uuid, uuid, text, text, jsonb, text, jsonb, text, bigint, boolean) 21f875a2122e691543b112b2973540294f82835fd7dff6a006f255bf30b1ad36
+-- based-on: custom.io_import_rows(uuid, uuid, jsonb, jsonb) 217df136c4cf40ac04eaf83dac87cdcd67cc800e9ba6e40eab3cdfd137c9e042
 --
 -- AN IMPORT TAKES TYPED ROWS (lane 4 N2, KINDS-GLUE-WAVE3-DESIGN.md §11): records that are not a file,
 -- through the one importer, with the same editor rung, the same duplicate key and the same run report.

@@ -1,5 +1,6 @@
 -- chair-step: body replacement of custom.form_submit (same signature, same SECURITY DEFINER, same grants): a drawn signature answered on a form is kept as a File record and the Value's envelope names it (signature_file_id), the way custom.sign_request_sign keeps one. No table, grant, policy or other function is touched.
 -- lane: CHAIR-DOORS-1 (asked by v6 lane 10 VIEWS-AND-FIELDS)
+-- based-on: custom.form_submit(uuid, text, jsonb, text, text, text) 253d349556696ea3bf6b0d76b6e5860c5fbf4f006d21b7b7ba60afa01c29538b
 --
 -- A FORM KEEPS A DRAWN SIGNATURE AS A FILE. Before this file a form stored the drawing (a PNG data: URL,
 -- ~21 kB) as the text Value; the sign-link path stored a File and the signer's name. One shape now:
