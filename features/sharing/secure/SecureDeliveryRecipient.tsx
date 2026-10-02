@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/sharing/secure/SecureDeliveryRecipient.tsx — THE PAGE A SECURE LINK OPENS.
 //
 // Somebody was sent something private — a password, a Social Security number, a record — the way
@@ -255,7 +256,7 @@ function Opened({ page, from }: { page: SecureDeliveryPage; from: string }) {
           {record.map(([k, v]) => (
             <FieldRow
               key={k}
-              label={k.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())}
+              label={humanizeIdentifier(k) || k}
               value={Array.isArray(v) ? v.join(", ") : String(v)}
               secret={false}
             />

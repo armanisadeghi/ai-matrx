@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useEffect, useId, useMemo, useState } from "react";
 import {
   Loader2,
@@ -574,7 +575,7 @@ export function ContextItemSettingsForm({
         <div className="space-y-1.5">
           <Label className="text-xs">Status</Label>
           <div className="px-3 py-1.5 text-sm bg-muted rounded-md text-muted-foreground capitalize">
-            {item.status?.replace(/_/g, " ") || "—"}
+            {(item.status && humanizeIdentifier(item.status)) || "—"}
           </div>
         </div>
       </div>

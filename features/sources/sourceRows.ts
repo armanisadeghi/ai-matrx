@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * features/sources/sourceRows.ts
  *
@@ -332,8 +333,7 @@ const CLIENT_WORDS: Record<string, string> = {
 export const ORIGIN_CLIENTS: readonly string[] = Object.keys(CLIENT_WORDS);
 
 function codeWords(code: string): string {
-  const words = code.replace(/_/g, " ").trim();
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return humanizeIdentifier(code) || code;
 }
 
 function clientWords(code: string): string {
@@ -598,8 +598,7 @@ export function isFileCanonicalExtract(
 
 /** Words for an attachment's kind, e.g. "research_topic" → "Research topic". */
 export function attachmentTypeWords(token: string): string {
-  const words = token.replace(/_/g, " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return humanizeIdentifier(token) || token;
 }
 
 // ── Paging (the list reads 100 at a time, filtered by the server) ────────────

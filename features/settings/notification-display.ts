@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // What Settings › Notifications SHOWS a person about an event — pure, no I/O.
 //
 // The event catalog (`communication.notification_event_type`) is written by
@@ -39,8 +40,7 @@ const AREA_LABELS: Readonly<Record<string, string>> = {
 export function notificationAreaLabel(area: string): string {
   const known = AREA_LABELS[area];
   if (known) return known;
-  const words = area.replace(/[_-]+/g, " ").trim();
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return humanizeIdentifier(area) || area;
 }
 
 /**

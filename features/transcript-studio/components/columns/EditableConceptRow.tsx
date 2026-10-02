@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Per-row edit/delete UI for concept items. The display mode mirrors
  * `ConceptsColumn`'s original button (kind chip + label + description) and
@@ -92,7 +93,7 @@ export function EditableConceptRow({
         >
           {KIND_OPTIONS.map((k) => (
             <option key={k} value={k}>
-              {k.replace(/_/g, " ")}
+              {humanizeIdentifier(k) || k}
             </option>
           ))}
         </select>

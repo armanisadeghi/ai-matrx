@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useEffect, useState } from "react";
 import { Layers, Loader2, Pencil, Tag as TagIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -192,7 +193,7 @@ export function ContextItemHub({
           <PropRow label="Sensitivity" value={item.sensitivity} />
           <PropRow
             label="Fetch hint"
-            value={item.fetch_hint?.replace(/_/g, " ")}
+            value={item.fetch_hint ? humanizeIdentifier(item.fetch_hint) : undefined}
           />
           <PropRow label="Sort order" value={String(item.sort_order ?? 0)} />
         </dl>

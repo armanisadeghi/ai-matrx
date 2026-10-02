@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/unified-data/hub/dataHomeScope.ts — LANE DATA-HOME-1
 //
 // THE DATA HOME'S FIVE FILTERS (Arman, 2026-09-27 21:20 PT). He opened /data-v2 and "Mine" read
@@ -257,8 +258,7 @@ const KIND_ONE: Record<string, string> = {
 };
 
 function wordsOf(kind: string): string {
-  const spaced = kind.replace(/_/g, " ");
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  return humanizeIdentifier(kind) || kind;
 }
 
 export function kindTitle(kind: string): string {

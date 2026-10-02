@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Context reference cells — client-side parse/validate mirror of the DB path
  * (`context.parse_reference_fence` / `context.validate_reference_value`).
@@ -64,10 +65,7 @@ export function referenceTypeLabel(type: string): string {
   return (
     REFERENCE_TYPE_LABELS[type] ??
     (isEntityTypeToken(type) ? ENTITY_TYPE_METADATA[type].label : undefined) ??
-    type
-      .replace(/[_-]+/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-      .trim()
+    (humanizeIdentifier(type) || type)
   );
 }
 

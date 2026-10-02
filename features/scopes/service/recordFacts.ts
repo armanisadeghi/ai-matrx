@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * RECORD FACTS — the one or two things that tell same-named records apart.
  *
@@ -45,8 +46,7 @@ function asText(value: unknown): string | null {
 export function statusWord(value: unknown): string | null {
   const raw = asText(value);
   if (!raw) return null;
-  const words = raw.replace(/[_-]+/g, " ").toLowerCase();
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return humanizeIdentifier(raw) || raw;
 }
 
 function statusOf(noun: string, value: unknown): string | null {
