@@ -11,9 +11,17 @@
  *   · a `begin read only; …; rollback` whose rollback never ran (error, timeout, killed psql) is
  *     cleaned by the pooler at disconnect; it is hygiene, not this incident's cause.
  *
- * So: production is reached on the SESSION pooler only (6543 is refused by name); read-only work is
- * one `begin read only` with `set local` limits and a rollback that always runs; nothing is ever
+ * So: production is reached on the SESSION pooler only (6543 is refused by name); nothing is ever
  * `set` at session level. Guard: `pnpm check:no-session-read-only`. Sweeper: `pnpm pooler:sweep`.
+ *
+ * THE DOOR IS THE ROLE (lane ONE-HOME, 2026-10-02). psqlRead() and withReadOnly() connect as `matrx_reader`
+ * (readerDsnFor) — pg_read_all_data + pg_monitor, BYPASSRLS, no write grant, role defaults
+ * default_transaction_read_only=on / statement_timeout=60s — never as postgres. Its password is
+ * SUPABASE_READER_PASSWORD (environment, aidream/.env, .env.local; the nightly clone is a restore of production
+ * and carries the same role). A missing key is refused by name: there is no fallback to postgres. The
+ * `begin read only` + `set local` limits + rollback stay as defence in depth. Designed doors the role leaves
+ * open (Arman, 2026-10-02): lo_create and SECURITY DEFINER functions granted to PUBLIC, which write as their
+ * owner once a session turns its read-only default off.
  *
  *   import { dsnFor, psqlRead, withReadOnly } from "./lib/pooled-db.mjs";
  */
@@ -106,6 +114,29 @@ export function dsnFor(target, { app = "matrx-script" } = {}) {
   throw new PoolerRefusal(`unknown target ${target} (production | clone)`);
 }
 
+export const READER_ROLE = "matrx_reader";
+export const READER_PASSWORD_KEY = "SUPABASE_READER_PASSWORD";
+
+/** dsnFor(target) as the least-privilege reader role — the one connection psqlRead()/withReadOnly() open. */
+export function readerDsnFor(target, { app = "matrx-reader" } = {}) {
+  return readerDsnFrom(() => dsnFor(target, { app }), lookup(READER_PASSWORD_KEY));
+}
+
+/** The reader-role form of a DSN; refuses (by key name) when the reader password is missing — never postgres. */
+export function readerDsnFrom(baseDsn, password) {
+  if (!password) {
+    throw new PoolerRefusal(
+      `${READER_PASSWORD_KEY} not found (env, aidream/.env, .env.local): read-only sessions connect as ${READER_ROLE}, ` +
+        "never postgres. Add the key to matrx-frontend/.env.local (and aidream/.env).",
+    );
+  }
+  const u = new URL(typeof baseDsn === "function" ? baseDsn() : baseDsn);
+  const user = decodeURIComponent(u.username);
+  u.username = encodeURIComponent(user.includes(".") ? `${READER_ROLE}.${user.split(".").slice(1).join(".")}` : READER_ROLE);
+  u.password = encodeURIComponent(password);
+  return u.toString();
+}
+
 /**
  * The TRANSACTION-pooler DSN — for the sweeper only, whose job is to visit that pool.
  * Never hand this to work: work goes through dsnFor().
@@ -128,11 +159,12 @@ export function readOnlyBody(sql, { statementTimeout = "60s", idleTimeout = "90s
 }
 
 /**
- * Run read-only SQL through psql. The body goes on stdin (-f -), never one `-c` string; any ERROR fails.
+ * Run read-only SQL through psql as the reader role. The body goes on stdin (-f -), never one `-c` string; any
+ * ERROR fails.
  * Returns { ok, stdout, stderr }.
  */
 export function psqlRead(target, sql, { app, statementTimeout, timeoutMs = 120_000, args = ["-X", "-qAt"] } = {}) {
-  const dsn = dsnFor(target, { app });
+  const dsn = readerDsnFor(target, { app });
   const r = spawnSync(PSQL, [dsn, "-v", "ON_ERROR_STOP=0", ...args, "-f", "-"], {
     input: readOnlyBody(sql, { statementTimeout }),
     encoding: "utf8",
@@ -151,11 +183,12 @@ export function pgClient(pg, dsn) {
 }
 
 /**
- * node-postgres read-only unit: begin read only + set local limits, fn(client), ROLLBACK in finally.
+ * node-postgres read unit as the reader role (the door), with begin read only + set local limits as defence in
+ * depth: fn(client), ROLLBACK in finally.
  */
 export async function withReadOnly(target, fn, { app, statementTimeout = "60s" } = {}) {
   const pg = (await import("pg")).default;
-  const client = pgClient(pg, dsnFor(target, { app }));
+  const client = pgClient(pg, readerDsnFor(target, { app }));
   await client.connect();
   try {
     await client.query("begin read only");
