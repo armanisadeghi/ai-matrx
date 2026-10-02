@@ -11,9 +11,7 @@
 //                 lib/redux/chat-host-from-app — the same reading the root
 //                 reducer uses to keep the package's `chatHost` slice equal
 //   org         → appContext active org (same reading); require = the
-//                 canonical gate: a write → `ensureOrgId` (joins boot, asks only
-//                 right after the person acted), an explicit ask →
-//                 `ensureOrganizationContext`
+//                 canonical gate (lib/organization/chat-org-port)
 //   server      → apiConfig's resolved aidream URL; bearer + X-Organization-Id
 //   notify      → lib/toast (`toast`, `recordToast`)
 //   diagnostics → the Error Inspector capture store (which persists through
@@ -74,9 +72,7 @@ import {
   selectAllWindows,
 } from "@/lib/redux/slices/windowManagerSlice";
 import type { OverlayId } from "@/features/overlays/catalogue";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import type { OrganizationRequiredWireMembership } from "@/lib/organizations/organizationRequiredError";
+import { requireOrganizationForChat } from "@/lib/organization/chat-org-port";
 import { toast, recordToast } from "@/lib/toast";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { getAgentCatalog } from "@/lib/agents/catalog";
@@ -209,15 +205,7 @@ function reduxOrg(store: AppStore): ChatOrgPort {
       return (last = next);
     },
     subscribe: (listener) => store.subscribe(listener),
-    require: (_reason, options) =>
-      options?.interactive === undefined && !options?.prefetched
-        ? ensureOrgId(null)
-        : ensureOrganizationContext({
-            interactive: options.interactive ?? true,
-            prefetchedOrganizations:
-              (options.prefetched as OrganizationRequiredWireMembership[] | null | undefined) ??
-              null,
-          }),
+    require: requireOrganizationForChat,
   };
 }
 

@@ -74,7 +74,12 @@ import appContext from "@host/lib/redux/slices/appContextSlice";
 import userAuth, { setUserAuth } from "@host/lib/redux/slices/userAuthSlice";
 import scopesTree, { scopesActions } from "@host/features/scopes/redux/scopesSlice";
 import { setStoreSingleton } from "../../../../../store/store-singleton";
-import { settleOrganizationSelection } from "@host/lib/organization/organization-gate";
+import {
+  ensureOrganizationContext as askThroughTheAppGate,
+  settleOrganizationSelection,
+} from "@host/lib/organization/organization-gate";
+import { configureChat, _resetChatHostForTests } from "../../../../../host/configure";
+import { createFakeDb } from "../../../../../host/__tests__/fake-db";
 import { surfaceUserStateReducer } from "../../../../../surfaces/redux/userStateSlice";
 import { ContextRulesChip } from "@ai-matrx/agents/context/react";
 import { resolveContextRow } from "@ai-matrx/agents/context";
@@ -129,6 +134,17 @@ beforeEach(async () => {
     reducer: { appContext, userAuth, scopesTree, surfaceUserState: surfaceUserStateReducer },
   });
   setStoreSingleton(store);
+  // The package asks for an organization through its host's org port; this app's port is its
+  // one gate (providers/ChatHostAdapter.tsx). This test drives the explicit ask a save makes.
+  configureChat({
+    db: createFakeDb().db,
+    org: {
+      active: () => null,
+      subscribe: () => () => undefined,
+      require: (_reason, options) =>
+        askThroughTheAppGate({ interactive: options?.interactive ?? true }),
+    },
+  });
   store.dispatch(setUserAuth({ id: PERSON }));
   store.dispatch(
     scopesActions.treeFetchFulfilled({
@@ -167,6 +183,7 @@ afterEach(async () => {
     root.unmount();
   });
   container.remove();
+  _resetChatHostForTests();
 });
 
 const wait = (ms: number) => act(() => new Promise<void>((r) => setTimeout(r, ms)));

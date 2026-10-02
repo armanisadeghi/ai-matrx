@@ -20,6 +20,8 @@ import {
   registerOrganizationPicker,
   settleOrganizationSelection,
 } from "@/lib/organization/organization-gate";
+import { requireOrganizationForChat } from "@/lib/organization/chat-org-port";
+import { configureChat, _resetChatHostForTests } from "@ai-matrx/chat/host";
 
 /** The organization the person picks in the dialog. */
 export const CHOSEN_ORG = "33333333-3333-4333-8333-333333333333";
@@ -30,12 +32,33 @@ export function selectOrganization(
   getState: jest.Mock,
   organizationId: string | null,
 ): void {
-  getState.mockReturnValue({ appContext: { organization_id: organizationId } });
+  // Both shapes: the app's gate reads appContext; the chat package reads its own chatHost slice
+  // (which the app's root reducer keeps equal to appContext).
+  getState.mockReturnValue({
+    appContext: { organization_id: organizationId },
+    chatHost: { org: organizationId ? { id: organizationId, name: null } : null },
+  });
+}
+
+/**
+ * The chat package asks for an organization through its host's org port; install the one the
+ * app's chat host adapter installs (the app gate), over a stand-in db no gate test reads.
+ */
+function configureChatWithAppGate(): void {
+  configureChat({
+    db: { auth: {}, rpc: () => undefined, from: () => undefined } as never,
+    org: {
+      active: () => null,
+      subscribe: () => () => undefined,
+      require: requireOrganizationForChat,
+    },
+  });
 }
 
 /** Mount a picker that answers `organizationId` the way the dialog's Continue does. */
 export function mountPickerAnswering(organizationId: string | null): jest.Mock {
   const opened = jest.fn();
+  configureChatWithAppGate();
   registerOrganizationPicker(() => {
     opened();
     queueMicrotask(() => settleOrganizationSelection(organizationId));
@@ -46,6 +69,7 @@ export function mountPickerAnswering(organizationId: string | null): jest.Mock {
 export function resetGate(): void {
   registerOrganizationPicker(null);
   settleOrganizationSelection(null);
+  _resetChatHostForTests();
 }
 
 export function mockFetchJson(body: unknown = {}, status = 200): jest.Mock {
