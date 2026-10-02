@@ -10,6 +10,9 @@
 
 :root {
   --shell-header-h: 2.75rem;
+  /* The chrome's edge gutter: the sidebar toggle sits this far from the left
+     edge and the header's last visible control this far from the right. */
+  --shell-edge-gutter: 0.5rem;
   --shell-header-fade-h: 1rem;
   --shell-header-clearance: calc(var(--shell-header-h) + var(--shell-header-fade-h));
   /* Marketing CTA banner: right inset so its action button clears the
@@ -507,7 +510,7 @@
   display: flex;
   align-items: center;
   height: var(--shell-header-h);
-  padding: 0 0.5rem;
+  padding: 0 var(--shell-edge-gutter);
   gap: 0.5rem;
   flex-shrink: 0;
   position: relative;
@@ -2616,6 +2619,17 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  /* EDGES MATCH (owner, 2026-10-01): the last control's VISIBLE circle sits as
+     far from the right edge as the sidebar toggle does from the left. A tap
+     target is wider than its pill by --matrx-tap-gap, half of it on each side,
+     so the gutter subtracts that half — the targets themselves stay touching. */
+  padding-right: max(0px, calc(var(--shell-edge-gutter) - var(--matrx-tap-gap, 0px) / 2));
+}
+
+/* The phone's left control gets the same gutter, so both ends match there too. */
+.shell-mobile-trigger {
+  flex-shrink: 0;
+  padding-left: max(0px, calc(var(--shell-edge-gutter) - var(--matrx-tap-gap, 0px) / 2));
 }
 
 .shell-header-right-inject {
