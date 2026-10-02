@@ -16,7 +16,7 @@
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { MandateDoorError } from "../door-error";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type RunHistoryView = "mine" | "org" | "platform";
 export type RunStatus = "succeeded" | "failed" | "stopped" | "waiting" | "running";

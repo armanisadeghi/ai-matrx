@@ -9,7 +9,7 @@ jest.mock("@/lib/knobs/featureKnobs", () => ({
 import { describeSettingsChanges, describeThunkFailure } from "../impact-settings-fix";
 import { settleSettingsFix, type SettingsFixReport } from "../impact-settings-fix-report";
 import { ADMIN_WRITE_CONTEXT, type ImpactVerdict } from "../impact";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 function verdict(overrides: Partial<ImpactVerdict> = {}): ImpactVerdict {
   const base: ImpactVerdict = {

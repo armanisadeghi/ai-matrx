@@ -16,7 +16,7 @@ import {
 } from "@/features/mandates/record-next/record-tabs";
 import { MandateOverridesSimple } from "./MandateOverridesSimple";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export function OverridesPreviewPage({
   mandateKey,

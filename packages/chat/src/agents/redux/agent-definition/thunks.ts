@@ -88,7 +88,7 @@ import {
   writeFavorite,
 } from "@host/features/scopes/service/favoriteOverlay";
 import { parseAgentVersionSnapshot } from "./parse-output-snapshot";
-import { assignField } from "../shared/field-flags";
+import { assignField } from "@ai-matrx/agents/field-flags";
 import {
   upsertAgent,
   mergePartialAgent,

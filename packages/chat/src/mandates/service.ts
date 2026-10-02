@@ -75,7 +75,7 @@ import {
   missingVariablesMessage,
   parseMandateContract,
   type MandateContract,
-} from "@host/features/mandates/contract";
+} from "@ai-matrx/agents/mandates";
 import {
   parseMandateWave1,
   type MandateWave1Fields,
@@ -89,13 +89,13 @@ import {
   mandateDefinitions,
   mandateTreatments,
 } from "@host/lib/supabase/mandateStorage";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import {
   TREATMENT_TIER_WIDGET,
   parseTreatmentConfig,
   type BindingPresentation,
 } from "@host/features/bindings/treatment-shape";
-import { storedMandateKey } from "@host/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface ResolvedMandate {
   mandateKey: AnyMandateKey;
@@ -974,4 +974,4 @@ export {
   missingRequiredVariables,
   missingVariablesMessage,
   type MandateContract,
-} from "@host/features/mandates/contract";
+} from "@ai-matrx/agents/mandates";

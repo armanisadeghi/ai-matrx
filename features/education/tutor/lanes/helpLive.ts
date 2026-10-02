@@ -15,7 +15,7 @@
 // lands, so advancing the card can no longer destroy a paid tutor answer.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import {
   livePosture,
   mandateOutputUnusableSentence,

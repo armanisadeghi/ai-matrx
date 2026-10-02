@@ -28,7 +28,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import type { Database, Json } from "@/types/database.types";
 import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** A rung of the one ladder. `run` never appears here — it is not stored. */
 export type MandateRung = "system" | "org" | "user";

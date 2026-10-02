@@ -31,7 +31,7 @@ import {
   type FeatureKey,
   type InteractionMode,
   type ModelCapabilities,
-} from "./types";
+} from "@ai-matrx/agents/models";
 
 /** Identifies the model whose capabilities are being parsed, for loud reporting. */
 export interface CapabilitiesParseContext {
@@ -389,13 +389,13 @@ export {
   FEATURE_KEYS,
   INTERACTION_MODES,
   DEFAULT_CAPABILITIES,
-} from "./types";
+} from "@ai-matrx/agents/models";
 export type {
   ContentType,
   FeatureKey,
   InteractionMode,
   ModelCapabilities,
-} from "./types";
+} from "@ai-matrx/agents/models";
 
 // ─── Write-side guard for the raw-JSON capabilities editor ────────────────
 

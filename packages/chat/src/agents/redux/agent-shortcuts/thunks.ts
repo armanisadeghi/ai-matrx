@@ -25,7 +25,7 @@ import { pgErrorToError } from "@ai-matrx/data";
 import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";
 import { toGlobalOwnershipRecord } from "@host/lib/organizations/globalOwnership";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
-import { assignField } from "../shared/field-flags";
+import { assignField } from "@ai-matrx/agents/field-flags";
 import type {
   AgentShortcut,
   AgentShortcutMenuResult,
@@ -1597,7 +1597,7 @@ import {
   mandateIdOfShortcutRow,
   mandateKeyOfShortcutRow,
 } from "@host/lib/supabase/shortcutStorage";
-import { storedMandateKey, type AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { selectUserId } from "../../../host/identity";
 import { ensureOrgId } from "../../../host/org";
 

@@ -79,7 +79,7 @@ import {
 import { fetchAgentVersionFieldSnapshots } from "@/features/agents/sync/field-change-history.service";
 import { formatAbsoluteDate } from "@/utils/datetime";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 const SYSTEM_AGENT_ADMIN_BASE_PATH =
   "/administration/agents/system-agents/agents";

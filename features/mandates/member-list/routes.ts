@@ -5,7 +5,7 @@
 // new routes beside /organizations/<org>/settings/mandates (untouched).
 
 import type { MandateListLevel } from "./types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export const PERSON_MANDATE_LIST_HREF = "/mandates/list-preview";
 

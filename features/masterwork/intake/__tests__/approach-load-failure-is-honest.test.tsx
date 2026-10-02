@@ -178,7 +178,7 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => {
 });
 
 import { NewRulebookFlow } from "../NewRulebookFlow";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 const GOAL = "An assistant that writes the way I write";
 

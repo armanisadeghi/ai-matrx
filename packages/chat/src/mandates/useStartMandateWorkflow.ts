@@ -19,7 +19,7 @@ import { callApi } from "@host/lib/api/call-api";
 import { useAppDispatch } from "../store/hooks";
 import { toast } from "../host/notify";
 import { getChatHost } from "../host/configure";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { isOrganizationSelectionCancelled } from "../host/org";
 
 export interface WorkflowStarterResult {

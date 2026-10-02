@@ -39,7 +39,7 @@ import {
   parseServedInput,
   type ServedInput,
 } from "@/features/workflow-runtime/served-form/served-input";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** Where the served declaration came from. `none` is the ONLY value that
  * licenses the words "user text only". */

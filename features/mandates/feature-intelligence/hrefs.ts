@@ -15,7 +15,7 @@ import {
   targetForKey,
 } from "./placement";
 import type { IntelligenceContext } from "./types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** The directory, opened at one Domain's section. */
 export function intelligenceDomainHref(domain: string): string {

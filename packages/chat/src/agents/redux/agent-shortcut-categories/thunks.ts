@@ -1,6 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
-import { assignField } from "../shared/field-flags";
+import { assignField } from "@ai-matrx/agents/field-flags";
 import {
   buildScopeQueryString,
   resolveRowScope,

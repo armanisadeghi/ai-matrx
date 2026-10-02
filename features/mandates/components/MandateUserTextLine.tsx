@@ -24,7 +24,7 @@ import {
   StatusToken,
 } from "@/components/official/ConfigurationFields";
 import { useMandateInputSurface, userTextSentence } from "../input-surface";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface MandateUserTextLineProps {
   mandateKey: AnyMandateKey;

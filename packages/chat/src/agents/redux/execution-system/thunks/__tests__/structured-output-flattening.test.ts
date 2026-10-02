@@ -14,7 +14,7 @@ import {
   judgeDeclaredFlattening,
   judgeHarvestedFlattening,
 } from "../structured-output-flattening";
-import { storedMandateKey } from "@host/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 describe("isStructuredOutputKind", () => {
   it("treats undeclared and prose kinds as prose", () => {

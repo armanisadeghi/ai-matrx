@@ -6,7 +6,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { extractErrorMessage } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { normalizeModel } from "@/features/ai-models/utils/model-normalizer";
+import { normalizeModel } from "@ai-matrx/agents/models";
 import { requireCanonicalCapabilities } from "@/features/ai-models/capabilities/parse";
 // Minimal local state type — avoids importing RootState from store.ts (which
 // transitively imports this slice via reduxTypes → modelRegistrySlice),

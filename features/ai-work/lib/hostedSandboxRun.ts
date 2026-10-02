@@ -38,7 +38,7 @@ import { callApi } from "@/lib/api/call-api";
 import type { AppThunk } from "@/lib/redux/store";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** See THE TWO-HOMES RULE. The one url for a hosted turn. */
 export const HOSTED_STREAM_PATH = "/coding-sessions/claude/stream" as const;

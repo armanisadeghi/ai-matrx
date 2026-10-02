@@ -1,5 +1,5 @@
 import type { Database } from "@/types/database.types";
-import type { ModelCapabilities } from "./capabilities/types";
+import type { ModelCapabilities } from "@ai-matrx/agents/models";
 import type { RuleField } from "./controls/controlRuleFields.generated";
 
 // =============================================================================

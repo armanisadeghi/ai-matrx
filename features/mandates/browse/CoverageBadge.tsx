@@ -33,7 +33,7 @@ import {
   type MandateCoverageStateIndex,
   type MandateCoverageStatesResponse,
 } from "@/features/mandates/coverage";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** The two states a row can be filtered to. Green is quiet, so never a filter. */
 export type MandateCoverageFilterBucket = "orange" | "red";

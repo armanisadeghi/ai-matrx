@@ -91,7 +91,7 @@ import {
   type DefaultHolderRungOffer,
 } from "../default-holder-rung";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const JOB = {
   mandateKey: storedMandateKey("mandate.guard_probe"),

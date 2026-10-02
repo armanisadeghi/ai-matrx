@@ -25,8 +25,8 @@ import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdva
 import { agentHref } from "@/features/mandates/admin/mandate-health";
 import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import type { UnifiedUsageRow } from "./unified-rows";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const CONTROL_CLASS =
   "flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground " +

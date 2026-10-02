@@ -14,7 +14,7 @@ import { isSourceFeature } from "../../../types/instance.types";
 import { launchAgentExecution } from "../thunks/launch-agent-execution.thunk";
 import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { readUnsentLaunch } from "./unsent-launch-store";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** True when a recipe existed and the window is being rebuilt from it. */
 export function restoreUnsentLaunch(

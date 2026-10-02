@@ -121,7 +121,7 @@ import {
   type AppHolder,
   type AppHolderSource,
 } from "@/features/agent-apps/lib/appHolder";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface UseAgentAppArgs {
   /**

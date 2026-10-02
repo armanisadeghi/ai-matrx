@@ -29,7 +29,7 @@ import {
 } from "@/features/mandates/coverage";
 import { resolveMandateGoal } from "@/features/mandates/goal";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
-import { splitMandateKey } from "@/features/mandates/mandate-key";
+import { splitMandateKey } from "@ai-matrx/agents/mandates";
 import { holderOfMandate } from "@/lib/supabase/mandateStorage";
 import {
   bindingContractCheck,
@@ -44,7 +44,7 @@ import type {
   MandateDefaultState,
   MandateServes,
 } from "./types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** One place a mandate is served from, read from its own table. */
 export interface MandateServeLink {

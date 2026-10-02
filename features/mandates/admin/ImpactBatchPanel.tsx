@@ -104,7 +104,7 @@ import {
   VerdictDetail,
 } from "./impact-cells";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { TryAsCandidateButton } from "@/features/mandates/candidate-dialog/TryAsCandidateButton";
 import {
   rungOfImpactVerdict,

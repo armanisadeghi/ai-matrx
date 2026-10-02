@@ -1,4 +1,4 @@
-import type { FieldFlags } from "../shared/field-flags";
+import type { FieldFlags } from "@ai-matrx/agents/field-flags";
 import type { Scope } from "../shared/scope";
 
 export interface AgentShortcutCategoryDef {

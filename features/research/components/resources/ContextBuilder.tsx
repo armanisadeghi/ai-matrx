@@ -1,5 +1,5 @@
 "use client";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * CONTEXT BUILDER — the surface where a human decides what an agent reads.

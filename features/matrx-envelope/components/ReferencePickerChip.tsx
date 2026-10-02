@@ -20,7 +20,7 @@ import {
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
 import { useReferenceDoor } from "@/features/matrx-envelope/components/useReferenceDoor";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 
 export interface ReferencePickerChipProps {
   item: ReferenceItem;

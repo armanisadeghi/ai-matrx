@@ -7,7 +7,7 @@ import {
   patchMandateDraftInputs,
   patchMandateGoal,
 } from "../service";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 jest.mock("@/lib/api/call-api", () => ({
   callApi: jest.fn((config: unknown) => config),

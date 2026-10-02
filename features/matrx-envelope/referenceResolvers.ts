@@ -31,7 +31,7 @@ import {
   CATALOG_ALIASES,
   CATALOG_NOUNS,
 } from "@/features/matrx-envelope/catalog-nouns.generated";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 // Static, not `await import()`: this module reaches ~714 entry contexts and the seam adds ~31
 // modules (`pnpm lab:graph`, 2026-09-23) — an async edge here would be a new chunk-group split in

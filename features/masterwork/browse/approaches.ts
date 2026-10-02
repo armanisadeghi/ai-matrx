@@ -1,5 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * The Approach registry — the many ways an Expert goes through Distillation.

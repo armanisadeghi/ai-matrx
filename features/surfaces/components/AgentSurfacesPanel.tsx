@@ -1,7 +1,7 @@
 "use client";
 import { readOf } from "@/components/read-state/ReadGate";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * AgentSurfacesPanel — the agent engineer's view for binding an agent to

@@ -23,7 +23,7 @@ import { ReactReduxContext } from "react-redux";
 import { UserCog } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
 import {
   Tooltip,

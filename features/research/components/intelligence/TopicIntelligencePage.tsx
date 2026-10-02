@@ -17,7 +17,7 @@ import { useTopicContext } from "../../context/ResearchContext";
 import { AGENT_CONFIG_KEYS } from "../../admin/types";
 import { getTopic, removeTopicAgentChoice } from "../../service";
 import { ROLE_MANDATE_KEYS } from "../agents/constants";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export default function TopicIntelligencePage() {
   const { topic, topicId, refresh } = useTopicContext();

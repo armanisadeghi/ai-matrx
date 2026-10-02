@@ -40,7 +40,7 @@ import {
   workflowPinLabel,
   type WorkflowImpactVerdict,
 } from "./workflow-impact";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface WorkflowAdvanceEligibility {
   batchable: boolean;

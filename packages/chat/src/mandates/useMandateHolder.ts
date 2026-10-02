@@ -22,7 +22,7 @@ import {
   type ResolvedMandateHolder,
 } from "./service";
 import { extractErrorMessage } from "@ai-matrx/data/net";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { selectOrganizationId } from "../host/org";
 
 export interface MandateHolderState {

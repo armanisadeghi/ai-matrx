@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { hasField } from "@ai-matrx/chat/agents/redux/shared/field-flags";
+import { hasField } from "@ai-matrx/agents/field-flags";
 import { selectAgentIdFromInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import { fetchAgentOutputSchemas } from "@ai-matrx/chat/mandates/output-contract";
 

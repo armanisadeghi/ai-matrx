@@ -24,7 +24,7 @@
 // reason it has not.
 
 import { callApi } from "@/lib/api/call-api";
-import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 import type { AppStore } from "@/lib/redux/store";
 import type { paths } from "@/types/python-generated/api-types";
 import {

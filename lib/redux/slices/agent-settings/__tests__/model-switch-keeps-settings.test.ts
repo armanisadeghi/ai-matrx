@@ -14,7 +14,7 @@ import agentSettingsReducer, {
   confirmModelSwitch,
 } from "../agentSettingsSlice";
 import modelRegistryReducer from "@/features/ai-models/redux/modelRegistrySlice";
-import { normalizeModel } from "@/features/ai-models/utils/model-normalizer";
+import { normalizeModel } from "@ai-matrx/agents/models";
 import {
   analyzeModelChange,
   applyReconciliation,

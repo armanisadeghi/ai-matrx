@@ -29,7 +29,7 @@
 
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { components } from "@/types/python-generated/api-types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 type MandateCodeTruth = components["schemas"]["MandateCodeTruth"];
 

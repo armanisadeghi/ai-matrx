@@ -18,7 +18,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
-import { isConversationalModelCapability } from "@/features/ai-models/capabilities/types";
+import { isConversationalModelCapability } from "@ai-matrx/agents/models";
 import {
   selectActiveModels,
   selectActiveModelsReady,

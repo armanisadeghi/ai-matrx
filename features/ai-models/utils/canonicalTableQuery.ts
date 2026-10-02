@@ -4,7 +4,7 @@ import type {
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table";
 import type { AiModelFilters, TabState } from "../hooks/useTabUrlState";
-import { isContentType } from "../capabilities/types";
+import { isContentType } from "@ai-matrx/agents/models";
 
 /** Preserve the catalog's existing URL/tab contract when using the shared table. */
 export function modelFiltersToColumns(

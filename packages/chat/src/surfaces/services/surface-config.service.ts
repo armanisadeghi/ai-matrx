@@ -1,5 +1,5 @@
 "use client";
-import { storedMandateKey, type AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * Surface config resolution — the canonical reader/writer for agent roles

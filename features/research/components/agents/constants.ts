@@ -12,7 +12,7 @@ import {
 import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META } from "../../admin/types";
 import type { AgentConfigKey } from "../../admin/types";
 import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * The system agents that drive the research pipeline, one AGENT MANDATE per

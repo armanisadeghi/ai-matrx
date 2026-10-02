@@ -26,7 +26,7 @@ import {
 } from "@/features/mandates/code-references/health";
 import { plainFailureReason } from "@/lib/entity-list/failure";
 import { asClause } from "@ai-matrx/kit/text";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 const SEVERITY_CLASS: Record<HealthFinding["severity"], string> = {
   high: "border-red-500/40 text-red-700 dark:text-red-400",

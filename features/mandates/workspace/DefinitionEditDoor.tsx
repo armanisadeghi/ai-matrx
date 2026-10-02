@@ -7,7 +7,7 @@ import { crossDeploymentHref } from "@/lib/deployment/surfaces";
 import { RequestAccess } from "@/features/access-gate/components/RequestAccess";
 import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 // features/mandates/workspace/DefinitionEditDoor.tsx
 //

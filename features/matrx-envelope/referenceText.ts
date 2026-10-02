@@ -24,8 +24,8 @@ import {
   type DecodedDirective,
   tryDecodeDirective,
 } from "@ai-matrx/content-ir";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
-import { buildReferenceFence } from "@/features/matrx-envelope/referenceFence";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
+import { buildReferenceFence } from "@ai-matrx/agents/envelope";
 import {
   referenceCellSummary,
   referenceTypeLabel,

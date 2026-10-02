@@ -11,7 +11,7 @@ import {
   useOpenAgentRunWindow,
   type AgentRunWindowHandle,
 } from "@/features/overlays/openers/agentRunWindow";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * The opener stamps the window with WHO is running it and WHICH workspace the

@@ -63,8 +63,8 @@ jest.mock("../../../../../mandates/service", () => ({
     supplied: unknown,
   ) => {
     const contract = jest.requireActual<
-      typeof import("@host/features/mandates/contract")
-    >("@host/features/mandates/contract");
+      typeof import("@ai-matrx/agents/mandates")
+    >("@ai-matrx/agents/mandates");
     const missing = contract.missingRequiredVariables(
       mandate.contract as never,
       supplied as never,
@@ -120,7 +120,7 @@ import appContextReducer from "@host/lib/redux/slices/appContextSlice";
 import { initialChatHostState, type ChatHostState } from "../../../../../store/chat-host.slice";
 import { configureRecordingWindows } from "../../../../../host/__tests__/recording-windows";
 import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
-import { storedMandateKey } from "@host/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 // Fully-loaded agent record: Step 0.5's readiness check passes so the thunk
 // never reaches the network. `_loadedFields` mirrors the FieldFlags shape.

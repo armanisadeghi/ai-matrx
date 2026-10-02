@@ -7,8 +7,8 @@ import type {
   AgentShortcutRecord,
   AgentShortcutSliceState,
 } from "./types";
-import type { FieldFlags } from "../shared/field-flags";
-import { hasField } from "../shared/field-flags";
+import type { FieldFlags } from "@ai-matrx/agents/field-flags";
+import { hasField } from "@ai-matrx/agents/field-flags";
 import {
   matchesScope,
   scopeIndexKey,

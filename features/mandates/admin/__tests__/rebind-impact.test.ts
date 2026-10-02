@@ -13,7 +13,7 @@ import {
   computeRebindImpact,
 } from "../rebind-impact";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const v = (
   name: string,

@@ -18,7 +18,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { REFERENCE_TYPES } from "@/features/matrx-envelope/envelope";
+import { REFERENCE_TYPES } from "@ai-matrx/agents/envelope";
 
 interface RegistryShape {
   class: string;

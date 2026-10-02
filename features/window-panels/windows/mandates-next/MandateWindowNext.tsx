@@ -60,7 +60,7 @@ import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
 import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface MandateWindowNextProps {
   isOpen?: boolean;

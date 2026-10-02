@@ -38,7 +38,7 @@ import {
   setSources,
   sourcesFor,
 } from "../consumption-writer";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** One place in the batch: a job this holder would be bound to. */
 export interface PlaceRow {

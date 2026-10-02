@@ -16,7 +16,7 @@ import { useLiveSurfaceMandates } from "../../runtime/surface-mandates";
 import { fetchMandateIdentities, type MandateIdentity } from "../../../mandates/service";
 import { mandateDisplayName } from "@host/features/mandates/mandate-words";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useOpenMandateWindow } from "../../../host/window-openers";
 
 /**

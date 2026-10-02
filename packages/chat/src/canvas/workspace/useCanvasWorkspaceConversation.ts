@@ -42,7 +42,7 @@ import { selectShouldPromptForOrganization } from "@host/lib/redux/slices/appCon
 import { selectIsCacheOnly } from "../../agents/redux/execution-system/conversations/conversations.selectors";
 import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
 import { describeLaunchError } from "./describe-launch-error";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { selectOrganizationId, ensureOrganizationContext, isOrganizationSelectionCancelled } from "../../host/org";
 
 export type CanvasWorkspaceConversation =

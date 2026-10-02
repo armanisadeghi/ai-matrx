@@ -110,7 +110,7 @@ import {
 } from "./binding-lookup";
 import { agentSettingDisplay } from "./format-setting-value";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 export type {
   OverridesLevel,

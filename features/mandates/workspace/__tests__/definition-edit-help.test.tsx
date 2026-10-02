@@ -1,7 +1,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { DefinitionEditHelp } from "../DefinitionEditHelp";
-import { EMPTY_MANDATE_CONTRACT } from "../../contract";
+import { EMPTY_MANDATE_CONTRACT } from "@ai-matrx/agents/mandates";
 import type { CopyButtonsProps } from "@/components/agent-copy/CopyButtons";
 
 let copiedProps: CopyButtonsProps | undefined;

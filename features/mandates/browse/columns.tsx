@@ -28,7 +28,7 @@ import {
 } from "./types";
 import { MandateCoverageBadge } from "./CoverageBadge";
 import { MandateHomeBadge } from "./MandateHome";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { CandidateListCell } from "@/features/mandates/candidates/components/CandidateListCell";
 
 // The filter vocabularies are the DATABASE's, named once in ./types.ts —

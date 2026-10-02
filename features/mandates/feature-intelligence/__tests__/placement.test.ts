@@ -11,7 +11,7 @@ import {
 import { REGISTRY_DOMAINS, registryDomain, registryFeature } from "../taxonomy";
 import { DECLARED_FEATURES } from "../registry";
 import { LIVE_MANDATE_KEYS_2026_09_26 } from "./live-keys.fixture";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 /** Custom jobs an organization or a person wrote under their own prefix. */
 const OWNER_AUTHORED = new Set([

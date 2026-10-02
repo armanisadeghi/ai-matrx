@@ -50,7 +50,7 @@ jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({
 import { useServedRunForm } from "../served-form/useServedRunForm";
 import { useResultSchema } from "../kind-emissions/useResultSchema";
 import { useMandateInputSurface } from "@/features/mandates/input-surface";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 async function mount(useHook: () => unknown): Promise<{
   current: unknown;

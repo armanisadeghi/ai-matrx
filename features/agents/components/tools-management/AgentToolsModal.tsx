@@ -36,7 +36,7 @@ import {
 import { selectAllTools } from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
 import { resetAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
-import { hasField } from "@ai-matrx/chat/agents/redux/shared/field-flags";
+import { hasField } from "@ai-matrx/agents/field-flags";
 
 interface AgentToolsModalProps {
   agentId: string;

@@ -21,7 +21,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 
 export const CRM_OUTREACH_LISTS_SURFACE_NAME = "matrx-user/crm-outreach-lists";
 

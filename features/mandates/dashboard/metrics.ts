@@ -30,7 +30,7 @@ import type {
 } from "@/features/mandates/admin/service";
 import type { MandateReferenceBoard } from "@/features/mandates/admin/references";
 import type { WorkflowImpactReport } from "@/features/mandates/admin/workflow-impact";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface FeatureCount {
   feature: string;

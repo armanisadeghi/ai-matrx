@@ -37,7 +37,7 @@ import {
   type MandateDefinitionRow,
 } from "./service";
 import { contractOfMandate } from "@/lib/supabase/mandateStorage";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface RebindRequest {
   /** The agent to bind. */

@@ -8,7 +8,7 @@ import { keyInFeature, lanesFor, shortMandateName } from "../service";
 import { featureIntelligenceHref, featureOfMandateKey } from "../hrefs";
 import { effectiveRunOverride } from "../run-override";
 import type { FeatureIntelligenceRow, ResolvedPlace } from "../types";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const place = (over: Partial<ResolvedPlace>): ResolvedPlace => ({
   id: "p",

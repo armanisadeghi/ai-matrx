@@ -9,7 +9,7 @@
  */
 
 import type { AgentApp as AgentAppDb } from "@/features/agent-apps/types";
-import type { FieldFlags } from "@ai-matrx/chat/agents/redux/shared/field-flags";
+import type { FieldFlags } from "@ai-matrx/agents/field-flags";
 
 // Re-export the canonical DB-row type. Slice + selectors + thunks all use
 // this shape so there is no aspirational/real divergence to reconcile.

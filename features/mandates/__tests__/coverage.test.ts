@@ -15,7 +15,7 @@ import {
   coverageBucketOf,
   type MandateCoverageResponse,
 } from "../coverage";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const report = (
   overrides: Partial<MandateCoverageResponse> = {},

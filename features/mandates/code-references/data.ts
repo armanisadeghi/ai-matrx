@@ -21,7 +21,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface LatestReference {
   identity_hash: string;

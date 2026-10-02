@@ -40,7 +40,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { ApproachCard } from "../ApproachCard";
 import type { DistillationApproach } from "../approaches";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }

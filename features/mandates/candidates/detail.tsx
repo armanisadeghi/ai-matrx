@@ -23,7 +23,7 @@ import { formatWhen } from "@ai-matrx/detail";
 
 import { BackendApiError } from "@/lib/api/errors";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 import { fetchCandidate, fetchCandidateRun } from "./api";
 import type { CandidateRunRow } from "./components/CandidateRunBody";

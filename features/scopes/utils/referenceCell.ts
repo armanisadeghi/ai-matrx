@@ -19,8 +19,8 @@
 import {
   parseReferenceFence,
   buildReferenceFence,
-} from "@/features/matrx-envelope/referenceFence";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+} from "@ai-matrx/agents/envelope";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 import { listableTokens } from "@/features/scopes/registry/entityRegistry";
 import {
   ENTITY_TYPE_METADATA,

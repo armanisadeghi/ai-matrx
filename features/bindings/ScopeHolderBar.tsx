@@ -50,7 +50,7 @@ import {
   DEFAULT_HOLDER_RUNG,
   type DefaultHolderRungOffer,
 } from "./default-holder-rung";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * The rungs a mandate binding can actually be written at. There is no `global`

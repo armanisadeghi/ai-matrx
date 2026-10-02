@@ -17,7 +17,7 @@ import {
   missingRequiredVariables,
   missingVariablesMessage,
   parseMandateContract,
-} from "../contract";
+} from "@ai-matrx/agents/mandates";
 
 const contract = (required: string[], spill: string[] = []) => ({
   ...EMPTY_MANDATE_CONTRACT,

@@ -42,7 +42,7 @@ import type {
   TriageItem,
   ValueBucket,
 } from "./types";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 interface CommerceReviewDatabase {
   commerce: CommerceReviewSchema;

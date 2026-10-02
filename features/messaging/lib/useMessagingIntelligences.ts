@@ -42,7 +42,7 @@ import {
   MESSAGING_MANDATE_KEY_LIST,
   type MessagingCapability,
 } from "./messagingMandates";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * The mandate resolver already narrows a binding's `config_overrides` to the

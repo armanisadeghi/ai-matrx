@@ -46,7 +46,7 @@ import { MandateHealthSummary } from "./MandateHealthSummary";
 import { usePathname } from "next/navigation";
 import { isAdminLanePath } from "@/utils/supabase/adminLane";
 import { MandateRunHistory } from "@/features/mandates/run-history/MandateRunHistory";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 type AdminSection = "test" | "permissions" | "source" | "diagnostics";
 

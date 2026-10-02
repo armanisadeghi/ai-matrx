@@ -17,7 +17,7 @@
 // never from code.
 
 import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
-import { isDecisionModelCapability } from "@/features/ai-models/capabilities/types";
+import { isDecisionModelCapability } from "@ai-matrx/agents/models";
 import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
 import {
   resolvePreferredModelChoice,

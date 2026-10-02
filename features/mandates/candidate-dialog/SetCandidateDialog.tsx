@@ -48,7 +48,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { HolderAssignment } from "@/features/bindings/HolderAssignment";
 import { useMandateHolder } from "@ai-matrx/chat/mandates/useMandateHolder";
 import type { HolderDraft } from "@/features/bindings/ScopeHolderBar";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   COVERED_DOORS,

@@ -59,7 +59,7 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { BackendApiError } from "@/lib/api/errors";
 import { keyFromName, softMandateNamespace } from "./soft-key";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface NewSoftMandatePageProps {
   level: MandateListLevel;

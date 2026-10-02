@@ -32,7 +32,7 @@ import { cn } from "@/utils/cn";
 import dynamic from "next/dynamic";
 import { ReferenceTypeAdder } from "@/features/matrx-envelope/components/ReferenceTypeAdder";
 import { ReferencePickerChip } from "@/features/matrx-envelope/components/ReferencePickerChip";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 import {
   buildReferenceCellValue,
   parseReferenceCellValue,

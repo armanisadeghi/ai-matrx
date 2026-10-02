@@ -62,7 +62,7 @@ import {
   rungOfImpactVerdict,
   targetOfImpactVerdict,
 } from "@/features/mandates/candidate-dialog/target";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import {
   batchEligibilityOf,

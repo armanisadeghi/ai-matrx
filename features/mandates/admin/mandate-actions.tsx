@@ -36,7 +36,7 @@ import { promoteMandateToSystem } from "./promotion";
 import type { MandateCodeTruth, MandateDefinitionRow } from "./service";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 /** A lineage relative, always rendered with a door. */
 export function LineageChip({

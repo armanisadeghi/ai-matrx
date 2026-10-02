@@ -29,7 +29,7 @@ import {
   applyBulkSelection,
   bulkSelectionLabel,
 } from "@/features/bindings/batch/batch-model";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface SelectablePlace {
   key: string;

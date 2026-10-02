@@ -12,7 +12,7 @@
  */
 
 import { LLM_PARAMS_KEYS } from "@/types/python-generated/llm-enums";
-import { outputFormatControlKey } from "@/features/ai-models/utils/model-normalizer";
+import { outputFormatControlKey } from "@ai-matrx/agents/models";
 import type {
   AgentSettings,
   AgentVariable,

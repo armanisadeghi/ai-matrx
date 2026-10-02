@@ -6,7 +6,7 @@
  */
 
 import { resolveMandate } from "@ai-matrx/chat/mandates/service";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import {
   registerAssistAction,
   type AssistActionResult,

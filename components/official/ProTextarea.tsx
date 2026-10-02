@@ -202,7 +202,7 @@ import {
   type ProTextareaAgentActionId,
   type ProTextareaMenuMode,
 } from "./proTextareaAgentActions";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 // STATIC by measured ruling (2026-07-28, build-lab bracket): a dynamic({ssr:
 // false}) front door here was tried (v0.4.225 E1) and REVERTED same day. It
 // cut /notes first-load JS by 3MB, but the async chunk-group split of the

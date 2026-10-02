@@ -26,7 +26,7 @@
  * Position, not spelling, is the test: `education.spoken_practice` is BOTH a
  * mandate key and an entitlement meter id (features/entitlements/registry.ts),
  * and only one of those is this guard's business. The two TYPED DOORS
- * (`dbAuthoredMandateKey`, `storedMandateKey` in features/mandates/mandate-key.ts)
+ * (`dbAuthoredMandateKey`, `storedMandateKey` in @ai-matrx/agents/mandates)
  * are walked THROUGH, not around: a literal inside one is still reported, so the
  * allowlist keeps naming it with a reason. A typed door that hid its argument
  * would be a laundering hole, not a fix.
@@ -142,7 +142,7 @@ const POSITIONAL_ENTRY_POINTS: Readonly<Record<string, number>> = {
   runMandate: 0,
 };
 /**
- * THE TYPED DOORS (features/mandates/mandate-key.ts). A literal inside one is
+ * THE TYPED DOORS (@ai-matrx/agents/mandates). A literal inside one is
  * still a literal: the scan walks THROUGH the call so the allowlist keeps
  * naming it with a reason, instead of the door becoming a way to launder a
  * hand-typed key past this guard.

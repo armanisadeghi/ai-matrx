@@ -10,7 +10,7 @@
  * swaps it for `MANDATE_KEYS.seo__topic_curation` on adoption. Every reader of
  * the key in this lane imports it from HERE, so that swap is one line.
  */
-import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export const TOPIC_CURATION_MANDATE_KEY = dbAuthoredMandateKey(MANDATE_KEYS.seo__topic_curation);

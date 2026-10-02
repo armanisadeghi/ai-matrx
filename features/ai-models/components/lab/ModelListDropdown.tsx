@@ -101,7 +101,7 @@ import {
   isDecisionModelCapability,
   isManagedAgentModelCapability,
   type ModelSelectionPurpose,
-} from "@/features/ai-models/capabilities/types";
+} from "@ai-matrx/agents/models";
 import {
   costRatingTier,
   speedRatingLabel,

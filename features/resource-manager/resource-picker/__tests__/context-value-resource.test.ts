@@ -1,4 +1,4 @@
-import { parseReferenceFence } from "@/features/matrx-envelope/referenceFence";
+import { parseReferenceFence } from "@ai-matrx/agents/envelope";
 import type { PickNode } from "@/features/scopes/components/active-context/quick-pick/engine";
 import { contextValueResourceFromNode } from "../context-value-resource";
 

@@ -40,7 +40,7 @@ import {
   type CoveragePlan,
   type SourceSegment,
 } from "./coverage";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { runAgentExtraction } from "./runAgentExtraction";
 import type {
   ConvertContext,

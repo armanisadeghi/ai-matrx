@@ -16,7 +16,7 @@ import React, { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { useMandateProvenance } from "../provenance";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;

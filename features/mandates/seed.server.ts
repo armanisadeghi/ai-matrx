@@ -38,7 +38,7 @@ import "server-only";
  */
 
 import { resolveMandateServer } from "@/features/mandates/service.server";
-import type { AnyMandateKey } from "./mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { ResolvedMandate } from "@ai-matrx/chat/mandates/service";
 
 /**

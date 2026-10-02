@@ -1,5 +1,5 @@
 import "server-only";
-import type { AnyMandateKey } from "./mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * Server-side agent-mandate resolution — the SSR half of the Mandates system,
@@ -48,7 +48,7 @@ import type { AnyMandateKey } from "./mandate-key";
 
 import { createClient } from "@/utils/supabase/server";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { parseMandateContract } from "./contract";
+import { parseMandateContract } from "@ai-matrx/agents/mandates";
 import { parseMandateWave1 } from "./provision-shapes";
 import type { ResolvedMandate } from "@ai-matrx/chat/mandates/service";
 import {

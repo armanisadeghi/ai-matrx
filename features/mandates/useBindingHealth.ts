@@ -52,7 +52,7 @@ import {
 } from "./contract-compare";
 // Leaf modules, not ./overrides — service.ts needs these shapes too, and
 // importing them via ./overrides is a cycle.
-import type { MandateContract } from "./contract";
+import type { MandateContract } from "@ai-matrx/agents/mandates";
 import type { ConsumptionMap } from "./provision-shapes";
 import {
   fetchAgentOutputSchemas,

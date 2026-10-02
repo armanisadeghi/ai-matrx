@@ -21,7 +21,7 @@ import React from "react";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 
 import { useMandateGoal } from "./useMandateGoal";
-import type { AnyMandateKey } from "./mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function MandateGoalBlock({

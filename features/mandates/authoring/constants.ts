@@ -9,7 +9,7 @@
 // singular, his key, live, bound, fully mapped); the plural placeholder row is
 // soft-deleted. Changing a constant here is the entire wiring.
 
-import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * Both keys are DB-authored, not declared in aidream, so the generated union

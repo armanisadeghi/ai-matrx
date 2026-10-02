@@ -26,7 +26,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
 import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * What the page knows about the typed key. `unknown` is a first-class answer:

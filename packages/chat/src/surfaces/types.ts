@@ -26,7 +26,7 @@ import type {
   ValueType,
 } from "@ai-matrx/alchemy/declare";
 import type { ApplicationScope } from "../agents/types/scope.types";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { components } from "@host/types/python-generated/api-types";
 
 // ---------------------------------------------------------------------------

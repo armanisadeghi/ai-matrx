@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/creatable-picker";
 import { CustomDataRecordsScope } from "@/features/agents/components/variables-management/custom-data/CustomDataRecordsScope";
 import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
-import { buildDirectiveFence } from "@/features/matrx-envelope/referenceFence";
+import { buildDirectiveFence } from "@ai-matrx/agents/envelope";
 import type { DataHomeTableRow } from "@/features/unified-data/hub/doors";
 
 const RECORD_PAGE_SIZE = 100;

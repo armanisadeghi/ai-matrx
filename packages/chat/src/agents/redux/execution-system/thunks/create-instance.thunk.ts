@@ -30,7 +30,7 @@ import type {
 import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
 import { fetchShortcutMandateKey } from "@host/lib/supabase/shortcutStorage";
 import { supabase } from "../../../../host/db";
-import { hasField } from "../../shared/field-flags";
+import { hasField } from "@ai-matrx/agents/field-flags";
 import { fetchAgentExecutionFull } from "../../agent-definition/thunks";
 import { executeInstance } from "./execute-instance.thunk";
 
@@ -87,7 +87,7 @@ import {
 } from "../../../types/instance.types";
 import { mapScopeToInstanceWithSurface } from "../../../utils/scope-mapping";
 import type { ValueMappingMap } from "../../../../surfaces/types";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 // =============================================================================
 // Shared helper — reads agent snapshot data. The ONLY place agentId is used.

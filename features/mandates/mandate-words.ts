@@ -14,7 +14,7 @@
 // on its own mono sub-line, which is its honest home.
 
 import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * A job's name as a person reads it.

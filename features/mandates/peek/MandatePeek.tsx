@@ -50,7 +50,7 @@ import {
   PEEK_CONTENT_PROPS,
   useTransientPeek,
 } from "@/features/organizations/peek/useTransientPeek";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 interface MandateFacts {

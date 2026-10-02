@@ -25,7 +25,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
 import {
   destroyInstanceIfAllowed,

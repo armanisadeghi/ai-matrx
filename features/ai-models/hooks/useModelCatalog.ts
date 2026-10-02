@@ -47,7 +47,7 @@ import {
 import type {
   ContentType,
   InteractionMode,
-} from "@/features/ai-models/capabilities/types";
+} from "@ai-matrx/agents/models";
 import { requireCanonicalCapabilities } from "@/features/ai-models/capabilities/parse";
 import type { Database, Json } from "@/types/database.types";
 

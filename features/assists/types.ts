@@ -16,7 +16,7 @@ import type { Json } from "@/types/database.types";
 import {
   storedMandateKey,
   type AnyMandateKey,
-} from "@/features/mandates/mandate-key";
+} from "@ai-matrx/agents/mandates";
 import {
   isSourceFeature,
   type SourceFeature,

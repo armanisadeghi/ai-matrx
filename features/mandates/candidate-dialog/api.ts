@@ -17,7 +17,7 @@ import { serverRefusal } from "@/lib/progress/failureSentence";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
 import { refusalCode } from "@/features/mandates/test-run";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type LiveCandidate = components["schemas"]["LiveCandidate"];
 export type LiveCandidateRun = components["schemas"]["LiveCandidateRun"];

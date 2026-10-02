@@ -36,7 +36,7 @@ import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SINGLE_SITE_SENTENCE, fetchMandateReferences, formatRepoList, unreportedSentence, type MandateReferenceReport, type MandateReferenceRow } from "./references";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface SourceUsageFallback {
   /** The code-truth declaration string, when discovery found one. */

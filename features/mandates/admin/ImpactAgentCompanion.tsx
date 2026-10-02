@@ -32,7 +32,7 @@ import {
 } from "./service";
 import { versionLabel, type ImpactVerdict } from "./impact";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type CompanionSection = "history" | "test";
 

@@ -28,7 +28,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
-import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Per-slot summary entry inside `custom_slots_summary`. */

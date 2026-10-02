@@ -29,7 +29,7 @@ import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manif
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { MAP_CURATION_MANDATE_KEY } from "@/features/marketing/seo/topical-map/mandateKeys";
 import { TOPIC_CURATION_MANDATE_KEY } from "@/features/marketing/seo/topical-map/panel/topicCuration";
-import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 
 const groups: SurfaceValueGroup[] = [
   {

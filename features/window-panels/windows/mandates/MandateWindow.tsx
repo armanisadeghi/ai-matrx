@@ -61,13 +61,13 @@ import { buildRow, type MandateRow } from "@/features/mandates/admin/mandate-hea
 import { MandateDetailView } from "@/features/mandates/admin/MandateDetailPanel";
 import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
 import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
-import { splitMandateKey } from "@/features/mandates/mandate-key";
+import { splitMandateKey } from "@ai-matrx/agents/mandates";
 import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { cn } from "@/lib/utils";
 import type { MandateWindowView } from "@/features/overlays/openers/mandateWindow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface MandateWindowProps {
   isOpen?: boolean;

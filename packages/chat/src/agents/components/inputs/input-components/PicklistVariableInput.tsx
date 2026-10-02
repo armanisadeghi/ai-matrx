@@ -11,7 +11,7 @@ import type { VariableCustomComponent } from "../../../types/agent-definition.ty
 import {
   buildPicklistItemFence,
   readPicklistSelection,
-} from "@host/features/matrx-envelope/referenceFence";
+} from "@ai-matrx/agents/envelope";
 import { useStructuredListForSelection } from "@host/features/user-lists/hooks/useStructuredListForSelection";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";
 

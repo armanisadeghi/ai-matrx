@@ -41,7 +41,10 @@ jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => null }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
-jest.mock("@ai-matrx/agents/mandates", () => ({ MANDATE_KEYS: { data__page_guidance: "data.page_guidance" } }));
+jest.mock("@ai-matrx/agents/mandates", () => ({
+  ...jest.requireActual("@ai-matrx/agents/mandates"),
+  MANDATE_KEYS: { data__page_guidance: "data.page_guidance" },
+}));
 jest.mock("@ai-matrx/records-ui", () => ({
   RecordsMount: () => null,
   TablePage: () => null,

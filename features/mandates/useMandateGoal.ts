@@ -21,7 +21,7 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import type { AnyMandateKey } from "./mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import {
   fetchMandateCatalogue,
   type MandateCatalogueEntry,

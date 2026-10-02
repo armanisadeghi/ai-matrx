@@ -156,9 +156,9 @@ import {
 import { fromImageOutputData } from "@host/features/files/blocks/image/adapters/from-image-output-data";
 import { fromPartialImageData } from "@host/features/files/blocks/image/adapters/from-partial-image-data";
 import { getCapabilitiesForConversation } from "../../../runtime/get-model-capabilities";
-import type { ContentType } from "@host/features/ai-models/capabilities/types";
+import type { ContentType } from "@ai-matrx/agents/models";
 import { toast } from "../../../../host/notify";
-import { isDirectiveApplyEvent } from "@host/features/matrx-envelope/envelope";
+import { isDirectiveApplyEvent } from "@ai-matrx/agents/envelope";
 import { proposeDirective } from "../../proposed-directives/proposedDirectivesSlice";
 
 function readTransportCursor(event: unknown): {

@@ -1,5 +1,5 @@
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
-import { parseReferenceFence } from "@/features/matrx-envelope/referenceFence";
+import { parseReferenceFence } from "@ai-matrx/agents/envelope";
 
 describe("reference fence authoring", () => {
   it("minifies the canonical envelope onto one JSON line", () => {

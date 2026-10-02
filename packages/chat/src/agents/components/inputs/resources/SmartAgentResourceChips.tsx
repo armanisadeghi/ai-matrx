@@ -29,7 +29,7 @@ import { useContextItemDrawer } from "../../context-items/useContextItemDrawer";
 import { normalizeResource } from "../../context-items/normalize";
 import type { ContextDrawerItem } from "../../context-items/types";
 import { MediaAttachmentThumbnail } from "@host/features/files/components/inline/MediaAttachmentThumbnail";
-import { parseReferenceFence } from "@host/features/matrx-envelope/referenceFence";
+import { parseReferenceFence } from "@ai-matrx/agents/envelope";
 import { revokeTrackedObjectUrl } from "@host/lib/media/object-url-registry";
 
 import { resolveContextItemDef } from "../../context-items/registry";

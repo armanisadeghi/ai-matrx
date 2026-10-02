@@ -1,5 +1,5 @@
 "use client";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 // features/masterwork/drive/useDriveSettings.ts
 //

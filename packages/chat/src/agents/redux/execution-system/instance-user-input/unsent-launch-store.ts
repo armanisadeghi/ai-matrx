@@ -30,7 +30,7 @@
 
 import { DRAFT_TTL_MS } from "@ai-matrx/kit/drafts";
 import type { ResultDisplayMode } from "../../../utils/run-ui-utils";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 const PREFIX = "matrx.unsent-launch.";
 

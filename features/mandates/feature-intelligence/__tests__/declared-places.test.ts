@@ -26,7 +26,7 @@ import { join, relative } from "node:path";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { DECLARED_FEATURES, featurePrefixes } from "../registry";
 import type { FeaturePlaces } from "../types";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const ROOT = process.cwd();
 const OWN_GUARD = new Set(["flashcards", "research"]);

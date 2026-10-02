@@ -23,7 +23,7 @@ import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMandateWorkspaceData";
 import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 type Mandate = MandateWorkspaceData["mandate"];
 

@@ -46,7 +46,7 @@ import {
   type MandateProvenanceReport,
 } from "@/features/mandates/provenance";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** A link that opens a surface, in the panel's own small type. */
 function SurfaceLink({ href, children }: { href: string; children: string }) {

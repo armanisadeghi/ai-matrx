@@ -26,7 +26,7 @@ import {
   selectAgentAccessResolved,
 } from "../redux/agent-definition/selectors";
 import { setAgentField } from "../redux/agent-definition/slice";
-import { readField } from "../redux/shared/field-flags";
+import { readField } from "@ai-matrx/agents/field-flags";
 import type { AgentDefinition } from "../types/agent-definition.types";
 import { toast } from "../../host/notify";
 

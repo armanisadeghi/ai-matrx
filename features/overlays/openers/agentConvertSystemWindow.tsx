@@ -14,7 +14,7 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 const OVERLAY_ID = "agentConvertSystemWindow" as const;
 

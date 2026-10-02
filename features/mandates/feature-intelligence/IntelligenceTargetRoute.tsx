@@ -19,7 +19,7 @@ import {
   targetLabel,
 } from "./placement";
 import { registryDomain } from "./taxonomy";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type RouteQuery = Record<string, string | string[] | undefined>;
 

@@ -19,7 +19,7 @@
 
 import type { components } from "@/types/python-generated/api-types";
 import type { Database } from "@/types/database.types";
-import type { FieldFlags } from "@ai-matrx/chat/agents/redux/shared/field-flags";
+import type { FieldFlags } from "@ai-matrx/agents/field-flags";
 import type { readFileRowById } from "@/features/files/filesDb";
 
 // ---------------------------------------------------------------------------

@@ -37,7 +37,7 @@ import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import type { MandateRowDb } from "@/features/mandates/workspace/useMandateWorkspaceData";
 import { describedOfferFrom } from "../described-offer";
 import type { PlaceOfferState } from "./batch-model";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const LOADING: PlaceOfferState = { status: "loading" };
 

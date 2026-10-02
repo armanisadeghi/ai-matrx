@@ -7,7 +7,7 @@
 // `{ value, requestId, conversationId }` result with a live-UI handle.
 
 import { runHeadlessAgentJson } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import type { AppDispatch, AppStore } from "@/lib/redux/store";
 

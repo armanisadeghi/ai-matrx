@@ -26,7 +26,7 @@ import { createClient } from "@/utils/supabase/client";
 import { MandateDoorError } from "@/features/mandates/door-error";
 import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** A refusal or failure from the promotion door, in the database's own words. */
 export class MandatePromotionError extends MandateDoorError {

@@ -31,7 +31,7 @@ import type {
   CodeEditorAgentConfig,
   CodeFile,
 } from "@/features/code-editor/agent-code-editor/types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface OpenSmartCodeEditorWindowOptions
   extends SmartCodeEditorWindowHandlers {

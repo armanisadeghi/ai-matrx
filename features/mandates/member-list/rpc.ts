@@ -8,7 +8,7 @@ import { mandateStatusOf } from "@/features/mandates/status/mandate-status";
 import type { Database, Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import type { MandateMemberRow } from "./types";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 export type MandateMemberListArgs =
   Database["public"]["Functions"]["mnd_member_list"]["Args"];

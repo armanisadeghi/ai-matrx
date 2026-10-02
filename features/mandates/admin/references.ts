@@ -30,7 +30,7 @@ import type { components } from "@/types/python-generated/api-types";
 import { formatFileSize, formatCost, type CostUnit } from "@ai-matrx/kit/format";
 import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type MandateReferenceRow =
   components["schemas"]["MandateReferenceRow"];

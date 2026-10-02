@@ -28,7 +28,7 @@ import type {
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { useCopyMandateAgent } from "@/features/mandates/useCopyMandateAgent";
 import { mandateRoute, type MandateListRow } from "./types";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 export function useMandateRowActions(
   _list: EntityListController<MandateListRow>,

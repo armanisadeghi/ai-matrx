@@ -63,7 +63,7 @@ import {
 import { runMandateTry, type MandateTryCandidate } from "./owner-service";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 type CandidateMode = "current" | "candidate";
 

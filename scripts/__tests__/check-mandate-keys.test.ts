@@ -255,7 +255,7 @@ describe("check:mandate-keys CENSUS — every string mandateKey member is typed 
   it("GREEN: the typed member is not in the census at all — that IS the fix", () => {
     const typed = scanCarrierTypes(
       FILE,
-      `import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+      `import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
        export interface MandateDraft { mandateKey: AnyMandateKey; }`,
     );
     expect(explainCensus(typed, []).unexplained).toEqual([]);

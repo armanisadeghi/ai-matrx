@@ -38,7 +38,7 @@ import {
   StatusToken,
 } from "@/components/official/ConfigurationFields";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface MandateNotesPanelProps {
   /** The mandate the notes hang off. */

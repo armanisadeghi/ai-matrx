@@ -3,7 +3,7 @@ import { ADMIN_MANDATES_HOME } from "@/features/mandates/admin-routes";
 import { DEFAULT_HOLDER_RUNG } from "@/features/bindings/default-holder-rung";
 import { ContractMismatchList } from "@/features/mandates/components/ContractMismatchNotice";
 import { unmetContractChecks } from "@/features/mandates/contract-check";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
@@ -68,7 +68,7 @@ import {
   TriadOutputSection,
 } from "./TriadSections";
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
-import { splitMandateKey } from "../mandate-key";
+import { splitMandateKey } from "@ai-matrx/agents/mandates";
 import { holderOfMandate } from "@/lib/supabase/mandateStorage";
 import {
   OneBindingWorkspace,

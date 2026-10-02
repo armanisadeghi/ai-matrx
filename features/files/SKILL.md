@@ -106,7 +106,7 @@ const link = await createShareLink(fileId, {
 - `Dialog` on mobile. Branch via `useIsMobile()` to `Drawer`.
 - `h-screen` / `vh` under `app/(core)/files/` — use `dvh`, `--header-height`, `pb-safe`.
 - Hardcoded paths. Use [features/files/utils/path.ts](utils/path.ts).
-- `Set` in Redux state. Use `FieldFlags<K>` from [features/agents/redux/shared/field-flags.ts](../agents/redux/shared/field-flags.ts).
+- `Set` in Redux state. Use `FieldFlags<K>` from `@ai-matrx/agents/field-flags`.
 - Directly importing core components from `components/core/FileTree/internal/*`. Consume from the barrel.
 - Calling the REST API without a `requestId`. The realtime middleware will not be able to dedup, and you will see visual flicker.
 

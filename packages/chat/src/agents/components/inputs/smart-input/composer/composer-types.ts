@@ -1,4 +1,4 @@
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { EditableContextMenuProps } from "@host/features/context-menu-v3/types";
 import type { ApplicationScope } from "../../../../types/scope.types";
 

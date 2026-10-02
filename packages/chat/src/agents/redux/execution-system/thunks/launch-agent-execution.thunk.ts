@@ -34,7 +34,7 @@ import {
   assertMandateVariables,
   type ResolvedMandate,
 } from "../../../../mandates/service";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { mapScopeToInstanceWithSurface } from "../../../utils/scope-mapping";
 import type { ApplicationScope } from "../../../types/scope.types";
 import { toast } from "../../../../host/notify";

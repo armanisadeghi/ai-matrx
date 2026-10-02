@@ -53,7 +53,7 @@ import {
   type DirectiveRenderer,
   registerDirectiveRenderer,
 } from "@ai-matrx/content-ir-react";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 import {
   coerceRefToStrings,
   referenceChipLabel,

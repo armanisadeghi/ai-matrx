@@ -43,7 +43,7 @@ import { Mic, MicOff, Square, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { useConversationResume } from "@ai-matrx/chat/agents/hooks/useConversationResume";
 import { selectPrimaryRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";

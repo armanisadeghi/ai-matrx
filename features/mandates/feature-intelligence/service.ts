@@ -18,7 +18,7 @@ import type { MandateMemberRow } from "../member-list/types";
 import { featurePrefixes } from "./registry";
 import { keyInTarget, targetPrefixes } from "./placement";
 import type { FeatureIntelligenceRow, IntelligenceLevel } from "./types";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface FeatureIntelligenceQuery {
   /** The registry target (`seo`, `education/unassigned`) — see `placement.ts`. */

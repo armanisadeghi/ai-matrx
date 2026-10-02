@@ -55,7 +55,7 @@ import {
   type MandateDefinitionRow,
   type MandateDefinitionUpdate,
 } from "@/lib/supabase/mandateStorage";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 
 const MANDATE_CODE_TRUTH_CONNECT_TIMEOUT_MS = 60_000;

@@ -68,7 +68,7 @@ import {
   type MandateBindingRow,
   type MandateDefinitionRow,
 } from "@/lib/supabase/mandateStorage";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type { MandateBindingRow, MandateDefinitionRow };
 
@@ -87,7 +87,7 @@ export {
   missingVariablesMessage,
   EMPTY_MANDATE_CONTRACT,
   type MandateContract,
-} from "./contract";
+} from "@ai-matrx/agents/mandates";
 
 export function isPlaceholderMandate(mandate: MandateDefinitionRow): boolean {
   return (

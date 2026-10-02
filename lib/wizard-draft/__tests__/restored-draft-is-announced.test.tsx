@@ -133,7 +133,7 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => {
 });
 
 import { NewRulebookFlow } from "@/features/masterwork/intake/NewRulebookFlow";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const GOAL =
   "An assistant that decides, exactly the way I do, which incoming pallets of e-waste need a manual sort";

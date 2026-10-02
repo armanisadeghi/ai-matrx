@@ -34,7 +34,7 @@ import type {
   SourceFeature,
 } from "../../types/instance.types";
 import type { InitInstanceUIStatePayload } from "./instance-ui-state/instance-ui-state.slice";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface CreateInstanceFullPayload {
   // ── Conversation record (conversations slice) ───────────────────────────────

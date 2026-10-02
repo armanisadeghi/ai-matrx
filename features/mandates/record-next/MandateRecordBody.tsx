@@ -40,7 +40,7 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import { displayResolutionOrgId, usePageOrgFilter } from "@/features/mandates/display-org";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/slices/userSlice";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { featureLabelOf } from "@/features/mandates/admin-list/rows";
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";

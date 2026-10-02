@@ -42,7 +42,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database.types";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** OFF — ships dark. The flip is a one-line release (R14 gate: Arman's nod). */
 export const SHORTCUT_STORAGE_CUTOVER = true;

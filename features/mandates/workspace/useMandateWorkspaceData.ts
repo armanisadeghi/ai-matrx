@@ -38,7 +38,7 @@ import {
   parseBindingWave1,
   parseMandateWave1,
 } from "../provision-shapes";
-import { parseMandateContract, type MandateContract } from "../contract";
+import { parseMandateContract, type MandateContract } from "@ai-matrx/agents/mandates";
 import {
   agentHolderOfBinding,
   contractOfMandate,

@@ -45,7 +45,7 @@ import type {
   IntelligenceLevel,
 } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface FeatureIntelligenceProps {
   /** The registry target (`research`, `seo`, `education/unassigned`) — `placement.ts`. */

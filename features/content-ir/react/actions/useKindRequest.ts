@@ -1,5 +1,5 @@
 "use client";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * useKindRequest — the run engine behind "ask an agent for a typed value".

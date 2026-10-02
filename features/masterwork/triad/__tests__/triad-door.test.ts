@@ -26,7 +26,7 @@ import {
 } from "../../browse/approaches";
 import { resolveApproachLane } from "../../browse/approachLane";
 import { parseDeck } from "../types";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 /** The live `platform.approach` row, as `enable_triad_game.py` leaves it. */
 const TRIAD_ROW: DistillationApproach = {

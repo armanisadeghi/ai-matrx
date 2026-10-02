@@ -17,7 +17,7 @@
 // fulfils it); the tolerant coercer absorbs prompt-driven key drift.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import {

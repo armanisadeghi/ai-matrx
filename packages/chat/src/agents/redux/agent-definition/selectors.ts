@@ -7,8 +7,8 @@ import type {
   AgentDefinitionRecord,
   AgentFetchStatus,
 } from "../../types/agent-definition.types";
-import type { FieldFlags } from "../shared/field-flags";
-import { fieldFlagsSize, hasField } from "../shared/field-flags";
+import type { FieldFlags } from "@ai-matrx/agents/field-flags";
+import { fieldFlagsSize, hasField } from "@ai-matrx/agents/field-flags";
 
 // ---------------------------------------------------------------------------
 // Slice root

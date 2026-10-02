@@ -40,7 +40,7 @@ import {
   type MandateBindingRow,
 } from "@/lib/supabase/mandateStorage";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
-import { parseMandateContract } from "@/features/mandates/contract";
+import { parseMandateContract } from "@ai-matrx/agents/mandates";
 import { compareStoredContract } from "@/features/mandates/contract-compare";
 import {
   fetchAgentOutputSchemas,
@@ -74,7 +74,7 @@ import { PlacesSelector, type SelectablePlace } from "./PlacesSelector";
 import { usePlaceOffers } from "./usePlaceOffers";
 import { offeredValuesToSurfaceValues } from "../offered-adapter";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface BatchModeProps {
   rung: BindingRung;

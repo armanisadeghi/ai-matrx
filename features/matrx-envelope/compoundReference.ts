@@ -7,8 +7,8 @@
  * `referenceResolvers.ts` (best-effort FE preview until BE lands).
  */
 
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
-import { buildReferenceFence } from "@/features/matrx-envelope/referenceFence";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
+import { buildReferenceFence } from "@ai-matrx/agents/envelope";
 
 function fence(type: string, item: Record<string, string>): string {
   return buildReferenceFence({ type, items: [item as ReferenceItem] });

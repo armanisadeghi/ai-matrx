@@ -49,7 +49,7 @@ import { AgentDiffViewer } from "@ai-matrx/chat/agents/components/diff/AgentDiff
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
 import { ProvisionOfferList } from "@/features/mandates/components/ProvisionOfferList";
 import { MandateGoalBlock } from "@/features/mandates/MandateGoalBlock";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { goalOfMandate } from "@/lib/supabase/mandateStorage";
 import {
   fetchProvision,
@@ -130,7 +130,7 @@ import {
 } from "./impact";
 import { VerdictDetail } from "./impact-cells";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

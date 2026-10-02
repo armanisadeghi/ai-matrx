@@ -12,7 +12,7 @@
 // loudly and refuse to run; none of them substitutes a prompt of its own.
 
 import { useEffect, useState } from "react";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useAppDispatch, useAppStore } from "../store/hooks";
 import { fetchFullAgent } from "../agents/redux/agent-definition/thunks";
 import { selectAgentReadyForBuilder } from "../agents/redux/agent-definition/selectors";

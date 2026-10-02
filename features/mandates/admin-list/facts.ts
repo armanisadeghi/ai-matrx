@@ -25,7 +25,7 @@ import {
 } from "@/features/mandates/admin/workflow-impact";
 import type { EntityListQuery } from "@/lib/entity-list/types";
 import { declaredInOf, featureLabelOf } from "./rows";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type FactSection =
   | "coverage"

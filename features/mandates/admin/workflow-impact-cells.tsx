@@ -28,7 +28,7 @@ import {
   type WorkflowBreakWay,
   type WorkflowImpactVerdict,
 } from "./workflow-impact";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 const RUNG_WORDS: Record<WorkflowImpactVerdict["principal_kind"], string> = {
   system: "mandate default",

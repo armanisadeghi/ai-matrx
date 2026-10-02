@@ -23,7 +23,7 @@ import {
   parseMandateInputSurface,
   userTextSentence,
 } from "../input-surface";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const TRIAD = join(process.cwd(), "features/mandates/workspace/TriadSections.tsx");
 const ADMIN_PANEL = join(

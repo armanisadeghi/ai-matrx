@@ -56,7 +56,7 @@ import { mandateDisplayName } from "@host/features/mandates/mandate-words";
 import { useOpenMandateWindow } from "../../../host/window-openers";
 import { INTELLIGENCE_ICON } from "@host/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface SurfaceMandatesSectionProps {
   /** The surface the user is standing on. */

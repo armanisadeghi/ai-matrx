@@ -12,7 +12,7 @@
  */
 
 import { parseCapabilities } from "./capabilities/parse";
-import type { ModelCapabilities } from "./capabilities/types";
+import type { ModelCapabilities } from "@ai-matrx/agents/models";
 
 export type UsageBasis =
   | "image_output"

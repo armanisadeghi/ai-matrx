@@ -42,7 +42,7 @@ import {
   useMandateInputSurface,
   type MandateInputSurfaceState,
 } from "@/features/mandates/input-surface";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }

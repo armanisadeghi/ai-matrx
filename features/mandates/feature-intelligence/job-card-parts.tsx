@@ -26,7 +26,7 @@ import { inputDisplayLabel } from "../peek/input-label";
 import { MandateStatusBadge } from "../status/MandateStatusBadge";
 import { useMandateLadder, type MandateRung } from "../workspace/useMandateLadder";
 import type { FeatureIntelligenceRow, ResolvedPlace } from "./types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface JobContext {
   places: readonly ResolvedPlace[];

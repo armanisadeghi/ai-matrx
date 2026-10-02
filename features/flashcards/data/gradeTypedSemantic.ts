@@ -15,7 +15,7 @@
 // comes back as `{ kind: "unusable", sentence }` so the surface says why.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import {
   mandateOutputUnusableSentence,
   runHeadlessAgentJson,

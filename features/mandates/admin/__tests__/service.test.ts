@@ -122,7 +122,7 @@ import {
   type MandateTestBatchResponse,
   type MandateVariableResolution,
 } from "../service";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 function makeDispatch() {
   // Same dev-check posture as the production makeStore (lib/redux/store.ts).

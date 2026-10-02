@@ -1,8 +1,8 @@
 import type { ContentTransferReferencePort } from "@ai-matrx/design-system/content-transfer";
 import { fetchDirectiveCatalog } from "@/features/directive-catalog/service";
 import type { NounDirectives } from "@/features/directive-catalog/types";
-import { buildReferenceFence } from "@/features/matrx-envelope/referenceFence";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+import { buildReferenceFence } from "@ai-matrx/agents/envelope";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 

@@ -14,7 +14,7 @@
 
 import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMandateWorkspaceData";
 import type { OfferedValue } from "@/features/mandates/provision-shapes";
-import { splitMandateKey } from "@/features/mandates/mandate-key";
+import { splitMandateKey } from "@ai-matrx/agents/mandates";
 import type { AgentOwner } from "@/features/agents/agent-creators/services/agentBuilderService";
 import type { HolderDraft, WorkspaceRung } from "./ScopeHolderBar";
 import { DEFAULT_HOLDER_RUNG } from "./default-holder-rung";

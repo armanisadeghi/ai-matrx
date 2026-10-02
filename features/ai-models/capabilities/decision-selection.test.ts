@@ -1,7 +1,7 @@
 import {
   hasCompatibleDecisionInteraction,
   modelsForSelectionPurpose,
-} from "./types";
+} from "@ai-matrx/agents/models";
 
 const chat = { id: "chat", interaction: "turn" as const };
 const decision = { id: "jev", interaction: "decision" as const };

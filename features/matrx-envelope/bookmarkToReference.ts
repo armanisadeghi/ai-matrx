@@ -30,8 +30,8 @@ import {
 import type {
   ReferenceItem,
   ReferenceType,
-} from "@/features/matrx-envelope/envelope";
-import { buildReferenceFence } from "@/features/matrx-envelope/referenceFence";
+} from "@ai-matrx/agents/envelope";
+import { buildReferenceFence } from "@ai-matrx/agents/envelope";
 
 export type AnyBookmark =
   | FullTableBookmark

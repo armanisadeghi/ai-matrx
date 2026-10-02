@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import { historyModeForParamChange } from "@ai-matrx/kit/url-state";
-import { isContentType, type ContentType } from "../capabilities/types";
+import { isContentType, type ContentType } from "@ai-matrx/agents/models";
 
 export type AiModelFilters = {
   provider?: string;

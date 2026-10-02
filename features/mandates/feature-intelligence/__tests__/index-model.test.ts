@@ -4,7 +4,7 @@ import {
   matchStrength,
   summarize,
 } from "../index-model";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const defs = [
   {

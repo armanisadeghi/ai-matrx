@@ -109,7 +109,7 @@ import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { TryAsCandidateButton } from "@/features/mandates/candidate-dialog/TryAsCandidateButton";
 import { targetOfBenchResult } from "@/features/mandates/candidate-dialog/target";

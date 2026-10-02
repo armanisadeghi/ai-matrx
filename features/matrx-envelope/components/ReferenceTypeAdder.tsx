@@ -36,7 +36,7 @@ import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotic
 import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 import {
   isEntityTypeToken,
   type EntityTypeToken,

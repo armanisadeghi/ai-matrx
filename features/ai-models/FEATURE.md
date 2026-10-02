@@ -58,7 +58,7 @@ must obey.
 - **"No model chosen" resolves through ONE place:** `redux/platformDefaultModel.ts`. Never hardcode a
   default model id in a seed or call site.
 - **`parseCapabilities` screams on unknown values instead of coercing.** Adding a capability value to
-  the DB requires extending `capabilities/types.ts` in the same change, or live data is discarded.
+  the DB requires extending the capability types in `@ai-matrx/agents/models` (aidream `apps/shared/matrx-agents/models/capabilities.ts`) in the same change, or live data is discarded.
 - **New catalog rows are homed via `resolveSystemOrgId()`** — the platform's own organization, named explicitly.
 - **Rating rendering is centralized** in `format.ts` (`costRatingTier`/`speedRatingLabel`, 1–6, 6 = "5+").
   Hardcoded maker/price maps are forbidden.

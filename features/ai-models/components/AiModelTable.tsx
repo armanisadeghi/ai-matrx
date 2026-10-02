@@ -66,7 +66,7 @@ import AiModelFilterBar from "./AiModelFilterBar";
 import { cn } from "@/lib/utils";
 import { MOBILE_TABLE_FROZEN_SECOND } from "@/components/official/mobile-table/mobileTable";
 import { parseCapabilities } from "../capabilities/parse";
-import { isContentType, type ContentType } from "../capabilities/types";
+import { isContentType, type ContentType } from "@ai-matrx/agents/models";
 import { applyAiModelFilters, sortAiModels } from "../utils/filterUtils";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { aiModelHref, aiProviderHref } from "../doors";

@@ -22,7 +22,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface MandateAncestor {
   id: string;

@@ -173,7 +173,7 @@ import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { RequestAccess } from "@/features/access-gate/components/RequestAccess";
 import { bindingAccessTarget } from "./access-target";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * THE MAPPER'S NOUNS ON A MANDATE SCREEN. The mechanic is the surface bind

@@ -35,7 +35,7 @@ import {
   type MandateTestResponse,
 } from "@/features/mandates/test-run";
 import type { JsonObject } from "@/types/json";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type MandateDefinitionRights = components["schemas"]["DefinitionRights"];
 export type MandateTryCandidate = components["schemas"]["MemberTryCandidate"];

@@ -1,5 +1,5 @@
 import { OverridesPreviewPage } from "@/features/mandates/overrides-simple/OverridesPreviewPage";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 export const metadata = {
   title: "Mandate overrides",

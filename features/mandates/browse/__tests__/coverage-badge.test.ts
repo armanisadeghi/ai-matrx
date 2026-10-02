@@ -21,7 +21,7 @@ import {
   type MandateCoverageView,
 } from "../CoverageBadge";
 import { withCoverageKeys } from "../service";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const REPORT: MandateCoverageStatesResponse = {
   organization_id: null,

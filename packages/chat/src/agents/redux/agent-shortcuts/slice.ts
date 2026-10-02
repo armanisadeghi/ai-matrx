@@ -12,7 +12,7 @@ import {
   fieldFlagsSize,
   hasField,
   removeField,
-} from "../shared/field-flags";
+} from "@ai-matrx/agents/field-flags";
 import { scopeIndexKey, type ScopeRef } from "../shared/scope";
 
 // ---------------------------------------------------------------------------

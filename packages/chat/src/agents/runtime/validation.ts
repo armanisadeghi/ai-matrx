@@ -13,7 +13,7 @@
 import type {
   ContentType,
   ModelCapabilities,
-} from "@host/features/ai-models/capabilities/types";
+} from "@ai-matrx/agents/models";
 import type { UserInputPart } from "../types/request.types";
 
 /** Project a single outbound part onto the canonical input ContentType. */

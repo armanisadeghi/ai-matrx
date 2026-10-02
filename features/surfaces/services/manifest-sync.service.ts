@@ -30,7 +30,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import type { Database, Json } from "@/types/database.types";
 import {
   ALL_MANIFESTS,

@@ -14,7 +14,7 @@ import {
   type ResolvedMandate,
 } from "./service";
 import { extractErrorMessage } from "@ai-matrx/data/net";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface MandateState {
   mandate: ResolvedMandate | null;

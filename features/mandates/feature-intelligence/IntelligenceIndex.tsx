@@ -39,7 +39,7 @@ import {
   type DirectoryFeature,
   type MatchReason,
 } from "./index-model";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** Kept for the index tests: one row per feature with its counts. */
 export function buildIndexRows(mandateKeys: readonly AnyMandateKey[]) {

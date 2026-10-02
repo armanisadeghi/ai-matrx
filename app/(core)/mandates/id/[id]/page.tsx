@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
 import { personMandateRecordHref } from "@/features/mandates/member-list/routes";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**

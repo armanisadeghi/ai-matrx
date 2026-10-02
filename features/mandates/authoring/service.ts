@@ -18,7 +18,7 @@ import { parseCallApiError } from "@/lib/api/errors";
 import { createClient } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** One descriptive input: description is the only required field. */
 export interface DraftInput {

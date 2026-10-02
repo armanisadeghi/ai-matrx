@@ -7,7 +7,7 @@ import {
   MandateOutputCell,
 } from "../mandate-contract-cells";
 import type { MandateRow } from "../mandate-health";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const renderToStaticMarkup = (children: ReactNode) => renderMarkup(<TooltipProvider>{children}</TooltipProvider>);
 

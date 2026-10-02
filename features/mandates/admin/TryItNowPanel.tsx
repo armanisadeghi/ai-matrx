@@ -3,7 +3,7 @@
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";

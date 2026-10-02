@@ -45,8 +45,8 @@ import { referenceTypeLabel } from "@/features/scopes/utils/referenceCell";
 import { createEntityRow } from "@/features/scopes/service/entityRows";
 import { matrxDirectiveNouns } from "@/features/matrx-envelope/directiveHost";
 import { CATALOG_ALIASES } from "@/features/matrx-envelope/catalog-nouns.generated";
-import { buildDirectiveFence } from "@/features/matrx-envelope/referenceFence";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+import { buildDirectiveFence } from "@ai-matrx/agents/envelope";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 import { ReferenceTypeAdder } from "@/features/matrx-envelope/components/ReferenceTypeAdder";
 import { fetchDirectiveCatalog } from "@/features/directive-catalog/service";
 import type {

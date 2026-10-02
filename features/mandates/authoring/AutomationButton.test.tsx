@@ -14,7 +14,7 @@
  * rather than assumed.
  */
 import type { MandateKey } from "@ai-matrx/agents/mandates";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * The DB-authored key this button is wired to (origin='user', so no generated

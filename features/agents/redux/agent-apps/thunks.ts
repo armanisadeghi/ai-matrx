@@ -23,7 +23,7 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   assignField,
   fieldFlagsKeys,
-} from "@ai-matrx/chat/agents/redux/shared/field-flags";
+} from "@ai-matrx/agents/field-flags";
 import { readAllRows } from "@ai-matrx/data/db";
 import type { AgentApp } from "./types";
 import { agentAppActions } from "./slice";

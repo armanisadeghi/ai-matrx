@@ -5,7 +5,7 @@
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 /**

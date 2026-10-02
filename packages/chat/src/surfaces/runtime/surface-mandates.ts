@@ -1,5 +1,5 @@
 "use client";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * features/surfaces/runtime/surface-mandates.ts

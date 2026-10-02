@@ -74,7 +74,7 @@ import {
   type MandateLadderRow,
 } from "../useMandateLadder";
 import { homeScopePhrase, systemRungHealth } from "../system-rung-health";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..", "..");
 

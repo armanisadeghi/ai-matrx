@@ -43,7 +43,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
 import {
   proTextareaRunValues,

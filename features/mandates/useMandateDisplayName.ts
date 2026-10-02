@@ -35,7 +35,7 @@ import { useEffect, useState } from "react";
 
 import { fetchMandateIdentities } from "@ai-matrx/chat/mandates/service";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** key → the author's label, once read. `null` = read, and there is none. */
 const labels = new Map<string, string | null>();

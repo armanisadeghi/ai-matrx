@@ -2,7 +2,7 @@
 import React from "react";
 import { Database } from "lucide-react";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
-import { parseReferenceFence } from "@/features/matrx-envelope/referenceFence";
+import { parseReferenceFence } from "@ai-matrx/agents/envelope";
 
 /**
  * ValueStoreStoredBlock — the compact "result ready" card for a

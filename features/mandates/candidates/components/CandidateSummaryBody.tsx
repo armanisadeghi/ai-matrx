@@ -21,7 +21,7 @@ import { BackendApiError } from "@/lib/api/errors";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { useOpenMandateWindowNext } from "@/features/overlays/openers/mandateWindowNext";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 import {
   discardCandidate,

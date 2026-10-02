@@ -66,7 +66,7 @@ import {
   recordMandateAdminFailure,
 } from "./store";
 import type { MandateAdminRow } from "./types";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 /** Each lane's scope kinds → the words its database door answers. */
 const SERVER_SCOPE: Record<

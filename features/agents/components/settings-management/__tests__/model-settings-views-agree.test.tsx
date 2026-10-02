@@ -59,7 +59,7 @@ import agentDefinitionReducer, {
   mergePartialAgent,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import modelRegistryReducer from "@/features/ai-models/redux/modelRegistrySlice";
-import { normalizeModel } from "@/features/ai-models/utils/model-normalizer";
+import { normalizeModel } from "@ai-matrx/agents/models";
 import { AgentSettingsCore } from "../AgentSettingsCore";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 

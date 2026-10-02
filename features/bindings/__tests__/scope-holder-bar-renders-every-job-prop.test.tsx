@@ -75,7 +75,7 @@ import {
   ScopeHolderBar,
   type ScopeHolderBarProps,
 } from "@/features/bindings/ScopeHolderBar";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * Every field of `job`, each a sentinel no other copy on this bar can produce.

@@ -133,7 +133,7 @@ test("(c) picking a different workflow starts on Latest", async () => {
 
 // ── (b) the stored pin SEEDS the draft — the half that actually unpinned ──
 import { defaultHolderDraftOf, holderDraftOf } from "../holder-draft-seed";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 test("(b) a stored workflow binding pin seeds the draft", () => {
   const draft = holderDraftOf({

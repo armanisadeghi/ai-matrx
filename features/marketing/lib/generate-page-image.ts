@@ -41,7 +41,7 @@
  */
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { executeInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";

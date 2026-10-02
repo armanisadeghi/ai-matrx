@@ -75,7 +75,7 @@ import {
   type ReportOutputFacts,
   type ReportSource,
 } from "./report-output-offer-values";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** Research content-engine generators run through AGENT MANDATES — the mandate is the
  *  identity, never a hardcoded agent id. The system default is managed in the

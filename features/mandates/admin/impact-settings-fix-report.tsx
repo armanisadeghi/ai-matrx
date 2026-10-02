@@ -21,7 +21,7 @@ import {
   type WriteContext,
 } from "./impact";
 import type { SettingsFixOutcome } from "./impact-settings-fix";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface SettingsFixRowBefore {
   rungId: string;

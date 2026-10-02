@@ -10,7 +10,7 @@
  * the hot path.
  */
 
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { resolveMandate } from "../../../../mandates/service";
 
 export async function resolveMandateKillSwitch(

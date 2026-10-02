@@ -35,7 +35,7 @@ import type {
 } from "../../../types/instance.types";
 import { extractFirstJson } from "@ai-matrx/kit/json-extract";
 import { extractErrorMessage } from "@ai-matrx/data/net";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { destroyInstanceIfAllowed } from "../conversations/conversations.thunks";
 import { captureError } from "../../../../host/diagnostics";
 import {

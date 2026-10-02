@@ -67,7 +67,7 @@ jest.mock("@/components/official/entity-ref/EntityRef", () => ({
 
 import { ScopeHolderBar, type WorkspaceRung } from "../ScopeHolderBar";
 import { defaultHolderRungOffer } from "../default-holder-rung";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const OFFER = defaultHolderRungOffer({
   homeOrganizationId: "2643e470-b275-47f3-95f3-ae275ad3ca47",

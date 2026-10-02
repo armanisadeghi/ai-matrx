@@ -80,7 +80,7 @@ import type { HolderDraft } from "./ScopeHolderBar";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ArchivedHolderNotice } from "./ArchivedHolderNotice";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** "Latest" as a select value. `null` is the stored form; this is the option. */
 export const LATEST_VERSION_VALUE = "latest";

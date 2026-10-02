@@ -73,7 +73,7 @@ jest.mock("@/features/organizations/components/OrganizationPickerPanel", () => (
 
 import { MandateReferenceBoardView } from "../MandateReferenceBoardView";
 import { MandateSourceUsage } from "../MandateSourceUsage";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 async function mount(node: React.ReactElement) {
   const container = document.createElement("div");

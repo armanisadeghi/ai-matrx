@@ -1,6 +1,6 @@
 "use client";
 import { logFailure } from "@host/lib/errors/expectedRefusal";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 import { usePreparedResourceSeed } from "./usePreparedResourceSeed";
 import { Suspense, useEffect, useRef, useState } from "react";

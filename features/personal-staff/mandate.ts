@@ -12,7 +12,7 @@
  */
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import type { MandateKey } from "@/features/mandates/mandate-key";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 /** The job the staff thread runs. Never a literal, never a raw agent UUID —
  *  the generated union is the vocabulary (`pnpm check:mandate-keys`). */

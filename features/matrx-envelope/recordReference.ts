@@ -6,8 +6,8 @@
  * still route through `buildBookmarkReferenceFence`; record entities route here.
  */
 
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
-import { buildReferenceFence } from "@/features/matrx-envelope/referenceFence";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
+import { buildReferenceFence } from "@ai-matrx/agents/envelope";
 
 export interface RecordReferenceArgs {
   /** Reference `type` on the wire (e.g. `"task"`, `"note"`). */

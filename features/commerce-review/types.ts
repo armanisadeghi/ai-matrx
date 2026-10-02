@@ -23,7 +23,7 @@ import type {
   IntakeAssetRow,
   PipelineState,
 } from "@/features/commerce-intake/types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** Gate-1 value buckets (live CHECK `intake_asset_bucket_chk`). */
 export type ValueBucket =

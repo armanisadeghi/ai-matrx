@@ -18,7 +18,7 @@ import { parseDraftInputs } from "@/features/mandates/authoring/service";
 import type { ProvisionOffer } from "@/features/mandates/provisions";
 import type { OfferedValue } from "@/features/mandates/provision-shapes";
 import type { MandateInputSurface } from "@/features/mandates/input-surface";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface DescribedOfferArgs {
   mandateKey: AnyMandateKey;

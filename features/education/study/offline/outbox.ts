@@ -41,7 +41,7 @@
  */
 
 import Dexie, { type Table } from "dexie";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 
 export const STUDY_OFFLINE_DB = "matrx-study-offline";

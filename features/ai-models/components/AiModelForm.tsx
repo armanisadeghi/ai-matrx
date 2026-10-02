@@ -12,7 +12,7 @@ import { MODEL_DESCRIPTION_MAX_CHARS } from '../model-metadata';
 import { ModelListDropdown } from '@/features/ai-models/components/lab/ModelListDropdown';
 import type { AiModelFormData, AiProvider, AiModel } from '../types';
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { hasCompatibleDecisionInteraction } from "@/features/ai-models/capabilities/types";
+import { hasCompatibleDecisionInteraction } from "@ai-matrx/agents/models";
 
 interface AiModelFormProps {
     data: AiModelFormData;

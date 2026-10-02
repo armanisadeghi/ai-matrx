@@ -24,7 +24,7 @@ jest.mock("@host/lib/supabase/shortcutStorage", () => ({
 import { createInstanceFromShortcut } from "../create-instance.thunk";
 import { resolveStartPath } from "../../utils/resolve-start-path";
 import { fetchShortcutMandateKey } from "@host/lib/supabase/shortcutStorage";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 const SHORTCUT_ID = "11111111-1111-4111-8111-111111111111";
 const AGENT_ID = "22222222-2222-4222-8222-222222222222";

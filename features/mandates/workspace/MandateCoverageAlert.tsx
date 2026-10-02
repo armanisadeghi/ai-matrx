@@ -62,7 +62,7 @@ import {
 } from "@/features/mandates/coverage";
 import { useMandateCoverageStates } from "@/features/mandates/browse/CoverageBadge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * WHAT THE BANNER SAYS, as a value. Every one of these is a way to get honesty

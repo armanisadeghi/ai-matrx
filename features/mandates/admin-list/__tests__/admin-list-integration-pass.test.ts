@@ -9,7 +9,7 @@ import { adminMandateListConfig } from "../listConfig";
 import { mandateListHref, unconvertedCallsHref } from "@/features/mandates/dashboard/list-link";
 import { workflowAdvanceEligibility } from "@/features/mandates/admin/workflow-advance";
 import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-impact";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({ confirm: jest.fn() }));
 

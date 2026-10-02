@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { curatedTokens } from "@/features/scopes/registry/entityRegistry";
 import { referenceTypeLabel } from "@/features/scopes/utils/referenceCell";
 import { ReferenceTypeAdder } from "@/features/matrx-envelope/components/ReferenceTypeAdder";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 import type { AttachedReference } from "@/features/matrx-envelope/referenceText";
 
 // THE one canonical file picker. Lazy — WindowPanel must never be parsed in

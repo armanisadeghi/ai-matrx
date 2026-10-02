@@ -66,7 +66,10 @@ jest.mock("@/features/unified-data/tableCopyEvaluation", () => ({
   tableCopyEvaluation: async () => ({ state: "none" }),
   useTableCopyEvaluation: () => ({ state: "none" }),
 }));
-jest.mock("@ai-matrx/agents/mandates", () => ({ MANDATE_KEYS: { data__page_guidance: "data.page_guidance" } }));
+jest.mock("@ai-matrx/agents/mandates", () => ({
+  ...jest.requireActual("@ai-matrx/agents/mandates"),
+  MANDATE_KEYS: { data__page_guidance: "data.page_guidance" },
+}));
 jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({ useAgentLauncher: () => ({ launchMandate: jest.fn() }) }));
 jest.mock("@/features/access-gate/components/AccessGate", () => ({ AccessGate: () => null }));
 jest.mock("@/features/sharing/components/TableTransferOffer", () => ({ TableTransferOffer: () => null }));

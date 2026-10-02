@@ -43,12 +43,12 @@
 
 import type { ChatRootState } from "../../../../store/root-state";
 import { selectAgentById } from "../../agent-definition/selectors";
-import { hasField } from "../../shared/field-flags";
+import { hasField } from "@ai-matrx/agents/field-flags";
 import { peekMandateCatalogueEntry } from "@host/features/mandates/catalogue";
 import { fetchAgentOutputSchemas } from "../../../../mandates/output-contract";
 import { SURFACE_WRITE_TOOL_NAME } from "../../../../surfaces/runtime/surface-writeback";
 import { isJsonObject } from "@host/types/json";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface OutputContractVerdict {
   agentId: string;

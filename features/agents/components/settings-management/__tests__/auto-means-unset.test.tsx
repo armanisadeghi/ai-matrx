@@ -88,7 +88,7 @@ import agentDefinitionReducer, {
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { agentDefinitionToUpdate } from "@ai-matrx/chat/agents/redux/agent-definition/converters";
 import modelRegistryReducer from "@/features/ai-models/redux/modelRegistrySlice";
-import { normalizeModel } from "@/features/ai-models/utils/model-normalizer";
+import { normalizeModel } from "@ai-matrx/agents/models";
 import { AgentSettingsCore } from "../AgentSettingsCore";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =

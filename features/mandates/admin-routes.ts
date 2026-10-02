@@ -1,4 +1,4 @@
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 // features/mandates/admin-routes.ts
 //
 // THE admin addresses of the mandate pages. Mandates are a Feature of the

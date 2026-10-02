@@ -10,7 +10,7 @@
 
 import { aiVersionPathOverrides } from "@host/lib/api/ai-api-version";
 import { resolveStartPath } from "../resolve-start-path";
-import { storedMandateKey } from "@host/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const V2 = { pathOverrides: aiVersionPathOverrides("v2") };
 

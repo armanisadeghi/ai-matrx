@@ -1,5 +1,5 @@
 "use client";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * KindRequestDialog — the reusable "ask an agent for a typed value, pick one,

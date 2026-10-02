@@ -62,7 +62,7 @@ import {
 } from "./impact";
 import type { ImpactWriteBusy } from "./impact-advance";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** Why a row carries no verdict — each is a different fact. */
 export type UngradedReason = "loading" | "read_failed" | "no_agent" | "not_returned";

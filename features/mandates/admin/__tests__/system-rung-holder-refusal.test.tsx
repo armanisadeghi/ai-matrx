@@ -79,7 +79,7 @@ import {
 } from "@/features/bindings/system-rung";
 import { defaultHolderRungOffer } from "@/features/bindings/default-holder-rung";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 /** The real offer for a SYSTEM-homed job, as a super admin sees it. The answer
  *  for everybody is that job's own default (there is no global rung — aidream 1041). */

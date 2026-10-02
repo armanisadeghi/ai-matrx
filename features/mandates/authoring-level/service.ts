@@ -25,7 +25,7 @@ import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import type { CreateMandateInput, DraftInput } from "@/features/mandates/authoring/service";
 import type { MandateListLevel } from "@/features/mandates/member-list/types";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface CreateSoftMandateInput extends CreateMandateInput {
   level: MandateListLevel;

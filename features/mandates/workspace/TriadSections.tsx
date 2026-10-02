@@ -89,7 +89,7 @@ import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toastFailure } from "@/lib/failure/toastFailure";
 import { outputConstraintsOf } from "./definition-output";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** Plain words for H/V/A — never the letter alone. */
 export function GroundingBadge({ grounding }: { grounding: string | null }) {

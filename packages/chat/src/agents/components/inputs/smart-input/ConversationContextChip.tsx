@@ -40,7 +40,7 @@ import {
   saveContextRule,
 } from "../../../redux/execution-system/context-rules/context-rules.thunks";
 import { resolveMandateKillSwitch } from "../../../redux/execution-system/context-rules/mandate-kill-switch";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useMachineFramesVisible } from "../../shared/transcript-audience";
 
 /**

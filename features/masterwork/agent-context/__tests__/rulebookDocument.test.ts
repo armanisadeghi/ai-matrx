@@ -7,7 +7,7 @@
  * refused by `missingRequiredVariables`).
  */
 
-import { missingRequiredVariables } from "@/features/mandates/contract";
+import { missingRequiredVariables } from "@ai-matrx/agents/mandates";
 import { renderRulebookDocument } from "../rulebookDocument";
 import type { Rulebook, RulebookRule } from "../../types";
 

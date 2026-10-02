@@ -8,12 +8,12 @@ import type { ShortcutContext } from "../../utils/shortcut-context-utils";
 import type { VariablesPanelStyle } from "../../components/inputs/variable-input-variations/variable-input-options";
 import type { JsonExtractionConfig } from "../../types/instance.types";
 import type { Database } from "../../../host/db-types";
-import type { FieldFlags } from "../shared/field-flags";
+import type { FieldFlags } from "@ai-matrx/agents/field-flags";
 import type {
   ValueMappingMap,
   WritePolicyMap,
 } from "../../../surfaces/types";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type { ResultDisplayMode, ShortcutContext };
 

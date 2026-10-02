@@ -14,7 +14,7 @@ import {
   createFieldFlags,
   hasField,
   removeField,
-} from "@ai-matrx/chat/agents/redux/shared/field-flags";
+} from "@ai-matrx/agents/field-flags";
 import type {
   CloudFile,
   CloudFileFieldSnapshot,

@@ -13,7 +13,7 @@ import type { MandateCoverageResponse } from "@/features/mandates/coverage";
 import { buildFacts, sectionsFor, ALL_FACT_SECTIONS } from "../facts";
 import { countsFromAnswer, scopeArgs } from "../service";
 import { customizedByOf, declaredInOf, featureLabelOf } from "../rows";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 function query(partial: Partial<EntityListQuery> = {}): EntityListQuery {
   return { ...DEFAULT_ENTITY_LIST_QUERY, scope: { kind: "system" }, ...partial };

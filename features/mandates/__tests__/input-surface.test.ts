@@ -15,7 +15,7 @@ import {
   isUserTextOnly,
   parseMandateInputSurface,
 } from "@/features/mandates/input-surface";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const described = {
   mandate_key: "mandate.goal_writer",

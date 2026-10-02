@@ -27,7 +27,7 @@
  */
 
 import { captureError } from "../host/diagnostics";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface FastPathCheck {
   /** The Mandate that owns this seat. */

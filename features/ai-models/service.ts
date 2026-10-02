@@ -61,7 +61,7 @@ import {
   requireCanonicalCapabilities,
   DEFAULT_CAPABILITIES,
 } from "./capabilities/parse";
-import type { ModelCapabilities } from "./capabilities/types";
+import type { ModelCapabilities } from "@ai-matrx/agents/models";
 
 type ReplaceModelReferencesResult = {
   agents: number;

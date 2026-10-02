@@ -15,7 +15,7 @@ import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink"
 import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export function AnalysisMandateGate({
   mandateKey,

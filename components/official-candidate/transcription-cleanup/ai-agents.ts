@@ -17,8 +17,8 @@
  * Holder rebound to an agent with different keys is refused loudly by the
  * run (missing variable), never silently fed the wrong field.
  */
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export interface AiPostProcessAgent {

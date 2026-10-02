@@ -23,7 +23,7 @@ import type {
 import type { OpenAgentRunWindowOptions } from "@/features/overlays/openers/agentRunWindow";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import type { Assist } from "../types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type AssistActionResult =
   | { ok: true; result?: unknown }

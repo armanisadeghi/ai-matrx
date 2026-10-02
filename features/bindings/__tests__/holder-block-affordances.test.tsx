@@ -70,7 +70,7 @@ import {
   __resetAgentAddressCache,
   seedAgentAddress,
 } from "@ai-matrx/chat/agents/addressing/agentAddressCache";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 
 /** `research_client.output_slides`' real holder — a BUILTIN (system) agent. */

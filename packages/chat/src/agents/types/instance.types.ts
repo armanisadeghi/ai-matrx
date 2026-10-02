@@ -21,7 +21,7 @@ import type {
 } from "./agent-api-types";
 import type { ApplicationScope } from "./scope.types";
 import type { ValueMappingMap } from "../../surfaces/types";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { UserInputPart } from "./request.types";
 import type { MessagePart } from "@host/types/python-generated/stream-events";
 import type { components } from "@host/types/python-generated/api-types";

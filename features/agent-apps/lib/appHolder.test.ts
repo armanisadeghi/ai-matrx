@@ -18,7 +18,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 
 import {
   APP_MANDATE_CUTOVER,

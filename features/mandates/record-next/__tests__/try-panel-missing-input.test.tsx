@@ -72,7 +72,7 @@ jest.mock("../owner-service", () => ({
 
 // eslint-disable-next-line import/first
 import { MandateTryPanel } from "../MandateTryPanel";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 function mount() {
   const container = document.createElement("div");

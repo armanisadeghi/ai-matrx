@@ -51,7 +51,7 @@ import {
 } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateWorkspace";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type RecordTabId = MandateWorkspaceTab | "overrides-simple" | "runs" | "candidates";
 

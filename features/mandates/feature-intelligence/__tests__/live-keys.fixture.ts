@@ -1,4 +1,4 @@
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 // Every live mandate key (mandate.definition, deleted_at is null) on 2026-09-26,
 // minus the `shortcut.*` (207) and `app.*` (96) bulk, represented by two each.
 // The placement guard proves each one lands on a real registry node.

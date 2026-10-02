@@ -19,7 +19,7 @@ import {
   unmetContractChecks,
   type ContractMismatch,
 } from "@/features/mandates/contract-check";
-import { splitMandateKey } from "@/features/mandates/mandate-key";
+import { splitMandateKey } from "@ai-matrx/agents/mandates";
 import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import {
   contractOfMandate,
@@ -31,7 +31,7 @@ import type {
   MandateConsoleData,
   MandateDefinitionRow,
 } from "./service";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** Mandate health, worst-first. Drives the Health column + the drawer banner. */
 export type MandateHealth =

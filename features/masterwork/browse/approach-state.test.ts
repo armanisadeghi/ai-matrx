@@ -16,7 +16,7 @@
 
 import type { DistillationApproach } from "./approaches";
 import { approachState, startableApproaches } from "./approaches";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 function approach(over: Partial<DistillationApproach> = {}): DistillationApproach {
   return {

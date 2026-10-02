@@ -12,7 +12,7 @@
 // given an invented name). A key no rule matches has no Domain yet.
 
 import { registryDomain, registryFeature } from "./taxonomy";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface PlacementRule {
   pattern: string;

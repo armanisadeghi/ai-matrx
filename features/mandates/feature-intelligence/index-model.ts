@@ -22,7 +22,7 @@ import {
 } from "./placement";
 import { REGISTRY_DOMAINS, registryDomain } from "./taxonomy";
 import { shortMandateName } from "./service";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** One job as the directory needs it. */
 export interface DirectoryJob {

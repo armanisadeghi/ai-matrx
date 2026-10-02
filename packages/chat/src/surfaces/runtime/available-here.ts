@@ -45,7 +45,7 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectAllShortcutsArray } from "../../agents/redux/agent-shortcuts/selectors";
 import { fetchUnifiedMenu } from "../../agents/redux/agent-shortcuts/thunks";
 import type { AgentShortcutRecord } from "../../agents/redux/agent-shortcuts/types";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** One item the requirement gate says this surface can run. */
 export interface AvailableHereItem {

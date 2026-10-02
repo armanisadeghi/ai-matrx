@@ -32,7 +32,7 @@ import {
 
 export { ADMIN_MANDATES_UNCONVERTED as UNCONVERTED_PATH, ADMIN_MANDATES_HEALTH as HEALTH_PATH } from "@/features/mandates/admin-routes";
 import { ADMIN_MANDATES_UNCONVERTED as UNCONVERTED_PATH } from "@/features/mandates/admin-routes";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type HealthSeverity = "high" | "medium" | "low";
 

@@ -25,7 +25,7 @@ import {
   patchOwnerDefinition,
   type MandateDefinitionRights,
 } from "./owner-service";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** What this viewer may do to the definition. `null` while unknown or when
  * the read failed — every affordance stays absent until the server says yes. */

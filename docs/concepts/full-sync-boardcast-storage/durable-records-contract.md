@@ -68,7 +68,7 @@ _fetchStatus: ... | null     // list | full | versionSnapshot — gates readines
 _undoPast / _undoFuture      // undo stacks (coalesced, byte-bounded)
 ```
 
-**`FieldFlags` (`packages/chat/src/agents/redux/shared/field-flags.ts`), never `Set`.** `Set` is not JSON-serializable — it blocks persistence, devtools time-travel, and broadcast. Notes' `_dirtyFields: Set` is the one thing the migration drops.
+**`FieldFlags` (`@ai-matrx/agents/field-flags`), never `Set`.** `Set` is not JSON-serializable — it blocks persistence, devtools time-travel, and broadcast. Notes' `_dirtyFields: Set` is the one thing the migration drops.
 
 ### 3.2 `applyFieldEdit` — the dirty-tracking core
 

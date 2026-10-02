@@ -9,7 +9,7 @@ import {
   type ResolvedMandate,
 } from "./service";
 import type { MandateState } from "./useMandate";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type MandateSetState = Readonly<Record<string, MandateState>>;
 

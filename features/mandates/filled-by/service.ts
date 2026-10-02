@@ -11,7 +11,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type MandateHolderKind = "agent" | "workflow";
 

@@ -67,7 +67,7 @@ import {
   rungWords,
 } from "./format";
 import { formatCount } from "@ai-matrx/kit/format";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /** The list's place in the URL — Back returns to the same page and filters. */
 export const RUN_URL_KEYS = {

@@ -2,7 +2,7 @@
 import {
   storedMandateKey,
   type AnyMandateKey,
-} from "@/features/mandates/mandate-key";
+} from "@ai-matrx/agents/mandates";
 
 /**
  * THE APP HOLDER ROUTER — the one place this repo answers "which agent does

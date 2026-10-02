@@ -15,7 +15,7 @@
  */
 
 /** The map-wide agent: reads and edits the whole map through the `topical_map` tool. */
-import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export const MAP_CURATION_MANDATE_KEY = dbAuthoredMandateKey(MANDATE_KEYS.seo__map_curation);

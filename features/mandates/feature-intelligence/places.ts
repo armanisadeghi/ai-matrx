@@ -10,7 +10,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { declaredPlacesFor, declaredPlacesForTarget } from "./registry";
 import type { IntelligenceContext, ResolvedPlace } from "./types";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 export { declaredPlacesFor };
 

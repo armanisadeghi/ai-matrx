@@ -39,7 +39,7 @@ import { registryDomain } from "./taxonomy";
 import { keyInFeature, shortMandateName } from "./service";
 import type { IntelligenceContext } from "./types";
 import { registerPageIntelligenceDoor } from "./page-intelligence-doors";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface IntelligenceIndicatorProps {
   /**

@@ -5,7 +5,7 @@
 // "Feature intelligence pages", Arman 2026-09-25).
 
 import type { MandateMemberRow } from "../member-list/types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type {
   IntelligenceContext,

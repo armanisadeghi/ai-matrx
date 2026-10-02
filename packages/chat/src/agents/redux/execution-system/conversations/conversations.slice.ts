@@ -33,7 +33,7 @@ import { generateConversationId } from "../utils/ids";
 import type { AgentType } from "../../../types/agent-definition.types";
 import type { ApiEndpointMode } from "../../../types/instance.types";
 import { createInstanceFull } from "../create-instance-full";
-import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 // =============================================================================
 // Record alias
