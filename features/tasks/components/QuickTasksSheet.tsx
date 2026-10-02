@@ -517,8 +517,9 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
           </span>
               </div>
 
-              {/* Tasks List */}
-              <ScrollArea className="flex-1">
+              {/* Tasks List — the viewport's inner box is a block, so a long
+                  task title wraps instead of widening every card off-screen. */}
+              <ScrollArea className="flex-1" viewportClassName="[&>div]:!block">
                 <div className="p-1">
                   {filteredTasks.length === 0 ? (
                     <div className="text-center text-xs text-muted-foreground py-4">
