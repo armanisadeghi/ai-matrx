@@ -13,6 +13,12 @@
 import { InfoHint } from "@/components/official/InfoHint";
 import React from "react";
 import {
+  measureElement,
+  observeElementRect,
+  useVirtualizer,
+  type Virtualizer,
+} from "@tanstack/react-virtual";
+import {
   AlertTriangle,
   Check,
   CircleDashed,
@@ -77,10 +83,20 @@ function StateBadge({ state }: { state: "old" | "new" }) {
   );
 }
 
-function OrganizationRow({ org }: { org: FinalSwitchOrganization }) {
+function OrganizationRow({
+  org,
+  index,
+  measure,
+}: {
+  org: FinalSwitchOrganization;
+  index: number;
+  measure: (node: Element | null) => void;
+}) {
   const blocked = org.cannot_clear.length > 0;
   return (
     <tr
+      ref={measure}
+      data-index={index}
       className="border-t border-border align-top"
       data-testid="final-switch-org-row"
     >
@@ -183,6 +199,152 @@ function OrganizationRow({ org }: { org: FinalSwitchOrganization }) {
   );
 }
 
+/** organizationOrder's rank for an organization with nothing to switch (already current). */
+const CURRENT_ORDER = 3;
+/** A one-line row's height; rows with lists measure themselves. */
+const ROW_ESTIMATE_PX = 34;
+
+/**
+ * The scroller's size, but never zero: before the first layout (or with no layout at all) a 0×0
+ * rect would render no row, so the first screenful renders until the real size arrives.
+ */
+function observeRectOrViewport(
+  instance: Virtualizer<HTMLElement, Element>,
+  cb: (rect: { width: number; height: number }) => void,
+) {
+  return observeElementRect(instance, (rect) =>
+    cb(
+      rect.height > 0
+        ? rect
+        : { width: rect.width, height: window.innerHeight || 900 },
+    ),
+  );
+}
+
+/** The nearest ancestor that scrolls vertically — the shell's page body, so the page still scrolls as one. */
+function scrollingAncestor(el: HTMLElement): HTMLElement | null {
+  for (let p = el.parentElement; p; p = p.parentElement) {
+    if (p === document.body || p === document.documentElement) return null;
+    if (/(auto|scroll)/.test(getComputedStyle(p).overflowY)) return p;
+  }
+  return null;
+}
+
+/**
+ * Every organization, one row each, but only the rows near the viewport are in the DOM: production
+ * lists 1,600+ organizations, and one <tr> each (~40,000 nodes) made every click on the page pay a
+ * full style recalculation (sec_8f1a9be1…). The rows ride the page's own scroll; spacer rows keep the
+ * table's height and native table semantics.
+ */
+function OrganizationTable({ orgs }: { orgs: FinalSwitchOrganization[] }) {
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  const bodyRef = React.useRef<HTMLTableSectionElement>(null);
+  const [scroller, setScroller] = React.useState<HTMLElement | null>(null);
+  const [ownScroll, setOwnScroll] = React.useState(false);
+  const [margin, setMargin] = React.useState(0);
+
+  React.useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const found = scrollingAncestor(wrap);
+    // No scrolling page body (a bare render): the table bounds and scrolls itself.
+    setOwnScroll(found === null);
+    setScroller(found ?? wrap);
+  }, []);
+
+  // Where the rows start inside the scroller; content above (progress lines, notices) moves it.
+  React.useLayoutEffect(() => {
+    const body = bodyRef.current;
+    if (!scroller || !body) return;
+    const measure = () => {
+      const next = Math.round(
+        body.getBoundingClientRect().top -
+          scroller.getBoundingClientRect().top +
+          scroller.scrollTop,
+      );
+      setMargin((prev) => (prev === next ? prev : next));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    const content = scroller === wrapRef.current ? body : scroller.firstElementChild;
+    if (content) ro.observe(content);
+    return () => ro.disconnect();
+  }, [scroller]);
+
+  const virtualizer = useVirtualizer({
+    count: orgs.length,
+    getScrollElement: () => scroller,
+    estimateSize: () => ROW_ESTIMATE_PX,
+    overscan: 12,
+    scrollMargin: ownScroll ? 0 : margin,
+    getItemKey: (i) => orgs[i].id,
+    observeElementRect: observeRectOrViewport,
+    // A row never measures 0 tall once laid out; 0 means "not laid out yet", so keep the estimate.
+    measureElement: (el, entry, instance) =>
+      measureElement(el, entry, instance) || ROW_ESTIMATE_PX,
+  });
+  const items = virtualizer.getVirtualItems();
+  const offset = ownScroll ? 0 : margin;
+  const top = items.length > 0 ? items[0].start - offset : 0;
+  const bottom =
+    items.length > 0
+      ? virtualizer.getTotalSize() - (items[items.length - 1].end - offset)
+      : 0;
+
+  return (
+    <div
+      ref={wrapRef}
+      className={`overflow-x-auto rounded-md border border-border ${ownScroll ? "max-h-[70dvh] overflow-y-auto" : ""}`}
+    >
+      <table className="w-full min-w-[900px] table-fixed break-words text-left text-sm">
+        <colgroup>
+          <col className="w-[18%]" />
+          <col className="w-[14%]" />
+          <col className="w-[9%]" />
+          <col className="w-[20%]" />
+          <col className="w-[20%]" />
+          <col className="w-[13%]" />
+          <col className="w-[6%]" />
+        </colgroup>
+        <thead className="bg-muted/50 text-xs text-muted-foreground">
+          <tr>
+            <th className="px-2 py-1.5 font-medium">Organization</th>
+            <th className="px-2 py-1.5 font-medium">Data tables</th>
+            <th className="px-2 py-1.5 font-medium">Pick lists</th>
+            <th className="px-2 py-1.5 font-medium">Step 1 clears</th>
+            <th className="px-2 py-1.5 font-medium">Step 1 cannot clear</th>
+            <th className="px-2 py-1.5 font-medium">Scopes</th>
+            <th className="px-2 py-1.5 text-right font-medium">
+              Edits waiting
+            </th>
+          </tr>
+        </thead>
+        <tbody ref={bodyRef}>
+          {top > 0 && (
+            <tr aria-hidden="true" style={{ height: top }}>
+              <td colSpan={7} />
+            </tr>
+          )}
+          {items.map((item) => (
+            <OrganizationRow
+              key={item.key}
+              org={orgs[item.index]}
+              index={item.index}
+              measure={virtualizer.measureElement}
+            />
+          ))}
+          {bottom > 0 && (
+            <tr aria-hidden="true" style={{ height: bottom }}>
+              <td colSpan={7} />
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function FinalSwitchScreen() {
   const dispatch = useAppDispatch();
   const [board, setBoard] = React.useState<FinalSwitchBoard | null>(null);
@@ -199,16 +361,15 @@ export function FinalSwitchScreen() {
     says: string;
   } | null>(null);
 
+  // No try/finally: the React Compiler skips a component holding one, and an uncompiled screen
+  // re-rendered all of its rows on every progress line and every click (sec_8f1a9be1…).
   const load = React.useCallback(async () => {
     setLoading(true);
     setError(null);
-    try {
-      setBoard(await readFinalSwitch());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
+    await readFinalSwitch().then(setBoard, (e: unknown) =>
+      setError(e instanceof Error ? e.message : String(e)),
+    );
+    setLoading(false);
   }, []);
 
   React.useEffect(() => {
@@ -263,10 +424,21 @@ export function FinalSwitchScreen() {
               value: board.blocking,
             },
             {
+              // Only the organizations that still need something: the copy menu prepares the whole
+              // capture when it opens, and 1,600 current organizations froze it for seconds.
               id: "final-switch-organizations",
+              title: "Organizations that still need something",
+              role: "data",
+              value: board.organizations.filter(
+                (o) => organizationOrder(o) < CURRENT_ORDER,
+              ),
+            },
+            {
+              id: "final-switch-all-organizations",
               title: "Every organization's readiness",
               role: "data",
-              value: board.organizations,
+              value: `${board.organizations.length} organizations, read at copy time.`,
+              load: async () => board.organizations,
             },
             {
               id: "final-switch-undo",
@@ -775,30 +947,7 @@ export function FinalSwitchScreen() {
                 The {counts.listed} organizations listed ({counts.toSwitch}{" "}
                 switch at the press)
               </p>
-              <div className="overflow-x-auto rounded-md border border-border">
-                <table className="w-full min-w-[900px] text-left text-sm">
-                  <thead className="bg-muted/50 text-xs text-muted-foreground">
-                    <tr>
-                      <th className="px-2 py-1.5 font-medium">Organization</th>
-                      <th className="px-2 py-1.5 font-medium">Data tables</th>
-                      <th className="px-2 py-1.5 font-medium">Pick lists</th>
-                      <th className="px-2 py-1.5 font-medium">Step 1 clears</th>
-                      <th className="px-2 py-1.5 font-medium">
-                        Step 1 cannot clear
-                      </th>
-                      <th className="px-2 py-1.5 font-medium">Scopes</th>
-                      <th className="px-2 py-1.5 text-right font-medium">
-                        Edits waiting
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orgs.map((o) => (
-                      <OrganizationRow key={o.id} org={o} />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <OrganizationTable orgs={orgs} />
             </section>
           </>
         )}
