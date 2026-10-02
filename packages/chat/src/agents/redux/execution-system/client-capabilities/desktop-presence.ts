@@ -103,13 +103,26 @@ async function fetchPresence(): Promise<DesktopPresence | null> {
 }
 
 /**
- * The live desktop instance, or null when none is online. Cached for
- * CACHE_TTL_MS with in-flight dedup; safe to call on every turn build.
+ * The live desktop instance, or null when none is online. Fresh for
+ * CACHE_TTL_MS, then served stale while it refreshes; in-flight dedup; safe to
+ * call on every turn build.
  */
 export function getLiveDesktopInstance(): Promise<DesktopPresence | null> {
   if (cache && Date.now() - cache.fetchedAt < CACHE_TTL_MS) {
     return Promise.resolve(cache.value);
   }
+  // A SEND IS NEVER HELD BY A RE-CHECK (2026-10-02 latency regression: every
+  // turn more than 30s after the last paid a session read + an app_instances
+  // round trip before its request). An expired answer is served at once and
+  // refreshed behind it; only the first-ever check waits.
+  if (cache) {
+    void refreshPresence();
+    return Promise.resolve(cache.value);
+  }
+  return refreshPresence();
+}
+
+function refreshPresence(): Promise<DesktopPresence | null> {
   if (inFlight) return inFlight;
   inFlight = fetchPresence()
     .then((fresh) => {

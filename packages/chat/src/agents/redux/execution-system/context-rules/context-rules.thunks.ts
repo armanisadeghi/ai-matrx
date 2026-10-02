@@ -103,12 +103,19 @@ export function reloadContextRules(): ChatThunk<Promise<void>> {
  * device may have changed them since this screen loaded).
  */
 export function ensureContextRulesReady(conversationId: string): ChatThunk<Promise<void>> {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
+    // Local: a rule write in flight must land before the request is built.
     await awaitContextRuleWrites();
-    await Promise.all([
+    // THE SEND IS NEVER HELD BY A RE-READ (2026-10-02 latency regression: an
+    // uncached database read on every send). The server reads the saved rules
+    // and the agent's context layer itself on every turn, so these copies only
+    // keep the table honest. Once loaded, the refresh runs beside the send;
+    // focus and every later send keep it current. Only a never-loaded copy waits.
+    const refresh = Promise.all([
       dispatch(reloadContextRules()),
       dispatch(ensureAgentContextLayer(conversationId)),
     ]);
+    if (!selectContextRulesLoaded(getState())) await refresh;
   };
 }
 

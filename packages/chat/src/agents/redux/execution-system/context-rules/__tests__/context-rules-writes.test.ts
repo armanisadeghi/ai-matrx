@@ -10,8 +10,9 @@
  *   - F4: a write that upserts the WHOLE row from the writing tab's copy — tab
  *     B's save erased tab A's rule, and A's next send silently reloaded
  *     without it;
- *   - F4: a send that builds its request from the tab's stale copy instead of
- *     re-reading the saved rules first;
+ *   - F4: a tab whose copy never catches up with another tab's change (a send
+ *     refreshes it beside the request — never ahead of it: the server applies
+ *     the saved rules itself on every turn, 2026-10-02 latency regression);
  *   - F6: a first save with no organization selected that throws and reverts
  *     with a toast, while a send in the same session would ask the person.
  *
@@ -145,6 +146,7 @@ import {
   saveContextRules,
   selectSavedContextRuleRows,
 } from "../context-rules.thunks";
+import { surfaceUserStateService } from "../../../../../surfaces/user-state/service";
 import type { ChatRootState } from "../../../../../store/root-state";
 import { setStoreSingleton } from "../../../../../store/store-singleton";
 
@@ -222,7 +224,7 @@ describe("two tabs changing different values", () => {
     });
   });
 
-  it("a send re-reads the saved rules first, so tab A's request carries tab B's rule", async () => {
+  it("a send refreshes the saved rules beside it, so tab A picks up tab B's rule", async () => {
     seedRow({});
     const tabA = openTab();
     const tabB = openTab();
@@ -231,6 +233,36 @@ describe("two tabs changing different values", () => {
     await run(tabB, saveContextRule({ surfaceKey: NOTES, key: "cursor_offset", rule: { max_inline_chars: 0 } }));
     expect(rulesIn(tabA)[NOTES]).toEqual({});
 
+    await run(tabA, ensureContextRulesReady("standup-notes-chat"));
+    await run(tabA, reloadContextRules()); // joins the refresh the send started
+    expect(rulesIn(tabA)[NOTES]).toEqual({ cursor_offset: { max_inline_chars: 0 } });
+  });
+
+  it("a send never waits on a re-read once the rules are loaded (the server re-applies them every turn)", async () => {
+    seedRow({});
+    const tabA = openTab();
+    await run(tabA, reloadContextRules());
+    let release: (rows: Record<string, Record<string, unknown>>) => void = () => undefined;
+    const hang = jest
+      .spyOn(surfaceUserStateService, "loadFeature")
+      .mockImplementation(() => new Promise((resolve) => (release = resolve)));
+    try {
+      const ready = run(tabA, ensureContextRulesReady("standup-notes-chat"));
+      const outcome = await Promise.race([
+        ready.then(() => "sent" as const),
+        new Promise<"held">((resolve) => setTimeout(() => resolve("held"), 50)),
+      ]);
+      expect(outcome).toBe("sent");
+    } finally {
+      release({});
+      hang.mockRestore();
+      await run(tabA, reloadContextRules());
+    }
+  });
+
+  it("the first send in a tab waits for the rules it has never loaded", async () => {
+    seedRow({ cursor_offset: { max_inline_chars: 0 } });
+    const tabA = openTab();
     await run(tabA, ensureContextRulesReady("standup-notes-chat"));
     expect(rulesIn(tabA)[NOTES]).toEqual({ cursor_offset: { max_inline_chars: 0 } });
   });
