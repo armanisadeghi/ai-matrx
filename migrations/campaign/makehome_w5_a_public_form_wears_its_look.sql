@@ -1,4 +1,3 @@
--- draft: MAKE-HOME W5 clone proof pending
 -- additive: yes
 --   It ADDS two internal functions — custom._form_look_judge(uuid, jsonb) and
 --   custom._form_look(uuid, jsonb), EXECUTE to postgres only (no client grant) — and REPLACES three
