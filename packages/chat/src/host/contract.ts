@@ -150,6 +150,8 @@ export interface ChatPrefsPort {
   subscribe(listener: (key: string) => void): () => void;
   /** A typed knob: the stored value when it parses, the platform default otherwise. */
   knob<T extends string | number | boolean>(key: string, fallback: T): T;
+  /** Every stored key and value, for the `chatHost` slice's first-render snapshot. Optional. */
+  snapshot?(): Readonly<Record<string, string>>;
 }
 
 export interface ChatLinkProps {

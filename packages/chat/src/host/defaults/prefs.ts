@@ -99,6 +99,23 @@ export function createWebPrefs(): ChatPrefsPort {
     knob(key, fallback) {
       return parseKnob(port.get(key), fallback);
     },
+    snapshot() {
+      const out: Record<string, string> = Object.fromEntries(memory);
+      const s = storage();
+      if (s) {
+        try {
+          for (let i = 0; i < s.length; i += 1) {
+            const full = s.key(i);
+            if (!full?.startsWith(CHAT_PREFS_PREFIX)) continue;
+            const value = s.getItem(full);
+            if (value != null) out[full.slice(CHAT_PREFS_PREFIX.length)] = value;
+          }
+        } catch {
+          /* memory only */
+        }
+      }
+      return out;
+    },
   };
   return port;
 }

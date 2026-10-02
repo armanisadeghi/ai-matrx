@@ -85,6 +85,9 @@ const CHAT_KEYS_BEFORE_P2 = [
   "mcp",
 ];
 
+/** Keys the package added since P2 (none existed in the host before): P3's synced host state. */
+const CHAT_KEYS_ADDED = ["chatHost"];
+
 /** The chat middlewares in the order store.ts ran them before P2. */
 const CHAT_MIDDLEWARES_BEFORE_P2: Middleware[] = [
   agentCacheBustMiddleware,
@@ -96,13 +99,15 @@ const CHAT_MIDDLEWARES_BEFORE_P2: Middleware[] = [
 ];
 
 describe("chat slices mount under the same keys", () => {
-  it("exports exactly today's 38 chat keys", () => {
-    expect(Object.keys(chatReducers).sort()).toEqual([...CHAT_KEYS_BEFORE_P2].sort());
+  it("exports exactly today's 38 chat keys, plus the keys added since", () => {
+    expect(Object.keys(chatReducers).sort()).toEqual(
+      [...CHAT_KEYS_BEFORE_P2, ...CHAT_KEYS_ADDED].sort(),
+    );
   });
 
   it("the host root reducer mounts every chat key with the package's own reducer", () => {
     const hostMap = slimReducerMap as Record<string, unknown>;
-    for (const key of CHAT_KEYS_BEFORE_P2) {
+    for (const key of [...CHAT_KEYS_BEFORE_P2, ...CHAT_KEYS_ADDED]) {
       const mounted = hostMap[key];
       expect({ key, mounted: typeof mounted }).toEqual({ key, mounted: "function" });
       expect({ key, same: mounted === (chatReducers as Record<string, unknown>)[key] }).toEqual({
@@ -115,7 +120,7 @@ describe("chat slices mount under the same keys", () => {
   it("a built store holds every chat key, initialised by the chat reducer", () => {
     const store = makeStore();
     const state = store.getState() as unknown as Record<string, unknown>;
-    for (const key of CHAT_KEYS_BEFORE_P2) {
+    for (const key of [...CHAT_KEYS_BEFORE_P2, ...CHAT_KEYS_ADDED]) {
       const reducer = (chatReducers as Record<string, (s: unknown, a: { type: string }) => unknown>)[key];
       expect({ key, state: state[key] }).toEqual({
         key,

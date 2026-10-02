@@ -27,7 +27,8 @@
 //   feedback    → the `submitFeedback` action (the in-app feedback window's path)
 //   routes      → nav-data's Workflow Studio address
 //
-// Inside StoreProvider: every port reads the live store.
+// Inside StoreProvider: every port reads the live store, and the same store is
+// handed to the package (`store`), which keeps its `chatHost` slice synced.
 
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -373,5 +374,11 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
     routes: { workflowStudio: WORKFLOWS_APP_URL },
   };
 
-  return <ChatProvider host={host}>{children}</ChatProvider>;
+  // The app's store IS the chat store (its root reducer spreads chatReducers):
+  // package hooks read it through the package's own context (P3).
+  return (
+    <ChatProvider host={host} store={store}>
+      {children}
+    </ChatProvider>
+  );
 }

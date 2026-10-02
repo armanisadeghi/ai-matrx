@@ -32,6 +32,7 @@ import { tasksRealtimeMiddleware } from "@/features/tasks/redux/tasksRealtimeMid
 import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
 // The chat package's middlewares, in their required order (P2).
 import { chatMiddlewares } from "@ai-matrx/chat/store/middlewares";
+import { setStoreSingleton as setChatStoreSingleton } from "@ai-matrx/chat/store/store-singleton";
 import { mandateOrgSwitchCacheMiddleware } from "@/features/mandates/redux/org-switch-cache-middleware";
 import { activeOrgCookieMiddleware } from "@/lib/organizations/activeOrgCookieMiddleware";
 import { scopeTreeInvalidationMiddleware } from "@/features/scopes/redux/scopeTreeInvalidationMiddleware";
@@ -383,6 +384,8 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
   registerNotesDraftSource(store.getState);
 
   setStoreSingleton(storeWithSync);
+  // The chat package reads the same store outside React through its own singleton (P3).
+  setChatStoreSingleton(storeWithSync);
   // Register this store's sagaMiddleware so `runSaga` from this module
   // (and any consumer that imports it) always runs on the active store.
   setRunSaga((saga) => sagaMiddleware.run(saga));

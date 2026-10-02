@@ -48,6 +48,7 @@ import { surfacesCatalogReducer } from "../surfaces/redux/surfacesCatalogSlice";
 import { agentSurfaceBindingsReducer } from "../surfaces/redux/agentSurfaceBindingsSlice";
 import { surfaceConfigReducer } from "../surfaces/redux/surfaceConfigSlice";
 import agentAssistantMarkdownDraftReducer from "../agents/redux/agent-assistant-markdown-draft.slice";
+import { chatHostReducer } from "./chat-host.slice";
 
 export const chatReducers = {
   voiceAgent: voiceAgentReducer,
@@ -90,6 +91,8 @@ export const chatReducers = {
   surfaceConfig: surfaceConfigReducer,
   agentAssistantMarkdownDraft: agentAssistantMarkdownDraftReducer,
   mcp: mcpReducer,
+  // Host state the package reads (identity, active org, server, prefs), synced by <ChatProvider> (P3).
+  chatHost: chatHostReducer,
 };
 
 export type ChatReducers = typeof chatReducers;
