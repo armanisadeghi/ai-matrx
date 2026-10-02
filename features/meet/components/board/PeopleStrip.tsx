@@ -75,8 +75,9 @@ export function PeopleStrip() {
       data-meet-people-strip
       className={cn(
         "pointer-events-auto absolute z-20 flex max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-card/95 shadow-lg backdrop-blur",
-        // Phones: below the board toolbar; wider screens: the top-right corner.
-        position === null && "right-4 top-20 md:top-4",
+        // Below the board's toolbar on the left — the top-right corner holds
+        // the board's layers / zoom controls and the parked shelf.
+        position === null && "left-4 top-16",
       )}
       style={position === null ? undefined : { left: position.x, top: position.y }}
       aria-label="People in this meeting"

@@ -42,7 +42,7 @@ function MeetingPartItemBody({ source }: ItemBodyProps) {
   if (!target) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
-        This tile does not point at a meeting part. Remove it and add Meeting notes again.
+        No meeting part here — remove this tile and add it again.
       </div>
     );
   }

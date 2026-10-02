@@ -27,7 +27,8 @@ chrome, and the routes.
 | The meeting RECORD after `ended_at` | the package's `<MeetingRecordView>`, routed to by `<MeetingRoom>` — nothing here |
 | Room ⇄ Board layout choice (connected phase only; per viewer, this browser) | [`components/MeetingLayout.tsx`](./components/MeetingLayout.tsx) |
 | One meeting, one box: the home and the live room in the same place (Board meeting tile) — Join switches to `MeetingSurface chrome="embedded"` (stage contained by `--mx-meet-height: 100%`, @ai-matrx/meet 0.7.78), Leave or Details returns; the home stays mounted so its agent surface keeps answering | [`components/MeetingHomeAndRoom.tsx`](./components/MeetingHomeAndRoom.tsx) |
-| The Board layout — spatial board + floating people strip + live meeting-notes tiles | [`components/board/`](./components/board/) (`MeetingBoard`, `PeopleStrip`, `MeetingNotesBodies`, `LayoutSwitch`) |
+| The Board layout — the person's own Board (`UserBoard`) as a saved board linked to the meeting + floating people strip + captions; the "Meeting notes" parts are a registered board item type | [`components/board/`](./components/board/) (`MeetingBoard`, `PeopleStrip`, `MeetingNotesBodies`, `useGuestMeetingBoard`, `LayoutSwitch`), `features/spatial/items/meeting-items.tsx` |
+| One meeting + invitees + occurrences, one read per meeting per tab (the surface host's inputs) | [`hooks/useMeetingById.ts`](./hooks/useMeetingById.ts) |
 | aidream base URL | [`lib/meetBaseUrl.ts`](./lib/meetBaseUrl.ts) |
 | Stylesheets (tokens → brand → structure) | `app/layout.tsx` imports 1 and 3; the brand map is the `--mx-meet-*` block in `app/globals.css` |
 
@@ -211,11 +212,11 @@ address with `/meet/<slug>`.
 ## The Board layout (2026-09-27)
 
 While connected, a person can swap the package's room for a **Board**: the
-spatial board (`features/spatial`, consumed — never forked) fills the stage,
-people float in a compact draggable strip, and the meeting's AI output is a live
-"Meeting notes" frame (transcript, notes, decisions, action items, summary)
-beside anything else the person adds (scratchpad, web page, image, sample
-generated pages, a replayed stream). Rules:
+person's own Board — `UserBoard`, the same host `/board` renders, with every item
+type, tool, shelf, layers, undo, drop/paste and the board's agent tools — fills
+the stage, people and captions float over it in screen space, and the board
+opens on a "Meeting notes" frame of live parts (transcript, notes, decisions,
+action items, summary). Rules:
 
 - **Only the connected room is swappable.** Pre-join, lobby, a failed join,
   leaving and the post-meeting record always render through `<MeetingRoom>`.
@@ -226,10 +227,23 @@ generated pages, a replayed stream). Rules:
   `orderParticipants`; `Captions` and `ControlBar` (with its chat, people and
   Meeting-assistant panels) are the package's. The root carries the package's
   `mx-meet` class so those pieces sit in their own structure and tokens.
-- **Per viewer, this browser:** the layout (`matrx.meet.layout`, default
-  `room`), the board's tiles and positions (`matrx.meet.board.<meetingId>`) and
-  scratchpad text. Every read/write is try/catch; blocked storage = defaults.
+- **The meeting's board is a SAVED BOARD** (2026-10-02): the viewer's own
+  `workspace.spatial_boards` row with `settings.meeting_id` (`getMeetingBoard`,
+  through `useSavedBoard({ meeting })`), created on first open with the Meeting
+  notes frame (`meetingNotesDocument`) in the organization new work is filed in
+  (none chosen → the organization gate asks). It autosaves like `/board`, is
+  listed in All boards and opens at `/board/<id>` (the header's open icon).
   What a person adds is theirs alone — nobody else in the meeting sees it.
+  A **guest** has no account: the same document is kept in this browser
+  (`matrx.meet.board.v2.<meetingId>`, `useGuestMeetingBoard`).
+- **Meeting notes are a board item type** (`meeting_part`, one part of one
+  meeting): the live AI seam (`useMeetAi`) while this tab is in that meeting's
+  room, the durable record (`useMeetingRecord`; action items through the Record
+  tab's `ActionItemsSection`) anywhere else — so any board can hold a meeting's
+  decisions. Surface: `matrx-user/meeting` via `MeetingSurfaceHost`. Bring in:
+  "Meeting notes" (this meeting's parts first, or pick a meeting).
+- **The layout choice** is per viewer, this browser (`matrx.meet.layout`, default
+  `room`); blocked storage = the default.
 - **Host menu:** the package's `HostMenu` (lock / end for everyone, @ai-matrx/meet
   0.7.5) renders in the Board header for hosts — the "Host controls" hop back to
   the Room layout is gone.
@@ -276,6 +290,8 @@ with its answer, and the whiteboard as it was left, read through the package's
 Census: `common-docs/systems/communications/meet/PARITY.md` § Wave 5.
 
 ## Change log
+
+- 2026-10-02 — The Board layout is the canonical Board: `MeetingBoard` renders `UserBoard` over a saved board linked by `settings.meeting_id` (guests: the same document in this browser); the five Meeting notes tiles are the registered item type `meeting_part` (live in the room, the durable record elsewhere, `matrx-user/meeting` surface). Gone with the bespoke board: the scratchpad (a real Note now), the sample pages and the replayed demo stream (demo content), save-to-Notes up-throw and the one-click "Meeting notes" fly button (bring in Meeting notes instead). Tests: `features/spatial/__tests__/meeting-board.test.ts`, `features/spatial/items/__tests__/meeting-items.logic.test.ts`.
 
 - 2026-10-02 — The live room joins IN PLACE on a Board meeting tile (`MeetingHomeAndRoom`; `MeetingDetail onJoin`, `MeetingSurface chrome="embedded" onLeave`, `MeetingLayout onLeave`); /meetings/[id] still goes to /meet/[slug].
 

@@ -60,8 +60,9 @@ describe("every board wires tile resize", () => {
   const uses = spatialTileUses();
 
   it("finds the boards", () => {
-    // /board, the demo, the meeting board, the workflow run board, War Room.
-    expect(new Set(uses.map((u) => u.where.split(":")[0])).size).toBeGreaterThanOrEqual(5);
+    // /board, the demo, the workflow run board, War Room. (The meeting board
+    // renders /board's own host, UserBoard, so it mounts no tile of its own.)
+    expect(new Set(uses.map((u) => u.where.split(":")[0])).size).toBeGreaterThanOrEqual(4);
   });
 
   it("no movable tile is mounted without a resize decision", () => {

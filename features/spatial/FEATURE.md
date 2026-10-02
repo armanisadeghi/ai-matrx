@@ -128,7 +128,10 @@ shapes ride in `nodes` flagged; JSON Canvas 1.0 export). The home board is the r
   (Figma, Miro): kept per person per board in this browser (`persistence/viewerCamera.ts`,
   localStorage `matrx.board.camera:<user>:<board>`, guarded) plus the `#cam=` address. A board opens
   at `#cam=`, else the viewer's last view, else fit-all (an empty board: the row's `camera`). The
-  `camera` column is read for old rows and copied by duplicate; nothing writes it. It is outside the
+  `camera` column is read for old rows and copied by duplicate; nothing writes it.
+A meeting's board is the row whose `settings.meeting_id` is that meeting, per person
+(`getMeetingBoard`, `useSavedBoard({ meeting })`; created with the meeting's notes); a copy drops
+the link (`settingsForCopy`). It is outside the
   version guard's fingerprint (`documentFingerprint`), so a pan in one tab never makes another tab's
   edit a conflict — it did, and the conflict stopped that tab's autosave.
 - **Saving is lazy and light.** `UserBoard` reports a BUILDER (`onChange(() => doc)`) on every store
@@ -180,7 +183,7 @@ hardware with a production build before tuning further.
     `useBoard.resizeTile` coalesces a resize into ONE undo step, like a move; `/board` persists it
     through the board document. At the overview tier (a tile a few px on screen) only the SELECTED
     tile shows handles, so a drag there moves instead of resizes (Figma). `onResize` is a REQUIRED prop, so no board can
-    forget it: every `useBoard` host passes `board.resizeTile` (/board, the demo, the meeting board,
+    forget it: every `useBoard` host passes `board.resizeTile` (/board — which the meeting board now is —, the demo,
     the workflow run board); War Room passes `null` with its reason (its parts are sized by the
     thread layout, which stores positions only). `__tests__/resize-wiring.test.ts` walks every
     `<SpatialTile>` in `features/` and fails on a movable tile with no resize decision.
@@ -261,7 +264,7 @@ dormant; the host keeps them in an `ItemSurfaceIndex` (`BoardToolHost.itemSurfac
   `applySurfaceWrite` / `executeSurfaceClientTool` with `source: capture` and the call's
   `agentWrite` (`SurfaceToolCall`): same type check, anchored patch, value contract, `validate`,
   apply policy (ask → this call's approval card) and `surfaceWriteToolOutput` envelope as on the page.
-- A host without `itemSurfaces` (meeting, War Room, workflow boards) lists identity only.
+- A host without `itemSurfaces` (War Room, workflow boards) lists identity only.
 - **The person's view and selection are theirs while they work.** When a tile is interacting or full
   screen, no tool moves the camera, selects, or ends their typing: `board_open_item` opens without
   selecting (`live: false`), `board_add_tile` does not select, `board_focus` refuses with the remedy.
@@ -287,10 +290,7 @@ and `read().removed` lists tiles off the board that `board_park parked:false` re
 Markdown written by an agent renders through the stream pipeline (`tiles/MarkdownTileBody.tsx`,
 an instant `ReplayStream` → `StreamTileBody`), never a second renderer; an agent's note is a real
 Note in the notes core (`items/NoteItemBody.tsx`; its `text` is the note's seed while no note exists
-yet, and a real note's text changes through `note_content`). Wired: the demo; the meeting board
-(`features/meet/components/board/MeetingBoard.tsx` — markdown / html page or `srcDoc` / image; a
-"note" is the board's own scratchpad and "text" becomes markdown; the live meeting sections refuse
-content edits); the workflow run board (`features/workflow-runtime/components/spatial/WorkflowRunSpatialView.tsx`
+yet, and a real note's text changes through `note_content`). Wired: the demo; `/board` and the meeting board (which renders `UserBoard` itself); the workflow run board (`features/workflow-runtime/components/spatial/WorkflowRunSpatialView.tsx`
 — real Note / markdown / text / html / image beside the steps; a step refuses content edits, and
 `describe` gives its family + declared kind and live status). Both render `board.frames` and
 `board.connections`; the War Room board (`features/war-room/components/board/roomBoardAgent.ts`, an
@@ -369,9 +369,22 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   document" places a draft tile that creates the document only on its Create click (org gate +
   `createDocument`, `items/DocumentDraftBody.tsx`); bring in is `DocumentsResourcePicker`; the older
   `{ kind: "document" }` source renders through the same item and is saved in the entity form.
+- **Meeting notes are one part of one meeting** (`items/meeting-items.tsx`, key `meeting_part`,
+  `meta.part` = transcript / notes / decisions / actions / summary; `recordKeyOf` keys a part as
+  `meeting_part:<meeting>#<part>`, so all five sit on a board once each): the room's live AI seam
+  while this tab is in that meeting, its durable record elsewhere (action items through the Record
+  tab's `ActionItemsSection`); surface `matrx-user/meeting` via `MeetingSurfaceHost`
+  (`useMeetingById` shares one read per meeting). The meeting board (`features/meet`) IS `UserBoard`
+  over a saved board linked to the meeting and opens on these five in a "Meeting notes" frame.
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-10-02 — The meeting board is the canonical Board: `MeetingBoard` renders `UserBoard` over a
+  saved board linked by `settings.meeting_id` (`getMeetingBoard`; a guest keeps the same document in
+  the browser). Its five live sections became the registered item type `meeting_part`
+  (`items/meeting-items.tsx`), placeable on any board; `recordKeyOf` keys a `meta.part` separately.
+  The bespoke board (all-in-one `useBoard` host, own toolbar, scratchpad, localStorage tiles) is gone.
 
 - 2026-10-02 — A tile never navigates the board away: pages it opens land on the board as Page
   tiles (or a new tab); Page tiles put any app page on the board with the shell chrome dropped.

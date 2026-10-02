@@ -35,7 +35,6 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import type { TileStatusValue } from "@/features/spatial/streams/useSourceStatus";
 import type { MeetingPart } from "@/features/spatial/items/meeting-items.logic";
 import { ActionItemsSection } from "@/features/meet/components/record/ActionItemsSection";
 import { useMeetingById, type LoadedMeeting } from "@/features/meet/hooks/useMeetingById";
@@ -53,16 +52,6 @@ export function useIsInMeetingRoom(meetingId: string): boolean {
   const snapshot = useMeetSnapshot();
   const phase = snapshot?.phase;
   return liveId === meetingId && (phase === "connected" || phase === "reconnecting");
-}
-
-/** The tile's status dot: live while the note-taker is transcribing. */
-export function useMeetingSectionStatus(): TileStatusValue {
-  const { noteTaker } = useMeetAi();
-  if (noteTaker.state === "transcribing" || noteTaker.state === "joining") {
-    return { status: "streaming", progress: null };
-  }
-  if (noteTaker.state === "ended") return { status: "complete", progress: null };
-  return { status: "idle", progress: null };
 }
 
 /** One part of one meeting: live in its room, its durable record elsewhere. */
