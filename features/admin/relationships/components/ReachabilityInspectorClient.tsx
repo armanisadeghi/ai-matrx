@@ -371,7 +371,6 @@ export function ReachabilityInspectorClient({
           getRowId={(row) => `${row.item_type}:${row.item_id}`}
           defaultSort={{ id: "depth", direction: "asc" }}
           pageSize={0}
-          copy={false}
           coverage={reachabilityCoverage("reachable item", contents.length)}
           emptyState={{ title: "This container reaches nothing." }}
           // Rows exist only after a lookup succeeded (a failed one leaves null and toasts).
@@ -390,7 +389,6 @@ export function ReachabilityInspectorClient({
           getRowId={(row) => `${row.container_type}:${row.container_id}`}
           defaultSort={{ id: "depth", direction: "asc" }}
           pageSize={0}
-          copy={false}
           coverage={reachabilityCoverage("conveying container", containers.length)}
           emptyState={{ title: "No container conveys access to this item." }}
           read={readOf({ loading }, { what: "conveying containers" })}

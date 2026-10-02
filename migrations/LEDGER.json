@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T02:22:48.961Z",
+  "generated_at": "2026-10-02T09:15:53.321Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4243,6 +4243,18 @@
       "filename": "refcarry_the_search_finds_platform_catalogue_things.sql",
       "checksum": "e1a8daf463f46fca8a1e72f7afbc5f2aeb47907e8b7b3f7a4b4681c1fbcddd87",
       "applied_at": "2026-09-29 19:54:25.428499+00"
+    },
+    "migrations/campaign/refkeep_an_archived_record_keeps_every_reference_to_it.sql": {
+      "source": "campaign",
+      "filename": "refkeep_an_archived_record_keeps_every_reference_to_it.sql",
+      "checksum": "0f87ba74eb2a0ccc5781a207e53896bc6bf0d9ab1c4d303c9f78a984be7cbb96",
+      "applied_at": "2026-10-01 09:48:32.14446+00"
+    },
+    "migrations/campaign/refkeep_c_a_record_pointing_at_an_archived_one_stays_editable.sql": {
+      "source": "campaign",
+      "filename": "refkeep_c_a_record_pointing_at_an_archived_one_stays_editable.sql",
+      "checksum": "1b5c0c42223964ac2bec990230fbc15f5229724c56342e223ea775233c359910",
+      "applied_at": "2026-10-01 09:48:32.14446+00"
     },
     "migrations/campaign/registrykernel_a_level_move_bumps_the_kernel_fixture_in_its_own_transaction.sql": {
       "source": "matrx-frontend",

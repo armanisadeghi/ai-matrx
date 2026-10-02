@@ -475,7 +475,6 @@ export function CmsArtifactList() {
             ) : undefined,
           }}
           coverage={{ noun: "artifact", answeredBy: "client" }}
-          copy={false}
           toolbar={{ search: false }}
           detail={{ enabled: false }}
           window={{ enabled: false }}
