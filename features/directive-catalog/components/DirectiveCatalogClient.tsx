@@ -32,6 +32,7 @@ import {
 import { setEntityTypeAgentWritable } from "@/features/admin/relationships/entityTypeMutations";
 import type { NounDirectives } from "@/features/directive-catalog/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { stripTerminalCodes } from "@/utils/errors";
 
 /**
  * No polling. The directive catalog is static metadata — the set of registered
@@ -71,7 +72,7 @@ export function DirectiveCatalogClient() {
     } catch (toggleError) {
       toast.error(
         toggleError instanceof Error
-          ? toggleError.message
+          ? stripTerminalCodes(toggleError.message)
           : `Could not update ${noun.noun}`,
       );
     } finally {
@@ -153,8 +154,8 @@ export function DirectiveCatalogClient() {
               <ErrorAlchemyMenu />
             </p>
             <p className="max-w-md font-mono text-xs text-muted-foreground">
-              {error}
-              <ErrorAlchemyMenu error={error} />
+              {stripTerminalCodes(error)}
+              <ErrorAlchemyMenu error={stripTerminalCodes(error)} />
             </p>
             <Button type="button" variant="outline" size="sm" onClick={refresh}>
               <RefreshCw className="h-3.5 w-3.5" />
@@ -188,8 +189,8 @@ export function DirectiveCatalogClient() {
         {/* Non-fatal error while a stale catalog is still shown. */}
         {error && catalog && (
           <div className="border-t border-border bg-amber-500/10 px-3 py-1 text-xs text-amber-600 dark:text-amber-400">
-            Last refresh failed: {error}
-            <ErrorAlchemyMenu error={error} />
+            Last refresh failed: {stripTerminalCodes(error)}
+            <ErrorAlchemyMenu error={stripTerminalCodes(error)} />
           </div>
         )}
       </div>

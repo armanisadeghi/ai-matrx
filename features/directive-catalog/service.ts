@@ -94,8 +94,9 @@ export async function fetchDirectiveCatalog(
  * Run ONE `verb:noun` action via `POST {baseUrl}/directives/execute`. AUTHED — the
  * write runs as the user (RLS) on the server, so we attach the Supabase JWT (same
  * session client the reference resolvers use). Throws a structured Error on a
- * missing base / no session / non-2xx (surfacing the server's `detail`) / a
- * malformed payload — the panel shows it. Returns the per-item receipts.
+ * missing base / no session / a malformed payload, and `BackendApiError` on a
+ * non-2xx (`userMessage` for the person, `detail` for the log) — the panel
+ * shows it. Returns the per-item receipts.
  */
 export async function executeDirective(
   baseUrl: string | undefined,
@@ -121,16 +122,10 @@ export async function executeDirective(
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    let detail = `${response.status} ${response.statusText}`;
-    try {
-      const err: unknown = await response.json();
-      if (err && typeof err === "object" && "detail" in err) {
-        detail = String((err as { detail: unknown }).detail);
-      }
-    } catch {
-      /* non-JSON error body — keep the status line */
-    }
-    throw new Error(`Execute failed: ${detail}`);
+    // One parser for every backend refusal: the person reads `userMessage`,
+    // the technical `detail` stays behind it. (A hand-rolled `String(detail)`
+    // here printed "[object Object]" for FastAPI's structured detail.)
+    throw await parseHttpError(response);
   }
 
   const payload: unknown = await response.json();

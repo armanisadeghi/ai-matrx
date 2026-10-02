@@ -871,6 +871,9 @@ function derivedResolver(noun: string): ReferenceResolver | undefined {
   };
 }
 
+/** Every noun with a bespoke resolver (the overlay above the catalog). */
+export const BESPOKE_REFERENCE_NOUNS: readonly string[] = Object.keys(RESOLVERS);
+
 /** Resolve a reference `type` to its resolver, or `undefined` (graceful chip).
 
  * Bespoke overlay first, then the catalog-derived generic resolver. Aliases are

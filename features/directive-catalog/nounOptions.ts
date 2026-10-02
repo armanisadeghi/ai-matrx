@@ -2,15 +2,23 @@
  * nounOptions — how the builder offers ~1,100 nouns without a scroll wall.
  *
  * The catalog is noun × verb; what a person is looking for is "a thing I can
- * <verb> right now". So the options are grouped by the chosen verb's state:
- * wired first (writable nouns leading — they are what gets tested), then
- * planned, then unavailable — the last two folded behind a "More" row until
- * searched. Every option carries its human label (the server's `label`) and
- * is searchable by label, token and family (OptionCombobox matches all three
- * through `getLabel` / `getHint`).
+ * <verb> right now". So the options lead with the COMMON types — the org's
+ * `platform.reference_picker.common_types` knob, the same tier the right-click
+ * reference picker shows first (`useCommonReferenceTypes`), never a list in
+ * code — then the rest grouped by the chosen verb's state: wired (writable
+ * nouns leading), planned, unavailable; the last two folded behind a "More"
+ * row until searched. Every option carries its human label (the picker's
+ * friendly name, else the server's `label`) and is searchable by label, token
+ * and family (OptionCombobox matches all three through `getLabel` / `getHint`).
+ *
+ * There is deliberately NO default noun: any noun chosen for the person is a
+ * guess (the 2026-09-30 defect opened on `access_delta_probe`), so the builder
+ * opens on "Choose a type" with the common tier on top.
  */
 
 import type { OptionComboboxGroup } from "@/components/official/option-combobox/OptionCombobox";
+import { CATALOG_ALIASES } from "@/features/matrx-envelope/catalog-nouns.generated";
+import { FRIENDLY_REFERENCE_TYPE_LABELS } from "@/features/matrx-envelope/components/reference-picker/referencePickerTypes";
 import {
   cellState,
   type DirectiveState,
@@ -26,8 +34,14 @@ function isWritable(noun: NounDirectives): boolean {
   );
 }
 
-/** The person-facing name: the server's label, else the token humanized. */
+/**
+ * The person-facing name: the reference picker's friendly name (a
+ * conversation is a "Chat" everywhere a person picks one), else the server's
+ * label, else the token humanized.
+ */
 export function nounLabel(noun: NounDirectives): string {
+  const friendly = FRIENDLY_REFERENCE_TYPE_LABELS[noun.noun];
+  if (friendly) return friendly;
   const label = noun.label?.trim();
   if (label) return label;
   const words = noun.noun.replace(/_/g, " ");
@@ -52,19 +66,48 @@ function headingFor(
   return `Can't ${verb} (${count})`;
 }
 
-/** The noun choices for one verb, grouped by that verb's state. */
+/**
+ * The common tier resolved against this catalog: knob tokens (aliases
+ * followed, e.g. `document` → `udt_document`) that name a real noun, in knob
+ * order, each once. A token the catalog does not carry is skipped, never
+ * drawn as a dead option.
+ */
+export function commonNounTokens(
+  nouns: readonly NounDirectives[],
+  commonTokens: readonly string[],
+  aliases: Readonly<Record<string, string>> = CATALOG_ALIASES,
+): string[] {
+  const known = new Set(nouns.map((n) => n.noun));
+  const out: string[] = [];
+  for (const raw of commonTokens) {
+    const token = aliases[raw] ?? raw;
+    if (known.has(token) && !out.includes(token)) out.push(token);
+  }
+  return out;
+}
+
+/**
+ * The noun choices for one verb: the common tier first (when the knob gave
+ * one), then the rest grouped by that verb's state. Every noun appears once.
+ */
 export function nounOptionGroups(
   nouns: readonly NounDirectives[],
   verb: DirectiveVerb,
+  common: readonly string[] = [],
 ): OptionComboboxGroup[] {
+  const commonSet = new Set(common);
   const byState = new Map<DirectiveState, NounDirectives[]>();
   for (const noun of nouns) {
+    if (commonSet.has(noun.noun)) continue;
     const state = cellState(noun, verb);
     const bucket = byState.get(state);
     if (bucket) bucket.push(noun);
     else byState.set(state, [noun]);
   }
   const groups: OptionComboboxGroup[] = [];
+  if (common.length > 0) {
+    groups.push({ heading: "Common", options: [...common], collapsed: false });
+  }
   for (const state of STATE_ORDER) {
     const bucket = byState.get(state);
     if (!bucket || bucket.length === 0) continue;
@@ -88,17 +131,4 @@ export function nounHint(noun: NounDirectives): string | null {
   if (nounLabel(noun).toLowerCase() !== spokenToken) parts.push(noun.noun);
   if (noun.family && noun.family !== "Other") parts.push(noun.family);
   return parts.length > 0 ? parts.join(" · ") : null;
-}
-
-/**
- * The noun the builder opens on: the first option of the verb's wired group
- * (a writable noun when one exists), so the first thing on screen can run.
- * Falls back to the first noun at all; empty string for an empty catalog.
- */
-export function defaultNounFor(
-  nouns: readonly NounDirectives[],
-  verb: DirectiveVerb,
-): string {
-  const groups = nounOptionGroups(nouns, verb);
-  return groups[0]?.options[0] ?? "";
 }

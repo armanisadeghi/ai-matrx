@@ -38,10 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  buildDirectiveSlug,
-  buildKindDirective,
-} from "@ai-matrx/content-ir";
+import { buildDirectiveSlug, buildKindDirective } from "@ai-matrx/content-ir";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import { getReferenceResolver } from "@/features/matrx-envelope/referenceResolvers";
 import { StateBadge } from "@/features/directive-catalog/components/StateCell";
@@ -86,11 +83,13 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeBackendError, stripTerminalCodes } from "@/utils/errors";
 import {
-  defaultNounFor,
+  commonNounTokens,
   nounHint,
   nounLabel,
   nounOptionGroups,
 } from "@/features/directive-catalog/nounOptions";
+import { useCommonReferenceTypes } from "@/features/matrx-envelope/components/reference-picker/useCommonReferenceTypes";
+import { BackendApiError } from "@/lib/api/errors";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
@@ -113,9 +112,17 @@ const STATE_WORDS: Record<DirectiveState, string> = {
  * a full ORM dump. Show the readable sentence; keep the cleaned full text one
  * click away and in the ErrorAlchemyMenu.
  */
-function PanelError({ raw }: { raw: string }) {
+function PanelError({
+  raw,
+  headline: given,
+}: {
+  raw: string;
+  headline?: string;
+}) {
   const clean = stripTerminalCodes(raw).trim();
-  const headline = humanizeBackendError(clean) ?? clean;
+  const headline =
+    (given ? stripTerminalCodes(given).trim() : "") ||
+    (humanizeBackendError(clean) ?? clean);
   const hasDetail = clean.length > 0 && clean !== headline;
   return (
     <div
@@ -179,12 +186,17 @@ export function DirectiveBuilderPanel({
 
   const initialVerb: DirectiveVerb = verbs[0] ?? "reference";
   const [verb, setVerb] = useState<DirectiveVerb>(initialVerb);
-  const [nounName, setNounName] = useState<string>(() =>
-    defaultNounFor(nouns, initialVerb),
+  // No default noun: any pick made for the admin is a guess (nounOptions.ts).
+  const [nounName, setNounName] = useState<string>("");
+  // The same knob-driven "common types first" tier the reference picker shows.
+  const { tokens: commonKnobTokens } = useCommonReferenceTypes();
+  const commonNouns = useMemo(
+    () => commonNounTokens(nouns, commonKnobTokens),
+    [nouns, commonKnobTokens],
   );
   const nounGroups = useMemo(
-    () => nounOptionGroups(nouns, verb),
-    [nouns, verb],
+    () => nounOptionGroups(nouns, verb, commonNouns),
+    [nouns, verb, commonNouns],
   );
   const [fields, setFields] = useState<Record<string, string>>({});
   const [selectedLabels, setSelectedLabels] = useState<Record<string, string>>(
@@ -205,7 +217,10 @@ export function DirectiveBuilderPanel({
   const [force, setForce] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [result, setResult] = useState<DirectiveApplyResult | null>(null);
-  const [execError, setExecError] = useState<string | null>(null);
+  const [execError, setExecError] = useState<{
+    raw: string;
+    headline?: string;
+  } | null>(null);
 
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const openReferencePicker = useOpenDirectiveReferencePickerWindow();
@@ -270,8 +285,10 @@ export function DirectiveBuilderPanel({
         payloadFieldEntityInfo(key, noun.noun)?.token ?? null,
     });
   }, [isReference, noun, verb]);
-  // No published schema → the JSON view is the only honest editor.
-  const effectiveView = writeFields.length === 0 ? "json" : payloadView;
+  // No published schema → the JSON view is the only editor, and only offered
+  // where Execute can run it; elsewhere one line says why there is no form.
+  const noSchema = !isReference && writeFields.length === 0;
+  const effectiveView = noSchema ? "json" : payloadView;
   const builtPayload = useMemo(
     () =>
       buildSchemaPayload(
@@ -419,9 +436,19 @@ export function DirectiveBuilderPanel({
       if (res.failed === 0) toast.success(`Applied ${res.applied} item(s)`);
       else toast.error(`${res.failed} item(s) failed`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Execute failed";
-      setExecError(msg);
-      toast.error(humanizeBackendError(stripTerminalCodes(msg)) ?? msg);
+      // A server refusal carries a sentence written for a person
+      // (`user_message`) and a technical `detail`; show the first, keep the
+      // second one click away. Terminal colour codes never reach the screen.
+      const raw =
+        e instanceof BackendApiError
+          ? e.detail
+          : e instanceof Error
+            ? e.message
+            : "Execute failed";
+      const headline = e instanceof BackendApiError ? e.userMessage : undefined;
+      setExecError({ raw, headline });
+      const clean = stripTerminalCodes(headline ?? raw);
+      toast.error(humanizeBackendError(clean) ?? clean);
     } finally {
       setExecuting(false);
     }
@@ -498,15 +525,26 @@ export function DirectiveBuilderPanel({
             }}
             getHint={(token) => {
               const n = nounByToken.get(token);
-              return n ? nounHint(n) : null;
+              if (!n) return null;
+              const hint = nounHint(n);
+              // The common tier mixes states; the other groups' headings say it.
+              const s = cellState(n, verb);
+              if (s === "yes" || !commonNouns.includes(token)) return hint;
+              return [STATE_WORDS[s], hint].filter(Boolean).join(" · ");
             }}
-            placeholder="Choose a noun"
-            searchPlaceholder={`Search ${nouns.length} nouns by name or token…`}
+            placeholder="Choose a type"
+            searchPlaceholder={`Search ${nouns.length} types…`}
             ariaLabel="Directive noun"
             className="h-11 text-base lg:h-8 lg:text-sm"
           />
         </div>
       </div>
+
+      {!noun && (
+        <p className="text-xs text-muted-foreground">
+          Choose a type to build an action.
+        </p>
+      )}
 
       {/* Prominent availability read-out */}
       {noun && state && (
@@ -617,8 +655,8 @@ export function DirectiveBuilderPanel({
         </div>
       )}
 
-      {/* Action area: live render for reads, stubbed execute for writes */}
-      {isReference ? (
+      {/* Action area: live render for reads, execute for writes */}
+      {!noun ? null : isReference ? (
         <div className="flex flex-col gap-2">
           <Button
             type="button"
@@ -698,11 +736,11 @@ export function DirectiveBuilderPanel({
                 </div>
               )}
             </div>
-            {writeFields.length === 0 && noun && (
+            {noSchema && (
               <p className="text-xs text-muted-foreground">
-                The server publishes no field list for{" "}
-                <span className="font-medium">{nounLabel(noun)}</span> {verb}{" "}
-                yet, so this one is written as JSON.
+                {state === "yes"
+                  ? "No field list published — write it as JSON."
+                  : "No field list published for this yet."}
               </p>
             )}
             {viewNote && (
@@ -710,7 +748,7 @@ export function DirectiveBuilderPanel({
                 {viewNote}
               </p>
             )}
-            {effectiveView === "fields" ? (
+            {noSchema && state !== "yes" ? null : effectiveView === "fields" ? (
               <SchemaFieldsForm
                 fields={writeFields}
                 values={payloadValues}
@@ -737,51 +775,61 @@ export function DirectiveBuilderPanel({
             )}
           </div>
 
-          <label className="flex min-h-11 items-center gap-2 text-xs text-muted-foreground">
-            <Checkbox
-              checked={force}
-              onCheckedChange={(v) => setForce(v === true)}
-            />
-            Force — bypass idempotency (apply a deliberate duplicate)
-          </label>
+          {state === "yes" && (
+            <>
+              <label className="flex min-h-11 items-center gap-2 text-xs text-muted-foreground">
+                <Checkbox
+                  checked={force}
+                  onCheckedChange={(v) => setForce(v === true)}
+                />
+                Force — apply even if it already ran
+              </label>
 
-          {effectiveView === "fields" &&
-            splitWarnings(builtPayload.warnings, payloadValues).action.map((m) => (
-              <p key={m} className="text-xs text-amber-700 dark:text-amber-300">
-                {m}
-              </p>
-            ))}
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              disabled={!canExecute}
-              onClick={handleExecute}
-              className="h-11 w-fit gap-1 lg:h-8"
-            >
-              {executing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Play className="h-3.5 w-3.5" />
-              )}
-              Execute
-            </Button>
-            {verb === "delete" && state === "yes" && (
-              <span className="text-xs text-muted-foreground">
-                Soft delete — the record goes to trash, never destroyed.
-              </span>
-            )}
-          </div>
+              {effectiveView === "fields" &&
+                splitWarnings(builtPayload.warnings, payloadValues).action.map(
+                  (m) => (
+                    <p
+                      key={m}
+                      className="text-xs text-amber-700 dark:text-amber-300"
+                    >
+                      {m}
+                    </p>
+                  ),
+                )}
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!canExecute}
+                  onClick={handleExecute}
+                  className="h-11 w-fit gap-1 lg:h-8"
+                >
+                  {executing ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Play className="h-3.5 w-3.5" />
+                  )}
+                  Execute
+                </Button>
+                {verb === "delete" && (
+                  <span className="text-xs text-muted-foreground">
+                    Moves the record to trash.
+                  </span>
+                )}
+              </div>
+            </>
+          )}
 
           {state === "planned" && (
             <p className="text-xs text-muted-foreground">
-              This {verb} is <span className="font-medium">planned</span>, not
-              wired yet — you can build and copy the envelope, but Execute runs
-              only for nouns under &quot;Ready to {verb}&quot;.
+              Planned, not wired — copy the envelope; Execute needs a wired
+              type.
             </p>
           )}
 
-          {execError && <PanelError raw={execError} />}
+          {execError && (
+            <PanelError raw={execError.raw} headline={execError.headline} />
+          )}
 
           {result && (
             <div className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
@@ -800,7 +848,9 @@ export function DirectiveBuilderPanel({
                     </span>
                   </div>
                   {r.summary && (
-                    <span className="text-foreground">{r.summary}</span>
+                    <span className="break-words text-foreground">
+                      {stripTerminalCodes(r.summary)}
+                    </span>
                   )}
                   {r.resource_ids !== undefined &&
                     r.resource_ids.length > 0 &&
