@@ -22,7 +22,7 @@ import {
   Volume2,
   Image as ImageIcon,
   Zap,
-  Wand,
+
   Pencil,
   Expand,
   TrendingUp,
@@ -55,6 +55,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { MergeCardsDialog } from "./MergeCardsDialog";
 import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -280,16 +281,16 @@ function IconAction({
 
 const POWER_UP_TONE = {
   enrich: {
-    tile: "bg-chart-4/15 text-chart-4",
-    glow: "from-chart-4/10",
+    tile: "bg-chart-4 text-white",
+    glow: "from-chart-4/15",
   },
   illustrate: {
-    tile: "bg-chart-2/15 text-chart-2",
-    glow: "from-chart-2/10",
+    tile: "bg-chart-2 text-white",
+    glow: "from-chart-2/15",
   },
   convert: {
-    tile: "bg-chart-6/15 text-chart-6",
-    glow: "from-chart-6/10",
+    tile: "bg-chart-6 text-white",
+    glow: "from-chart-6/15",
   },
 } as const;
 
@@ -322,7 +323,7 @@ function PowerUpTile({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "group relative flex items-start gap-3 overflow-hidden rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-all",
+        "group relative flex flex-col items-center gap-2 overflow-hidden rounded-2xl border border-border bg-card p-3 text-center shadow-sm transition-all sm:flex-row sm:items-start sm:gap-3 sm:p-4 sm:text-left",
         "hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         "disabled:pointer-events-none disabled:opacity-70",
       )}
@@ -330,13 +331,13 @@ function PowerUpTile({
       <span
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-0 bg-gradient-to-br to-transparent opacity-0 transition-opacity group-hover:opacity-100",
+          "pointer-events-none absolute inset-0 bg-gradient-to-br via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-100",
           t.glow,
         )}
       />
       <span
         className={cn(
-          "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+          "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform group-hover:scale-105",
           t.tile,
         )}
       >
@@ -347,18 +348,18 @@ function PowerUpTile({
         )}
       </span>
       <span className="relative min-w-0 flex-1">
-        <span className="flex items-center gap-2">
+        <span className="flex items-center justify-center gap-2 sm:justify-start">
           <span className="text-sm font-semibold text-foreground">{title}</span>
           {badge && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+            <span className="hidden rounded-full sm:inline bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
               {badge}
             </span>
           )}
         </span>
-        <span className="mt-0.5 block text-xs text-muted-foreground">{hint}</span>
+        <span className="mt-0.5 hidden text-xs text-muted-foreground sm:block">{hint}</span>
         {meter && <span className="mt-1 block">{meter}</span>}
       </span>
-      <ArrowRight className="relative mt-1 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
+      <ArrowRight className="relative mt-1 hidden h-4 w-4 shrink-0 sm:block text-muted-foreground opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
     </button>
   );
 }
@@ -455,9 +456,9 @@ function CardPeek({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-lg border bg-card p-3",
+        "flex flex-col rounded-xl border bg-card p-4 shadow-sm",
         interactive &&
-          "cursor-pointer transition-colors hover:border-primary/50",
+          "cursor-pointer transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
         selected
           ? "border-primary ring-1 ring-primary"
           : selectable
@@ -1037,7 +1038,7 @@ export function SetDetailView({
                 {deckEmpty ? (
                   canEdit && (
                     <Button className="h-10 px-5" onClick={() => setGenerateOpen(true)}>
-                      <Wand className="mr-1.5 h-4 w-4" />
+                      <AGENT_ICON className="mr-1.5 h-4 w-4" />
                       Generate cards
                     </Button>
                   )
@@ -1292,7 +1293,7 @@ export function SetDetailView({
                   className="h-12 w-full"
                   onClick={() => setGenerateOpen(true)}
                 >
-                  <Wand className="mr-2 h-5 w-5" />
+                  <AGENT_ICON className="mr-2 h-5 w-5" />
                   Generate cards
                 </Button>
               )}
@@ -1330,6 +1331,7 @@ export function SetDetailView({
                 </Button>
               </div>
               {canEdit && (
+                <div className="[&>button]:h-11 [&>button]:w-full">
                 <AddMoreCardsButton
                   setId={setId}
                   existingCards={data.cards.map((c) => ({ front: c.front, back: c.back }))}
@@ -1340,6 +1342,7 @@ export function SetDetailView({
                     setLineageKey((k) => k + 1);
                   }}
                 />
+                </div>
               )}
               {viewOnly && (
                 <DuplicateToEditButton
@@ -1367,8 +1370,8 @@ export function SetDetailView({
             {!deckEmpty && (
               <div
                 className={cn(
-                  "mt-3 grid grid-cols-1 gap-3",
-                  canEdit ? "sm:grid-cols-3" : "sm:grid-cols-1",
+                  "mt-3 grid gap-2 sm:gap-3",
+                  canEdit ? "grid-cols-3" : "grid-cols-1",
                 )}
               >
                 {canEdit && (
@@ -1466,7 +1469,7 @@ export function SetDetailView({
                   {canEdit && (
                     <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
                       <Button onClick={() => setGenerateOpen(true)}>
-                        <Wand className="mr-1.5 h-4 w-4" />
+                        <AGENT_ICON className="mr-1.5 h-4 w-4" />
                         Generate cards
                       </Button>
                       <Button
