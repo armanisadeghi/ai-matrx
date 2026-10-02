@@ -6,7 +6,8 @@
 -- INSERT, or an UPDATE, that leaves a LIVE (deleted_at is null) content_ir.kind_definition row without a disposition
 -- from the closed set (record, envelope, receipt, proposal, prose = matrx_graph.content_ir.sdk.KIND_DISPOSITIONS;
 -- the same set content_ir.evaluate_kind_activation's disposition leg reads) is refused with a plain sentence.
--- Soft-deleted rows are exempt (1,048 on the clone were archived undeclared); restoring one requires declaring it.
+-- Soft-deleted rows are exempt (1,048 on the clone were archived undeclared); a restore (trash, version history)
+-- is refused with its own sentence until the row declares. A wrong value ("Record") gets its own sentence too.
 --
 -- WHY A TRIGGER, NOT A CHECK CONSTRAINT. ALTER TABLE ... ADD CONSTRAINT takes ACCESS EXCLUSIVE on the table even with
 -- NOT VALID, and every kind-catalog read waits behind that lock — kindsglue_a measured exactly that as a lock timeout
@@ -20,6 +21,11 @@
 -- Locks: SHARE ROW EXCLUSIVE on content_ir.kind_definition for the CREATE TRIGGER statement only (no DROP, no ALTER TABLE).
 -- lane: KINDS-GLUE
 -- INVERSE: migrations/inverse/kindsglue_c_the_registry_refuses_a_kind_that_does_not_say_what_it_is_down.sql
+
+-- The registry is held against writes from here to commit, so no undeclared row can land between the
+-- precondition count and the trigger's creation (SHARE ROW EXCLUSIVE: the same lock CREATE TRIGGER takes;
+-- reads never wait).
+lock table content_ir.kind_definition in share row exclusive mode;
 
 do $pre$
 declare
@@ -40,14 +46,27 @@ create or replace function content_ir._kind_says_what_its_output_is()
  language plpgsql
  set search_path to ''
 as $function$
+declare
+  v_disposition text := new.metadata ->> 'disposition';
+  v_kind text := coalesce(quote_literal(new.kind), 'with no slug');
 begin
-  if new.deleted_at is null
-     and coalesce(new.metadata ->> 'disposition', '') not in ('record', 'envelope', 'receipt', 'proposal', 'prose') then
-    raise exception 'The kind % does not say what its output is: metadata.disposition must be one of record, envelope, receipt, proposal, prose.', quote_literal(new.kind)
-      using errcode = '23514',
-            hint = 'Write metadata.disposition with the kind; without it every emission of the kind is refused storage.';
+  if new.deleted_at is not null
+     or coalesce(v_disposition, '') in ('record', 'envelope', 'receipt', 'proposal', 'prose') then
+    return new;
   end if;
-  return new;
+  if tg_op = 'UPDATE' and old.deleted_at is not null then
+    -- A restore (trash, version history): the archived row was born before kinds had to declare.
+    raise exception 'The kind % cannot be restored until it says what its output is: declare what it is first.', v_kind
+      using errcode = '23514',
+            hint = 'Set metadata.disposition to one of record, envelope, receipt, proposal, prose, then restore it.';
+  end if;
+  if coalesce(v_disposition, '') <> '' then
+    raise exception 'The kind % declares disposition %, which is not one of record, envelope, receipt, proposal, prose.', v_kind, quote_literal(v_disposition)
+      using errcode = '23514';
+  end if;
+  raise exception 'The kind % does not say what its output is: metadata.disposition must be one of record, envelope, receipt, proposal, prose.', v_kind
+    using errcode = '23514',
+          hint = 'Write metadata.disposition with the kind; without it every emission of the kind is refused storage.';
 end
 $function$;
 
