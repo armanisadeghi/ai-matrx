@@ -291,7 +291,6 @@ function selfTest(): void {
         green.newFindings,
       );
       exitAfterDrain(1);
-      return;
     }
 
     plant(
@@ -330,7 +329,6 @@ function selfTest(): void {
         red.newFindings,
       );
       exitAfterDrain(1);
-      return;
     }
 
     const stale = scan(root, {
@@ -345,7 +343,6 @@ function selfTest(): void {
         stale,
       );
       exitAfterDrain(1);
-      return;
     }
 
     rmSync(join(root, "features/copy"), { recursive: true, force: true });
@@ -356,7 +353,6 @@ function selfTest(): void {
         greenAgain,
       );
       exitAfterDrain(1);
-      return;
     }
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -372,8 +368,9 @@ function main(): void {
     selfTest();
     return;
   }
-  const root = process.cwd();
-  const result = scan(root, loadAllowlist(root));
+  const rootFlag = process.argv.indexOf("--root");
+  const root = rootFlag > -1 ? process.argv[rootFlag + 1] : process.cwd();
+  const result = scan(root, loadAllowlist(process.cwd()));
   if (process.argv.includes("--list")) {
     for (const [rel, rules] of result.matched) console.log(`${rel}\t${rules.join(",")}`);
   }

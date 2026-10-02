@@ -1,1 +1,77 @@
-{"entries":{}}
+{
+  "about": "check:server-pipeline allowlist. Every entry names a file the heuristic matches that is NOT a copy of the Python-server request pipeline, with the reason. 'pending:' entries are copies still to migrate. The list only shrinks: a stale entry fails the check. See scripts/check-server-pipeline.ts.",
+  "entries": {
+    "app/(admin)/administration/compute/resilience-lab/page.tsx": {
+      "rules": ["url-fetch", "ndjson-parse"],
+      "reason": "Admin lab that exercises the transport layer itself: its in-browser mock streams emit bare fixture lines (not server envelopes) and one scenario must throw on a torn line; its server scenarios go through requestRaw + parseNdjsonStream."
+    },
+    "app/(dev)/demos/local-tools/_lib/useMatrxLocal.ts": {
+      "rules": ["url-fetch"],
+      "reason": "Not the Python server: the matrx-local desktop engine on localhost."
+    },
+    "app/(dev)/demos/local-tools/chat/page.dev.tsx": {
+      "rules": ["url-fetch", "ndjson-parse"],
+      "reason": "Not the Python server: streams from the matrx-local desktop engine on localhost."
+    },
+    "app/(dev)/demos/tests/matrx-local/DownloadEndpointCard.tsx": {
+      "rules": ["url-fetch"],
+      "reason": "Not the Python server: the matrx-local desktop engine on localhost."
+    },
+    "app/(dev)/demos/tests/matrx-local/page.dev.tsx": {
+      "rules": ["url-fetch"],
+      "reason": "Not the Python server: the matrx-local desktop engine on localhost."
+    },
+    "app/(dev)/demos/token-broker/page.dev.tsx": {
+      "rules": ["ndjson-parse"],
+      "reason": "Not the Python server: reads a provider's (Anthropic) SSE through the token-broker gateway."
+    },
+    "app/api/compute-targets/resolve/route.ts": {
+      "rules": ["url-fetch"],
+      "reason": "Not the Python server: calls the sandbox orchestrator; the server host appears only as a returned value."
+    },
+    "app/api/mcp/oauth/callback/route.ts": {
+      "rules": ["url-fetch"],
+      "reason": "The raw fetch is the third-party MCP OAuth token endpoint; the server call builds its URL with buildMatrxRequestUrl and sends through persistMcpOAuthTokens (sendMatrxRequest)."
+    },
+    "components/admin/debug/CodeWorkspaceDebug.tsx": {
+      "rules": ["url-fetch"],
+      "reason": "Not the Python server: fetches Next /api/sandbox routes; the server base URL is only displayed."
+    },
+    "features/code/adapters/SandboxProcessAdapter.ts": {
+      "rules": ["ndjson-parse"],
+      "reason": "Not the Python server: parses the sandbox exec stream from the Next /api/sandbox route."
+    },
+    "features/files/cache/service-worker/src/sw.ts": {
+      "rules": ["url-fetch"],
+      "reason": "Service worker pass-through cache: re-issues the page's own requests, never builds a server URL."
+    },
+    "features/files/media-client/client.ts": {
+      "rules": ["url-fetch"],
+      "reason": "pending: the fetch injected into @ai-matrx/files carries its own organization-admission gate and body sniff; move onto the core transport (createMatrxTransport) in the files package."
+    },
+    "features/sharing/components/ShareModal.tsx": {
+      "rules": ["url-fetch"],
+      "reason": "Not the Python server: builds a share link on the app's own origin and calls a Next /api/sharing route."
+    },
+    "features/window-panels/windows/ShareModalWindow.tsx": {
+      "rules": ["url-fetch"],
+      "reason": "Not the Python server: builds a share link on the app's own origin and calls a Next /api/sharing route."
+    },
+    "lib/diagnostics/stream-capture/install-fetch-tap.ts": {
+      "rules": ["ndjson-parse"],
+      "reason": "Diagnostics tap that observes every fetch body in the page for the Error Inspector; it parses nothing it acts on."
+    },
+    "lib/local-engine/discovery.ts": {
+      "rules": ["url-fetch"],
+      "reason": "Not the Python server: discovers the matrx-local desktop engine on localhost ports."
+    },
+    "lib/sandbox/active-binding.ts": {
+      "rules": ["url-fetch"],
+      "reason": "Not the Python server: calls Next /api/sandbox and /api/compute-targets routes."
+    },
+    "packages/chat/src/agents/services/mcp-oauth/discovery.ts": {
+      "rules": ["url-fetch"],
+      "reason": "Not the Python server: OAuth discovery against a third-party MCP server."
+    }
+  }
+}
