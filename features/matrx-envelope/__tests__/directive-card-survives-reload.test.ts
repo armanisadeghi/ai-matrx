@@ -100,6 +100,8 @@ describe("the host reads the ledger so a card survives a reload", () => {
       state: "applied",
       message: "Deleted task.",
       records: [{ noun: "task", id: TASK_A }],
+      // An older server sends no `copies`: the block applied once.
+      copies: 1,
     });
     expect(created).toEqual({ state: "not_applied" });
   });
@@ -179,8 +181,8 @@ describe("the host reads the ledger so a card survives a reload", () => {
       conversation_id: null,
       shells: [
         shellState("directive_v1_create_task", [
-          { state: "applied", message: "Created task.", resource_ids: [TASK_A] },
-          { state: "applied", message: "Created task.", resource_ids: [TASK_B] },
+          { state: "applied", message: "Created task.", resource_ids: [TASK_A], copies: 2 },
+          { state: "applied", message: "Created task.", resource_ids: [TASK_B], copies: 2 },
         ]),
       ],
     });
@@ -195,6 +197,8 @@ describe("the host reads the ledger so a card survives a reload", () => {
         { noun: "task", id: TASK_A },
         { noun: "task", id: TASK_B },
       ],
+      // The server's per-item count after a Run again (aidream applied_summary).
+      copies: 2,
     });
   });
 

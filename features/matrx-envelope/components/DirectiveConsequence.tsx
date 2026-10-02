@@ -174,10 +174,12 @@ function NameList({
   named,
   withChanges,
   noun,
+  titleColumn = null,
 }: {
   named: NamedItem[];
   withChanges: boolean;
   noun: string;
+  titleColumn?: string | null;
 }) {
   const shown = named.slice(0, DIALOG_NAMES_MAX);
   const more = named.length - shown.length;
@@ -186,7 +188,7 @@ function NameList({
       {shown.map((entry) => (
         <li key={entry.key} className="min-w-0">
           <div className="truncate">{entry.name}</div>
-          {withChanges ? <ChangeList noun={noun} item={entry.item} /> : null}
+          {withChanges ? <ChangeList noun={noun} item={entry.item} titleColumn={titleColumn} /> : null}
         </li>
       ))}
       {more > 0 ? <li className="text-muted-foreground">and {more} more</li> : null}
@@ -200,12 +202,21 @@ function NameList({
  * it is now (`readDirectiveRecord`). Until the record is read it lists the new
  * values alone; it never blocks the question.
  */
-function ChangeList({ noun, item }: { noun: string; item: Record<string, unknown> }) {
+function ChangeList({
+  noun,
+  item,
+  titleColumn,
+}: {
+  noun: string;
+  item: Record<string, unknown>;
+  /** The noun's title column — it reads "Title" here exactly as in the form and on the card. */
+  titleColumn: string | null;
+}) {
   const id = itemRecordId(item);
   const current = useRecordValues(readDirectiveRecord, id ? { noun, id } : null);
   return (
     <DirectiveChangeList
-      changes={itemChanges(item, current.values)}
+      changes={itemChanges(item, current.values, { titleColumn })}
       className="mx-auto mt-1 w-fit max-w-full text-left sm:mx-0 sm:pl-3"
     />
   );
@@ -233,6 +244,7 @@ export function directiveConsequenceDialog(
   const { directive, items, nounLabel } = request;
   const noun = nounLabel.toLowerCase();
   const named = namedItems(request, nouns);
+  const titleColumn = nounTitleColumn(directive.noun, nouns);
   const one = named.length === 1 ? named[0] : null;
   const many = `${named.length} ${noun} items`;
   // "Run again" (`request.again`): the ledger already holds this block and a
@@ -275,7 +287,11 @@ export function directiveConsequenceDialog(
                 ? `${ranBefore} Writes these fields again, as you.`
                 : `Overwrites ${one ? "these fields" : "the fields below"} as you. The old values are not kept.`}
             </p>
-            {one ? <ChangeList noun={directive.noun} item={one.item} /> : <NameList named={named} withChanges noun={directive.noun} />}
+            {one ? (
+              <ChangeList noun={directive.noun} item={one.item} titleColumn={titleColumn} />
+            ) : (
+              <NameList named={named} withChanges noun={directive.noun} titleColumn={titleColumn} />
+            )}
           </>
         ),
         confirmLabel: again ? "Update again" : "Update",

@@ -46,6 +46,16 @@ jest.mock("@/features/matrx-envelope/referenceResolvers", () => ({
   useResolvedReferenceLabel: () => ({ display: "REVIEW — task create\nbody", status: "ready" }),
 }));
 
+// The organization a write lands in, and the record's current values, are read
+// live in the app; settled here so the test reads what the dialog SAYS.
+jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
+  selectActiveOrganizationName: () => "G3 Test Org",
+}));
+jest.mock("@/features/matrx-envelope/directiveRecordRow", () => ({
+  readDirectiveRecord: async () => null,
+  useDirectiveRecordTrashed: () => null,
+}));
+
 import { decodeDirective } from "@ai-matrx/content-ir";
 import type { DirectiveAskRequest } from "@ai-matrx/content-ir-react";
 import { matrxDirectiveHost } from "@/features/matrx-envelope/directiveHost";
