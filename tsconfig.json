@@ -21,8 +21,12 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "paths": {
-      "@ai-matrx/chat/*": ["./packages/chat/src/*"],
-      "@host/*": ["./*"],
+      "@ai-matrx/chat/*": [
+        "./packages/chat/src/*"
+      ],
+      "@host/*": [
+        "./*"
+      ],
       "@/app/(admin)/*": [
         "./app/(admin)/*",
         "./app/_admin_build_excluded/*"
@@ -77,7 +81,8 @@
     "global.d.ts",
     "cartesia.d.ts",
     "components/**/*",
-    "features/**/*", "packages/chat/src/**/*",
+    "features/**/*",
+    "packages/chat/src/**/*",
     "app/**/*",
     "packages/**/*.ts",
     "packages/**/*.tsx",
@@ -116,8 +121,12 @@
       "moduleResolution": "node",
       "baseUrl": ".",
       "paths": {
-        "@ai-matrx/chat/*": ["./packages/chat/src/*"],
-        "@host/*": ["./*"],
+        "@ai-matrx/chat/*": [
+          "./packages/chat/src/*"
+        ],
+        "@host/*": [
+          "./*"
+        ],
         "@/app/(admin)/*": [
           "./app/(admin)/*",
           "./app/_admin_build_excluded/*"

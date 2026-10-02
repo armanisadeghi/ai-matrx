@@ -671,7 +671,10 @@ export function adoptWorkflowRun(
           metaTimer = null;
         }
         metaBuffer.clear();
-        for (const router of mediaRouters.values()) router.flush();
+        for (const router of mediaRouters.values()) {
+          router.flush();
+          router.dispose();
+        }
         mediaRouters.clear();
         for (const stop of tree.stops.values()) stop();
         tree.stops.clear();

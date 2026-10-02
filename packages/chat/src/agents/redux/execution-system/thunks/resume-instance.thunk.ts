@@ -55,6 +55,7 @@ import {
   RunInProgressError,
   StreamCancelledError,
   StreamPhaseError,
+  StreamRejoinUnavailableError,
 } from "./run-ai-stream";
 import {
   claimResume,
@@ -408,20 +409,36 @@ export const resumeInstance = createAsyncThunk<
         // (replay-then-follow through the same processStream pipeline),
         // never resume it beside itself and never spin the retry loop.
         releaseResumeClaim(userRequestId);
-        return runAiStream({
-          requestId,
-          conversationId,
-          url: `${backend.baseUrl}${error.rejoin.rejoinPath}`,
-          headers: backend.headers,
-          body: {},
-          channel: backend.channel,
-          dispatch,
-          getState: getState as () => RootState,
-          submitAt: performance.now(),
-          kind: "rejoin",
-          clearInputOnError: false,
-          onStreamOpen: () => onResumeStreamOpened(userRequestId),
-        });
+        try {
+          return await runAiStream({
+            requestId,
+            conversationId,
+            url: `${backend.baseUrl}${error.rejoin.rejoinPath}`,
+            headers: backend.headers,
+            body: {},
+            channel: backend.channel,
+            dispatch,
+            getState: getState as () => RootState,
+            submitAt: performance.now(),
+            kind: "rejoin",
+            clearInputOnError: false,
+            onStreamOpen: () => onResumeStreamOpened(userRequestId),
+          });
+        } catch (rejoinError) {
+          if (!(rejoinError instanceof StreamRejoinUnavailableError)) throw rejoinError;
+          // No live journal (409 live_stream_unavailable): the turn runs on,
+          // or already finished, without a replayable wire. Hand it to THE
+          // durable follower — follow the operation to its end, then reload
+          // the saved turn (`settleRunPickup`) — never a request stuck on
+          // "connecting".
+          const { reconnectServerOperation } = await import(
+            "../../../runtime-reconnect/reconnect-server-operation.thunk"
+          );
+          void dispatch(
+            reconnectServerOperation({ conversationId, requestId, source: "stream-loss" }),
+          );
+          return { requestId, conversationId };
+        }
       }
       if (error instanceof ResumeConflictError) {
         // 409 resume_conflict — another run is still live for this request

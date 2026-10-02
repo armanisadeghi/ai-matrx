@@ -24,21 +24,34 @@ export function workflowLiveAudioKey(runId: string, invocationKey: string): stri
   return `${runId}|${invocationKey}`;
 }
 
+/** A run attachment's media router: the frame assembler plus its own teardown. */
+export interface WorkflowMediaRouter extends MediaFrameAssembler {
+  /**
+   * The attachment is gone (run view unmounted, run detached): destroy every
+   * live player it fed — no AudioContext outlives the page — and start those
+   * keys over, so a later attach under the same key (a rejoin replays from
+   * seq 0) plays fresh instead of staying broken until reload.
+   */
+  dispose(): void;
+}
+
 /**
- * One assembler per run attachment. Reassembled live-audio payloads play
+ * One router per run attachment. Reassembled live-audio payloads play
  * through `workflowLiveAudio`; other media payloads (`media_block`,
  * `partial_image`) are not rendered live on the run page yet — the step's
  * settled output carries the saved file — and say so once per kind.
  */
-export function createWorkflowMediaRouter(runId: string): MediaFrameAssembler {
+export function createWorkflowMediaRouter(runId: string): WorkflowMediaRouter {
   const announced = new Set<string>();
-  return createMediaFrameAssembler({
+  const keys = new Set<string>();
+  const assembler = createMediaFrameAssembler({
     onPayload: ({ payload, source }) => {
       if (isLiveAudioEvent(payload)) {
         const key = workflowLiveAudioKey(
           runId,
           invocationKeyOf(source.nodeId ?? "", source.dispatchId, source.itemIndex),
         );
+        keys.add(key);
         workflowLiveAudio.handle(key, payload);
         return;
       }
@@ -51,4 +64,15 @@ export function createWorkflowMediaRouter(runId: string): MediaFrameAssembler {
       }
     },
   });
+  return {
+    push: (frame) => assembler.push(frame),
+    flush: () => assembler.flush(),
+    get openCount() {
+      return assembler.openCount;
+    },
+    dispose() {
+      for (const key of keys) workflowLiveAudio.reset(key);
+      keys.clear();
+    },
+  };
 }
