@@ -48,11 +48,6 @@ import type {
   KgSuggestionsQuery,
 } from "@/features/kg-suggestions/types";
 import { KgSuggestionRowItem } from "@/features/kg-suggestions/components/KgSuggestionRowItem";
-import {
-  SourcePreviewProvider,
-  useSourcePreviewController,
-} from "@/features/kg-suggestions/components/source-preview/SourcePreviewContext";
-import { SourcePreviewPanel } from "@/features/kg-suggestions/components/source-preview/SourcePreviewPanel";
 import { SuggestionsFilterBar } from "./SuggestionsFilterBar";
 import { SuggestionsTable } from "./SuggestionsTable";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -82,10 +77,6 @@ export function SuggestionsManager() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showLowQuality, setShowLowQuality] = useState(false);
-
-  // Source preview floats in a non-blocking, resizable panel beside the table —
-  // review the document a suggestion came from without losing your place.
-  const { target, openPreview, closePreview } = useSourcePreviewController();
 
   const pendingCount = sumStats(stats, (s) => s.status === "pending");
   const deferredCount = sumStats(stats, (s) => s.status === "deferred");
@@ -421,8 +412,7 @@ export function SuggestionsManager() {
       getWriteHandlers={getWriteHandlers}
       isEditable={false}
     >
-      <SourcePreviewProvider value={{ openPreview }}>
-        <div className="flex h-full min-h-0 flex-col">
+      <div className="flex h-full min-h-0 flex-col">
           {/* Summary strip */}
           <div className="flex items-center gap-3 border-b border-border px-3 py-1.5 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1">
@@ -485,12 +475,6 @@ export function SuggestionsManager() {
             </div>
           )}
         </div>
-        <SourcePreviewPanel
-          target={target}
-          onClose={closePreview}
-          position="right"
-        />
-      </SourcePreviewProvider>
     </SurfaceRuntimeProvider>
   );
 }

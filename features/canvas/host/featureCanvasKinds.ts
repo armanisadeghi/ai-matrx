@@ -10,7 +10,9 @@
 
 import { registerCanvasKinds } from "@ai-matrx/canvas/react";
 import { RECORD_PEEK_CANVAS_KIND } from "@/features/window-panels/detail/canvas/recordPeekKind";
+import { AI_ANSWER_CANVAS_KIND } from "@/features/marketing/seo/ai-visibility/canvas/aiAnswerKind";
+import { SOURCE_PREVIEW_CANVAS_KIND } from "@/features/kg-suggestions/components/source-preview/sourcePreviewKind";
 
 export function registerFeatureCanvasKinds(): () => void {
-  return registerCanvasKinds([RECORD_PEEK_CANVAS_KIND]);
+  return registerCanvasKinds([RECORD_PEEK_CANVAS_KIND, AI_ANSWER_CANVAS_KIND, SOURCE_PREVIEW_CANVAS_KIND]);
 }

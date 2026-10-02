@@ -28,11 +28,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useKgSuggestions } from "@/features/kg-suggestions/hooks/useKgSuggestions";
 import { KgSuggestionRowItem } from "./KgSuggestionRowItem";
-import {
-  SourcePreviewProvider,
-  useSourcePreviewController,
-} from "./source-preview/SourcePreviewContext";
-import { SourcePreviewPanel } from "./source-preview/SourcePreviewPanel";
+import { useIsPreviewingSource } from "./source-preview/SourcePreviewContext";
 import type {
   KgGlobalFilter,
   KgSuggestionRow,
@@ -69,12 +65,10 @@ export function GlobalSuggestionsDrawer({
   const { items, count, status, error, accept, reject, defer } =
     useKgSuggestions(filter, { autoFetch: isOpen });
 
-  // Source preview is a separate non-blocking floating panel. Opening it only
-  // updates this local target — the inbox surface never unmounts. While a
-  // preview is open we also stop outside-clicks / escape from dismissing the
+  // A source preview opens as a canvas tab; the inbox never unmounts. While the
+  // person is reading one we stop outside-clicks / escape from dismissing the
   // inbox, so reviewing the source can't close the drawer out from under you.
-  const { target, openPreview, closePreview, isPreviewing } =
-    useSourcePreviewController();
+  const isPreviewing = useIsPreviewingSource();
   const keepOpenWhilePreviewing = (e: { preventDefault: () => void }) => {
     if (isPreviewing) e.preventDefault();
   };
@@ -260,16 +254,7 @@ export function GlobalSuggestionsDrawer({
     </MatrxDynamicPanelHost>
   );
 
-  return (
-    <SourcePreviewProvider value={{ openPreview }}>
-      {surface}
-      <SourcePreviewPanel
-        target={target}
-        onClose={closePreview}
-        position="left"
-      />
-    </SourcePreviewProvider>
-  );
+  return surface;
 }
 
 export default GlobalSuggestionsDrawer;

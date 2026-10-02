@@ -14,8 +14,8 @@ recurring entity to a brand-new scope.
 **Components** — `KgSuggestionsChip` · `KgSuggestionsPopover` · `ScopeItemSuggestionsPanel` ·
 `GlobalSuggestionsDrawer` · `HeavyHitterSuggestionsInbox` · `KgSuggestionsNavButton` ·
 **`KgSuggestionRowItem`** (the ONE shared decision card every surface renders) ·
-`components/source-preview/` (`SuggestionSourcePreview`, `useSourcePreviewController`,
-`useOpenSourcePreview`, `PreviewSourceButton`) · `SuggestionsManager` (`/suggestions`).
+`components/source-preview/` (`SuggestionSourcePreview`, the `kg-source-preview` canvas kind,
+`useOpenSourcePreview`, `useIsPreviewingSource`, `PreviewSourceButton`) · `SuggestionsManager` (`/suggestions`).
 
 **Hooks / state** — `useKgSuggestions(filter)` (slice cache, the three inbox views) ·
 `useSuggestionsQuery` (server-side query over the enriched view, manager only) ·
@@ -47,12 +47,12 @@ Migration `kg_014` added `decision_note`, `viewed_at`, `is_starred` to both ledg
   (per CLAUDE.md, confirms are only for destructive paths). Results are toasts.
 - **One shared row.** Every surface renders `KgSuggestionRowItem` — never fork
   the row UX. Accept/reject/defer come from the hook, not the component.
-- **Source preview is non-blocking, host-owned, and never dismisses the inbox.**
-  The preview target lives in the HOST's local state (`useSourcePreviewController`),
-  not Redux — opening it must not touch the suggestion cache or close the drawer.
-  Reuse `MatrxDynamicPanel` for the surface; don't add a new panel primitive. A
-  card requests a preview via `useOpenSourcePreview()` and MUST tolerate a `null`
-  controller (compact surfaces) by falling back to a link-out, never crashing.
+- **Source preview is a canvas tab and never dismisses the inbox.** A card
+  calls `useOpenSourcePreview()`, which opens the `kg-source-preview` kind keyed
+  `<source_kind>:<source_id>` (same source → same tab). It touches neither the
+  suggestion cache nor the drawer; the drawer reads `useIsPreviewingSource()` to
+  stay open while the evidence is read. Where no canvas column is on screen the
+  hook returns `null` and the card MUST fall back to a link-out, never crash.
 - **One source read layer.** Source titles + bodies + link-outs come from
   `sourcePreviewService` (and `useSourcePreviewDoc` for bodies). Don't re-query
   source tables ad hoc from a card or fork a second title resolver — extend the
@@ -112,6 +112,7 @@ Migration `kg_014` added `decision_note`, `viewed_at`, `is_starred` to both ledg
 
 ## Change Log
 
+- 2026-10-02 — Source preview moved off the floating `MatrxDynamicPanel` (`SourcePreviewPanel`, deleted with its host-owned controller) onto a `kg-source-preview` canvas tab keyed by the source; `useOpenSourcePreview` needs no host provider any more.
 - 2026-09-17 — **The personal-organization write in `kgSuggestionAckService.ackSuggestions` is
   marked deliberate, not removed.** A "don't show this suggestion again" row is the signed-in
   person's own cross-organization preference (the new-suggestion toast is global; RLS scopes every

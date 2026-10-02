@@ -1,71 +1,51 @@
 // features/kg-suggestions/components/source-preview/SourcePreviewContext.tsx
 //
-// The wiring that lets ANY suggestion decision card (KgSuggestionRowItem, deep
-// in the drawer or the manager table) ask to preview its source document —
-// WITHOUT prop-drilling and, crucially, WITHOUT re-rendering or closing the
-// inbox it lives in.
+// How ANY suggestion decision card (KgSuggestionRowItem, deep in the drawer or
+// the manager table) previews its source document: as a canvas tab
+// (`kg-source-preview`, keyed by the source), beside whatever inbox the person
+// is triaging from. Opening one never re-renders or closes that inbox.
 //
-// A host (the drawer, the manager) owns the preview target via
-// `useSourcePreviewController`, exposes only `openPreview` to descendants
-// through this context, and renders the floating `SourcePreviewPanel` itself.
-// A card calls `useOpenSourcePreview()`; when a provider is present it opens the
-// in-place panel, otherwise (compact popover/chip surfaces with no host) the
-// card falls back to a link-out / window open. Opening a preview only updates
-// the host's local target state, so the inbox surface never unmounts.
+// A card calls `useOpenSourcePreview()`. Where a canvas column is on screen it
+// gets the canvas opener; where none is (a kiosk, a meeting stage) it gets
+// `null` and falls back to a link-out / window open.
 
 "use client";
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { selectCanvasActiveItem } from "@ai-matrx/canvas";
+import { useCanvasIsPresented, useOptionalCanvas, useOptionalCanvasState } from "@ai-matrx/canvas/react";
+import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
+import { SOURCE_PREVIEW_KIND, sourcePreviewOpenInput } from "./sourcePreviewKind";
 
 export interface SourcePreviewTarget {
   kind: string;
   id: string;
   snippet: string | null;
-  /** Pre-resolved title (optional) so the panel header can show it instantly. */
+  /** Pre-resolved title (optional) so the tab can show it instantly. */
   title?: string | null;
 }
 
-interface SourcePreviewApi {
-  openPreview: (target: SourcePreviewTarget) => void;
-}
-
-const SourcePreviewContext = createContext<SourcePreviewApi | null>(null);
-
-export const SourcePreviewProvider = SourcePreviewContext.Provider;
-
 /**
- * Card-side hook. Returns an `openPreview` fn when a host provides one, else
- * `null` so the card can gracefully fall back to a link-out / window open.
+ * Card-side hook. Returns an `openPreview` fn when the canvas can show the
+ * source, else `null` so the card can fall back to a link-out / window open.
  */
 export function useOpenSourcePreview():
   | ((target: SourcePreviewTarget) => void)
   | null {
-  const api = useContext(SourcePreviewContext);
-  return api?.openPreview ?? null;
-}
-
-export interface SourcePreviewController {
-  target: SourcePreviewTarget | null;
-  openPreview: (target: SourcePreviewTarget) => void;
-  closePreview: () => void;
-  /** True while a source preview is open — hosts use this to keep the inbox open. */
-  isPreviewing: boolean;
+  const canvas = useOptionalCanvas();
+  const presented = useCanvasIsPresented();
+  if (!canvas || !presented) return null;
+  return (target) => {
+    openCanvasItem(canvas, sourcePreviewOpenInput(target));
+  };
 }
 
 /**
- * Host-side state. Owns the single active preview target. The same source
- * re-opening just updates the target (no flicker); a new source swaps it in.
+ * True while the person is looking at a source preview tab — inboxes use this
+ * to keep themselves open while the evidence is being read.
  */
-export function useSourcePreviewController(): SourcePreviewController {
-  const [target, setTarget] = useState<SourcePreviewTarget | null>(null);
-
-  const openPreview = useCallback((next: SourcePreviewTarget) => {
-    setTarget(next);
-  }, []);
-
-  const closePreview = useCallback(() => {
-    setTarget(null);
-  }, []);
-
-  return { target, openPreview, closePreview, isPreviewing: target !== null };
+export function useIsPreviewingSource(): boolean {
+  return useOptionalCanvasState(
+    (state) => state.isOpen && selectCanvasActiveItem(state)?.kind === SOURCE_PREVIEW_KIND,
+    false,
+  );
 }

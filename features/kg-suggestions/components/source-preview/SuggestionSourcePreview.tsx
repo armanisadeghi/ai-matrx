@@ -5,8 +5,8 @@
 // CONTEXT and scrolled into view — so a user can verify the evidence before
 // accepting/rejecting, instead of trusting an opaque kind + id.
 //
-// Presentational only (no panel chrome). It's wrapped by `SourcePreviewPanel`
-// for the floating non-blocking surface, and can be embedded directly anywhere
+// Presentational only (no panel chrome). It is the body of the
+// `kg-source-preview` canvas tab, and can be embedded directly anywhere
 // a read-only source view is wanted. Loads the body via `useSourcePreviewDoc`
 // (per-kind direct-Supabase + ingested-doc fallback). The verbatim snippet is
 // ALWAYS shown at the top (the guaranteed "at least one good snippet"), even

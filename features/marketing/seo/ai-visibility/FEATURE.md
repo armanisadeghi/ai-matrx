@@ -40,8 +40,9 @@
 - **Aliases are identity data.** Mention and recommendation position come from
   brand/site names plus `web.brand.profile.brand_aliases`, never a frontend text
   match.
-- **Every truncated answer has a door.** Internal cards open the full answer in
-  `SidePanelSurface`; public report answers are fully readable in expandable
+- **Every truncated answer has a door.** Internal cards open the full answer as
+  an `ai-visibility-answer` canvas tab (`canvas/aiAnswerKind.ts`, keyed by the
+  answer's id, rendered through `RichDocument`); public report answers are fully readable in expandable
   provider sections.
 - **Social previews are data-specific.** `/s/[token]/opengraph-image.tsx`
   renders brand, buyer question, provider coverage, mentions, and best position
@@ -69,6 +70,7 @@
 
 ## Change log
 
+- 2026-10-02 — An engine's full answer opens as an `ai-visibility-answer` canvas tab keyed by the answer's id (saved response row → live response id → run:engine), rendered through `RichDocument`; the `SidePanelSurface` beside the workspace is gone.
 - 2026-09-27 — Panels: removed the pooled "Named in answers / Cited as a
   source" cells, headline sentence and weekly bars; added the six named
   metrics, the evidence ladder, paired comparisons, unclassified-question
