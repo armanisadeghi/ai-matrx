@@ -391,21 +391,24 @@ function parsePricingTier(value: unknown, path: string): PricingTier {
   if (maxTokens !== null && typeof maxTokens !== "number") {
     throw boundaryError(`${path}.max_tokens`, "a number or null");
   }
+  // A price direction that does not apply may be stored absent rather than
+  // null (an audio-hour offering carries no cached_input_price); both mean
+  // "no price". A present non-number is still refused.
   const tier: PricingTier = {
     max_tokens:
       maxTokens === null
         ? null
         : requireFiniteNumber(maxTokens, `${path}.max_tokens`),
     input_price: requireFiniteNumberOrNull(
-      record.input_price,
+      record.input_price ?? null,
       `${path}.input_price`,
     ),
     output_price: requireFiniteNumberOrNull(
-      record.output_price,
+      record.output_price ?? null,
       `${path}.output_price`,
     ),
     cached_input_price: requireFiniteNumberOrNull(
-      record.cached_input_price,
+      record.cached_input_price ?? null,
       `${path}.cached_input_price`,
     ),
   };

@@ -1156,10 +1156,27 @@ export function restoreResearchInitDraft(data: Record<string, unknown>): {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function ResearchInitForm() {
+export interface ResearchInitFormProps {
+  /**
+   * EMBEDDED mode (a board tile, a window): the wizard keeps its step in local
+   * state instead of the address bar, and hands the created topic back here
+   * instead of navigating to it.
+   */
+  onCreated?: (topicId: string, name: string) => void;
+}
+
+export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const urlSearchParams = useSearchParams();
+  const embedded = onCreated !== undefined;
+  const [localParams, setLocalParams] = useState(() => new URLSearchParams());
+  const searchParams = embedded ? localParams : urlSearchParams;
+  /** Move the wizard: the address bar on the page, local state when embedded. */
+  const goToAddress = (qs: string) => {
+    if (embedded) setLocalParams(new URLSearchParams(qs));
+    else pushAddressWithoutNavigating(qs ? `${pathname}?${qs}` : pathname);
+  };
   const api = useResearchApi();
   const dispatch = useAppDispatch();
   const { value: activeHierarchy, onChange: updateActiveHierarchy } =
@@ -1351,14 +1368,14 @@ export default function ResearchInitForm() {
     params.set("mode", mode);
     if (step >= 2) params.set("step", "2");
     else params.delete("step");
-    pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
+    goToAddress(params.toString());
   };
 
   const handleModeSelect = (mode: Mode) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("mode", mode);
     params.delete("step");
-    pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
+    goToAddress(params.toString());
   };
 
   const handleContinue = () => {
@@ -1388,7 +1405,7 @@ export default function ResearchInitForm() {
     params.delete("mode");
     params.delete("step");
     const qs = params.toString();
-    pushAddressWithoutNavigating(qs ? `${pathname}?${qs}` : pathname);
+    goToAddress(qs);
   };
 
   // ── Template handling ─────────────────────────────────────────────────────
@@ -1474,7 +1491,8 @@ export default function ResearchInitForm() {
           }
         }
 
-        router.push(`/research/topics/${topic.id}`);
+        if (onCreated) onCreated(topic.id, topic.name);
+        else router.push(`/research/topics/${topic.id}`);
       } catch (err) {
         setError((err as Error).message);
       }
@@ -1696,7 +1714,7 @@ export default function ResearchInitForm() {
   // ── AI review actions ─────────────────────────────────────────────────────
   const handleStartResearch = async () => {
     if (aiPhase.status !== "reviewing") return;
-    const { topicId, organizationId, keywordRows, quotas } = aiPhase;
+    const { topicId, organizationId, keywordRows, quotas, appliedName } = aiPhase;
     if (!keywordRows || keywordRows.length === 0) {
       toast.error("Add at least one keyword before starting.");
       return;
@@ -1723,9 +1741,11 @@ export default function ResearchInitForm() {
       );
       startTransition(() => {
         api.runPipeline(topicId, organizationId).catch(() => {});
-        router.push(
-          researchStartDestination(searchParams.get("return_to"), topicId),
-        );
+        if (onCreated) onCreated(topicId, appliedName ?? "Research");
+        else
+          router.push(
+            researchStartDestination(searchParams.get("return_to"), topicId),
+          );
       });
     } catch (err) {
       toast.error((err as Error).message ?? "Could not save keywords.");

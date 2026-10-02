@@ -193,17 +193,13 @@ it("an expanded envelope the receipt accounts for is compared like any key", () 
   ]);
 });
 
-it("a generated row's delivered text is normalized once to the package's shape", () => {
-  // The wire marks a defaulted field optional (`truncated?`); the package's
-  // ContextDeliveredText requires it. One normalizer fills it for every reader.
+it("a generated row's delivered ref is normalized once — size and hash, never text (RULES.md §5b)", () => {
   const data = receipt(12000, "inline");
   const wire = data.rows![0]!;
   wire.origin = "server";
-  wire.delivered = { text: "  <organization>Harbor</organization>", chars: 38, sha256: "ab" };
+  wire.delivered = { chars: 38, sha256: "ab" };
   wire.on_request = null;
   const fields = deliveredFieldsFor(data, "note_bundle", "matrx-user/notes");
-  expect(fields).toEqual({
-    delivered: { text: "  <organization>Harbor</organization>", chars: 38, truncated: false, sha256: "ab" },
-  });
+  expect(fields).toEqual({ delivered: { chars: 38, sha256: "ab" } });
   expect(toContextReceipt(data).rows[0]!.delivered).toEqual(fields.delivered);
 });

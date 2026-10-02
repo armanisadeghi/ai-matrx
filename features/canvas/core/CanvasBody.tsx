@@ -4,18 +4,13 @@
  * CanvasBody — the type-keyed renderer switch, extracted so it can be
  * reused independently of any chrome (header, share sheet, sync controls).
  *
- * Two consumers today:
- *   1. `CanvasRenderer` — the legacy "full" renderer (header + body + share
- *      dialog) used by PromptRunnerModal, AdaptiveLayout, and other pre-
- *      existing surfaces. Kept intact for backward compatibility.
- *   2. `CanvasPane` — the new modern per-pane wrapper used by
- *      `CanvasSideSheetImpl`, which provides its own pane-aware header
- *      and the optional split-view layout.
+ * One consumer: `features/canvas/host/ArtifactCanvasView.tsx`, the body of
+ * every artifact tab on the canvas (@ai-matrx/canvas).
  *
  * If you're adding a new content type:
- *   - Add the case here (one place — both surfaces pick it up)
+ *   - Add the case here (one place)
  *   - Register metadata in `canvas-block-meta.ts`
- *   - Update `CanvasContentType` in the slice
+ *   - Add it to `CanvasContentType` (features/canvas/canvasContent.ts) and its icon in `features/canvas/host/artifactKinds.tsx`
  *   - Remember: renderers MUST handle partial state during streaming.
  */
 

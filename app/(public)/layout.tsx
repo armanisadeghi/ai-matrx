@@ -19,11 +19,9 @@ export default function PublicLayout({
         </main>
         <PublicFooter />
       </div>
-      {/* Canvas front door at layout root so the surface sits above all page
-          content (z-10000) and is available from every public route. The
-          heavy canvas core loads only when a canvas item exists — never
-          statically import CanvasSideSheetImpl here (build-graph leak on
-          every anonymous page; eslint bans it). */}
+      {/* THE canvas column — same as every layout: the public layout gives up
+          --shell-canvas-w on the right, so the canvas never covers the page.
+          Tab bodies load lazily per kind. */}
       <ShellCanvasColumn />
     </Providers>
   );

@@ -524,17 +524,15 @@ export interface ContextDecidedBy {
   max_inline_chars: "default" | "page" | "agent" | "you";
 }
 
-export interface ContextDeliveredText {
-  text: string;
+export interface ContextDeliveredRef {
   chars: number;
-  truncated?: boolean;
   sha256: string;
 }
 
 export interface ContextReceiptBlock {
   id: string;
   label: string;
-  delivered: ContextDeliveredText;
+  delivered: ContextDeliveredRef;
 }
 
 export interface ContextReceiptRow {
@@ -553,8 +551,8 @@ export interface ContextReceiptRow {
   blocked_by?: "model" | "self_check" | null;
   consumed_as?: "expanded" | "directive" | "renamed" | "unaccounted" | null;
   consumed_into?: string[];
-  delivered?: ContextDeliveredText | null;
-  on_request?: ContextDeliveredText | null;
+  delivered?: ContextDeliveredRef | null;
+  on_request?: ContextDeliveredRef | null;
 }
 
 export interface ContextRule {

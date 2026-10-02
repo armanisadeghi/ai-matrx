@@ -113,8 +113,8 @@ describe("the progress summary and the steps under it are one truth", () => {
 
 /**
  * The census: the Build was not the only surface whose summary was computed
- * beside its rows rather than from them. `toProgressState` (flashcard
- * illustration) and `initialProgress` (the AI-visibility report) both hand a
+ * beside its rows rather than from them. `initialProgress` (the AI-visibility
+ * report) hands a
  * cheerful, fixed sentence to the same renderer while individual rows can go
  * red. Fixing this in the renderer is what makes them inherit it.
  */

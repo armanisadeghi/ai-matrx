@@ -58,6 +58,36 @@ describe("AI offering boundary", () => {
     });
   });
 
+  it("reads an absent price direction as null", async () => {
+    mockOrder.mockResolvedValue({
+      error: null,
+      data: [
+        {
+          id: "offering-audio",
+          pricing: [
+            {
+              max_tokens: null,
+              input_price: 0.288,
+              output_price: 0,
+              usage_basis: "audio_hour_input",
+            },
+          ],
+          capabilities_override: {},
+          override: { params: {}, constraints: [] },
+          metadata: {},
+        },
+      ],
+    });
+
+    const offerings = await aiModelService.fetchOfferings();
+
+    expect(offerings[0].pricing[0]).toMatchObject({
+      input_price: 0.288,
+      output_price: 0,
+      cached_input_price: null,
+    });
+  });
+
   it("still rejects a non-numeric non-null price", async () => {
     mockOrder.mockResolvedValue({
       error: null,

@@ -30,6 +30,7 @@ import {
   systemRowsToResolved,
   withheldKeys,
 } from "@ai-matrx/agents/context";
+import * as contextPackage from "@ai-matrx/agents/context";
 import { getManifest } from "../../../../surfaces/runtime/registry";
 import {
   BASELINE_VALUES,
@@ -562,6 +563,29 @@ export function contextRowsForRequest(request: object): ResolvedContextRow[] {
 
 // ── What the table DISPLAYS ─────────────────────────────────────────────────
 
+/**
+ * RULES.md §5a and the value→blocks map, from @ai-matrx/agents (≥ 0.28.0 /
+ * ≥ 0.29.0); the literal fallbacks serve an older installed build — retire with
+ * the 0.29.0 adoption.
+ */
+const SERVER_OWNED_FALLBACK = new Set(["user", "client", "organization", "active_scopes"]);
+function isServerOwnedKey(key: string): boolean {
+  const fromPackage = (contextPackage as { isServerAuthoritativeKey?: (k: string) => boolean })
+    .isServerAuthoritativeKey;
+  return fromPackage ? fromPackage(key) : SERVER_OWNED_FALLBACK.has(key);
+}
+const ROW_BLOCK_IDS: Readonly<Record<string, readonly string[]>> =
+  (contextPackage as { CONTEXT_ROW_BLOCKS?: Record<string, readonly string[]> }).CONTEXT_ROW_BLOCKS ?? {
+    organization: ["organization_catalog"],
+  };
+
+function statedBlockChars(receipt: { blocks?: { id: string; delivered: { chars: number } }[] }, key: string): number {
+  const ids = ROW_BLOCK_IDS[key] ?? [];
+  return (receipt.blocks ?? [])
+    .filter((b) => ids.includes(b.id))
+    .reduce((n, b) => n + b.delivered.chars, 0);
+}
+
 /** The receipt persisted on the conversation's most recent sent message, if any. */
 function lastPersistedReceipt(state: ChatRootState, conversationId: string) {
   const entry = state.messages?.byConversationId?.[conversationId];
@@ -666,9 +690,16 @@ export const selectDisplayContextRows =
     });
     // WHAT THE MODEL READ (RULES.md §5 `delivered`): every row the receipt
     // carries it for shows the server's rendering, never the client's copy.
+    // A value the server states itself (RULES.md §5a) is measured by what it
+    // stated — its statement plus the blocks it rode with (the Organization's
+    // catalog) — never by the page's copy.
     const out = [...filled, ...serverAdded].map((row) => {
       const fields = deliveredFieldsFor(receipt, row.key, row.surfaceKey);
-      return Object.keys(fields).length > 0 ? { ...row, ...fields } : row;
+      if (Object.keys(fields).length === 0) return row;
+      const stated = fields.delivered && isServerOwnedKey(row.key)
+        ? fields.delivered.chars + statedBlockChars(receipt, row.key)
+        : null;
+      return { ...row, ...fields, ...(stated !== null ? { chars: stated } : {}) };
     });
     displayMemo.set(conversationId, { rows, receipt, expected, saved, out });
     return out;

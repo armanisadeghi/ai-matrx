@@ -50,7 +50,6 @@ export interface AuthenticatedChatPropsConfig {
   showResourcePicker?: boolean;
   showModelPicker?: boolean;
   showVariables?: boolean;
-  enableCanvas?: boolean;
 
   // Callbacks
   onConversationIdChange?: (conversationId: string) => void;
@@ -80,7 +79,6 @@ export function useAuthenticatedChatProps(
     showResourcePicker = true,
     showModelPicker = false,
     showVariables,
-    enableCanvas = false,
     onConversationIdChange,
     onClose,
     sidebarSlot,
@@ -112,7 +110,6 @@ export function useAuthenticatedChatProps(
       showResourcePicker,
       showModelPicker,
       showVariables: showVariables ?? !!variableDefaults?.length,
-      enableCanvas,
 
       // Agent config
       variableDefaults,
@@ -139,7 +136,6 @@ export function useAuthenticatedChatProps(
       showResourcePicker,
       showModelPicker,
       showVariables,
-      enableCanvas,
       variableDefaults,
       variables,
       requiresVariableReplacement,

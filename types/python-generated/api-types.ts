@@ -2480,6 +2480,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/context/delivered": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Context Delivered
+         * @description The exact text a SENT turn's model received for one value or block (RULES.md §5b),
+         *     re-found in the turn's recorded provider request and matched by the receipt's hash. The next
+         *     turn's text is ``POST /preview`` with ``view``. Access: the conversation, viewer level.
+         */
+        get: operations["context_delivered_ai_context_delivered_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/chat/direct-chat": {
         parameters: {
             query?: never;
@@ -2557,6 +2579,46 @@ export interface paths {
          *     ``aidream.services.ai_execution.realtime_tools.execute_realtime_tool``.
          */
         post: operations["execute_realtime_tool_route_ai_tools_execute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/agents/versions/{version_id}/portable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Portable Agent Version
+         * @description One immutable agent version as a portable bundle.
+         */
+        post: operations["get_portable_agent_version_ai_agents_versions__version_id__portable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/agents/{agent_id}/portable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Portable Agent
+         * @description The agent's current definition as a portable bundle.
+         */
+        post: operations["get_portable_agent_ai_agents__agent_id__portable_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4936,7 +4998,7 @@ export interface paths {
          *
          *     How much of the record comes back is the resolved
          *     `meet.guest_record_access` configuration — the meeting's own setting, then
-         *     the organization's, then the platform default `summary`. `none` is a 403
+         *     the organization's, then the platform default `full`. `none` is a 403
          *     carrying the sentence a guest reads; it is never an empty record, because a
          *     screen that cannot tell "not shared" from "nothing happened" is a screen
          *     that lies.
@@ -4950,6 +5012,30 @@ export interface paths {
         get: operations["meeting_record_v1_meet_record_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Meeting Claim
+         * @description KEEP YOUR NOTES: a guest who just created an account takes the meeting with them.
+         *
+         *     A real session plus the guest pass this browser kept from the meeting. The
+         *     attendance becomes the account's; what it may read stays the guest share
+         *     (`services/meet/guest_claim.py`). Idempotent; never a grant.
+         */
+        post: operations["meeting_claim_v1_meet_claim_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -64445,6 +64531,7 @@ export interface components {
             surface?: string | null;
             /** @description This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt. */
             page_context?: components["schemas"]["PageContext"] | null;
+            view?: components["schemas"]["ContextViewTarget"] | null;
             /** Question */
             question: string;
         };
@@ -64643,6 +64730,19 @@ export interface components {
             says: string;
         };
         /**
+         * ContextDeliveredRef
+         * @description What the model read for one value or block, by SIZE and HASH only — never the text
+         *     (RULES.md §5/§5b, owner law 2026-10-01: a server-shaped value is fetched on demand, never
+         *     pushed). The text itself is served by ``GET /ai/context/delivered`` (a sent turn) or
+         *     ``POST /ai/context/preview`` with ``view`` (the next turn), byte-exact, matched by this hash.
+         */
+        ContextDeliveredRef: {
+            /** Chars */
+            chars: number;
+            /** Sha256 */
+            sha256: string;
+        };
+        /**
          * ContextDeliveredSide
          * @description One side's context EXACTLY as the model is fed it — the run path's assembler's bytes.
          */
@@ -64670,24 +64770,6 @@ export interface components {
             /** Block Byte Length */
             block_byte_length?: number | null;
             provenance?: components["schemas"]["ContextProvenance"] | null;
-        };
-        /**
-         * ContextDeliveredText
-         * @description Text the model actually read for one value — copied from what the server rendered,
-         *     never rebuilt from the client's copy (RULES.md §5 ``delivered`` / ``on_request``).
-         */
-        ContextDeliveredText: {
-            /** Text */
-            text: string;
-            /** Chars */
-            chars: number;
-            /**
-             * Truncated
-             * @default false
-             */
-            truncated?: boolean;
-            /** Sha256 */
-            sha256: string;
         };
         /**
          * ContextEnvelope
@@ -64947,6 +65029,7 @@ export interface components {
             surface?: string | null;
             /** @description This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt. */
             page_context?: components["schemas"]["PageContext"] | null;
+            view?: components["schemas"]["ContextViewTarget"] | null;
         };
         /** ContextPreviewResponse */
         ContextPreviewResponse: {
@@ -64989,6 +65072,7 @@ export interface components {
             provenance?: components["schemas"]["ContextProvenance"] | null;
             delivered?: components["schemas"]["ContextDelivered"] | null;
             receipt?: components["schemas"]["ContextReceipt"] | null;
+            viewed?: components["schemas"]["ContextViewedText"] | null;
         };
         /**
          * ContextPreviewSelection
@@ -65088,6 +65172,23 @@ export interface components {
             rows?: components["schemas"]["ContextReceiptRow"][];
             /** Rules Error */
             rules_error?: string | null;
+            /** Blocks */
+            blocks?: components["schemas"]["ContextReceiptBlock"][];
+        };
+        /**
+         * ContextReceiptBlock
+         * @description One block of text the server put in front of the model this turn that is NOT a single
+         *     context value: the turn's ``<active_context>``, earlier-turn context, the sandbox briefing,
+         *     unplaced bound data, skills, observational memory, the organization catalog, the
+         *     dictionary… (RULES.md §5 ``blocks``). Captured from the final config just before the model
+         *     call — the exact text the model received, never a rebuilt copy.
+         */
+        ContextReceiptBlock: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            delivered: components["schemas"]["ContextDeliveredRef"];
         };
         /**
          * ContextReceiptRow
@@ -65134,9 +65235,8 @@ export interface components {
             consumed_as?: ("directive" | "expanded" | "renamed" | "unaccounted") | null;
             /** Consumed Into */
             consumed_into?: string[];
-            delivered?: components["schemas"]["ContextDeliveredText"] | null;
-            on_request?: components["schemas"]["ContextDeliveredText"] | null;
-            server_rendered?: components["schemas"]["ContextDeliveredText"] | null;
+            delivered?: components["schemas"]["ContextDeliveredRef"] | null;
+            on_request?: components["schemas"]["ContextDeliveredRef"] | null;
         };
         /** ContextRenderRequest */
         ContextRenderRequest: {
@@ -65312,6 +65412,43 @@ export interface components {
             scope_type_slug?: string | null;
             /** Item Key */
             item_key?: string | null;
+        };
+        /**
+         * ContextViewTarget
+         * @description One thing to view: ``kind`` + the value's key or the block's id.
+         */
+        ContextViewTarget: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "block" | "delivered" | "on_request";
+            /** Key */
+            key: string;
+        };
+        /**
+         * ContextViewedText
+         * @description The exact text the model received (or will receive) for one value or block.
+         */
+        ContextViewedText: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "block" | "delivered" | "on_request";
+            /** Key */
+            key: string;
+            /** Text */
+            text: string;
+            /** Chars */
+            chars: number;
+            /** Sha256 */
+            sha256: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "conversation_prompt" | "preview" | "turn_record" | "wire";
         };
         /** ContractAuditReport */
         ContractAuditReport: {
@@ -95489,6 +95626,25 @@ export interface components {
             /** Body */
             body: string;
         };
+        /**
+         * MeetClaimRequest
+         * @description `POST /api/v1/meet/claim` — the guest's pass rides `x-meet-room-token`.
+         */
+        MeetClaimRequest: {
+            /** Meeting Id */
+            meeting_id: string;
+        };
+        /** MeetClaimResponse */
+        MeetClaimResponse: {
+            /** Meeting Id */
+            meeting_id: string;
+            /** Slug */
+            slug: string;
+            /** Claimed */
+            claimed: boolean;
+            /** Access */
+            access: string;
+        };
         /** MeetCollabRequest */
         MeetCollabRequest: {
             /** Meeting Id */
@@ -107294,6 +107450,115 @@ export interface components {
             indicator: "critical" | "major" | "minor" | "none";
             /** Operational */
             operational: boolean;
+        };
+        /** PortableAgentBundle */
+        PortableAgentBundle: {
+            /**
+             * Contract
+             * @default portable-agent.v1
+             * @constant
+             */
+            contract?: "portable-agent.v1";
+            /** Agent Id */
+            agent_id: string;
+            /** Version Id */
+            version_id?: string | null;
+            /** Version Number */
+            version_number?: number | null;
+            /**
+             * Is Version
+             * @default false
+             */
+            is_version?: boolean;
+            /** Name */
+            name: string;
+            /** Definition Hash */
+            definition_hash: string;
+            /** Model Id */
+            model_id: string;
+            /** Instructions */
+            instructions: string;
+            /** Variables */
+            variables?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Filled Variables */
+            filled_variables?: string[];
+            /** Skills */
+            skills?: components["schemas"]["PortableSkill"][];
+            /** Tools */
+            tools?: components["schemas"]["PortableTool"][];
+            /** Surface */
+            surface: string;
+            /** Unavailable */
+            unavailable?: components["schemas"]["PortableUnavailable"][];
+        };
+        /**
+         * PortableAgentRequest
+         * @description What the host sends: the person's variable values, and the tool surface.
+         */
+        PortableAgentRequest: {
+            /** Variables */
+            variables?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Surface
+             * @default matrx-user/code-editor
+             */
+            surface?: string;
+        };
+        /** PortableSkill */
+        PortableSkill: {
+            /** Id */
+            id: string;
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "included" | "listed";
+            /** Slug */
+            slug: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description: string;
+            /** Path */
+            path: string;
+            /** Content */
+            content: string;
+            /** Body */
+            body: string;
+            /** Content Hash */
+            content_hash: string;
+        };
+        /** PortableTool */
+        PortableTool: {
+            /** Name */
+            name: string;
+            /** Canonical Name */
+            canonical_name: string;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Parameters */
+            parameters?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /** PortableUnavailable */
+        PortableUnavailable: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "mcp_server" | "message" | "skill" | "tool" | "tools" | "variable";
+            /** Name */
+            name: string;
+            /** Reason */
+            reason: string;
         };
         /**
          * Portion
@@ -149557,6 +149822,42 @@ export interface operations {
             };
         };
     };
+    context_delivered_ai_context_delivered_get: {
+        parameters: {
+            query: {
+                conversation_id: string;
+                /** @description The person's message of the turn. */
+                message_id: string;
+                kind: "block" | "delivered" | "on_request";
+                /** @description The value's key, or the block's id. */
+                key: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextViewedText"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     direct_chat_ai_chat_direct_chat_post: {
         parameters: {
             query?: never;
@@ -149678,6 +149979,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolExecuteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_portable_agent_version_ai_agents_versions__version_id__portable_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortableAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortableAgentBundle"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_portable_agent_ai_agents__agent_id__portable_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortableAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortableAgentBundle"];
                 };
             };
             /** @description Validation Error */
@@ -153790,6 +154161,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeetRecordResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_claim_v1_meet_claim_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-meet-room-token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetClaimRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetClaimResponse"];
                 };
             };
             /** @description Validation Error */

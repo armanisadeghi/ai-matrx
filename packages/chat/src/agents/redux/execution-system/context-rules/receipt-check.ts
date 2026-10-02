@@ -17,14 +17,13 @@ import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import {
   compareReceipt,
   deliveredFields,
-  type ContextDeliveredText,
   type ContextReceipt,
   type ContextReceiptMismatch,
   type ContextReceiptRow,
   type ResolvedContextRow,
 } from "@ai-matrx/agents/context";
 import type {
-  ContextDeliveredText as WireDeliveredText,
+  ContextDeliveredRef as WireDeliveredRef,
   ContextReceiptData,
   ContextReceiptRow as WireReceiptRow,
 } from "@host/types/python-generated/stream-events";
@@ -36,8 +35,8 @@ import { toast } from "../../../../host/notify";
  * THE ONE normalizer of a generated receipt row (the server's OpenAPI shape, where
  * every defaulted field is optional) to the package's `ContextReceiptRow`. Every
  * host reader of a receipt row goes through it — never hands a generated field
- * to a package type directly (the two `ContextDeliveredText` types differ:
- * the wire's `truncated` is optional, the package's is not).
+ * to a package type directly. `delivered` / `on_request` are size + hash only
+ * (RULES.md §5b) — the text is fetched on demand through `context-viewer.ts`.
  */
 export function toContextReceiptRow(row: WireReceiptRow): ContextReceiptRow {
   const out: ContextReceiptRow = {
@@ -64,16 +63,21 @@ export function toContextReceiptRow(row: WireReceiptRow): ContextReceiptRow {
     consumed_as: row.consumed_as ?? null,
     consumed_into: row.consumed_into ?? [],
   };
-  const delivered = toDeliveredText(row.delivered);
+  const delivered = toDeliveredRef(row.delivered);
   if (delivered) out.delivered = delivered;
-  const onRequest = toDeliveredText(row.on_request);
+  const onRequest = toDeliveredRef(row.on_request);
   if (onRequest) out.on_request = onRequest;
   return out;
 }
 
-function toDeliveredText(text: WireDeliveredText | null | undefined): ContextDeliveredText | null {
-  if (!text) return null;
-  return { text: text.text, chars: text.chars, truncated: text.truncated ?? false, sha256: text.sha256 };
+/**
+ * The wire's ref as the package's. Cast through the package's own field type:
+ * @ai-matrx/agents < 0.29.0 still names it `ContextDeliveredText` (with text) —
+ * retire the cast with the 0.29.0 adoption.
+ */
+function toDeliveredRef(ref: WireDeliveredRef | null | undefined): ContextReceiptRow["delivered"] {
+  if (!ref) return null;
+  return { chars: ref.chars, sha256: ref.sha256 } as unknown as ContextReceiptRow["delivered"];
 }
 
 /** Normalize the generated wire type (optional fields) to the package's receipt. */
@@ -85,6 +89,8 @@ export function toContextReceipt(data: ContextReceiptData): ContextReceipt {
     model_reads_context: data.model_reads_context !== false,
     rules_error: data.rules_error ?? null,
     rows: (data.rows ?? []).map(toContextReceiptRow),
+    // Spread, not a literal key: @ai-matrx/agents < 0.29.0 has no `blocks` on its receipt.
+    ...({ blocks: data.blocks ?? [] } as object),
   };
 }
 

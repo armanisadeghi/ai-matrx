@@ -86,11 +86,14 @@ export type ItemSurface =
  * item to place NOW (a draft note, a new chat that opens its conversation when
  * mounted), so the person can start immediately. `Picker` is for a start that
  * needs ONE choice first (which agent to chat with) — the board shows it the
- * way it shows a bring-in picker, and places what it picks.
+ * way it shows a bring-in picker, and places what it picks. `Dialog` is for a
+ * feature whose canonical create form IS a dialog (a meeting): the board
+ * mounts it bare, never inside a second dialog, and places what it saves.
  */
 export type StartNewEntry =
   | { label: string; icon?: LucideIcon; create: () => PlacedItem }
-  | { label: string; icon?: LucideIcon; Picker: ComponentType<PickerProps> };
+  | { label: string; icon?: LucideIcon; Picker: ComponentType<PickerProps> }
+  | { label: string; icon?: LucideIcon; Dialog: ComponentType<PickerProps> };
 
 export interface BoardItemType {
   /** Registry key. For entity sources it equals `source.entity`. */

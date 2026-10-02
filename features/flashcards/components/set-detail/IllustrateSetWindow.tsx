@@ -8,11 +8,14 @@
  * live-run block at the top of a page is banned — this floats beside the deck
  * so nothing the user is reading moves):
  *
- *   1. WHILE RUNNING — the canonical `LiveRunProgress` rows, one per card,
- *      streamed from aidream `/education/images/source-set` as each card
- *      settles (~30-60s each).
- *   2. AFTER THE RUN — the review pass: what got attached, the sourcing
- *      agent's own trust reasoning, and Keep / Reject per card. A rejection is
+ *   1. WHILE RUNNING — every settled card shows its picture the moment it
+ *      lands (review can start right away), the rest wait below, and Stop
+ *      ends the spend at the next card (aidream `/ai/cancel/{request_id}` —
+ *      closing the window does NOT stop the server).
+ *   2. AFTER THE RUN — the same review rows: the picture, the sourcing
+ *      agent's own trust reasoning, and Keep / Reject per card, plus
+ *      "Illustrate N more" when cards are left (a run starts as ONE trial
+ *      card, confirmed, so nobody buys a whole deck sight unseen). A rejection is
  *      RECORDED on the detail row before the soft-delete
  *      (`fcService.reviewCardImage`) so judge accuracy can learn from it.
  *
@@ -26,6 +29,8 @@ import { useState } from "react";
 import {
   AlertTriangle,
   Check,
+  Circle,
+  Square,
   ExternalLink,
   ImageOff,
   Loader2,
@@ -37,11 +42,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { LiveRunProgress } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
 import { FlashcardFaceImage } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
 import { cn } from "@/lib/utils";
 import {
-  toProgressState,
   type IllustrateCardState,
   type IllustrateRunState,
 } from "./illustrateSetRun";
@@ -51,6 +54,12 @@ export interface IllustrateSetWindowProps {
   run: IllustrateRunState;
   setName: string;
   onClose: () => void;
+  /** Stop the run at the next card — the server sources nothing after it. */
+  onStop: () => void;
+  /** Cards in the deck still without a picture — offered as the next run. */
+  remainingCount: number;
+  /** Run the rest of the deck (the page confirms the cost first). */
+  onContinue: () => void;
   /** Keep the picture — records the human "yes" on the detail row. */
   onKeep: (card: IllustrateCardState) => Promise<void>;
   /** Reject it — records the "no" on the row, THEN soft-deletes the image. */
@@ -89,18 +98,21 @@ function ReviewRow({
 
   return (
     <div className="flex gap-3 border-t border-border p-3 first:border-t-0">
-      <div className="shrink-0">
+      <button
+        type="button"
+        onClick={() => onOpenCard(card.cardId)}
+        className="flex h-24 w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/30"
+        title="Open this card"
+      >
         {attached && result?.image_url ? (
           <FlashcardFaceImage
             image={{ url: result.image_url, alt: result.alt_text }}
-            size="thumb"
+            className="h-full"
           />
         ) : (
-          <span className="flex h-8 w-8 items-center justify-center rounded-sm border border-dashed border-border text-muted-foreground/50">
-            <ImageOff className="h-3.5 w-3.5" />
-          </span>
+          <ImageOff className="h-5 w-5 text-muted-foreground/50" />
         )}
-      </div>
+      </button>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <button
@@ -120,7 +132,10 @@ function ReviewRow({
         {attached ? (
           <>
             {judgment?.reasoning && (
-              <p className="mt-1 rounded-lg bg-muted/60 px-2.5 py-1.5 text-xs leading-relaxed text-foreground/80">
+              <p
+                className="mt-1 line-clamp-3 rounded-lg bg-muted/60 px-2.5 py-1.5 text-xs leading-relaxed text-foreground/80"
+                title={judgment.reasoning}
+              >
                 {judgment.reasoning}
               </p>
             )}
@@ -199,7 +214,7 @@ function ReviewRow({
                   // the card, so the click says what disappears.
                   const ok = await confirm({
                     title: "Reject this image?",
-                    description: `The illustration is removed from “${card.label}” — the card goes back to having no picture, and the sourcing agent's miss is recorded so its judging improves.`,
+                    description: `The image is removed from “${card.label}” and the miss is recorded so the agent learns.`,
                     confirmLabel: "Reject image",
                     variant: "destructive",
                   });
@@ -227,15 +242,35 @@ export function IllustrateSetWindow({
   run,
   setName,
   onClose,
+  onStop,
+  remainingCount,
+  onContinue,
   onKeep,
   onReject,
   onOpenCard,
 }: IllustrateSetWindowProps) {
-  const live = run.phase === "starting" || run.phase === "running";
-  const settled = run.cards.filter((c) => c.status !== "waiting" && c.status !== "running");
+  const live =
+    run.phase === "starting" ||
+    run.phase === "running" ||
+    run.phase === "stopping";
+  const settled = run.cards.filter(
+    (c) => c.status === "completed" || c.status === "failed",
+  );
+  const pending = run.cards.filter(
+    (c) => c.status === "waiting" || c.status === "running",
+  );
   const attachedCards = settled.filter((c) => c.result?.attached);
+  const total = run.cards.length;
 
   const { width, height } = computeViewportSize();
+
+  let status: string;
+  if (run.phase === "starting") status = "Starting…";
+  else if (run.phase === "stopping") status = "Stopping after this card…";
+  else if (live) status = `${settled.length} of ${total} cards`;
+  else if (run.phase === "stopped")
+    status = `Stopped · ${attachedCards.length} of ${settled.length} got an image`;
+  else status = `${attachedCards.length} of ${settled.length} got an image`;
 
   return (
     <WindowPanel
@@ -248,45 +283,105 @@ export function IllustrateSetWindow({
       height={height}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      {live ? (
-        <div className="min-h-0 flex-1">
-          <LiveRunProgress progress={toProgressState(run, setName)} />
-        </div>
-      ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {(run.phase === "refused" || run.phase === "error") && (
-            <div className="m-3 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{run.message} <ErrorAlchemyMenu error={run.message} /></span>
-            </div>
-          )}
-
-          <div className="border-b border-border px-3 py-2 text-xs text-muted-foreground">
-            {attachedCards.length} of {settled.length} cards got an image
-            {run.skippedExisting > 0 &&
-              ` · ${run.skippedExisting} already had one`}
-            {run.trimmedByLimit > 0 &&
-              ` · ${run.trimmedByLimit} left for later (plan limit)`}
-            . Keep what's right; rejecting records the miss so the judge improves.
-          </div>
-
-          {settled.length === 0 ? (
-            <p className="p-4 text-sm text-muted-foreground">
-              Nothing to review — no cards were sourced in this run.
-            </p>
+      <div className="shrink-0 border-b border-border px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium text-foreground">{status}</span>
+          {live ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              disabled={run.phase === "stopping"}
+              onClick={onStop}
+              title="Finish the current card and source nothing after it"
+            >
+              {run.phase === "stopping" ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Square className="mr-1 h-3.5 w-3.5" />
+              )}
+              Stop
+            </Button>
           ) : (
-            settled.map((card) => (
-              <ReviewRow
-                key={card.cardId}
-                card={card}
-                onKeep={onKeep}
-                onReject={onReject}
-                onOpenCard={onOpenCard}
-              />
-            ))
+            remainingCount > 0 &&
+            run.phase !== "refused" && (
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                onClick={onContinue}
+              >
+                Illustrate {remainingCount} more
+              </Button>
+            )
           )}
         </div>
-      )}
+        {total > 0 && (
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full bg-primary transition-all"
+              style={{ width: `${(settled.length / total) * 100}%` }}
+            />
+          </div>
+        )}
+        {(run.skippedExisting > 0 || run.trimmedByLimit > 0) && (
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            {run.skippedExisting > 0 && `${run.skippedExisting} already had one`}
+            {run.skippedExisting > 0 && run.trimmedByLimit > 0 && " · "}
+            {run.trimmedByLimit > 0 &&
+              `${run.trimmedByLimit} left for later (plan limit)`}
+          </p>
+        )}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {run.message && (
+          <div className="m-3 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {run.message} <ErrorAlchemyMenu error={run.message} />
+            </span>
+          </div>
+        )}
+
+        {settled.map((card) => (
+          <ReviewRow
+            key={card.cardId}
+            card={card}
+            onKeep={onKeep}
+            onReject={onReject}
+            onOpenCard={onOpenCard}
+          />
+        ))}
+
+        {pending.map((card) => (
+          <div
+            key={card.cardId}
+            className="flex items-center gap-2 border-t border-border px-3 py-2 text-sm"
+          >
+            {card.status === "running" && live ? (
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+            ) : (
+              <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+            )}
+            <span className="min-w-0 flex-1 truncate text-foreground/80">
+              {card.label}
+            </span>
+            <span className="shrink-0 text-[11px] text-muted-foreground">
+              {!live
+                ? "Not run"
+                : card.status === "running"
+                  ? "Finding an image"
+                  : "Waiting"}
+            </span>
+          </div>
+        ))}
+
+        {!live && settled.length === 0 && pending.length === 0 && !run.message && (
+          <p className="p-4 text-sm text-muted-foreground">
+            No cards were sourced in this run.
+          </p>
+        )}
+      </div>
     </WindowPanel>
   );
 }

@@ -465,7 +465,7 @@ export function getStateViewerTabs(
       id: "canvas",
       label: "Canvas",
       content: (
-        <GenericSliceViewer sliceKey="canvas" state={completeState.canvas} />
+        <GenericSliceViewer sliceKey="canvasHost" state={completeState.canvasHost} />
       ),
     },
     {

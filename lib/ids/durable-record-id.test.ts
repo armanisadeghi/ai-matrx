@@ -97,7 +97,6 @@ const RULE_C_BASELINE: Record<string, string> = {
   "components/mardown-display/blocks/artifact/ArtifactBlock.tsx": CANVAS_KEY,
   "components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx": CANVAS_KEY,
   "components/mardown-display/blocks/mermaid/MermaidBlock.tsx": CANVAS_KEY,
-  "features/canvas/redux/canvasSlice.ts": CANVAS_KEY,
   "features/canvas/hooks/useOpenArtifactInCanvas.ts": CANVAS_KEY,
   "features/html-pages/components/HtmlInlinePreview.tsx":
     "publishes only through HTMLPageService.createPage, which applies durableRecordId to sourceMessageId",

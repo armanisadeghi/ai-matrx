@@ -24,7 +24,7 @@ import * as contextCore from "@ai-matrx/agents/context";
 import { ContextRulesPanelBody } from "@ai-matrx/agents/context/react";
 import type { ResolvedContextRow } from "@ai-matrx/agents/context";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
-import { useAppSelector } from "../../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { selectAgentContextPolicies } from "../../redux/agent-definition/selectors";
 import {
@@ -39,15 +39,30 @@ import { decodeAgentEditAccess } from "../../utils/agent-edit-access";
 import { docKindForContextKey } from "../../utils/workingDocumentContext";
 import type { ContextObjectType } from "../../types/agent-api-types";
 import { ContextValueBody } from "./ContextValueBody";
-import { ContextDeliveredBlock } from "./ContextDeliveredBlock";
-import type { ContextDeliveredFields } from "../../redux/execution-system/context-rules/receipt-check";
+import { ContextDeliveredBlock, type DeliveredRef, type DeliveredRefBlock } from "./ContextDeliveredBlock";
+import {
+  loadContextView,
+  selectDisplayReceiptBlocks,
+  selectDisplayReceiptMessageId,
+  type ContextViewLoader,
+} from "../../redux/execution-system/context-rules/context-viewer";
 
 /**
- * @ai-matrx/agents ≥ 0.27.0 renders what the agent received in the panel
- * detail itself (`ContextDeliveredValue`); an older installed build does not,
- * so the host renders it. Retire with the 0.27.0 adoption.
+ * @ai-matrx/agents ≥ 0.29.0 fetches what the agent received on demand in the
+ * panel detail itself (`DeliveredSection`, `loadView`) and lists the receipt's
+ * blocks under "Also sent" (`blocks`). An older installed build would render a
+ * ref as an empty text, so the host strips the refs from its rows and renders
+ * the detail itself. Retire with the 0.29.0 adoption.
  */
-const PACKAGE_SHOWS_DELIVERED = "ContextDeliveredValue" in contextReact;
+const PACKAGE_FETCHES_ON_DEMAND = "DeliveredSection" in contextReact;
+
+/** Blocks the model read as part of a value (the package's `CONTEXT_ROW_BLOCKS` ≥ 0.29.0). */
+const ROW_BLOCKS: Readonly<Record<string, readonly string[]>> =
+  (contextCore as { CONTEXT_ROW_BLOCKS?: Record<string, readonly string[]> }).CONTEXT_ROW_BLOCKS ?? {
+    organization: ["organization_catalog"],
+  };
+
+type RowRefs = { delivered?: DeliveredRef | null; onRequest?: DeliveredRef | null; deliveredBlocks?: DeliveredRefBlock[] };
 
 /**
  * RULES.md §5a: the server states these values itself and drops the page's
@@ -83,12 +98,28 @@ export function ContextRulesPanel({
   onSelectedKeyChange: (key: string | null) => void;
 }) {
   const isMobile = useIsMobile();
+  const dispatch = useAppDispatch();
   const save = useSaveContextRule();
+  // THE VIEWER (RULES.md §5b): the turn the full view shows — the receipt's own
+  // message, or the next turn before any receipt. Called only when a detail opens.
+  const receiptMessageId = useAppSelector((state) =>
+    selectDisplayReceiptMessageId(state, conversationId),
+  );
+  const blocks = useAppSelector((state) => selectDisplayReceiptBlocks(state, conversationId));
+  const loadView: ContextViewLoader = (target) =>
+    dispatch(loadContextView({ conversationId, messageId: receiptMessageId, agentId }, target));
   const mandateKey = useAppSelector(
     (state) => state.conversations.byConversationId[conversationId]?.mandateKey ?? null,
   );
   const killSwitch = useMandateKillSwitch(mandateKey);
-  const rows = useConversationDisplayRows(conversationId, killSwitch);
+  const displayRows = useConversationDisplayRows(conversationId, killSwitch);
+  const refsByKey = new Map(displayRows.map((row) => [row.key, row as ResolvedContextRow & RowRefs]));
+  const rows = PACKAGE_FETCHES_ON_DEMAND
+    ? displayRows
+    : displayRows.map((row) => {
+        const { delivered: _d, onRequest: _o, ...rest } = row as ResolvedContextRow & RowRefs;
+        return rest as ResolvedContextRow;
+      });
   const cap = useAppSelector((state) => selectContextInlineCap(state, conversationId));
   const mismatches = useAppSelector(
     (state) => state.instanceContext.receiptByConversationId[conversationId]?.mismatches,
@@ -113,8 +144,8 @@ export function ContextRulesPanel({
     const policy = policies?.find((p) => p.key === row.key);
     // RULES.md §5: when the receipt says what the model read for this value,
     // THAT is the content — never the client's pre-send copy (Arman, 2026-10-01).
-    const delivered = row as ResolvedContextRow & ContextDeliveredFields;
-    const received = Boolean(delivered.delivered || delivered.onRequest);
+    const refs = refsByKey.get(row.key) ?? (row as ResolvedContextRow & RowRefs);
+    const received = Boolean(refs.delivered || refs.onRequest);
     const serverOwned = !received && isServerOwnedContextKey(row.key);
     const value =
       row.value && typeof row.value === "object" && !Array.isArray(row.value) && "content" in row.value
@@ -126,7 +157,20 @@ export function ContextRulesPanel({
           <p className="text-xs text-muted-foreground">{policy?.description ?? row.description}</p>
         ) : null}
         {received ? (
-          PACKAGE_SHOWS_DELIVERED ? null : <ContextDeliveredBlock fields={delivered} />
+          PACKAGE_FETCHES_ON_DEMAND ? null : (
+            <ContextDeliveredBlock
+              rowKey={row.key}
+              delivered={refs.delivered}
+              onRequest={refs.onRequest}
+              blocks={
+                refs.deliveredBlocks ??
+                (refs.delivered
+                  ? blocks.filter((b) => (ROW_BLOCKS[row.key] ?? []).includes(b.id))
+                  : undefined)
+              }
+              load={loadView}
+            />
+          )
         ) : serverOwned ? (
           PACKAGE_KNOWS_SERVER_OWNED ? null : (
             <p data-testid="context-server-fills" className="text-xs text-muted-foreground">
@@ -165,6 +209,8 @@ export function ContextRulesPanel({
         cap={cap}
         mismatches={mismatches}
         onChange={save}
+        // Spread: @ai-matrx/agents < 0.29.0 has neither prop (it ignores them).
+        {...({ blocks, loadView } as object)}
         renderDetail={renderDetail}
         isMobile={isMobile}
         selectedKey={selectedKey}

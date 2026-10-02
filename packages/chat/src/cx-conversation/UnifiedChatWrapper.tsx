@@ -107,8 +107,6 @@ export interface UnifiedChatWrapperProps {
   showVariables?: boolean;
   /** Show system messages in the message list */
   showSystemMessages?: boolean;
-  /** Enable inline canvas (side panel) */
-  enableCanvas?: boolean;
   /** Show the submit-on-enter toggle */
   showSubmitOnEnterToggle?: boolean;
 
@@ -175,7 +173,6 @@ export function UnifiedChatWrapper({
   showModelPicker = false,
   showVariables = false,
   showSystemMessages = false,
-  enableCanvas = false,
   showSubmitOnEnterToggle = false,
 
   // Input Config
@@ -290,7 +287,6 @@ export function UnifiedChatWrapper({
           onClose={onClose}
           compact={compact}
           showSystemMessages={showSystemMessages}
-          enableCanvas={enableCanvas}
           inputProps={inputProps}
           headerSlot={headerSlot}
         />

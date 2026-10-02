@@ -13,11 +13,10 @@
 // (`SetImagePlanEvent` / `SetImageProgressEvent`) + api/routers/education_images.py.
 // System-of-record: common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import type { LiveRunProgressState } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
 
 export type IllustrateFace = "front" | "back";
 
@@ -60,7 +59,20 @@ export interface IllustrateCardState {
 }
 
 export interface IllustrateRunState {
-  phase: "idle" | "starting" | "running" | "done" | "refused" | "error";
+  /**
+   * `stopping` = Stop was pressed: the server finishes the card in hand (its
+   * spend is already committed) and sources nothing after it; `stopped` = the
+   * stream ended after a Stop, so the cards still `waiting` were never run.
+   */
+  phase:
+    | "idle"
+    | "starting"
+    | "running"
+    | "stopping"
+    | "stopped"
+    | "done"
+    | "refused"
+    | "error";
   face: IllustrateFace;
   cards: IllustrateCardState[];
   skippedExisting: number;
@@ -188,18 +200,30 @@ export function reduceIllustrateRun(
   switch (event.kind) {
     case "refused":
       return { ...state, phase: "refused", message: event.reason };
-    case "set_image_plan":
+    case "set_image_plan": {
+      // A follow-up run ("illustrate the rest") keeps the cards an earlier run
+      // already settled, so the trial card's picture never vanishes from review.
+      const planned = new Set(event.cards.map((c) => c.cardId));
+      const kept = state.cards.filter(
+        (c) =>
+          !planned.has(c.cardId) &&
+          (c.status === "completed" || c.status === "failed"),
+      );
       return {
         ...state,
-        phase: "running",
+        phase: state.phase === "stopping" ? "stopping" : "running",
         skippedExisting: event.skippedExisting,
         trimmedByLimit: event.trimmedByLimit,
-        cards: event.cards.map((c) => ({
-          cardId: c.cardId,
-          label: c.label,
-          status: "waiting" as const,
-        })),
+        cards: [
+          ...kept,
+          ...event.cards.map((c) => ({
+            cardId: c.cardId,
+            label: c.label,
+            status: "waiting" as const,
+          })),
+        ],
       };
+    }
     case "set_image_progress": {
       const cards = state.cards.map((card) =>
         card.cardId === event.cardId
@@ -228,42 +252,6 @@ export function reduceIllustrateRun(
   }
 }
 
-/** The run's rows in the canonical live-run progress shape. */
-export function toProgressState(
-  state: IllustrateRunState,
-  setName: string,
-): LiveRunProgressState {
-  const noun = state.face === "front" ? "front" : "back";
-  return {
-    title: `Illustrating ${setName}`,
-    // One row per CARD, every one sourced independently of its neighbours —
-    // a card that finds nothing costs that card and nothing else.
-    shape: "fan_out",
-    description:
-      state.cards.length === 0
-        ? "Finding expert images on the open web…"
-        : `An agent searches the open web for each card's ${noun}, judges the source, and attaches only what clears the bar.`,
-    items: state.cards.map((card) => ({
-      id: card.cardId,
-      label: card.label,
-      status: card.status,
-      ...(card.status === "completed"
-        ? {
-            detail: card.result?.attached
-              ? `Attached from ${card.result.candidate?.domain || "the web"}`
-              : `No image attached — ${card.result?.refusal_reason || "nothing cleared the bar"}`,
-          }
-        : {}),
-      ...(card.status === "failed"
-        ? { detail: card.error || "Sourcing failed for this card" }
-        : {}),
-      ...(card.result?.judgment?.reasoning
-        ? { preview: card.result.judgment.reasoning }
-        : {}),
-    })),
-  };
-}
-
 /**
  * Drive one set-illustration run. State lives here (the page owns it) so the
  * floating window can render both the live progress and the review pass from
@@ -272,9 +260,32 @@ export function toProgressState(
 export function useIllustrateSetRun() {
   const dispatch = useAppDispatch();
   const [run, setRun] = useState<IllustrateRunState>(IDLE_RUN);
+  // The live stream's server request id — what Stop cancels. A closed window
+  // or aborted fetch does NOT stop the server (streams detach on disconnect
+  // by design), so Stop must name the request.
+  const requestIdRef = useRef<string | null>(null);
+  const stopRequestedRef = useRef(false);
 
-  const start = async (setId: string, face: IllustrateFace) => {
-    setRun({ ...IDLE_RUN, phase: "starting", face });
+  /**
+   * `limit` caps the cards sourced this run (the server counts it after
+   * skipping cards that already have a picture) — `1` is "try one card first".
+   */
+  const start = async (
+    setId: string,
+    face: IllustrateFace,
+    options: { limit?: number } = {},
+  ) => {
+    requestIdRef.current = null;
+    stopRequestedRef.current = false;
+    setRun((prev) => ({
+      ...IDLE_RUN,
+      // Keep what earlier runs settled so the review list only grows.
+      cards: prev.cards.filter(
+        (c) => c.status === "completed" || c.status === "failed",
+      ),
+      phase: "starting",
+      face,
+    }));
     let refused = false;
     // Counted here (not read back out of state) so the caller's success branch
     // never races React's updater queue.
@@ -283,9 +294,19 @@ export function useIllustrateSetRun() {
       callApi({
         path: "/education/images/source-set",
         method: "POST",
-        body: { set_id: setId, face, skip_existing: true },
+        body: {
+          set_id: setId,
+          face,
+          skip_existing: true,
+          ...(options.limit ? { limit: options.limit } : {}),
+        },
         stream: true,
         outputKind: "image",
+        onStreamStart: (requestId) => {
+          requestIdRef.current = requestId;
+          // Stop pressed before the headers landed — cancel now.
+          if (stopRequestedRef.current && requestId) void sendCancel(requestId);
+        },
         onStreamEvent: (event) => {
           const parsed = parseIllustrateEvent(
             (event as { data?: unknown }).data,
@@ -309,11 +330,46 @@ export function useIllustrateSetRun() {
         phase: "error",
         message: res.error?.message ?? "The illustration run failed.",
       }));
-      return { attached: 0, refused: false, failed: true };
+      return { attached: 0, refused: false, failed: true, stopped: false };
     }
-    if (refused) return { attached: 0, refused: true, failed: false };
-    setRun((prev) => ({ ...prev, phase: "done", attachedCount: attached }));
-    return { attached, refused: false, failed: false };
+    if (refused) return { attached: 0, refused: true, failed: false, stopped: false };
+    const stopped = stopRequestedRef.current;
+    setRun((prev) => ({
+      ...prev,
+      phase: stopped ? "stopped" : "done",
+      attachedCount: attached,
+    }));
+    return { attached, refused: false, failed: false, stopped };
+  };
+
+  const sendCancel = async (requestId: string) => {
+    const res = await dispatch(
+      callApi({
+        path: "/ai/cancel/{request_id}",
+        method: "POST",
+        pathParams: { request_id: requestId },
+      }),
+    );
+    if (res.error) {
+      // Never pretend it stopped: go back to running and say why.
+      stopRequestedRef.current = false;
+      setRun((prev) => ({
+        ...prev,
+        phase: "running",
+        message: "Stop didn't reach the server. Press Stop again.",
+      }));
+    }
+  };
+
+  /**
+   * Stop the run: the card being sourced finishes (its spend is committed),
+   * nothing after it is sourced, and the stream ends on its own.
+   */
+  const stop = () => {
+    if (stopRequestedRef.current) return;
+    stopRequestedRef.current = true;
+    setRun((prev) => ({ ...prev, phase: "stopping", message: undefined }));
+    if (requestIdRef.current) void sendCancel(requestIdRef.current);
   };
 
   /** Record the human's keep/reject verdict on one card's row. */
@@ -327,5 +383,5 @@ export function useIllustrateSetRun() {
 
   const reset = () => setRun(IDLE_RUN);
 
-  return { run, start, setReview, reset };
+  return { run, start, stop, setReview, reset };
 }

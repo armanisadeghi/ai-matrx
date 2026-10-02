@@ -38,7 +38,6 @@ import voicePadReducer from "./slices/voicePadSlice";
 // The chat package owns its slices and mounts them under the same keys (P2).
 import { chatReducers } from "@ai-matrx/chat/store/slices";
 import windowManagerReducer from "./slices/windowManagerSlice";
-import canvasReducer from "@/features/canvas/redux/canvasSlice";
 import { canvasReducer as canvasHostReducer } from "@ai-matrx/canvas";
 import textDiffReducer from "./slices/textDiffSlice";
 import noteVersionsReducer from "./slices/noteVersionsSlice";
@@ -167,7 +166,6 @@ export const slimReducerMap = {
   urlSync: urlSyncReducer,
 
   // Canvas and Artifacts system ----------
-  canvas: canvasReducer,
   // THE canvas (@ai-matrx/canvas): column, panes, tabs, items, width.
   canvasHost: canvasHostReducer,
   // Artifact tracking — universal registry for all AI-generated content

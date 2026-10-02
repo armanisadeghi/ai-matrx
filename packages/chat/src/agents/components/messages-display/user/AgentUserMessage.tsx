@@ -32,7 +32,10 @@ import {
   UserMessageVariables,
 } from "./FirstTurnVariables";
 import { ContextPolicyChipStrip } from "../../context-policies-display/ContextPolicyChipStrip";
-import { MessageContextReceipt } from "../../context-policies-display/MessageContextReceipt";
+import {
+  MessageContextReceipt,
+  useSentTurnContextView,
+} from "../../context-policies-display/MessageContextReceipt";
 import {
   selectMessageContextMismatches,
   selectMessageContextReceipt,
@@ -250,6 +253,8 @@ export function AgentUserMessage({
   const contextMismatches = useAppSelector(
     useMemo(() => selectMessageContextMismatches(conversationId, messageId), [conversationId, messageId]),
   );
+  // RULES.md §5b: what this turn's model read, fetched only when a value is opened.
+  const contextView = useSentTurnContextView(conversationId, messageId);
   const modelContext = record?.modelContext;
   const ambientEntries: InstanceContextEntry[] = (
     modelContext?.items ?? []
@@ -520,6 +525,7 @@ export function AgentUserMessage({
                 <MessageContextReceipt
                   receipt={contextReceipt}
                   mismatches={contextMismatches}
+                  load={contextView}
                 />
               </div>
             ) : machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (

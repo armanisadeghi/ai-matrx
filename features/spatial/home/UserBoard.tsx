@@ -252,11 +252,15 @@ export function UserBoard({
   };
 
   const startNew = (_type: BoardItemType, entry: StartNewEntry) => {
+    setPicking(null);
     if ("create" in entry) place([entry.create()]);
+    else if ("Dialog" in entry) setStarting({ Dialog: entry.Dialog });
     else setPicking({ title: entry.label, Picker: entry.Picker });
   };
+  // Bringing something in always offers starting a new one beside the list —
+  // every type's own "Start new" entries, so no picker is a dead end.
   const bringIn = (type: BoardItemType) => {
-    if (type.bringIn) setPicking({ title: `Bring in: ${type.bringIn.label}`, Picker: type.bringIn.Picker });
+    if (type.bringIn) setPicking({ title: `Bring in: ${type.bringIn.label}`, Picker: type.bringIn.Picker, type });
   };
 
   const onCreate = (c: Creation) => {

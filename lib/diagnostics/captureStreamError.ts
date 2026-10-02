@@ -34,6 +34,15 @@ import {
 import type { BackendApiError } from "@/lib/api/errors";
 import { isJsonObject } from "@/types/json";
 
+/**
+ * Stream error types whose ONE store of record the server writes itself
+ * (`ops.system_error`, carrying the request id). `invalid_setting`: a provider
+ * refused one of our settings — kind `provider_setting_rejected` (K10).
+ */
+export const SERVER_RECORDED_ERROR_TYPES: ReadonlySet<string> = new Set([
+  "invalid_setting",
+]);
+
 export interface StreamErrorContext {
   requestId?: string | null;
   conversationId?: string | null;
@@ -73,6 +82,10 @@ export function captureStreamEvent(
         message: d.message || "Agent stream error",
         userMessage: d.user_message ?? undefined,
         details: str(d.details),
+        // The server already filed THE record of a class it owns, keyed by
+        // this request id; a browser row would be a second open record of the
+        // same failure. Kept in the local Error Inspector, never persisted.
+        durable: SERVER_RECORDED_ERROR_TYPES.has(d.error_type) ? false : undefined,
         ...base,
         raw: d,
       });

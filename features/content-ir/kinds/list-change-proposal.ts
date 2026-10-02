@@ -39,6 +39,11 @@
  * Table-homed-in-a-Record (v5 CONTRACT AGT-4/AGT-8, `record_write` /
  * `record_delete` behind one door). Swapping the target does not
  * change this kind, the component, or anything an agent was taught.
+ * `kind:"flashcard_deck"` (2026-10-02) addresses one flashcard deck, one row
+ * per card with columns `front` / `back`; the first customer is the
+ * `flashcards.fix_giveaway_cards` mandate (rewrite cards whose one face gives
+ * the other away). Its port writes through `fcService.updateCard` and accepts
+ * `update` only.
  *
  * Complete-only bridge: accept / reject on a half-parsed list would apply a
  * row the model had not finished writing, so the bridge declines every
@@ -64,7 +69,7 @@ export const LIST_CHANGE_TARGET_KIND = "list_change_target_v1";
 export const LIST_CHANGE_PROPOSAL_BLOCK_TYPE = "list_change_proposal";
 
 /** Every list target the port knows how to address. */
-export const LIST_TARGET_KINDS = ["scope_dataset", "table"] as const;
+export const LIST_TARGET_KINDS = ["scope_dataset", "table", "flashcard_deck"] as const;
 export type ListTargetKind = (typeof LIST_TARGET_KINDS)[number];
 
 export const LIST_CHANGE_ACTIONS = ["add", "remove", "update"] as const;
@@ -82,7 +87,7 @@ export const listChangeTargetKindSchema: KindSchema = {
       values: [...LIST_TARGET_KINDS],
       required: true,
       description:
-        "Which kind of list this is. scope_dataset = a table held per scope by a context item (today). table = a Table homed in a Record in the unified record store.",
+        "Which kind of list this is. scope_dataset = a table held per scope by a context item (today). table = a Table homed in a Record in the unified record store. flashcard_deck = a flashcard deck, one row per card (columns front and back).",
     },
     context_item_id: {
       type: "string",
@@ -103,6 +108,11 @@ export const listChangeTargetKindSchema: KindSchema = {
       type: "string",
       nullable: true,
       description: "table only: the Record the Table is homed in.",
+    },
+    set_id: {
+      type: "string",
+      nullable: true,
+      description: "flashcard_deck only: the id of the deck whose cards change.",
     },
     label: {
       type: "string",
@@ -207,6 +217,11 @@ export type ListChangeTarget =
       tableId: string;
       homeRecordId: string | null;
       label: string | null;
+    }
+  | {
+      kind: "flashcard_deck";
+      setId: string;
+      label: string | null;
     };
 
 export type ListChangeProposalItem =
@@ -268,6 +283,11 @@ export function readListChangeTarget(raw: unknown): ListChangeTarget | null {
     const tableId = str(value.table_id);
     if (!tableId) return null;
     return { kind: "table", tableId, homeRecordId: str(value.home_record_id), label };
+  }
+  if (value.kind === "flashcard_deck") {
+    const setId = str(value.set_id);
+    if (!setId) return null;
+    return { kind: "flashcard_deck", setId, label };
   }
   return null;
 }

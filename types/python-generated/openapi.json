@@ -6557,6 +6557,88 @@
         }
       }
     },
+    "/ai/context/delivered": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Context Delivered",
+        "description": "The exact text a SENT turn's model received for one value or block (RULES.md §5b),\nre-found in the turn's recorded provider request and matched by the receipt's hash. The next\nturn's text is ``POST /preview`` with ``view``. Access: the conversation, viewer level.",
+        "operationId": "context_delivered_ai_context_delivered_get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The person's message of the turn.",
+              "title": "Message Id"
+            },
+            "description": "The person's message of the turn."
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "block",
+                "delivered",
+                "on_request"
+              ],
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The value's key, or the block's id.",
+              "title": "Key"
+            },
+            "description": "The value's key, or the block's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextViewedText"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/chat/direct-chat": {
       "post": {
         "tags": [
@@ -6713,6 +6795,112 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ToolExecuteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/agents/versions/{version_id}/portable": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get Portable Agent Version",
+        "description": "One immutable agent version as a portable bundle.",
+        "operationId": "get_portable_agent_version_ai_agents_versions__version_id__portable_post",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Version Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortableAgentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortableAgentBundle"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/agents/{agent_id}/portable": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get Portable Agent",
+        "description": "The agent's current definition as a portable bundle.",
+        "operationId": "get_portable_agent_ai_agents__agent_id__portable_post",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortableAgentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortableAgentBundle"
                 }
               }
             }
@@ -12606,7 +12794,7 @@
           "Meet"
         ],
         "summary": "Meeting Record",
-        "description": "THE POST-MEETING RECORD, FOR A READER WHO HAS NO DATABASE (MRF-1).\n\nLike `/token` and `/intelligence/ask` this route takes NO authentication\ndependency, because the reader it exists for has no session: a guest who\nattended a meeting by link. Their credential is the room token this server\nsigned for them, presented in the `x-meet-room-token` header and VERIFIED\n(`services/meet/record.py` — a token for another meeting, an unadmitted\nknocker, or a forged string is refused with a sentence). It is a header and\nnot a query parameter on purpose: a bearer credential in a URL lands in\naccess logs, referrers and browser history.\n\nHow much of the record comes back is the resolved\n`meet.guest_record_access` configuration — the meeting's own setting, then\nthe organization's, then the platform default `summary`. `none` is a 403\ncarrying the sentence a guest reads; it is never an empty record, because a\nscreen that cannot tell \"not shared\" from \"nothing happened\" is a screen\nthat lies.\n\n**RLS is not widened by this route and nothing here is a signed URL.** The\nrows are read server-side through the ORM and returned already filtered,\nde-identified to the least-privileged reader in the room. A signed-in member\nof the meeting's organization keeps reading the record direct from Supabase\nunder RLS; this route answers them too, so one shape is testable.",
+        "description": "THE POST-MEETING RECORD, FOR A READER WHO HAS NO DATABASE (MRF-1).\n\nLike `/token` and `/intelligence/ask` this route takes NO authentication\ndependency, because the reader it exists for has no session: a guest who\nattended a meeting by link. Their credential is the room token this server\nsigned for them, presented in the `x-meet-room-token` header and VERIFIED\n(`services/meet/record.py` — a token for another meeting, an unadmitted\nknocker, or a forged string is refused with a sentence). It is a header and\nnot a query parameter on purpose: a bearer credential in a URL lands in\naccess logs, referrers and browser history.\n\nHow much of the record comes back is the resolved\n`meet.guest_record_access` configuration — the meeting's own setting, then\nthe organization's, then the platform default `full`. `none` is a 403\ncarrying the sentence a guest reads; it is never an empty record, because a\nscreen that cannot tell \"not shared\" from \"nothing happened\" is a screen\nthat lies.\n\n**RLS is not widened by this route and nothing here is a signed URL.** The\nrows are read server-side through the ORM and returned already filtered,\nde-identified to the least-privileged reader in the room. A signed-in member\nof the meeting's organization keeps reading the record direct from Supabase\nunder RLS; this route answers them too, so one shape is testable.",
         "operationId": "meeting_record_v1_meet_record_get",
         "parameters": [
           {
@@ -12665,6 +12853,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MeetRecordResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/claim": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Meeting Claim",
+        "description": "KEEP YOUR NOTES: a guest who just created an account takes the meeting with them.\n\nA real session plus the guest pass this browser kept from the meeting. The\nattendance becomes the account's; what it may read stays the guest share\n(`services/meet/guest_claim.py`). Idempotent; never a grant.",
+        "operationId": "meeting_claim_v1_meet_claim_post",
+        "parameters": [
+          {
+            "name": "x-meet-room-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Meet-Room-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeetClaimRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetClaimResponse"
                 }
               }
             }
@@ -149311,6 +149559,16 @@
             ],
             "description": "This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt."
           },
+          "view": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextViewTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "question": {
             "type": "string",
             "maxLength": 4000,
@@ -149868,6 +150126,26 @@
         "title": "ContextDelivered",
         "description": "What the model gets today beside what it would get from the record store (lane INSPECTOR-DIFF)."
       },
+      "ContextDeliveredRef": {
+        "properties": {
+          "chars": {
+            "type": "integer",
+            "title": "Chars"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "chars",
+          "sha256"
+        ],
+        "title": "ContextDeliveredRef",
+        "description": "What the model read for one value or block, by SIZE and HASH only — never the text\n(RULES.md §5/§5b, owner law 2026-10-01: a server-shaped value is fetched on demand, never\npushed). The text itself is served by ``GET /ai/context/delivered`` (a sent turn) or\n``POST /ai/context/preview`` with ``view`` (the next turn), byte-exact, matched by this hash."
+      },
       "ContextDeliveredSide": {
         "properties": {
           "path": {
@@ -149966,36 +150244,6 @@
         ],
         "title": "ContextDeliveredSide",
         "description": "One side's context EXACTLY as the model is fed it — the run path's assembler's bytes."
-      },
-      "ContextDeliveredText": {
-        "properties": {
-          "text": {
-            "type": "string",
-            "title": "Text"
-          },
-          "chars": {
-            "type": "integer",
-            "title": "Chars"
-          },
-          "truncated": {
-            "type": "boolean",
-            "title": "Truncated",
-            "default": false
-          },
-          "sha256": {
-            "type": "string",
-            "title": "Sha256"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "text",
-          "chars",
-          "sha256"
-        ],
-        "title": "ContextDeliveredText",
-        "description": "Text the model actually read for one value — copied from what the server rendered,\nnever rebuilt from the client's copy (RULES.md §5 ``delivered`` / ``on_request``)."
       },
       "ContextEnvelope": {
         "properties": {
@@ -150635,6 +150883,16 @@
               }
             ],
             "description": "This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt."
+          },
+          "view": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextViewTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -150791,6 +151049,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ContextReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "viewed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextViewedText"
               },
               {
                 "type": "null"
@@ -151023,6 +151291,13 @@
               }
             ],
             "title": "Rules Error"
+          },
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/ContextReceiptBlock"
+            },
+            "type": "array",
+            "title": "Blocks"
           }
         },
         "additionalProperties": false,
@@ -151032,6 +151307,30 @@
         ],
         "title": "ContextReceipt",
         "description": "What the server did with every context value this turn (RULES.md §5)."
+      },
+      "ContextReceiptBlock": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "delivered": {
+            "$ref": "#/components/schemas/ContextDeliveredRef"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "delivered"
+        ],
+        "title": "ContextReceiptBlock",
+        "description": "One block of text the server put in front of the model this turn that is NOT a single\ncontext value: the turn's ``<active_context>``, earlier-turn context, the sandbox briefing,\nunplaced bound data, skills, observational memory, the organization catalog, the\ndictionary… (RULES.md §5 ``blocks``). Captured from the final config just before the model\ncall — the exact text the model received, never a rebuilt copy."
       },
       "ContextReceiptRow": {
         "properties": {
@@ -151150,7 +151449,7 @@
           "delivered": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ContextDeliveredText"
+                "$ref": "#/components/schemas/ContextDeliveredRef"
               },
               {
                 "type": "null"
@@ -151160,17 +151459,7 @@
           "on_request": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ContextDeliveredText"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "server_rendered": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ContextDeliveredText"
+                "$ref": "#/components/schemas/ContextDeliveredRef"
               },
               {
                 "type": "null"
@@ -151545,6 +151834,83 @@
           "tier"
         ],
         "title": "ContextTarget"
+      },
+      "ContextViewTarget": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "block",
+              "delivered",
+              "on_request"
+            ],
+            "title": "Kind"
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "key"
+        ],
+        "title": "ContextViewTarget",
+        "description": "One thing to view: ``kind`` + the value's key or the block's id."
+      },
+      "ContextViewedText": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "block",
+              "delivered",
+              "on_request"
+            ],
+            "title": "Kind"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "chars": {
+            "type": "integer",
+            "title": "Chars"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "conversation_prompt",
+              "preview",
+              "turn_record",
+              "wire"
+            ],
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "key",
+          "text",
+          "chars",
+          "sha256",
+          "source"
+        ],
+        "title": "ContextViewedText",
+        "description": "The exact text the model received (or will receive) for one value or block."
       },
       "ContractAuditReport": {
         "properties": {
@@ -221233,6 +221599,48 @@
         ],
         "title": "MeetChatSendRequest"
       },
+      "MeetClaimRequest": {
+        "properties": {
+          "meeting_id": {
+            "type": "string",
+            "title": "Meeting Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meeting_id"
+        ],
+        "title": "MeetClaimRequest",
+        "description": "`POST /api/v1/meet/claim` — the guest's pass rides `x-meet-room-token`."
+      },
+      "MeetClaimResponse": {
+        "properties": {
+          "meeting_id": {
+            "type": "string",
+            "title": "Meeting Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "claimed": {
+            "type": "boolean",
+            "title": "Claimed"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meeting_id",
+          "slug",
+          "claimed",
+          "access"
+        ],
+        "title": "MeetClaimResponse"
+      },
       "MeetCollabRequest": {
         "properties": {
           "meeting_id": {
@@ -246735,6 +247143,257 @@
         ],
         "title": "PollyStatusResult",
         "description": "Safe projection of Polly's high-level service status."
+      },
+      "PortableAgentBundle": {
+        "properties": {
+          "contract": {
+            "type": "string",
+            "const": "portable-agent.v1",
+            "title": "Contract",
+            "default": "portable-agent.v1"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
+          },
+          "version_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Number"
+          },
+          "is_version": {
+            "type": "boolean",
+            "title": "Is Version",
+            "default": false
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "definition_hash": {
+            "type": "string",
+            "title": "Definition Hash"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id"
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions"
+          },
+          "variables": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Variables"
+          },
+          "filled_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Filled Variables"
+          },
+          "skills": {
+            "items": {
+              "$ref": "#/components/schemas/PortableSkill"
+            },
+            "type": "array",
+            "title": "Skills"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/PortableTool"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "surface": {
+            "type": "string",
+            "title": "Surface"
+          },
+          "unavailable": {
+            "items": {
+              "$ref": "#/components/schemas/PortableUnavailable"
+            },
+            "type": "array",
+            "title": "Unavailable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "agent_id",
+          "name",
+          "definition_hash",
+          "model_id",
+          "instructions",
+          "surface"
+        ],
+        "title": "PortableAgentBundle"
+      },
+      "PortableAgentRequest": {
+        "properties": {
+          "variables": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Variables"
+          },
+          "surface": {
+            "type": "string",
+            "title": "Surface",
+            "default": "matrx-user/code-editor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PortableAgentRequest",
+        "description": "What the host sends: the person's variable values, and the tool surface."
+      },
+      "PortableSkill": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "included",
+              "listed"
+            ],
+            "title": "Tier"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "content_hash": {
+            "type": "string",
+            "title": "Content Hash"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "tier",
+          "slug",
+          "label",
+          "description",
+          "path",
+          "content",
+          "body",
+          "content_hash"
+        ],
+        "title": "PortableSkill"
+      },
+      "PortableTool": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "canonical_name": {
+            "type": "string",
+            "title": "Canonical Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "parameters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Parameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "canonical_name"
+        ],
+        "title": "PortableTool"
+      },
+      "PortableUnavailable": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "mcp_server",
+              "message",
+              "skill",
+              "tool",
+              "tools",
+              "variable"
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "name",
+          "reason"
+        ],
+        "title": "PortableUnavailable"
       },
       "Portion": {
         "properties": {

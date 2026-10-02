@@ -4,6 +4,7 @@ import {
 } from "@/lib/diagnostics/errorCaptureStore";
 import {
   captureStreamClientError,
+  captureStreamEvent,
   captureStreamTransportError,
   wasStreamErrorCaptured,
 } from "@/lib/diagnostics/captureStreamError";
@@ -76,5 +77,37 @@ describe("captureStreamTransportError", () => {
       source: "agent-stream-transport",
       code: "stream_transport_lost",
     });
+  });
+});
+
+describe("captureStreamEvent — server-recorded classes", () => {
+  beforeEach(() => {
+    clearCapturedErrors();
+  });
+
+  function errorEvent(errorType: string) {
+    return {
+      event: "error",
+      data: {
+        error_type: errorType,
+        message: "Groq rejected the max completion tokens setting for this model.",
+        user_message: "Groq rejected the max completion tokens setting for this model.",
+      },
+    } as unknown as Parameters<typeof captureStreamEvent>[0];
+  }
+
+  it("keeps a settings rejection local: the server holds its one record", () => {
+    captureStreamEvent(errorEvent("invalid_setting"), { requestId: "req-1" });
+    expect(getSnapshot()[0]).toMatchObject({
+      source: "agent-stream-error",
+      code: "invalid_setting",
+      requestId: "req-1",
+      durable: false,
+    });
+  });
+
+  it("still persists every other stream error", () => {
+    captureStreamEvent(errorEvent("invalid_request"), { requestId: "req-2" });
+    expect(getSnapshot()[0]?.durable).not.toBe(false);
   });
 });

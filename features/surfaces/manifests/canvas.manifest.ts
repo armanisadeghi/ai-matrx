@@ -16,9 +16,9 @@
  * `matrx-user/working-document` / `matrx-user/scratchpad`). Values here
  * describe the pane and the open item — never the inside of the artifact.
  *
- * Emitter: NONE since the 2026-10-01 rebuild on `@ai-matrx/canvas`. The old
- * `SurfaceRuntimeProvider` lived in `features/canvas/core/CanvasSurface.tsx`,
- * which the new host (`features/canvas/host/`) no longer renders.
+ * Emitter: `features/canvas/host/ShellCanvasColumn.tsx` wraps the canvas
+ * column in `SurfaceRuntimeProvider`; the scope is built at run time by
+ * `features/canvas/host/canvasSurfaceScope.ts` from the canvas store.
  *
  * NO `writeTargets` — deliberately. See the FEATURE.md Change Log entry for
  * 2026-08-11: the pane owns no authored text, and writing "into the canvas"
@@ -178,7 +178,7 @@ export const canvasManifest: SurfaceManifest = {
   readiness: "partial",
   readinessNote:
     // access-errors: ok — internal readiness note about a removed editor's vocabulary, verified against the codebase; never rendered to a user as record state
-    "Values re-authored against the live pane (2026-08-11) — the previous set declared diagram-node vocabulary (`selected_node_id`, `selected_nodes`, `current_text_block`) for an editor that does not exist in this codebase, and documented `render_mode` with an edit/preview enum it never had. Emitter was wired in the pre-2026-10-01 CanvasSideSheetImpl. Remaining: no `data-surface-value` anchors, and no live non-matching-name binding test.",
+    "Values re-authored against the live pane (2026-08-11) — the previous set declared diagram-node vocabulary (`selected_node_id`, `selected_nodes`, `current_text_block`) for an editor that does not exist in this codebase, and documented `render_mode` with an edit/preview enum it never had. Emitter: the canvas column (ShellCanvasColumn). Remaining: no `data-surface-value` anchors, and no live non-matching-name binding test.",
   label: "Canvas",
   intro: `<surface_intro>
 The Canvas is a side pane that HOSTS artifacts — a mermaid diagram, a table, a

@@ -5618,22 +5618,13 @@
         "title": "ContextDecidedBy",
         "type": "object"
       },
-      "ContextDeliveredText": {
+      "ContextDeliveredRef": {
         "additionalProperties": false,
-        "description": "Text the model actually read for one value — copied from what the server rendered,\nnever rebuilt from the client's copy (RULES.md §5 ``delivered`` / ``on_request``).",
+        "description": "What the model read for one value or block, by SIZE and HASH only — never the text\n(RULES.md §5/§5b, owner law 2026-10-01: a server-shaped value is fetched on demand, never\npushed). The text itself is served by ``GET /ai/context/delivered`` (a sent turn) or\n``POST /ai/context/preview`` with ``view`` (the next turn), byte-exact, matched by this hash.",
         "properties": {
-          "text": {
-            "title": "Text",
-            "type": "string"
-          },
           "chars": {
             "title": "Chars",
             "type": "integer"
-          },
-          "truncated": {
-            "default": false,
-            "title": "Truncated",
-            "type": "boolean"
           },
           "sha256": {
             "title": "Sha256",
@@ -5641,11 +5632,10 @@
           }
         },
         "required": [
-          "text",
           "chars",
           "sha256"
         ],
-        "title": "ContextDeliveredText",
+        "title": "ContextDeliveredRef",
         "type": "object"
       },
       "ContextReceiptBlock": {
@@ -5661,7 +5651,7 @@
             "type": "string"
           },
           "delivered": {
-            "$ref": "#/$defs/ContextDeliveredText"
+            "$ref": "#/$defs/ContextDeliveredRef"
           }
         },
         "required": [
@@ -5795,7 +5785,7 @@
           "delivered": {
             "anyOf": [
               {
-                "$ref": "#/$defs/ContextDeliveredText"
+                "$ref": "#/$defs/ContextDeliveredRef"
               },
               {
                 "type": "null"
@@ -5806,7 +5796,7 @@
           "on_request": {
             "anyOf": [
               {
-                "$ref": "#/$defs/ContextDeliveredText"
+                "$ref": "#/$defs/ContextDeliveredRef"
               },
               {
                 "type": "null"

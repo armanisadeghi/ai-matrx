@@ -7,55 +7,60 @@ in that node's doc kit (`STATE.md`, `ARTIFACT-WIRE-CONTRACT.md`, `TWO-WAY-BINDIN
 `CANVAS-DATA-MODEL.md`, `DECISIONS.md`, `HANDOFF.md`, `VISION.md`). This file is the file map plus
 the rules an agent editing THIS directory must obey.
 
-> **The one thing to understand: the Canvas is a HOST, not an editor.** It renders ARTIFACTS
-> through a type-keyed switch. It has no nodes, no node selection, and no text elements of its own.
+> **The one thing to understand: the Canvas is a HOST, not an editor.** It is the
+> `@ai-matrx/canvas` column (`packages/canvas/FEATURE.md`): one docked right-hand column with panes
+> and tabs. This directory is the app's binding to it plus the ARTIFACT kinds it shows through a
+> type-keyed switch. No nodes, no node selection, no text elements of its own.
 
 ## Shape of the thing
 
 | Layer                                                                          | Where                                                                                            |
 | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Front door (always mounted, owns ⌘\ + availability signalling)                 | `core/CanvasSideSheet.tsx`                                                                       |
-| THE ONE presentation — overlay slide-in + width resize, identical everywhere   | `core/CanvasSideSheetImpl.tsx`                                                                   |
-| The content it presents — card, vertical split, surface emitter                | `core/CanvasSurface.tsx`                                                                         |
-| Per-pane header chrome + body                                                  | `core/CanvasPane.tsx`                                                                            |
-| The type-keyed renderer switch (+ `titleToString`, `getDefaultTitle`)          | `core/CanvasBody.tsx`                                                                            |
+| THE canvas — column, panes, tabs, identity, memory (package)                  | `packages/canvas/` (`@ai-matrx/canvas`)                                                          |
+| App binding: Redux key `canvasHost`, open-drop reporting                       | `host/CanvasHostProvider.tsx`                                                                    |
+| Placement: fixed right column, `--shell-canvas-w`, surface emitter             | `host/ShellCanvasColumn.tsx`, `host/canvas-host.css`, `host/canvasSurfaceScope.ts`               |
+| Every content type as a kind (icon, restore, keep-alive, header action, menu)  | `host/artifactKinds.tsx`                                                                         |
+| Artifact item data + identity keys                                             | `host/artifactItem.ts`                                                                           |
+| THE way app code opens content                                                 | `host/useArtifactCanvas.ts` (+ `hooks/useCanvas.ts`, `useOpenArtifactInCanvas`, `useOpenCanvasItem`) |
+| Artifact tab body (CanvasBody / source, share sheet, debug panel)              | `host/ArtifactCanvasView.tsx`, `host/artifactPanels.ts`                                          |
+| Content types, persistable set, title helpers                                  | `canvasContent.ts`                                                                               |
+| The type-keyed renderer switch                                                 | `core/CanvasBody.tsx`                                                                            |
 | Unified artifact renderers (chart, table, quiz, mermaid, …)                    | `artifact-types/renderers/*`                                                                     |
 | Type registry — the single source of truth                                     | `artifact-types/artifact-type-registry.ts`                                                       |
 | Materialization primitive + planner + unbind                                   | `materialization/`                                                                               |
 | Tool result → canvas offer wire (registry + pure rules + headless opener)      | `tool-results/`                                                                                  |
-| The switcher-visibility rule, and the remembered reveal decision                | `core/canvasSwitcher.ts`, `revealMemory.ts`                                                      |
+| The remembered reveal decision                                                 | `revealMemory.ts`                                                                                |
 | Markdown export                                                                | `export/exportArtifactMarkdown.ts`                                                               |
-| State                                                                          | `redux/canvasSlice.ts`                                                                           |
 | Library persistence (`canvas_items`)                                           | `services/canvasItemsService.ts`, `services/canvasArtifactService.ts`, `hooks/useCanvasItems.ts` |
 | Public/social surface                                                          | `social/`, `discovery/`, `leaderboard/`, `shared/resolveSharedCanvas.ts`                         |
-| Legacy in-page renderer (3 importers, queued for collapse)                     | `core/CanvasRenderer.tsx`                                                                        |
 | Visual maps — a DIFFERENT registry node built on this stack                    | `maps/FEATURE.md`                                                                                |
 
 ## Rules for this directory
 
-- 🚨 **THERE IS ONE PRESENTATION AND NO ROUTE OWNS ONE OF ITS OWN.** The
-  canvas is the globally mounted `CanvasSideSheet` — an overlay drawn at the
-  right edge, at z-10000, from y = 0 — and every route gets exactly that one:
-  documents, artifacts, the browser, the sandbox, chat. A route NEVER mounts,
-  wraps, docks or otherwise presents the canvas; it only opens things INTO it
-  through the headless openers. If the canvas genuinely lacks something one
-  route needs, EXTEND `CanvasSideSheetImpl`/`CanvasSurface` for every route —
-  never fork a presentation for one. Owner, 2026-09-16, rejecting exactly such
-  a fork (`CanvasDock`, a docked column the chat route wrapped its body in,
-  which lived 2026-09-14 → 2026-09-17): *"The canvas system set up for the
-  sandboxes completely breaks the core systems for how these canvases work. It
-  adds an unnecessary layer, causes a shift in the top header buttons and
-  creates a mess that clearly shows it is not properly built to be identical to
-  the way the canvas actually works. FOLLOW established patterns."*
-  The global mount points are exactly: `DeferredIslands` (authenticated shell),
-  `app/(public)/layout.tsx`, and `app/(link)/layout.tsx` (shell-less link pages,
-  e.g. published agent app `/p/<slug>`) — a shell-less group mounts the front
-  door in its LAYOUT, never in a page.
-  Guards: `features/canvas/__tests__/one-canvas-presentation.test.ts` (static —
-  no dock module, no dock state, no route mounting a presentation) and
-  `features/shell/layout-gate/canvas-one-presentation.spec.ts` (real-engine
-  rects — the canvas pane header lands at the same place on chat as on a
-  document route, and opening the canvas moves no shell header button).
+- 🚨 **THERE IS ONE CANVAS AND NO ROUTE OWNS ONE OF ITS OWN.** The canvas is
+  the `@ai-matrx/canvas` column, placed by `host/ShellCanvasColumn.tsx`: fixed to
+  the right edge, full height, owning its own strip of the window's top. The
+  shell root and the public/link layouts give up `--shell-canvas-w`, so the
+  header and the page END at the canvas edge — it never covers them and never
+  fights a page for space. Owner, 2026-10-01: *"the top of the page gets taken
+  over by the canvas when it's open… then the canvas doesn't have to fight for
+  space"*, modelled on the Claude Code / Codex panes. It is mounted exactly in
+  `features/shell/components/AppShell.tsx`, `app/(public)/layout.tsx` and
+  `app/(link)/layout.tsx`. A route NEVER mounts, wraps, docks or forks a
+  canvas; it opens things INTO it. If the canvas lacks something, extend the
+  PACKAGE for every host. (The 2026-09-16 ruling against a per-route
+  `CanvasDock` still stands: that was a route-owned fork, which this is not.)
+  Guard: `__tests__/one-canvas-column.test.ts`.
+- **A new kind of content is a KIND, never a new panel.** Register it with
+  `registerCanvasKind(defineCanvasKind({...}))` (package registry); artifact
+  content types are already registered in `host/artifactKinds.tsx`, and adding
+  a `CanvasContentType` without its entry there is a type error.
+- **Identity: the same thing never opens twice.** An artifact tab's key is the
+  saved artifact id, else the producing task, else the producing message, else
+  a hash of the content (`host/artifactItem.ts`). Re-opening focuses the
+  existing tab. Choose a key that names the THING.
+- **Canvas data is plain JSON.** The controller refuses functions and Dates
+  and announces it. Live editor callbacks ride by id (`liveCallbacks.ts`).
 - **AN OPEN-IN-CANVAS REQUEST NEVER SILENTLY DOES NOTHING.** Every place a
   request to show something in the canvas can be dropped — no type, no data,
   an unknown type, an artifact that would not persist, a route with no canvas
@@ -63,19 +68,10 @@ the rules an agent editing THIS directory must obey.
   was asked for and what to do instead. A bare `return` there is the defect:
   live on 2026-09-14 an agent announced it had opened a document artifact, the
   canvas kept showing what it was showing, and nothing anywhere said otherwise.
-  `useCanvas().open` returns a boolean for the same reason. Availability is
-  checked with `useCanvasOpenGuard` BEFORE dispatching, because the slice
-  happily accepts an open for a route that mounts nothing.
-- **Availability has ONE source:** `selectCanvasIsAvailable` reads the flag the
-  global front door raises on mount. A second source meant a second
-  presentation, and that is the layer above.
-
-- **Never fork the canvas body.** Card, vertical split and pane chrome live
-  once in `core/CanvasSurface.tsx`; `CanvasSideSheetImpl` owns only placement,
-  width and the Radix Sheet.
-- **react-resizable-panels v4: a bare number is PIXELS.** Percentages must
-  carry the unit (`defaultSize={\`${ratio}%\`}`). Invoke the
-  `react-resizable-panels-v4` skill before touching any group here.
+  `useCanvas().open` returns a boolean for the same reason.
+- **Availability has ONE source:** the canvas provider's presence
+  (`useCanvasOpenGuard` → `useOptionalCanvas`); `CanvasUnavailableBoundary`
+  marks a subtree that must not open into it.
 
 - **The owner of a canvas write is `auth.uid()`, never a value the client sends.** The write RPCs
   still take `p_user_id`, but `canvas._require_actor()` validates it (`28000` with no session,
@@ -109,7 +105,8 @@ the rules an agent editing THIS directory must obey.
 - **Read the node's `TWO-WAY-BINDING.md` before touching artifact EDIT or UNBIND on any surface.**
   `ArtifactTypeDef.userEditable` is the ONE edit switch — flag a type only when its editor actually
   exists and saves versions.
-- The slice is **not persisted** — a full page reload empties the canvas. Materialized items store
+- The canvas **remembers** its panes, tabs and width per browser (package localStorage port); kinds
+  marked `restore: false` (live sessions) are left out. Materialized items store
   a POINTER (`data: { artifactId }`); `CanvasBody` resolves that pointer through `useCanvasItem`
   before invoking the canonical renderer. Legacy `openCanvas` items carry a full payload, so
   anything reading `content.data` must handle both.
@@ -128,8 +125,8 @@ the rules an agent editing THIS directory must obey.
   remembering which URLs we wrote — that bookkeeping swallows Forward to an
   artifact that was open before. Guard:
   `features/canvas/__tests__/canvas-artifact-url-state.test.tsx`.
-- Use `updateCanvasContent` (not `openCanvas`) to change an item already on the canvas — `openCanvas`
-  creates a duplicate. `closeCanvas()` keeps items in memory; `clearCanvas()` destroys them.
+- Change the active artifact tab in place with `useArtifactCanvas().updateActive` (or the controller's
+  `update`). Putting the canvas away keeps its tabs; `clear` closes them.
 - Pass `titleToString(content.metadata?.title)` — never the raw `metadata.title` — to anything that
   needs a plain string; `CanvasContent.metadata.title` is deliberately `string | ReactNode`.
 - **No `writeTargets` on the `matrx-user/canvas` surface, by design** — the pane owns no authored
@@ -155,7 +152,7 @@ the rules an agent editing THIS directory must obey.
 - **Verifying the canvas surface:** `/canvas` is not a route, and on a MAPPED route the route
   surface wins — verify on `/artifacts` (no route→surface mapping). Since 2026-09-18 a reload
   there is fine: `?open=<id>` restores the pane. On any OTHER route, still reach it by
-  CLIENT-SIDE navigation with the pane open, because a reload empties the slice.
+  the open tab (the canvas remembers it across a reload).
 - **A public shared canvas owns the viewport.** Both `/canvas/shared/[token]` and the canonical
   `/s/[token]` lens suppress the generic public header/footer through
   `data-public-immersive-surface`, render the same identity/action header, and keep
@@ -167,6 +164,14 @@ the rules an agent editing THIS directory must obey.
 path updates the node's `STATE.md` in the same session.
 
 ## Change log
+
+- `2026-10-01` — **The canvas is the `@ai-matrx/canvas` column.** The overlay side sheet
+  (`CanvasSideSheet*`, `CanvasSurface`, `CanvasPane`, `CanvasNavigation`, `CanvasHomeSheet`,
+  `ResizableCanvas`, `CanvasRenderer`, `CanvasHeader`, `canvasSwitcher`) and `redux/canvasSlice.ts`
+  are deleted. The canvas is a full-height right column the header ends at, with split panes, tabs,
+  full screen, memory and identity keys; every content type is a kind (`host/artifactKinds.tsx`),
+  saved items are a launcher kind, live editor callbacks ride by id. Guards: `one-canvas-column.test.ts`,
+  `packages/canvas/src/__tests__/core.test.ts`.
 
 - `2026-09-29` — **Surface-owned conversations survive a reload.** The module-level `materialization/surfaceOwnedConversations.ts` Set (lost on every reload, never consulted by the on-load reconcile) is deleted; ownership is the launch option `surfaceOwnsOutput`, carried on the conversation record in the execution-system Redux state, persisted in the row's metadata, restored by `loadConversation`, and read by `materializeMessageArtifacts` (now given `getState`) via `selectConversationSurfaceOwnsOutput`. Tests: `education/convert/__tests__/segment-runs-never-materialize.test.ts` (red on a scratch copy of the old claim path), `materialization/__tests__/materializeMessageArtifacts.test.ts`.
 - `2026-09-28` — **Submitting a score and recording a view work again.** `hooks/canvas/useCanvasScore.ts` and `hooks/canvas/useSharedCanvas.ts` wrote `canvas.canvas_scores` / `canvas.canvas_views` directly, closed by the same 2026-09-21 sweep; they now call the new `canvas.submit_canvas_score` / `canvas.record_canvas_view` doors (migration `canvas_score_and_view_doors.sql`). Rank and high score now come from the door (the browser could only count its own scores).

@@ -9,7 +9,7 @@
  * the component, the skill the agents were taught and every conversation
  * already on the screen are all untouched.
  *
- * TWO IMPLEMENTATIONS, ONE SHAPE:
+ * THREE IMPLEMENTATIONS, ONE SHAPE:
  *   - `scope_dataset` (today) — a context item bound to a table template,
  *     provisioned once per scope by `context.provision_scope_dataset`, a Table
  *     in the record store. Writes go through the data seam's `bulkWrite` under
@@ -20,6 +20,11 @@
  *     `record_delete` / `read_records`; v5 CONTRACT AGT-4 / AGT-8), reached
  *     through `@ai-matrx/records/core`'s `createRecordsClient`. The store's
  *     own refusal is carried back verbatim here too, never translated.
+ *   - `flashcard_deck` — one flashcard deck, one row per card, columns
+ *     `front` / `back`. Reads and writes go through `fcService` (the ONE
+ *     flashcard data door) under the person's own authority; RLS decides who
+ *     may edit. Only `update` is meaningful here: cards are added and removed
+ *     on the deck page, so `add` / `remove` are refused in words.
  *
  * NOTHING HERE TOUCHES A DECISION. Applying is one thing; remembering what the
  * person decided is another (`decisions.ts`). Keeping them apart is what makes
@@ -40,6 +45,7 @@ import { isScopesRpcErr } from "@/features/scopes/types";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { createClient } from "@/utils/supabase/client";
+import { fcService } from "@/features/flashcards/data/fcService";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { resolveObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -281,6 +287,63 @@ const recordTableStore: ListStore<Extract<ListChangeTarget, { kind: "table" }>> 
   },
 };
 
+// ── implementation 3: a flashcard deck (one row per card) ──────────────────
+
+/** The two columns a card has. Anything else in a patch is not a card field. */
+const CARD_FIELDS = [
+  { name: "front", label: "Front" },
+  { name: "back", label: "Back" },
+] as const;
+
+const flashcardDeckStore: ListStore<
+  Extract<ListChangeTarget, { kind: "flashcard_deck" }>
+> = {
+  async read(target) {
+    const res = await fcService.getSetWithCards(target.setId);
+    if (!res.data) {
+      return { status: "refused", detail: res.error ?? "This deck could not be read." };
+    }
+    return {
+      status: "read",
+      snapshot: {
+        fields: CARD_FIELDS.map((f) => ({ ...f })),
+        rows: res.data.cards.map((c) => ({
+          id: c.id,
+          values: { front: c.front, back: c.back },
+        })),
+        label: target.label ?? res.data.set.name ?? "this deck",
+      },
+    };
+  },
+
+  async apply(_target, proposal) {
+    if (proposal.action !== "update") {
+      return {
+        status: "refused",
+        detail: "Cards are added and removed on the deck page; only edits apply here.",
+      };
+    }
+    const patch: { front?: string; back?: string } = {};
+    if (typeof proposal.patch.front === "string" && proposal.patch.front.trim()) {
+      patch.front = proposal.patch.front;
+    }
+    if (typeof proposal.patch.back === "string" && proposal.patch.back.trim()) {
+      patch.back = proposal.patch.back;
+    }
+    if (!patch.front && !patch.back) {
+      return {
+        status: "refused",
+        detail: "This change names no new front or back, so nothing was written.",
+      };
+    }
+    const written = await fcService.updateCard(proposal.rowId, patch);
+    if (written.error || !written.data) {
+      return { status: "refused", detail: written.error ?? "The card was not saved." };
+    }
+    return { status: "applied", rowId: proposal.rowId, detail: "Card updated." };
+  },
+};
+
 // ---------------------------------------------------------------------------
 // The two doors every caller uses.
 // ---------------------------------------------------------------------------
@@ -288,6 +351,7 @@ const recordTableStore: ListStore<Extract<ListChangeTarget, { kind: "table" }>> 
 /** Read the list a target names, so proposals can be shown against reality. */
 export async function readListTarget(target: ListChangeTarget): Promise<ReadOutcome> {
   if (target.kind === "scope_dataset") return scopeDatasetStore.read(target);
+  if (target.kind === "flashcard_deck") return flashcardDeckStore.read(target);
   return recordTableStore.read(target);
 }
 
@@ -297,6 +361,7 @@ export async function applyListChange(
   proposal: ListChangeProposalItem,
 ): Promise<ApplyOutcome> {
   if (target.kind === "scope_dataset") return scopeDatasetStore.apply(target, proposal);
+  if (target.kind === "flashcard_deck") return flashcardDeckStore.apply(target, proposal);
   return recordTableStore.apply(target, proposal);
 }
 

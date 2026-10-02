@@ -20,6 +20,11 @@
  *     not a paraphrase.
  *  3. Accepting a removal moves the row to Trash (delete means archive), and the
  *     confirm says exactly that.
+ *  4. An edit shows what it replaces. Each `update` row draws every patched
+ *     column as current → proposed (read from the store, rendered as rich
+ *     text so math and markdown read as they do in the list), so the person
+ *     sees the consequence BEFORE accepting; "accept all" over edits stops and
+ *     says the current wording is replaced.
  *
  * STATE AFTER A RELOAD comes from two places on purpose: what the store now
  * says (an accepted add is settled because the row is THERE) and what the
@@ -66,6 +71,7 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { RichContent } from "@/components/rich-content/RichContent";
 
 export interface ListChangeProposalViewProps {
   proposal: ListChangeProposalValue;
@@ -98,6 +104,35 @@ const NO_MESSAGE_REASON =
 
 function outcomeSentence(outcome: ApplyOutcome): string {
   return outcome.detail;
+}
+
+/** One patched column of an `update`, as the row draws it. */
+interface ChangedField {
+  name: string;
+  label: string;
+  /** What the store holds now; null when the store could not be read. */
+  before: string | null;
+  after: string;
+}
+
+function asText(value: unknown): string {
+  if (value == null) return "";
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+/** current → proposed for every column an update touches. */
+function changedFields(
+  snapshot: ListSnapshot | null,
+  item: ListChangeProposalItem,
+): ChangedField[] {
+  if (item.action !== "update") return [];
+  const row = snapshot?.rows.find((r) => r.id === item.rowId) ?? null;
+  return Object.entries(item.patch).map(([name, value]) => ({
+    name,
+    label: snapshot?.fields.find((f) => f.name === name)?.label ?? name,
+    before: row ? asText(row.values[name]) : null,
+    after: asText(value),
+  }));
 }
 
 export function ListChangeProposalView({
@@ -214,6 +249,7 @@ export function ListChangeProposalView({
     return proposalStanding(snapshot, p) === "open";
   });
   const openRemovals = openProposals.filter((p) => p.action === "remove");
+  const openEdits = openProposals.filter((p) => p.action === "update");
 
   const runAcceptAll = useCallback(async () => {
     for (const item of openProposals) {
@@ -256,8 +292,7 @@ export function ListChangeProposalView({
         <div className="rounded-xl border border-dashed border-border p-3 text-sm">
           <p className="font-medium">Nothing to change</p>
           <p className="mt-1 text-muted-foreground">
-            The agent looked at {listLabel} and proposed no additions or removals. An
-            empty set is a real answer.
+            The agent looked at {listLabel} and proposed no changes.
           </p>
         </div>
       ) : (
@@ -269,6 +304,7 @@ export function ListChangeProposalView({
               density={density}
               decision={decisions[item.id] ?? null}
               settledByStore={snapshot ? proposalStanding(snapshot, item) === "settled" : false}
+              changes={changedFields(snapshot, item)}
               busy={busyId === item.id}
               canDecide={canDecide}
               loading={loading}
@@ -332,7 +368,7 @@ export function ListChangeProposalView({
             variant="default"
             disabled={busyId !== null}
             onClick={() =>
-              openRemovals.length > 0
+              openRemovals.length > 0 || openEdits.length > 0
                 ? setPendingConfirm({ scope: "all" })
                 : void runAcceptAll()
             }
@@ -365,7 +401,7 @@ export function ListChangeProposalView({
         // read-gate-exempt: counts of this message's own proposals; the dialog opens only while deciding is allowed (decisions read succeeded)
         description={
           pendingConfirm?.scope === "all"
-            ? `${openRemovals.length} of these ${openProposals.length} changes take a row off ${listLabel}; each one ${removalFate}. The rest add or edit rows.`
+            ? allChangesSentence(openProposals.length, openRemovals.length, openEdits.length, listLabel, removalFate)
             : `The row "${pendingConfirm?.scope === "one" ? pendingConfirm.item.title : ""}" leaves ${listLabel} and ${removalFate}.`
         }
         confirmLabel={
@@ -387,11 +423,34 @@ export function ListChangeProposalView({
   );
 }
 
+/** What "accept all" will do, in counts — removals and overwrites named. */
+function allChangesSentence(
+  total: number,
+  removals: number,
+  edits: number,
+  listLabel: string,
+  removalFate: string,
+): string {
+  const parts: string[] = [];
+  if (removals > 0) {
+    parts.push(`${removals} of these ${total} take a row off ${listLabel}; each one ${removalFate}.`);
+  }
+  if (edits > 0) {
+    parts.push(
+      edits === total
+        ? "Each one replaces the current wording, which is not kept."
+        : `${edits} of them replace the current wording, which is not kept.`,
+    );
+  }
+  return parts.join(" ");
+}
+
 function ProposalRow({
   item,
   density,
   decision,
   settledByStore,
+  changes,
   busy,
   canDecide,
   loading,
@@ -402,6 +461,7 @@ function ProposalRow({
   density: "compact" | "comfortable";
   decision: ProposalDecision | null;
   settledByStore: boolean;
+  changes: ChangedField[];
   busy: boolean;
   canDecide: boolean;
   loading: boolean;
@@ -431,6 +491,25 @@ function ProposalRow({
           <span className="font-medium">{ACTION_WORD[item.action]}:</span> {item.title}
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">{item.reason}</p>
+        {changes.length > 0 ? (
+          <dl className="mt-1 space-y-1">
+            {changes.map((c) => (
+              <div key={c.name} className="flex min-w-0 gap-2 text-xs">
+                <dt className="w-10 shrink-0 text-muted-foreground">{c.label}</dt>
+                <dd className="min-w-0 flex-1 space-y-0.5">
+                  {c.before ? (
+                    <span className="block text-muted-foreground line-through decoration-muted-foreground/60">
+                      <RichContent level="inline" source={c.before} />
+                    </span>
+                  ) : null}
+                  <span className="block text-foreground">
+                    <RichContent level="inline" source={c.after} />
+                  </span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
         {decision ? (
           <p className="mt-0.5 text-xs">
             <span

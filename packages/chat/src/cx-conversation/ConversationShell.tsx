@@ -1,7 +1,6 @@
 "use client";
 
-import React, { Suspense } from "react";
-import dynamic from "next/dynamic";
+import React from "react";
 import { X } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { MessageList } from "./MessageList";
@@ -9,15 +8,6 @@ import { ConversationInput } from "./ConversationInput";
 import type { ConversationInputProps } from "./ConversationInput";
 import { UnsavedChangesIndicator } from "./UnsavedChangesIndicator";
 import { useUnsavedChangesGuard } from "./hooks/useUnsavedChangesGuard";
-
-const ResizableCanvas = dynamic(
-  () => import("@host/features/canvas/core/ResizableCanvas").then((m) => ({ default: m.ResizableCanvas })),
-  { ssr: false }
-);
-const CanvasRenderer = dynamic(
-  () => import("@host/features/canvas/core/CanvasRenderer").then((m) => ({ default: m.CanvasRenderer })),
-  { ssr: false }
-);
 
 // ============================================================================
 // PROPS
@@ -34,11 +24,6 @@ export interface ConversationShellProps {
   // ── Message list options ───────────────────────────────────────────────────
   showSystemMessages?: boolean;
   compact?: boolean;
-
-  // ── Canvas ─────────────────────────────────────────────────────────────────
-  /** Enable inline side-by-side canvas (canvas always on right) */
-  enableInlineCanvas?: boolean;
-  enableCanvas?: boolean;
 
   // ── Input feature flags — forwarded to ConversationInput ─────────────────
   inputProps?: Partial<ConversationInputProps>;
@@ -65,8 +50,6 @@ export function ConversationShell({
   className,
   showSystemMessages = false,
   compact = false,
-  enableInlineCanvas = false,
-  enableCanvas = false,
   inputProps = {},
   headerSlot,
 }: ConversationShellProps) {
@@ -105,7 +88,7 @@ export function ConversationShell({
       {/* ── Unsaved changes indicator ──────────────────────────────── */}
       <UnsavedChangesIndicator sessionId={sessionId} />
 
-      {/* ── Main content: messages + optional canvas ─────────────────── */}
+      {/* ── Main content: messages ─────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden min-h-0">
         {/* Messages */}
         <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
@@ -117,23 +100,6 @@ export function ConversationShell({
             />
           </div>
         </div>
-
-        {/* Inline canvas (side-by-side, right panel) */}
-        {(enableInlineCanvas || enableCanvas) && (
-          <div className="flex-shrink-0 w-1/2 min-w-[300px] border-l border-border overflow-hidden">
-            <Suspense
-              fallback={
-                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-                  Loading canvas…
-                </div>
-              }
-            >
-              <ResizableCanvas>
-                <CanvasRenderer />
-              </ResizableCanvas>
-            </Suspense>
-          </div>
-        )}
       </div>
 
       {/* ── Input ─────────────────────────────────────────────────────── */}

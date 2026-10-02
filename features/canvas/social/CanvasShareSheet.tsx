@@ -20,8 +20,7 @@
  *
  * 2. THE BESPOKE `z-[20000]` / `z-[20001]` STACK IS GONE. It was load-bearing
  *    for nothing — a census found the 20000 layer existed ONLY in this file,
- *    and `features/canvas/` sets no z-index at all; `CanvasSideSheetImpl`
- *    tops out at the canonical 10000. Sitting ABOVE the dialog layer is
+ *    and `features/canvas/` sets no z-index above the canonical 10000. Sitting ABOVE the dialog layer is
  *    itself the recorded bug class (`features/window-panels/FEATURE.md`,
  *    2026-07-05: a `z-[10001]` popover BURIED the dialogs opened from inside
  *    it, and the global fix was to make the layer EQUAL and let DOM portal
