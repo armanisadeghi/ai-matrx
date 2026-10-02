@@ -14,7 +14,7 @@ import { formatDurationSeconds, formatFileSize } from "@ai-matrx/kit/format";
 
 import { cn } from "@/lib/utils";
 
-import { osLine, platformLabel, relaySinceIso, sinceLabel } from "../platform";
+import { osLine, relaySinceIso, sinceLabel } from "../platform";
 import { useNow } from "../useNow";
 import type { DeviceRow } from "../types";
 import type { ConsoleStatus } from "./connection";
@@ -79,7 +79,7 @@ export function InfoPanel({
     <div className={cn("min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2 lg:px-3", !visible && "hidden")}>
       <Group title="Computer">
         <Row label="Name" value={s?.device_name ?? device.instance_name ?? dash} />
-        <Row label="System" value={s ? `${platformLabel(s.platform)} ${s.os_version} · ${s.arch}` : osLine(device.platform, device.os_version)} />
+        <Row label="System" value={s ? `${osLine(s.platform, s.os_version)} · ${s.arch}` : osLine(device.platform, device.os_version)} />
         <Row label="Host" value={s?.hostname ?? dash} mono />
         <Row label="User" value={s?.user.username ?? dash} mono />
         <Row label="Home" value={s?.paths.home ?? dash} mono />

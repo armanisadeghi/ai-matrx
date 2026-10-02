@@ -10,7 +10,7 @@
 "use client";
 
 import "@/styles/terminal-host.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Plus, X } from "lucide-react";
 import { ACCESSORY_BAR_HEIGHT } from "@ai-matrx/terminal";
 import { Terminal } from "@ai-matrx/terminal/react";
@@ -56,8 +56,23 @@ function chipLabel(pty: PtyInfo, index: number, all: PtyInfo[]): string {
   return all.filter((p) => baseLabel(p) === base).length > 1 ? `${base} ${index + 1}` : base;
 }
 
+function subscribeVisibility(onChange: () => void): () => void {
+  document.addEventListener("visibilitychange", onChange);
+  return () => document.removeEventListener("visibilitychange", onChange);
+}
+
+/** The page is on screen. A hidden page never takes a shell (see the visibility effect below). */
+function usePageVisible(): boolean {
+  return useSyncExternalStore(
+    subscribeVisibility,
+    () => document.visibilityState === "visible",
+    () => true,
+  );
+}
+
 export function TerminalPanel({ client, live, resourceId, onResourceChange, visible, hiddenOnPhone = false }: TerminalPanelProps) {
   const isMobile = useIsMobile();
+  const pageVisible = usePageVisible();
   const termRef = useRef<TerminalHandle | null>(null);
   const streamRef = useRef<LiveStream | null>(null);
   const sizeRef = useRef<TerminalSize>({ cols: 80, rows: 24 });
@@ -205,7 +220,7 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
 
   // First connection: reattach to the shell in the URL, else the oldest running one, else a new one.
   useEffect(() => {
-    if (!live || !ready || streamRef.current || startingRef.current || ended !== null) return;
+    if (!live || !ready || !pageVisible || streamRef.current || startingRef.current || ended !== null) return;
     void (async () => {
       const running = await refreshSessions();
       if (streamRef.current || startingRef.current) return;
@@ -216,9 +231,10 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
       else if (running[0]) attach(running[0].resource_id);
       else start();
     })();
-    // Runs when the connection opens or the terminal mounts; the handlers read refs.
+    // Runs when the connection opens, the terminal mounts or the page comes on screen; the
+    // handlers read refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [live, ready]);
+  }, [live, ready, pageVisible]);
 
   // A reconnect brings other people's (or agents') shells: refresh the chips.
   useEffect(() => {
@@ -237,26 +253,14 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
   // shell for everyone. So a hidden page lets go of its shell — it keeps running on the computer —
   // and on return picks it up from the last byte this screen shows (since_seq), screen intact.
   useEffect(() => {
-    const onVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        const stream = streamRef.current;
-        if (!stream?.resourceId) return;
-        // seq 0 = this screen holds only a snapshot: the return asks for a fresh one.
-        parkedRef.current = { id: stream.resourceId, seq: stream.lastSeq };
-        streamRef.current = null;
-        void stream.detach().catch(() => undefined);
-        return;
-      }
-      const parked = parkedRef.current;
-      if (!parked || !live || streamRef.current) return; // not live yet: the first-connection effect resumes it
-      parkedRef.current = null;
-      attach(parked.id, parked.seq > 0 ? parked.seq : undefined);
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-    // attach() reads refs; re-binding on `live` is what lets a return before reconnect wait for it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [live]);
+    if (pageVisible) return; // coming back is the first-connection effect's job (it reads parkedRef)
+    const stream = streamRef.current;
+    if (!stream?.resourceId) return;
+    // seq 0 = this screen holds only a snapshot: the return asks for a fresh one.
+    parkedRef.current = { id: stream.resourceId, seq: stream.lastSeq };
+    streamRef.current = null;
+    void stream.detach().catch(() => undefined);
+  }, [pageVisible]);
 
   // The keyboard accessory bar is this page's bottom dock: publish its height so the assists
   // launcher sits above it instead of on the keys (the shell's --page-bottom-dock-h contract).

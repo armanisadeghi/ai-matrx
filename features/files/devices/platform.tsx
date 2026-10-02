@@ -32,7 +32,8 @@ export function platformLabel(platform: string | null): string {
  */
 export function osLine(platform: string | null, osVersion: string | null): string {
   const label = platformLabel(platform);
-  if (!osVersion) return label;
+  // A kernel banner ("Darwin Kernel Version 25.0.0: …") is not the OS version a person knows.
+  if (!osVersion || /kernel/i.test(osVersion)) return label;
   const version = /\d+(?:\.\d+)+/.exec(osVersion)?.[0] ?? osVersion;
   return `${label} ${version}`;
 }

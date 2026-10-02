@@ -44,7 +44,7 @@ function setQuery(patch: Record<string, string | null>): void {
     if (v === null) url.searchParams.delete(k);
     else url.searchParams.set(k, v);
   }
-  window.history.replaceState(window.history.state, "", url);
+  window.history.replaceState(null, "", url);
 }
 
 function offlineText(name: string, lastIso: string | null, now: number): string {
