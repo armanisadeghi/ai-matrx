@@ -14,7 +14,7 @@
 // no removal date is how a banner becomes permanent.
 
 import Link from "next/link";
-import { Rows3, X } from "lucide-react";
+import { ArrowLeft, Rows3, X } from "lucide-react";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 
 export function ClassicViewNotice() {
@@ -45,6 +45,27 @@ export function ClassicViewNotice() {
       >
         <X className="h-3.5 w-3.5" />
       </button>
+    </div>
+  );
+}
+
+// The way back. /agents/classic is a page a person opts INTO, so it must always
+// offer the return trip — before this it had none, and a refresh kept the
+// person on the old gallery with no control leading home. Never dismissible.
+export function ClassicViewReturn() {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs">
+      <Rows3 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      <span className="min-w-0 flex-1 truncate text-foreground">
+        You are on the classic Agents view
+      </span>
+      <Link
+        href="/agents/all"
+        className="inline-flex min-h-11 shrink-0 items-center gap-1 font-medium text-primary hover:underline sm:min-h-0"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back to the new view
+      </Link>
     </div>
   );
 }
