@@ -13,9 +13,10 @@
 // rest of the query (`?filters=`), is never persisted as a preference (the query never is), "Clear
 // filters" clears it, and every list RPC already receives it in `p_filters` with no service change.
 //
-// WHERE IT IS APPLIED: server-side, never in the browser — `platform.list_dimension_match(p_filters,
-// '<entity token>', row id)` inside each `*_list_scoped` body (migration
-// migrations/campaign/integration_w15_a_list_narrows_to_one_dimension_value.sql). A list declares that its
+// WHERE IT IS APPLIED: server-side, never in the browser — each `*_list_scoped` body carries
+// `AND (NOT v_f ? '__dimension' OR j.id = ANY(coalesce((SELECT platform.list_dimension_ids(v_f, '<token>')), '{}')))`,
+// so the linked ids are read ONCE per call (migrations/campaign/integration_w15_*.sql and _w15b_*.sql; a
+// per-row EXISTS took the filtered /agents/all past the 8 s statement timeout). A list declares that its
 // RPC honours it with `config.dimensionFilter: true`; the shell shows the control only then, so a list
 // whose server would ignore the key never wears a control that does nothing.
 //

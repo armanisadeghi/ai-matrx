@@ -8,7 +8,8 @@
 // (`useScopeTree` + `ensureScopeTree`), which already reads `context.*` or the record store
 // (`custom.context_tree`) behind lane 9's read switch (`scopesReadFromStore()` in scopesService). When
 // lane 9 ships a paged store reader, replace the `SOURCE` line below with it; nothing else in the shell
-// reads scopes. The server half is `platform.list_dimension_match` (see ./dimensionFilter.ts).
+// reads scopes. The server half is `platform.list_dimension_ids` (see ./dimensionFilter.ts) — lane 9's
+// one switch there.
 //
 // Lazy on purpose: the whole tree is asked for only when a control needs it (`enabled` — the menu was
 // opened, or the URL already names a Value whose name must be shown), never on every list mount.
