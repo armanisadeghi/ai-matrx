@@ -210,7 +210,6 @@ describe("three setting states — saved JSON says absent / off / value", () => 
     const store = makeStore({ reasoning_effort: "high" });
     render(store);
     expect(rowState("reasoning_effort")).toBe("set");
-    expect(row("reasoning_effort").querySelector("[data-setting-off-badge]")).toBeNull();
     expect(savedSettings(store)).toEqual({ reasoning_effort: "high" });
   });
 

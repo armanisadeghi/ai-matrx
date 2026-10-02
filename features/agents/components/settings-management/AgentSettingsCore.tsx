@@ -1709,8 +1709,9 @@ export function AgentSettingsCore({
     const canBind = !!control && isControlBindable(key, bindablePolicy);
     const isEnabled = view.state === "set";
     const valueRaw = view.state === "set" ? view.value : undefined;
-    // Three states (./setting-state.ts): not set (key absent), off (an
-    // explicit off value saved), or a value.
+    // Three states (./setting-state.ts): not set (key absent, row reads
+    // "Not set"), off (an explicit off value saved — the input itself reads
+    // "Off"), or a value. The row carries the state for every reader.
     const isOff = isEnabled && isOffValue(valueRaw, control);
     const checkboxId = `setting-agent-${key}`;
     const keyIssues = validation.issuesByKey[key] ?? [];
@@ -1790,14 +1791,6 @@ export function AgentSettingsCore({
             {label}
           </Label>
         </div>
-        {isOff && (
-          <span
-            className="mt-1 shrink-0 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-            data-setting-off-badge
-          >
-            Off
-          </span>
-        )}
 
         {/* Control input (or fallback). An unset control shows no input and
             no value — only what the model does when it is left unset. */}
@@ -1902,11 +1895,13 @@ export function AgentSettingsCore({
       data-setting-state="translated"
     >
       <span className="h-2 w-2 rounded-full shrink-0 bg-sky-500" aria-hidden />
+      {/* Aligns with the checkbox column of the rows below. */}
+      <span className="h-4 w-4 shrink-0" aria-hidden />
       <Label className="text-xs flex-shrink-0 w-36 text-gray-700 dark:text-gray-300">
         {humanizeSettingKey(key)}
       </Label>
       <span className="flex-1 min-w-0 truncate text-xs font-mono text-foreground/80">
-        {formatModelDefault(value)}
+        {isOffValue(value, null) ? "Off" : formatModelDefault(value)}
       </span>
       <TooltipProvider delayDuration={200}>
         <Tooltip>
