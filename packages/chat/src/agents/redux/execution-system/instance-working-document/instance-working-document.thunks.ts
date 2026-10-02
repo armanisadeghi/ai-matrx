@@ -78,7 +78,7 @@ import {
 } from "./cx-working-document.service";
 import { selectUserId } from "../../../../host/identity";
 import {
-  ensureOrgId,
+  ensureOrganizationContext,
   getActiveOrgId,
   isOrganizationSelectionCancelled,
 } from "../../../../host/org";
@@ -371,9 +371,14 @@ async function orgForPersonLink(
   conversationId: string,
 ): Promise<string | null> {
   try {
-    return await ensureOrgId(
-      state.conversations.byConversationId[conversationId]?.organizationId,
-    );
+    // interactive: the person's intent is explicit (they opened this chat to
+    // link the document), but the write runs after the page loads, not in
+    // the click — a plain write's default would refuse instead of asking.
+    return await ensureOrganizationContext({
+      organizationId:
+        state.conversations.byConversationId[conversationId]?.organizationId,
+      interactive: true,
+    });
   } catch (err) {
     if (isOrganizationSelectionCancelled(err)) return null;
     throw err;

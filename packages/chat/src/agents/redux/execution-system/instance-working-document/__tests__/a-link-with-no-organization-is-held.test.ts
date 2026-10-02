@@ -60,14 +60,14 @@ function seedOrglessConversation(store: ReturnType<typeof makeStore>, conversati
 
 /** The host's hold-and-set gate: records each ask, answers with the person's choice. */
 function hostWhoseGateAnswers(answer: () => Promise<string>) {
-  const asks: string[] = [];
+  const asks: { reason: string; interactive: boolean | undefined }[] = [];
   const host: ChatHost = {
     db: createFakeDb().db,
     org: {
       active: () => null,
       subscribe: () => () => undefined,
-      require: (reason) => {
-        asks.push(reason);
+      require: (reason, options) => {
+        asks.push({ reason, interactive: options?.interactive });
         return answer();
       },
     },
@@ -114,7 +114,8 @@ describe("linking a document to a chat with no organization selected", () => {
 
     await store.dispatch(linkConversationDocumentThunk({ conversationId, kind: "working", documentId: DOCUMENT_ID }));
 
-    expect(asks).toEqual(["write"]);
+    // Asked NOW, even though the write runs after the page load, not in a click.
+    expect(asks).toEqual([{ reason: "action", interactive: true }]);
     expect(link).toHaveBeenCalledWith({
       conversationId,
       documentId: DOCUMENT_ID,
@@ -134,7 +135,8 @@ describe("linking a document to a chat with no organization selected", () => {
 
     await store.dispatch(linkConversationDocumentThunk({ conversationId, kind: "working", documentId: DOCUMENT_ID }));
 
-    expect(asks).toEqual(["write"]);
+    // Asked NOW, even though the write runs after the page load, not in a click.
+    expect(asks).toEqual([{ reason: "action", interactive: true }]);
     expect(link).not.toHaveBeenCalled();
     expect(selectWorkingDocEnabled(conversationId, "working")(store.getState())).toBe(true);
     expect(selectWorkingDocError(conversationId, "working")(store.getState())).toBeNull();
@@ -149,7 +151,8 @@ describe("linking a document to a chat with no organization selected", () => {
 
     await store.dispatch(openWorkspaceDocumentThunk({ documentId: DOCUMENT_ID, attachTo: conversationId }));
 
-    expect(asks).toEqual(["write"]);
+    // Asked NOW, even though the write runs after the page load, not in a click.
+    expect(asks).toEqual([{ reason: "action", interactive: true }]);
     expect(link).toHaveBeenCalledWith(expect.objectContaining({ conversationId, organizationId: CHOSEN_ORG }));
   });
 });
