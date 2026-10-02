@@ -48,7 +48,7 @@ export function relaySinceIso(sinceMs: number | null | undefined): string | null
  * offline when the relay knows one, else the device row's last check-in. One source, one formatter
  * (`sinceLabel`), so two screens can never disagree about the same computer.
  */
-export function lastSeenIso(row: { last_seen: string | null }, relay: { online: boolean; since_ms: number } | null | undefined): string | null {
+export function lastSeenIso(row: { last_seen: string | null }, relay: { online: boolean; since_ms: number | null } | null | undefined): string | null {
   return (relay && !relay.online ? relaySinceIso(relay.since_ms) : null) ?? row.last_seen;
 }
 

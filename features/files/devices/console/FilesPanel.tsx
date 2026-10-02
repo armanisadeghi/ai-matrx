@@ -60,8 +60,8 @@ type Prompt =
 export interface FilesPanelProps {
   client: DesktopClient;
   live: boolean;
-  /** The relay says the computer is gone. */
-  offline: boolean;
+  /** Why this computer cannot be used right now; null = usable. */
+  blocked: string | null;
   /** Folder from the URL; null = the device's home folder. */
   path: string | null;
   onPathChange: (path: string) => void;
@@ -171,7 +171,8 @@ function SwipeRow({
 /** sonner's action button is ~24px tall; a phone needs a 44px target for Undo. */
 const UNDO_BUTTON_STYLE = { minHeight: 44, minWidth: 64, padding: "0 16px", fontSize: 15 } as const;
 
-export function FilesPanel({ client, live, offline, path, onPathChange, visible }: FilesPanelProps) {
+export function FilesPanel({ client, live, blocked, path, onPathChange, visible }: FilesPanelProps) {
+  const offline = blocked !== null;
   const sysinfo = useDesktopRequest("sysinfo.get", {}, { enabled: live, client });
   const home = sysinfo.data?.paths.home ?? null;
   const dir = path ?? home;
@@ -371,7 +372,7 @@ export function FilesPanel({ client, live, offline, path, onPathChange, visible 
             : null}
           {offline ? (
             <div className="flex h-[52px] items-center px-3 text-sm font-medium text-muted-foreground" role="status">
-              Computer is offline
+              {blocked}
             </div>
           ) : null}
           {!offline && listing.error && entries.length === 0 ? (

@@ -36,8 +36,11 @@ export interface TerminalPanelProps {
   client: DesktopClient;
   /** The computer — the text size a person picks is remembered per computer. */
   deviceId: string;
-  /** The relay says the computer is gone: one line instead of a dead terminal and keyboard bar. */
-  offline: boolean;
+  /**
+   * Why this computer cannot be used right now ("Computer is offline", "This computer was
+   * removed"…): one line instead of a dead terminal and keyboard bar. null = usable.
+   */
+  blocked: string | null;
   /** The client is open (Live). */
   live: boolean;
   /** Resource id from the URL, or null. */
@@ -88,12 +91,13 @@ function readFontSize(deviceId: string): number {
   }
 }
 
-export function TerminalPanel({ client, deviceId, offline, live, resourceId, onResourceChange, visible, hiddenOnPhone = false }: TerminalPanelProps) {
+export function TerminalPanel({ client, deviceId, blocked, live, resourceId, onResourceChange, visible, hiddenOnPhone = false }: TerminalPanelProps) {
   const isMobile = useIsMobile();
   const pageVisible = usePageVisible();
   /** Unmounting (navigating away) closes the client; its CANCELLED is not a failure to report. */
   const unmountedRef = useRef(false);
   const [fontSize, setFontSize] = useState<number>(TERMINAL_DEFAULTS.fontSize);
+  const offline = blocked !== null;
   const termRef = useRef<TerminalHandle | null>(null);
   const streamRef = useRef<LiveStream | null>(null);
   const sizeRef = useRef<TerminalSize>({ cols: 80, rows: 24 });
@@ -403,7 +407,7 @@ export function TerminalPanel({ client, deviceId, offline, live, resourceId, onR
         >
           {offline ? (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/85 text-sm font-medium text-muted-foreground" role="status">
-              Computer is offline
+              {blocked}
             </div>
           ) : null}
           {ended !== null && !offline ? (

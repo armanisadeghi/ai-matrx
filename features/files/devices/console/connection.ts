@@ -7,7 +7,7 @@
  *   Offline        — the relay says the device itself is gone; we keep retrying quietly.
  *   Signed out     — the relay refused us for good (revoked, not the owner, unknown device).
  */
-import type { RelayDeviceStatusEvent } from "@ai-matrx/desktop-protocol";
+import type { CloseOutcome, RelayDeviceStatusEvent } from "@ai-matrx/desktop-protocol";
 import type { DesktopClientState } from "@ai-matrx/desktop-protocol/client";
 
 export type ConsolePill = "live" | "reconnecting" | "offline" | "refused";
@@ -21,16 +21,23 @@ export interface ConsoleStatus {
   detail: string | null;
 }
 
-export function consoleStatus(state: Pick<DesktopClientState, "status" | "lastError">, device: RelayDeviceStatusEvent | null): ConsoleStatus {
-  if (state.status === "closed" && state.lastError && state.lastError.code !== "CANCELLED") {
-    const [label, detail] = refused(state.lastError.code);
+/**
+ * Whether to dial again is the protocol's call (CLOSE_RULES, read by the client), never ours: this
+ * only reads where the client ended up. A stop carries `state.outcome`, said here in plain words.
+ */
+export function consoleStatus(
+  state: Pick<DesktopClientState, "status" | "lastError" | "outcome">,
+  device: RelayDeviceStatusEvent | null,
+): ConsoleStatus {
+  if (state.status === "closed" && state.outcome) {
+    const [label, detail] = STOPPED[state.outcome];
     return { pill: "refused", label, offlineSinceMs: null, detail };
   }
   // The relay's word on the COMPUTER beats our socket to the relay: the browser stays connected
   // to the relay while the Mac is gone, and only relay.device_status says so (at once on a clean
-  // quit, within the relay's 75 s silence window on a dead one).
+  // quit, within the relay's 75 s silence window on a dead one). since_ms null = never connected.
   if (device && !device.online) {
-    return { pill: "offline", label: "Offline", offlineSinceMs: device.since_ms > 0 ? device.since_ms : null, detail: null };
+    return { pill: "offline", label: "Offline", offlineSinceMs: device.since_ms && device.since_ms > 0 ? device.since_ms : null, detail: null };
   }
   if (state.status === "open") return { pill: "live", label: "Live", offlineSinceMs: null, detail: null };
   // A hello refused with DEVICE_OFFLINE before any status event arrived means the same thing.
@@ -39,17 +46,12 @@ export function consoleStatus(state: Pick<DesktopClientState, "status" | "lastEr
   return { pill: "reconnecting", label: "Reconnecting…", offlineSinceMs: null, detail: null };
 }
 
-function refused(code: string): [string, string] {
-  switch (code) {
-    case "AUTH_DEVICE_REVOKED":
-      return ["Removed", "This computer was removed from your devices"];
-    case "NOT_FOUND":
-      return ["Not found", "This computer is not registered"];
-    case "PROTOCOL_VERSION_UNSUPPORTED":
-      return ["Update needed", "This computer needs a newer Matrx 2"];
-    case "CONFLICT":
-      return ["Replaced", "This console was opened somewhere else"];
-    default:
-      return ["No access", "This computer belongs to another account"];
-  }
-}
+/** Every way dialing can stop, in a person's words: [pill, the one line under the header]. */
+export const STOPPED: Record<CloseOutcome, readonly [string, string]> = {
+  removed: ["Removed", "This computer was removed"],
+  revoked: ["Removed", "This computer was removed"],
+  signed_out: ["Signed out", "Signed out — sign in again"],
+  upgrade_required: ["Update needed", "Update AI Matrx"],
+  not_owned: ["No access", "This computer belongs to another account"],
+  replaced: ["Replaced", "This console was opened somewhere else"],
+};

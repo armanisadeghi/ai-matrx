@@ -59,6 +59,7 @@ export function DeviceConsole({ device }: { device: DeviceRow }) {
   const view = readView(search.get("view"));
   const live = state.status === "open";
   const name = device.instance_name?.trim() || "Unnamed device";
+  const blocked = status.pill === "offline" ? "Computer is offline" : status.pill === "refused" ? status.detail : null;
 
   const offlineLine =
     status.pill === "offline"
@@ -112,14 +113,14 @@ export function DeviceConsole({ device }: { device: DeviceRow }) {
         <TerminalPanel
           client={client}
           deviceId={device.id}
-          offline={status.pill === "offline"}
+          blocked={blocked}
           live={live}
           resourceId={search.get("t")}
           onResourceChange={(id) => setQuery({ t: id })}
           visible={view === "terminal" || view === "info"}
           hiddenOnPhone={view === "info"}
         />
-        <FilesPanel client={client} live={live} offline={status.pill === "offline"} path={search.get("path")} onPathChange={(p) => setQuery({ path: p })} visible={view === "files"} />
+        <FilesPanel client={client} live={live} blocked={blocked} path={search.get("path")} onPathChange={(p) => setQuery({ path: p })} visible={view === "files"} />
         <div className={cn("flex min-h-0 flex-1 flex-col lg:hidden", view !== "info" && "hidden")}>
           <InfoPanel client={client} live={live} device={device} relay={relay} status={status} visible={view === "info"} />
         </div>

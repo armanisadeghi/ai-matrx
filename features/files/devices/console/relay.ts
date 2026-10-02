@@ -4,7 +4,7 @@
  * test relay. Clone-mode previews set it to the TEST relay, which trusts only the nightly copy
  * (scripts/clone-preview/clone-preview-env.cjs pairs the two).
  */
-import { BEARER_PREFIX, RelayStatusResponse, SUBPROTOCOL } from "@ai-matrx/desktop-protocol";
+import { BEARER_PREFIX, PROTOCOL_VERSION, RelayStatusResponse, SUBPROTOCOL, versionSubprotocol } from "@ai-matrx/desktop-protocol";
 import type { RelayDeviceStatusEvent } from "@ai-matrx/desktop-protocol";
 
 export const MATRX_RELAY_URL: string = process.env.NEXT_PUBLIC_MATRX_RELAY_URL || "https://relay.matrxserver.com";
@@ -14,8 +14,12 @@ export function relayConnectUrl(deviceId: string, base: string = MATRX_RELAY_URL
   return `${base.replace(/^http/, "ws").replace(/\/$/, "")}/v1/devices/${encodeURIComponent(deviceId)}/connect`;
 }
 
+/**
+ * The relay's subprotocol, this client's protocol minor (so the relay answers in what we read —
+ * e.g. `since_ms: null` for a computer that never connected) and the token. Never the URL.
+ */
 export function relaySubprotocols(token: string): string[] {
-  return [SUBPROTOCOL, `${BEARER_PREFIX}${token}`];
+  return [SUBPROTOCOL, versionSubprotocol(PROTOCOL_VERSION), `${BEARER_PREFIX}${token}`];
 }
 
 /**
