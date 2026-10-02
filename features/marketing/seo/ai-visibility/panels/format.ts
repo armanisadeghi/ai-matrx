@@ -27,9 +27,10 @@ import type {
   QaDecision,
 } from "./types";
 import { currentCostUnit } from "@/components/cost/costUnit";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function humanize(code: string): string {
-  return code.replaceAll("_", " ").trim();
+  return humanizeIdentifier(code).toLowerCase() || code;
 }
 
 function lookup(map: Record<string, string>, code: string | null | undefined): string | null {

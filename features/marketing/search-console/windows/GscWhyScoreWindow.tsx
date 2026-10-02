@@ -22,7 +22,7 @@ import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
 import { WhyScoreBody } from "@/features/marketing/seo/value-system/workbench/WhyScore";
-import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface GscWhyScoreWindowProps {
   onClose: () => void;
@@ -69,7 +69,7 @@ export default function GscWhyScoreWindow({
   const title = keyword ? `Why: ${keyword}` : "Why this score";
   const humanCopy = [
     keyword ? `Keyword: ${keyword}` : null,
-    row?.value_band ? `Level: ${humanizeSlug(row.value_band)}` : null,
+    row?.value_band ? `Level: ${humanizeIdentifier(row.value_band)}` : null,
     row?.value_score === null || row?.value_score === undefined
       ? null
       : `Score: ${Math.round(Number(row.value_score))}`,

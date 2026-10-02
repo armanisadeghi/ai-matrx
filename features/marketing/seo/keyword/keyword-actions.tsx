@@ -65,13 +65,13 @@ import {
 } from "@/features/marketing/seo/value-system/data";
 import {
   buildBandMeta,
-  humanizeSlug,
   reviewWindow,
 } from "@/features/marketing/seo/value-system/lib";
 import {
   RulingDialog,
   type RulingDraft,
 } from "@/features/marketing/seo/value-system/workbench/RulingDialog";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The one thing every keyword surface can say about a right-clicked row. */
 export interface KeywordMenuRow {
@@ -213,7 +213,7 @@ export function useKeywordAssignSurfaces(opts: {
       await settled();
       toast.success(
         tier
-          ? `Ruled ${draft.label} as ${humanizeSlug(tier)}`
+          ? `Ruled ${draft.label} as ${humanizeIdentifier(tier)}`
           : `Cleared your ruling on ${draft.label}`,
         {
           description: tier

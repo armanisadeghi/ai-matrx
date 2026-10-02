@@ -23,11 +23,11 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { cn } from "@/styles/themes/utils";
-import { humanizeSlug } from "../lib";
 import { levelEditorLink, type ReasonLinkContext } from "../reason-links";
 import type { ValueReason, ValueSource } from "../types";
 import { ReasonChainDetail } from "./ReasonChain";
 import { KeywordLocationLine } from "../locations/KeywordLocationLine";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface WhyScoreSubject {
   /** Present = the (i) can also OPEN the receipt as a floating panel. */
@@ -57,7 +57,7 @@ function Verdict({
   return (
     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
       <span className="text-xs font-medium text-foreground">
-        {subject.valueBand ? humanizeSlug(subject.valueBand) : "Unvalued"}
+        {subject.valueBand ? humanizeIdentifier(subject.valueBand) : "Unvalued"}
       </span>
       <span className="text-[11px] tabular-nums text-muted-foreground">
         {subject.valueScore === null || subject.valueScore === undefined

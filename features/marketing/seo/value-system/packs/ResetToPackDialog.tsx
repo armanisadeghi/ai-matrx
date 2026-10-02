@@ -25,12 +25,13 @@ import { cn } from "@/styles/themes/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { adoptStarterPack } from "../data";
-import { describePackMeaningValue, humanizeSlug } from "../lib";
+import { describePackMeaningValue } from "../lib";
 import type {
   StarterPackPart,
   StarterPackSiteStatus,
   StarterPackStatusItem,
 } from "../types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const KIND_LABEL: Record<string, string> = {
   meaning: "Meaning",
@@ -79,19 +80,19 @@ export function itemDelta(item: StarterPackStatusItem): {
     }
     case "geo_area":
       return {
-        pack: `${humanizeSlug(String(p.geo_band ?? ""))} · ${humanizeSlug(String(p.area_kind ?? "city"))} (your places stay)`,
+        pack: `${humanizeIdentifier(String(p.geo_band ?? ""))} · ${humanizeIdentifier(String(p.area_kind ?? "city"))} (your places stay)`,
         site:
           item.state === "archived"
             ? "archived"
-            : `${humanizeSlug(String(s.geo_band ?? ""))} · ${humanizeSlug(String(s.area_kind ?? ""))}`,
+            : `${humanizeIdentifier(String(s.geo_band ?? ""))} · ${humanizeIdentifier(String(s.area_kind ?? ""))}`,
       };
     case "topic":
       return {
-        pack: `weight ${String(p.weight ?? "—")}${p.offering_match ? ` · ${humanizeSlug(String(p.offering_match))}` : ""}${p.lead_quality ? ` · ${humanizeSlug(String(p.lead_quality))}` : ""}`,
+        pack: `weight ${String(p.weight ?? "—")}${p.offering_match ? ` · ${humanizeIdentifier(String(p.offering_match))}` : ""}${p.lead_quality ? ` · ${humanizeIdentifier(String(p.lead_quality))}` : ""}`,
         site:
           item.state === "archived"
             ? "archived"
-            : `weight ${String(s.weight ?? "—")}${s.offering_match ? ` · ${humanizeSlug(String(s.offering_match))}` : ""}${s.lead_quality ? ` · ${humanizeSlug(String(s.lead_quality))}` : ""}`,
+            : `weight ${String(s.weight ?? "—")}${s.offering_match ? ` · ${humanizeIdentifier(String(s.offering_match))}` : ""}${s.lead_quality ? ` · ${humanizeIdentifier(String(s.lead_quality))}` : ""}`,
       };
     default:
       return { pack: "", site: "" };

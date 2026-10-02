@@ -15,8 +15,8 @@ import React from "react";
 import { CircleAlert, Route } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
-import { humanizeKey } from "./shape";
 import { guardRoutingOf } from "./guard-routing";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface ToolErrorCardProps {
     entry: ToolLifecycleEntry;
@@ -54,7 +54,7 @@ export function toolErrorLabel(entry: ToolLifecycleEntry): string {
         return "The agent sent invalid arguments";
     }
     const trimmed = entry.errorType?.trim();
-    if (trimmed) return humanizeKey(trimmed);
+    if (trimmed) return (humanizeIdentifier(trimmed) || trimmed);
     return "This step didn't complete";
 }
 

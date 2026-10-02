@@ -95,7 +95,6 @@ import {
   describeMultiplier,
   describePackMeaningValue,
   describeRuleMatch,
-  humanizeSlug,
   reviewWindow,
   rowOrigin,
   RULEBOOK_SOURCE_QUERY,
@@ -126,6 +125,7 @@ import type {
   MeaningUsageRow,
   ValueRuleHealthRow,
 } from "./types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The honest usage chip: measuring · unavailable · fires on nothing · N keywords. */
 function UsageChip({
@@ -266,7 +266,7 @@ function ruleSummary(v: Record<string, unknown>): string {
 }
 
 function areaSummary(v: Record<string, unknown>): string {
-  return `${humanizeSlug(String(v.geo_band ?? ""))} · ${humanizeSlug(String(v.area_kind ?? "city"))}`;
+  return `${humanizeIdentifier(String(v.geo_band ?? ""))} · ${humanizeIdentifier(String(v.area_kind ?? "city"))}`;
 }
 
 function SourceFilterChip({
@@ -531,7 +531,7 @@ export function MeaningRulesWorkbench() {
     (adoptions.data ?? []).map((a) => [a.slug, a]),
   );
   const packNameOf = (slug: string) =>
-    adoptionBySlug.get(slug)?.name ?? humanizeSlug(slug);
+    adoptionBySlug.get(slug)?.name ?? humanizeIdentifier(slug);
   const bySiteRow = new Map<string, Provenance>();
   const bandStateByValue = new Map<
     string,
@@ -1047,7 +1047,7 @@ export function MeaningRulesWorkbench() {
                 `Fires when the search ${describeRuleMatch(rule)}`,
                 `Multiplier: ×${String(rule.value_multiplier ?? 1)} — ${describeMultiplier(rule.value_multiplier)}`,
                 rule.target_class
-                  ? `Sets the class: ${humanizeSlug(rule.target_class)}`
+                  ? `Sets the class: ${humanizeIdentifier(rule.target_class)}`
                   : null,
                 `State: ${health?.state ?? "unknown"}`,
                 usageRow
@@ -1079,7 +1079,7 @@ export function MeaningRulesWorkbench() {
               },
               content: [
                 `Service area: ${area.label}`,
-                `Geo band: ${humanizeSlug(area.geo_band)} · ${humanizeSlug(area.area_kind)}`,
+                `Geo band: ${humanizeIdentifier(area.geo_band)} · ${humanizeIdentifier(area.area_kind)}`,
                 `${area.place_ids.length} places from the gazetteer`,
                 area.match_tokens.length > 0
                   ? `Matches: ${area.match_tokens.join(", ")}`
@@ -1525,11 +1525,11 @@ export function MeaningRulesWorkbench() {
                         />
                       )}
                       <span className="shrink-0 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] text-foreground">
-                        {humanizeSlug(area.geo_band)}
+                        {humanizeIdentifier(area.geo_band)}
                       </span>
                     </div>
                     <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-                      {humanizeSlug(area.area_kind)} ·{" "}
+                      {humanizeIdentifier(area.area_kind)} ·{" "}
                       {areaNeedsPlaces(area) ? (
                         <span className="text-warning">
                           {/* Not "matches nothing" — the badge beside this line

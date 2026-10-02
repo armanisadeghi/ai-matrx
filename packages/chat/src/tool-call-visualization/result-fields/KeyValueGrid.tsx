@@ -39,7 +39,6 @@ import { cn } from "@ai-matrx/design-system";
 import {
   detectResultShape,
   humanizeEnumValue,
-  humanizeKey,
   mediaElementHintForKey,
 } from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
@@ -53,6 +52,7 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { KindValueNode } from "./KindValueNode";
 import { rootKindSlug } from "@host/features/content-ir/surfaces/json-kind-signal";
 import { useReportKindAtRawRenderer } from "@host/features/content-ir/surfaces/report-kind-at-raw-renderer";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface KeyValueGridProps {
   value: Record<string, unknown>;
@@ -193,7 +193,7 @@ function fieldLabel(
   key: string,
   labels: Readonly<Record<string, SchemaFieldLabel>>,
 ): SchemaFieldLabel {
-  return labels[key] ?? { label: humanizeKey(key) };
+  return labels[key] ?? { label: (humanizeIdentifier(key) || key) };
 }
 
 function renderFieldValue(

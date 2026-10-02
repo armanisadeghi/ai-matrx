@@ -17,16 +17,7 @@
  */
 
 import type { RunActivityEntry } from "../../redux/workflow-runs.slice";
-import { humanizeIdentifier } from "./node-presentation";
-
-/** `web_search` → "web search". Also survives camelCase and dotted names. */
-export function humanizeToolName(raw: string): string {
-  return raw
-    .replace(/[._-]+/g, " ")
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .trim()
-    .toLowerCase();
-}
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * The known phase vocabulary, in the reader's words. An unknown phase is
@@ -60,7 +51,7 @@ const PHASE_COPY: Record<string, string> = {
 
 export function phaseCopy(raw: string): string {
   const key = raw.trim().toLowerCase();
-  return PHASE_COPY[key] ?? humanizeIdentifier(key);
+  return PHASE_COPY[key] ?? (humanizeIdentifier(key) || key);
 }
 
 function legacyWarningCopy(trimmed: string): string {
@@ -72,7 +63,7 @@ function legacyWarningCopy(trimmed: string): string {
     if (text) return text;
   }
   const code = /"code"\s*:\s*"([^"]+)"/.exec(trimmed);
-  if (code?.[1]) return humanizeIdentifier(code[1]);
+  if (code?.[1]) return (humanizeIdentifier(code[1]) || code[1]);
   return trimmed.startsWith("{")
     ? "Something needed a second attempt"
     : trimmed;
@@ -89,7 +80,7 @@ export function warningCopy(raw: string): string {
         return record.user_message;
       }
       if (typeof record.code === "string" && record.code) {
-        return humanizeIdentifier(record.code);
+        return (humanizeIdentifier(record.code) || record.code);
       }
     }
   } catch {
@@ -115,14 +106,14 @@ export function toolCopy(raw: string): string {
           return record.message;
         }
         if (typeof record.tool === "string" && record.tool) {
-          return humanizeToolName(record.tool);
+          return (humanizeIdentifier(record.tool) || record.tool);
         }
       }
     } catch {
       // Fall through to the raw text.
     }
   }
-  return humanizeToolName(trimmed);
+  return (humanizeIdentifier(trimmed) || trimmed);
 }
 
 export interface ActivityLine {
@@ -145,7 +136,7 @@ export function activityLine(
   stepLabels: Record<string, string>,
 ): ActivityLine {
   const stepLabel = entry.nodeId
-    ? (stepLabels[entry.nodeId] ?? humanizeIdentifier(entry.nodeId))
+    ? (stepLabels[entry.nodeId] ?? (humanizeIdentifier(entry.nodeId) || entry.nodeId))
     : null;
   const detail = entry.detail;
 

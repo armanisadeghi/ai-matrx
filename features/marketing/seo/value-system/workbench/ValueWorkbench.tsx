@@ -135,7 +135,6 @@ import {
   buildKpis,
   buildVerdict,
   formatScore,
-  humanizeSlug,
   reviewWindow,
   type BandMeta,
 } from "../lib";
@@ -191,6 +190,7 @@ import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import { RulingSession } from "./RulingSession";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { readOf } from "@/components/read-state/ReadGate";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const REVIEW_SORTS = new Set(["clicks", "impressions", "score", "keyword"]);
 
@@ -318,7 +318,7 @@ function BandCell({
 
 function SourceChip({ source }: { source: ValueSource }) {
   const meta = SOURCE_META[source] ?? {
-    label: humanizeSlug(source),
+    label: humanizeIdentifier(source),
     description: "",
     tone: "border-border bg-muted/40 text-foreground",
   };
@@ -775,7 +775,7 @@ export function ValueWorkbench() {
       const count = resolved.length;
       if (input.tier === null) {
         const bands = [
-          ...new Set(resolved.map((r) => humanizeSlug(r.value_band))),
+          ...new Set(resolved.map((r) => humanizeIdentifier(r.value_band))),
         ];
         toast.success(
           `Cleared ${count === 1 ? "your ruling" : `${count} rulings`}`,
@@ -903,7 +903,7 @@ export function ValueWorkbench() {
       // plumbing — it never reaches a header.
       const label =
         dimension?.label ??
-        humanizeSlug(slug.replace(/^site_[0-9a-f]{8}_/, ""));
+        humanizeIdentifier(slug.replace(/^site_[0-9a-f]{8}_/, ""));
       return {
         id: `dim:${slug}`,
         header: label,
@@ -1417,7 +1417,7 @@ export function ValueWorkbench() {
                         `Keyword: ${row.keyword}`,
                         `Level: ${bandMetaFor(metas, row.value_band).label}`,
                         `Score: ${formatScore(row.value_score)}`,
-                        `Class: ${row.traffic_class ? humanizeSlug(row.traffic_class) : "not set"}`,
+                        `Class: ${row.traffic_class ? humanizeIdentifier(row.traffic_class) : "not set"}`,
                         `Decided by: ${SOURCE_META[row.value_source]?.label ?? row.value_source}`,
                         `Clicks: ${formatCount(row.clicks)} · Impressions: ${formatCount(row.impressions)}`,
                       ].join("\n"),
@@ -1599,7 +1599,7 @@ export function ValueWorkbench() {
                                   </p>
                                   <p className="text-sm font-semibold">
                                     {row.traffic_class
-                                      ? humanizeSlug(row.traffic_class)
+                                      ? humanizeIdentifier(row.traffic_class)
                                       : "Set it"}
                                   </p>
                                 </button>

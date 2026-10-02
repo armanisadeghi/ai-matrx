@@ -25,19 +25,12 @@ import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-di
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function splitSurfaceName(fullName: string): { client: string; local: string } {
   const idx = fullName.indexOf("/");
   if (idx < 0) return { client: "", local: fullName };
   return { client: fullName.slice(0, idx), local: fullName.slice(idx + 1) };
-}
-
-function prettifyClient(client: string): string {
-  return client
-    .split(/[-_/]/g)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 }
 
 type BindingFilter = "all" | "bound" | "unbound";
@@ -460,7 +453,7 @@ function ClientSection({
       >
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium text-foreground truncate">
-            {prettifyClient(client)}
+            {humanizeIdentifier(client)}
           </div>
         </div>
         {boundInGroup > 0 && (

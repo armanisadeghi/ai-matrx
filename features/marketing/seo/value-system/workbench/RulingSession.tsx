@@ -71,7 +71,7 @@ import {
   OFFERING_UNPLACED,
 } from "@/features/marketing/seo/keyword-workbench/components/OfferingPicker";
 import { AddLevelDialog } from "../pickers/AddLevelDialog";
-import { humanizeSlug, type BandMeta, type ValueWindow } from "../lib";
+import { type BandMeta, type ValueWindow } from "../lib";
 import { getRulingSessionQueue, type SessionQueueRow } from "./session/data";
 import { TrialPanel } from "./session/TrialPanel";
 import { VerifyPanel } from "./session/VerifyPanel";
@@ -79,6 +79,7 @@ import type { SessionRuling } from "./session/trial";
 import { trialDimensionSlug } from "./session/trial";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface SessionRulingInput {
   keywordIds: string[];

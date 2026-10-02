@@ -21,6 +21,7 @@
  */
 
 import type { Database, Json } from "@/types/database.types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 type SeoTables = Database["seo"]["Tables"];
 
@@ -219,7 +220,7 @@ export const PLATFORM_LABELS: Record<string, string> = {
 /** Never print a raw machine value at a human. */
 export function humanize(value: string | null | undefined): string {
   if (!value) return "—";
-  return value.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase());
+  return humanizeIdentifier(value) || value;
 }
 
 // ─── jsonb[] readers ────────────────────────────────────────────────────────

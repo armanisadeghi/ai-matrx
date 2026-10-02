@@ -28,7 +28,6 @@ import {
   GSC_COMPACT_COLUMN_LABELS,
 } from "@/features/marketing/search-console/lib/columns";
 import type { GscBreakdownRow } from "@/features/marketing/search-console/types";
-import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
 import {
   ClassCell,
@@ -48,6 +47,7 @@ import {
 import type { KeywordMapHomes } from "@/features/marketing/seo/topical-map/linkins/useKeywordMapHomes";
 import type { KeywordCoreColumnId } from "./state";
 import type { KeywordRowsResult } from "./useKeywordRows";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * The Offering column's id. It stays `topic` because saved views and shared
@@ -288,7 +288,7 @@ export function buildKeywordColumns({
     // reads "SITE 38EFF4C9 BUYER STAGE" while the catalog loads is plumbing on
     // the user's screen.
     const label =
-      dimension?.label ?? humanizeSlug(slug.replace(/^site_[0-9a-f]{8}_/, ""));
+      dimension?.label ?? humanizeIdentifier(slug.replace(/^site_[0-9a-f]{8}_/, ""));
     columns.push({
       id: `dim:${slug}`,
       header: label,
@@ -452,7 +452,7 @@ export function buildKeywordColumns({
                     : "text-foreground",
               )}
             >
-              {value.value_band ? humanizeSlug(value.value_band) : "—"}
+              {value.value_band ? humanizeIdentifier(value.value_band) : "—"}
             </span>
             <WhyScoreHint
               subject={{

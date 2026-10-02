@@ -134,6 +134,7 @@ import {
   isKnownNoToolRenderer,
 } from "../db-renderer/toolRendererCache";
 import { contextEntryLabel } from "../../agents/components/context-policies-display/contextEntryLabel";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEO header extras — ONE helper for every `seo` action + legacy tool name.
@@ -2079,10 +2080,7 @@ export function getToolDisplayName(toolName: string | null): string {
   const dbName = getCachedToolMeta(toolName)?.displayName;
   if (dbName) return dbName;
   // (3) No metadata anywhere — title-case the tool name.
-  return toolName
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+  return humanizeIdentifier(toolName) || toolName;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

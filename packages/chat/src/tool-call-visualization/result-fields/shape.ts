@@ -30,6 +30,7 @@ import {
     rootKindSlug,
     valueCarriesKind,
 } from "@host/features/content-ir/surfaces/json-kind-signal";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const hasMarkdownTable = (value: string): boolean => findTableStart(value.split("\n")) !== -1;
 
@@ -139,16 +140,6 @@ function isScalarList(arr: unknown[]): arr is Array<string | number | boolean | 
 
 // ─── Key / column helpers ───────────────────────────────────────────────────
 
-/** Normalize a key like `total_results` / `totalResults` → "Total results". */
-export function humanizeKey(key: string): string {
-    const spaced = key
-        .replace(/[_-]+/g, " ")
-        .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-        .trim();
-    if (spaced.length === 0) return key;
-    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
-
 /**
  * Infer a media element from an explicit media URL field name. This is a
  * render hint only — it never fabricates or persists a MIME type. It covers
@@ -191,7 +182,7 @@ export function isUniformObjectArray(arr: unknown[]): TableColumn[] | null {
     }
     // A "table" with zero columns is meaningless; treat as non-uniform.
     if (ordered.length === 0) return null;
-    return ordered.map((key) => ({ key, label: humanizeKey(key) }));
+    return ordered.map((key) => ({ key, label: (humanizeIdentifier(key) || key) }));
 }
 
 // ─── URL / media heuristics ─────────────────────────────────────────────────
@@ -231,8 +222,7 @@ export function humanizeEnumValue(value: string): string | null {
     if (!/^[A-Za-z][\w]*(?:\.[A-Za-z0-9_]+)+$/.test(value)) return null;
     const tail = value.split(".").pop() as string;
     if (!/^[A-Z][A-Z0-9_]*$/.test(tail)) return null;
-    const lowered = tail.toLowerCase().replace(/_/g, " ");
-    return lowered.charAt(0).toUpperCase() + lowered.slice(1);
+    return humanizeIdentifier(tail) || tail;
 }
 
 /**

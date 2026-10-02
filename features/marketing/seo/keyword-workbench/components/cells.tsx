@@ -29,8 +29,8 @@ import type {
   FacetDimension,
   FacetValue,
 } from "@/features/marketing/seo/value-system/dimensions/data";
-import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { DimensionValuePicker, type PickedValue } from "./DimensionValuePicker";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** Where a stamp came from, in two words a non-technical reader can act on. */
 function sourceHint(source: string | null): string | null {
@@ -160,7 +160,7 @@ export function ClassCell({
         >
           <span className="truncate">
             {active?.label ??
-              (current ? humanizeSlug(current) : "Unclassified")}
+              (current ? humanizeIdentifier(current) : "Unclassified")}
           </span>
           {hint && hint !== "you" ? (
             <span className="text-[10px] text-muted-foreground">{hint}</span>

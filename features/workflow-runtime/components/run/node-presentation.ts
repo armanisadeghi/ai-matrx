@@ -17,6 +17,7 @@
 import { kebabCaseToLucidePascalCase } from "@ai-matrx/icons";
 
 import type { WorkflowDefinitionLike } from "../../trigger-points";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The five families a step can belong to — drives icon + colour. */
 export type NodeFamily = "input" | "prepare" | "think" | "agent" | "deliver";
@@ -269,7 +270,7 @@ export function describeWorkflowSteps(
     definition.nodes.map(
       (node) =>
         readString(node.data as Record<string, unknown> | undefined, "label") ??
-        humanizeIdentifier(node.id),
+        (humanizeIdentifier(node.id) || node.id),
     ),
   );
   return definition.nodes.map((node, index) => {
@@ -337,19 +338,12 @@ export function humanizeKind(kind: string): string {
     .replace(/[._]/g, " ")
     .replace(/\bset\b/gi, "")
     .trim();
-  if (!base) return humanizeIdentifier(kind);
+  if (!base) return humanizeIdentifier(kind) || kind;
   const words = base.split(/\s+/);
   const head = words[0];
   const spoken =
     words.length > 1 || NO_BARE_S.test(head) ? words.join(" ") : `${head}s`;
-  return spoken.charAt(0).toUpperCase() + spoken.slice(1);
-}
-
-/** `lesson_scripts` → "Lesson scripts". The last-resort human name. */
-export function humanizeIdentifier(raw: string): string {
-  const words = raw.replace(/[._-]+/g, " ").trim();
-  if (!words) return raw;
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return humanizeIdentifier(spoken) || spoken;
 }
 
 /**

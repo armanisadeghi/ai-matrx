@@ -72,6 +72,7 @@ import {
   SHOWN_TO_LABEL,
   shownToLabel,
 } from "@/lib/row-access";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The item-presentation type token — the SAME word as the entity token. */
 export const WEB_SITE_TYPE = "web_site" as const;
@@ -80,13 +81,6 @@ function text(row: DetailRow, key: string): string | null {
   const value = row[key];
   if (typeof value !== "string") return null;
   return value.trim() || null;
-}
-
-function titleCase(value: string): string {
-  return value
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
 }
 
 /**
@@ -111,7 +105,7 @@ export function siteFields(row: DetailRow): DetailField[] {
   push("domain", "Domain", text(row, "domain"));
   push("description", "What it is", text(row, "description"));
   const status = text(row, "status");
-  push("status", "Status", status ? titleCase(status) : null);
+  push("status", "Status", status ? humanizeIdentifier(status) : null);
   // The owning marketing account — a door, on the token that actually names it
   // (`brand_id` → `web_brand`; the generic column→token rule would derive
   // "brand", which names nothing, so the record would lose the door).
@@ -197,7 +191,7 @@ export const WEB_SITE_ITEM_TYPE: ItemTypeConfig = {
           text(row, "domain")
             ? { label: "Domain", value: text(row, "domain")! }
             : null,
-          status ? { label: "Status", value: titleCase(status) } : null,
+          status ? { label: "Status", value: humanizeIdentifier(status) } : null,
         ].filter(Boolean) as EnrichedItem["details"],
       };
     })(),

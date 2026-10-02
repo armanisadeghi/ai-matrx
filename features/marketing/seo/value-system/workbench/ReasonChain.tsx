@@ -28,8 +28,8 @@ import {
 import { cn } from "@/styles/themes/utils";
 import { formatRelativeTime } from "@/utils/datetime";
 import type { ValueReason, ValueSource } from "../types";
-import { humanizeSlug } from "../lib";
 import { reasonEditorLink, type ReasonLinkContext } from "../reason-links";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function multiplierText(multiplier: number): string {
   return `×${Number.isInteger(multiplier) ? multiplier : multiplier.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}`;
@@ -136,7 +136,7 @@ function reasonView(reason: ValueReason): ReasonView {
       // is overwritten, but a disagreement you cannot see is a disagreement you
       // can never settle.
       const computed = reason.computed_band
-        ? `${humanizeSlug(reason.computed_band)}${
+        ? `${humanizeIdentifier(reason.computed_band)}${
             reason.computed_score != null ? ` (${reason.computed_score})` : ""
           }`
         : null;
@@ -164,7 +164,7 @@ function reasonView(reason: ValueReason): ReasonView {
         text: `${reason.offering} ${reason.points >= 0 ? "+" : ""}${reason.points}`,
         detail: reason.negative_guard
           ? `Your offering "${reason.offering}" is marked not offered, actively avoided, or bringing leads you do not want, so this keyword is Negative regardless of arithmetic.`
-          : `This keyword maps to your offering "${reason.offering}"${reason.root ? ` (a ${humanizeSlug(reason.root).toLowerCase()} you sell)` : ""}, which adds ${reason.points} points.`,
+          : `This keyword maps to your offering "${reason.offering}"${reason.root ? ` (a ${humanizeIdentifier(reason.root).toLowerCase()} you sell)` : ""}, which adds ${reason.points} points.`,
         tone: reason.negative_guard ? "text-destructive" : undefined,
       };
     case "topic":
@@ -173,7 +173,7 @@ function reasonView(reason: ValueReason): ReasonView {
         text: `${reason.topic} ${reason.weight >= 0 ? "+" : ""}${reason.weight}`,
         detail: reason.negative_guard
           ? `"${reason.topic}" carries a negative guard (not offered / actively avoided), so this keyword is Negative regardless of arithmetic.`
-          : `This keyword is about "${reason.topic}"${reason.root ? ` (a ${humanizeSlug(reason.root).toLowerCase()} branch)` : ""}, which adds ${reason.weight} points.`,
+          : `This keyword is about "${reason.topic}"${reason.root ? ` (a ${humanizeIdentifier(reason.root).toLowerCase()} branch)` : ""}, which adds ${reason.weight} points.`,
         tone: reason.negative_guard ? "text-destructive" : undefined,
       };
     case "baseline":
@@ -201,8 +201,8 @@ function reasonView(reason: ValueReason): ReasonView {
     case "geo":
       return {
         icon: MapPin,
-        text: `${reason.area}: ${humanizeSlug(reason.band)} ${multiplierText(reason.multiplier)}`,
-        detail: `Geo intent matched "${reason.area}", which sits in your "${humanizeSlug(reason.band)}" geo band (${multiplierText(reason.multiplier)}).`,
+        text: `${reason.area}: ${humanizeIdentifier(reason.band)} ${multiplierText(reason.multiplier)}`,
+        detail: `Geo intent matched "${reason.area}", which sits in your "${humanizeIdentifier(reason.band)}" geo band (${multiplierText(reason.multiplier)}).`,
         tone: reason.multiplier <= 0 ? "text-destructive" : undefined,
       };
     default:

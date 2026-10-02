@@ -8,8 +8,9 @@
 
 import type { ReactNode } from "react";
 
-import { counts, humanize, isRecord, num, records, str } from "../run-document";
+import { counts, isRecord, num, records, str } from "../run-document";
 import { KindCard, Pill } from "./shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const TIER_ORDER = ["pitch_ready", "big_story", "watch"] as const;
 const TIER_LABEL: Record<string, string> = {
@@ -71,7 +72,7 @@ export function NewsTriageView({
                       {t.off_policy === true ? (
                         <Pill tone="bad" title={str(t.policy_rule)}>off your brief</Pill>
                       ) : null}
-                      {str(t.watch_reason) ? <Pill>{humanize(str(t.watch_reason))}</Pill> : null}
+                      {str(t.watch_reason) ? <Pill>{humanizeIdentifier(str(t.watch_reason))}</Pill> : null}
                       {str(t.relevance_confidence) ? (
                         <span className="text-[11px] text-muted-foreground">
                           confidence {str(t.relevance_confidence)}

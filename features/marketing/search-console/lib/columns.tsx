@@ -10,7 +10,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
 import type { GscKeywordValueRow } from "@/features/marketing/search-console/data-insights";
 import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
@@ -22,6 +21,7 @@ import {
   formatCtr,
   formatPosition,
 } from "@/features/marketing/search-console/types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The metric fields every GSC table row carries (breakdown/dig/watch). */
 export interface GscMetricRowShape {
@@ -532,7 +532,7 @@ export function buildGscValueColumns<T>(
                     : "No worth reaches this keyword yet"
               }
             >
-              {humanizeSlug(v.value_band)}
+              {humanizeIdentifier(v.value_band)}
             </span>
             {why ? (
               <WhyScoreHint

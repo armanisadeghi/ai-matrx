@@ -32,10 +32,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { WhyScoreBody } from "@/features/marketing/seo/value-system/workbench/WhyScore";
-import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 
 import { useKeywordMeaning } from "./keyword-meaning";
 import type { KeywordAssignSurfaces, KeywordMenuRow } from "./keyword-actions";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function Field({
   label,
@@ -155,11 +155,11 @@ export function KeywordMeaningPanel({
           {value?.traffic_class ? (
             <span className="inline-flex flex-wrap items-center gap-1.5">
               <span className="rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium">
-                {humanizeSlug(value.traffic_class)}
+                {humanizeIdentifier(value.traffic_class)}
               </span>
               {value.class_source ? (
                 <span className="text-[10px] text-muted-foreground">
-                  decided by {humanizeSlug(value.class_source)}
+                  decided by {humanizeIdentifier(value.class_source)}
                 </span>
               ) : null}
             </span>
@@ -204,7 +204,7 @@ export function KeywordMeaningPanel({
               ) : null}
               {service.assignedBy ? (
                 <span className="text-[10px] text-muted-foreground">
-                  · placed by {humanizeSlug(service.assignedBy)}
+                  · placed by {humanizeIdentifier(service.assignedBy)}
                 </span>
               ) : null}
             </span>
@@ -230,7 +230,7 @@ export function KeywordMeaningPanel({
         >
           <span className="inline-flex flex-wrap items-baseline gap-x-2">
             <span className="font-medium">
-              {value?.value_band ? humanizeSlug(value.value_band) : "Unvalued"}
+              {value?.value_band ? humanizeIdentifier(value.value_band) : "Unvalued"}
             </span>
             <span className="tabular-nums text-muted-foreground">
               {value?.value_score === null || value?.value_score === undefined
@@ -311,7 +311,7 @@ export function KeywordMeaningPanel({
                       : "Recorded by a rule or an agent — yours would beat it."
                   }
                 >
-                  {stamp.pinned ? "yours" : humanizeSlug(stamp.source)}
+                  {stamp.pinned ? "yours" : humanizeIdentifier(stamp.source)}
                 </span>
                 {stamp.notes ? (
                   <span className="text-[10px] text-muted-foreground">

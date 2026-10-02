@@ -75,8 +75,9 @@ import type {
   ValueRule,
   VocabKind,
 } from "../types";
-import { areaNeedsPlaces, humanizeSlug, rowOrigin, type BandMeta } from "../lib";
+import { areaNeedsPlaces, rowOrigin, type BandMeta } from "../lib";
 import { SourceChip } from "../SourceChip";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function SectionHeader({
   icon: Icon,
@@ -490,7 +491,7 @@ export function MeaningPanel({
                     {rowOrigin(rule.metadata) === "pack" ? (
                       <SourceChip
                         state="pack"
-                        packName={humanizeSlug(rule.metadata.adopted_from_pack ?? "")}
+                        packName={humanizeIdentifier(rule.metadata.adopted_from_pack ?? "")}
                       />
                     ) : null}
                     <span
@@ -507,9 +508,9 @@ export function MeaningPanel({
                 </p>
                 <p className="text-[10px] text-muted-foreground">
                   {rule.match_facet
-                    ? `Fires when ${humanizeSlug(rule.match_facet).toLowerCase()} is “${humanizeSlug(rule.match_facet_value ?? "").toLowerCase()}”`
+                    ? `Fires when ${humanizeIdentifier(rule.match_facet).toLowerCase()} is “${humanizeIdentifier(rule.match_facet_value ?? "").toLowerCase()}”`
                     : rule.pattern
-                      ? `Matches “${rule.pattern}” (${humanizeSlug(rule.match_kind ?? "word").toLowerCase()})`
+                      ? `Matches “${rule.pattern}” (${humanizeIdentifier(rule.match_kind ?? "word").toLowerCase()})`
                       : "No match condition recorded"}
                   {rule.description ? ` — ${rule.description}` : ""}
                 </p>
@@ -609,13 +610,13 @@ export function MeaningPanel({
                       {area.label}
                     </span>{" "}
                     <span className="text-muted-foreground">
-                      ({humanizeSlug(area.area_kind).toLowerCase()}) →{" "}
-                      {humanizeSlug(area.geo_band)}
+                      ({humanizeIdentifier(area.area_kind).toLowerCase()}) →{" "}
+                      {humanizeIdentifier(area.geo_band)}
                     </span>
                     {rowOrigin(area.metadata) === "pack" ? (
                       <SourceChip
                         state="pack"
-                        packName={humanizeSlug(area.metadata.adopted_from_pack ?? "")}
+                        packName={humanizeIdentifier(area.metadata.adopted_from_pack ?? "")}
                         className="ml-1.5 align-middle"
                       />
                     ) : null}
@@ -688,7 +689,7 @@ export function MeaningPanel({
                         </span>
                         {topic ? (
                           <span className="shrink-0 rounded border border-border bg-muted/40 px-1 py-px text-[10px] text-muted-foreground">
-                            {humanizeSlug(topic.node_type).toLowerCase()}
+                            {humanizeIdentifier(topic.node_type).toLowerCase()}
                           </span>
                         ) : null}
                         {guardChips(value)}

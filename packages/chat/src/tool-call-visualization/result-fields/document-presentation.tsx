@@ -21,7 +21,7 @@
  *     payload read differently in chat and on the showcase.)
  *  2. A boolean flag rendered as the literal token `false` in a mono badge —
  *     a programmer's value, printed verbatim.
- *  3. Every heading came from the payload's KEY. `humanizeKey` is the right
+ *  3. Every heading came from the payload's KEY. `humanizeIdentifier` is the right
  *     fallback, but when the producer's own JSON Schema carries a `title` for
  *     that property, that title is the AUTHOR'S name for the field and must
  *     win — the key is the machine's name for it.

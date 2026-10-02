@@ -22,6 +22,7 @@ import type {
 } from "./types";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { PackProvenance, SiteGeoArea } from "./types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // ── Brand-scoped industry packs ─────────────────────────────────────────────
 
@@ -198,11 +199,6 @@ const UNVALUED_META = {
   chip: "border-warning/50 bg-warning/10 text-warning",
 };
 
-export function humanizeSlug(slug: string): string {
-  const spaced = slug.replaceAll(/[_-]+/g, " ").trim();
-  return spaced ? spaced[0].toUpperCase() + spaced.slice(1) : slug;
-}
-
 function isNegativeDef(def: ValueBandDef): boolean {
   return def.value === "negative" || def.config?.negative === true;
 }
@@ -222,7 +218,7 @@ export function buildBandMeta(vocab: ValueBandDef[]): BandMeta[] {
     const minScore = def.config?.min_score;
     return {
       value: def.value,
-      label: def.label || humanizeSlug(def.value),
+      label: def.label || humanizeIdentifier(def.value),
       description: def.description,
       reserved: null,
       tone: ladder.tone,
@@ -270,7 +266,7 @@ export function bandMetaFor(metas: BandMeta[], value: string): BandMeta {
   // it honestly rather than hiding rows.
   return {
     value,
-    label: humanizeSlug(value),
+    label: humanizeIdentifier(value),
     description: null,
     reserved: null,
     tone: "text-foreground",
@@ -486,7 +482,7 @@ export function describeRuleMatch(rule: {
   match_facet_value: string | null;
 }): string {
   if (rule.match_facet) {
-    return `${humanizeSlug(rule.match_facet).toLowerCase()} is “${humanizeSlug(
+    return `${humanizeIdentifier(rule.match_facet).toLowerCase()} is “${humanizeIdentifier(
       rule.match_facet_value ?? "",
     ).toLowerCase()}”`;
   }

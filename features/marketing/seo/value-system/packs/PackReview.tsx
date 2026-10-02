@@ -71,7 +71,6 @@ import {
   buildBandMeta,
   describeMatcher,
   describeWorth,
-  humanizeSlug,
   incompleteAreasHref,
   reviewWindow,
   rulebookSourceHref,
@@ -90,6 +89,7 @@ import type {
   StarterPackSiteStatus,
 } from "../types";
 import { GeoPlacesStep, type GeoPlacesDraft } from "./GeoPlacesStep";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 type ItemKey = string; // `${kind}:${ref}`
 
@@ -612,7 +612,7 @@ export function PackReview({
           <Badge variant="outline" className="text-[10px]">
             {pack.status === "ratified"
               ? "Expert-ratified"
-              : humanizeSlug(pack.status)}
+              : humanizeIdentifier(pack.status)}
           </Badge>
           {status?.adopted ? (
             <Link
@@ -810,7 +810,7 @@ export function PackReview({
                       </span>
                       <Badge variant="outline" className="shrink-0 text-[10px]">
                         {item.dimension_label ??
-                          humanizeSlug(item.dimension_slug)}
+                          humanizeIdentifier(item.dimension_slug)}
                       </Badge>
                       {onSite && state ? (
                         <SourceChip
@@ -1077,11 +1077,11 @@ export function PackReview({
                         />
                       ) : null}
                       <span className="shrink-0 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] text-foreground">
-                        {humanizeSlug(area.geo_band)}
+                        {humanizeIdentifier(area.geo_band)}
                       </span>
                     </div>
                     <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-                      {humanizeSlug(area.area_kind ?? "city")}
+                      {humanizeIdentifier(area.area_kind ?? "city")}
                       {area.notes ? ` — ${area.notes}` : ""}
                     </p>
                     {onSite && pending ? (

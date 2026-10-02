@@ -63,10 +63,10 @@ import {
   getValueSummary,
   getValueVocabulary,
 } from "@/features/marketing/seo/value-system/data";
-import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { levelVocabularyHref } from "@/features/marketing/seo/value-system/reason-links";
 import type { ValueSummaryRow } from "@/features/marketing/seo/value-system/types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * C6 — ONE LEVEL ROW: `seo.gsc_perf_value_summary` returns a row per
@@ -242,7 +242,7 @@ export function QualityView({
   });
   const levelLabel = (band: string) =>
     (vocabulary.data ?? []).find((def) => def.value === band)?.label ??
-    humanizeSlug(band);
+    humanizeIdentifier(band);
   const levelRows = rollUpLevels(valueSummary.data ?? []);
   const headline = levelHeadline(levelRows, levelLabel);
   const movers = useGscClassMovers(

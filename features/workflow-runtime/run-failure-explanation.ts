@@ -45,6 +45,7 @@
 
 import { describeBackendFailure } from "@/lib/api/errors";
 import { retryIsPointless, serverRefusal } from "@/lib/progress/failureSentence";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface RunFailureExplanation {
   /** One plain sentence naming what was being run and what went wrong. */
@@ -304,7 +305,10 @@ function lower(text: string): string {
 
 /** "pasted_text" → "pasted text"; "match.id" → "match → id". */
 function humanizeField(field: string): string {
-  return field.replace(/_/g, " ").replace(/\./g, " → ");
+  return field
+    .split(".")
+    .map((part) => humanizeIdentifier(part).toLowerCase() || part)
+    .join(" → ");
 }
 
 /**

@@ -16,6 +16,7 @@ import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 import { resolveDocumentContentView } from "./documentContentView";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * Inline renderer for `document_content` — random access into a processed
@@ -50,10 +51,6 @@ function docTitle(
     getArg<string>(entry, "document_id") ||
     "";
   return id ? `Document · ${id.slice(0, 8)}` : "Document";
-}
-
-function humanize(s: string): string {
-  return s.replaceAll("_", " ");
 }
 
 // ─── action="read" (format clean / raw) ─────────────────────────────────────────────
@@ -110,7 +107,7 @@ function PagesBody({ result }: { result: Record<string, unknown> }) {
           </span>
           {p.section_kind ? (
             <span className="shrink-0 rounded bg-muted px-1.5 py-px text-[10px] leading-4 text-muted-foreground">
-              {humanize(p.section_kind)}
+              {humanizeIdentifier(p.section_kind)}
             </span>
           ) : null}
         </div>
@@ -198,7 +195,7 @@ function AssetsBody({ result }: { result: Record<string, unknown> }) {
             className="flex items-center gap-2.5 rounded-md px-2 py-1 text-xs"
           >
             <span className="shrink-0 rounded bg-muted px-1.5 py-px text-[10px] leading-4 text-muted-foreground">
-              {humanize(kind)}
+              {humanizeIdentifier(kind)}
             </span>
             <span className="min-w-0 flex-1 truncate text-foreground">
               {title ?? <span className="text-muted-foreground/70">Untitled</span>}

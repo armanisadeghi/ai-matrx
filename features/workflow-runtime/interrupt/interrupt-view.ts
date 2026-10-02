@@ -37,6 +37,7 @@
 import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
 import { valueTypeFromJsonSchema } from "../served-form/kind-source";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 /** The presets a decision point may be authored as (`HumanInputPreset`). */
 export type InterruptPreset = "free_text" | "form" | "approval";
@@ -201,11 +202,6 @@ export const FREE_TEXT_FIELD: InterruptAnswerField = {
   variant: null,
 };
 
-function humanizeKey(key: string): string {
-  const spaced = key.replace(/[_-]+/g, " ").trim();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
-
 function enumOptions(schema: Record<string, unknown>): string[] {
   return Array.isArray(schema.enum)
     ? schema.enum.filter((v): v is string => typeof v === "string")
@@ -238,7 +234,7 @@ export function answerFieldsOf(
     const schema = isRecord(rawSchema) ? rawSchema : {};
     fields.push({
       name,
-      label: str(schema.title).trim() || humanizeKey(name),
+      label: displayLabel(str(schema.title), name),
       description: str(schema.description).trim(),
       required: required.has(name),
       valueType: valueTypeFromJsonSchema(schema),

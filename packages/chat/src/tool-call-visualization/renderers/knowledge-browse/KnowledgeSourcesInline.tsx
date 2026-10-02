@@ -21,6 +21,7 @@ import { normalizeSourceName } from "@host/features/rag/components/hit-card/adap
 import { useOpenCitation } from "@host/features/rag/components/source-inspector/useOpenCitation";
 import { citationHrefFor, type RagSearchHit } from "@host/features/rag/api/search";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * Inline renderer for `knowledge_browse(action="sources")` — the user's indexed knowledge as a
@@ -87,10 +88,6 @@ const KIND_LABELS: Record<string, string> = {
   transcript: "Transcript",
   scraped: "Web page",
 };
-
-function humanizeKind(kind: string): string {
-  return kind.replaceAll("_", " ");
-}
 
 function relativeDay(iso: string | null): string | null {
   if (!iso) return null;
@@ -167,7 +164,7 @@ function SourceRow({ source }: { source: ParsedSource }) {
                 key={k}
                 className="rounded bg-muted px-1.5 py-px text-[10px] leading-4 text-muted-foreground"
               >
-                {humanizeKind(k)}
+                {humanizeIdentifier(k)}
               </span>
             ))}
             {moreKinds > 0 ? (

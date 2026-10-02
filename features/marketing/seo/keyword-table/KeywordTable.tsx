@@ -91,7 +91,6 @@ import { ServiceCell } from "@/features/marketing/seo/keyword-workbench/componen
 import { ClassCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
 import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
-import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { ColumnChooser } from "./ColumnChooser";
 import { useKeywordMapHomes } from "@/features/marketing/seo/topical-map/linkins/useKeywordMapHomes";
 import { buildKeywordColumns, OFFERING_COLUMN_ID } from "./columns";
@@ -111,6 +110,7 @@ import {
 } from "./useKeywordRows";
 import { pushAddressWithoutNavigating, replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { readOf } from "@/components/read-state/ReadGate";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface KeywordTableSurface {
   /** Stable id — names the copy payloads and the surface in a toast. */
@@ -948,7 +948,7 @@ export function KeywordTable({
             <span className="flex min-h-11 items-center gap-1">
               <span className="font-medium text-foreground">
                 {value?.value_band
-                  ? humanizeSlug(value.value_band)
+                  ? humanizeIdentifier(value.value_band)
                   : "Unvalued"}
               </span>
               {value ? (

@@ -2,7 +2,7 @@
  * THE AUTHOR'S NAME FOR A FIELD, read out of the producer's own JSON Schema.
  *
  * A payload key is the MACHINE's name for a field (`headline_finding`,
- * `watsons_words`). `humanizeKey` turns that into something readable, and that
+ * `watsons_words`). `humanizeIdentifier` turns that into something readable, and that
  * is the right fallback — but when the producing node declared a JSON Schema
  * with `title` on the property, that title is what the AUTHOR called it, and
  * it outranks anything derived from the key.

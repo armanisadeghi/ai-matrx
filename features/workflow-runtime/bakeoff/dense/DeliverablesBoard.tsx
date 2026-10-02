@@ -30,10 +30,10 @@ import {
 } from "../../components/readout-parts";
 import type { WorkflowRunEmission } from "../../redux/workflow-runs.slice";
 import {
-  humanizeIdentifier,
   humanizeKind,
   type RunStepPresentation,
 } from "../../components/run/node-presentation";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The durable seq is THE stable identity across refolds; the ring index
  * shifts when the cap drops from the head. */
@@ -160,7 +160,7 @@ export function DeliverablesBoard({
                 <MonitorUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 truncate text-[11px] font-medium text-muted-foreground">
                   {labels[emission.nodeId] ??
-                    humanizeIdentifier(emission.nodeId)}
+                    (humanizeIdentifier(emission.nodeId) || emission.nodeId)}
                 </span>
               </header>
               <div className="p-3">

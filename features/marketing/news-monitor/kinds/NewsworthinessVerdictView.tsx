@@ -6,8 +6,9 @@
  * dimension, the caps that fired, and what would fix it. The ONE renderer.
  */
 
-import { humanize, isRecord, num, records, str, strings } from "../run-document";
+import { isRecord, num, records, str, strings } from "../run-document";
 import { FactRow, KindCard, Pill, SmartLink } from "./shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export function NewsworthinessVerdictView({
   value,
@@ -28,7 +29,7 @@ export function NewsworthinessVerdictView({
       title={
         <>
           Newsworthiness{title ? ` — ${title}` : ""}:{" "}
-          {score == null ? "blocked" : `${score}/10`} {band ? `· ${humanize(band)}` : ""}
+          {score == null ? "blocked" : `${score}/10`} {band ? `· ${humanizeIdentifier(band)}` : ""}
         </>
       }
       subtitle={
@@ -49,7 +50,7 @@ export function NewsworthinessVerdictView({
         <ul className="flex flex-col gap-0.5">
           {dimensions.map((d) => (
             <li key={str(d.name)} className="flex flex-wrap gap-x-2 text-xs">
-              <span className="font-medium text-foreground">{humanize(str(d.name))}</span>
+              <span className="font-medium text-foreground">{humanizeIdentifier(str(d.name))}</span>
               <span className="text-muted-foreground">
                 {num(d.score)} × weight {num(d.weight)} — {str(d.reason)}
               </span>
