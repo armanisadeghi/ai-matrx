@@ -518,7 +518,7 @@ export function ConversationContextRail({
           label,
           word: label || "Code",
           detail: `v${e.value.source.base_version}`,
-          hint: "Click: open in canvas · X: unpin from context",
+          hint: "Click: open in canvas · X: unpin",
           tone: "primary",
           active:
             canvasOpen &&
@@ -559,7 +559,7 @@ export function ConversationContextRail({
         // THE WHOLE LABEL, TRUNCATED BY WIDTH (lane HANDOVER, 2026-09-29): its first word made
         // "Table ID", "Table Name" and "Table Columns" three chips that all read "Table".
         word: label,
-        hint: "Click: view details · X: remove from context",
+        hint: "Click: view details · X: remove",
         active: detailOpen && activeKey === e.key,
         onOpen: () => toggleEntry(e.key),
         onRemove: () =>
@@ -764,7 +764,7 @@ function RailPill({ item }: { item: RailItem }) {
                 e.stopPropagation();
                 item.onRemove?.();
               }}
-              aria-label={`Remove ${item.label} from context`}
+              aria-label={`Remove ${item.label}`}
               className={cn(
                 "absolute -right-1 -top-1 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full",
                 "border border-border bg-background text-muted-foreground shadow-sm",

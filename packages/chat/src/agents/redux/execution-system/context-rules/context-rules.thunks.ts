@@ -221,7 +221,7 @@ async function applyRowPatch(
         // nothing was saved, so show what is saved, without an error.
         if (!isOrganizationSelectionCancelled(error)) {
           console.error("[context-rules] save failed — reloading the saved rules", error);
-          toast.error("Your context setting didn't save. Showing what's saved.");
+          toast.error("Your setting didn't save. Showing what's saved.");
         }
         await dispatch(reloadContextRules());
       }
