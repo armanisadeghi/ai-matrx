@@ -49,12 +49,8 @@ import {
 import { useRequestRecovery } from "@/features/request-recovery/providers/RequestRecoveryProvider";
 import { selectActiveNetRequests } from "@/lib/redux/net/selectors";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import { selectAccessToken } from "@/lib/redux/slices/userSlice";
-import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
-import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+import { requestRaw } from "@/lib/python-client";
+import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 type RunResult = { ok: true; detail: string } | { ok: false; error: string };
@@ -156,6 +152,12 @@ function makeMockNdjsonResponse(options: {
   });
 }
 
+/**
+ * Reader for the lab's IN-BROWSER mock streams only (never a server
+ * response). The mocks emit bare `{kind,...}` lines, not Matrx envelopes, and
+ * scenario 5 must THROW on a torn line — the core reader would skip both, so
+ * this fixture reader stays. Server scenarios use `parseNdjsonStream`.
+ */
 async function consumeNdjsonWithMonitor(
   response: Response,
   abortController: AbortController,
@@ -372,56 +374,55 @@ const SERVER_SCENARIOS: ServerScenario[] = [
 
 async function runServerScenario(args: {
   dispatch: ReturnType<typeof useAppDispatch>;
-  baseUrl: string;
-  token: string | null;
-  organizationId: string | null;
   scenario: ServerScenario;
 }): Promise<RunResult> {
-  const { dispatch, baseUrl, token, organizationId, scenario } = args;
+  const { dispatch, scenario } = args;
   const requestId = shortId();
   const abortController = new AbortController();
   try {
-    let headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-      // Mandatory org admission on every authed request (server
-      // AuthMiddleware, matrx-connect 2026-08-30) — fail-closed through the
-      // ONE kernel (inside the try so "select an organization" lands in the
-      // scenario's result line, never as an unhandled rejection) so a
-      // scenario never burns a run on a guaranteed organization_required 400.
-      headers = applyOrganizationContextHeader(
-        headers,
-        requireOrganizationContext(organizationId),
-      );
-    }
     await runTrackedRequest(dispatch, {
       id: requestId,
       kind: "api",
       label: `Server: ${scenario.name}`,
       run: async () => {
-        const { response } = await resilientFetch(
-          `${baseUrl}/ai/mock-stream/${scenario.name}`,
-          {
-            method: "POST",
-            headers,
-            body: JSON.stringify({}),
-          },
-          {
-            signal: abortController.signal,
-            connectTimeoutMs: 15_000,
-            totalTimeoutMs: null,
-            throwOnHttpError: true,
-          },
+        // The host door resolves the server and stamps Authorization +
+        // X-Organization-Id — fail-closed on the organization (the thrown
+        // OrganizationContextError lands in the scenario's result line, never
+        // as an unhandled rejection) so a scenario never burns a run on a
+        // guaranteed organization_required 400. A non-2xx throws a classified
+        // BackendApiError. The connect timeout is this lab's own: abort when
+        // response headers have not arrived within 15s.
+        const connectTimer = setTimeout(
+          () => abortController.abort(new Error("Connect timeout (15s)")),
+          15_000,
         );
+        let response: Response;
+        try {
+          response = await requestRaw(
+            `/ai/mock-stream/${scenario.name}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({}),
+            },
+            { signal: abortController.signal },
+          );
+        } finally {
+          clearTimeout(connectTimer);
+        }
         if (!response.body) throw new Error("No response body");
-        await consumeNdjsonWithMonitor(
-          response,
+        // THE shared NDJSON parser (core): compact lines expanded, torn lines
+        // skipped, a body that breaks mid-run is a classified transport error.
+        const { events } = parseNdjsonStream(response, abortController.signal);
+        let count = 0;
+        for await (const _ev of monitorStream(events, {
+          heartbeatTimeoutMs: scenario.heartbeatTimeoutMs,
+          maxLifetimeMs: scenario.maxLifetimeMs,
           abortController,
-          scenario.heartbeatTimeoutMs,
-          scenario.maxLifetimeMs,
-        );
+        })) {
+          count++;
+        }
+        return count;
       },
     });
     return { ok: true, detail: "Stream consumed cleanly" };
@@ -446,8 +447,6 @@ export default function ResilienceLabPage() {
   const recovery = useRequestRecovery();
   const activeRequests = useAppSelector(selectActiveNetRequests);
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
-  const accessToken = useAppSelector(selectAccessToken);
-  const organizationId = useServerOrganizationId();
 
   const [inputValue, setInputValue] = useState(MOCK_USER_INPUT);
   const [log, setLog] = useState<
@@ -787,9 +786,6 @@ export default function ResilienceLabPage() {
     setRunningServer(s.name);
     const result = await runServerScenario({
       dispatch,
-      baseUrl,
-      token: accessToken ?? null,
-      organizationId: organizationId ?? null,
       scenario: s,
     });
     setRunningServer(null);
@@ -906,7 +902,7 @@ export default function ResilienceLabPage() {
           <CardTitle className="text-sm">
             Live server scenarios ({SERVER_SCENARIOS.length})
           </CardTitle>
-          {/* Hits POST /ai/mock-stream/{scenario} via resilientFetch + monitorStream; PASS = expected outcome, UNEXPECTED = drift. */}
+          {/* Hits POST /ai/mock-stream/{scenario} via requestRaw + monitorStream; PASS = expected outcome, UNEXPECTED = drift. */}
         </CardHeader>
         <CardContent>
           {!baseUrl ? (

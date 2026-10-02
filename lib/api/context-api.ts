@@ -20,17 +20,21 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { ENDPOINTS, BACKEND_URLS } from "@/lib/api/endpoints";
 import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
-import { selectEffectiveServer } from "@/lib/redux/preferences/adminPreferencesSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  applyOrganizationContextHeader,
   OrganizationContextError,
   requireOrganizationContext,
 } from "@/lib/api/organization-context";
+import { getJson } from "@/lib/python-client";
+import { BackendApiError, getUserMessage } from "@ai-matrx/agents/matrx";
 import { hydrateContextState } from "@ai-matrx/chat/agents/redux/execution-system/context-state/context-state.slice";
 
 export class SelectedBackendUnavailableError extends Error {}
 
+/**
+ * Kept for its existing callers/tests. `fetchContextState` no longer resolves
+ * a base URL itself — the host door (`getJson`) does.
+ */
 export function resolveSelectedBackendOrRaise(env: string): string {
   if (env === "ec2") {
     throw new SelectedBackendUnavailableError(
@@ -101,37 +105,25 @@ export const fetchContextState = createAsyncThunk<
       }
     }
 
-    const env = selectEffectiveServer(state);
-    // 🚨 Do not restore `?? production`; this resolver owns endpoint identity.
-    let baseUrl: string;
-    try { baseUrl = resolveSelectedBackendOrRaise(env); }
-    catch (error) { return rejectWithValue((error as Error).message); }
-
-    const url = `${baseUrl}${ENDPOINTS.cx.contextState(conversationId)}`;
-    const response = await fetch(url, {
-      method: "GET",
-      headers: organizationId
-        ? applyOrganizationContextHeader(
-            {
-              Authorization: `Bearer ${token}`,
-              Accept: "application/json",
-            },
-            organizationId,
-          )
-        : {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-      signal,
-    });
-
-    if (!response.ok) {
-      return rejectWithValue(
-        `context_state_fetch_failed: ${response.status} ${response.statusText}`,
-      );
+    // The host door resolves the active server and adds Authorization; this
+    // thunk's own organization (read from ITS state) is passed explicitly.
+    let payload: ContextStateApiResponse;
+    try {
+      ({ data: payload } = await getJson<ContextStateApiResponse>(
+        ENDPOINTS.cx.contextState(conversationId),
+        {
+          signal,
+          ...(organizationId ? { organizationId } : {}),
+        },
+      ));
+    } catch (error) {
+      if (error instanceof BackendApiError && error.status !== null) {
+        return rejectWithValue(
+          `context_state_fetch_failed: ${error.status} ${getUserMessage(error)}`,
+        );
+      }
+      throw error;
     }
-
-    const payload = (await response.json()) as ContextStateApiResponse;
 
     // Push into the slice via the hydration action — same as a CONTEXT_STATE
     // event plus the extra last_trim_summary / last_raw_usage fields the

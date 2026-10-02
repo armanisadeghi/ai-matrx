@@ -11,6 +11,15 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
+
+// The thunk's transport is the host door; what this file locks is the
+// organization the thunk hands it (the door's own header stamping is covered
+// by the python-client tests).
+const getJson = jest.fn();
+jest.mock("@/lib/python-client", () => ({
+  getJson: (...args: unknown[]) => getJson(...args),
+}));
+
 import { fetchContextState } from "@/lib/api/context-api";
 
 function fakeState(organizationId: string | null): RootState {
@@ -21,16 +30,26 @@ function fakeState(organizationId: string | null): RootState {
   } as unknown as RootState;
 }
 
+const PAYLOAD = {
+  conversation_id: "conv-1",
+  last_request_input_tokens: 0,
+  last_request_cached_tokens: 0,
+  last_request_output_tokens: 0,
+  total_chars_visible_to_model: 0,
+  message_count_visible: 0,
+  cache_state: {},
+  last_trim_summary: null,
+  last_raw_usage: null,
+  measured_at: "2026-08-30T00:00:00Z",
+};
+
 describe("fetchContextState organization admission (sender-side, fail-closed)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    getJson.mockResolvedValue({ data: PAYLOAD, meta: {} });
   });
 
-  it("READ: with no organization selected the GET is still sent, without X-Organization-Id", async () => {
-    const fetchMock = jest.fn().mockResolvedValue(
-      new Response(JSON.stringify({ conversation_id: "conv-1" }), { status: 200 }),
-    );
-    global.fetch = fetchMock as unknown as typeof fetch;
+  it("READ: with no organization selected the GET is still sent, naming no organization", async () => {
     const dispatch = jest.fn();
 
     await fetchContextState({ conversationId: "conv-1" })(
@@ -39,33 +58,14 @@ describe("fetchContextState organization admission (sender-side, fail-closed)", 
       undefined,
     );
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(
-      (init.headers as Record<string, string>)["X-Organization-Id"],
-    ).toBeUndefined();
+    expect(getJson).toHaveBeenCalledTimes(1);
+    const [path, opts] = getJson.mock.calls[0] as [string, { organizationId?: string }];
+    expect(path).toBe("/cx/conversations/conv-1/context-state");
+    expect(opts.organizationId).toBeUndefined();
   });
 
-  it("CONTROL: attaches X-Organization-Id and calls fetch when an organization is selected", async () => {
+  it("CONTROL: names the selected organization and fulfils when one is selected", async () => {
     const orgId = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
-    const fetchMock = jest.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          conversation_id: "conv-1",
-          last_request_input_tokens: 0,
-          last_request_cached_tokens: 0,
-          last_request_output_tokens: 0,
-          total_chars_visible_to_model: 0,
-          message_count_visible: 0,
-          cache_state: {},
-          last_trim_summary: null,
-          last_raw_usage: null,
-          measured_at: "2026-08-30T00:00:00Z",
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
-    );
-    global.fetch = fetchMock as unknown as typeof fetch;
     const dispatch = jest.fn();
 
     const action = await fetchContextState({ conversationId: "conv-1" })(
@@ -74,11 +74,9 @@ describe("fetchContextState organization admission (sender-side, fail-closed)", 
       undefined,
     );
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect((init.headers as Record<string, string>)["X-Organization-Id"]).toBe(
-      orgId,
-    );
+    expect(getJson).toHaveBeenCalledTimes(1);
+    const [, opts] = getJson.mock.calls[0] as [string, { organizationId?: string }];
+    expect(opts.organizationId).toBe(orgId);
     expect(action.type).toBe("contextState/fetch/fulfilled");
   });
 });

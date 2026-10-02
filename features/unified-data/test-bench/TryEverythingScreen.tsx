@@ -24,6 +24,8 @@
 // source, each with its own sentence for "we could not read this". There is no
 // number on this page that was not read from the live system this minute.
 
+import { getJson } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import Link from "next/link";
@@ -957,11 +959,14 @@ function StatusStrip({
         setServer(undefined);
         setServerProblem(null);
         void Promise.all([
-            fetch("https://server.app.matrxserver.com/health/detailed").then((response) =>
-                response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)),
-            ),
-            fetch("https://server.app.matrxserver.com/health/version")
-                .then((response) => (response.ok ? response.json() : null))
+            // The host door resolves the active server (production unless the
+            // admin server toggle points elsewhere).
+            getJson<{ status?: string; uptime_seconds?: number; components?: { tool_system?: { tool_count?: number } } }>(
+                "/health/detailed",
+            ).then(({ data }) => data),
+            // Optional build identity: a miss is shown as no SHA, not an error.
+            getJson<{ git_sha?: string }>("/health/version", { captureErrors: false })
+                .then(({ data }) => data)
                 .catch(() => null),
         ])
             .then(
@@ -982,7 +987,7 @@ function StatusStrip({
             .catch((error: unknown) => {
                 if (cancelled) return;
                 setServerProblem(
-                    `Could not reach the AI server — ${error instanceof Error ? error.message : String(error)}`,
+                    `Could not reach the AI server — ${getUserMessage(error)}`,
                 );
             });
         return () => {
