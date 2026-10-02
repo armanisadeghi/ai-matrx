@@ -1204,14 +1204,14 @@ export function EntityListPage<TRow>({
           // each one to 44px (owner, /board/all on an iPad, 2026-10-02).
           className="matrx-tap-ring flex min-w-0 items-center justify-between gap-1.5"
         >
-          {/* On a phone the lane select keeps its words and the organization
-              filter takes what is left (it truncates); wider, the tabs take the
-              room and scroll sideways before the filter or the actions are cut. */}
+          {/* On a phone the organization filter is an icon until it narrows and
+              the lane select gives way first (it truncates); wider, the tabs take
+              the room and scroll sideways before the filter or the actions are cut. */}
           <div
             data-entity-list-lanes=""
             className={cn(
               "min-w-0",
-              oneHeaderRow ? "flex-none" : "max-sm:flex-none sm:flex-1",
+              oneHeaderRow ? "flex-none" : "max-sm:flex-initial sm:flex-1",
               phoneSearching && "hidden",
             )}
           >
@@ -1235,7 +1235,13 @@ export function EntityListPage<TRow>({
           {oneHeaderRow ? <div className="min-w-0 flex-1 [&_[data-entity-list-toolbar]]:flex-nowrap">{renderToolbar()}</div> : null}
           {/* A narrowing the address carries is always visible and clearable, knob or not. */}
           {(orgFilterOffered || Boolean(list.query.orgId)) && !(phoneSearching && !list.query.orgId) && (
-            <div data-entity-list-org="" className="flex min-w-0 items-center max-sm:flex-1 sm:ml-auto sm:shrink-0">
+            <div
+              data-entity-list-org=""
+              className={cn(
+                "flex min-w-0 items-center sm:ml-auto sm:shrink-0",
+                list.query.orgId ? "max-sm:flex-1" : "max-sm:flex-none",
+              )}
+            >
               <EntityOrgFilter
                 orgId={list.query.orgId}
                 onChange={list.setOrgId}

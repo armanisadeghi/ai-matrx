@@ -102,13 +102,15 @@ export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, onOpen
             "inline-flex h-7 min-w-0 max-w-full items-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors sm:max-w-[11rem] lg:max-w-[16rem]",
             orgId
               ? "border-primary/40 bg-primary/10 text-foreground"
-              : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+              // Un-narrowed on a phone it is an icon: beside two page actions
+              // the words were squeezed to a 20px stub (2026-10-02).
+              : "border-border text-muted-foreground hover:bg-muted hover:text-foreground max-sm:shrink-0",
             className,
           )}
         >
           <Building2 className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{label}</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+          <span className={cn("truncate", !orgId && "max-sm:sr-only")}>{label}</span>
+          <ChevronDown className={cn("h-3.5 w-3.5 shrink-0", !orgId && "max-sm:hidden")} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-h-[60dvh] min-w-56 overflow-y-auto">
