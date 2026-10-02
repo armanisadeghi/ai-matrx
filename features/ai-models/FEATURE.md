@@ -8,10 +8,12 @@ must obey.
 
 ## Where things are
 
-- Admin routes: `app/(admin)/administration/ai/ai-models/{page,audit,deprecated-audit,provider-sync,providers,endpoints,offerings,settings,aliases}` (display metadata in `features/admin/constants/admin-{categories,navigation}.ts`).
+- Admin routes: `app/(admin)/administration/ai/ai-models/{page,audit,deprecated-audit,provider-sync,providers,endpoints,offerings,settings,translations,aliases}` (display metadata in `features/admin/constants/admin-{categories,navigation}.ts`).
 - API routes: `GET /api/ai-models` (CDN-cached 12h/24h SWR), `POST /api/ai-models/revalidate`, `POST /api/admin/ai-models/replace-references`. `app/api/ai-models/provider-sync` is DELETED (2026-09-11) — Provider Sync's model refresh is server-side now (aidream `POST /admin/ai-catalog/provider-models/refresh`), never a Next.js middle tier.
 - No barrel: import from `components/…`, `service.ts`, `types.ts`, `hooks/…`, `redux/…`, `audit/…`, `server/…`, `controls/…`, `capabilities/…`, `usageBasis.ts`, `format.ts`.
 - Slice `redux/modelRegistrySlice.ts` · service `service.ts` · reload thunk `catalogReload.ts` · provider-models refresh thunk `providerModelsRefresh.ts` · SSR reader `server/ai-models-server.ts` · identity display `components/official/entity-ref/AiIdentityRef.tsx` · picker favorites `hooks/useModelFavorites.ts` (canonical write: `platform.user_entity_state` via `ues_set`/`ues_list` for `ai_model`; preferences JSON is the instant cache). Replace Review `components/ModelSettingsReviewDialog.tsx` mounts `RunConfigOverrides` for the replacement model plus **Suggested swaps** (`components/suggestSettingSwaps.ts` over `usageSettingsList`, engine = the agent `analyzeModelChange`): one unticked line per distinct problem value, "if an agent has X, change it to Y". Apply ALWAYS runs — swaps are offers, never gates (`../common-docs/policies/validation-offers-never-blocks.md`). The write (`server/replace-model-references.ts`, via `/api/admin/ai-models/replace-references`) runs as the signed-in admin (`await createClient()`), MERGES into each row's settings, and reports rows RLS would not let it write as `skipped` (a toast), never silently.
+
+- Settings translation grid (`translations` route, settings-translation item G1): `translation/` — `data.ts` (reads `ai.translation_cell`, `ai.offering_rules_compiled`, `ai.setting_profile`; writes ONLY through `ai.save_translation_cell` / `ai.archive_translation_cell`, then `reloadAiCatalog()`), `model.ts` (pure grid model; "missing" mirrors aidream T1 `settings_grid.py`), `components/` (grid, cell editor, structured K6 rule fields). The approvals queue reads the same cells through `features/approvals/kinds/settings-translation.tsx` — a view, never a second store; it shows rows only inside the admin lane. Contracts: `../common-docs/projects/settings-translation/CONTRACTS.md`.
 
 ## 🚨 Rules
 
@@ -74,6 +76,8 @@ must obey.
 > updates this file in the same change; a change to what the catalog MEANS updates the node's STATE.md.
 
 ## Change log
+
+- **2026-10-02** — **Settings translation grid (G1).** `/administration/ai/ai-models/translations`: settings × settings profiles/APIs by modality, default "Needs you" (proposed, conflict, rejection, missing), cell editor over the K6 rule fields, honest multi-model approve, archive, one-line state where the tables are absent (live before the C2 apply; guard `translation/__tests__/data.absent.test.ts`, red against the first read). Verified on the nightly clone as admin@admin.com; test@test.com is redirected and every door refuses it (42501).
 
 - **2026-09-25** — **Replace never blocks; swaps are offers.** Opus 5 → Opus 5.5 was refused by the database's provenance guard (23514 "actor_tier=code, but names no actor_system") because the route wrote with the service-role client; it now writes as the signed-in admin. The write also used to REPLACE each agent's whole `settings` with the review's overrides when any were set — it now merges. Suggested swaps (unticked, optional) restore the "if an agent has X, replace it with Y" offer; the decision-interaction filter that hid replacement candidates is gone from both pickers. Guard `scripts/check-admin-client-governed-writes.mjs` now also catches an admin client HANDED to a helper in another module (proven RED on the old route). Law: `../common-docs/policies/validation-offers-never-blocks.md`.
 
