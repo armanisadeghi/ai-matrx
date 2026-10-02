@@ -109,6 +109,8 @@ alias map. Consequences here:
 
 ## Change Log
 
+- 2026-10-02 — G8A review: `valueWord` is also the action card's and confirm's word — `matrxDirectiveValueLabel` (matrx-envelope) answers the package's `valueLabel` seam with it for every pick-list field the catalog declares (`catalog-enum-fields.generated.ts`). One value, one word in the form, the card and the confirm. Guard: `features/matrx-envelope/__tests__/a-value-has-one-word.test.ts` (every enum field in the snapshot).
+
 - 2026-10-02 — G6B review: the human form speaks the record's own words. Pick-list values read the feature's vocabulary (`valueVocabulary.ts` → `TASK_STATUS_META`, `PROJECT_STATUS_LABEL` in the new `features/projects/constants/status.ts`), a legacy value folded onto another is not offered twice (`incomplete` → Inbox) and a legacy default reads in words ("Default (Inbox)"); `SchemaField.enumLabels`, `resolveValueVocabulary` option. `recurrence_rule` is kind `recurrence`, labelled "Repeat", drawn with the task editor's `TaskRecurrencePicker` (new `emptyLabel` prop). `humanFormFields` drops derived fields by schema signal (`isDerived`): `X_name` beside `X_id`, `slug`, ordering integers (`position`, `sort_order`, …); the admin builder still shows them. Guard: `__tests__/a-person-form-asks-only-what-a-person-sets.test.tsx`.
 
 - 2026-10-02 — G5 review: `humanFormFields` drops fields the record sets itself (a `*_at`

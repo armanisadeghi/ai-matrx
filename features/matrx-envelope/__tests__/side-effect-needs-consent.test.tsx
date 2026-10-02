@@ -44,6 +44,8 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 jest.mock("@/features/matrx-envelope/referenceResolvers", () => ({
   ...jest.requireActual("@/features/matrx-envelope/referenceResolvers"),
   useResolvedReferenceLabel: () => ({ display: "REVIEW — task create\nbody", status: "ready" }),
+  // The confirm reads the name BEFORE it asks (G8A) — the same name.
+  resolveReferenceName: async () => "REVIEW — task create",
 }));
 
 // The organization a write lands in, and the record's current values, are read
@@ -75,6 +77,7 @@ async function askAndRead(req: DirectiveAskRequest) {
   const opts = confirmDialog.mock.calls[0][0] as {
     title: ReactNode;
     description: ReactNode;
+    ready?: PromiseLike<unknown>;
     confirmLabel?: string;
     variant?: string;
   };
@@ -88,6 +91,11 @@ async function askAndRead(req: DirectiveAskRequest) {
         <div data-testid="description">{opts.description}</div>
       </div>,
     );
+  });
+  // The question reads its records first; its yes waits on \`ready\` (G8A).
+  await act(async () => {
+    await opts.ready;
+    for (let i = 0; i < 4; i += 1) await new Promise((r) => setTimeout(r, 0));
   });
   const text = (id: string) => host.querySelector(`[data-testid="${id}"]`)?.textContent ?? "";
   return { ...opts, title: text("title"), description: text("description") };
@@ -117,7 +125,7 @@ describe("the host names the consequence before anything runs", () => {
     expect(opts.title).toBe("Update task REVIEW — task create?");
     const text = opts.description;
     expect(text).toContain("Description→Ship by Friday");
-    expect(text).toContain("Due date→2026-10-15");
+    expect(text).toContain("Due Date→2026-10-15");
     expect(opts.variant).toBeUndefined();
   });
 
@@ -154,7 +162,11 @@ describe("the host names the consequence before anything runs", () => {
       confirmDialog.mockReset();
       const opts = await askAndRead(req);
       // The sentence only — the change list below it is data, not prose.
-      const sentence = opts.description.split("Status→")[0];
+      // A failed read adds its own one-line status slot (G8A); it is not the
+      // consequence sentence, and has its own budget (secondary, ≤60).
+      const unread = "Current values couldn't be read.";
+      expect(unread.length).toBeLessThanOrEqual(60);
+      const sentence = opts.description.replace(unread, "").split("Status→")[0];
       expect(sentence.length).toBeLessThanOrEqual(140);
     }
   });

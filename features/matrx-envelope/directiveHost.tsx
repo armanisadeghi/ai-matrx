@@ -34,6 +34,7 @@
 
 import type {
   DirectiveHost,
+  DirectiveValueRef,
   DirectiveApplyResult,
   DirectiveApplyState,
   DirectiveShell,
@@ -74,6 +75,8 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { selectOrganizations } from "@/features/scopes/redux/selectors/tree";
 import { readDirectiveRecord } from "@/features/matrx-envelope/directiveRecordRow";
+import { CATALOG_ENUM_FIELDS } from "@/features/matrx-envelope/catalog-enum-fields.generated";
+import { valueWord } from "@/features/directive-catalog/valueVocabulary";
 import { explainDirectiveFailure } from "@/features/matrx-envelope/directiveFailureWords";
 import { referenceTypeDisplayLabel } from "@/features/matrx-envelope/components/reference-picker/referencePickerTypes";
 
@@ -119,6 +122,23 @@ export const matrxDirectiveItemKind: DirectiveItemKindLookup = (
   return typeof kind === "string" && kind ? kind : null;
 };
 
+/**
+ * ONE VALUE, ONE WORD — the package's `valueLabel` seam. A pick-list field's
+ * stored value reads as the SAME word the write forms and the record's own
+ * screens show (`valueWord`: a task's "incomplete" is "Inbox", a project's
+ * "paused" is "Paused"); a field that is not a pick-list (per the server
+ * catalog's schemas, `CATALOG_ENUM_FIELDS`) keeps its value as written. G8A
+ * review, 2026-10-02: the card said "Status incomplete → completed".
+ * Guard: `__tests__/a-value-has-one-word.test.ts` (every enum field in the
+ * catalog snapshot).
+ */
+export function matrxDirectiveValueLabel({ noun, field, value }: DirectiveValueRef): string | null {
+  const canonical = (CATALOG_ALIASES as Record<string, string>)[noun] ?? noun;
+  const fields = CATALOG_ENUM_FIELDS[noun] ?? CATALOG_ENUM_FIELDS[canonical];
+  if (!fields?.includes(field)) return null;
+  return valueWord(noun, field, value);
+}
+
 /** The live store, or a stated failure — never a silent no-op. */
 function requireStore() {
   const store = getStoreSingleton();
@@ -163,8 +183,12 @@ function ask(request: DirectiveAskRequest): Promise<boolean> {
   // The organization the write will land in — the one `authedDirectiveHeaders`
   // sends with every directive write (the active organization is for writes).
   const organizationName = selectActiveOrganizationName(requireStore().getState());
+  // An update or delete reads its records first and holds its yes until it has
+  // (`ready`) — a confirm never asks before it can say what it will do (G8A).
   return confirmDialog(
-    directiveConsequenceDialog(request, matrxDirectiveNouns, organizationName, organizationNameOf),
+    directiveConsequenceDialog(request, matrxDirectiveNouns, organizationName, organizationNameOf, {
+      valueLabel: matrxDirectiveValueLabel,
+    }),
   );
 }
 
@@ -431,6 +455,8 @@ export const matrxDirectiveHost: DirectiveHost = {
   applyState,
   // An update card and its confirm say "old → new" from the record as it is now.
   readRecord: readDirectiveRecord,
+  // A pick-list value reads as the app's word, on the card and in the confirm.
+  valueLabel: matrxDirectiveValueLabel,
   renderRecord: (props) => <DirectiveRecordLink {...props} />,
   openItem,
   renderCopy,

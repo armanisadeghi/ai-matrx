@@ -57,7 +57,8 @@ export function sentenceCaseValue(value: string): string {
  * The word a person reads for one stored value of one field — the same word
  * the record's own screens show ("incomplete" on a task reads "Inbox").
  * Consumers: write-form pick-lists (`schemaFields.ts`) and the record search's
- * secondary line (`features/scopes/service/recordFacts.ts`).
+ * secondary line (`features/scopes/service/recordFacts.ts`), and every directive
+ * card and confirm (`matrxDirectiveValueLabel` in `features/matrx-envelope/directiveHost.tsx`).
  */
 export function valueWord(noun: string, key: string, value: string): string {
   const vocabulary = valueVocabularyFor(noun, key);

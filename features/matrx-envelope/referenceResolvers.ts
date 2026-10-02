@@ -25,7 +25,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
 import { useEffect, useRef, useState } from "react";
-import { noteRecordChanged, useRecordRevision } from "@ai-matrx/content-ir-react";
+import { noteRecordChanged, recordRevision, useRecordRevision } from "@ai-matrx/content-ir-react";
 
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { supabase } from "@/utils/supabase/client";
@@ -47,6 +47,7 @@ import {
   readTableDetails,
 } from "@/features/data-tables/service";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * WHERE THIS TABLE OPENS. The table names its OWN organization (`custom.where_id_opens`, inside
@@ -917,12 +918,6 @@ export function coerceRefToStrings(
   return out;
 }
 
-const humanizeType = (type: string): string =>
-  type
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
-
 /**
  * The display hint an item carries (flat: `label`, else a few other readable
  * hints), trimmed; else a humanized type. The canonical item is flat — there is
@@ -943,7 +938,7 @@ export function referenceFallbackLabel(
     const v = hints[key];
     if (typeof v === "string" && v.trim().length > 0) return v.trim();
   }
-  return humanizeType(type);
+  return (humanizeIdentifier(type) || type);
 }
 
 /**
@@ -1043,6 +1038,23 @@ function readLabelOnce(key: string, read: () => Promise<unknown>): Promise<unkno
  */
 export function useReferenceRecordVersion(id: string): number {
   return useRecordRevision(id);
+}
+
+/**
+ * The live NAME of `{type, id}` as a promise — the SAME read, key and cache as
+ * `useResolvedReferenceLabel`, for a caller that must know the name BEFORE it
+ * renders (a confirm that may not ask until it can say what it changes — G8A
+ * review, 2026-10-02). A label mounted afterwards shows it on its first paint.
+ * Resolves null when the type has no resolver or there is no such record;
+ * rejects when the read fails.
+ */
+export async function resolveReferenceName(type: string, id: string): Promise<string | null> {
+  const resolver = getReferenceResolver(type);
+  if (!resolver) return null;
+  const ref = coerceRefToStrings({ id }, `${type} reference`);
+  const key = `${type}:${JSON.stringify(ref)}:${recordRevision(id)}`;
+  const value = resolvedLabels.get(key) ?? (await readLabelOnce(key, () => resolver.resolveValue(supabase, ref)));
+  return typeof value === "string" && value.length > 0 ? referenceChipLabel(value) : null;
 }
 
 export function useResolvedReferenceLabel(

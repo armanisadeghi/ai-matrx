@@ -33,6 +33,8 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 jest.mock("@/features/matrx-envelope/referenceResolvers", () => ({
   ...jest.requireActual("@/features/matrx-envelope/referenceResolvers"),
   useResolvedReferenceLabel: () => ({ display: "G3 note", status: "ready" }),
+  // The confirm reads the name BEFORE it asks (G8A) — the same name.
+  resolveReferenceName: async () => "G3 note",
 }));
 jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
   // The ACTIVE organization is a different one: an update must not borrow it.
@@ -65,12 +67,17 @@ async function dialogText(req: DirectiveAskRequest): Promise<string> {
   confirmDialog.mockReset();
   confirmDialog.mockResolvedValue(false);
   await matrxDirectiveHost.ask!(req);
-  const opts = confirmDialog.mock.calls[0][0] as { title: ReactNode; description: ReactNode };
+  const opts = confirmDialog.mock.calls[0][0] as { title: ReactNode; description: ReactNode; ready?: PromiseLike<unknown> };
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = createRoot(host);
   await act(async () => {
     root.render(<div>{opts.description}</div>);
+  });
+  // The question reads its records first; its yes waits on \`ready\` (G8A).
+  await act(async () => {
+    await opts.ready;
+    for (let i = 0; i < 4; i += 1) await new Promise((r) => setTimeout(r, 0));
   });
   // Let the current-values read land.
   await act(async () => {
