@@ -43,12 +43,12 @@ export function FullDownloadButton({
       if (sources.length === 0) {
         setState({
           phase: "failed",
-          message: "This conversation is not linked to a coding session, so there is no provider transcript to download.",
+          message: "No coding session linked",
         });
         return;
       }
       const results: FullDownloadResult[] = [];
-      for (const source of sources) results.push(await fullDownloadOne(source));
+      for (const source of sources) results.push(await fullDownloadOne(source, organizationId));
       setState({ phase: "done", results });
     } catch (error) {
       setState({
@@ -65,7 +65,7 @@ export function FullDownloadButton({
         onClick={() => void run()}
         disabled={state.phase === "working"}
         className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs text-foreground hover:bg-accent disabled:opacity-60"
-        title="Download the complete transcript, including every tool input and output"
+        title="The full transcript, with every tool input and output"
       >
         {state.phase === "working" ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -75,7 +75,9 @@ export function FullDownloadButton({
         Full Download
       </button>
       {state.phase === "failed" ? (
-        <p className="max-w-sm text-right text-xs text-amber-700 dark:text-amber-400">{state.message}</p>
+        <p className="max-w-sm truncate text-right text-xs text-amber-700 dark:text-amber-400" title={state.message}>
+          {state.message}
+        </p>
       ) : null}
       {state.phase === "done" ? (
         <ul className="max-w-sm space-y-1 text-right text-xs text-muted-foreground" aria-live="polite">
@@ -90,29 +92,27 @@ export function FullDownloadButton({
   );
 }
 
+/**
+ * One short line per session (interface text: secondary slot, 60 chars); the
+ * detail — the saved path, or why each source could not provide it — sits in
+ * the tooltip (140 chars).
+ */
 function FullDownloadOutcome({ result }: { result: FullDownloadResult }) {
   const name = PROVIDER_NAMES[result.provider] ?? result.provider;
   const step = result.step;
   if (step.kind === "this_computer") {
-    return (
-      <span>
-        {name}: saved from your computer to <span className="font-mono">{step.savedPath}</span>
-        {step.subagentStreams > 0 ? ` (plus ${step.subagentStreams} sub-agent streams beside it)` : ""}.
-        {step.backupNote ? ` ${step.backupNote}` : ""}
-      </span>
-    );
+    return <span title={clip(step.savedPath)}>{name}: saved to Downloads</span>;
   }
   if (step.kind === "cloud_backup") {
-    return (
-      <span>
-        {name}: downloaded the cloud backup as <span className="font-mono">{step.fileName}</span>{" "}
-        because this computer could not provide it ({step.thisComputer})
-      </span>
-    );
+    return <span title={clip(step.thisComputer)}>{name}: downloaded cloud backup</span>;
   }
   return (
-    <span className="text-amber-700 dark:text-amber-400">
-      {name}: not available. {step.reasons.join(" ")}
+    <span className="text-amber-700 dark:text-amber-400" title={clip(step.reasons.join(" "))}>
+      {name}: not available
     </span>
   );
+}
+
+function clip(text: string): string {
+  return text.length > 140 ? `${text.slice(0, 139)}…` : text;
 }

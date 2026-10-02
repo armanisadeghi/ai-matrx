@@ -927,14 +927,15 @@ function ToolsCalledAfter({ names }: { names: string[] }) {
       aria-label={`Tools called after this turn: ${names.join(", ")}`}
     >
       <span>
-        {names.length === 1 ? "Then used 1 tool:" : `Then used ${names.length} tools:`}
+        {names.length === 1 ? "1 tool:" : `${names.length} tools:`}
       </span>
       {shown.map((name, index) => (
         <span
           key={`${index}-${name}`}
-          className="rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-foreground/80"
+          className="rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[11px] text-foreground/80"
+          title={name}
         >
-          {name}
+          {humanizeIdentifier(name)}
         </span>
       ))}
       {hidden > 0 ? (

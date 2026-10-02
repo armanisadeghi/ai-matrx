@@ -64,7 +64,7 @@ export async function readRawTranscriptSources(
     }),
   );
   if (result.error) {
-    throw new Error(result.error.message || "AI Matrx could not list this conversation's transcripts.");
+    throw new Error(result.error.message || "Couldn't list transcripts");
   }
   const data = result.data as components["schemas"]["RawTranscriptSources"] | undefined;
   return data?.sources ?? [];
@@ -82,7 +82,10 @@ function saveBlob(blob: Blob, fileName: string): void {
 }
 
 /** One source, resolved through the three steps. Never throws for a "no". */
-export async function fullDownloadOne(source: RawTranscriptSource): Promise<FullDownloadResult> {
+export async function fullDownloadOne(
+  source: RawTranscriptSource,
+  organizationId: string | null,
+): Promise<FullDownloadResult> {
   const reasons: string[] = [];
   const base = { provider: source.provider, providerSessionId: source.provider_session_id };
 
@@ -115,23 +118,34 @@ export async function fullDownloadOne(source: RawTranscriptSource): Promise<Full
           },
         };
       }
-      reasons.push(reply.detail ?? "The full transcript file is not on this computer.");
+      reasons.push(reply.detail ?? "Not on this computer.");
     } catch (error) {
       reasons.push(error instanceof Error ? error.message : String(error));
     }
   } else {
-    reasons.push("AI Matrx does not know this session's file name on your computer.");
+    reasons.push("File name unknown on this computer.");
   }
 
   if (source.backup_available && source.backup_file_id) {
-    const { blob, filename } = await downloadFile(source.backup_file_id);
-    const fileName =
-      filename || `${source.provider}-${source.native_session_id ?? "session"}.jsonl.gz`;
-    saveBlob(blob, fileName);
-    return {
-      ...base,
-      step: { kind: "cloud_backup", fileName, thisComputer: reasons.join(" ") },
-    };
+    try {
+      // The backup lives in the session's organization, which is the
+      // conversation's; name it so the download is admitted there.
+      const { blob, filename } = await downloadFile(
+        source.backup_file_id,
+        {},
+        organizationId ? { organizationId } : {},
+      );
+      const fileName =
+        filename || `${source.provider}-${source.native_session_id ?? "session"}.jsonl.gz`;
+      saveBlob(blob, fileName);
+      return {
+        ...base,
+        step: { kind: "cloud_backup", fileName, thisComputer: reasons.join(" ") },
+      };
+    } catch (error) {
+      reasons.push(`Backup download failed: ${error instanceof Error ? error.message : String(error)}`);
+      return { ...base, step: { kind: "not_available", reasons } };
+    }
   }
   reasons.push(source.backup_sentence);
   return { ...base, step: { kind: "not_available", reasons } };
