@@ -22,7 +22,10 @@ import {
   destroyInstance,
 } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
-import { runBattleFanOut } from "@/features/agent-comparison/shared/battle-follow-up";
+import {
+  isSubmitAllTarget,
+  runBattleFanOut,
+} from "@/features/agent-comparison/shared/battle-follow-up";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
   fetchFullAgent,
@@ -474,7 +477,7 @@ export const submitAllVariations = createAsyncThunk<
         state.agentComparisonVariations.inputConversationId;
       const allColumns = state.agentComparisonVariations.columns;
       // Paused variations are excluded from Submit All — see VariationColumn.paused.
-      const columns = allColumns.filter((c) => !c.paused);
+      const columns = allColumns.filter(isSubmitAllTarget);
       const pausedSkipped = allColumns.length - columns.length;
 
       if (!sourceAgentId || !inputConversationId || columns.length === 0) {

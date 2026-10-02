@@ -10,11 +10,8 @@
 import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
 import type { SmartAgentInputSurfaceValueAnchors } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectActiveBattleColumns,
-  selectMountedBattleSetId,
-} from "./activeBattleColumns";
-import { selectBattleFollowUpNotice } from "./battle-follow-up";
+import { selectMountedBattleSetId } from "./activeBattleColumns";
+import { selectSharedComposerFollowUpNotice } from "./battle-follow-up";
 
 interface SharedBattleInputProps {
   conversationId: string | null | undefined;
@@ -38,14 +35,10 @@ export function SharedBattleInput({
   const draftAlias = `${surfaceKey}:${setId ?? "new"}`;
   // Every mode's shared composer: the line Submit All's held columns need
   // (battle-follow-up.ts), derived from the mounted mode's columns.
-  const columns = useAppSelector(selectActiveBattleColumns);
   const notice = useAppSelector((state) =>
-    selectBattleFollowUpNotice(
-      state,
-      conversationId,
-      columns.map((c) => c.conversationId),
-    ),
+    selectSharedComposerFollowUpNotice(state, conversationId),
   );
+
   return (
     <div className="space-y-1.5">
       {showHeading && (

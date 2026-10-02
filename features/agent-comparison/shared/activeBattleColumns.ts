@@ -42,6 +42,8 @@ export interface BattleColumnDescriptor {
    * the Runs header). Not used today but kept for symmetry.
    */
   mode: BattleModeId;
+  /** A paused Variations column — Submit All leaves it out (`isSubmitAllTarget`). */
+  paused?: boolean;
 }
 
 const EMPTY: BattleColumnDescriptor[] = [];
@@ -58,7 +60,7 @@ const selectVariations = (s: RootState) => s.agentComparisonVariations;
 const selectConversation = (s: RootState) => s.agentComparisonConversation;
 
 interface LockedColumnSource {
-  columns: { columnId: string; conversationId: string; label: string }[];
+  columns: { columnId: string; conversationId: string; label: string; paused?: boolean }[];
 }
 
 function lockedColumns(
@@ -72,6 +74,7 @@ function lockedColumns(
     columnId: c.columnId,
     conversationId: c.conversationId,
     label: c.label,
+    ...(c.paused ? { paused: true } : {}),
     agentId,
     agentVersion,
     mode,

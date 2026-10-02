@@ -28,11 +28,20 @@ import { refusesEmptyTurn } from "@ai-matrx/chat/agents/redux/execution-system/t
 import { selectMessageCount } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { copyInstanceRequestDraft } from "@ai-matrx/chat/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
 import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { selectActiveBattleColumns } from "./activeBattleColumns";
 import {
   persistForRun,
   type BattleSubmitResult,
   type PersistedBattle,
 } from "./battlePersistence";
+
+/**
+ * Whether Submit All targets this column — the ONE decision the fan-out and
+ * the composer line share. A paused Variations column is left out.
+ */
+export function isSubmitAllTarget(column: { paused?: boolean }): boolean {
+  return column.paused !== true;
+}
 
 export interface BattleFanOutPlan {
   /** Columns that start (or continue) from this Submit All. */
@@ -95,6 +104,23 @@ export function selectBattleFollowUpNotice(
     .needFollowUp.length > 0
     ? FOLLOW_UP_NEEDED_TEXT
     : null;
+}
+
+/**
+ * The line for the mounted mode's shared composer: its columns, narrowed to
+ * the ones Submit All targets (`isSubmitAllTarget`), planned like the fan-out.
+ */
+export function selectSharedComposerFollowUpNotice(
+  state: RootState,
+  sourceConversationId: string | null | undefined,
+): string | null {
+  return selectBattleFollowUpNotice(
+    state,
+    sourceConversationId,
+    selectActiveBattleColumns(state)
+      .filter(isSubmitAllTarget)
+      .map((c) => c.conversationId),
+  );
 }
 
 export interface RunBattleFanOutOptions {
