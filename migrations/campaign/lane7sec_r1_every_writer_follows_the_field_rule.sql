@@ -1,41 +1,39 @@
--- chair-step: this file ALTERs platform.entity_types (two ADD COLUMNs with constant defaults and
--- one CHECK: a brief ACCESS EXCLUSIVE lock on that ~1,077-row registry table, metadata-only plus a
--- one-pass check) and sets one registry row. It changes no grant. Everything else is one
--- CREATE OR REPLACE of a live trigger body (no trigger DDL). Its inverse puts the body back byte
--- for byte and drops the two columns (and the CHECK with them).
+-- chair-step: this file ALTERs platform.entity_types (ONE ADD COLUMN, boolean with a constant
+-- default: metadata-only, a brief ACCESS EXCLUSIVE lock on that ~1,077-row registry table, no
+-- rewrite, no CHECK) and sets one registry row (party). It changes no grant. Everything else is
+-- one CREATE OR REPLACE of a live trigger body (no trigger DDL). Its inverse puts the body back
+-- byte for byte and drops the column.
 -- based-on: custom._entity_custom_fields_guard() 40e0cd49091aea328672d8134f64f19eb36d45469d572e2df091f90771332b98
 --
--- LANE 7 · SEC, ROUND 1 — EVERY WRITER FOLLOWS THE FIELD RULE, AND THE RULE IS CHEAP.
+-- LANE 7 · SEC, ROUND 1 (CHAIR-SEC-R1) — THE FIELD RULE BINDS CLIENTS ON CLOSED TABLES, NOT THE PLATFORM.
 --
 -- lane7sec_a_standard_rows_fields_follow_the_field_rule.sql (applied 2026-10-02 17:52Z) put the
--- field rule into custom._entity_custom_fields_guard. An independent verification on the clone
--- found, and the chair ruled on:
---   1. undeclared keys bind EVERY writer (service role and server jobs included) — the callers
---      declare first — EXCEPT a table the REGISTRY says holds one person's own free keys:
---      users.user_form_profile (the autofill profile: /api/user/form-profile, the extension's
---      profile upsert, public.user_form_profile_set_custom_field), refused since 17:52Z;
---   2. a `_` prefix let any key through: only the store's three named keys are accepted;
---   3. a client's x-matrx-actor-tier header (agent / system) was recorded as "user", because a
---      SECURITY DEFINER trigger's current_user is never `authenticated`: it is read with
---      custom.caller_role() now, never from the payload;
---   4. per-row has_org_admin / has_access / may_touch_field on every changed field: the rung is
---      asked once per Field per statement (editor first, which the UPDATE already proves).
+-- declared-key check into custom._entity_custom_fields_guard for EVERY writer on EVERY standard
+-- table. Measured on the clone: the service role, the server channel, the autofill profile
+-- (/api/user/form-profile, the extension's upsert, public.user_form_profile_set_custom_field) and
+-- an edit of an old note's `studyAnnotation` key were all refused. The chair's rule (2026-10-02):
+--   1. undeclared keys are refused only for a CLIENT writer (custom.caller_role() authenticated /
+--      anon) on a table whose registry row says its custom_fields shape is CLOSED
+--      (platform.entity_types.custom_fields_closed; today only `party`, the one token with
+--      declared Fields and a governance screen). Every other table keeps the shape it had;
+--   2. the platform's own writers (service role, the server channel) are never refused for a key:
+--      the value is kept, and a NOTICE names it (never silent);
+--   3. a key already on the row (a legacy key) stays editable and clearable by anyone;
+--   4. a `_` prefix is not a bypass: only the store's three named keys are its bookkeeping;
+--   5. a client's x-matrx-actor-tier header is read with custom.caller_role(), never the payload;
+--   6. the field rung is asked once per Field per statement (editor first).
 --
--- 1. THE REGISTRY FACT: whose keys a table's custom_fields holds.
+-- 1. THE REGISTRY FACT: whose shape a table's custom_fields follows.
 ALTER TABLE platform.entity_types
-  ADD COLUMN IF NOT EXISTS custom_fields_free_form boolean NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS custom_fields_free_form_reason text,
-  ADD CONSTRAINT entity_types_free_form_says_why
-    CHECK (NOT custom_fields_free_form OR nullif(btrim(custom_fields_free_form_reason), '') IS NOT NULL);
+  ADD COLUMN IF NOT EXISTS custom_fields_closed boolean NOT NULL DEFAULT false;
 
-COMMENT ON COLUMN platform.entity_types.custom_fields_free_form IS
-  'True when this table''s custom_fields holds ONE PERSON''S OWN free keys rather than the organization''s declared Fields; custom._entity_custom_fields_guard then skips only its declared-key check. Set per table with custom_fields_free_form_reason.';
+COMMENT ON COLUMN platform.entity_types.custom_fields_closed IS
+  'True when a client may write into this table''s custom_fields only keys the organization declared as Fields (custom._entity_custom_fields_guard). False (default): any key is kept. The platform''s own writers and keys already on a row are never refused.';
 
 UPDATE platform.entity_types
-   SET custom_fields_free_form = true,
-       custom_fields_free_form_reason = 'The autofill profile: each person keeps their own extra form answers under keys they name (app/api/user/form-profile, the extension''s profile upsert, public.user_form_profile_set_custom_field). The row is one person''s, not the organization''s, so no organization Field describes those keys.'
- WHERE token = 'user_form_profile'
-   AND custom_fields_free_form IS DISTINCT FROM true;
+   SET custom_fields_closed = true
+ WHERE token = 'party'
+   AND custom_fields_closed IS DISTINCT FROM true;
 
 -- 2. THE GUARD.
 CREATE OR REPLACE FUNCTION custom._entity_custom_fields_guard()
@@ -68,7 +66,7 @@ declare
   v_sess     text;
   v_decl     text;
   v_needs    text;
-  v_free     boolean;
+  v_closed   boolean;
   v_declared text[];
   v_f        custom.record;
   v_ok       text;
@@ -182,62 +180,54 @@ begin
     perform custom.validate_values(v_org, v_fields, coalesce(v_doc, '{}'::jsonb), null);
   end if;
 
-  -- LANE7-SEC (2026-10-02, round 1). THE FIELD RULE ON EVERY WRITE PATH, FOR EVERY WRITER.
+  -- LANE7-SEC (2026-10-02, round 1, CHAIR-SEC-R1). THE FIELD RULE, ON EVERY WRITE PATH.
   -- This door, entity_value_write, a direct supabase update, a server job and the service role
   -- all arrive here, and only when `custom_fields` actually changed (the no-change return above).
-  -- Only what THIS write added or changed is judged, so a row that already carries an old key
-  -- is never refused for a write that leaves it alone, and clearing a key is always allowed.
-  --
-  -- (a) THE STORE'S OWN KEYS ARE NAMED, NOT GUESSED BY PREFIX. A row's custom_fields carries
-  --     values under declared keys plus exactly three of the store's own: `_values` (each
-  --     value's envelope), `_actor` and `_on_behalf_of` (who is writing, read and removed
-  --     below). Any other `_` key would be a value no Field describes, hidden by its spelling.
-  select coalesce(array_agg(k order by k), '{}'::text[]) into v_bad
-    from jsonb_object_keys(v_doc) k
-   where left(k, 1) = '_'
-     and k <> all (array['_values', '_actor', '_on_behalf_of'])
-     and (v_old -> k) is distinct from (v_doc -> k);
+  -- Only a key THIS write added and the row did not already carry is judged: a legacy key stays
+  -- editable, and clearing a key is always allowed. The store's own keys are named, never guessed
+  -- by prefix: `_values` (each value's envelope), `_actor` and `_on_behalf_of` (read and removed
+  -- below). A value's envelope under `_values` needs its Field too.
+  --   · a CLIENT (custom.caller_role() authenticated / anon) on a table whose registry row says
+  --     custom_fields_closed is refused, in a sentence, and nothing is written;
+  --   · every other writer keeps the key, and a NOTICE names it — never silent.
+  select coalesce(array_agg(f.data ->> 'key'), '{}'::text[]) into v_declared
+    from unnest(coalesce(v_fields, '{}'::custom.record[])) f;
+  select coalesce(array_agg(distinct k order by k), '{}'::text[]) into v_bad
+    from (select k from jsonb_object_keys(v_doc) k
+           where k <> all (array['_values', '_actor', '_on_behalf_of'])
+             and not (v_old ? k)
+          union all
+          select k from jsonb_object_keys(case when jsonb_typeof(v_doc -> '_values') = 'object'
+                                               then v_doc -> '_values' else '{}'::jsonb end) k
+           where not coalesce((v_old -> '_values') ? k, false)) c
+   where not (k = any (v_declared));
   if cardinality(v_bad) > 0 then
+    v_memo := platform.memo_k_get('sccl:' || v_token);
+    if v_memo is null then
+      select coalesce(bool_or(e.custom_fields_closed), false) into v_closed
+        from platform.entity_types e where e.token = v_token;
+      perform platform.memo_k_put('sccl:' || v_token, to_jsonb(v_closed)::text);
+    else
+      v_closed := (v_memo #>> '{}')::boolean;
+    end if;
     select e.label into v_label from custom.entity_table(v_token) e;
     select string_agg(format('"%s"', x), ', ' order by x) into v_list from unnest(v_bad) x;
-    raise exception '% keeps its own bookkeeping only under "_values", "_actor" and "_on_behalf_of", so % cannot be stored and nothing was written.',
-                    coalesce(v_label, v_token), v_list
-      using errcode = '23514',
-            hint = 'LANE7-SEC: a key that starts with _ is the store''s own; name a value by its field''s key.';
-  end if;
-
-  -- (b) A VALUE NEEDS A FIELD — for every writer, people and server jobs alike — unless the
-  --     registry says this table's custom_fields is one person's own free-form bag
-  --     (`platform.entity_types.custom_fields_free_form`, set with its reason). A value's
-  --     envelope under `_values` needs its Field too.
-  v_memo := platform.memo_k_get('scff:' || v_token);
-  if v_memo is null then
-    select coalesce(bool_or(e.custom_fields_free_form), false) into v_free
-      from platform.entity_types e where e.token = v_token;
-    perform platform.memo_k_put('scff:' || v_token, to_jsonb(v_free)::text);
-  else
-    v_free := (v_memo #>> '{}')::boolean;
-  end if;
-  if not v_free then
-    select coalesce(array_agg(f.data ->> 'key'), '{}'::text[]) into v_declared
-      from unnest(coalesce(v_fields, '{}'::custom.record[])) f;
-    select coalesce(array_agg(distinct k order by k), '{}'::text[]) into v_bad
-      from (select k from jsonb_object_keys(v_doc) k
-             where left(k, 1) <> '_' and (v_old -> k) is distinct from (v_doc -> k)
-            union all
-            select k from jsonb_object_keys(case when jsonb_typeof(v_doc -> '_values') = 'object'
-                                                 then v_doc -> '_values' else '{}'::jsonb end) k
-             where (v_old -> '_values' -> k) is distinct from (v_doc -> '_values' -> k)) c
-     where not (k = any (v_declared));
-    if cardinality(v_bad) > 0 then
-      select e.label into v_label from custom.entity_table(v_token) e;
-      select string_agg(format('"%s"', x), ', ' order by x) into v_list from unnest(v_bad) x;
+    if v_closed and coalesce(custom.caller_role()::text, '') in ('authenticated', 'anon') then
+      if exists (select 1 from unnest(v_bad) x where left(x, 1) = '_') then
+        raise exception '% keeps its own bookkeeping only under "_values", "_actor" and "_on_behalf_of", so % cannot be stored and nothing was written.',
+                        coalesce(v_label, v_token), v_list
+          using errcode = '23514',
+                hint = 'LANE7-SEC: a key that starts with _ is the store''s own; name a value by its field''s key.';
+      end if;
       raise exception '% has no field called %, so there is nowhere to keep %; adding a field is an owner''s or an admin''s to do.',
                       coalesce(v_label, v_token), v_list,
                       case when cardinality(v_bad) = 1 then 'that value' else 'those values' end
         using errcode = '23514',
               hint = 'REC-1 / REC-51: a value with no field is a value nobody will ever see. Declare the field first (custom.entity_field_declare). Nothing was written.';
     end if;
+    raise notice '% has no field called %; kept as written, and no field shows it until one is declared.',
+                 coalesce(v_label, v_token), v_list
+      using hint = 'LANE7-SEC: custom._entity_custom_fields_guard keeps an undeclared key from the platform''s own writers and on open tables.';
   end if;
 
   -- (c) A PERSON CHANGES ONLY THE FIELDS SHE MAY EDIT (DOOR-3), asked through the same

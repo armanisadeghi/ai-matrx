@@ -1,8 +1,8 @@
 -- chair-step: the inverse of lane7sec_r1_every_writer_follows_the_field_rule.sql. It puts
--- custom._entity_custom_fields_guard back exactly as lane7sec_a left it and drops the two
--- platform.entity_types columns that file added (and their CHECK): a brief ACCESS EXCLUSIVE
--- lock on that registry table. It changes no grant.
--- based-on: custom._entity_custom_fields_guard() df0a1f16d5721da34c03549f764d6f387fb52cbedf42b0bd45280493ffc0a2b5
+-- custom._entity_custom_fields_guard back exactly as lane7sec_a left it and drops the one
+-- platform.entity_types column that file added: a brief ACCESS EXCLUSIVE lock on that registry
+-- table. It changes no grant.
+-- based-on: custom._entity_custom_fields_guard() 3a55d13935ba008e59889641548cf05f21f54bbbf06380d8c874330daed874d8
 
 CREATE OR REPLACE FUNCTION custom._entity_custom_fields_guard()
  RETURNS trigger
@@ -290,6 +290,4 @@ end;
 $function$;
 
 ALTER TABLE platform.entity_types
-  DROP CONSTRAINT IF EXISTS entity_types_free_form_says_why,
-  DROP COLUMN IF EXISTS custom_fields_free_form_reason,
-  DROP COLUMN IF EXISTS custom_fields_free_form;
+  DROP COLUMN IF EXISTS custom_fields_closed;
