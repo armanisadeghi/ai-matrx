@@ -361,7 +361,7 @@ export const updateRoomIdentity =
     }
   };
 
-/** Persist the room's focused thread to `workspace.war_rooms.active_thread_id`. */
+/** Persist the room's focused thread to `projects.war_rooms.active_thread_id`. */
 export const persistActiveThread =
   (roomId: string, threadId: string | null) =>
   async (dispatch: AppDispatch, getState: () => RootState): Promise<void> => {
@@ -521,7 +521,7 @@ export const setSessionContextThunk =
   (sessionId: string, ctx: ContextSelectionInput) =>
   async (dispatch: AppDispatch, getState: () => RootState) => {
     try {
-      // `organization_id` is NOT NULL on `workspace.war_rooms` — never write
+      // `organization_id` is NOT NULL on `projects.war_rooms` — never write
       // null/undefined (an empty UPDATE returns 0 rows → "Cannot coerce the
       // result to a single JSON object"). Only persist a real, changed org.
       const prior = getState().warRoom.sessionsById[sessionId];

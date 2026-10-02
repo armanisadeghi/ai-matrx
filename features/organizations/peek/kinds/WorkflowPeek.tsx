@@ -35,7 +35,7 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       // `workflow.definition` is the live model; the old `public.workflow`
-      // this peek used to read is in `graveyard` and returned nothing, so the
+      // this peek used to read is in `deprecated` and returned nothing, so the
       // dialog always said "Workflow not found."
       const { data, error } = await supabase
         .schema("workflow")

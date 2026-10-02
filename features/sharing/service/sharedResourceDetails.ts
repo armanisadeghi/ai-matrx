@@ -30,10 +30,10 @@ export async function getResourceDetails(
   try {
     switch (resourceType) {
       case "prompt": {
-        // TODO(prompt-to-agent-sweep): public.prompts is graveyarded.
+        // TODO(prompt-to-agent-sweep): public.prompts is deprecated.
         // Re-wire to agent.definition (same UUIDs) when the migration completes.
         console.warn(
-          "[sharing/notify] prompt sharing notification skipped — public.prompts graveyarded",
+          "[sharing/notify] prompt sharing notification skipped — public.prompts deprecated",
         );
         return null;
       }

@@ -297,7 +297,7 @@ async function fetchMenuAgentsFromDb(
   // the current user — agents you can't access simply won't appear.
   //
   // Source of truth: platform.associations (NOT the retired junction
-  // table — now graveyarded). Associations are the only place binds exist.
+  // table — now deprecated). Associations are the only place binds exist.
   const { data, error } = await supabase
     .schema("agent")
     .from("menu_surface")

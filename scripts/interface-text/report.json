@@ -85639,7 +85639,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 71,
-      "text": "workspace.projects + workspace.tasks for the combined project/task view",
+      "text": "projects.projects + projects.tasks for the combined project/task view",
       "detail": "secondary slot: 71 chars, budget 60"
     },
     {

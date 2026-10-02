@@ -713,7 +713,7 @@ export const saveTaskEditsThunk = createAsyncThunk<
   dispatch(clearTaskEdit(taskId));
 });
 
-// ─── Per-user notification/triage state (workspace.task_user_state) ─────────
+// ─── Per-user notification/triage state (projects.task_user_state) ─────────
 
 export const loadTaskUserStateThunk = createAsyncThunk<
   void,

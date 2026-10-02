@@ -210,8 +210,8 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
   // WHO WROTE IT (DD-131 slice 3). `anyone` is no predicate: the two kinds of
   // contact share one grid until somebody asks.
   //
-  // `agent` is created_by_tier = 'ai' — an AI DECIDED to save this person.
-  // `code` is deliberately NOT included: the discovered-party pipelines (the
+  // `agent` is created_by_tier = 'agent' — an AI DECIDED to save this person.
+  // `system` is deliberately NOT included: the discovered-party pipelines (the
   // social fold, expert promotion, the SEO domain sweep) are machinery, and
   // the list already has a control for what they produce — the Record column's
   // "Found by the platform". Folding them in here would give a user two chips
@@ -219,9 +219,9 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
   //
   // `agent_edited` adds the second fact on top of the first: a person has since
   // touched the row. It is the same chip, not a third kind of record.
-  if (f.written_by === "agent") q = q.eq("created_by_tier", "ai");
+  if (f.written_by === "agent") q = q.eq("created_by_tier", "agent");
   else if (f.written_by === "agent_edited")
-    q = q.eq("created_by_tier", "ai").eq("updated_by_tier", "human");
+    q = q.eq("created_by_tier", "agent").eq("updated_by_tier", "user");
   if (f.updated_at) q = q.gte("updated_at", bucketSince(f.updated_at));
   if (f.created_at) q = q.gte("created_at", bucketSince(f.created_at));
   // Custom fields (lane 7 wave 2): server predicates on the row's own `custom_fields`.

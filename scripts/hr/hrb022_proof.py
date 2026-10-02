@@ -483,7 +483,7 @@ async def main():
                 title = prow.get("title") or ""
                 subject = people["alice"]["name"]
                 # 🚨 THESE ASSERTIONS WERE INVERTED UNTIL 2026-08-27, AND THE INVERSION SHIPPED
-                # THE BUG. hr_c4_07 made one display rule serve both the workspace.tasks mirror
+                # THE BUG. hr_c4_07 made one display rule serve both the projects.tasks mirror
                 # and /hr/tasks, and this suite then asserted the two titles were IDENTICAL and
                 # called that evidence. T-L10-5 says the opposite in one sentence: the general
                 # /tasks list is contentless, while /hr/tasks shows the FULL item to that same
@@ -499,9 +499,9 @@ async def main():
 
                 await as_owner()
                 mirror = await conn.fetchval(
-                    "select t.title from workspace.tasks t join hr.workflow_step s "
+                    "select t.title from projects.tasks t join hr.workflow_step s "
                     "on s.workspace_task_id = t.id where s.id = $1", pay_step)
-                rec("C sensitivity", "🚨 T-L10-5: the workspace.tasks mirror stays CONTENTLESS — "
+                rec("C sensitivity", "🚨 T-L10-5: the projects.tasks mirror stays CONTENTLESS — "
                                      "'internal'-visibility machinery gets no name",
                     mirror is not None and mirror.endswith(" — 1 item") and subject not in mirror,
                     f"mirror={mirror!r}")
@@ -510,7 +510,7 @@ async def main():
                     f"inbox={title!r} mirror={mirror!r}")
                 if mirror is None:
                     gap("C mirror comparison",
-                        "no workspace.tasks row is linked to the restricted step (workspace_task_id null)")
+                        "no projects.tasks row is linked to the restricted step (workspace_task_id null)")
 
                 # the colleague half of T-L10-5: reaching a row and being told whose it is are
                 # different permissions, so a queue-scope viewer without standing gets neither.
@@ -536,7 +536,7 @@ async def main():
         if row1 is not None:
             await as_owner()
             mirror1 = await conn.fetchval(
-                "select t.title from workspace.tasks t join hr.workflow_step s "
+                "select t.title from projects.tasks t join hr.workflow_step s "
                 "on s.workspace_task_id = t.id where s.id = $1", lstep1)
             rec("C sensitivity", "a NON-restricted title DOES carry the subject's display name",
                 people["alice"]["name"] in (row1.get("title") or ""), repr(row1.get("title")))

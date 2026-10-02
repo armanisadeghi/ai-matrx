@@ -283,7 +283,7 @@ describe("detail about a thing opens a tab keyed by that thing", () => {
   });
 
   it("a directive's shape: one tab per verb and noun, schema in the tab", () => {
-    const noun = { noun: "task", label: "Task", table: "workspace.tasks", schemas: { create: { type: "object" } } } as unknown as NounDirectives;
+    const noun = { noun: "task", label: "Task", table: "projects.tasks", schemas: { create: { type: "object" } } } as unknown as NounDirectives;
     const { store, unmount } = openWith(directiveShapeOpenInput({ kind: "directive", noun, verb: "create" }));
     expect(ids(store)).toEqual([`${DIRECTIVE_SHAPE_KIND}::create:task`]);
     expect(item(store, `${DIRECTIVE_SHAPE_KIND}::create:task`)?.data).toMatchObject({ schema: { type: "object" } });

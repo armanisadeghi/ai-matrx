@@ -68,10 +68,10 @@
     {
       "relation": "code_file_versions",
       "old": "public.code_file_versions",
-      "newSchema": "graveyard",
-      "new": "graveyard.code_file_versions",
+      "newSchema": "deprecated",
+      "new": "deprecated.code_file_versions",
       "since": "2026-06-27",
-      "reason": "moved to code schema 2026-06-27, then retired to graveyard (live location verified 2026-07-10). No app reads."
+      "reason": "moved to code schema 2026-06-27, then retired to deprecated (live location verified 2026-07-10). No app reads."
     },
     {
       "relation": "agent_run",
@@ -175,7 +175,7 @@
       "newSchema": "platform",
       "new": "platform.associations",
       "since": "2026-07-02",
-      "reason": "M2M junction collapsed into platform.associations (research_source \u2192 research_tag, worklog \u00a74.1) and archived to graveyard.rs_source_tag. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_source_tag')."
+      "reason": "M2M junction collapsed into platform.associations (research_source \u2192 research_tag, worklog \u00a74.1) and archived to deprecated.rs_source_tag. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_source_tag')."
     },
     {
       "relation": "rs_keyword_source",
@@ -183,7 +183,7 @@
       "newSchema": "platform",
       "new": "platform.associations",
       "since": "2026-07-02",
-      "reason": "M2M junction collapsed into platform.associations (research_source \u2192 research_keyword, worklog \u00a74.2) and archived to graveyard.rs_keyword_source. Per-keyword rank now lives in the association metadata. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_keyword_source')."
+      "reason": "M2M junction collapsed into platform.associations (research_source \u2192 research_keyword, worklog \u00a74.2) and archived to deprecated.rs_keyword_source. Per-keyword rank now lives in the association metadata. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_keyword_source')."
     },
     {
       "relation": "rs_source_keywords",
@@ -215,7 +215,7 @@
       "newSchema": "history",
       "new": "history.row_versions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
+      "reason": "retired (deprecated) \u2014 note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
     },
     {
       "relation": "note_shares",
@@ -223,7 +223,7 @@
       "newSchema": "iam",
       "new": "iam.permissions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 note sharing is canonical iam.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
+      "reason": "retired (deprecated) \u2014 note sharing is canonical iam.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
     },
     {
       "relation": "org_module_settings",
@@ -231,7 +231,7 @@
       "newSchema": "platform",
       "new": "platform.org_module_config",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
+      "reason": "retired (deprecated) \u2014 org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
     },
     {
       "relation": "user_achievements",
@@ -276,18 +276,18 @@
     {
       "relation": "user_flashcard_reviews",
       "old": "public.user_flashcard_reviews",
-      "newSchema": "graveyard",
-      "new": "graveyard.user_flashcard_reviews",
+      "newSchema": "deprecated",
+      "new": "deprecated.user_flashcard_reviews",
       "since": "2026-06-27",
-      "reason": "legacy flashcard reviews preserved in graveyard after canonical education port."
+      "reason": "legacy flashcard reviews preserved in deprecated after canonical education port."
     },
     {
       "relation": "user_flashcard_sets",
       "old": "public.user_flashcard_sets",
-      "newSchema": "graveyard",
-      "new": "graveyard.user_flashcard_sets",
+      "newSchema": "deprecated",
+      "new": "deprecated.user_flashcard_sets",
       "since": "2026-06-27",
-      "reason": "legacy flashcard sets preserved in graveyard after canonical education port."
+      "reason": "legacy flashcard sets preserved in deprecated after canonical education port."
     },
     {
       "relation": "user_follows",
@@ -980,18 +980,18 @@
     {
       "relation": "prompt_apps",
       "old": "public.prompt_apps",
-      "newSchema": "graveyard",
-      "new": "graveyard.prompt_apps",
+      "newSchema": "deprecated",
+      "new": "deprecated.prompt_apps",
       "since": "2026-06-29",
-      "reason": "retired to graveyard; live apps are app.definition (formerly aga_apps). Do not .from('prompt_apps')."
+      "reason": "retired to deprecated; live apps are app.definition (formerly aga_apps). Do not .from('prompt_apps')."
     },
     {
       "relation": "prompt_app_executions",
       "old": "public.prompt_app_executions",
-      "newSchema": "graveyard",
-      "new": "graveyard.prompt_app_executions",
+      "newSchema": "deprecated",
+      "new": "deprecated.prompt_app_executions",
       "since": "2026-06-29",
-      "reason": "retired to graveyard; live execution tracking is app.execution."
+      "reason": "retired to deprecated; live execution tracking is app.execution."
     },
     {
       "relation": "bundle_member",
@@ -999,7 +999,7 @@
       "newSchema": "platform",
       "new": "platform.associations",
       "since": "2026-07-02",
-      "reason": "collapsed into platform.associations (tool \u2192 tool_bundle, role='member'; position=sort_order; metadata.local_alias) and moved to graveyard.bundle_member. Reads/writes go through associationsService (assoc_* RPCs), server-side admin routes write platform.associations directly. Never .from('bundle_member')."
+      "reason": "collapsed into platform.associations (tool \u2192 tool_bundle, role='member'; position=sort_order; metadata.local_alias) and moved to deprecated.bundle_member. Reads/writes go through associationsService (assoc_* RPCs), server-side admin routes write platform.associations directly. Never .from('bundle_member')."
     },
     {
       "relation": "render_component",
@@ -1007,7 +1007,7 @@
       "newSchema": "content_ir",
       "new": "content_ir.kind_component",
       "since": "2026-07-07",
-      "reason": "retired to graveyard.render_component (Shape System Stage 3, SHAPE_SYSTEM.md R1) \u2014 the dormant render registry lost to content_ir.kind_component, the canonical (kind, platform, role) \u2192 component_key resolver. Its only reader was the never-dispatched fetchRenderComponents thunk, now deleted. skill.render_definition SURVIVES as the markdown-atom palette; only its render_component satellite died. Never .from('render_component')."
+      "reason": "retired to deprecated.render_component (Shape System Stage 3, SHAPE_SYSTEM.md R1) \u2014 the dormant render registry lost to content_ir.kind_component, the canonical (kind, platform, role) \u2192 component_key resolver. Its only reader was the never-dispatched fetchRenderComponents thunk, now deleted. skill.render_definition SURVIVES as the markdown-atom palette; only its render_component satellite died. Never .from('render_component')."
     },
     {
       "relation": "service",
@@ -1023,7 +1023,7 @@
       "newSchema": "platform",
       "new": "platform.associations",
       "since": "2026-07-12",
-      "reason": "condemned agent\u2194surface junction retired to graveyard; bindings are platform.associations edges (agent\u2192surface, tier-encoded role) read via agent.menu_surface. Use bind-agent-to-surface.service.ts."
+      "reason": "condemned agent\u2194surface junction retired to deprecated; bindings are platform.associations edges (agent\u2192surface, tier-encoded role) read via agent.menu_surface. Use bind-agent-to-surface.service.ts."
     },
     {
       "relation": "content_blocks",
@@ -1076,26 +1076,26 @@
     {
       "relation": "cld_file_permissions",
       "old": "public.cld_file_permissions",
-      "newSchema": "graveyard",
-      "new": "graveyard.cld_file_permissions",
+      "newSchema": "deprecated",
+      "new": "deprecated.cld_file_permissions",
       "since": "2026-08-12",
-      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in graveyard awaiting final DROP."
+      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in deprecated awaiting final DROP."
     },
     {
       "relation": "cld_user_groups",
       "old": "public.cld_user_groups",
-      "newSchema": "graveyard",
-      "new": "graveyard.cld_user_groups",
+      "newSchema": "deprecated",
+      "new": "deprecated.cld_user_groups",
       "since": "2026-08-12",
-      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in graveyard awaiting final DROP."
+      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in deprecated awaiting final DROP."
     },
     {
       "relation": "cld_user_group_members",
       "old": "public.cld_user_group_members",
-      "newSchema": "graveyard",
-      "new": "graveyard.cld_user_group_members",
+      "newSchema": "deprecated",
+      "new": "deprecated.cld_user_group_members",
       "since": "2026-08-12",
-      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in graveyard awaiting final DROP."
+      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in deprecated awaiting final DROP."
     },
     {
       "relation": "agenda_task",
@@ -1143,7 +1143,7 @@
       "newSchema": "(deleted)",
       "new": "(deleted)",
       "since": "2026-08-12",
-      "reason": "applet-builder junction (FKs pointed into graveyard); DROPPED (0 rows)."
+      "reason": "applet-builder junction (FKs pointed into deprecated); DROPPED (0 rows)."
     },
     {
       "relation": "applet_containers",
@@ -1156,42 +1156,42 @@
     {
       "relation": "dashboard_saved_views",
       "old": "public.dashboard_saved_views",
-      "newSchema": "graveyard",
-      "new": "graveyard.dashboard_saved_views",
+      "newSchema": "deprecated",
+      "new": "deprecated.dashboard_saved_views",
       "since": "2026-08-12",
-      "reason": "no code consumers in any repo; moved to graveyard (2 rows preserved)."
+      "reason": "no code consumers in any repo; moved to deprecated (2 rows preserved)."
     },
     {
       "relation": "microservice_project",
       "old": "public.microservice_project",
-      "newSchema": "graveyard",
-      "new": "graveyard.microservice_project",
+      "newSchema": "deprecated",
+      "new": "deprecated.microservice_project",
       "since": "2026-08-12",
-      "reason": "no consumers; moved to graveyard (1 row preserved)."
+      "reason": "no consumers; moved to deprecated (1 row preserved)."
     },
     {
       "relation": "full_spectrum_positions",
       "old": "public.full_spectrum_positions",
-      "newSchema": "graveyard",
-      "new": "graveyard.full_spectrum_positions",
+      "newSchema": "deprecated",
+      "new": "deprecated.full_spectrum_positions",
       "since": "2026-08-12",
-      "reason": "2025 recruiting content, no feature; moved to graveyard (12 rows preserved)."
+      "reason": "2025 recruiting content, no feature; moved to deprecated (12 rows preserved)."
     },
     {
       "relation": "ts_check_runs",
       "old": "public.ts_check_runs",
-      "newSchema": "graveyard",
-      "new": "graveyard.ts_check_runs",
+      "newSchema": "deprecated",
+      "new": "deprecated.ts_check_runs",
       "since": "2026-08-12",
-      "reason": "writer removed from FE scripts; moved to graveyard (1 row preserved)."
+      "reason": "writer removed from FE scripts; moved to deprecated (1 row preserved)."
     },
     {
       "relation": "site_metadata",
       "old": "public.site_metadata",
-      "newSchema": "graveyard",
-      "new": "graveyard.site_metadata",
+      "newSchema": "deprecated",
+      "new": "deprecated.site_metadata",
       "since": "2026-08-12",
-      "reason": "client-site SEO metadata superseded by web.* schema; moved to graveyard (9 rows preserved)."
+      "reason": "client-site SEO metadata superseded by web.* schema; moved to deprecated (9 rows preserved)."
     },
     {
       "relation": "flexible_data",
@@ -1242,26 +1242,26 @@
     {
       "relation": "applet",
       "old": "public.applet",
-      "newSchema": "graveyard",
-      "new": "graveyard.applet",
+      "newSchema": "deprecated",
+      "new": "deprecated.applet",
       "since": "2026-08-13",
-      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to graveyard (6 rows preserved)."
+      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to deprecated (6 rows preserved)."
     },
     {
       "relation": "custom_app_configs",
       "old": "public.custom_app_configs",
-      "newSchema": "graveyard",
-      "new": "graveyard.custom_app_configs",
+      "newSchema": "deprecated",
+      "new": "deprecated.custom_app_configs",
       "since": "2026-08-13",
-      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to graveyard (46 rows preserved)."
+      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to deprecated (46 rows preserved)."
     },
     {
       "relation": "custom_applet_configs",
       "old": "public.custom_applet_configs",
-      "newSchema": "graveyard",
-      "new": "graveyard.custom_applet_configs",
+      "newSchema": "deprecated",
+      "new": "deprecated.custom_applet_configs",
       "since": "2026-08-13",
-      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to graveyard (130 rows preserved)."
+      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to deprecated (130 rows preserved)."
     },
     {
       "relation": "campaign",
@@ -1290,10 +1290,10 @@
     {
       "relation": "system_personal_org_failures",
       "old": "iam.system_personal_org_failures",
-      "newSchema": "graveyard",
-      "new": "graveyard.system_personal_org_failures",
+      "newSchema": "deprecated",
+      "new": "deprecated.system_personal_org_failures",
       "since": "2026-09-26",
-      "reason": "access-ladder T-3: the personal-organization concept is gone; signup provisions via iam.provision_signup_organization and never recorded failures here. Moved to graveyard (0 rows)."
+      "reason": "access-ladder T-3: the personal-organization concept is gone; signup provisions via iam.provision_signup_organization and never recorded failures here. Moved to deprecated (0 rows)."
     }
   ]
 }

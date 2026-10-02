@@ -62,16 +62,26 @@ const ROLE_COLOR: Record<ChangeRole, string> = {
  * mystery; labelling it "human" flat would hide that nothing was stamped. It is
  * shown as human, muted, and says which on hover.
  */
-const TIER_LABEL: Record<ActorTier, string> = {
-  human: "Human",
-  ai: "AI",
-  code: "System",
+type CanonicalTier = "user" | "agent" | "system";
+
+/** DD-064: tiers are system | agent | user; a change recorded before 2026-10-03 may still say code | ai | human. */
+function canonicalTier(tier: ActorTier | string | null | undefined): CanonicalTier | null {
+  if (tier === "user" || tier === "human") return "user";
+  if (tier === "agent" || tier === "ai") return "agent";
+  if (tier === "system" || tier === "code") return "system";
+  return null;
+}
+
+const TIER_LABEL: Record<CanonicalTier, string> = {
+  user: "Human",
+  agent: "AI",
+  system: "System",
 };
 
-const TIER_COLOR: Record<ActorTier, string> = {
-  human: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
-  ai: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-  code: "bg-slate-500/15 text-slate-600 dark:text-slate-400",
+const TIER_COLOR: Record<CanonicalTier, string> = {
+  user: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  agent: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+  system: "bg-slate-500/15 text-slate-600 dark:text-slate-400",
 };
 
 function unitDoor(row: ChangeHistoryRow) {
@@ -190,7 +200,7 @@ export function ChangeHistoryPanel({
       <ul className="divide-y divide-border">
         {rows.map((row) => {
           const Icon = KIND_ICON[row.unit_token];
-          const tier = row.actor_tier;
+          const tier = canonicalTier(row.actor_tier);
           const tierLabel = tier ? TIER_LABEL[tier] : "Human";
           return (
             <li
@@ -225,7 +235,7 @@ export function ChangeHistoryPanel({
                 variant="outline"
                 className={cn(
                   "shrink-0 border-0 text-[10px]",
-                  TIER_COLOR[tier ?? "human"],
+                  TIER_COLOR[tier ?? "user"],
                   !tier && "opacity-60",
                 )}
                 title={
@@ -236,7 +246,7 @@ export function ChangeHistoryPanel({
                     : "Written before provenance stamping existed. The platform reads an unstamped change as human; it is never backfilled."
                 }
               >
-                {tier === "human" && <UserRound className="mr-1 h-3 w-3" />}
+                {tier === "user" && <UserRound className="mr-1 h-3 w-3" />}
                 {tierLabel}
                 {!tier && " (unstamped)"}
               </Badge>

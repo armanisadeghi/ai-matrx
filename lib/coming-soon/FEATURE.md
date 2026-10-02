@@ -1,6 +1,6 @@
 # Coming Soon — a promise we made, tracked like a defect
 
-**A "Coming Soon" is a promise to a user, not a placeholder.** We deliberately advertise actions we intend to build, so users can see where the product is going and engineers feel the debt. That policy only works if every promise is **declared, countable, and reviewed** — otherwise "coming soon" becomes a graveyard of things nobody remembers agreeing to.
+**A "Coming Soon" is a promise to a user, not a placeholder.** We deliberately advertise actions we intend to build, so users can see where the product is going and engineers feel the debt. That policy only works if every promise is **declared, countable, and reviewed** — otherwise "coming soon" becomes a deprecated of things nobody remembers agreeing to.
 
 So: same handling as a found defect. **Report it, and ask to solve it.**
 

@@ -1369,7 +1369,7 @@ export const aiModelService = {
   },
 
   async fetchUsage(modelId: string): Promise<ModelUsageResult> {
-    // NOTE: public.prompts was moved to graveyard.prompts — that leg is intentionally
+    // NOTE: public.prompts was moved to deprecated.prompts — that leg is intentionally
     // removed. All user-owned prompts have been migrated to agent.definition.
     const [builtinsResult, agentsResult, agentTemplatesResult] =
       await Promise.all([
@@ -1405,7 +1405,7 @@ export const aiModelService = {
     if (agentsResult.error) throw agentsResult.error;
     if (agentTemplatesResult.error) throw agentTemplatesResult.error;
 
-    // public.prompts is graveyarded — return empty array; no live prompt rows remain.
+    // public.prompts is deprecated — return empty array; no live prompt rows remain.
     const prompts: ModelUsageResult["prompts"] = [];
 
     const promptBuiltins = (builtinsResult.data ?? []).map((b) => ({
@@ -1447,10 +1447,10 @@ export const aiModelService = {
     _newId: string,
     _newSettings?: LLMParams,
   ): Promise<number> {
-    // public.prompts was moved to graveyard.prompts — no live rows to update.
+    // public.prompts was moved to deprecated.prompts — no live rows to update.
     // All prompt model references are now on agent.definition and handled by replaceModelInBuiltins.
     console.warn(
-      "[aiModelService.replaceModelInPrompts] public.prompts is graveyarded — no-op, returning 0",
+      "[aiModelService.replaceModelInPrompts] public.prompts is deprecated — no-op, returning 0",
     );
     return 0;
   },

@@ -17,7 +17,7 @@
 // survive hydration instead of being re-synthesized.
 
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isContentSourceEdge } from "@/features/scopes/service/associationEdges";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -53,7 +53,7 @@ export async function fetchThreadContents(
   threadId: string,
 ): Promise<ThreadContentModule[]> {
   const [threadRow, threadEdgesRes] = await Promise.all([
-    workspaceDb(supabase)
+    projectsDb(supabase)
       .from("threads")
       .select("anchor_type, anchor_id")
       .eq("id", threadId)

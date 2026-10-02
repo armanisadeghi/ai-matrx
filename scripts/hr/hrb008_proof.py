@@ -296,9 +296,9 @@ async def main():
                 "select count(*)=1 from iam.permissions where resource_type='hr_workflow_instance' "
                 "and resource_id=$1 and granted_to_user_id=$2 and review_note='auto:wf_step:'||$3::text",
                 inst, people["bob"]["uid"], str(step["id"])))
-        rec("§5 projection", "the step projected into workspace.tasks with the deep link",
+        rec("§5 projection", "the step projected into projects.tasks with the deep link",
             await conn.fetchval(
-                "select count(*)=1 from workspace.tasks where dedupe_key=$1 and source_type='hr_workflow_step'",
+                "select count(*)=1 from projects.tasks where dedupe_key=$1 and source_type='hr_workflow_step'",
                 f"hrwf:{step['id']}:{people['bob']['uid']}"),
             str(await conn.fetchval("select detail::text from hr.workflow_event where workflow_instance_id=$1 "
                                     "and event_kind='projection_failed' limit 1", inst)))
@@ -647,7 +647,7 @@ async def main():
                 "join hr.workflow_instance i on i.workflow_definition_id=d.id where i.id=$1", term))
         rec("§5.1 projection", "🚨 the restricted-tier projection is CONTENTLESS — no name in the task title",
             await conn.fetchval(
-                "select count(*)=0 from workspace.tasks t join hr.workflow_step s on s.workspace_task_id=t.id "
+                "select count(*)=0 from projects.tasks t join hr.workflow_step s on s.workspace_task_id=t.id "
                 "where s.workflow_instance_id=$1 and t.title ilike '%Erin%'", term))
 
         t_step = await conn.fetchval(
@@ -1146,7 +1146,7 @@ async def main():
 
         # ============================================= §8.2 NODE G — THE UNREACHABLE ATTESTATION
         # 🚨 A SELF-STEP CAN ROUTE TO SOMEBODY WHO CANNOT ACT, AND IT MUST STILL BE ABLE TO END.
-        # A kiosk-only employee holds no login: no iam.permissions grant, no workspace.tasks row,
+        # A kiosk-only employee holds no login: no iam.permissions grant, no projects.tasks row,
         # no way to call hr.wf_decide. hr_c4_11 made the step ROUTE to them (§5.1 — the login is a
         # projection filter, not an eligibility rule); this is the other half — it TERMINATES,
         # honestly, without anything ever attesting on their behalf.

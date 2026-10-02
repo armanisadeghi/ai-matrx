@@ -1,6 +1,6 @@
 import { GET } from "./route";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { sendDueDateReminderEmail } from "@/lib/email/notificationService";
 import { sendDm } from "@/lib/services/system-dm";
 
@@ -13,11 +13,11 @@ jest.mock("next/server", () => ({
     }),
   },
 }));
-jest.mock("@/utils/supabase/workspaceDb", () => ({ workspaceDb: jest.fn() }));
+jest.mock("@/utils/supabase/projectsDb", () => ({ projectsDb: jest.fn() }));
 jest.mock("@/lib/email/notificationService", () => ({ sendDueDateReminderEmail: jest.fn() }));
 jest.mock("@/lib/services/system-dm", () => ({ sendDm: jest.fn() }));
 
-const mockedWorkspaceDb = jest.mocked(workspaceDb);
+const mockedWorkspaceDb = jest.mocked(projectsDb);
 const mockedSendDm = jest.mocked(sendDm);
 const mockedSendEmail = jest.mocked(sendDueDateReminderEmail);
 
@@ -61,7 +61,7 @@ describe("due-date reminders organization boundary", () => {
     };
     mockedWorkspaceDb.mockReturnValue({
       from: jest.fn((table: string) => table === "tasks" ? taskQuery : muteQuery),
-    } as unknown as ReturnType<typeof workspaceDb>);
+    } as unknown as ReturnType<typeof projectsDb>);
     mockedSendEmail.mockResolvedValue({ success: true, message: "sent" });
     mockedSendDm.mockResolvedValue({ ok: true });
 

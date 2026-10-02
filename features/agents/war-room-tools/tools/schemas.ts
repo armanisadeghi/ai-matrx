@@ -16,7 +16,7 @@
 
 import { z } from "zod";
 
-// Shared scalar shapes (match workspace.tasks exactly — canonical vocabulary
+// Shared scalar shapes (match projects.tasks exactly — canonical vocabulary
 // in features/tasks/constants/status.ts; 'incomplete' accepted for agent
 // back-compat and normalized to 'inbox' in the handler).
 const taskStatusSchema = z.enum([

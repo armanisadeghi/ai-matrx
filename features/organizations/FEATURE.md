@@ -140,7 +140,7 @@ Organizations are the top-level multi-tenant scope in the app — every organiza
 
 - `iam.memberships` — canonical membership for orgs + projects (`container_type` / `container_id`). Sole chokepoint: `membershipsService` → authenticated-only `mbr_*` RPCs. **No direct client grant and no anonymous RPC execution.** Every idempotent membership read uses the shared one-shot session recovery; a missing browser JWT produces an attributable `401`, never a successful empty membership set.
 - `iam.invitations` — canonical invitations for orgs + projects + **scopes** (`target_type` / `target_id`; scope targets added 2026-08-18 for education class invites — `migrations/edu_class_invites_and_join_codes.sql` extended `iam._container_authz` with a scope branch, `inv_create` accepts `'scope'` **member-role-only**, `inv_get_by_token` resolves the scope name; consumer: `features/education/classes`, accept page `/invitations/class/accept/[token]`, email route `/api/education/class-invite`). Sole chokepoint: `invitationsService` → `inv_*` RPCs. **No direct client grant** — every read/write goes through `inv_list` / `inv_create` / `inv_accept` / `inv_revoke` / `inv_resend` / `inv_for_me` / `inv_get_by_token`; server email routes use manager-guarded `inv_get_managed`.
-- `workspace.projects` — project rows, scoped by `organization_id`
+- `projects.projects` — project rows, scoped by `organization_id`
 - `admin.invitation_requests` — signup-access requests, admin-approved, triggers `features/invitations/emailService.ts` (separate from org/project member invites)
 
 **Key types** (`features/organizations/types.ts`)

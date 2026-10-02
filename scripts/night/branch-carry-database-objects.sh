@@ -25,7 +25,7 @@
 # = '30s'` (migration 0919) lives in pg_db_role_setting, which is cluster-level: no schema dump
 # carries it. The branch's `postgres` ran with the cluster's 2min, so provision's preflight refused
 # every rehearsal ("statement_timeout … Legal values here: 1s … 60s"), and `authenticator`'s
-# pgrst.db_schemas lacked `custom`, `media` and `graveyard`, so PostgREST on the branch did not
+# pgrst.db_schemas lacked `custom`, `media` and `deprecated`, so PostgREST on the branch did not
 # expose three schemas production exposes. Mirrored: every role-wide (all-database) setting the
 # clone holds for the API and owner roles below that the branch holds differently. Database-level
 # settings (app.settings.jwt_exp) are per-project configuration and are NOT copied.

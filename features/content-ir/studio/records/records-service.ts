@@ -63,7 +63,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * never rendered as "unknown", which would invent a third kind of author.
  */
 function toWriterTier(raw: string | null): RecordWriterTier {
-  return raw === "ai" || raw === "code" ? raw : "human";
+  // DD-064: the tiers are system | agent | user; a row stamped before the
+  // rename still says ai | code until its backfill, so both spellings map.
+  if (raw === "agent" || raw === "ai") return "agent";
+  if (raw === "system" || raw === "code") return "system";
+  return "user";
 }
 
 function homeConversationId(metadata: Json | null): string | null {
@@ -248,13 +252,13 @@ function applyRecordFilters<Q extends RecordQueryShape>(
     out = out.eq("confirmation", q.confirmation) as Q;
   }
 
-  // Agent-written = the two MACHINE tiers. A person-written row is `human` or
-  // an unstamped NULL, so "person" is expressed as "not ai and not code"
-  // rather than `eq(human)`, which would silently hide every unstamped row.
+  // Agent-written = the two MACHINE tiers. A person-written row is `user` or
+  // an unstamped NULL, so "person" is expressed as "user or unstamped"
+  // rather than `eq(user)`, which would silently hide every unstamped row.
   if (q.writer === "agent") {
-    out = out.in("created_by_tier", ["ai", "code"]) as Q;
+    out = out.in("created_by_tier", ["agent", "system"]) as Q;
   } else if (q.writer === "person") {
-    out = out.or("created_by_tier.is.null,created_by_tier.eq.human") as Q;
+    out = out.or("created_by_tier.is.null,created_by_tier.eq.user") as Q;
   }
 
   const term = safeSearchTerm(q.search);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import {
   resolveOrchestratorByTier,
   orchestratorJsonHeaders,
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     } = parsedBody.data;
 
     if (project_id) {
-      const { data: project, error: projectError } = await workspaceDb(supabase)
+      const { data: project, error: projectError } = await projectsDb(supabase)
         .from("projects")
         .select("id")
         .eq("id", project_id)

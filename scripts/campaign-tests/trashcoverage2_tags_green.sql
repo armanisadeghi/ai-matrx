@@ -35,14 +35,14 @@ begin
      and coalesce((platform.knob_resolve('custom', 'context_copy_following', s.organization_id) #>> '{}')::boolean, true)
    order by s.id limit 1;
   if v_scope is null then raise exception 'the admin owns no live scope in an organization that follows copies'; end if;
-  insert into workspace.war_rooms (title, organization_id, created_by)
+  insert into projects.war_rooms (title, organization_id, created_by)
   values ('Q4 fleet contract push', v_org, c_admin) returning id into v_wr;
   -- The copied tag, written the way the follow writes it (the store owner's connection).
   insert into platform.associations (source_type, source_id, target_type, target_id, role, organization_id, created_by)
   values ('war_room', v_wr, 'record', v_scope, 'context_tag', v_org, c_admin) returning id into v_assoc;
 
   perform set_config('role', 'authenticated', true);
-  update workspace.war_rooms set deleted_at = now() where id = v_wr;
+  update projects.war_rooms set deleted_at = now() where id = v_wr;
   perform set_config('role', 'postgres', true);
   if not exists (select 1 from platform.associations where id = v_assoc and deleted_at is not null and deleted_via_id = v_wr) then
     raise exception 'the archive did not tombstone the copied tag (fixture broken)';
@@ -60,7 +60,7 @@ begin
   -- The Trash restore of the item succeeds and brings the tag back.
   if not public.entity_undelete('war_room', v_wr) then raise exception 'Trash restore answered false'; end if;
   perform set_config('role', 'postgres', true);
-  if not exists (select 1 from workspace.war_rooms where id = v_wr and deleted_at is null) then
+  if not exists (select 1 from projects.war_rooms where id = v_wr and deleted_at is null) then
     raise exception 'the war room is not back';
   end if;
   if not exists (select 1 from platform.associations where id = v_assoc and deleted_at is null) then

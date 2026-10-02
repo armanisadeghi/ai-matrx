@@ -268,7 +268,7 @@ try {
     const shows = await until("task shows its scope", async () => (await text(admin)).includes(SCOPE), 60000);
     let dbNote = "";
     if (CLONE_DSN && state.scopeId) {
-      const row = db(`select t.id, (select count(*) from platform.associations a where a.target_type = 'scope' and a.target_id = ${q(state.scopeId)} and a.source_id = t.id and a.deleted_at is null) from workspace.tasks t where t.title = ${q(TASK)} order by t.created_at desc limit 1`);
+      const row = db(`select t.id, (select count(*) from platform.associations a where a.target_type = 'scope' and a.target_id = ${q(state.scopeId)} and a.source_id = t.id and a.deleted_at is null) from projects.tasks t where t.title = ${q(TASK)} order by t.created_at desc limit 1`);
       const [id, tags] = (row ?? "").split("|");
       state.taskId = id || null;
       dbNote = ` · clone: task ${id ? "saved" : "NOT saved"}, tagged with the scope ${tags === "1" ? "yes" : "NO"}`;
@@ -361,7 +361,7 @@ try {
       const gone = !(await text(admin)).includes(TASK);
       if (!CLONE_DSN) return { ok: gone, detail: `"${TASK}" gone from the tasks list ${gone}` };
       let dbNote = "";
-      if (CLONE_DSN && state.taskId) dbNote = ` · clone: task archived ${db(`select (deleted_at is not null)::text from workspace.tasks where id = ${q(state.taskId)}`)}`;
+      if (CLONE_DSN && state.taskId) dbNote = ` · clone: task archived ${db(`select (deleted_at is not null)::text from projects.tasks where id = ${q(state.taskId)}`)}`;
       return { ok: !CLONE_DSN || /true/.test(dbNote), detail: `Delete task pressed on ${state.taskUrl}${dbNote}` };
     });
   });

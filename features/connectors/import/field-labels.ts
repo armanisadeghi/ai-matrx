@@ -23,11 +23,11 @@
 /**
  * Column/field key → the words a person reads. Keys are the ones the two
  * `/google-import/*` payloads actually carry (Person fields for contacts,
- * `workspace.tasks` columns for tasks); an unknown key is humanised rather than
+ * `projects.tasks` columns for tasks); an unknown key is humanised rather than
  * dropped, so a new server field reads as English instead of vanishing.
  */
 const FIELD_LABELS: Record<string, string> = {
-  // workspace.tasks
+  // projects.tasks
   title: "title",
   description: "description",
   due_date: "due date",

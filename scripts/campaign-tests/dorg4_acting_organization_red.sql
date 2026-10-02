@@ -14,7 +14,7 @@
 -- It ends in ROLLBACK and leaves nothing behind.
 
 \set suite 'dorg4_acting_organization_red.sql'
-\set requires 'function:public.wsp_upsert_system_task|function:public.wsp_resolve_system_task|function:public.fork_shared_quiz|relation:workspace.tasks'
+\set requires 'function:public.wsp_upsert_system_task|function:public.wsp_resolve_system_task|function:public.fork_shared_quiz|relation:projects.tasks'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -26,7 +26,7 @@ declare
   c_admin uuid := '87a6e699-3622-4869-8843-d0867456c0dd';   -- admin@admin.com
   v_actor_org uuid;
   v_task jsonb;
-  v_row workspace.tasks;
+  v_row projects.tasks;
   v_res jsonb;
   v_dedupe text := 'thornfield-recall:red:2026-w39:heartworm-retest';
   v_unanswered int;
@@ -52,7 +52,7 @@ begin
   v_task := public.wsp_upsert_system_task(
     p_dedupe_key := v_dedupe,
     p_title := 'Call Mrs. Alvarado — Biscuit (Labrador, 7y) heartworm re-test overdue 11 days');
-  select * into v_row from workspace.tasks where id = (v_task ->> 'id')::uuid;
+  select * into v_row from projects.tasks where id = (v_task ->> 'id')::uuid;
   if v_row.organization_id is distinct from v_actor_org then
     raise exception 'R1: the substitution is GONE — the task landed in % rather than the actor''s own workspace (%). This red twin is meant to fail once DEFAULT-ORG-4 has landed.',
       v_row.organization_id, v_actor_org;

@@ -130,7 +130,7 @@ export const ITEMS = {
   C06: "Births in the store only",
   C07: "Old systems unreachable (guard)",
   C08: "Context follow backlog 0",
-  C09: "Delete step reversible (graveyard, never drop)",
+  C09: "Delete step reversible (deprecated, never drop)",
   C10: "Personal-key policy file freezes sign-in under 100 ms (SAFETY-NET-B)",
   C11: "Rolling release stopped during the hour (SAFETY-NET-B)",
   C12: "Rollback path per step, with the exact command (SAFETY-NET-B)",
@@ -158,6 +158,11 @@ export const ITEMS = {
   Q08: "Query — a member-invisible row stays out",
   Q09: "Query — group by date",
   Q10: "Query — top 5 by a measure",
+  Q11: "Query — roll-up for named related records (related_to)",
+  Q12: "Query — a cut group list says it is cut",
+  Q13: "Query — the roll-up door refuses rather than answer 0 from a walk that missed the field",
+  Q14: "Query — REST v1 answers the questions exactly with a personal key",
+  Q15: "Query — the AI Matrx MCP answers the questions exactly",
 };
 
 export const CHECKS = [...tables, ...lists, ...scopes, ...datahome, ...agents, ...agentsA12, ...drill, ...cutover, ...platform, ...query];

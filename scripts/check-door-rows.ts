@@ -681,7 +681,7 @@ async function buildVictimCatalog(
     where c.relkind in ('r','p')
       and c.relnamespace::regnamespace::text not in (
         'pg_catalog','information_schema','pgsodium','extensions','vault','_realtime','realtime',
-        'storage','supabase_migrations','net','cron','graphql','graphql_public','pgbouncer','auth','graveyard')
+        'storage','supabase_migrations','net','cron','graphql','graphql_public','pgbouncer','auth','deprecated')
     order by 1,2`);
 
   const columnsOf: Record<string, { cols: string[]; types: Record<string, string> }> = {};

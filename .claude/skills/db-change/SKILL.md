@@ -1,6 +1,6 @@
 ---
 name: db-change
-description: "Entry point and shared rules for structural changes to the live Matrx database. Use before any DDL: dropping, merging, or renaming a table, changing a function, RPC, trigger, or policy, hunting straggler tables, or starting a graveyard, schema move, or canonicalization (it routes to those skills)."
+description: "Entry point and shared rules for structural changes to the live Matrx database. Use before any DDL: dropping, merging, or renaming a table, changing a function, RPC, trigger, or policy, hunting straggler tables, or starting a deprecated, schema move, or canonicalization (it routes to those skills)."
 ---
 
 # DB Change — the transition SOP (read first)
@@ -36,7 +36,7 @@ census, and one session applies the batch end-to-end in a window (Arman, 2026-09
 change pays the full multi-layer sweep below; batching pays it once.
 
 **Came here from a DB-wide check?** Triage the finding by table first —
-[canonical-first triage](../../../../common-docs/policies/canonical-first-triage.md): graveyard is
+[canonical-first triage](../../../../common-docs/policies/canonical-first-triage.md): deprecated is
 dead, public is a queue, and a problem that shows only on uncertified tables (while certified ones
 are clean) is not a fix — the work is canonicalizing that table (`db-canonicalize-table`).
 
@@ -56,7 +56,7 @@ are clean) is not a fix — the work is canonicalizing that table (`db-canonical
 
 6. **SHIP IT — committing and pushing IS the job, not a decision to agonize over.** During a scheduled outage the win condition is: fully canonical + all layers repointed + committed + pushed + lights on. Do not pause to ask "is it OK to release?" — the app is down; the *only* way to lose is to sit on finished work. Commit, push, deploy, in the same pass.
 
-7. **DISCOVERING MORE THAN YOU EXPECTED IS NORMAL — FINISH, NEVER REVERT.** Halfway through you WILL find consumers you didn't know about: a second parallel feature module, a generated wiring hub, a raw-SQL string, a lazy import buried in a function. That is not a signal that "this was a mistake, undo it." It is the migration working — you found a consumer, now repoint it. **Re-adding a dropped table / un-graveyarding / reverting a rename to escape a bigger-than-expected blast radius is THE cardinal panic-failure** (it happened on skill.project/skill.resource: the drop was correct, the revert was cowardice, and it cost hours). The moment you're tempted to revert, do the opposite: run the discovery protocol below, list every remaining consumer, and grind through them. The ONLY thing that ever stops you is a genuine human decision (rule 4) — and that is a loud flag with the drop still in place, never a silent revert. "Broken for five minutes while every layer changes" is the migration; a revert is the failure.
+7. **DISCOVERING MORE THAN YOU EXPECTED IS NORMAL — FINISH, NEVER REVERT.** Halfway through you WILL find consumers you didn't know about: a second parallel feature module, a generated wiring hub, a raw-SQL string, a lazy import buried in a function. That is not a signal that "this was a mistake, undo it." It is the migration working — you found a consumer, now repoint it. **Re-adding a dropped table / un-deprecating / reverting a rename to escape a bigger-than-expected blast radius is THE cardinal panic-failure** (it happened on skill.project/skill.resource: the drop was correct, the revert was cowardice, and it cost hours). The moment you're tempted to revert, do the opposite: run the discovery protocol below, list every remaining consumer, and grind through them. The ONLY thing that ever stops you is a genuine human decision (rule 4) — and that is a loud flag with the drop still in place, never a silent revert. "Broken for five minutes while every layer changes" is the migration; a revert is the failure.
 
 **One-line test before you stop:** *If the lights came on right now, would every layer agree and the app work?* If no, you are not done — and you do not stop, hand off, revert, or "leave it for the next pass." You finish.
 
@@ -84,24 +84,24 @@ A dropped/renamed table or field breaks silently in the places the compiler can'
 
 Structural changes to **Matrx Main** (`brsgrqvjdzwihsvnfqkf`) during scheduled downtime. 🚨 **DDL goes through `pnpm db:apply migrations/<file>.sql` — the ONE apply path, downtime included** (CLAUDE.md § Migrations): the whole file in one transaction, and the applier writes the `public._schema_migrations` row with the SHA-256 of the bytes it executed. Never paste DDL into the database tool by hand, and never write that ledger row yourself — on that path a statement you leave out of a payload stays missing while `pnpm check:migrations` reads green. The file is therefore not a convenience: it is the unit that gets applied (a file still changes nothing until applied + verified live). Write it whole and apply it in one call; chunking is what prolongs the outage.
 
-**Before any change, read [`TOOLKIT.md`](./TOOLKIT.md)** (verified live signatures, registry shapes, constants, gotchas) and the rulebook [`db-rules/FEATURE.md`](../../../../common-docs/systems/platform/db-rules/FEATURE.md) (what a canonical table IS). **Where a table belongs:** [changeover doctrine §7](../../../../common-docs/policies/database-changeover-doctrine.md) (one feature, one schema; `public` keeps no tables) + [PLATFORM-CONVENTIONS §E](../../../../common-docs/projects/hr-domain/PLATFORM-CONVENTIONS.md) (every live schema's purpose, verified 2026-08-25); re-check live with `obj_description(oid,'pg_namespace')` — the `workbench` comment carries the `workbench` (user-constructed materials) vs `workspace` (coordination) split. **Where any doc and the live DB disagree, the DB wins** — re-verify with `execute_sql` before betting a migration on it.
+**Before any change, read [`TOOLKIT.md`](./TOOLKIT.md)** (verified live signatures, registry shapes, constants, gotchas) and the rulebook [`db-rules/FEATURE.md`](../../../../common-docs/systems/platform/db-rules/FEATURE.md) (what a canonical table IS). **Where a table belongs:** [changeover doctrine §7](../../../../common-docs/policies/database-changeover-doctrine.md) (one feature, one schema; `public` keeps no tables) + [PLATFORM-CONVENTIONS §E](../../../../common-docs/projects/hr-domain/PLATFORM-CONVENTIONS.md) (every live schema's purpose, verified 2026-08-25); re-check live with `obj_description(oid,'pg_namespace')` — the `workbench` comment carries the `workbench` (user-constructed materials) vs `projects` (coordination) split. **Where any doc and the live DB disagree, the DB wins** — re-verify with `execute_sql` before betting a migration on it.
 
 ## Propose first — for multi-table, data-migrating, or consumer-facing changes
 A change is rarely one table. Before executing anything risky (a cluster, a data migration, a schema move, a retire/drop), **do the homework and fill [`PROPOSAL_TEMPLATE.md`](./PROPOSAL_TEMPLATE.md)** — scope the whole cluster, quantify the repoint cost across both repos (+ extend/local) with the `db-table-refs` helpers, list the decisions with recommendations — save it to `docs/db_rebuild/proposals/<slug>.md`, and get a **`go`** before mutating. A single-column tweak or an obviously-safe additive step doesn't need one; anything that could lose data or break a production consumer does.
 
 ## THE LAW: zero data loss, always
 
-1. **Never `DROP TABLE` (or `DROP COLUMN` with data) during the transition.** Retirement = `ALTER TABLE … SET SCHEMA graveyard` (reversible). Hard DROP is a separate, later, PITR-gated step.
+1. **Never `DROP TABLE` (or `DROP COLUMN` with data) during the transition.** Retirement = `ALTER TABLE … SET SCHEMA deprecated` (reversible). Hard DROP is a separate, later, PITR-gated step.
 2. **Additive-first, cut over, then retire.** Add new structure → backfill → dual-write/mirror if needed → repoint consumers → verify counts match → only then retire the old.
-3. **Getting a table offline is reversible and is the first priority**; resolving every dependency is required but **must not block the move** — graveyard it, then finish the cleanup. (DROP is what's gated, not the schema move.)
+3. **Getting a table offline is reversible and is the first priority**; resolving every dependency is required but **must not block the move** — deprecate it, then finish the cleanup. (DROP is what's gated, not the schema move.)
 4. **Verify live, not on faith.** After every DDL, `execute_sql` to confirm the object exists and `SELECT count(*)` to confirm no rows were lost. Compare pre/post counts.
 5. **Loud recovery.** Any bridge/backfill/mirror you add must scream (RAISE / log) when it fires on data it shouldn't — a silent fallback hides the bug it's papering over.
 
 ## THE CUT — no silent shim (read twice; this is the #1 source of disasters)
 When a table is MOVED or RETIRED, **the old name MUST stop working — abruptly.** AI agents do not reliably catch lingering references, so a "nice fallback" old table is how reads/writes silently split across two tables and burn a day to debug. **A clean cut + 15 minutes of repointing beats a silent shim every time.**
 
-- **Default = make the old name vanish.** `SET SCHEMA workbench` / `SET SCHEMA graveyard` / rename — the data is preserved at the NEW location, but `public.<old>` no longer resolves, so every stale ref **errors loudly** (PostgREST 404 in the browser console = red; a raised exception in server logs = red). That IS the desired behavior.
-- **NEVER leave a compat VIEW or a still-readable old table** that silently passes through. That is the forbidden shim. (Reconciles with Law #1: "data preserved, reversible" ≠ "old name still readable." Graveyard/move preserves data AND kills the old name.)
+- **Default = make the old name vanish.** `SET SCHEMA workbench` / `SET SCHEMA deprecated` / rename — the data is preserved at the NEW location, but `public.<old>` no longer resolves, so every stale ref **errors loudly** (PostgREST 404 in the browser console = red; a raised exception in server logs = red). That IS the desired behavior.
+- **NEVER leave a compat VIEW or a still-readable old table** that silently passes through. That is the forbidden shim. (Reconciles with Law #1: "data preserved, reversible" ≠ "old name still readable." Deprecated/move preserves data AND kills the old name.)
 - **If a table genuinely can't move yet** (consumers can't all be cut in the window), do NOT leave it readable — install a **tripwire**: `select platform.deprecate_relation('public','<t>','<new.ref>','<reason>')` renames the data aside (zero loss) and replaces the old name with a view + INSTEAD-OF triggers that **RAISE on any read or write** with a message naming the new location (TOOLKIT.md §9). A shim that errors loudly is acceptable; one that silently works is not.
 - 🚨 **THE EXCEPTION, AND IT IS THE ONE THAT BIT US: a RENAME of a table that LIVE USERS ARE USING RIGHT NOW.** This whole section assumes a downtime window — no traffic, so a hard cut costs a red log line. Outside a window it costs a person their work. **The old name must keep resolving until the new code is DEPLOYED** (`CREATE VIEW old_name AS SELECT * FROM new_name`, dropped once the running SHA has the new code), or the rename goes LAST, after the code is live. A "loud" 42P01 is not loud to the human it happens to: the agent above it reports success in prose and the content simply never existed. **2026-08-17:** `platform.expertise_pack` → `platform.rulebook` landed ahead of the deployed code while an Expert was an hour into dictating his SEO method; five calls died, one carrying 11 finished expert rules (8,773 chars), recovered only because `chat.tool_trace` happens to keep `args`. Full rule: `common-docs/policies/database-changeover-doctrine.md` §8a-2.
 - **Light up the terminal RED until refs are gone.** Every move/retire MUST: (1) add the relation to **`scripts/dead-relations.json`** + `platform.deprecated_relations`, and (2) leave **`pnpm check:dead-relations`** green. 🚨 **Nothing runs it for you — there is no pre-commit hook and no CI in this repo; YOU run `pnpm check:dead-relations` (or `:strict`) before you call the move done.** It scans for bare `.from("<old>")`, `public.<old>`, and `Database["public"][…]["<old>"]` and screams until every one is repointed. Add the manifest entry *before* repointing so the guard becomes your checklist. (aidream has the parallel `db/check_dead_relations.py`.)
@@ -110,7 +110,7 @@ When a table is MOVED or RETIRED, **the old name MUST stop working — abruptly.
 
 | Task | Skill |
 |---|---|
-| Take a table offline / retire it (no longer used) | **`db-graveyard-table`** |
+| Take a table offline / retire it (no longer used) | **`db-deprecate-table`** |
 | Relocate a table to another schema, references intact | **`db-move-table-schema`** |
 | Bring a table/feature onto the platform standard — base cols + FKs, RLS, registry, satellites, versioning (a.k.a. "retrofit" / "base retrofit" / "Wave 3"; take it to certified or stop at the transition floor) | **`db-canonicalize-table`** |
 | Drop / merge / modify-logic / find stragglers / anything else | **[`playbooks.md`](./playbooks.md)** |
@@ -119,7 +119,7 @@ When a table is MOVED or RETIRED, **the old name MUST stop working — abruptly.
 ## Constants (full table in TOOLKIT.md §0)
 - Project: **Matrx Main** · `project_id` **`brsgrqvjdzwihsvnfqkf`**.
 - System org ("Matrx System"): **`39c38960-d30c-4840-b0c1-c9960de95582`** (ownerless-row fallback).
-- **Exposed-schema trap:** `pnpm db-types` only pulls `public, context, files, workflow, workspace, app, skill, tool, agent, chat, ai, graveyard`. A FE-read table in any other schema needs its schema added to the `db-types` `--schema` list + PostgREST exposure, or the FE gets no types and 404s.
+- **Exposed-schema trap:** `pnpm db-types` only pulls `public, context, files, workflow, workspace, app, skill, tool, agent, chat, ai, deprecated`. A FE-read table in any other schema needs its schema added to the `db-types` `--schema` list + PostgREST exposure, or the FE gets no types and 404s.
 
 ## Cross-repo finalize (run for EVERY change — TOOLKIT.md §8 has detail)
 

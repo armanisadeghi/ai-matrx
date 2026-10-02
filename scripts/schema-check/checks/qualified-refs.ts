@@ -4,7 +4,7 @@
  * (now `iam.organizations`) or `public.notes` (now `workbench.notes`).
  *
  * Precision (mirrors the aidream backend so noise stays near zero):
- *   • `public.`/`graveyard.` prefixes are always treated as SQL (no JS module is
+ *   • `public.`/`deprecated.` prefixes are always treated as SQL (no JS module is
  *     named those), so they're judged on any line.
  *   • any other live-schema prefix is judged ONLY on a SQL-ish line (FROM/JOIN/
  *     INTO/UPDATE/TABLE/REFERENCES …) — avoids flagging JS member access.
@@ -19,7 +19,7 @@ import ts from "typescript";
 
 const PAIR_RE = /\b([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)\b/g;
 const SQL_KEYWORD = /\b(from|join|into|update|table|references|truncate|delete\s+from|insert\s+into|alter\s+table)\b/i;
-const ALWAYS_SQL = new Set(["public", "graveyard"]);
+const ALWAYS_SQL = new Set(["public", "deprecated"]);
 
 /** True when the match at `idx` is inside a comment (whole-line or trailing `//`). */
 function inComment(text: string, idx: number): boolean {
@@ -51,7 +51,7 @@ export function checkQualifiedRefs(ctx: Context): Finding[] {
         const schema = m[1];
         const rel = m[2];
         if (ctx.deadOldNames.has(rel)) continue;
-        // Candidate only if the prefix is a real schema (or always-SQL public/graveyard).
+        // Candidate only if the prefix is a real schema (or always-SQL public/deprecated).
         if (!ALWAYS_SQL.has(schema) && !liveSchemas.has(schema)) continue;
         if (relationExists(snap, schema, rel)) continue; // correct as written
         const livesIn = [...(snap.relationSchemas.get(rel) ?? [])].filter((s) => s !== schema).sort();
@@ -78,13 +78,13 @@ export function checkQualifiedRefs(ctx: Context): Finding[] {
           const matchLength = m[0].length;
           if (!literalRanges.some(([start, end]) => position >= start && position + matchLength <= end)) continue;
         }
-        // A line that already names the correct location (e.g. "moved to graveyard.prompts")
+        // A line that already names the correct location (e.g. "moved to deprecated.prompts")
         // is documenting the move, not making a stale reference — skip it.
         if (livesIn.some((s) => text.includes(`${s}.${rel}`))) continue;
 
         // ERROR only on a genuinely SQL-ish, non-comment line (raw SQL that executes).
         // A bare `schema.table` mention in a comment or a log/message string is
-        // documentation, not a runtime ref — downgrade to WARN (a public/graveyard
+        // documentation, not a runtime ref — downgrade to WARN (a public/deprecated
         // prefix) or skip (any other prefix needs SQL context to be a real ref).
         const executable = sqlish && !inComment(text, m.index);
         let severity: "error" | "warn";

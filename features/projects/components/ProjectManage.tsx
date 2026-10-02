@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { getProject } from "@/features/projects/service";
 import {
   useProjectUserRole,
@@ -73,7 +73,7 @@ export function ProjectManage() {
         if (isUuidShape(projectParam)) {
           resolved = await getProject(projectParam);
         } else {
-          const { data, error: slugError } = await workspaceDb(supabase)
+          const { data, error: slugError } = await projectsDb(supabase)
             .from("projects")
             .select("id")
             .is("deleted_at", null)

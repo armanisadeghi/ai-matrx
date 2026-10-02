@@ -106,7 +106,7 @@ export function useContainerInventory({
 
       // Direct FK counts — one RPC instead of ~20 head-count round-trips. The
       // function returns a row only for each countable table; a key it omits
-      // (table moved/graveyarded, or the container column doesn't exist on it)
+      // (table moved/deprecated, or the container column doesn't exist on it)
       // stays `null` → informational tile, exactly like the old catch→null path.
       // Cast through `never` because the generated DB types intentionally aren't
       // regenerated mid-reorg (a full regen would pull half-applied schema).

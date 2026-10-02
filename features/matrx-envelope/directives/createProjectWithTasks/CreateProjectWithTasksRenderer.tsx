@@ -304,7 +304,7 @@ function ProjectDirectiveCard({
                   read "The project is still being created. Please refresh the
                   browser…" — under the `ask` apply policy NOTHING is being
                   created: the write is gated on a click the user has not made,
-                  and `workspace.projects` was empty at that instant. All this
+                  and `projects.projects` was empty at that instant. All this
                   state actually knows is that no project by this name was found
                   after the poll schedule ran out, so that is what it says. */}
               <span className="flex-1">

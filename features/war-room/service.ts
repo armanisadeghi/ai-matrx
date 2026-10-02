@@ -4,7 +4,7 @@
 
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { tryWriteOne, writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -24,13 +24,13 @@ import type {
   WarRoomThreadUpdate,
 } from "./types";
 
-// War-room tables live in the `workspace` schema — always reached via
-// `workspaceDb(supabase).from(...)` (NOT the public `supabase.from`).
+// War-room tables live in the `projects` schema — always reached via
+// `projectsDb(supabase).from(...)` (NOT the public `supabase.from`).
 const SESSIONS = "war_rooms";
 const THREADS = "threads";
 
-/** A supabase client scoped to the `workspace` schema for war-room tables. */
-const wsDb = workspaceDb(supabase);
+/** A supabase client scoped to the `projects` schema for war-room tables. */
+const wsDb = projectsDb(supabase);
 
 const NOT_DELETED = { deleted_at: null as null };
 
@@ -173,7 +173,7 @@ export async function updateSession(
 }
 
 /**
- * Replace ONE key of `workspace.war_rooms.metadata` (e.g. the Board view's
+ * Replace ONE key of `projects.war_rooms.metadata` (e.g. the Board view's
  * `spatial_layout`) without clobbering the others — compare-and-swap on
  * `version` through the shared `mergeJsonColumn`, so two tabs moving tiles in
  * the same room can never erase each other's other keys. The update matches

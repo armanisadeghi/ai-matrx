@@ -45,7 +45,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
 import { readAllRowsIn } from "@/lib/supabase/readAllRowsIn";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
 import {
@@ -308,7 +308,7 @@ export const scopesService = {
       const oldTypesP = scopesReadFromStore() ? null : bootTreeTypesFromContextTables(orgIds);
 
       // VIEW LAW: org-scoped — restricted to orgIds (see orgsP above).
-      const projectsP = workspaceDb(supabase)
+      const projectsP = projectsDb(supabase)
         .from("projects")
         .select("id, organization_id, name, slug")
         .in("organization_id", orgIds)
@@ -576,7 +576,7 @@ export const scopesService = {
 
       let taskIds: string[];
       if (level === "project") {
-        const { data, error } = await workspaceDb(supabase)
+        const { data, error } = await projectsDb(supabase)
           .from("tasks")
           .select("id")
           .is("deleted_at", null)
@@ -599,7 +599,7 @@ export const scopesService = {
 
       if (taskIds.length === 0) return ok({ tasks: [] });
 
-      const { data: taskRows, error: taskErr } = await workspaceDb(supabase)
+      const { data: taskRows, error: taskErr } = await projectsDb(supabase)
         .from("tasks")
         .select("id, title, status, project_id, organization_id, updated_at")
         .is("deleted_at", null)
@@ -635,7 +635,7 @@ export const scopesService = {
     try {
       requireUserId();
 
-      const { data: projectRows, error: projErr } = await workspaceDb(supabase)
+      const { data: projectRows, error: projErr } = await projectsDb(supabase)
         .from("projects")
         .select("id, organization_id, name, slug")
         .is("deleted_at", null)
@@ -1517,8 +1517,8 @@ export const scopesService = {
     entityId: string,
     scopeIds: string[],
   ): Promise<ScopesRpcResult<{ organization_id: string | null }>> {
-    // Workspace-schema table names (project/task moved to `workspace`). Consumed
-    // below via `workspaceDb(supabase).from(table)`.
+    // Projects-schema table names (project/task live in `projects`). Consumed
+    // below via `projectsDb(supabase).from(table)`.
     const ENTITY_ORG_TABLE: Partial<Record<EntityType, string>> = {
       project: "projects",
       task: "tasks",
@@ -1548,8 +1548,8 @@ export const scopesService = {
       if (!orgId) return ok({ organization_id: null });
 
       // Adopt ONLY when the container currently has no org (DB-enforced).
-      // project/task live in the `workspace` schema — reach them via workspaceDb.
-      const { data: updated, error: uErr } = await workspaceDb(supabase)
+      // project/task live in the `projects` schema — reach them via projectsDb.
+      const { data: updated, error: uErr } = await projectsDb(supabase)
         .from(table as never)
         .update({ organization_id: orgId } as never)
         .eq("id", entityId)

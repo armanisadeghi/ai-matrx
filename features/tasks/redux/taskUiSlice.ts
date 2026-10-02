@@ -72,7 +72,7 @@ export interface TaskUiState {
   // from some other entity (chat message, note, file, chat block, ...)
   pendingSource: PendingSource | null;
 
-  // Per-user notification/triage state (workspace.task_user_state), keyed by
+  // Per-user notification/triage state (projects.task_user_state), keyed by
   // task id. Hydrated once by loadTaskUserStateThunk; snoozed tasks drop out
   // of the attention views.
   userState: Record<string, TaskUserStateEntry>;

@@ -2,7 +2,7 @@
  * Canonical task priority vocabulary — the ONE place the set of priorities
  * lives, mirroring `constants/status.ts` for the lifecycle set.
  *
- * DB: `workspace.tasks.priority`, nullable — `null` means "no priority", which
+ * DB: `projects.tasks.priority`, nullable — `null` means "no priority", which
  * is why the picker's own value type is `TaskPriorityValue | null` and the
  * quick-create form models "none" as an empty string in its `<Select>`.
  *

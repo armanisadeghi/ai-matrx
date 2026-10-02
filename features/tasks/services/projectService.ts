@@ -10,7 +10,7 @@
 import { pgErrorToError } from "@ai-matrx/data";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
@@ -43,7 +43,7 @@ export async function createProject(
   // never one of the swallowed-and-logged failures below.
   const organizationId = requireSelectedOrgId(); // org-filter: write-target a NEW project is filed in the organization the person works in
   try {
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("projects")
       .insert({
         name,
@@ -116,7 +116,7 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
 
     // Also fetch personal projects created by user that may not have members yet
     const listScope = await defaultListFilter("project", { userId });
-    let createdQuery = workspaceDb(supabase)
+    let createdQuery = projectsDb(supabase)
       .from("projects")
       .select("*")
       .is("deleted_at", null);
@@ -137,7 +137,7 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
 
     if (allIds.size === 0) return [];
 
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("projects")
       .select("*")
       .is("deleted_at", null)
@@ -168,7 +168,7 @@ export async function getProjectsWithTasks(): Promise<ProjectWithTasks[]> {
     : membersResult.data.memberships.map((m) => m.containerId);
 
   // Fetch with tasks joined
-  let query = workspaceDb(supabase)
+  let query = projectsDb(supabase)
     .from("projects")
     .select(`*, tasks(*)`)
     .is("deleted_at", null)
@@ -202,7 +202,7 @@ export async function updateProject(
 ): Promise<DatabaseProject | null> {
   try {
     const { data, error } = await writeOneRow(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("projects")
         .update(updates)
         .eq("id", projectId)
@@ -226,7 +226,7 @@ export async function updateProject(
  * Move a project to the trash — the canonical soft delete (db-rules §8).
  *
  * 🚨 This was a hard `DELETE` until 2026-09-20 (lane ORG-ARCHIVE, the owner's
- * soft-delete ruling). `workspace.projects` is a registered entity carrying
+ * soft-delete ruling). `projects.projects` is a registered entity carrying
  * `deleted_at` and EVERY reader in this repo already filters it, so the hard
  * delete destroyed a person's project — and its tasks with it — while deleting
  * a task beside it on the same screen was recoverable. Same class as DD-119.
@@ -234,7 +234,7 @@ export async function updateProject(
 export async function deleteProject(projectId: string): Promise<boolean> {
   try {
     const { error } = await tryWriteOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("projects")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", projectId)
@@ -245,7 +245,7 @@ export async function deleteProject(projectId: string): Promise<boolean> {
         noun: "project",
         alreadyDone: {
           reread: () =>
-            workspaceDb(supabase)
+            projectsDb(supabase)
               .from("projects")
               .select("id, deleted_at")
               .eq("id", projectId)

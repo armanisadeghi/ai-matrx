@@ -7,10 +7,10 @@
  * (db-rules FEATURE.md §8, §8a).
  *
  * WHY IT EXISTS (DD-119, 2026-09-12): deleting a task from /tasks issued
- * `DELETE FROM workspace.tasks` straight from the browser. The task and its
+ * `DELETE FROM projects.tasks` straight from the browser. The task and its
  * subtask were gone from the table — not `deleted_at`-stamped — while the dialog
  * said "This cannot be undone", and deleting a chat on the same afternoon was a
- * soft delete that promised recovery. `workspace.tasks` had `deleted_at` and a
+ * soft delete that promised recovery. `projects.tasks` had `deleted_at` and a
  * registry row saying so the whole time. Three separate client paths in this repo
  * were hard-deleting it.
  *
@@ -37,7 +37,7 @@
  *
  * PROVEN FAILING: with `features/tasks/services/taskService.ts` put back to
  * `.delete()` (its shape before DD-119), this reported
- * `FAIL new client hard delete … workspace.tasks` and exited 1 in strict; with
+ * `FAIL new client hard delete … projects.tasks` and exited 1 in strict; with
  * the soft-delete door restored it reported OK and exited 0 (2026-09-12).
  *
  * EXTENDED 2026-09-27 (Arman: "delete MUST MEAN ARCHIVE regardless of what it's
@@ -252,7 +252,7 @@ function walk(dir: string, out: string[]): void {
  * Resolve the table a `.delete()` acts on.
  *
  * The chain is written many ways — `supabase.from("x")`,
- * `supabase.schema("s").from("x")`, `workspaceDb(supabase).from("x")`,
+ * `supabase.schema("s").from("x")`, `projectsDb(supabase).from("x")`,
  * `db.from(TABLE)` — so this reads the NEAREST PRECEDING `.from("literal")` in the
  * same statement window and the nearest `.schema("literal")` in front of it. A
  * `.from(CONSTANT)` resolves to nothing and is reported as unresolved rather than

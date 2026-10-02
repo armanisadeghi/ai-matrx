@@ -126,7 +126,7 @@ interface RecordResolverConfig {
   /**
    * Non-`public` Postgres schema `table` lives in, if any. Reached via
    * `.schema(schema)`. Omitted ⇒ `public`. (Set for the workspace domain after
-   * the 2026 restructure moved projects/tasks to the `workspace` schema.)
+   * the 2026 restructure moved projects/tasks to the `projects` schema.)
    */
   schema?: string;
   select: string;
@@ -420,7 +420,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   task: createRecordResolver({
     openItemType: "task",
     table: "tasks",
-    schema: "workspace",
+    schema: "projects",
     select: "title, description",
     titleFields: ["title"],
     bodyFields: ["description"],
@@ -436,7 +436,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   project: createRecordResolver({
     openItemType: "project",
     table: "projects",
-    schema: "workspace",
+    schema: "projects",
     select: "name, description",
     titleFields: ["name"],
     bodyFields: ["description"],

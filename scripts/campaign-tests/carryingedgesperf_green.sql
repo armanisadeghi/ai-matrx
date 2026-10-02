@@ -161,7 +161,7 @@ begin
   insert into rmo values ('n_delivery', v_id);
   -- the task is the contractor's OWN (personal), so the crew lead cannot reach it directly: the note
   -- reaches her only from the Kitchen, through the task
-  insert into workspace.tasks (title, organization_id, created_by, visibility)
+  insert into projects.tasks (title, organization_id, created_by, visibility)
   values ('Order the Kitchen tile (Zellige 4x4, 62 sq ft + 10% overage)', v_org, c_admin, 'personal') returning id into v_task;
   insert into rmo values ('task', v_task);
   insert into platform.associations (source_type, source_id, target_type, target_id, organization_id, role, created_by) values

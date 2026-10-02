@@ -143,7 +143,7 @@ select
       -- A policy no client role can reach is not a surface. This is measured
       -- live on every run, never an allowlist: restore one GRANT and the table
       -- is a finding again the same second. (DD-136c took these grants away
-      -- from the four retired graveyard tables iam.apply_rls cannot regenerate.)
+      -- from the four retired deprecated tables iam.apply_rls cannot regenerate.)
       and ((has_schema_privilege('authenticated', p.schemaname, 'USAGE')
             and has_table_privilege('authenticated', format('%I.%I', p.schemaname, p.tablename)::regclass, 'SELECT'))
         or (has_schema_privilege('anon', p.schemaname, 'USAGE')

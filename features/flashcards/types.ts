@@ -27,7 +27,7 @@ export type ReviewResult = GradeResult;
 // ============================================================================
 
 // (The legacy users.user_flashcard_sets/reviews row aliases lived here until
-// 2026-08-22 — tables ported to education.fc_set and moved to graveyard, Q3.)
+// 2026-08-22 — tables ported to education.fc_set and moved to deprecated, Q3.)
 
 // ============================================================================
 // Insert types

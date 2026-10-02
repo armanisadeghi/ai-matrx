@@ -68,7 +68,7 @@ describe("task assignment notification admission", () => {
     jest.clearAllMocks();
     jest.mocked(createClient).mockResolvedValue({
       schema: jest.fn((name: string) => ({
-        from: jest.fn(() => name === "workspace" ? taskQuery : profileQuery),
+        from: jest.fn(() => name === "projects" ? taskQuery : profileQuery),
       })),
     } as never);
     jest.mocked(createAdminClient).mockReturnValue({

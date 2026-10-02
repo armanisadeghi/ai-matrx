@@ -29,7 +29,7 @@
 -- admin@admin.com's claims, because public.cmt_add reads auth.uid().
 
 \set suite 'dorg3_acting_organization_green.sql'
-\set requires 'function:public.cmt_add|function:platform.entity_organization_id|relation:platform.comments|relation:crm.party|relation:workspace.tasks|relation:platform.entity_types'
+\set requires 'function:public.cmt_add|function:platform.entity_organization_id|relation:platform.comments|relation:crm.party|relation:projects.tasks|relation:platform.entity_types'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -63,7 +63,7 @@ begin
   insert into crm.party (party_kind, display_name, organization_id)
   values ('person', 'Marguerite Okonjo — 2118 E Ocotillo Rd', v_brightwater)
   returning id into v_customer;
-  insert into workspace.tasks (title, organization_id)
+  insert into projects.tasks (title, organization_id)
   values ('Tuesday route — Ocotillo / Knox loop, 11 stops', v_brightwater)
   returning id into v_route_task;
 

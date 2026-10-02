@@ -201,7 +201,7 @@ function selfTest(): number {
     },
     {
       label: "a same-named table in a DIFFERENT schema is not a self-reference",
-      schema: "graveyard",
+      schema: "deprecated",
       table: "rulebook",
       expr: "(id IN ( SELECT rb.id FROM platform.rulebook rb))",
       expect: false,

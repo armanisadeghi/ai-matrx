@@ -196,7 +196,7 @@ async function productionDbSchemas(ref: BranchRef): Promise<string> {
  * 🚨 PRODUCTION'S LIST IS NOT APPLICABLE VERBATIM, AND APPLYING IT TAKES THE
  * BRANCH'S WHOLE API DOWN (measured 2026-09-16, and recovered).
  *
- * Production's `pgrst.db_schemas` names `graveyard`, which the schema-only branch
+ * Production's `pgrst.db_schemas` names `deprecated`, which the schema-only branch
  * does not carry. PostgREST will not build a schema cache that names a schema the
  * database does not have: every request to EVERY schema then answers
  *

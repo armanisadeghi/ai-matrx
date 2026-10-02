@@ -4,7 +4,7 @@
 //
 // 🚨 HR DOES NOT BUILD A SECOND TASK STORE, AND THIS COMPONENT IS WHERE THAT
 // RULE IS KEPT HONEST. An "HR task" is an `hr.wf_instance` — an approval, an
-// acknowledgment, a decision on a workflow step. It is NOT a `workspace.tasks`
+// acknowledgment, a decision on a workflow step. It is NOT a `projects.tasks`
 // row and it must never be copied into one: the moment it is, there are two
 // places a pay-change approval can be decided and two answers about whether it
 // was.

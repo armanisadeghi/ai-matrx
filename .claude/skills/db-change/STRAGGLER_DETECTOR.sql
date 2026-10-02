@@ -19,7 +19,7 @@ with t as (
   from pg_class c join pg_namespace n on n.oid = c.relnamespace
   where c.relkind = 'r'
     and n.nspname in ('public','platform','iam','chat','agent','skill','tool','app','workflow',
-                      'context','files','workspace','workbench','ai','runtime','users','scraper','rag','legal')
+                      'context','files','projects','workbench','ai','runtime','users','scraper','rag','legal')
 )
 select pub.tbl, pub.rows as public_rows, dom.schema as also_lives_in, dom.rows as domain_rows
 from t pub join t dom on pub.tbl = dom.tbl and pub.schema = 'public' and dom.schema <> 'public'
@@ -57,7 +57,7 @@ with d as (
     regexp_replace(c.relname,'^(org_|cx_|agx_|aga_|agc_|skl_|cld_|file_|ctx_|wr_|udt_|tool_|wf_|user_)','') as base,
     (xpath('/row/c/text()', query_to_xml(format('select count(*) c from %I.%I', n.nspname, c.relname), false, true, '')))[1]::text::bigint as rows
   from pg_class c join pg_namespace n on n.oid=c.relnamespace
-  where c.relkind='r' and n.nspname <> 'graveyard' and n.nspname not in ('pg_catalog','information_schema','pg_toast','auth','storage','realtime','vault','extensions')
+  where c.relkind='r' and n.nspname <> 'deprecated' and n.nspname not in ('pg_catalog','information_schema','pg_toast','auth','storage','realtime','vault','extensions')
 )
 select dom.schema as empty_canonical_schema, dom.tbl as empty_canonical, dom.rows as canon_rows,
        pub.schema as live_old_schema, pub.tbl as live_old, pub.rows as old_rows

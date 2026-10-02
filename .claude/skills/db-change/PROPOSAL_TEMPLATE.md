@@ -7,14 +7,14 @@
 # DB Change Proposal — <title>
 
 **One-liner:** <what changes + why, in one sentence>
-**Change types:** canonicalize · move-schema · graveyard · drop · merge · modify *(list the ones that apply)*
+**Change types:** canonicalize · move-schema · deprecated · drop · merge · modify *(list the ones that apply)*
 **Status:** ⏳ awaiting GO
 
 ## 1. Scope — the cluster (every table in the blast radius)
 A change is rarely one table. List them all, each with a verdict.
 | Table | Rows | Verdict | Why |
 |---|---|---|---|
-| `<t>` | <n> | keep+canonicalize / move / migrate→retire / graveyard / leave | <one line> |
+| `<t>` | <n> | keep+canonicalize / move / migrate→retire / deprecated / leave | <one line> |
 
 ## 2. Outcome (before → after)
 <2–4 lines: the end state, and the explicit promise that user-visible behavior is preserved.>
@@ -29,7 +29,7 @@ A change is rarely one table. List them all, each with a verdict.
 Number every step; tag each `[DB]`/`[FE]`/`[PY]`/`[EXT]` and `[reversible]`/`[gated]`. Show the exact toolkit calls / SQL shape. Phase it if the safe work and the risky work separate.
 1. `[DB][reversible]` …
 2. `[FE]` …
-3. `[gated]` … (graveyard, not drop)
+3. `[gated]` … (deprecated, not drop)
 
 ## 5. Data migration — lossless proof
 <what moves where · row counts (source → target) · column mapping · how "no row lost" is verified (count equality, spot-check). If nothing moves, say "none.">
@@ -46,7 +46,7 @@ The reviewer answers these; everything else is pre-decided.
 - `pnpm sync-types` clean · `python run.py` clean boot.
 
 ## 8. Reversibility & data-loss guards
-<graveyard-not-drop · PITR confirmed before any hard drop · count snapshots before/after · what the rollback is at each phase.>
+<deprecated-not-drop · PITR confirmed before any hard drop · count snapshots before/after · what the rollback is at each phase.>
 
 ## 9. Out of scope / deferred (explicit)
 <what this change deliberately does NOT do, so nobody assumes it did — list the litter/columns/tables left for later and why.>

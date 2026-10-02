@@ -22,7 +22,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { filesDb } from "@/features/files/filesDb";
 import { formatFileSize } from "@ai-matrx/kit/format";
@@ -150,7 +150,7 @@ export async function resolveSourceTitle(
         return data?.label?.trim() || null;
       }
       case "task": {
-        const { data } = await workspaceDb(supabase)
+        const { data } = await projectsDb(supabase)
           .from("tasks")
           .select("title")
           .eq("id", id)
@@ -158,7 +158,7 @@ export async function resolveSourceTitle(
         return data?.title?.trim() || null;
       }
       case "project": {
-        const { data } = await workspaceDb(supabase)
+        const { data } = await projectsDb(supabase)
           .from("projects")
           .select("name")
           .eq("id", id)
@@ -349,7 +349,7 @@ async function resolveTitlesForKind(
       return;
     }
     case "task": {
-      const { data } = await workspaceDb(supabase)
+      const { data } = await projectsDb(supabase)
         .from("tasks")
         .select("id, title")
         .is("deleted_at", null)
@@ -358,7 +358,7 @@ async function resolveTitlesForKind(
       return;
     }
     case "project": {
-      const { data } = await workspaceDb(supabase)
+      const { data } = await projectsDb(supabase)
         .from("projects")
         .select("id, name")
         .is("deleted_at", null)
@@ -473,7 +473,7 @@ async function loadNote(id: string): Promise<SourcePreviewDoc> {
 
 async function loadTask(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("task", id);
-  const { data, error } = await workspaceDb(supabase)
+  const { data, error } = await projectsDb(supabase)
     .from("tasks")
     .select("title, description, created_at")
     .is("deleted_at", null)
@@ -495,7 +495,7 @@ async function loadTask(id: string): Promise<SourcePreviewDoc> {
 
 async function loadProject(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("project", id);
-  const { data, error } = await workspaceDb(supabase)
+  const { data, error } = await projectsDb(supabase)
     .from("projects")
     .select("name, description, created_at")
     .is("deleted_at", null)

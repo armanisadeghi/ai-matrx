@@ -49,31 +49,31 @@ const promptAppsAdapter: VirtualSourceAdapter = {
     return id ? { id } : null;
   },
 
-  // NOTE: The `prompt_apps` table has been moved to the graveyard schema and is no longer
+  // NOTE: The `prompt_apps` table has been moved to the deprecated schema and is no longer
   // reachable via PostgREST. All operations fail-soft with empty results or clear errors.
 
   async list(_supabase, _userId, _args: ListArgs): Promise<VirtualNode[]> {
-    console.warn("[files/virtual-sources/adapters/prompt-apps] list: prompt_apps table is in graveyard schema — returning empty");
+    console.warn("[files/virtual-sources/adapters/prompt-apps] list: prompt_apps table is in deprecated schema — returning empty");
     return [];
   },
 
   async read(_supabase, _userId, id): Promise<VirtualContent> {
-    console.warn("[files/virtual-sources/adapters/prompt-apps] read: prompt_apps table is in graveyard schema");
+    console.warn("[files/virtual-sources/adapters/prompt-apps] read: prompt_apps table is in deprecated schema");
     throw new Error(`Prompt App ${id} is not available — prompt_apps has been decommissioned`);
   },
 
   async write(_supabase, _userId, args: WriteArgs) {
-    console.warn("[files/virtual-sources/adapters/prompt-apps] write: prompt_apps table is in graveyard schema");
+    console.warn("[files/virtual-sources/adapters/prompt-apps] write: prompt_apps table is in deprecated schema");
     throw new Error(`Cannot save Prompt App ${args.id} — prompt_apps has been decommissioned`);
   },
 
   async rename(_supabase, _userId, args: RenameArgs) {
-    console.warn("[files/virtual-sources/adapters/prompt-apps] rename: prompt_apps table is in graveyard schema");
+    console.warn("[files/virtual-sources/adapters/prompt-apps] rename: prompt_apps table is in deprecated schema");
     throw new Error(`Cannot rename Prompt App ${args.id} — prompt_apps has been decommissioned`);
   },
 
   async delete(_supabase, _userId, id) {
-    console.warn("[files/virtual-sources/adapters/prompt-apps] delete: prompt_apps table is in graveyard schema");
+    console.warn("[files/virtual-sources/adapters/prompt-apps] delete: prompt_apps table is in deprecated schema");
     throw new Error(`Cannot delete Prompt App ${id} — prompt_apps has been decommissioned`);
   },
 

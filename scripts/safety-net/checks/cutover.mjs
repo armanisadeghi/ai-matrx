@@ -6,7 +6,7 @@
 export default [
   {
     // Read-only on live: readiness truthful + in time, the plan, test edits the press puts back, doors/births state,
-    // follow backlog, the window policy, the undo's reach, nothing in the graveyard. AFTER: exactly the plan switched.
+    // follow backlog, the window policy, the undo's reach, nothing in the deprecated schema. AFTER: exactly the plan switched.
     id: "cutover.state",
     area: "cutover",
     kind: "cmd",

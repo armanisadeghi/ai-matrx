@@ -7,7 +7,7 @@
  *
  * A scope type is a store Table, a scope a Record, a context item a Field, a value a key of the
  * Record's document. The old `context.scope_types` / `scopes` / `context_items` /
- * `context_item_values` tables leave for the graveyard at the contract (step 4.3); a web read still
+ * `context_item_values` tables leave for the deprecated schema at the contract (step 4.3); a web read still
  * aimed at them would then fail — or, while they still exist, read an image nobody writes first.
  *
  * Guard: the Supabase client below REFUSES the `context` schema outright and answers only the
@@ -136,8 +136,8 @@ jest.mock("@/utils/supabase/client", () => {
     },
   };
 });
-jest.mock("@/utils/supabase/workspaceDb", () => ({
-  workspaceDb: () => {
+jest.mock("@/utils/supabase/projectsDb", () => ({
+  projectsDb: () => {
     const q: Record<string, unknown> = {};
     for (const m of ["select", "in", "is", "order", "eq"]) q[m] = () => q;
     q.then = (res: (v: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(res);

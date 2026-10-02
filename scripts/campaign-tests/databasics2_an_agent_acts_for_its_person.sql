@@ -3,7 +3,7 @@
 -- THE USE CASE: an organization whose knob custom/agent_schema_changes says never_ask — the agent adds
 -- a choice column ("Visit Status": Scheduled, Completed) and a board to a clinic's visit table itself,
 -- no approval card. The server does it exactly as it does every agent write: signed in AS the person
--- (acting_as → request.jwt.claims.sub) with the connection declared as an agent (app.actor_tier = ai).
+-- (acting_as → request.jwt.claims.sub) with the connection declared as an agent (app.actor_tier = agent).
 -- MEASURED: custom.field_declare and custom.pipeline_declare refused — "This write says an agent wrote
 -- it, and does not say who the agent is acting for" — because the records those doors write for the
 -- column (its choices, the board's rules) carry no `_on_behalf_of`, and the envelope took the agent
@@ -47,7 +47,7 @@ begin
     'fields', jsonb_build_array(jsonb_build_object('name', 'patient')), 'parent_id', v_home::text));
   perform custom.field_declare(c_ws, c_tbl, '{"key":"patient","label":"Patient","type":"text"}');
   -- from here the AGENT writes, for this person
-  perform set_config('app.actor_tier', 'ai', true);
+  perform set_config('app.actor_tier', 'agent', true);
   v_f := custom.field_declare(c_ws, c_tbl, '{"key":"visit_status","label":"Visit Status","parity_type":"select","options":["Scheduled","Completed"]}');
   perform custom.pipeline_declare(c_ws, c_tbl, '{"stage_field":{"key":"visit_status"}}'::jsonb);
   -- D: a document that says agent and names nobody

@@ -6,7 +6,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { getProject, getProjectMembers } from "@/features/projects/service";
 import type { Project, ProjectMemberWithUser } from "@/features/projects/types";
 import {
@@ -95,7 +95,7 @@ async function buildTaskExportNode(
     getTaskComments(task.id),
     getTaskAttachments(task.id),
     fetchNotesForTask(task.id),
-    workspaceDb(supabase)
+    projectsDb(supabase)
       .from("tasks")
       .select("*")
       .is("deleted_at", null)
@@ -190,7 +190,7 @@ export async function fetchProjectExportBundle(
 export async function fetchTaskExportBundle(
   taskId: string,
 ): Promise<TaskExportBundle | null> {
-  const { data: task, error } = await workspaceDb(supabase)
+  const { data: task, error } = await projectsDb(supabase)
     .from("tasks")
     .select("*")
     .is("deleted_at", null)

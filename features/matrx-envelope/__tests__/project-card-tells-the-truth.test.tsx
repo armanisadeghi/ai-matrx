@@ -8,7 +8,7 @@
  *    live project and tasks."
  *
  * Nothing was being created. Under the `ask` apply policy the write is gated on
- * a click the user has not made, and `workspace.projects` was empty at that
+ * a click the user has not made, and `projects.projects` was empty at that
  * instant. Law 4: a screen is absent or honest — never wearing a false sentence.
  *
  * All this state actually knows is that the poll schedule ran out without

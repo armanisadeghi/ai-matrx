@@ -243,29 +243,29 @@
       "consumer": "extension capture review."
     },
     {
-      "target": "graveyard.ai_runs.messages",
-      "reason": "Retired table in the graveyard schema \u2014 no live consumer by definition.",
-      "consumer": "none (graveyard = retired)."
+      "target": "deprecated.ai_runs.messages",
+      "reason": "Retired table in the deprecated schema \u2014 no live consumer by definition.",
+      "consumer": "none (deprecated = retired)."
     },
     {
-      "target": "graveyard.compiled_recipe.compiled_recipe",
+      "target": "deprecated.compiled_recipe.compiled_recipe",
       "reason": "Retired table \u2014 no live consumer.",
-      "consumer": "none (graveyard)."
+      "consumer": "none (deprecated)."
     },
     {
-      "target": "graveyard.data_broker.default_value",
+      "target": "deprecated.data_broker.default_value",
       "reason": "Retired table \u2014 no live consumer.",
-      "consumer": "none (graveyard)."
+      "consumer": "none (deprecated)."
     },
     {
-      "target": "graveyard.message.content",
+      "target": "deprecated.message.content",
       "reason": "Retired table \u2014 no live consumer.",
-      "consumer": "none (graveyard)."
+      "consumer": "none (deprecated)."
     },
     {
-      "target": "graveyard.note_versions.content",
+      "target": "deprecated.note_versions.content",
       "reason": "Retired table \u2014 no live consumer.",
-      "consumer": "none (graveyard)."
+      "consumer": "none (deprecated)."
     }
   ],
   "mitigated": [

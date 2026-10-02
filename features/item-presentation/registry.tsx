@@ -125,7 +125,7 @@ export interface ItemTypeConfig {
     /**
      * Non-`public` Postgres schema `table` lives in, if any. Reached via
      * `.schema(schemaName)`. Omitted ⇒ `public`. (Set for the workspace domain
-     * after the 2026 restructure moved projects/tasks to the `workspace` schema.)
+     * after the 2026 restructure moved projects/tasks to the `projects` schema.)
      */
     schemaName?: string;
     /** Column to use as the window title (falls back to the seed name). */
@@ -438,7 +438,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     open: { kind: "task" },
     detailSource: {
       table: "tasks",
-      schemaName: "workspace",
+      schemaName: "projects",
       titleField: "title",
     },
     enrich: (s, id) =>
@@ -472,7 +472,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     open: { kind: "project" },
     detailSource: {
       table: "projects",
-      schemaName: "workspace",
+      schemaName: "projects",
       titleField: "name",
     },
     enrich: (s, id) =>

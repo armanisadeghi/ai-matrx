@@ -103,7 +103,7 @@
  *     closed the same day). `schemaFor` only ever saw a `.schema("x")` written
  *     in the statement itself, so every read through the ten-strong
  *     `utils/supabase/*Db.ts` family (`appDb`, `docprocDb`, `iamDb`, `ragDb`,
- *     `pdfDb`, `codeDb`, `webDb`, `contextDb`, `schedulerDb`, `workspaceDb`)
+ *     `pdfDb`, `codeDb`, `webDb`, `contextDb`, `schedulerDb`, `projectsDb`)
  *     resolved to `?.table` — and an ambiguous key can neither settle a class
  *     nor answer to rule 3. The day one of those schemas gained an archivable
  *     table, every read of it would have been PERMANENTLY invisible while the
@@ -440,7 +440,7 @@ function schemaFor(code: string, fromIndex: number): string | null {
  * ambiguous `?.table` — and an ambiguous key can neither settle a class nor
  * answer to rule 3. Ten such helpers exist (`appDb`, `docprocDb`, `iamDb`,
  * `ragDb`, `pdfDb`, `codeDb`, `webDb`, `contextDb`, `schedulerDb`,
- * `workspaceDb`), so the day any of their schemas gains an archivable table,
+ * `projectsDb`), so the day any of their schemas gains an archivable table,
  * every read of it would have been PERMANENTLY invisible to the guard while the
  * run stayed green. The map is DERIVED from the tree on every run, exactly like
  * the precedent set, so a new helper needs no edit here.

@@ -798,9 +798,9 @@ const ANON_INVOKER_WRITER_QUERY = `
     and p.prosrc ~* '(^|[^a-z_.])(insert into|update |delete from|merge into)'
     and n.nspname = any (array[
       'api','public','rag','scraper','workflow','files','legal','knowledge','agent','ai','app',
-      'chat','context','skill','tool','workspace','work','admin','billing','browser','canvas',
+      'chat','context','skill','tool','projects','work','admin','billing','browser','canvas',
       'code','communication','content_ir','crm','dictionary','docproc','education','extend',
-      'graveyard','growth','hindsight','history','iam','interview','marketing','meta','ops','pdf',
+      'deprecated','growth','hindsight','history','iam','interview','marketing','meta','ops','pdf',
       'plan','platform','podcast','research','runtime','scheduler','seo','transcripts','ui',
       'users','web','workbench','assignment','audit','batch','mandate','commerce'])
     and not exists (

@@ -66,7 +66,11 @@ function toConfirmation(raw: string): RecordConfirmation {
 }
 
 function toWriterTier(raw: string | null): RecordWriterTier {
-  return raw === "ai" || raw === "code" ? raw : "human";
+  // DD-064: the tiers are system | agent | user; a row stamped before the
+  // rename still says ai | code until its backfill, so both spellings map.
+  if (raw === "agent" || raw === "ai") return "agent";
+  if (raw === "system" || raw === "code") return "system";
+  return "user";
 }
 
 function homeConversationId(metadata: Json | null): string | null {

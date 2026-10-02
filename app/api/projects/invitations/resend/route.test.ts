@@ -29,8 +29,8 @@ jest.mock("@/lib/email/client", () => ({
   },
 }));
 
-jest.mock("@/utils/supabase/workspaceDb", () => ({
-  workspaceDb: () => ({
+jest.mock("@/utils/supabase/projectsDb", () => ({
+  projectsDb: () => ({
     from: () => ({
       select: () => ({
         eq: () => ({

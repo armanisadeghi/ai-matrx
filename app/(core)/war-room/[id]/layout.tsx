@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 
 export async function generateMetadata({
@@ -15,8 +15,8 @@ export async function generateMetadata({
 
   try {
     const supabase = await createClient();
-    // War-room session moved to the `workspace` schema (war_rooms).
-    const { data } = await workspaceDb(supabase)
+    // War-room session moved to the `projects` schema (war_rooms).
+    const { data } = await projectsDb(supabase)
       .from("war_rooms")
       .select("title, description")
       .is("deleted_at", null)

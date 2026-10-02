@@ -12,11 +12,11 @@
 -- of 8 such steps: a new `hr.workflow_failure` row and a `failure_raised` notification to the HR
 -- owner (16,366 failure rows, 16,361 open), a revoke + re-grant of the approver's access, a
 -- no-op `update hr.workflow_step_definition set resolver_kind = resolver_kind`, and a re-save of
--- the identical approval task in `workspace.tasks` — 16,300+ phantom versions on each table.
+-- the identical approval task in `projects.tasks` — 16,300+ phantom versions on each table.
 --
 --   1  a sweep over the stuck steps opens NO new failure for a step that already has an open
 --      failure from its refused escalation (and so sends the HR owner no new notification)
---   2  the sweep moves no `hr.workflow_step_definition` version and no `workspace.tasks` version
+--   2  the sweep moves no `hr.workflow_step_definition` version and no `projects.tasks` version
 --      of those steps
 --   3  `wsp_upsert_system_task` with the arguments a task already holds writes nothing (version and
 --      updated_at unchanged); with a new title it writes once
@@ -46,7 +46,7 @@ create temporary table _before on commit drop as
 select 'step_definition' what, d.id, d.version from hr.workflow_step_definition d
  where d.id in (select step_definition_id from _stuck)
 union all
-select 'task', t.id, t.version from workspace.tasks t
+select 'task', t.id, t.version from projects.tasks t
  where t.dedupe_key like any (select 'hrwf:' || id::text || ':%' from _stuck);
 
 do $suite$
@@ -72,7 +72,7 @@ begin
       into v_moved
       from _before b
       left join hr.workflow_step_definition d on b.what = 'step_definition' and d.id = b.id
-      left join workspace.tasks t2 on b.what = 'task' and t2.id = b.id
+      left join projects.tasks t2 on b.what = 'task' and t2.id = b.id
      where coalesce(d.version, t2.version) <> b.version;
     if v_moved is not null then
       raise exception '2: the sweep re-saved rows that did not change: %', left(v_moved, 1500);
@@ -81,11 +81,11 @@ begin
   end if;
 
   -- 3: projecting an unchanged approval task writes nothing
-  select * into t from workspace.tasks
+  select * into t from projects.tasks
    where dedupe_key like 'hrwf:%' and deleted_at is null and status not in ('completed','cancelled','dismissed')
    order by updated_at desc limit 1;
   if t.id is null then
-    select * into t from workspace.tasks
+    select * into t from projects.tasks
      where dedupe_key is not null and deleted_at is null and status not in ('completed','cancelled','dismissed')
      order by updated_at desc limit 1;
   end if;
@@ -95,13 +95,13 @@ begin
   v_ver := t.version; v_upd := t.updated_at;
   perform public.wsp_upsert_system_task(t.dedupe_key, t.title, t.description, t.origin, t.source_type,
     t.source_id, t.source_url, t.source_label, t.due_date, null, t.assignee_id, t.organization_id, t.project_id, '{}'::jsonb);
-  select version, updated_at into v_ver2, v_upd2 from workspace.tasks where id = t.id;
+  select version, updated_at into v_ver2, v_upd2 from projects.tasks where id = t.id;
   if v_ver2 <> v_ver or v_upd2 <> v_upd then
     raise exception '3: re-projecting an unchanged task moved it v% -> v%, updated_at % -> %', v_ver, v_ver2, v_upd, v_upd2;
   end if;
   perform public.wsp_upsert_system_task(t.dedupe_key, t.title || ' (renamed)', t.description, t.origin, t.source_type,
     t.source_id, t.source_url, t.source_label, t.due_date, null, t.assignee_id, t.organization_id, t.project_id, '{}'::jsonb);
-  select version into v_ver2 from workspace.tasks where id = t.id;
+  select version into v_ver2 from projects.tasks where id = t.id;
   if v_ver2 <> v_ver + 1 then
     raise exception '3: a real title change moved the task v% -> v% (expected one step)', v_ver, v_ver2;
   end if;

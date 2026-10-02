@@ -571,7 +571,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   project: {
     resourceType: "project",
     tableName: "projects",
-    schemaName: "workspace",
+    schemaName: "projects",
     idColumn: "id",
     ownerColumn: "created_by",
     isPublicColumn: null,
@@ -675,7 +675,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   task: {
     resourceType: "task",
     tableName: "tasks",
-    schemaName: "workspace",
+    schemaName: "projects",
     idColumn: "id",
     ownerColumn: "created_by",
     isPublicColumn: null,
@@ -686,7 +686,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   thread: {
     resourceType: "thread",
     tableName: "threads",
-    schemaName: "workspace",
+    schemaName: "projects",
     idColumn: "id",
     ownerColumn: "created_by",
     isPublicColumn: null,
@@ -841,7 +841,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   war_room: {
     resourceType: "war_room",
     tableName: "war_rooms",
-    schemaName: "workspace",
+    schemaName: "projects",
     idColumn: "id",
     ownerColumn: "created_by",
     isPublicColumn: null,

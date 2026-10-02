@@ -32,7 +32,7 @@ export type ContextItemRow =
   Database["context"]["Tables"]["context_items"]["Row"];
 export type ContextItemValueRow =
   Database["context"]["Tables"]["context_item_values"]["Row"];
-// `ctx_scope_assignments` is GRAVEYARDED — scope tags now live in
+// `ctx_scope_assignments` is DEPRECATED — scope tags now live in
 // `platform.associations` (reached via scopesService / associationsService).
 // The table is slated for drop, so its row vanishes from the generated types
 // on the next `pnpm db-types`. We hand-write the shape (identical to the old

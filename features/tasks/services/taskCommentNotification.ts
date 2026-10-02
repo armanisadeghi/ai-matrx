@@ -10,7 +10,7 @@
 // taskService import) so the host wiring's dynamic import cannot cycle.
 
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 
 /** Notify the task owner of a new comment. Never throws; logs on failure. */
 export async function sendTaskCommentNotification(
@@ -19,7 +19,7 @@ export async function sendTaskCommentNotification(
 ): Promise<void> {
   try {
     // Get the task to find the owner
-    const { data: task } = await workspaceDb(supabase)
+    const { data: task } = await projectsDb(supabase)
       .from("tasks")
       .select("id, title, created_by")
       .is("deleted_at", null)

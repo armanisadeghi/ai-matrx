@@ -37,7 +37,7 @@ export type Proof =
   /** A release tag of `repo` contains `commit`. */
   | { kind: "released"; repo: Repo; commit: string; says: string }
   /** A live read: one row `(ok boolean, detail text)`. `finalAtStepTwo`: once step two has retired the undo
-   *  and moved the older tables to the graveyard (lane SWITCH-STEP-TWO), there is nothing older left to
+   *  and moved the older tables to the deprecated schema (lane SWITCH-STEP-TWO), there is nothing older left to
    *  measure, so the proof reads met without running its SQL (which names the older tables). */
   | { kind: "db"; sql: string; says: string; finalAtStepTwo?: true };
 
@@ -685,12 +685,12 @@ export const INTEGRATIONS: Integration[] = [
   {
     id: "X1", repo: "aidream", plan: "found", disposition: "repointed",
     what: "Where a COPIED but not yet switched table is written",
-    why: "copy mode (owner, 2026-09-23) left the older table live beside its same-id copy and every integration had to choose a store; since step two (2026-10-01: the undo retired, the older tables in the graveyard) there is one store and no resolver chooses",
+    why: "copy mode (owner, 2026-09-23) left the older table live beside its same-id copy and every integration had to choose a store; since step two (2026-10-01: the undo retired, the older tables in the deprecated schema) there is one store and no resolver chooses",
     plain: "for a table that has been copied but not switched, agents, workflow steps, chat and the browser extension write into the copy while you are still working in the older table",
     owner: "matrx-frontend features/unified-data/whereThisTableLives.ts (+ data-source/locate-table.ts); matrx-extend src/lib/records/tables.ts",
     proofs: [
       // Lane OLD-READERS-REMOVAL (2026-10-01): step two ran — the undo is retired and the older tables
-      // are in the graveyard — so no table is ever copied-but-not-switched again, and every resolver
+      // are in the deprecated schema — so no table is ever copied-but-not-switched again, and every resolver
       // that once chose between the two stores knows only the record store.
       {
         kind: "nowhere", repo: "aidream", pattern: "server\\.table_home|server import table_home", except: [],

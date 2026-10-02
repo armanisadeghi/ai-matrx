@@ -42,7 +42,7 @@ export type HrSensitivityTier = string;
 /**
  * One actionable row. The first block comes from `hr.wf_pending` (the queue of
  * record); the second from `hr._wf_display` (the ONE display rule, which is
- * also what the `workspace.tasks` mirror renders).
+ * also what the `projects.tasks` mirror renders).
  */
 export type HrInboxRow = {
     step_id: string;

@@ -378,7 +378,7 @@ export const STAGES: LoopStage[] = [
     pipes: {
       code: {
         state: "live",
-        note: "One crawl world as of 2026-08-10 (G-CRAWL-DUAL): the legacy scraper.crawl_* store is in graveyard and the every-minute dispatcher drives web.crawl_schedule. The writer side closed 2026-08-11 (G-CRAWL-SCHEDULE): CrawlScheduleCard writes intent direct to Supabase under the column-scoped grants of aidream migration 0322.",
+        note: "One crawl world as of 2026-08-10 (G-CRAWL-DUAL): the legacy scraper.crawl_* store is in deprecated and the every-minute dispatcher drives web.crawl_schedule. The writer side closed 2026-08-11 (G-CRAWL-SCHEDULE): CrawlScheduleCard writes intent direct to Supabase under the column-scoped grants of aidream migration 0322.",
         ref: "aidream/packages/matrx-scraper/matrx_scraper/web_crawl/schedules.py#dispatch_due_crawl_schedules",
       },
       human: {

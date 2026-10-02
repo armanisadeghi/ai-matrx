@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * TaskSnoozeButton — per-user snooze control (workspace.task_user_state).
+ * TaskSnoozeButton — per-user snooze control (projects.task_user_state).
  * Snoozing hides the task from every attention view (Today/Overdue/Upcoming/
  * Inbox) and silences reminders until the chosen time; the task stays in
  * "All tasks". Preset times come from taskUserStateService.snoozePresets.

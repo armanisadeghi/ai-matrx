@@ -15,7 +15,7 @@ Companion to [`SKILL.md`](./SKILL.md) — read it first: the load-bearing bounda
    - many containers at once → `associationsService.listForTargets(targetType, targetIds)`
    - many sources at once (e.g. scope tags of every visible row) → `associationsService.listForSources(sourceType, sourceIds, targetType?)`
 4. **Prefer the hooks** in React: `useAssociations({ type, id })` (entity-centric) or `useContainerLinks({ containerType, containerId, orgId })` (container-centric: `countFor` / `attachedIdsFor` / `linksFor` / `totalCount` / `attach` / `detach`). Never call the service or `assoc_*` RPC directly from a component, and never dispatch `appContextSlice` from association code (durable relationships are not the user's active working context — see `features/scopes/FEATURE.md`).
-5. **Retire the old path:** delete the bespoke RPC caller. On the DB side, collapse + graveyard the junction via **Recipe A-DB** below (during the 2026 downtime the DB collapse ships in the SAME change as this FE repoint — no soak, no compat shim). Add a `dead-relations.json` entry the moment you stop reading a table.
+5. **Retire the old path:** delete the bespoke RPC caller. On the DB side, collapse + deprecate the junction via **Recipe A-DB** below (during the 2026 downtime the DB collapse ships in the SAME change as this FE repoint — no soak, no compat shim). Add a `dead-relations.json` entry the moment you stop reading a table.
 
 ---
 
@@ -31,10 +31,10 @@ Take the old shape DOWN and bring the new one UP in ONE migration — no FE-soak
 **The migration — atomic, idempotent, count-verified:**
 1. Both endpoint tokens registered + active in `platform.entity_types`. Missing → register + `pnpm tsx scripts/generate-entity-types.ts`.
 2. `INSERT INTO platform.associations (source_type,source_id,target_type,target_id,organization_id,role,position,metadata,created_at) SELECT …` — org from the source (or target) entity; `role`/`position` per the edge; `metadata` = edge props + `legacy_table` + `legacy_id` (composite PK → `jsonb_build_object(...)`). `ON CONFLICT ON CONSTRAINT associations_unique DO NOTHING`.
-3. **Count-verify or ROLLBACK:** `IF (SELECT count(*) FROM <junction>) <> (SELECT count(*) FROM platform.associations WHERE metadata->>'legacy_table'='<junction>') THEN RAISE EXCEPTION …`. Wrap the whole block in `IF to_regclass('<schema>.<junction>') IS NOT NULL THEN … END IF` (idempotent — a re-run after graveyard is a no-op).
+3. **Count-verify or ROLLBACK:** `IF (SELECT count(*) FROM <junction>) <> (SELECT count(*) FROM platform.associations WHERE metadata->>'legacy_table'='<junction>') THEN RAISE EXCEPTION …`. Wrap the whole block in `IF to_regclass('<schema>.<junction>') IS NOT NULL THEN … END IF` (idempotent — a re-run after deprecated is a no-op).
 4. **Repoint every fn from `table_impact`** in the SAME migration: `CREATE OR REPLACE` each, swapping `FROM <junction>` for `JOIN platform.associations a ON a.source_id=… AND a.source_type='<src>' AND a.target_type='<tgt>' AND a.role='<role>'` (position → `a.position`, edge props → `a.metadata->>'…'`). While in a fn, fix any pre-existing break it carries (e.g. an unqualified type that needs `SET search_path TO 'public'`).
 5. De-register (only if the junction itself was registered): `DELETE FROM platform.entity_relationships WHERE child_type='<token>'`; `DELETE FROM platform.entity_types WHERE token='<token>'`.
-6. Retire, never DROP: `ALTER TABLE <schema>.<junction> SET SCHEMA graveyard`; `INSERT INTO platform.deprecated_relations(old_ref,new_ref,reason,archived_as)`.
+6. Retire, never DROP: `ALTER TABLE <schema>.<junction> SET SCHEMA deprecated`; `INSERT INTO platform.deprecated_relations(old_ref,new_ref,reason,archived_as)`.
 7. `SELECT audit.refresh()` → confirm the junction left `m2m_candidates` and no fn landed in `audit.broken_functions`; `iam.canonical_certify_ok(...)` where applicable.
 8. Apply with `pnpm db:apply migrations/<name>.sql` — the ONE path; it ledgers the file itself with the SHA-256 of the bytes it executed, so you never write that row. Then `pnpm db-types` + aidream `python db/generate.py`.
 

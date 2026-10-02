@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import {
   sendEmail,
   emailTemplates,
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     // `projects` lives in `workspace`, `organizations` in `public` — PostgREST
     // resource embedding is single-schema, so the org name is fetched in a
     // separate `public` query and merged in JS.
-    const { data: projectData } = await workspaceDb(supabase)
+    const { data: projectData } = await projectsDb(supabase)
       .from("projects")
       .select("name, organization_id")
       .eq("id", invitation.target_id)

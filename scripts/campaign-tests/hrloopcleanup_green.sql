@@ -93,7 +93,7 @@ begin
 
   -- 3 -------------------------------------------------------------------------------------------
   select t.id, t.status, t.dedupe_key, s.id as step_id, s.organization_id into v_task
-    from workspace.tasks t
+    from projects.tasks t
     join hr.workflow_step s on s.id::text = split_part(t.dedupe_key, ':', 2)
    where t.dedupe_key like 'hrwf:%' and t.deleted_at is null
      and t.status not in ('completed', 'cancelled', 'dismissed') and s.state = 'active'
@@ -106,11 +106,11 @@ begin
     v_step := v_task.step_id;
     perform hr.arm_write();
     v_ret := hr._wf_unproject_step(v_step, 'superseded');
-    select status into v_status from workspace.tasks where id = v_task.id;
+    select status into v_status from projects.tasks where id = v_task.id;
     if v_status <> 'cancelled' then
       raise exception '3: the superseded task is still %, and the function said it closed % (hr._wf_unproject_step swallowed the refusal — hrloopcleanup_b not applied)', v_status, v_ret;
     end if;
-    if v_ret <> 1 or not exists (select 1 from workspace.tasks where id = v_task.id
+    if v_ret <> 1 or not exists (select 1 from projects.tasks where id = v_task.id
                                   and metadata -> 'hr_superseded' ->> 'prior_status' = v_task.status) then
       raise exception '3: the task closed but the count (%) or the supersession stamp is wrong', v_ret;
     end if;
@@ -124,7 +124,7 @@ begin
     -- 4 -----------------------------------------------------------------------------------------
     -- put it back as it was, then run the real escalation door on the real step
     perform hr._wf_project_step(v_step);
-    select status into v_status from workspace.tasks where id = v_task.id;
+    select status into v_status from projects.tasks where id = v_task.id;
     if not (hr._hr_knob('hr.workflow', 'inbox_project_tasks', v_task.organization_id, null) #>> '{}')::boolean then
       raise notice 'SKIPPED clause 4 — task projection is switched off for this organization';
     else
@@ -132,8 +132,8 @@ begin
         raise exception '4: projecting the step to the same holder left their task % (expected % again)', v_status, v_task.status;
       end if;
       v_res := hr.wf_escalate(v_step, 'SLA elapsed');
-      select t.status into v_status from workspace.tasks t where t.id = v_task.id;
-      select count(*) into v_n from workspace.tasks t where t.dedupe_key = v_task.dedupe_key and t.deleted_at is null;
+      select t.status into v_status from projects.tasks t where t.id = v_task.id;
+      select count(*) into v_n from projects.tasks t where t.dedupe_key = v_task.dedupe_key and t.deleted_at is null;
       if (v_res ->> 'granted')::boolean then
         raise notice 'clause 4: the escalation found a better approver (%), so the old holder''s task is % — checking it closed', v_res, v_status;
         if v_status <> 'cancelled' then
@@ -158,7 +158,7 @@ begin
 
   -- 6 -------------------------------------------------------------------------------------------
   select count(*) into v_n
-    from workspace.tasks t join hr.workflow_step s on s.id::text = split_part(t.dedupe_key, ':', 2)
+    from projects.tasks t join hr.workflow_step s on s.id::text = split_part(t.dedupe_key, ':', 2)
    where t.dedupe_key like 'hrwf:%' and t.deleted_at is null
      and t.status not in ('completed', 'cancelled', 'dismissed')
      and s.state not in ('pending', 'active', 'awaiting_result');

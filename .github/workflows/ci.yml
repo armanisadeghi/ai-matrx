@@ -896,7 +896,7 @@ jobs:
   # ---------------------------------------------------------------------------
   # client-hard-delete — a client path that DESTROYS a row in a registered
   # soft-deletable entity table (DD-119, 2026-09-12). Deleting a task from /tasks
-  # issued `DELETE FROM workspace.tasks` from the browser: the task AND its
+  # issued `DELETE FROM projects.tasks` from the browser: the task AND its
   # subtask were gone from the table, under a dialog that said "This cannot be
   # undone", while deleting a chat on the same afternoon was a soft delete that
   # promised recovery. Two halves, both needed: the live trigger that refuses a
@@ -907,7 +907,7 @@ jobs:
   # reach its dependency fails rather than degrading into a pass.
   #
   # Falsifiability proven 2026-09-12: with taskService.ts put back to `.delete()`
-  # it reported `new client hard delete ... workspace.tasks` and exited 1; with
+  # it reported `new client hard delete ... projects.tasks` and exited 1; with
   # the soft-delete door restored it exited 0.
   # ---------------------------------------------------------------------------
   client-hard-delete:

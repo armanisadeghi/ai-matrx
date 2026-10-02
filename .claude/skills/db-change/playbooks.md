@@ -1,10 +1,10 @@
 # DB Change — playbooks for changes without their own skill
 
 ## Drop a table (hard removal — rare, gated)
-Only after: graveyarded through the soak, `v_deprecated_table_access`/grep show **0** consumers in both repos, inbound FKs resolved, PITR/backup confirmed. Then `DROP TABLE graveyard.<t>`. Record it. If unsure whether something still reads it, you are not ready to drop — leave it in graveyard.
+Only after: deprecated through the soak, `v_deprecated_table_access`/grep show **0** consumers in both repos, inbound FKs resolved, PITR/backup confirmed. Then `DROP TABLE deprecated.<t>`. Record it. If unsure whether something still reads it, you are not ready to drop — leave it in deprecated.
 
 ## Merge two tables into one
-Additive pipeline: pick/confirm the survivor → add any missing columns to it → `INSERT … SELECT` the source rows (dedupe on the natural key; map ids and keep an id-map if other tables FK the source) → repoint inbound FKs + all code to the survivor → verify counts (survivor_after = survivor_before + migrated, 0 orphans) → **graveyard the source** (never drop yet). Document the key mapping and any dropped/coalesced columns.
+Additive pipeline: pick/confirm the survivor → add any missing columns to it → `INSERT … SELECT` the source rows (dedupe on the natural key; map ids and keep an id-map if other tables FK the source) → repoint inbound FKs + all code to the survivor → verify counts (survivor_after = survivor_before + migrated, 0 orphans) → **deprecate the source** (never drop yet). Document the key mapping and any dropped/coalesced columns.
 
 ## Modify logic (function / RPC / trigger / policy)
 `CREATE OR REPLACE` (idempotent); keep the signature stable or you break callers — if the signature must change, add the new overload, repoint callers, then drop the old. RLS policy changes go through `iam.apply_rls` only (never hand-edit canonical policies). Re-verify dependent RPCs and run `iam.verify_canonical` if a canonical table's policies were touched. Regenerate types if a return shape changed.

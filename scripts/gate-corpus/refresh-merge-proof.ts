@@ -384,7 +384,7 @@ async function liveHalf(branch: pg.Client, skipMerge: boolean): Promise<void> {
     );
 
   try {
-    // The actor-tier trigger REFUSES a write that declares `code` and names no
+    // The actor-tier trigger REFUSES a write that declares `system` and names no
     // system (measured 2026-09-17). Naming this proof is the honest answer, and
     // it is what a reader of the row will see.
     await branch.query(`select set_config('app.actor_system', 'W0-DATA refresh-merge-proof', false)`);

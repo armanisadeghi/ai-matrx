@@ -1,7 +1,7 @@
 /**
  * Canonical task lifecycle vocabulary — the ONE place status semantics live.
  *
- * DB: workspace.tasks.status, CHECK-constrained to this set plus the legacy
+ * DB: projects.tasks.status, CHECK-constrained to this set plus the legacy
  * 'incomplete' (still written by pre-cutover clients; normalized on read).
  *
  * Lifecycle: inbox → planned → active → completed, with cancelled/dismissed

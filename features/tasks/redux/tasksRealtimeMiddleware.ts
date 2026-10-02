@@ -23,7 +23,7 @@
 //
 // WHAT IS THIS FILE'S JOB — the two things only this route knows:
 //
-// 1. SCOPE. RLS on `workspace.tasks` is far WIDER than the list: a `pub_read`
+// 1. SCOPE. RLS on `projects.tasks` is far WIDER than the list: a `pub_read`
 //    policy delivers every task published to the web in the system, and
 //    `std_select` adds shared/permission-granted rows. Applying whatever
 //    arrives would put tasks on screen that a reload then removes. So every
@@ -72,7 +72,7 @@ const tasksContextChannel = defineChannelNamespace({
   namespace: "workspace-tasks-context",
   parts: ["userId"],
   description:
-    "workspace.tasks rows behind the /tasks route's get_user_full_context list",
+    "projects.tasks rows behind the /tasks route's get_user_full_context list",
 });
 
 /**
@@ -151,7 +151,7 @@ function inListScope(
 }
 
 /**
- * Build the slice record from a realtime payload. `workspace.tasks` events
+ * Build the slice record from a realtime payload. `projects.tasks` events
  * carry the WHOLE row (description and settings included), so the record is
  * genuinely full-data — recording it as "thin-list" would downgrade an open
  * editor's task and cost it a re-fetch.
@@ -307,7 +307,7 @@ export const tasksRealtimeMiddleware: Middleware<
           // visible tasks too, and RLS is what authorizes delivery. Scope is
           // decided by `inListScope`, against the RPC's own predicate.
           event: "*",
-          schema: "workspace",
+          schema: "projects",
           table: "tasks",
           rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
           fingerprint: workspaceRowFingerprint,
@@ -315,7 +315,7 @@ export const tasksRealtimeMiddleware: Middleware<
           // from the writes registered on `tasks/upsertTaskWithLevel`.
           onChange: (delivery) => {
             if (delivery.payload.eventType === "DELETE") {
-              // `workspace.tasks` has DEFAULT replica identity, so a DELETE
+              // `projects.tasks` has DEFAULT replica identity, so a DELETE
               // carries the primary key and nothing else — which is all an
               // eviction needs. (It also means Postgres cannot evaluate RLS on
               // the old row, so deletes of tasks we never held arrive too;

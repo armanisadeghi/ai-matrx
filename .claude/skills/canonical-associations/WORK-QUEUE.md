@@ -13,7 +13,7 @@
 
 The prioritized, file-anchored backlog for the canonicalization campaign. One subagent takes one item, applies the matching recipe in [`SKILL.md`](./SKILL.md), runs the checks, ticks the box. **Read `SKILL.md` first** — especially the load-bearing boundary (`platform.associations` vs `iam.permissions`/`iam.memberships`).
 
-> **State of play (2026-06-29 inventory):** FE schema-qualification for the 2026-moved tables is **already done** — there are **zero** bare `supabase.from("<moved-table>")` calls; everything uses `workspaceDb`/`filesDb`/`transcriptsDb`/`.schema(...)`. `pnpm check:schema` is at **0 errors**. No live FE code reads `ctx_scope_assignments`. So the real remaining work is **(A) collapsing bespoke M2M tables + association-read RPCs into `platform.associations`/`assoc_*`**, then **(B) the soak-gated DB retirement**. The "fix bare refs" sub-campaign is reduced to registry hardening + stale-comment cleanup.
+> **State of play (2026-06-29 inventory):** FE schema-qualification for the 2026-moved tables is **already done** — there are **zero** bare `supabase.from("<moved-table>")` calls; everything uses `projectsDb`/`filesDb`/`transcriptsDb`/`.schema(...)`. `pnpm check:schema` is at **0 errors**. No live FE code reads `ctx_scope_assignments`. So the real remaining work is **(A) collapsing bespoke M2M tables + association-read RPCs into `platform.associations`/`assoc_*`**, then **(B) the soak-gated DB retirement**. The "fix bare refs" sub-campaign is reduced to registry hardening + stale-comment cleanup.
 
 ---
 
@@ -35,7 +35,7 @@ The prioritized, file-anchored backlog for the canonicalization campaign. One su
 | 1 | ☐ MIGRATE | `research.rs_source_tag` | **M2M** `source_id`↔`tag_id` (both uuid FK) + edge attrs `is_primary_source`,`confidence`,`assigned_by` | **MIGRATE.** `research_source` registered ✅; `tag` is a real table row but NOT YET registered → **register a `research_tag` entity (root fix), then migrate**. No DB functions reference it → FE-only (`features/research/service.ts` 535,606,617,631,651,769). Carry the 3 edge attrs as association metadata. |
 | 1 | ☐ MIGRATE | `research.rs_keyword_source` | **M2M** `keyword_id`↔`source_id` (both uuid FK) + edge attr `rank_for_keyword` | **MIGRATE.** Same shape: register a `research_keyword` entity, then migrate. No DB functions → FE-only (`features/research/service.ts` 270,678,787). Carry `rank_for_keyword` as metadata. |
 | 4 | ☐ | `reg.scope_association_suggestions` | staging table (own entity `scope_association_suggestion`) | **EVALUATE** — staging is its own registered entity; the **accepted** edge already becomes a scope tag via `scopesService`. Confirm the accept path — likely nothing to migrate (staging stays, accept already canonical). |
-| — | ☑ | `agent.agent_surface` | **MIGRATED 2026-07-12** — retired to `graveyard`; bindings are `platform.associations` edges (uuid surface targets, tier-encoded `role`) via `agent.menu_surface` | **DONE** — and since 2026-07-19 `value_mappings` is a TYPED edge payload (`payload_kind='surface_binding'`, Edge Payload System — see §E below). |
+| — | ☑ | `agent.agent_surface` | **MIGRATED 2026-07-12** — retired to `deprecated`; bindings are `platform.associations` edges (uuid surface targets, tier-encoded `role`) via `agent.menu_surface` | **DONE** — and since 2026-07-19 `value_mappings` is a TYPED edge payload (`payload_kind='surface_binding'`, Edge Payload System — see §E below). |
 | — | ☐ | `ui.ui_surface_agent_role` | text-keyed (`surface_name`,`name`) **definition** row + single optional `default_agent_id` FK | **KEEP** — a surface-slot *definition* table, not a junction. |
 | — | ☐ | `ui.ui_surface_agent_pref` | agent_id (uuid) ↔ **(`surface_name`,`role_name`) TEXT slot** + `position`,`settings` jsonb, scope cols | **KEEP** — per-context agent→slot **preference/config**; the slot is a text config identifier, not an entity row. |
 | — | ☐ | `scheduler.sch_agent_task` | **entity table** (`prompt`,`variables`,`auth_mode`,…) with a single `agent_id` FK = **1:many** | **KEEP** — it's a first-class entity, not a junction. The lone `agent_id` is a plain FK. |
@@ -58,16 +58,16 @@ The prioritized, file-anchored backlog for the canonicalization campaign. One su
 |---|---|---|---|
 | 14 | ☐ | Add `dead-relations.json` entries | Only `notes`/`note_folders` are registered today; the rest (`tasks`,`projects`,`files`,`folders`,`conversation`,`transcripts`,`agent.definition`,`shortcut`,`quiz_sessions`,`flashcard_data`,`udt_*`) are caught only by `direct-from-schema` vs the live snapshot. Register them to lock the old names red. |
 | 16 | ☐ | Extend ESLint ban (optional) | `eslint.config.mjs` has no rule for bare `.from("<moved>")` or non-`assoc_*` association RPC names. Add a `no-restricted-syntax` ban so the whole class fails fast in-editor. Pattern to mirror: `scopesChokepointSyntaxRestrictions` (lines 367–374). |
-| — | ☐ | Stale-comment cleanup | The 35 `qualified-refs` **warnings** from `pnpm check:schema:warn --verbose` are all `public.<x>` strings **inside comments/docstrings** (prompts→graveyard, permissions→iam, shareable_resource_registry→platform). Cosmetic; fix opportunistically when editing the file. |
+| — | ☐ | Stale-comment cleanup | The 35 `qualified-refs` **warnings** from `pnpm check:schema:warn --verbose` are all `public.<x>` strings **inside comments/docstrings** (prompts→deprecated, permissions→iam, shareable_resource_registry→platform). Cosmetic; fix opportunistically when editing the file. |
 
-## D. DB retirement — SOAK-GATED, do LAST (Recipe A step 5 / `db-graveyard-table`)
+## D. DB retirement — SOAK-GATED, do LAST (Recipe A step 5 / `db-deprecate-table`)
 
 > **DO NOT execute until the FE migrations above have soaked in production and a live `SELECT count(*)` confirms nothing reads the table.** Dropping is gated by the zero-data-loss law (CLAUDE.md). Verify live before every drop.
 
 | Status | Item | Detail |
 |---|---|---|
-| ☑ | Repoint DB-side `ctx_scope_assignments` readers | DONE (verified by the access campaign, 2026-06/07): zero live DB functions reference `ctx_scope_assignments`; FE services cut over 2026-06. The on-disk `.sql` files listed here (`ctx_set_entity_scopes_auth.sql` etc.) are historical migration snapshots, not live readers. Remaining: graveyard the table + mirror triggers (soak-gated, below). |
-| ☐ | Drop graveyarded task-assoc RPCs | `associate_with_task` / `dissociate_from_task` / `create_task_with_association` already graveyarded; confirm zero callers (FE clean) then drop. |
+| ☑ | Repoint DB-side `ctx_scope_assignments` readers | DONE (verified by the access campaign, 2026-06/07): zero live DB functions reference `ctx_scope_assignments`; FE services cut over 2026-06. The on-disk `.sql` files listed here (`ctx_set_entity_scopes_auth.sql` etc.) are historical migration snapshots, not live readers. Remaining: deprecate the table + mirror triggers (soak-gated, below). |
+| ☐ | Drop deprecated task-assoc RPCs | `associate_with_task` / `dissociate_from_task` / `create_task_with_association` already deprecated; confirm zero callers (FE clean) then drop. |
 | ☐ | Drop the legacy junction tables + mirror triggers | Only after every reader above is repointed AND soaked. `verify live before dropping.` |
 
 ---
@@ -79,7 +79,7 @@ The prioritized, file-anchored backlog for the canonicalization campaign. One su
 - War Room container edges: `features/war-room/service/associations.ts`.
 - Content + edge split: `features/flashcards/data/fcService.ts`.
 - Container cards (Recipe B): `features/organizations/components/OrgWorkspace.tsx` + `features/scopes/components/associations/AssociationCardGrid.tsx`.
-- Schema helpers (Recipe C repoint targets): `utils/supabase/workspaceDb.ts`, `features/files/filesDb.ts`, `utils/supabase/appDb.ts`, `features/transcripts/service/transcriptsHubService.ts` (`transcriptsDb`).
+- Schema helpers (Recipe C repoint targets): `utils/supabase/projectsDb.ts`, `features/files/filesDb.ts`, `utils/supabase/appDb.ts`, `features/transcripts/service/transcriptsHubService.ts` (`transcriptsDb`).
 
 ## Per-item Definition of Done
 

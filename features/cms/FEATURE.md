@@ -196,7 +196,7 @@ Supabase MCP at the wrong project for this feature.
   `site_collection_items`) are NOT, mirroring the main DB.
   Don't trust this list — ask the DB: `select * from platform.versioning_audit()`. Not reachable
   over PostgREST directly — see the version RPCs below. Legacy `client_page_versions` was retired
-  (migration `0004`) and archived as `graveyard.client_page_versions`.
+  (migration `0004`) and archived as `deprecated.client_page_versions`.
 - `client_assets` — the asset library (W2-B, shipped 2026-07-15). `file_path` = durable public CDN URL, `file_id` = main-project `cld_files` id (migration `cms/0013`). Service: `CmsAssetService` (`features/cms/services/cmsService.ts`) → `/api/cms/assets`; UI: `AssetsPanel` tab on `/administration/knowledge/cms-agents`. aidream owns the agent path (`cms_asset` tool + `services/cms_assets/`).
 - `client_activity_log` — the C6 contract. Every mutation writes one row; `changes` jsonb always carries `actor: "agent"|"human"|"system"` + optional `metadata` (e.g. `capture_media_refs[]` from P4's verification loop).
 - `html_pages` — standalone quick-publish pages, no site/draft concept.
@@ -1111,7 +1111,7 @@ UI-complete here but only take effect once P1's service layer reads them.
   `change_summary` / `version_label` fields deleted (never populated by anything). History tab now shows
   every change with a "Current" badge. Legacy `client_page_versions` + `page_version_on_publish` +
   `create_page_version()` + `rollback_to_version()` retired in aidream CMS migration `0004`
-  (table archived to `graveyard.client_page_versions`; `last_published_at` write moved into
+  (table archived to `deprecated.client_page_versions`; `last_published_at` write moved into
   `publish_page_draft`). Verified live end-to-end on `dev-website`. Closes the
   `cms-versioning-fe-cutover` handoff.
 
@@ -1122,7 +1122,7 @@ UI-complete here but only take effect once P1's service layer reads them.
   `ClientEntityVersion` / `ClientEntityVersionDetail` (raw `data` snapshot + `pageVersionContent()`
   reader). `/api/cms/versions` takes an `entityType` token and enforces a per-entity `OWNERSHIP` map
   (new `verifyAssetOwnership` / `verifyHtmlPageOwnership` in `_lib/cmsDb.ts`); an unknown token is a 400. Verified live end-to-end: site/page/component/html_page history reads, a raw-snapshot `get`,
-  and 403 on every entity for rows the caller does not own. Also graveyarded the orphan CMS
+  and 403 on every entity for rows the caller does not own. Also deprecated the orphan CMS
   `dashboard_saved_views` (0 rows; the real one is on the main project).
 
 - `2026-07-14` — Convergence punch item 4 (MediaRef link-outs): verification screenshots

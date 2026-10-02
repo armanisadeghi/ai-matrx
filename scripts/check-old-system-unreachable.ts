@@ -7,7 +7,7 @@
  * and leave no trace of the old stuff."
  *
  * WHAT COUNTS AS REACHING THE OLDER SYSTEM (code only — comments are not code; strings are):
- *   - TABLE    the six older relations step two moves to the graveyard — `workbench.udt_datasets`,
+ *   - TABLE    the six older relations step two moves to the deprecated schema — `workbench.udt_datasets`,
  *              `udt_dataset_fields`, `udt_dataset_rows`, `udt_dataset_row_versions`,
  *              `udt_structured_lists`, `udt_structured_list_items` — by name (a `.from(…)`, a realtime
  *              filter, a resource token, a SQL string) or, in Python, by their ORM model
@@ -45,7 +45,7 @@
  * after step two a door whose body still names one of the six moved tables answers its caller with a raw
  * "relation workbench.udt_… does not exist" (42P01). `get_structured_list_for_selection` was the one door file c never
  * turned into its people sentence, and five more of its kind were found the same day. `--db` lists every function
- * outside the graveyard that a client role (anon / authenticated) may EXECUTE, that is not a trigger or event-trigger
+ * outside the deprecated schema that a client role (anon / authenticated) may EXECUTE, that is not a trigger or event-trigger
  * function, and whose code (comments stripped) names one of the six tables — and that does not answer file c's
  * sentence ("The older tables moved to the archive …"). Each is RED unless `db_doors` in the baseline names it with an
  * owner; a `db_doors` entry the database no longer shows is STALE. Read only (`begin read only`), one statement.
@@ -65,7 +65,7 @@ const CAMPAIGN = join(
 );
 const BASELINE = join(FRONTEND, "scripts/old-system-unreachable/baseline.json");
 
-/** The six older relations step two moves to the graveyard, as names and as aidream ORM models. */
+/** The six older relations step two moves to the deprecated schema, as names and as aidream ORM models. */
 export const OLD_TABLES = [
   "udt_datasets",
   "udt_dataset_fields",
@@ -315,14 +315,14 @@ export const MOVED_SENTENCE = "The older tables moved to the archive";
 /** One database function the census returns. */
 export type DbDoor = { sig: string; rettype: string; clientCallable: boolean; namesMovedTable: boolean; answersMoved: boolean };
 
-/** The read-only census: every function outside the graveyard whose code names a moved table. */
+/** The read-only census: every function outside the deprecated schema whose code names a moved table. */
 export const DB_DOORS_SQL = `
 with f as (
   select p.oid::regprocedure::text as sig, p.prorettype::regtype::text as rettype,
          (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute')) as client_callable,
          regexp_replace(regexp_replace(p.prosrc, '--[^\\n]*', '', 'g'), '/\\*.*?\\*/', '', 'g') as code
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname not in ('pg_catalog', 'information_schema', 'graveyard') and n.nspname not like 'pg\\_%' and p.prokind = 'f')
+   where n.nspname not in ('pg_catalog', 'information_schema', 'deprecated') and n.nspname not like 'pg\\_%' and p.prokind = 'f')
 select sig, rettype, client_callable,
        code ~ '\\m(${OLD_TABLES.join("|")})\\M' as names_moved_table,
        position('${MOVED_SENTENCE}' in code) > 0 as answers_moved

@@ -7,8 +7,8 @@ import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
  * The signed-in admin's OWN client (`await createClient()`), never the
  * service-role client: `agent.definition` is provenance-governed, and a
  * service-role write names no actor, so the database refuses it (23514,
- * "declares actor_tier=code, but names no actor_system" — 2026-09-25, Opus 5 →
- * Opus 5.5 was refused outright). The admin's session stamps `human` + their
+ * "declares actor_tier=system, but names no actor_system" — 2026-09-25, Opus 5 →
+ * Opus 5.5 was refused outright). The admin's session stamps `user` + their
  * id, and RLS `platform_admin_all` admits a platform admin.
  */
 type AdminSupabase = SupabaseClient<Database>;

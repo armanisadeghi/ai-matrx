@@ -9,7 +9,7 @@
 - §4 The access model — reality vs the conceptual tiers
 - §5 Triggers & versioning — what's actually live
 - §6 Gotchas that have already bitten
-- §7 Graveyard vs the deprecated-rename monitor
+- §7 The `deprecated` schema vs the deprecated-rename monitor
 - §8 Cross-repo apply order
 - §9 Clean cut — no silent shim (tripwire + RED guard)
 
@@ -54,7 +54,7 @@ Then **verify over HTTP, not in SQL** — `curl "$URL/rest/v1/<table>?select=id&
 **Its SQL-side twin — the schema `USAGE` grant.** Exposure (above) is platform config; USAGE is a role grant, and `ALTER TABLE … SET SCHEMA` carries the table's **grants** but **NOT** schema-level `USAGE` (USAGE belongs to the schema, not the table). A schema with table grants but no USAGE denies every `authenticated`/`anon` access — `permission denied for schema <x>` — which a wrapper RPC swallows into a **silent null** (`cx_canvas_upsert returned null`; canvas/code/legal/scraper all hit this). Every FE-reachable schema needs `GRANT USAGE ON SCHEMA <new> TO authenticated, anon, service_role;` — **MCP-applicable**, unlike exposure, and **separate** from it: a schema can be exposed yet USAGE-denied (silent null, not a 404). Audit signature = "tables granted but schema USAGE missing" (`db-move-table-schema` Step 3).
 
 ### Live schemas + table counts (2026-06-27)
-`public 255` · `graveyard 76` · `chat 21` · `files 21` · `scraper 17` · `rag 14` · `tool 14` · `workflow 12` · `context 9` · `platform 9` · `agent 7` · `runtime 7` · `legal 7` · `app 6` · `skill 6` · `iam 5` · `workspace 4` · `ai 3` · `history 3`.
+`public 255` · `deprecated 76` · `chat 21` · `files 21` · `scraper 17` · `rag 14` · `tool 14` · `workflow 12` · `context 9` · `platform 9` · `agent 7` · `runtime 7` · `legal 7` · `app 6` · `skill 6` · `iam 5` · `workspace 4` · `ai 3` · `history 3`.
 84 entities are registered in `platform.entity_types` (44 components, 45 versioned). **public still holds 255 tables** — the bulk of the canonicalization/reorg is still ahead.
 
 ---
@@ -83,7 +83,7 @@ All key off `(entity_type/source_type = '<token>', entity_id/_id = <row id>)`:
 - `platform.associations` — `id, source_type, source_id, target_type, target_id, organization_id, label, metadata, created_by, created_at` (Base-2: no version/updated/deleted)
 - `platform.categories` — base-shaped + `dimension, name, slug, parent_id, is_system, color, icon, position`
 - `platform.user_entity_state` — `user_id, entity_type, entity_id, is_favorite, is_pinned, is_hidden, last_viewed_at, metadata` (favorites/pins/hidden/recents)
-"Handling satellites" during canonicalization = migrate any per-feature comments/associations/categories/activity/favorites rows INTO these tables under the token, then graveyard the old per-feature tables.
+"Handling satellites" during canonicalization = migrate any per-feature comments/associations/categories/activity/favorites rows INTO these tables under the token, then deprecate the old per-feature tables.
 
 ---
 
@@ -177,7 +177,7 @@ Mismatch between registry `resource_type` and the entity token → `has_access` 
 **Read [`docs/db_changes/REACHABILITY-ROLLOUT.md`](../../../docs/db_changes/REACHABILITY-ROLLOUT.md) before touching either.** `association_types` is the edge dictionary: every `(source_type, target_type[, label])` shape, with `container_side` (`none|source|target`) deciding whether the edge conveys access and `conveys_max` capping the inherited level. `reachability` is a **disposable trigger-maintained closure cache — never hand-edit; rebuild via `platform.rebuild_reachability()`**. `iam.has_access` walks it: holding a container (grant/membership/ownership) conveys `LEAST(level, conveys_max)` on its contents. Manage rules in the **Relationship Manager** (`/administration/relationships`, `public.admin_relationship_*` RPCs) — not raw SQL. **New content type entering a container = three registrations:** `entity_types` + `association_types` (+ `shareable_resource_registry` if directly grantable); then containment is config, not code. The `trg_associations_enforce_known` trigger (off until flipped in the UI) rejects unregistered edge shapes at write time — register the pair BEFORE shipping code that writes a new shape.
 
 **Direction doctrine: little points to big — the SOURCE is the smaller thing, the TARGET the bigger thing it points to** (task→project, note→thread, project→war_room). **The size hierarchy is a PRODUCT fact — Arman's call, never inferred.** An agent who thinks a pair's direction is wrong ASKS; it does not flip the registry or the edges (this was gotten wrong twice in one day — the hierarchy that "seemed obvious" both times wasn't). `container_side='target'` is the norm; `'source'` = deliberately-inverted stored edge, documented in `notes`. **Direction ≠ conveyance:** registering direction is structural; flipping `container_side` to convey access is a human decision made in `/administration/relationships`. Enforcement: `trg_associations_auto_orient` (BEFORE INSERT) **REJECTS** a write whose reverse pair is the registered one — error names the canonical direction; `reverse_edge_count` flags pre-existing wrong-way data in the UI. Two-way pairs exist only when BOTH directions are registered active, by design. **Data-migration gotcha: the direction trigger reads the registry — update `association_types` BEFORE migrating edge rows, or your inserts are rejected/flipped.**
-Lives in **`iam`** (moved from `public` in the reorg; verified live 2026-07-05). `resource_type` (=token), `resource_id`, `granted_to_user_id` / `granted_to_organization_id`, `permission_level`, `status`, `expires_at`, …. Any per-feature `<x>_permissions`/`_shares`/`_collaborators`/`_acl` table → migrate rows here, then graveyard the old table. (`public.has_permission(...)` — the resolver function — is still in `public`.)
+Lives in **`iam`** (moved from `public` in the reorg; verified live 2026-07-05). `resource_type` (=token), `resource_id`, `granted_to_user_id` / `granted_to_organization_id`, `permission_level`, `status`, `expires_at`, …. Any per-feature `<x>_permissions`/`_shares`/`_collaborators`/`_acl` table → migrate rows here, then deprecate the old table. (`public.has_permission(...)` — the resolver function — is still in `public`.)
 
 ---
 
@@ -243,10 +243,10 @@ FOR EACH ROW EXECUTE FUNCTION platform._version_capture('<token>');
 
 ---
 
-## 7. Graveyard vs the deprecated-rename monitor (two different things)
+## 7. The `deprecated` schema vs the deprecated-rename monitor (two different things)
 
-- **Graveyard** = retirement holding area. `ALTER TABLE public.<t> SET SCHEMA graveyard` (reversible; **never `DROP TABLE`** during the soak). 76 tables already there. No tracking-registry row is required by convention; the move itself is the record. PITR gates the eventual hard DROP.
-- **`platform.v_deprecated_table_access`** = a `pg_stat_statements`-backed **monitor for RENAMED tables** (old→new name pairs like `file_*→cld_*`, `ctx_war_room_*→wr_*`). It counts lingering references to the OLD name so you know when a rename's consumers are fully repointed. It is **not** a graveyard registry and not about schema moves. Use it to confirm "0 calls to the old name" before dropping a compat view/old name.
+- **Deprecated** = retirement holding area. `ALTER TABLE public.<t> SET SCHEMA deprecated` (reversible; **never `DROP TABLE`** during the soak). 76 tables already there. No tracking-registry row is required by convention; the move itself is the record. PITR gates the eventual hard DROP.
+- **`platform.v_deprecated_table_access`** = a `pg_stat_statements`-backed **monitor for RENAMED tables** (old→new name pairs like `file_*→cld_*`, `ctx_war_room_*→wr_*`). It counts lingering references to the OLD name so you know when a rename's consumers are fully repointed. It is **not** a deprecated registry and not about schema moves. Use it to confirm "0 calls to the old name" before dropping a compat view/old name.
 
 ---
 

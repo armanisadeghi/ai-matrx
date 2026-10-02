@@ -94,7 +94,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "room_description",
     label: "Room description",
     description:
-      "The room's free-text description as stored on the `workspace.war_rooms` row. Empty when the user never wrote one.",
+      "The room's free-text description as stored on the `projects.war_rooms` row. Empty when the user never wrote one.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 200,

@@ -1,7 +1,7 @@
 import { explainError, SHORT_FAILURE_LABEL } from "./explainError";
 
 const ACTOR_SYSTEM_REFUSAL =
-  'This write declares actor_tier=code, but names no official_system. An agent or automated write must say WHICH agent/system it is (x-matrx-actor-system on the client channel, or the app.actor_system GUC on a server channel!) — a person\'s write needs no system at all, but "an AI did it" with no name is not provenance. Table: agent_definition';
+  'This write declares actor_tier=system, but names no official_system. An agent or automated write must say WHICH agent/system it is (x-matrx-actor-system on the client channel, or the app.actor_system GUC on a server channel!) — a person\'s write needs no system at all, but "an AI did it" with no name is not provenance. Table: agent_definition';
 
 describe("explainError", () => {
   it("turns a provenance refusal into a human title and summary", () => {

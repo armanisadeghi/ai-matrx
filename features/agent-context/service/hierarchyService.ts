@@ -2,7 +2,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { archiveOrganization as archiveOrganizationDoor } from "@/features/organizations/service/organizationArchive";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -125,7 +125,7 @@ export const hierarchyService = {
   },
 
   async fetchProjects(opts: { orgId?: string }): Promise<HierarchyProject[]> {
-    let query = workspaceDb(supabase)
+    let query = projectsDb(supabase)
       .from("projects")
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
@@ -148,7 +148,7 @@ export const hierarchyService = {
     // DD-137c / §3.3: `project` is registered `organization`. An agent-context tree that shows the
     // viewer only their own projects hides the organization's work from the agent as well.
     const listScope = await defaultListFilter("project", { userId, requested: scope });
-    let projectQuery = workspaceDb(supabase)
+    let projectQuery = projectsDb(supabase)
       .from("projects")
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
@@ -162,7 +162,7 @@ export const hierarchyService = {
   },
 
   async fetchProjectTasks(projectId: string): Promise<HierarchyTask[]> {
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("tasks")
       .select(
         "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, created_by",
@@ -179,7 +179,7 @@ export const hierarchyService = {
     const userId = requireUserId();
 
     const listScope = await defaultListFilter("task", { userId, requested: scope });
-    let orphanQuery = workspaceDb(supabase)
+    let orphanQuery = projectsDb(supabase)
       .from("tasks")
       .select(
         "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, created_by",
@@ -417,7 +417,7 @@ export const hierarchyService = {
     const userId = requireUserId();
 
     const { priority, organization_id: organizationId, ...taskRest } = data;
-    const { data: task, error } = await workspaceDb(supabase)
+    const { data: task, error } = await projectsDb(supabase)
       .from("tasks")
       .insert({
         ...taskRest,
@@ -456,14 +456,14 @@ export const hierarchyService = {
       organization_id?: string | null;
     },
   ): Promise<void> {
-    const patch: Database["workspace"]["Tables"]["projects"]["Update"] = {};
+    const patch: Database["projects"]["Tables"]["projects"]["Update"] = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.description !== undefined) patch.description = data.description;
     if (data.organization_id !== undefined) {
       patch.organization_id = data.organization_id ?? undefined;
     }
     await writeOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("projects")
         .update(patch)
         .eq("id", id)
@@ -484,14 +484,14 @@ export const hierarchyService = {
     },
   ): Promise<void> {
     const { priority, ...rest } = data;
-    const patch: Database["workspace"]["Tables"]["tasks"]["Update"] = {
+    const patch: Database["projects"]["Tables"]["tasks"]["Update"] = {
       ...rest,
     };
     if (priority !== undefined) {
       patch.priority = toTaskPriority(priority);
     }
     await writeOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("tasks")
         .update(patch)
         .eq("id", id)
@@ -506,7 +506,7 @@ export const hierarchyService = {
   // follow through the declared cascade edge.
   async deleteTask(id: string): Promise<void> {
     await writeOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("tasks")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", id)
@@ -517,7 +517,7 @@ export const hierarchyService = {
         noun: "task",
         alreadyDone: {
           reread: () =>
-            workspaceDb(supabase)
+            projectsDb(supabase)
               .from("tasks")
               .select("id, deleted_at")
               .eq("id", id)
@@ -528,11 +528,11 @@ export const hierarchyService = {
     );
   },
 
-  // Soft delete, same rule as a task: `workspace.projects` is a registered
+  // Soft delete, same rule as a task: `projects.projects` is a registered
   // entity with `deleted_at` and every reader filters it (db-rules §8).
   async deleteProject(id: string): Promise<void> {
     await writeOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("projects")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", id)
@@ -543,7 +543,7 @@ export const hierarchyService = {
         noun: "project",
         alreadyDone: {
           reread: () =>
-            workspaceDb(supabase)
+            projectsDb(supabase)
               .from("projects")
               .select("id, deleted_at")
               .eq("id", id)
@@ -586,12 +586,12 @@ export const hierarchyService = {
     projectId: string,
     target: { organization_id?: string | null },
   ): Promise<void> {
-    const patch: Database["workspace"]["Tables"]["projects"]["Update"] = {};
+    const patch: Database["projects"]["Tables"]["projects"]["Update"] = {};
     if (target.organization_id !== undefined) {
       patch.organization_id = target.organization_id ?? undefined;
     }
     await writeOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("projects")
         .update(patch)
         .eq("id", projectId)
@@ -605,7 +605,7 @@ export const hierarchyService = {
     target: { project_id?: string | null; parent_task_id?: string | null },
   ): Promise<void> {
     await writeOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("tasks")
         .update(target)
         .eq("id", taskId)
@@ -635,7 +635,7 @@ export const hierarchyService = {
     } else {
       const table =
         type === "project" ? ("projects" as const) : ("tasks" as const);
-      row = await workspaceDb(supabase)
+      row = await projectsDb(supabase)
         .from(table)
         .select(nameCol)
         .eq("id", id)
@@ -653,7 +653,7 @@ export const hierarchyService = {
       [];
 
     if (type === "task") {
-      const { data: task } = await workspaceDb(supabase)
+      const { data: task } = await projectsDb(supabase)
         .from("tasks")
         .select("title, project_id")
         .is("deleted_at", null)
@@ -670,7 +670,7 @@ export const hierarchyService = {
         }
       }
     } else if (type === "project") {
-      const { data: proj } = await workspaceDb(supabase)
+      const { data: proj } = await projectsDb(supabase)
         .from("projects")
         .select("name, organization_id")
         .is("deleted_at", null)

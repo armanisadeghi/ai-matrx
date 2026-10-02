@@ -45,19 +45,19 @@ const REFETCH_DEBOUNCE_MS = 300;
 const tasksChannel = defineChannelNamespace({
   namespace: 'workspace-tasks',
   parts: [],
-  description: 'workspace.tasks rows visible to the signed-in user',
+  description: 'projects.tasks rows visible to the signed-in user',
 });
 
 const projectsChannel = defineChannelNamespace({
   namespace: 'workspace-projects',
   parts: [],
-  description: 'workspace.projects rows visible to the signed-in user',
+  description: 'projects.projects rows visible to the signed-in user',
 });
 
 const projectsWithTasksChannel = defineChannelNamespace({
   namespace: 'workspace-projects-with-tasks',
   parts: [],
-  description: 'workspace.projects + workspace.tasks for the combined project/task view',
+  description: 'projects.projects + projects.tasks for the combined project/task view',
 });
 
 /**
@@ -79,7 +79,7 @@ function idOf(value: unknown): string | undefined {
 /**
  * Hook for managing tasks with real-time updates.
  *
- * Realtime applies the changed ROW from the payload — `workspace.tasks`
+ * Realtime applies the changed ROW from the payload — `projects.tasks`
  * carries every column this list needs (`created_by` + `deleted_at` reproduce
  * the `getUserTasks()` scope exactly), so no event ever costs a refetch.
  * Our own writes are registered on the manager's write ledger, so their echoes
@@ -191,7 +191,7 @@ export function useTasks() {
     postgresChanges: [
       {
         event: '*',
-        schema: 'workspace',
+        schema: 'projects',
         table: 'tasks',
         rowId: (row) => (typeof row.id === 'string' ? row.id : undefined),
         fingerprint: rowFingerprint,
@@ -341,7 +341,7 @@ export function useProjects() {
     postgresChanges: [
       {
         event: '*',
-        schema: 'workspace',
+        schema: 'projects',
         table: 'projects',
         rowId: (row) => (typeof row.id === 'string' ? row.id : undefined),
         fingerprint: rowFingerprint,
@@ -444,7 +444,7 @@ export function useProjectsWithTasks() {
     postgresChanges: [
       {
         event: '*',
-        schema: 'workspace',
+        schema: 'projects',
         table: 'projects',
         rowId: (row) => (typeof row.id === 'string' ? row.id : undefined),
         fingerprint: rowFingerprint,
@@ -452,7 +452,7 @@ export function useProjectsWithTasks() {
       },
       {
         event: '*',
-        schema: 'workspace',
+        schema: 'projects',
         table: 'tasks',
         rowId: (row) => (typeof row.id === 'string' ? row.id : undefined),
         fingerprint: rowFingerprint,

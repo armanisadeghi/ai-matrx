@@ -91,14 +91,14 @@ def step(items: list[str], name: str, ok: bool | None, detail: str) -> None:
 
 
 def main() -> int:
-    # RETIRED after step two (2026-10-01 20:37Z, lane POST-MOVE-GATES): the six older tables are in the graveyard and the
+    # RETIRED after step two (2026-10-01 20:37Z, lane POST-MOVE-GATES): the six older tables are in the deprecated schema and the
     # undo is retired, so the readiness function this probe times and the older-table facts it plans/compares no longer
     # exist to be judged (platform._final_switch_orphan_lists reads the moved tables -> 42P01). The probe judged the
     # hour BEFORE the press; it SKIPs, said, once the older tables are gone. The retired board is proven by the
     # public door (cutover.old-system-unreachable, the census), not by this inner read.
     if q("select (to_regclass('workbench.udt_datasets') is null)") == "t":
         step(["C01", "C02", "C04", "C05", "C06", "C08", "C09", "C10", "C12", "A11"], "cutover.state.retired_after_step_two", None,
-             "the older tables moved to the graveyard and the undo is retired: this probe judged the hour before the switch and reads tables that no longer exist")
+             "the older tables moved to the deprecated schema and the undo is retired: this probe judged the hour before the switch and reads tables that no longer exist")
         (OUT / "b-cutover-state.json").write_text(json.dumps({"target": TARGET, "after": bool(AFTER), "at": datetime.now(timezone.utc).isoformat(),
                                                               "results": results, "facts": {"retired": True}}, indent=2, default=str))
         print(f"\nb_cutover_state: 0 pass · 0 fail · 1 skip (retired after step two) → {OUT / 'b-cutover-state.json'}")
@@ -194,15 +194,15 @@ def main() -> int:
         step(["C06"], "births.after_in_the_store", knob == "true", f"data_tables/older_tables_moved = {knob}")
         step(["C12"], "undo.offered_after", r.get("state") == "new" and (r.get("undo") is not None), f"undo plan for {len((r.get('undo') or {}).get('plan') or [])} organizations; needs_confirm={(r.get('undo') or {}).get('needs_confirm')}")
 
-    # C09 — the hour moves nothing to the graveyard (chair's ruling 2026-10-01 02:30 PT): every older table is where it
-    # was, and nothing of the older systems sits in `graveyard`.
+    # C09 — the hour moves nothing to the deprecated schema (chair's ruling 2026-10-01 02:30 PT): every older table is where it
+    # was, and nothing of the older systems sits in `deprecated`.
     kept = q("""select concat_ws(',', to_regclass('workbench.udt_datasets') is not null, to_regclass('workbench.udt_dataset_rows') is not null,
                        to_regclass('workbench.udt_structured_lists') is not null, to_regclass('context.scopes') is not null,
                        to_regclass('context.scope_types') is not null,
-                       (select count(*) from pg_tables where schemaname = 'graveyard' and (tablename like 'udt\\_%' or tablename like 'scope%' or tablename like 'context%')));""")
+                       (select count(*) from pg_tables where schemaname = 'deprecated' and (tablename like 'udt\\_%' or tablename like 'scope%' or tablename like 'context%')));""")
     parts = kept.split(",")
-    step(["C09"], "graveyard.nothing_moved", parts[:5] == ["t"] * 5 and parts[5] == "0",
-         f"older tables in place (udt_datasets, udt_dataset_rows, udt_structured_lists, context.scopes, context.scope_types): {parts[:5]}; older-system tables in graveyard: {parts[5]}")
+    step(["C09"], "deprecated.nothing_moved", parts[:5] == ["t"] * 5 and parts[5] == "0",
+         f"older tables in place (udt_datasets, udt_dataset_rows, udt_structured_lists, context.scopes, context.scope_types): {parts[:5]}; older-system tables in deprecated: {parts[5]}")
     lag = qj("""select jsonb_build_object('n', count(*), 'orgs', count(distinct organization_id), 'oldest', min(created_at))
                   from custom.io_outbox where event_key = 'context.follow' and consumed_at is null and deleted_at is null;""")
     step(["C08"], "follow.backlog_zero", lag["n"] == 0, f"{lag['n']} context edits waiting in {lag['orgs']} organizations (oldest {lag['oldest']})")

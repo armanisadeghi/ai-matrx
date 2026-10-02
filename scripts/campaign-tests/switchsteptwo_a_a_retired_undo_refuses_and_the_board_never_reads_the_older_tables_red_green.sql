@@ -42,7 +42,7 @@ begin
   if (platform.final_switch_state() ->> 'state') <> 'new' then v_fail := v_fail || 'P2 the state changed'::text; end if;
   -- P3: the board never reads the older tables once the undo is retired.
   -- The full board is the one body that measures the older tables; inside this rolled-back transaction it is made to
-  -- refuse the way it would once they are in the graveyard (42P01), so a board that still calls it goes RED.
+  -- refuse the way it would once they are in the deprecated schema (42P01), so a board that still calls it goes RED.
   execute $b$create or replace function platform._final_switch_readiness() returns jsonb language plpgsql set search_path to 'pg_catalog' as $f$
     begin raise exception 'relation "workbench.udt_datasets" does not exist (test stand-in)' using errcode = '42P01'; end $f$$b$;
   begin

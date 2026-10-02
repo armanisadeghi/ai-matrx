@@ -2,7 +2,7 @@
  * Audio Transcription Error Logger
  *
  * Logs transcription errors to the canonical `ops.system_error` log (the
- * per-feature `audio_transcription_errors` table was graveyarded in the 2026 DB
+ * per-feature `audio_transcription_errors` table was deprecated in the 2026 DB
  * canonicalization — no duplicate error tables). `kind='audio_transcription'`;
  * transcription-specific fields go in `context`.
  * Server-side: direct insert via admin client (service-role; system_error is

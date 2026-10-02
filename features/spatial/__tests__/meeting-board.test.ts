@@ -38,8 +38,8 @@ const row = (over: Record<string, unknown>) => ({
 });
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
-jest.mock("@/utils/supabase/workspaceDb", () => ({
-  workspaceDb: () => ({
+jest.mock("@/utils/supabase/projectsDb", () => ({
+  projectsDb: () => ({
     from: () => {
       let inserting: Record<string, unknown> | null = null;
       const c = chain(() =>

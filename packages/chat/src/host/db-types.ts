@@ -24484,6 +24484,7 @@ export type ChatDatabase = {
         Returns: Json
       }
       build_lifecycle_reference_map: { Args: never; Returns: Json }
+      canonical_actor_tier: { Args: { p_tier: string }; Returns: string }
       capture_decision_items: {
         Args: { p_message_id: string }
         Returns: number
@@ -25611,6 +25612,10 @@ export type ChatDatabase = {
       }
       link_trigger_is_attached: {
         Args: { p_schema: string; p_table: string; p_trigger: string }
+        Returns: boolean
+      }
+      list_dimension_match: {
+        Args: { p_entity_id: string; p_entity_type: string; p_filters: Json }
         Returns: boolean
       }
       list_lives_in: { Args: { p_list_id: string }; Returns: string }

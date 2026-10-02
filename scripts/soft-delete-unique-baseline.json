@@ -247,7 +247,7 @@
     "workflow.plan:wf_plan_definition_node_unique",
     "workflow.plan_sample:wf_plan_one_output_stand_in",
     "workflow.plan_sample:wf_plan_sample_identity",
-    "workspace.projects:projects_org_slug_unique"
+    "projects.projects:projects_org_slug_unique"
   ],
   "deliberate": [
     {

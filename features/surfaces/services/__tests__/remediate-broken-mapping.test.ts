@@ -5,7 +5,7 @@
  * Why this matters: a direct update is refused twice over — RLS
  * `associations_client_update_refused` blocks it under the admin's session,
  * and under the service-role client `platform._stamp_actor_tier` refuses it
- * with 23514 (tier `code`, no actor_system). Live-proven 2026-09-25.
+ * with 23514 (tier `system`, no actor_system). Live-proven 2026-09-25.
  *
  * Fixture: the Cascade Electronics pickup-intake agent binding, one broken
  * `customer_zip` mapping remapped to `pickup_zip`.

@@ -85,8 +85,8 @@ jest.mock("@/utils/supabase/contextDb", () => ({
         : table([{ id: TYPE, organization_id: ORG, label_singular: "Establishment", label_plural: "Establishments", icon: null, color: null, max_assignments_per_entity: null, sort_order: 0, parent_type_id: null, default_variable_keys: [], slug: "establishment", description: null, created_at: "", updated_at: "" }]),
   }),
 }));
-jest.mock("@/utils/supabase/workspaceDb", () => ({
-  workspaceDb: () => ({
+jest.mock("@/utils/supabase/projectsDb", () => ({
+  projectsDb: () => ({
     from: () =>
       table([
         { id: PROJECT_A, organization_id: ORG, name: "Plant A", slug: "plant-a" },

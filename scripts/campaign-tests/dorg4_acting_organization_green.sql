@@ -9,7 +9,7 @@
 -- THORNFIELD, because that is whose patient it is and whose front desk has to do the calling.
 --
 -- WHY THE ORGANIZATION IS THE WHOLE POINT. `public.wsp_upsert_system_task` deduplicates on
--- `(organization_id, dedupe_key)` and `workspace.tasks` is read through organization-scoped
+-- `(organization_id, dedupe_key)` and `projects.tasks` is read through organization-scoped
 -- RLS. Before migrations/campaign/dorg4_fourteen_doors_name_the_organization_they_act_in.sql
 -- the door answered a missing `p_organization_id` with
 -- `public.ensure_personal_organization(auth.uid())` — so a recall task raised for Thornfield's
@@ -30,7 +30,7 @@
 -- admin@admin.com's claims, because every door here reads auth.uid() or is RLS-scoped.
 
 \set suite 'dorg4_acting_organization_green.sql'
-\set requires 'function:public.wsp_upsert_system_task|function:public.wsp_resolve_system_task|function:public.dm_get_or_create_direct_conversation|function:public.fork_shared_quiz|relation:workspace.tasks|relation:iam.organizations'
+\set requires 'function:public.wsp_upsert_system_task|function:public.wsp_resolve_system_task|function:public.dm_get_or_create_direct_conversation|function:public.fork_shared_quiz|relation:projects.tasks|relation:iam.organizations'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -44,7 +44,7 @@ declare
   v_actor_org uuid;
   v_task jsonb;
   v_task_id uuid;
-  v_row workspace.tasks;
+  v_row projects.tasks;
   v_res jsonb;
   v_sqlstate text;
   v_dedupe text := 'thornfield-recall:2026-w39:heartworm-retest';
@@ -96,7 +96,7 @@ begin
   if v_task_id is null or (v_task ->> 'created')::boolean is not true then
     raise exception '1: the recall task was not created: %', v_task;
   end if;
-  select * into v_row from workspace.tasks where id = v_task_id;
+  select * into v_row from projects.tasks where id = v_task_id;
   if v_row.organization_id is distinct from v_thornfield then
     raise exception '1: the recall task landed in organization % — Thornfield is %',
       v_row.organization_id, v_thornfield;
@@ -119,7 +119,7 @@ begin
       raise exception '2: wsp_upsert_system_task raised % when nothing named the organization — expected 23502', v_sqlstate;
     end if;
   end;
-  if exists (select 1 from workspace.tasks
+  if exists (select 1 from projects.tasks
               where dedupe_key = 'thornfield-recall:2026-w39:unplaceable') then
     raise exception '2: the refused task was written anyway';
   end if;

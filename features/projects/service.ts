@@ -12,7 +12,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { TablesUpdate } from "@/types/database.types";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -101,7 +101,7 @@ export async function createProject(
 
     const currentUserId = requireUserId();
 
-    const { data: project, error: projectError } = await workspaceDb(supabase)
+    const { data: project, error: projectError } = await projectsDb(supabase)
       .from("projects")
       .insert({
         name,
@@ -153,7 +153,7 @@ export async function updateProject(
   updates: UpdateProjectOptions,
 ): Promise<ProjectResult> {
   try {
-    const updateData: TablesUpdate<{ schema: "workspace" }, "projects"> = {};
+    const updateData: TablesUpdate<{ schema: "projects" }, "projects"> = {};
 
     if (updates.name !== undefined) {
       const validation = validateProjectName(updates.name);
@@ -177,7 +177,7 @@ export async function updateProject(
       updateData.target_date = updates.targetDate || null;
 
     const { data, error } = await writeOneRow(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("projects")
         .update(updateData)
         .eq("id", projectId)
@@ -203,14 +203,14 @@ export async function updateProject(
 /**
  * Move a project to the trash — the canonical soft delete (db-rules §8).
  * Hard `DELETE` until 2026-09-20; see `features/tasks/services/projectService.ts`
- * for the whole story. Every reader of `workspace.projects` filters `deleted_at`.
+ * for the whole story. Every reader of `projects.projects` filters `deleted_at`.
  */
 export async function deleteProject(
   projectId: string,
 ): Promise<OperationResult> {
   try {
     const { error } = await tryWriteOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("projects")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", projectId)
@@ -221,7 +221,7 @@ export async function deleteProject(
         noun: "project",
         alreadyDone: {
           reread: () =>
-            workspaceDb(supabase)
+            projectsDb(supabase)
               .from("projects")
               .select("id, deleted_at")
               .eq("id", projectId)
@@ -243,7 +243,7 @@ export async function deleteProject(
 export async function getProject(projectId: string): Promise<Project | null> {
   // null = no row this person can read. A FAILED read throws (RC-B12 r13) —
   // it used to log and answer null, so a fault read as "no such project".
-  const { data, error } = await workspaceDb(supabase)
+  const { data, error } = await projectsDb(supabase)
     .from("projects")
     .select("*")
     .is("deleted_at", null)
@@ -264,7 +264,7 @@ export async function getProjectBySlug(
   organizationId: string,
 ): Promise<Project | null> {
   try {
-    const base = workspaceDb(supabase)
+    const base = projectsDb(supabase)
       .from("projects")
       .select("*")
       .is("deleted_at", null)
@@ -311,7 +311,7 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
   }
   const projectIds = Array.from(roleById.keys());
 
-  const { data: projectRows, error: projectsError } = await workspaceDb(
+  const { data: projectRows, error: projectsError } = await projectsDb(
     supabase,
   )
     .from("projects")
@@ -378,7 +378,7 @@ export async function isProjectSlugAvailable(
 ): Promise<boolean> {
   try {
     const orgId = await resolveOrganizationId(organizationId);
-    let query = workspaceDb(supabase)
+    let query = projectsDb(supabase)
       .from("projects")
       .select("id")
       .is("deleted_at", null)

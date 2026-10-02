@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { sendDueDateReminderEmail } from "@/lib/email/notificationService";
 import { sendDm } from "@/lib/services/system-dm";
 
@@ -71,7 +71,7 @@ export async function GET(request: Request) {
     // PostgREST's row cap and starve tasks that are actually due now.
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const { data: tasks, error } = await workspaceDb(supabase)
+    const { data: tasks, error } = await projectsDb(supabase)
       .from('tasks')
       .select('id, title, created_by, due_date, assignee_id, organization_id')
       .is('deleted_at', null)
@@ -105,7 +105,7 @@ export async function GET(request: Request) {
     const taskIds = tasks.map((t) => t.id);
     for (let i = 0; i < taskIds.length; i += 150) {
       const chunk = taskIds.slice(i, i + 150);
-      const { data: userStates, error: muteError } = await workspaceDb(supabase)
+      const { data: userStates, error: muteError } = await projectsDb(supabase)
         .from('task_user_state')
         .select('task_id, user_id, snoozed_until, dismissed_at')
         .in('task_id', chunk);

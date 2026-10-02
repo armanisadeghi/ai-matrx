@@ -26,7 +26,7 @@
 -- own claims (set_config('role','authenticated')), because RLS and the doors read auth.uid().
 
 \set suite 'rca2_comments_follow_the_parent.sql'
-\set requires 'function:public.cmt_add|function:public.cmt_list|function:public.cmt_edit|function:public.cmt_delete|relation:platform.comments|relation:workbench.notes|relation:workspace.tasks|relation:crm.party|relation:iam.permissions'
+\set requires 'function:public.cmt_add|function:public.cmt_list|function:public.cmt_edit|function:public.cmt_delete|relation:platform.comments|relation:workbench.notes|relation:projects.tasks|relation:crm.party|relation:iam.permissions'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -54,7 +54,7 @@ begin
   values (v_org, c_owner, 'personal', 'Front-desk lead — annual review draft',
           'Strong year. Proposed 3% raise, contingent on the scheduling-error rate staying under 2%.')
   returning id into v_note;
-  insert into workspace.tasks (organization_id, created_by, visibility, title)
+  insert into projects.tasks (organization_id, created_by, visibility, title)
   values (v_org, c_owner, 'personal', 'Lease renewal — counter the landlord at 4.5%, walk away above 6%')
   returning id into v_task;
   insert into crm.party (organization_id, created_by, visibility, party_kind, display_name)
@@ -72,7 +72,7 @@ begin
 
   -- Preconditions the whole suite rests on. A fixture that does not hold is not a finding.
   if (select created_by from workbench.notes where id = v_note) is distinct from c_owner
-     or (select created_by from workspace.tasks where id = v_task) is distinct from c_owner
+     or (select created_by from projects.tasks where id = v_task) is distinct from c_owner
      or (select created_by from crm.party where id = v_party) is distinct from c_owner then
     raise exception 'FIXTURE: a private parent is not owned by the owner seat';
   end if;

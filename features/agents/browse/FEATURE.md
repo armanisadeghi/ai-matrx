@@ -339,7 +339,7 @@ hostile at 2,000.
   Organization cell is an `EntityRef` (open / new tab / peek), and rows with a
   `source_agent_id` gain an "Open source agent" door in the ONE action menu.
   `task_id` is deliberately NOT rendered — **not** for lack of a relationship:
-  it carries a live FK (`agx_agent_task_fk → workspace.tasks(id)`), which is
+  it carries a live FK (`agx_agent_task_fk → projects.tasks(id)`), which is
   exactly the `task` token's table. It is omitted because the column is 100%
   NULL (0 of 756 rows), so a column would be dead weight; the moment anything
   populates it, `token: "task"` is the correct wiring. **Clicking an agent's

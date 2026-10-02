@@ -149,10 +149,10 @@ begin
   on conflict (container_type, container_id, user_id) do nothing;
 
   -- ── Brightline: the pilot project and task, tagged to Harborline Dispatch ────────────────
-  insert into workspace.projects (id, name, description, created_by, organization_id, slug, status) values
+  insert into projects.projects (id, name, description, created_by, organization_id, slug, status) values
     (p_pilot, 'Dispatch board pilot — North County crew', 'Two-week pilot of Harborline Dispatch with the North County maintenance crew', c_admin, o_bright, 'dispatch-board-pilot-sc3', 'active')
   on conflict (id) do nothing;
-  insert into workspace.tasks (id, title, description, project_id, status, due_date, organization_id, created_by) values
+  insert into projects.tasks (id, title, description, project_id, status, due_date, organization_id, created_by) values
     (k_pilot, 'Run the North County crew on the new dispatch board for two weeks',
      'Coordinators schedule every North County work order in Harborline Dispatch; log anything the board gets wrong.',
      p_pilot, 'incomplete', date '2026-10-09', o_bright, c_admin)

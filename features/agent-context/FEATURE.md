@@ -15,7 +15,7 @@ variables-vs-Context-Policies rules and the teardown plan were centralized into 
    planned and never built — do not create them.
 2. **Never gate an invocation on a missing Context Policy.** Variables block; policies do not.
 3. **Do not resurrect `features/brokers/`** (deleted 2026-08-11 — every RPC dropped, every table
-   in `graveyard`, `broker_values` had 0 rows, zero importers). A hierarchical variable resolver,
+   in `deprecated`, `broker_values` had 0 rows, zero importers). A hierarchical variable resolver,
    if ever wanted again, is a NEW design against live tables.
 4. **Do not create per-feature scope state.** Use `appContextSlice` + `resolve_full_context` +
    `selectResolvedContext`.

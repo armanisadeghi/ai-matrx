@@ -177,7 +177,7 @@ export type CloudFileVersionRow = FilesTables["file_versions"]["Row"];
 /**
  * File-permission grants live in the CANONICAL grant store `iam.permissions`
  * (resource_type='file'), NOT in the legacy cld_ file-permission duplicate
- * (graveyarded in the 2026 DB cutover — see docs/db_rebuild/03-app-agent-cutover-instructions.md §1a).
+ * (deprecated in the 2026 DB cutover — see docs/db_rebuild/03-app-agent-cutover-instructions.md §1a).
  */
 export type CloudFilePermissionRow = IamTables["permissions"]["Row"];
 

@@ -4,7 +4,7 @@
 //
 // Compact room IDENTITY editor for the room header. Edits a room's title,
 // description, icon, and color in one popover panel — the setters that
-// activate the dormant workspace.war_rooms.{icon,color,description} columns.
+// activate the dormant projects.war_rooms.{icon,color,description} columns.
 // Saves through the optimistic updateRoomIdentity thunk (failures route to
 // reportWarRoomError).
 //

@@ -447,7 +447,7 @@ export function parseSelectString(sel: string): string[] {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** A relation NAME can exist in several schemas — `provision` is both
- *  `mandate.provision` (readable) and `graveyard.provision` (shut). Picking the
+ *  `mandate.provision` (readable) and `deprecated.provision` (shut). Picking the
  *  wrong one is how a guard invents a defect, so a site that names its schema is
  *  matched on the schema, and a site that names none while the name is readable
  *  somewhere else is reported as UNRESOLVED rather than guessed either way. */

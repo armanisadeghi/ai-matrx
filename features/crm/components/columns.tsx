@@ -53,11 +53,11 @@ const DATE_BUCKET_OPTIONS = DATE_BUCKETS.map((b) => ({
  */
 function writtenByBadge(row: PartyListRow) {
   const tier = row.created_by_tier;
-  if (tier !== "ai") {
+  if (tier !== "agent") {
     return <span className="text-xs text-muted-foreground">—</span>;
   }
   const system = row.created_by_system;
-  const edited = row.updated_by_tier === "human";
+  const edited = row.updated_by_tier === "user";
   const who = system ? `Added by ${system}` : "Added by an agent";
   return (
     <span

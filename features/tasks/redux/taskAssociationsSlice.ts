@@ -172,7 +172,7 @@ export const associateWithTask = createAsyncThunk<
   "taskAssociations/associate",
   async ({ taskId, entityType, entityId, label, metadata }, { dispatch }) => {
     // Canonical path: the generic `assoc_add` edge (entity → task) via the
-    // associationsService chokepoint — NOT the graveyarded `associate_with_task`
+    // associationsService chokepoint — NOT the deprecated `associate_with_task`
     // RPC, which hand-rolled a 4-column ON CONFLICT that matched no unique index
     // (the 5-tuple incl. role) and threw 42P10. The service validates the token +
     // ids up front and resolves the org from the task.
@@ -274,7 +274,7 @@ export const createTaskWithAssociation = createAsyncThunk<
   },
   { dispatch: ThunkDispatch<object, unknown, UnknownAction> }
 >("taskAssociations/createTaskWithAssociation", async (input, { dispatch }) => {
-  // Canonical path (replaces the graveyarded `create_task_with_association` RPC,
+  // Canonical path (replaces the deprecated `create_task_with_association` RPC,
   // whose hand-rolled 4-column ON CONFLICT threw 42P10 on the entity branch):
   //   1. insert the task via the feature's own service (owns defaults), then
   //   2. wire edges through the generic associationsService chokepoint.

@@ -252,7 +252,7 @@ export const WRITERS: Row[] = [
     id: "S14",
     what: "The older dataset store's scope-table provisioning (an organization whose tables are still born in the older store)",
     status: "flip_time",
-    plain: "context.provision_scope_dataset (web: features/scopes/service/olderContextWrites.ts, the one context-schema call left there) makes an older dataset for a (context item, scope) pair and records it in context.scope_dataset_instances; its scope write, the value pointing at the table, goes through context.write_context_value, which no client may call (S5). A store-born organization provisions through custom.scope_table_provision. It leaves with the older tables store; before SCOPES-CONTRACT moves scope_dataset_instances to graveyard, the organizations still born in the older store (1,636 of 1,640 on 2026-09-29) need that home decided.",
+    plain: "context.provision_scope_dataset (web: features/scopes/service/olderContextWrites.ts, the one context-schema call left there) makes an older dataset for a (context item, scope) pair and records it in context.scope_dataset_instances; its scope write, the value pointing at the table, goes through context.write_context_value, which no client may call (S5). A store-born organization provisions through custom.scope_table_provision. It leaves with the older tables store; before SCOPES-CONTRACT moves scope_dataset_instances to deprecated, the organizations still born in the older store (1,636 of 1,640 on 2026-09-29) need that home decided.",
     functions: ["context.provision_scope_dataset"],
     claims: { "matrx-frontend": ["features/scopes/service/olderContextWrites.ts"] },
   },
@@ -359,7 +359,7 @@ const CRON_WRITERS_SQL = `
   with w as (
     select p.proname
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-     where n.nspname not in ('pg_catalog', 'information_schema', 'graveyard', 'deprecated')
+     where n.nspname not in ('pg_catalog', 'information_schema', 'deprecated')
        and p.prokind = 'f'
        and p.prosrc ~* '(insert\\s+into|update|delete\\s+from)\\s+(context\\.)?(scope_types|scopes|context_items|context_item_values)\\M'
      group by 1)
@@ -502,7 +502,7 @@ async function connect(target: "production" | "clone"): Promise<pg.Client> {
 const DB_WRITERS_SQL = `
   select n.nspname || '.' || p.proname as fn
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname not in ('pg_catalog', 'information_schema', 'graveyard', 'deprecated')
+   where n.nspname not in ('pg_catalog', 'information_schema', 'deprecated')
      and p.prokind = 'f'
      and p.prosrc ~* '(insert\\s+into|update|delete\\s+from)\\s+(context\\.)?(scope_types|scopes|context_items|context_item_values)\\M'
    group by 1 order by 1`;

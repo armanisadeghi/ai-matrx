@@ -905,9 +905,9 @@ export interface LiveAnonColumn {
  */
 export const POSTGREST_EXPOSED_SCHEMAS = [
   "api", "public", "graphql_public", "rag", "scraper", "workflow", "files", "legal",
-  "knowledge", "agent", "ai", "app", "chat", "context", "skill", "tool", "workspace",
+  "knowledge", "agent", "ai", "app", "chat", "context", "skill", "tool", "projects",
   "work", "admin", "billing", "browser", "canvas", "code", "communication", "content_ir",
-  "crm", "dictionary", "docproc", "education", "extend", "graveyard", "growth", "hindsight",
+  "crm", "dictionary", "docproc", "education", "extend", "deprecated", "growth", "hindsight",
   "history", "iam", "interview", "marketing", "meta", "ops", "pdf", "plan", "platform",
   "podcast", "research", "runtime", "scheduler", "seo", "transcripts", "ui", "users",
   "web", "workbench", "assignment", "audit", "batch", "mandate", "commerce",

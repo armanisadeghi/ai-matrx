@@ -356,7 +356,7 @@ const notesAdapter: VirtualSourceAdapter = {
 
   async listVersions(supabase, id) {
     // Backed by `history.row_versions` via RPC; the legacy `note_versions`
-    // table is graveyarded. The RPC returns rows ordered by version DESC and
+    // table is deprecated. The RPC returns rows ordered by version DESC and
     // exposes neither `created_by` nor a `change_summary` — use `label` as the
     // human-facing summary.
     const { data } = await supabase.rpc("get_note_versions", {

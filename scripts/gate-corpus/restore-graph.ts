@@ -806,7 +806,7 @@ interface Column {
    * databases. They are read as TEXT from production and written through
    * `to_regclass(...)` on the branch, which answers NULL for a relation the
    * branch does not carry (the branch was bootstrapped by a schema-only dump,
-   * so `graveyard.provision` genuinely is not there — measured 2026-09-16).
+   * so `deprecated.provision` genuinely is not there — measured 2026-09-16).
    * Every such NULL is COUNTED AND ANNOUNCED, never silently swallowed.
    */
   readonly isRegclass: boolean;

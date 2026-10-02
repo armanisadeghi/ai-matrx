@@ -1,5 +1,5 @@
 /**
- * taskUserStateService — the ONE client for workspace.task_user_state, the
+ * taskUserStateService — the ONE client for projects.task_user_state, the
  * per-user notification/triage state on tasks (seen / acknowledged / snoozed /
  * dismissed / pinned). Rows are RLS-scoped to the current user; every write
  * is an upsert keyed on (task_id, user_id).
@@ -9,7 +9,7 @@
  * "All tasks". Reminders (email/cron) also respect it.
  */
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 
 export interface TaskUserState {
@@ -25,7 +25,7 @@ export interface TaskUserState {
 
 /** All of the current user's task states (RLS returns only their rows). */
 export async function listMyTaskUserStates(): Promise<TaskUserState[]> {
-  const { data, error } = await workspaceDb(supabase)
+  const { data, error } = await projectsDb(supabase)
     .from("task_user_state")
     .select("*");
   if (error) {
@@ -49,7 +49,7 @@ async function upsertState(
   >,
 ): Promise<TaskUserState | null> {
   const userId = requireUserId();
-  const { data, error } = await workspaceDb(supabase)
+  const { data, error } = await projectsDb(supabase)
     .from("task_user_state")
     .upsert(
       {

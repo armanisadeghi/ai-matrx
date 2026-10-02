@@ -86,11 +86,11 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "title_column": "name"
  },
  "project": {
-  "table": "workspace.projects",
+  "table": "projects.projects",
   "title_column": "name"
  },
  "task": {
-  "table": "workspace.tasks",
+  "table": "projects.tasks",
   "title_column": "title"
  },
  "feature_doc": {
@@ -462,7 +462,7 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "title_column": "name"
  },
  "thread": {
-  "table": "workspace.threads",
+  "table": "projects.threads",
   "title_column": "title"
  },
  "udt_document": {
@@ -482,7 +482,7 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "title_column": "name"
  },
  "war_room": {
-  "table": "workspace.war_rooms",
+  "table": "projects.war_rooms",
   "title_column": "title"
  },
  "wbx_pattern": {

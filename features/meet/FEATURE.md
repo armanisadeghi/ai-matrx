@@ -156,7 +156,7 @@ meeting). UI lives in [`components/record/`](./components/record/).
 | `/meetings/[id]?tab=record` — video + Transcript / Chat / People side panel, summary, decisions, action items, notes, ask, guest access, Export, Email recap. `?t=<line>` / `?note=<note>` deep-link, `?recap=1` opens the recap | `MeetingRecordWorkspace.tsx` |
 | Seekable player (the package's file-session / bytes lane via `host.api.fileMedia`) | `RecordingSeekPlayer.tsx` |
 | Transcript: search within (count, prev/next), click a line's time to play from it, follow-along | `TranscriptPanel.tsx` |
-| Action items → `workspace.tasks` (one with owner + due date, or all); provenance `source_type='meet_note'`, `source_id` = the note, `dedupe_key='meet_note:<id>'` (the org+dedupe unique index = no duplicates); status read back on focus | `ActionItemsSection.tsx`, `hooks/useActionItemTasks.ts` |
+| Action items → `projects.tasks` (one with owner + due date, or all); provenance `source_type='meet_note'`, `source_id` = the note, `dedupe_key='meet_note:<id>'` (the org+dedupe unique index = no duplicates); status read back on focus | `ActionItemsSection.tsx`, `hooks/useActionItemTasks.ts` |
 | Attendance (as what, joined / left / time, totals, CSV) | `AttendancePanel.tsx` |
 | Saved chat after the meeting | `ChatLogPanel.tsx` |
 | Export: notes (copy / .md / Word / PDF via `@ai-matrx/print/document`), transcript (copy / .txt / .vtt / Word), attendance CSV | `RecordExportMenu.tsx` |
@@ -228,7 +228,7 @@ action items, summary). Rules:
   Meeting-assistant panels) are the package's. The root carries the package's
   `mx-meet` class so those pieces sit in their own structure and tokens.
 - **The meeting's board is a SAVED BOARD** (2026-10-02): the viewer's own
-  `workspace.spatial_boards` row with `settings.meeting_id` (`getMeetingBoard`,
+  `projects.spatial_boards` row with `settings.meeting_id` (`getMeetingBoard`,
   through `useSavedBoard({ meeting })`), created on first open with the Meeting
   notes frame (`meetingNotesDocument`) in the organization new work is filed in
   (none chosen → the organization gate asks). It autosaves like `/board`, is

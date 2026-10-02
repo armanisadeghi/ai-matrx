@@ -15,6 +15,7 @@ import { getJson } from "@/lib/python-client";
 import { postJson } from "@/lib/python-client";
 
 import type {
+  ActorTier,
   ChangeHistory,
   ChangeRole,
   DiscussResult,
@@ -282,7 +283,7 @@ export async function getChangeHistory(params: {
   unitToken?: UnitToken;
   unitId?: string;
   changeRole?: ChangeRole;
-  actorTier?: "code" | "ai" | "human";
+  actorTier?: ActorTier;
   withFindingsOnly?: boolean;
   limit?: number;
   offset?: number;

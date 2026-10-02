@@ -197,7 +197,7 @@
       "function": "platform._stamp_actor_tier",
       "fires": "BEFORE INSERT OR UPDATE",
       "ruling": "twin_exists",
-      "plain": "the code/ai/human tier of the writer: every Record is stamped by the same function (this table goes to the graveyard with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
+      "plain": "the code/ai/human tier of the writer: every Record is stamped by the same function (this table goes to the deprecated schema with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
       "twin": "custom.record trigger _stamp_actor_tier"
     },
     {
@@ -206,7 +206,7 @@
       "function": "custom._entity_custom_fields_guard",
       "fires": "BEFORE INSERT OR UPDATE OF custom_fields",
       "ruling": "twin_exists",
-      "plain": "the custom_fields column is validated on every Record (this table goes to the graveyard with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
+      "plain": "the custom_fields column is validated on every Record (this table goes to the deprecated schema with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
       "twin": "custom.record trigger custom_fields_validation (custom._entity_custom_fields_guard)"
     },
     {
@@ -215,7 +215,7 @@
       "function": "platform._stamp_actor_tier",
       "fires": "BEFORE INSERT OR UPDATE",
       "ruling": "twin_exists",
-      "plain": "the code/ai/human tier of the writer: every Record is stamped by the same function (this table goes to the graveyard with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
+      "plain": "the code/ai/human tier of the writer: every Record is stamped by the same function (this table goes to the deprecated schema with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
       "twin": "custom.record trigger _stamp_actor_tier"
     },
     {
@@ -224,7 +224,7 @@
       "function": "custom._entity_custom_fields_guard",
       "fires": "BEFORE INSERT OR UPDATE OF custom_fields",
       "ruling": "twin_exists",
-      "plain": "the custom_fields column is validated on every Record (this table goes to the graveyard with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
+      "plain": "the custom_fields column is validated on every Record (this table goes to the deprecated schema with the scope tables at 4.3.3; a value's references live in the Record, a scope dataset's binding on its Table)",
       "twin": "custom.record trigger custom_fields_validation (custom._entity_custom_fields_guard)"
     },
     {

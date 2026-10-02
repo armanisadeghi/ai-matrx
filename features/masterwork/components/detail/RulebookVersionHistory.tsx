@@ -39,6 +39,10 @@ const OPERATION_LABELS: Record<string, string> = {
  * (`actor_tier`), so say it plainly instead of showing a raw id.
  */
 const TIER_LABELS: Record<string, string> = {
+  user: "by a person",
+  agent: "by AI",
+  system: "by the system",
+  // DD-064: history rows recorded before 2026-10-03 keep the retired words until their backfill.
   human: "by a person",
   ai: "by AI",
   code: "by the system",

@@ -8,7 +8,7 @@ import {
   PayloadAction,
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { writeOne } from "@/utils/supabase/writeOne";
 import type { TablesUpdate } from "@/types/database.types";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -99,7 +99,7 @@ export const fetchTask = createAsyncThunk<FetchTaskResult, string>(
       return { status: "skipped" }; // already fresh full-data — skip network call
     }
 
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("tasks")
       .select(
         "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, created_by, published_to_web, organization_id",
@@ -119,7 +119,7 @@ export const fetchTask = createAsyncThunk<FetchTaskResult, string>(
     let organization_id =
       (data as { organization_id?: string | null }).organization_id ?? "";
     if (!organization_id && (data as { project_id?: string | null }).project_id) {
-      const { data: proj } = await workspaceDb(supabase)
+      const { data: proj } = await projectsDb(supabase)
         .from("projects")
         .select("organization_id")
         .is("deleted_at", null)
@@ -146,7 +146,7 @@ export const fetchTask = createAsyncThunk<FetchTaskResult, string>(
 export const fetchProjectTasks = createAsyncThunk(
   "tasks/fetchByProject",
   async (params: { projectId: string; organizationId: string }) => {
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("tasks")
       .select(
         "id, title, project_id, parent_task_id, status, priority, due_date, assignee_id",
@@ -237,7 +237,7 @@ export const createTaskThunk = createAsyncThunk(
   }) => {
     const userId = requireUserId();
     const { organization_id, priority, ...insertData } = data;
-    const { data: task, error } = await workspaceDb(supabase)
+    const { data: task, error } = await projectsDb(supabase)
       .from("tasks")
       .insert({
         ...insertData,
@@ -281,12 +281,12 @@ export const updateTaskThunk = createAsyncThunk(
     };
   }) => {
     const { priority, ...rest } = params.patch;
-    const patch: TablesUpdate<{ schema: "workspace" }, "tasks"> = { ...rest };
+    const patch: TablesUpdate<{ schema: "projects" }, "tasks"> = { ...rest };
     if (priority !== undefined) {
       patch.priority = toTaskPriority(priority);
     }
     await writeOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("tasks")
         .update(patch)
         .eq("id", params.id)
@@ -304,7 +304,7 @@ export const deleteTaskThunk = createAsyncThunk(
   // follow through the declared cascade edge.
   async (taskId: string) => {
     await writeOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("tasks")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", taskId)
@@ -315,7 +315,7 @@ export const deleteTaskThunk = createAsyncThunk(
         noun: "task",
         alreadyDone: {
           reread: () =>
-            workspaceDb(supabase)
+            projectsDb(supabase)
               .from("tasks")
               .select("id, deleted_at")
               .eq("id", taskId)

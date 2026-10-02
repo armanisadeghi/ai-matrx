@@ -546,7 +546,7 @@ export interface RulebookVersionEntry {
   operation: string;
   occurred_at: string;
   actor_id: string | null;
-  // CONVERGE: actor tier literal code|ai|human; target vocabulary system|agent|user — declared 2026-09-10, Data Doctrine §1.5/§7. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-064
+  // system | agent | user (DD-064); rows recorded before 2026-10-03 may still say code | ai | human.
   actor_tier: string | null;
   rule_count: number;
 }

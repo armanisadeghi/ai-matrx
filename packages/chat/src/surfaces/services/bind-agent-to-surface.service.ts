@@ -12,7 +12,7 @@
  * edge `metadata`. Reads go through the pre-joined `agent.menu_surface` view.
  *
  * This replaced the condemned bespoke agent↔surface junction (P1–P4 — see
- * features/surfaces/FEATURE.md); that table now lives in `graveyard`.
+ * features/surfaces/FEATURE.md); that table now lives in `deprecated`.
  *
  * Launch-time layer resolution (`fetchSurfaceBindingLayers`) walks the
  * surface-inheritance chain: parent-surface layers apply first (weakest),

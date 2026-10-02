@@ -46,7 +46,7 @@ const LIVE_REFERENCE_NOUNS = {
   },
   task: {
     family: "Workspaces",
-    table: "workspace.tasks",
+    table: "projects.tasks",
     identity_fields: ["id"],
   },
 } as const;

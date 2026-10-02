@@ -9,7 +9,7 @@
  *   `CREATE EVENT TRIGGER` needs superuser, so a project restore silently
  *   skips every one. Between the changeover and 2026-08-20 the functions
  *   `platform._ddl_guard()`, `_bound_ddl_lock_wait()`,
- *   `_graveyard_outbound_fk_guard()`, `sync_entity_types_on_ddl()` and
+ *   `_deprecated_outbound_fk_guard()`, `sync_entity_types_on_ddl()` and
  *   `flag_entity_types_on_drop()` all existed and NONE of them was bound.
  *   Nothing errored. Nothing warned. The registry's text columns silently
  *   rotted for weeks and every hand-rolled entity table sailed through.
@@ -99,8 +99,8 @@ const EXPECTED: ReadonlyArray<{ name: string; why: string }> = [
     why: "bounds an unbounded DDL lock wait to 8s so a live request cannot hold the lock queue open",
   },
   {
-    name: "graveyard_outbound_fk_guard",
-    why: "blocks a graveyard table keeping a live outbound FK",
+    name: "deprecated_outbound_fk_guard",
+    why: "blocks a deprecated table keeping a live outbound FK",
   },
   {
     name: "entity_types_ddl_sync",

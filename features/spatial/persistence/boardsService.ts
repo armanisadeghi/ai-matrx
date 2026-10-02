@@ -1,6 +1,6 @@
 // features/spatial/persistence/boardsService.ts
 //
-// The ONE client path for saved boards (`workspace.spatial_boards`, entity
+// The ONE client path for saved boards (`projects.spatial_boards`, entity
 // token `spatial_board`). React → Supabase directly; RLS is the authority
 // (owner reads/writes/soft-deletes their own rows).
 //
@@ -32,7 +32,7 @@
 import type { MaybeSingleResponse } from "@ai-matrx/data";
 import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
@@ -47,12 +47,12 @@ import {
   type BoardDocument,
 } from "../board/document";
 
-type BoardRow = Database["workspace"]["Tables"]["spatial_boards"]["Row"];
+type BoardRow = Database["projects"]["Tables"]["spatial_boards"]["Row"];
 /** What a save reads back: the version always; the content only when a CAS missed. */
 type SaveRow = Pick<BoardRow, "version"> & Partial<Pick<BoardRow, "nodes" | "edges">>;
 
 const TABLE = "spatial_boards";
-const db = workspaceDb(supabase);
+const db = projectsDb(supabase);
 
 /** The title a person's home board is created with. */
 export const HOME_BOARD_TITLE = "My board";
@@ -359,7 +359,7 @@ export async function listBoards(archived: ArchiveFilterValue = "active"): Promi
           .order("updated_at", { ascending: false })
           .order("id", { ascending: true })
           .range(from, to),
-      { label: "workspace.spatial_boards" },
+      { label: "projects.spatial_boards" },
     );
   } catch (error) {
     throw readFailed("your boards", error);
@@ -427,7 +427,7 @@ const meetingInFlight = new Map<string, Promise<LoadedBoard>>();
  * `organizationId` — the organization new work is filed in; null → the
  * organization gate asks the person.
  *
- * The link is a setting, not a column: `workspace.spatial_boards` has no
+ * The link is a setting, not a column: `projects.spatial_boards` has no
  * meeting column and no association is registered for it (yet).
  */
 export async function getMeetingBoard(input: {

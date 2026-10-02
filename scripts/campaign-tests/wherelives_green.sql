@@ -100,7 +100,7 @@ begin
   -- 3. While the switch is off an AGENT's write to the copy (the extension's agent client declares
   --    itself) is refused by name, with the older table's address. A PERSON's own write is a test
   --    and is allowed (COPY-WRITABLE; its own suite, copywritable_green.sql, proves the rest).
-  perform set_config('request.headers', '{"x-matrx-actor-tier":"ai","x-matrx-actor-system":"matrx-extend:agent"}', true);
+  perform set_config('request.headers', '{"x-matrx-actor-tier":"agent","x-matrx-actor-system":"matrx-extend:agent"}', true);
   begin
     perform custom.record_write(c_ws, c_heat, jsonb_build_object('topic', 'Mini-split defrost settings for coastal installs'));
     raise exception '3a: an agent wrote a new row into the copy of a live older table';

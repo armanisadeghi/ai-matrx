@@ -49,7 +49,7 @@
  * the admin system (the aidream dashboard — our own raw database access). A platform-admin READ is
  * never removed and is never a finding here:
  *   - the `platform_admin_read` policy (FOR SELECT, `is_platform_admin()`) is EXCLUDED from limb B;
- *   - limb D is new and runs FIRST: the law's own check query — every RLS table outside graveyard and
+ *   - limb D is new and runs FIRST: the law's own check query — every RLS table outside deprecated and
  *     the Supabase system schemas must carry a permissive platform-admin read arm. More than 0 missing
  *     FAILS this guard with exit 1 in EVERY mode (strict or not), so removing our access is a red build.
  * Limbs A and C still stand: `platform_admin_all` is a WRITE lane too, and the suppress flag still
@@ -256,7 +256,7 @@ export const ADMIN_READ_MISSING_SQL = `
 select coalesce(json_agg(format('%I.%I', n.nspname, c.relname) order by n.nspname, c.relname), '[]'::json) as j
 from pg_class c join pg_namespace n on n.oid = c.relnamespace
 where c.relkind in ('r','p') and not c.relispartition and c.relrowsecurity
-  and n.nspname not in ('graveyard','auth','storage','realtime','supabase_functions','vault','pgsodium',
+  and n.nspname not in ('deprecated','auth','storage','realtime','supabase_functions','vault','pgsodium',
                         'net','cron','extensions','supabase_migrations','_realtime','pg_catalog','information_schema')
   /*SCOPE*/
   and not exists (select 1 from pg_policies p

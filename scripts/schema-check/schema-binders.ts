@@ -1,6 +1,6 @@
 /**
  * Auto-discovers the canonical `<name>Db(client)` schema-binder helpers
- * (`utils/supabase/workspaceDb.ts`, `docprocDb.ts`, …) —
+ * (`utils/supabase/projectsDb.ts`, `docprocDb.ts`, …) —
  * every one follows `export function xDb(client) { return client.schema("S"); }`.
  *
  * Before this, `direct-from-schema` treated ANY call-expression receiver

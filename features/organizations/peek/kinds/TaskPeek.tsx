@@ -10,7 +10,7 @@
 import React from "react";
 import { ListTodo } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { peekHref } from "../peekHref";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { PeekDialog, PeekField } from "../PeekDialog";
@@ -33,7 +33,7 @@ export default function TaskPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data, error } = await workspaceDb(supabase)
+      const { data, error } = await projectsDb(supabase)
         .from("tasks")
         .select("title, description, created_at")
         .is("deleted_at", null)

@@ -46,7 +46,7 @@ import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerW
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { usePathname } from "next/navigation";
-// TODO(prompt-to-agent-sweep): createUserPrompt writes to public.prompts which is graveyarded.
+// TODO(prompt-to-agent-sweep): createUserPrompt writes to public.prompts which is deprecated.
 // Replace with agent.definition upsert once the prompt-to-agent migration completes.
 import { FullPromptOptimizer } from "./FullPromptOptimizer";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -87,7 +87,7 @@ export function SystemPromptOptimizer({
 }: SystemPromptOptimizerProps) {
   const dispatch = useAppDispatch();
   const trigger = useShortcutTrigger();
-  // NOTE: router / basePath removed — previously used by the graveyarded "Save as Copy" path.
+  // NOTE: router / basePath removed — previously used by the deprecated "Save as Copy" path.
 
   const [additionalGuidance, setAdditionalGuidance] = useState("");
   const [showGuidanceInput, setShowGuidanceInput] = useState(false);
@@ -209,7 +209,7 @@ export function SystemPromptOptimizer({
   };
 
   const handleSaveAsCopy = async () => {
-    // TODO(prompt-to-agent-sweep): public.prompts is graveyarded.
+    // TODO(prompt-to-agent-sweep): public.prompts is deprecated.
     // The old createUserPrompt path is broken. This flow needs to be rewritten
     // to create an agent.definition row instead. Until then, surface a clear error
     // so users know "Save as Copy" is temporarily unavailable rather than seeing

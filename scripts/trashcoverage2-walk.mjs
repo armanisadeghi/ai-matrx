@@ -92,7 +92,7 @@ const [orgParentId, orgLeafId] = await folderChain(TIMES, "September");
 check("disposable folder chain created (Crew timesheets / September)", !!orgLeafId && !!orgParentId);
 
 const WR_TITLE = `Q4 fleet contract push ${stamp}`;
-const { data: wr, error: wrErr } = await sb.schema("workspace").from("war_rooms")
+const { data: wr, error: wrErr } = await sb.schema("projects").from("war_rooms")
   .insert({ created_by: ME, title: WR_TITLE, organization_id: ORG, anchor_type: "canvas" }).select("id").single();
 check("disposable war room created", !!wr?.id, wrErr?.message ?? WR_TITLE);
 const warRoomId = wr?.id;
@@ -109,7 +109,7 @@ writeFileSync(`${OUT}/walk-state.json`, JSON.stringify({ rulebookId, parentId, l
 await rpc("rulebook_archive", { p_rulebook_id: rulebookId });
 await rpc("soft_delete_folder", { p_folder_id: parentId });
 await rpc("soft_delete_folder", { p_folder_id: orgParentId });
-{ const { error } = await sb.schema("workspace").from("war_rooms").update({ deleted_at: new Date().toISOString() }).eq("id", warRoomId);
+{ const { error } = await sb.schema("projects").from("war_rooms").update({ deleted_at: new Date().toISOString() }).eq("id", warRoomId);
   check("war room archived the way its page does", !error, error?.message); }
 await rpc("delete_scope_type", { p_type_id: scopeTypeId });
 
@@ -182,7 +182,7 @@ await browser.close();
 await rpc("rulebook_archive", { p_rulebook_id: rulebookId });
 await rpc("soft_delete_folder", { p_folder_id: parentId });
 await rpc("soft_delete_folder", { p_folder_id: orgParentId });
-await sb.schema("workspace").from("war_rooms").update({ deleted_at: new Date().toISOString() }).eq("id", warRoomId);
+await sb.schema("projects").from("war_rooms").update({ deleted_at: new Date().toISOString() }).eq("id", warRoomId);
 await rpc("delete_scope_type", { p_type_id: scopeTypeId });
 const endChecks = await Promise.all([
   inTrash("rulebook", rulebookId), inTrash("folder", parentId), inTrash("folder", orgParentId),

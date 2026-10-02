@@ -1,6 +1,6 @@
 /**
  * Task recurrence — a deliberate SUBSET of RFC 5545 RRULE stored in
- * workspace.tasks.recurrence_rule, e.g.:
+ * projects.tasks.recurrence_rule, e.g.:
  *
  *   FREQ=DAILY
  *   FREQ=WEEKLY;INTERVAL=2

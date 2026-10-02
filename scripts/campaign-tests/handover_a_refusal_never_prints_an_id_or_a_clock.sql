@@ -55,7 +55,7 @@ begin
            p.prorettype = 'trigger'::regtype as is_trigger
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where p.prokind = 'f'
-       and n.nspname not in ('pg_catalog','information_schema','extensions','graphql','graphql_public','pgsodium','vault','net','cron','realtime','storage','supabase_functions','pgbouncer','auth','graveyard','deprecated','topology','tiger')
+       and n.nspname not in ('pg_catalog','information_schema','extensions','graphql','graphql_public','pgsodium','vault','net','cron','realtime','storage','supabase_functions','pgbouncer','auth','deprecated','topology','tiger')
        and n.nspname not like 'pg\_%'
   ),
   seeds as (

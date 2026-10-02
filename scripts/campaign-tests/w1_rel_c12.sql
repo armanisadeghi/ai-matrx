@@ -116,7 +116,7 @@ declare
   v_boss    text := current_user;
 begin
   -- Every write in this suite is made by a named system: `platform._stamp_actor_tier` stamps
-  -- actor_tier=code for the connected role, and the provenance guard then refuses a code write
+  -- actor_tier=system for the connected role, and the provenance guard then refuses a code write
   -- that names no system — '"an AI did it" with no name is not provenance'.
   perform set_config('app.actor_system', 'campaign.w1_rel.c12', true);
   perform set_config('request.jwt.claims', c_admin_j, true);

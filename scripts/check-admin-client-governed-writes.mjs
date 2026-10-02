@@ -4,7 +4,7 @@
 // THE SERVICE-ROLE PROVENANCE GUARD.
 //
 // Since wf_051 (2026-09-12) `platform._stamp_actor_tier` REFUSES (23514) any
-// write whose actor resolves to tier `code` with no `app.actor_system` — and a
+// write whose actor resolves to tier `system` with no `app.actor_system` — and a
 // write through `createAdminClient()` (the sb_secret_* service-role key) is
 // exactly that: no auth.uid(), no GUC, so it "declares" code + NULL. On every
 // table that carries a *_by_tier column the insert/update fails, and the UI
@@ -12,7 +12,7 @@
 //
 // A Next.js API route or server action acts FOR a signed-in person, so the
 // correct fix is never a declaration hack — it is the person's own client
-// (`createClient()` from utils/supabase/server), whose session stamps `human`
+// (`createClient()` from utils/supabase/server), whose session stamps `user`
 // + their id, and whose RLS `platform_admin_all` policy already lets a
 // platform admin write these tables.
 //
@@ -271,7 +271,7 @@ function main() {
   }
   console.error(
     `check:admin-client-governed-writes — ${findings.length} service-role write(s) to a provenance-governed table.\n` +
-      "The DB refuses these (23514: actor_tier=code with no actor_system). Write through the\n" +
+      "The DB refuses these (23514: actor_tier=system with no actor_system). Write through the\n" +
       "signed-in person's client (`await createClient()` from @/utils/supabase/server) instead —\n" +
       "RLS `platform_admin_all` already admits a platform admin, and the row is stamped `human`.\n",
   );

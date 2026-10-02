@@ -35,7 +35,7 @@ declare
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated","session_id":"5d0c3f5e-2f7b-4b36-9d0c-copywritable1"}';
   c_tech_j  constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated","session_id":"5d0c3f5e-2f7b-4b36-9d0c-copywritable2"}';
   c_page    constant text := '{"origin":"http://copy-writable.localhost:3001"}';
-  c_agent   constant text := '{"origin":"http://copy-writable.localhost:3001","x-matrx-actor-tier":"ai","x-matrx-actor-system":"matrx-extend:agent"}';
+  c_agent   constant text := '{"origin":"http://copy-writable.localhost:3001","x-matrx-actor-tier":"agent","x-matrx-actor-system":"matrx-extend:agent"}';
   v_a uuid; v_b uuid; v_c uuid; v_new uuid; v_field uuid;
   v jsonb; v_err text; v_n bigint; v_notes_before bigint;
   v_ready jsonb;
@@ -119,7 +119,7 @@ begin
     end if;
   end;
   perform set_config('request.headers', c_page, true);
-  perform set_config('app.actor_tier', 'code', true);                          -- a workflow step / automation
+  perform set_config('app.actor_tier', 'system', true);                          -- a workflow step / automation
   perform set_config('app.actor_system', 'workflow.step', true);
   begin
     perform custom.record_write(c_ws, c_heat, jsonb_build_object('topic', 'automation wrote the copy'));

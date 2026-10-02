@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     // This signed-in read is governed by task RLS. The request supplies an
     // identity for the saved change, never the recipient or words to send.
     const { data: taskRow, error: taskError } = await supabase
-      .schema("workspace").from("tasks")
+      .schema("projects").from("tasks")
       .select("id, assignee_id, title, description, organization_id, updated_by, updated_at, version")
       .eq("id", taskId)
       .is("deleted_at", null)

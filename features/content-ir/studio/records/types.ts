@@ -24,8 +24,8 @@ import type { ColumnFiltersState } from "@ai-matrx/design-system/data-table/type
 /** The stored `platform.confirmation` enum. */
 export type RecordConfirmation = "unconfirmed" | "confirmed";
 
-/** The actor tier that CREATED a row. NULL from the DB reads as `human`. */
-export type RecordWriterTier = "ai" | "code" | "human";
+/** The actor tier that CREATED a row. NULL from the DB reads as `user`. */
+export type RecordWriterTier = "agent" | "system" | "user";
 
 /** One row of the records table. */
 export interface KindRecordRow {
@@ -58,7 +58,7 @@ export interface KindRecordRow {
 /** The confirmation facet. `all` is the DEFAULT — unconfirmed rows always show. */
 export type ConfirmationFilter = "all" | "unconfirmed" | "confirmed";
 
-/** The provenance facet: who wrote it. `agent` = `created_by_tier in (ai, code)`. */
+/** The provenance facet: who wrote it. `agent` = `created_by_tier in (agent, system)`. */
 export type WriterFilter = "all" | "agent" | "person";
 
 /** Every sortable column id the reader can serve. */

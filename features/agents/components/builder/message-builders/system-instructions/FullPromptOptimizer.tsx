@@ -145,7 +145,7 @@ export function FullPromptOptimizer({
       return;
     }
 
-    // TODO(prompt-to-agent-sweep): public.prompts is graveyarded. Re-wire
+    // TODO(prompt-to-agent-sweep): public.prompts is deprecated. Re-wire
     // through a MANDATE (declare it in aidream seeded with the old optimizer
     // agent 8b7a674a-…, then launch by mandate key) — never by a raw agent id
     // (the raw-id constant that lived here was removed 2026-09-25).

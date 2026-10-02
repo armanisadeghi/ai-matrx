@@ -9,7 +9,7 @@ import {
 } from "@reduxjs/toolkit";
 import { archiveOrganization as archiveOrganizationDoor } from "@/features/organizations/service/organizationArchive";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import type { NavOrganization } from "./hierarchySlice";

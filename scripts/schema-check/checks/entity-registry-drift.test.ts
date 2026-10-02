@@ -13,14 +13,14 @@ function snapshot(): Snapshot {
     provenance: "rpc",
     tables: new Map([
       ["mandate", new Set(["definition"])],
-      ["graveyard", new Set(["old_thing"])],
+      ["deprecated", new Set(["old_thing"])],
       ["rag", new Set(["library_docs"])],
     ]),
     views: new Map([["platform", new Set(["some_view"])]]),
     exposedSchemas: new Set(["mandate", "rag", "platform"]),
     relationSchemas: new Map([
       ["definition", new Set(["mandate"])],
-      ["old_thing", new Set(["graveyard"])],
+      ["old_thing", new Set(["deprecated"])],
       ["library_docs", new Set(["rag"])],
       ["some_view", new Set(["platform"])],
     ]),
@@ -67,12 +67,12 @@ describe("entity-registry-drift", () => {
     expect(findings[0].fix).toContain("schema_name='rag'");
   });
 
-  it("flags a token buried in graveyard", () => {
+  it("flags a token buried in deprecated", () => {
     const findings = checkEntityRegistryDrift(context(), {
       old: { token: "old", schema: "platform", table: "old_thing" },
     });
     expect(findings).toHaveLength(1);
-    expect(findings[0].message).toContain("moved to graveyard");
+    expect(findings[0].message).toContain("moved to deprecated");
   });
 
   it("reads the installed package vocabulary by default (non-empty)", () => {

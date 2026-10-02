@@ -7,7 +7,7 @@
  * renders — features/spatial, consumed, never forked): every item type in the
  * catalog, the tools, shapes, frames, layers, shelf, undo, drop and paste, the
  * agent tools and the item bridge. A meeting's board is a SAVED BOARD: the
- * viewer's own `workspace.spatial_boards` row linked to the meeting
+ * viewer's own `projects.spatial_boards` row linked to the meeting
  * (`settings.meeting_id`, `getMeetingBoard`), opened with a "Meeting notes"
  * frame whose tiles are the meeting's live parts (item type `meeting_part`,
  * features/spatial/items/meeting-items.tsx) — which can also go on any other

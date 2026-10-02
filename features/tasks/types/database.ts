@@ -3,9 +3,9 @@
 import type { Database } from "@/types/database.types";
 
 export type DatabaseProject =
-  Database["workspace"]["Tables"]["projects"]["Row"];
+  Database["projects"]["Tables"]["projects"]["Row"];
 
-export type DatabaseTask = Database["workspace"]["Tables"]["tasks"]["Row"];
+export type DatabaseTask = Database["projects"]["Tables"]["tasks"]["Row"];
 
 // NOTE: task comments, attachments, and assignments moved off the legacy
 // junction tables in the 2026-06 canonical-DB cutover:

@@ -31,7 +31,7 @@ client, or a crawler. Verified with curl: the page form returned `200`, the conf
 | `hr.workflow_step` | **The queue of record.** Every pending item, forever. | Never re-queried by this feature with its own WHERE clause. |
 | `hr.wf_pending` | The hot query, served by the `workflow_step_approvers_idx` GIN index. | — |
 | `hr.wf_inbox` | Decorates `wf_pending` with the display rule and the notice evidence. | Never adds or drops a row. |
-| `workspace.tasks` | A **disposable** mirror, regenerable from the step table at any time. | Never the record. Never this page's source of truth. |
+| `projects.tasks` | A **disposable** mirror, regenerable from the step table at any time. | Never the record. Never this page's source of truth. |
 | `hr.workflow_notice` | Delivery/read/outcome, as a VIEW over `communication.notification`. | No HR table ever stores it. |
 
 ## 🚨 `hr` IS NOT EXPOSED TO PostgREST
@@ -115,7 +115,7 @@ remain empty for it.
 A restricted-tier flow (`pay_change`, adverse action, corrective action) renders a **deliberately
 contentless** title — `"Pay change approval — 1 item"`, no name, no amount. That string comes from
 `hr._wf_display`, which is **the one implementation** of the rule and is read by *both* this inbox
-and the `workspace.tasks` mirror. **Do not compute a title in React.** A second implementation is
+and the `projects.tasks` mirror. **Do not compute a title in React.** A second implementation is
 how two surfaces come to disagree about what a person is allowed to see.
 
 `subject_label` is `null` on a restricted row — redacted, not absent, so the UI can say so.

@@ -5,7 +5,7 @@
 //
 // Every web read of `context.scope_types` / `context.scopes` / `context.context_items` /
 // `context.context_item_values` now reads the store through its `custom.context_*` doors instead —
-// so the old tables can go to the graveyard without a single screen noticing. The old tables are
+// so the old tables can go to the deprecated schema without a single screen noticing. The old tables are
 // never read here: not as a fallback, not for a missing field, not at all.
 //
 // THE MAPPING IS THE MOVER'S, READ BACKWARDS — the same mapping the server reads with

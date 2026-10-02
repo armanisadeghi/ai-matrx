@@ -5,8 +5,8 @@ jest.mock("@/utils/supabase/client", () => ({
   supabase: {},
 }));
 
-jest.mock("@/utils/supabase/workspaceDb", () => ({
-  workspaceDb: () => ({ from }),
+jest.mock("@/utils/supabase/projectsDb", () => ({
+  projectsDb: () => ({ from }),
 }));
 
 jest.mock("@/utils/auth/getUserId", () => ({

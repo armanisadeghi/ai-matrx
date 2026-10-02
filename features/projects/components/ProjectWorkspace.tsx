@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { getProject } from "@/features/projects/service";
 import {
   useProjectMembers,
@@ -111,7 +111,7 @@ export function ProjectWorkspace() {
           resolved = await getProject(projectParam);
         } else {
           // Slug fallback (slugs aren't globally unique; take first match).
-          const { data, error: slugError } = await workspaceDb(supabase)
+          const { data, error: slugError } = await projectsDb(supabase)
             .from("projects")
             .select("id")
             .is("deleted_at", null)

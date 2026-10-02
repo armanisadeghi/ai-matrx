@@ -3,7 +3,7 @@
  *
  * V-24 on production, 2026-09-12: the Approve button was NOT disabled after the
  * first click (`b[0].disabled === false`), two clicks sent two
- * `POST /directives/confirm`, both returned 200, and `workspace.projects` got
+ * `POST /directives/confirm`, both returned 200, and `projects.projects` got
  * TWO rows. `disabled={busy}` is a render away — two clicks inside one React
  * tick both run the handler before anything re-renders.
  *

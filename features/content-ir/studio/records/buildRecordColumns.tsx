@@ -158,7 +158,7 @@ export function systemDisplayName(raw: string | null): string | null {
 }
 
 /**
- * Who wrote the row. `ai`/`code` are the machine tiers and get the machine
+ * Who wrote the row. `agent`/`system` are the machine tiers and get the machine
  * icon; everything else is a person (an unstamped NULL included — the platform
  * reads it as a person and it is never backfilled).
  *
@@ -167,7 +167,7 @@ export function systemDisplayName(raw: string | null): string | null {
  * through the organization's members, and says "You" for the viewer.
  */
 function writerCell(row: KindRecordRow, ctx: RecordColumnContext): ReactNode {
-  const isMachine = row.createdByTier === "ai" || row.createdByTier === "code";
+  const isMachine = row.createdByTier === "agent" || row.createdByTier === "system";
   const system = systemDisplayName(row.createdBySystem);
   const personName =
     row.createdBy && row.createdBy === ctx.viewerId

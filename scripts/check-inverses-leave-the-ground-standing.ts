@@ -83,7 +83,7 @@
  * used to be written here as a known limit with `--live` as the answer. It is not an answer:
  * `--live` needs a database, so the RELEASE GATE — the arm that actually stops a bad inverse —
  * was the blind one. DEFAULT-ORG-4 measured the cost: `public.ctx_projects_add_creator_membership`
- * IS live, run by `trg_ctx_projects_add_creator_membership` on `workspace.projects`, and the
+ * IS live, run by `trg_ctx_projects_add_creator_membership` on `projects.projects`, and the
  * static arm could not see it, because nothing under `migrations/` creates that trigger. Its
  * inverse had to write `-- ground-standing-ok: c` for a clause that was simply wrong about the
  * world. A guard that is wrong about the world teaches lanes to acknowledge it away.
@@ -627,7 +627,7 @@ export function judgeFile(
       // executes DIRECTLY — the most destructive shape there is, the table explodes on the next
       // write — was handed to a clause that by construction could never report it, and fell
       // through both. A planted inverse dropping public.ctx_projects_add_creator_membership,
-      // which trg_ctx_projects_add_creator_membership on workspace.projects executes, went
+      // which trg_ctx_projects_add_creator_membership on projects.projects executes, went
       // completely unreported. Detachment is already handled above (`facts.dropsTriggers`), so a
       // file that takes the trigger off first is still silent.
       const reached = reachFrom(trig.fn, afterCalls, afterTouches, TRIGGER_DEPTH);
@@ -1190,7 +1190,7 @@ function main(): void {
 
     // ── THE CENSUS'S OWN RED PROOF ───────────────────────────────────────────────────────
     // A PLANTED inverse that drops `public.ctx_projects_add_creator_membership` — the body
-    // `trg_ctx_projects_add_creator_membership` on `workspace.projects` executes on every
+    // `trg_ctx_projects_add_creator_membership` on `projects.projects` executes on every
     // project insert. Nothing under `migrations/` creates that trigger, so the tree ALONE
     // cannot see it; the census can. The proof is both directions: RED with the census, and
     // SILENT without it. If the second half ever goes red too, the census is no longer what
@@ -1207,7 +1207,7 @@ function main(): void {
     if (!censusSaw) {
       console.error(
         `[FAIL] SELF-TEST: the planted inverse drops public.ctx_projects_add_creator_membership, ` +
-          `which trg_ctx_projects_add_creator_membership on workspace.projects executes, and this ` +
+          `which trg_ctx_projects_add_creator_membership on projects.projects executes, and this ` +
           `guard did NOT name that trigger. The standing-trigger census is not reaching the ` +
           `static arm — which is the exact blindness it was added to close.`,
       );
@@ -1215,7 +1215,7 @@ function main(): void {
     }
     if (withoutCensus.some((x) => /workspace\.projects/.test(x.what))) {
       console.error(
-        `[FAIL] SELF-TEST: the tree found the workspace.projects trigger WITHOUT the census. ` +
+        `[FAIL] SELF-TEST: the tree found the projects.projects trigger WITHOUT the census. ` +
           `Then the census is not what closes the blindness and this clause proves nothing — ` +
           `re-read what changed before trusting either half.`,
       );
@@ -1223,7 +1223,7 @@ function main(): void {
     }
     console.log(
       `[ OK ] self-test (census) - a planted inverse dropping public.ctx_projects_add_creator_membership ` +
-        `is named through trg_ctx_projects_add_creator_membership on workspace.projects WITH the ` +
+        `is named through trg_ctx_projects_add_creator_membership on projects.projects WITH the ` +
         `census (${withCensus.map((x) => x.clause).join("/")}) and is invisible WITHOUT it.`,
     );
   }

@@ -288,7 +288,7 @@ value metadata mirror the manifests.
 
 **Inherited, never rebuilt:** notes = `platform.comments` (pass `p_org_id` — `cmt_add`'s
 org resolution is task-only) · audit = `platform.activity_log` · favorites/pins/recents
-= `platform.user_entity_state` · follow-ups = real `workspace.tasks` via an edge ·
+= `platform.user_entity_state` · follow-ups = real `projects.tasks` via an edge ·
 attachments = `features/files` · tags/stages = `platform.categories` · the 360° view =
 `AssociationCardGrid` once `ENTITY_OVERLAY` has a `party` line.
 
@@ -1493,8 +1493,8 @@ Settings → Configuration, Marketing → Public Relations). 🚨 `service.ts` c
   REQUIRED `writer` (`PartyWriter.person` / `.agent` / `.machinery`); all eleven
   call sites are classified.
   - The grid gains a **Written by** column and filter: *Anyone* (the default, no
-    predicate at all), *Added by an agent* (`created_by_tier = 'ai'`) and
-    *Agent-written then edited* (that plus `updated_by_tier = 'human'`). The SAME
+    predicate at all), *Added by an agent* (`created_by_tier = 'agent'`) and
+    *Agent-written then edited* (that plus `updated_by_tier = 'user'`). The SAME
     grid and the SAME row page — never a second list of agent-added contacts
     (Arman, 2026-09-12). `written_by` is agent-writable through `column_filters`
     like every other facet.

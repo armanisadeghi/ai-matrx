@@ -3731,7 +3731,7 @@
     {
       "capability": "side_effect",
       "class": "create",
-      "doc": "Create one Project row (workspace.projects). Payload = the table's writable columns, typed from the live model; DB-required columns without defaults must be present. Batch via items.",
+      "doc": "Create one Project row (projects.projects). Payload = the table's writable columns, typed from the live model; DB-required columns without defaults must be present. Batch via items.",
       "item_model": "CreateProjectItem",
       "noun": "project",
       "purposes": [],
@@ -5575,7 +5575,7 @@
     {
       "capability": "side_effect",
       "class": "create",
-      "doc": "Create one Task row (workspace.tasks). Payload = the table's writable columns, typed from the live model; DB-required columns without defaults must be present. Batch via items.",
+      "doc": "Create one Task row (projects.tasks). Payload = the table's writable columns, typed from the live model; DB-required columns without defaults must be present. Batch via items.",
       "item_model": "CreateTaskItem",
       "noun": "task",
       "purposes": [],
@@ -6665,7 +6665,7 @@
     {
       "capability": "side_effect",
       "class": "delete",
-      "doc": "Soft-delete one Project row (workspace.projects) by id (never a hard delete).",
+      "doc": "Soft-delete one Project row (projects.projects) by id (never a hard delete).",
       "item_model": "DeleteProjectItem",
       "noun": "project",
       "purposes": [],
@@ -6905,7 +6905,7 @@
     {
       "capability": "side_effect",
       "class": "delete",
-      "doc": "Soft-delete one Task row (workspace.tasks) by id (never a hard delete).",
+      "doc": "Soft-delete one Task row (projects.tasks) by id (never a hard delete).",
       "item_model": "DeleteTaskItem",
       "noun": "task",
       "purposes": [],
@@ -15710,7 +15710,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one Project (workspace.projects) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Project (projects.projects) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "project",
       "purposes": [
@@ -19142,7 +19142,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one Task (workspace.tasks) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Task (projects.tasks) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "task",
       "purposes": [
@@ -19229,7 +19229,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one War Room Thread (workspace.threads) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one War Room Thread (projects.threads) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "thread",
       "purposes": [
@@ -20191,7 +20191,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one War Room (workspace.war_rooms) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one War Room (projects.war_rooms) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "war_room",
       "purposes": [
@@ -23871,7 +23871,7 @@
     {
       "capability": "side_effect",
       "class": "update",
-      "doc": "Update one Project row (workspace.projects) by id; any writable columns.",
+      "doc": "Update one Project row (projects.projects) by id; any writable columns.",
       "item_model": "UpdateProjectItem",
       "noun": "project",
       "purposes": [],
@@ -25779,7 +25779,7 @@
     {
       "capability": "side_effect",
       "class": "update",
-      "doc": "Update one Task row (workspace.tasks) by id; any writable columns.",
+      "doc": "Update one Task row (projects.tasks) by id; any writable columns.",
       "item_model": "UpdateTaskItem",
       "noun": "task",
       "purposes": [],

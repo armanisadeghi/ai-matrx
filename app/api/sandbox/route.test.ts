@@ -7,7 +7,7 @@ import { POST } from "./route";
 const mockCreateClient = jest.fn();
 
 jest.mock("@/utils/supabase/server", () => ({ createClient: (...args: unknown[]) => mockCreateClient(...args) }));
-jest.mock("@/utils/supabase/workspaceDb", () => ({ workspaceDb: (client: unknown) => client }));
+jest.mock("@/utils/supabase/projectsDb", () => ({ projectsDb: (client: unknown) => client }));
 jest.mock("@/lib/sandbox/orchestrator-routing", () => ({
   resolveOrchestratorByTier: () => ({ tier: "ec2", url: "https://orchestrator.example.test", apiKey: "test-key" }),
   orchestratorJsonHeaders: () => ({ "X-API-Key": "test-key" }),

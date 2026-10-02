@@ -12,7 +12,7 @@
  *
  * Found live on 2026-08-04: 18 rows still pointed at `reg.*` (renamed to
  * `rag.*`), `user.*` (renamed to `users.*`), or tables since moved to
- * `graveyard`. No log line, no type error, no failing test — the only symptom
+ * `deprecated`. No log line, no type error, no failing test — the only symptom
  * would have been users quietly unable to reach their own rows.
  *
  * We iterate the INSTALLED `@ai-matrx/associations` vocabulary
@@ -49,9 +49,9 @@ export function checkEntityRegistryDrift(
 
     // Where does that relation actually live now? Drives an exact fix line.
     const actual = [...(ctx.snapshot.relationSchemas.get(table) ?? [])].filter(
-      (s) => s !== "graveyard",
+      (s) => s !== "deprecated",
     );
-    const buried = ctx.snapshot.relationSchemas.get(table)?.has("graveyard") ?? false;
+    const buried = ctx.snapshot.relationSchemas.get(table)?.has("deprecated") ?? false;
 
     if (actual.length) {
       findings.push({
@@ -65,7 +65,7 @@ export function checkEntityRegistryDrift(
       findings.push({
         check: "entity-registry-drift",
         severity: "error",
-        message: `entity token "${token}" points at "${schema}.${table}", which has been moved to graveyard. The token is dead but still registered — every access check on it silently denies.`,
+        message: `entity token "${token}" points at "${schema}.${table}", which has been moved to deprecated. The token is dead but still registered — every access check on it silently denies.`,
         location: SOURCE,
         fix: `De-register the token (set is_active=false / delete the platform.entity_types row) or repoint it deliberately; then regenerate + patch-release @ai-matrx/associations and \`pnpm up @ai-matrx/associations\`.`,
       });

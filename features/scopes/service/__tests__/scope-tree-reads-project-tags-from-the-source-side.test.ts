@@ -100,8 +100,8 @@ jest.mock("@/utils/supabase/client", () => ({
     },
   },
 }));
-jest.mock("@/utils/supabase/workspaceDb", () => ({
-  workspaceDb: () => ({
+jest.mock("@/utils/supabase/projectsDb", () => ({
+  projectsDb: () => ({
     from: () =>
       table([
         { id: PROJECT_A, organization_id: ORG, name: "Plant A", slug: "plant-a" },

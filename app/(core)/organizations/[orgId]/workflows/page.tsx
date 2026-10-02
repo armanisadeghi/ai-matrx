@@ -22,7 +22,7 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
  * queried Postgres at all: it resolved `{data: null}` and console.error'd. The
  * page therefore rendered "No shared workflows yet" forever — silent to the
  * user, loud only in the browser console, which is why it survived. The live
- * model is `workflow.definition` (the old `public.workflow` is in `graveyard`).
+ * model is `workflow.definition` (the old `public.workflow` is in `deprecated`).
  *
  * The SHARED half is hydrated by OrgResourceList from the physical table the
  * shareable-resource registry names for `workflow` (= `workflow.definition`),

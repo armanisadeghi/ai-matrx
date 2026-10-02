@@ -147,13 +147,13 @@ interface ProofResult {
   detail: string;
 }
 
-/** STEP TWO (lane SWITCH-STEP-TWO): the undo is retired and the older data tables are in the graveyard. */
+/** STEP TWO (lane SWITCH-STEP-TWO): the undo is retired and the older data tables are in the deprecated schema. */
 let stepTwoDone: boolean | null = null;
 async function stepTwoIsDone(db: pg.Client): Promise<boolean> {
   if (stepTwoDone !== null) return stepTwoDone;
   try {
     const moved = await db.query(
-      "select to_regclass('workbench.udt_datasets') is null and to_regclass('graveyard.udt_datasets') is not null as moved, to_regprocedure('platform._final_switch_undo_retired()') is not null as has_door",
+      "select to_regclass('workbench.udt_datasets') is null and to_regclass('deprecated.udt_datasets') is not null as moved, to_regprocedure('platform._final_switch_undo_retired()') is not null as has_door",
     );
     let retired = false;
     if (moved.rows[0]?.has_door) {
@@ -171,7 +171,7 @@ async function runProof(p: Proof, trees: Map<Repo, RepoTree>, db: pg.Client | nu
   if (p.kind === "db") {
     if (!db) return { says: p.says, ok: false, detail: "not measured: no database connection" };
     if (p.finalAtStepTwo && (await stepTwoIsDone(db))) {
-      return { says: p.says, ok: true, detail: "the older tables are in the graveyard (step two); nothing older is left to carry or fence" };
+      return { says: p.says, ok: true, detail: "the older tables are in the deprecated schema (step two); nothing older is left to carry or fence" };
     }
     try {
       const r = await db.query(p.sql);

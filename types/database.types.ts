@@ -30625,6 +30625,17 @@ export type Database = {
         Args: { p_id: string; p_image: Json; p_org: string }
         Returns: undefined
       }
+      _ctx_agent_cell: {
+        Args: {
+          p_cap: number
+          p_doc: Json
+          p_key: string
+          p_org: string
+          p_raw: Json
+          p_rec: string
+        }
+        Returns: Json
+      }
       _ctx_answer: {
         Args: { p_id: string; p_org: string; p_row: Json }
         Returns: Json
@@ -30926,6 +30937,16 @@ export type Database = {
         }
         Returns: Json
       }
+      _io_outbox_claim: {
+        Args: {
+          p_consumer: string
+          p_event_key: string
+          p_limit: number
+          p_organization_id: string
+        }
+        Returns: string[]
+      }
+      _io_outbox_server_only: { Args: { p_door: string }; Returns: undefined }
       _older_table_copy_refusal: {
         Args: { p_table_id: string }
         Returns: string
@@ -31410,6 +31431,10 @@ export type Database = {
         }
         Returns: Json
       }
+      agg_field_value_sql: {
+        Args: { p_key: string; p_organization_id: string; p_table_id: string }
+        Returns: string
+      }
       agg_fields_readable_assert: {
         Args: {
           p_keys: string[]
@@ -31500,6 +31525,7 @@ export type Database = {
         }[]
       }
       agg_value_sql: { Args: { p_key: string }; Returns: string }
+      agg_value_text: { Args: { p_value: Json }; Returns: string }
       agg_view_admits: {
         Args: {
           p_organization_id: string
@@ -32915,6 +32941,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      entity_read_mask: {
+        Args: {
+          p_action?: string
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_organization_id: string
+          p_token: string
+        }
+        Returns: Json
+      }
       entity_record_read: {
         Args: {
           p_organization_id: string
@@ -32976,6 +33011,14 @@ export type Database = {
       entity_reference_words: {
         Args: { p_organization_id: string; p_refs: Json }
         Returns: Json
+      }
+      entity_seat_level: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_token: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
       }
       entity_table: {
         Args: { p_token: string }
@@ -33363,6 +33406,10 @@ export type Database = {
           title: string
         }[]
       }
+      formula_compile_sql: {
+        Args: { p_expr: Json; p_organization_id: string; p_values_sql: string }
+        Returns: string
+      }
       formula_eval: {
         Args: {
           p_context?: Json
@@ -33604,6 +33651,11 @@ export type Database = {
         }
         Returns: Json
       }
+      io_change_actor: { Args: never; Returns: Json }
+      io_change_fields: {
+        Args: { p_keys: string[]; p_new: Json; p_old: Json }
+        Returns: Json
+      }
       io_changed_field_ids: {
         Args: {
           p_new: Json
@@ -33773,6 +33825,19 @@ export type Database = {
       }
       io_infer_type: { Args: { p_samples: Json }; Returns: string }
       io_money_unit: { Args: { p_word: string }; Returns: string }
+      io_outbox_backlog: {
+        Args: { p_consumer: string; p_event_key: string; p_older_than?: string }
+        Returns: {
+          last_carried: string
+          oldest: string
+          organization_id: string
+          waiting: number
+        }[]
+      }
+      io_outbox_consumed_by: {
+        Args: { p_consumed_at: string; p_consumer: string; p_event_id: string }
+        Returns: boolean
+      }
       io_outbox_drain: {
         Args: {
           p_consumer: string
@@ -33790,6 +33855,23 @@ export type Database = {
           table_id: string
         }[]
       }
+      io_outbox_last_consumed: {
+        Args: {
+          p_consumer: string
+          p_event_key: string
+          p_organization_id: string
+        }
+        Returns: string
+      }
+      io_outbox_pending_organizations: {
+        Args: { p_consumer: string; p_event_key: string }
+        Returns: string[]
+      }
+      io_outbox_per_consumer: { Args: never; Returns: boolean }
+      io_outbox_rearm: {
+        Args: { p_dedupe_key: string; p_organization_id: string }
+        Returns: undefined
+      }
       io_outbox_release: {
         Args: {
           p_consumer: string
@@ -33797,6 +33879,14 @@ export type Database = {
           p_organization_id: string
         }
         Returns: number
+      }
+      io_outbox_release_claimed: {
+        Args: { p_consumer: string; p_ids: string[]; p_organization_id: string }
+        Returns: number
+      }
+      io_outbox_subscribe: {
+        Args: { p_consumer: string; p_event_key: string }
+        Returns: string
       }
       io_proposal_accept: {
         Args: {
@@ -33861,6 +33951,7 @@ export type Database = {
         }[]
       }
       io_value_shape: { Args: { p_envelope: Json }; Returns: Json }
+      io_workflow_chain: { Args: never; Returns: Json }
       is_a_retirement: {
         Args: {
           p_new_class: string
@@ -33983,6 +34074,7 @@ export type Database = {
             }
             Returns: Json
           }
+      mask_history_data: { Args: { p_data: Json; p_mask: Json }; Returns: Json }
       mask_says_withheld: {
         Args: { p_key: string; p_mask: Json }
         Returns: boolean
@@ -34640,6 +34732,10 @@ export type Database = {
         }
         Returns: Json
       }
+      query_record_document: {
+        Args: { p_principal: string; p_row: Record<string, unknown> }
+        Returns: Json
+      }
       query_relation_edges: {
         Args: { p_flavor?: string; p_organization_id: string; p_role?: string }
         Returns: {
@@ -34966,6 +35062,28 @@ export type Database = {
       record_change_many: {
         Args: { p_changes: Json; p_organization_id: string; p_table_id: string }
         Returns: Json
+      }
+      record_changes_drain: {
+        Args: {
+          p_consumer: string
+          p_limit?: number
+          p_organization_id: string
+        }
+        Returns: {
+          actor: Json
+          chain: Json
+          changed_field_ids: Json
+          event_id: string
+          fields: Json
+          kind: string
+          occurred_at: string
+          op_id: string
+          operation: string
+          organization_id: string
+          record_id: string
+          table_id: string
+          version: number
+        }[]
       }
       record_delete: {
         Args: { p_organization_id: string; p_record_id: string }
@@ -36790,6 +36908,616 @@ export type Database = {
           turn: string
         }[]
       }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  deprecated: {
+    Tables: {
+      pb_claim_appeals_fd31de: {
+        Row: {
+          claim_id: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          filed_on: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          reason: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          filed_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          filed_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      pb_insurance_claims_fd31de: {
+        Row: {
+          billed_cents: number | null
+          carrier: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          status: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          billed_cents?: number | null
+          carrier: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          status?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          billed_cents?: number | null
+          carrier?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          status?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      provlock_recall_visits_all8u5: {
+        Row: {
+          booked: boolean | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          due_on: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          patient_ref: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          booked?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          due_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          patient_ref: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          booked?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          due_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          patient_ref?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      udt_dataset_fields: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data_type: Database["public"]["Enums"]["field_data_type"]
+          default_value: Json | null
+          deleted_at: string | null
+          display_name: string
+          field_name: string
+          field_order: number
+          id: string
+          is_public: boolean
+          is_required: boolean
+          metadata: Json
+          organization_id: string
+          table_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          validation_rules: Json | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data_type?: Database["public"]["Enums"]["field_data_type"]
+          default_value?: Json | null
+          deleted_at?: string | null
+          display_name: string
+          field_name: string
+          field_order?: number
+          id?: string
+          is_public?: boolean
+          is_required?: boolean
+          metadata?: Json
+          organization_id: string
+          table_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          validation_rules?: Json | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data_type?: Database["public"]["Enums"]["field_data_type"]
+          default_value?: Json | null
+          deleted_at?: string | null
+          display_name?: string
+          field_name?: string
+          field_order?: number
+          id?: string
+          is_public?: boolean
+          is_required?: boolean
+          metadata?: Json
+          organization_id?: string
+          table_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          validation_rules?: Json | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_dataset_fields_dataset_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "udt_datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_dataset_row_versions: {
+        Row: {
+          change_kind: Database["public"]["Enums"]["row_change_kind"]
+          changed_at: string
+          changed_by: string | null
+          custom_fields: Json
+          data: Json | null
+          id: number
+          prior_data: Json | null
+          reason: string | null
+          row_id: string
+          table_id: string
+        }
+        Insert: {
+          change_kind: Database["public"]["Enums"]["row_change_kind"]
+          changed_at?: string
+          changed_by?: string | null
+          custom_fields?: Json
+          data?: Json | null
+          id?: number
+          prior_data?: Json | null
+          reason?: string | null
+          row_id: string
+          table_id: string
+        }
+        Update: {
+          change_kind?: Database["public"]["Enums"]["row_change_kind"]
+          changed_at?: string
+          changed_by?: string | null
+          custom_fields?: Json
+          data?: Json | null
+          id?: number
+          prior_data?: Json | null
+          reason?: string | null
+          row_id?: string
+          table_id?: string
+        }
+        Relationships: []
+      }
+      udt_dataset_rows: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          deleted_at: string | null
+          id: string
+          is_public: boolean
+          metadata: Json
+          organization_id: string
+          source_row_ref: string | null
+          table_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data: Json
+          deleted_at?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json
+          organization_id: string
+          source_row_ref?: string | null
+          table_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          deleted_at?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json
+          organization_id?: string
+          source_row_ref?: string | null
+          table_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_dataset_rows_dataset_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "udt_datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_datasets: {
+        Row: {
+          created_at: string
+          created_by: string
+          custom_fields: Json
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean
+          metadata: Json
+          organization_id: string
+          project_id: string | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          row_ordering_config: Json | null
+          sheet_index: number | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          sync_source: Json | null
+          table_name: string
+          task_id: string | null
+          template_id: string | null
+          template_version: number | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          validation_mode: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          workbook_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json
+          organization_id: string
+          project_id?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          row_ordering_config?: Json | null
+          sheet_index?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          sync_source?: Json | null
+          table_name: string
+          task_id?: string | null
+          template_id?: string | null
+          template_version?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          validation_mode?: string
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          workbook_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json
+          organization_id?: string
+          project_id?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          row_ordering_config?: Json | null
+          sheet_index?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          sync_source?: Json | null
+          table_name?: string
+          task_id?: string | null
+          template_id?: string | null
+          template_version?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          validation_mode?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workbook_id?: string | null
+        }
+        Relationships: []
+      }
+      udt_structured_list_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          description: string | null
+          group_name: string | null
+          help_text: string | null
+          icon_name: string | null
+          id: string
+          is_public: boolean | null
+          label: string | null
+          list_id: string | null
+          metadata: Json
+          organization_id: string | null
+          public_read: boolean | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          group_name?: string | null
+          help_text?: string | null
+          icon_name?: string | null
+          id?: string
+          is_public?: boolean | null
+          label?: string | null
+          list_id?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          public_read?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          group_name?: string | null
+          help_text?: string | null
+          icon_name?: string | null
+          id?: string
+          is_public?: boolean | null
+          label?: string | null
+          list_id?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          public_read?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_structured_list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "udt_structured_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_structured_lists: {
+        Row: {
+          created_at: string
+          created_by: string
+          custom_fields: Json
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          list_name: string | null
+          metadata: Json
+          organization_id: string | null
+          public_read: boolean | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          list_name?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          public_read?: boolean | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          list_name?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          public_read?: boolean | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
@@ -44025,616 +44753,6 @@ export type Database = {
         Returns: string
       }
       webhook_tick: { Args: never; Returns: undefined }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-  graveyard: {
-    Tables: {
-      pb_claim_appeals_fd31de: {
-        Row: {
-          claim_id: string
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          filed_on: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          reason: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          claim_id: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          filed_on?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          reason: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          claim_id?: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          filed_on?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          reason?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      pb_insurance_claims_fd31de: {
-        Row: {
-          billed_cents: number | null
-          carrier: string
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          status: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          billed_cents?: number | null
-          carrier: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          status?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          billed_cents?: number | null
-          carrier?: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          status?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      provlock_recall_visits_all8u5: {
-        Row: {
-          booked: boolean | null
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          due_on: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          patient_ref: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          booked?: boolean | null
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          due_on?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          patient_ref: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          booked?: boolean | null
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          due_on?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          patient_ref?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      udt_dataset_fields: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          data_type: Database["public"]["Enums"]["field_data_type"]
-          default_value: Json | null
-          deleted_at: string | null
-          display_name: string
-          field_name: string
-          field_order: number
-          id: string
-          is_public: boolean
-          is_required: boolean
-          metadata: Json
-          organization_id: string
-          table_id: string
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          validation_rules: Json | null
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          data_type?: Database["public"]["Enums"]["field_data_type"]
-          default_value?: Json | null
-          deleted_at?: string | null
-          display_name: string
-          field_name: string
-          field_order?: number
-          id?: string
-          is_public?: boolean
-          is_required?: boolean
-          metadata?: Json
-          organization_id: string
-          table_id: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          validation_rules?: Json | null
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          data_type?: Database["public"]["Enums"]["field_data_type"]
-          default_value?: Json | null
-          deleted_at?: string | null
-          display_name?: string
-          field_name?: string
-          field_order?: number
-          id?: string
-          is_public?: boolean
-          is_required?: boolean
-          metadata?: Json
-          organization_id?: string
-          table_id?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          validation_rules?: Json | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_dataset_fields_dataset_id_fkey"
-            columns: ["table_id"]
-            isOneToOne: false
-            referencedRelation: "udt_datasets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_dataset_row_versions: {
-        Row: {
-          change_kind: Database["public"]["Enums"]["row_change_kind"]
-          changed_at: string
-          changed_by: string | null
-          custom_fields: Json
-          data: Json | null
-          id: number
-          prior_data: Json | null
-          reason: string | null
-          row_id: string
-          table_id: string
-        }
-        Insert: {
-          change_kind: Database["public"]["Enums"]["row_change_kind"]
-          changed_at?: string
-          changed_by?: string | null
-          custom_fields?: Json
-          data?: Json | null
-          id?: number
-          prior_data?: Json | null
-          reason?: string | null
-          row_id: string
-          table_id: string
-        }
-        Update: {
-          change_kind?: Database["public"]["Enums"]["row_change_kind"]
-          changed_at?: string
-          changed_by?: string | null
-          custom_fields?: Json
-          data?: Json | null
-          id?: number
-          prior_data?: Json | null
-          reason?: string | null
-          row_id?: string
-          table_id?: string
-        }
-        Relationships: []
-      }
-      udt_dataset_rows: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          data: Json
-          deleted_at: string | null
-          id: string
-          is_public: boolean
-          metadata: Json
-          organization_id: string
-          source_row_ref: string | null
-          table_id: string
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          data: Json
-          deleted_at?: string | null
-          id?: string
-          is_public?: boolean
-          metadata?: Json
-          organization_id: string
-          source_row_ref?: string | null
-          table_id: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          data?: Json
-          deleted_at?: string | null
-          id?: string
-          is_public?: boolean
-          metadata?: Json
-          organization_id?: string
-          source_row_ref?: string | null
-          table_id?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_dataset_rows_dataset_id_fkey"
-            columns: ["table_id"]
-            isOneToOne: false
-            referencedRelation: "udt_datasets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_datasets: {
-        Row: {
-          created_at: string
-          created_by: string
-          custom_fields: Json
-          deleted_at: string | null
-          description: string | null
-          id: string
-          is_public: boolean
-          metadata: Json
-          organization_id: string
-          project_id: string | null
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          row_ordering_config: Json | null
-          sheet_index: number | null
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          sync_source: Json | null
-          table_name: string
-          task_id: string | null
-          template_id: string | null
-          template_version: number | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          validation_mode: string
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-          workbook_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean
-          metadata?: Json
-          organization_id: string
-          project_id?: string | null
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          row_ordering_config?: Json | null
-          sheet_index?: number | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          sync_source?: Json | null
-          table_name: string
-          task_id?: string | null
-          template_id?: string | null
-          template_version?: number | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          validation_mode?: string
-          version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-          workbook_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean
-          metadata?: Json
-          organization_id?: string
-          project_id?: string | null
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          row_ordering_config?: Json | null
-          sheet_index?: number | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          sync_source?: Json | null
-          table_name?: string
-          task_id?: string | null
-          template_id?: string | null
-          template_version?: number | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          validation_mode?: string
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-          workbook_id?: string | null
-        }
-        Relationships: []
-      }
-      udt_structured_list_items: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          description: string | null
-          group_name: string | null
-          help_text: string | null
-          icon_name: string | null
-          id: string
-          is_public: boolean | null
-          label: string | null
-          list_id: string | null
-          metadata: Json
-          organization_id: string | null
-          public_read: boolean | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          group_name?: string | null
-          help_text?: string | null
-          icon_name?: string | null
-          id?: string
-          is_public?: boolean | null
-          label?: string | null
-          list_id?: string | null
-          metadata?: Json
-          organization_id?: string | null
-          public_read?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          group_name?: string | null
-          help_text?: string | null
-          icon_name?: string | null
-          id?: string
-          is_public?: boolean | null
-          label?: string | null
-          list_id?: string | null
-          metadata?: Json
-          organization_id?: string | null
-          public_read?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_structured_list_items_list_id_fkey"
-            columns: ["list_id"]
-            isOneToOne: false
-            referencedRelation: "udt_structured_lists"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_structured_lists: {
-        Row: {
-          created_at: string
-          created_by: string
-          custom_fields: Json
-          deleted_at: string | null
-          description: string | null
-          id: string
-          is_public: boolean | null
-          list_name: string | null
-          metadata: Json
-          organization_id: string | null
-          public_read: boolean | null
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          list_name?: string | null
-          metadata?: Json
-          organization_id?: string | null
-          public_read?: boolean | null
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          list_name?: string | null
-          metadata?: Json
-          organization_id?: string | null
-          public_read?: boolean | null
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
@@ -87611,6 +87729,7 @@ export type Database = {
         Returns: Json
       }
       build_lifecycle_reference_map: { Args: never; Returns: Json }
+      canonical_actor_tier: { Args: { p_tier: string }; Returns: string }
       capture_decision_items: {
         Args: { p_message_id: string }
         Returns: number
@@ -88738,6 +88857,10 @@ export type Database = {
       }
       link_trigger_is_attached: {
         Args: { p_schema: string; p_table: string; p_trigger: string }
+        Returns: boolean
+      }
+      list_dimension_match: {
+        Args: { p_entity_id: string; p_entity_type: string; p_filters: Json }
         Returns: boolean
       }
       list_lives_in: { Args: { p_list_id: string }; Returns: string }
@@ -90795,6 +90918,512 @@ export type Database = {
             columns: ["show_id"]
             isOneToOne: false
             referencedRelation: "pc_shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  projects: {
+    Tables: {
+      projects: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          description: string | null
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          settings: Json | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          slug: string | null
+          start_date: string | null
+          status: string
+          target_date: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          settings?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          slug?: string | null
+          start_date?: string | null
+          status?: string
+          target_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          settings?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          slug?: string | null
+          start_date?: string | null
+          status?: string
+          target_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      spatial_boards: {
+        Row: {
+          camera: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          edges: Json
+          id: string
+          last_opened_at: string | null
+          metadata: Json
+          nodes: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          camera?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          edges?: Json
+          id?: string
+          last_opened_at?: string | null
+          metadata?: Json
+          nodes?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          camera?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          edges?: Json
+          id?: string
+          last_opened_at?: string | null
+          metadata?: Json
+          nodes?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      task_user_state: {
+        Row: {
+          acknowledged_at: string | null
+          custom_fields: Json
+          dismissed_at: string | null
+          pinned_at: string | null
+          seen_at: string | null
+          snoozed_until: string | null
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          custom_fields?: Json
+          dismissed_at?: string | null
+          pinned_at?: string | null
+          seen_at?: string | null
+          snoozed_until?: string | null
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          custom_fields?: Json
+          dismissed_at?: string | null
+          pinned_at?: string | null
+          seen_at?: string | null
+          snoozed_until?: string | null
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_user_state_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          assignee_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          dedupe_key: string | null
+          deleted_at: string | null
+          description: string | null
+          due_date: string | null
+          due_time: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          origin: string
+          parent_task_id: string | null
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          project_id: string | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          recurrence_rule: string | null
+          reminders: Json
+          settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source_id: string | null
+          source_imported_at: string | null
+          source_label: string | null
+          source_list_id: string | null
+          source_snapshot: Json | null
+          source_type: string | null
+          source_url: string | null
+          start_date: string | null
+          status: string
+          timezone: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          assignee_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          dedupe_key?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          due_time?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          origin?: string
+          parent_task_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          project_id?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          recurrence_rule?: string | null
+          reminders?: Json
+          settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_id?: string | null
+          source_imported_at?: string | null
+          source_label?: string | null
+          source_list_id?: string | null
+          source_snapshot?: Json | null
+          source_type?: string | null
+          source_url?: string | null
+          start_date?: string | null
+          status?: string
+          timezone?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          assignee_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          dedupe_key?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          due_time?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          origin?: string
+          parent_task_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          project_id?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          recurrence_rule?: string | null
+          reminders?: Json
+          settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_id?: string | null
+          source_imported_at?: string | null
+          source_label?: string | null
+          source_list_id?: string | null
+          source_snapshot?: Json | null
+          source_type?: string | null
+          source_url?: string | null
+          start_date?: string | null
+          status?: string
+          timezone?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      threads: {
+        Row: {
+          active_tab: string
+          anchor_id: string | null
+          anchor_type: string
+          created_at: string
+          created_by: string
+          custom_fields: Json
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          position: number
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          active_tab?: string
+          anchor_id?: string | null
+          anchor_type?: string
+          created_at?: string
+          created_by: string
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          position?: number
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          active_tab?: string
+          anchor_id?: string | null
+          anchor_type?: string
+          created_at?: string
+          created_by?: string
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          position?: number
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      war_rooms: {
+        Row: {
+          active_thread_id: string | null
+          anchor_id: string | null
+          anchor_type: string
+          color: string | null
+          created_at: string
+          created_by: string
+          custom_fields: Json
+          deleted_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          last_opened_at: string | null
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          active_thread_id?: string | null
+          anchor_id?: string | null
+          anchor_type?: string
+          color?: string | null
+          created_at?: string
+          created_by: string
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          last_opened_at?: string | null
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          active_thread_id?: string | null
+          anchor_id?: string | null
+          anchor_type?: string
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          last_opened_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wr_sessions_active_thread_id_fkey"
+            columns: ["active_thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
             referencedColumns: ["id"]
           },
         ]
@@ -133949,512 +134578,6 @@ export type Database = {
       [_ in never]: never
     }
   }
-  workspace: {
-    Tables: {
-      projects: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          description: string | null
-          id: string
-          metadata: Json
-          name: string
-          organization_id: string
-          priority: Database["public"]["Enums"]["task_priority"] | null
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          settings: Json | null
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          slug: string | null
-          start_date: string | null
-          status: string
-          target_date: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          metadata?: Json
-          name: string
-          organization_id: string
-          priority?: Database["public"]["Enums"]["task_priority"] | null
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          settings?: Json | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          slug?: string | null
-          start_date?: string | null
-          status?: string
-          target_date?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          metadata?: Json
-          name?: string
-          organization_id?: string
-          priority?: Database["public"]["Enums"]["task_priority"] | null
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          settings?: Json | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          slug?: string | null
-          start_date?: string | null
-          status?: string
-          target_date?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      spatial_boards: {
-        Row: {
-          camera: Json
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          description: string | null
-          edges: Json
-          id: string
-          last_opened_at: string | null
-          metadata: Json
-          nodes: Json
-          organization_id: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          settings: Json
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          title: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          camera?: Json
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          edges?: Json
-          id?: string
-          last_opened_at?: string | null
-          metadata?: Json
-          nodes?: Json
-          organization_id: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          settings?: Json
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          camera?: Json
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          edges?: Json
-          id?: string
-          last_opened_at?: string | null
-          metadata?: Json
-          nodes?: Json
-          organization_id?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          settings?: Json
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      task_user_state: {
-        Row: {
-          acknowledged_at: string | null
-          custom_fields: Json
-          dismissed_at: string | null
-          pinned_at: string | null
-          seen_at: string | null
-          snoozed_until: string | null
-          task_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          acknowledged_at?: string | null
-          custom_fields?: Json
-          dismissed_at?: string | null
-          pinned_at?: string | null
-          seen_at?: string | null
-          snoozed_until?: string | null
-          task_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          acknowledged_at?: string | null
-          custom_fields?: Json
-          dismissed_at?: string | null
-          pinned_at?: string | null
-          seen_at?: string | null
-          snoozed_until?: string | null
-          task_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_user_state_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tasks: {
-        Row: {
-          assignee_id: string | null
-          completed_at: string | null
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          dedupe_key: string | null
-          deleted_at: string | null
-          description: string | null
-          due_date: string | null
-          due_time: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          origin: string
-          parent_task_id: string | null
-          priority: Database["public"]["Enums"]["task_priority"] | null
-          project_id: string | null
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          recurrence_rule: string | null
-          reminders: Json
-          settings: Json
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          source_id: string | null
-          source_imported_at: string | null
-          source_label: string | null
-          source_list_id: string | null
-          source_snapshot: Json | null
-          source_type: string | null
-          source_url: string | null
-          start_date: string | null
-          status: string
-          timezone: string | null
-          title: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          assignee_id?: string | null
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          dedupe_key?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          due_date?: string | null
-          due_time?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          origin?: string
-          parent_task_id?: string | null
-          priority?: Database["public"]["Enums"]["task_priority"] | null
-          project_id?: string | null
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          recurrence_rule?: string | null
-          reminders?: Json
-          settings?: Json
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          source_id?: string | null
-          source_imported_at?: string | null
-          source_label?: string | null
-          source_list_id?: string | null
-          source_snapshot?: Json | null
-          source_type?: string | null
-          source_url?: string | null
-          start_date?: string | null
-          status?: string
-          timezone?: string | null
-          title: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          assignee_id?: string | null
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          dedupe_key?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          due_date?: string | null
-          due_time?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          origin?: string
-          parent_task_id?: string | null
-          priority?: Database["public"]["Enums"]["task_priority"] | null
-          project_id?: string | null
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          recurrence_rule?: string | null
-          reminders?: Json
-          settings?: Json
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          source_id?: string | null
-          source_imported_at?: string | null
-          source_label?: string | null
-          source_list_id?: string | null
-          source_snapshot?: Json | null
-          source_type?: string | null
-          source_url?: string | null
-          start_date?: string | null
-          status?: string
-          timezone?: string | null
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tasks_parent_task_id_fkey"
-            columns: ["parent_task_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tasks_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      threads: {
-        Row: {
-          active_tab: string
-          anchor_id: string | null
-          anchor_type: string
-          created_at: string
-          created_by: string
-          custom_fields: Json
-          deleted_at: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          position: number
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          title: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          active_tab?: string
-          anchor_id?: string | null
-          anchor_type?: string
-          created_at?: string
-          created_by: string
-          custom_fields?: Json
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          position?: number
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          active_tab?: string
-          anchor_id?: string | null
-          anchor_type?: string
-          created_at?: string
-          created_by?: string
-          custom_fields?: Json
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          position?: number
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      war_rooms: {
-        Row: {
-          active_thread_id: string | null
-          anchor_id: string | null
-          anchor_type: string
-          color: string | null
-          created_at: string
-          created_by: string
-          custom_fields: Json
-          deleted_at: string | null
-          description: string | null
-          icon: string | null
-          id: string
-          last_opened_at: string | null
-          metadata: Json
-          organization_id: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          title: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          active_thread_id?: string | null
-          anchor_id?: string | null
-          anchor_type?: string
-          color?: string | null
-          created_at?: string
-          created_by: string
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          last_opened_at?: string | null
-          metadata?: Json
-          organization_id: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          active_thread_id?: string | null
-          anchor_id?: string | null
-          anchor_type?: string
-          color?: string | null
-          created_at?: string
-          created_by?: string
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          last_opened_at?: string | null
-          metadata?: Json
-          organization_id?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wr_sessions_active_thread_id_fkey"
-            columns: ["active_thread_id"]
-            isOneToOne: false
-            referencedRelation: "threads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
@@ -134655,6 +134778,9 @@ export const Constants = {
   custom: {
     Enums: {},
   },
+  deprecated: {
+    Enums: {},
+  },
   dictionary: {
     Enums: {},
   },
@@ -134671,9 +134797,6 @@ export const Constants = {
     Enums: {},
   },
   files: {
-    Enums: {},
-  },
-  graveyard: {
     Enums: {},
   },
   growth: {
@@ -134731,6 +134854,9 @@ export const Constants = {
     },
   },
   podcast: {
+    Enums: {},
+  },
+  projects: {
     Enums: {},
   },
   provider: {
@@ -135439,9 +135565,6 @@ export const Constants = {
     Enums: {},
   },
   workflow: {
-    Enums: {},
-  },
-  workspace: {
     Enums: {},
   },
 } as const

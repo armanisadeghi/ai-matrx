@@ -24,7 +24,7 @@ import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
  *
  * Tasks are NEVER auto-created. The materialized artifact is a *tracked
  * proposal*: it shows the agent's checklist plus an explicit **Convert to
- * tasks** action. Convert creates real `workspace.tasks` via the canonical
+ * tasks** action. Convert creates real `projects.tasks` via the canonical
  * `platform.associations` bridge (`associate_with_task`: source=`artifact`,
  * target=`task`) — the SAME path `TaskPreviewWindow` / `TaskChipRow` use everywhere
  * else — so there is exactly one task-linkage model, not a parallel one.
@@ -199,7 +199,7 @@ function TasksArtifactTracked({
           // converted without a join. Non-blocking — the link is a convenience
           // marker, the associations already exist.
           void canvasArtifactService.setExternalLink(canvasItemId, {
-            // Canonical discriminator after 2026 schema reorg: workspace.tasks → "tasks"
+            // Canonical discriminator after 2026 schema reorg: projects.tasks → "tasks"
             externalSystem: "tasks",
             externalId: canvasItemId,
           });

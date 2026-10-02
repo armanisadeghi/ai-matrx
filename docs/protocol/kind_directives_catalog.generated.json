@@ -18666,7 +18666,7 @@
      "type": "object"
     }
    },
-   "table": "workspace.projects",
+   "table": "projects.projects",
    "title_column": "name",
    "update": "yes",
    "view": "yes"
@@ -19317,7 +19317,7 @@
      "type": "object"
     }
    },
-   "table": "workspace.tasks",
+   "table": "projects.tasks",
    "title_column": "title",
    "update": "yes",
    "view": "yes"
@@ -217022,7 +217022,7 @@
      "type": "object"
     }
    },
-   "table": "workspace.spatial_boards",
+   "table": "projects.spatial_boards",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -226357,7 +226357,7 @@
      "type": "object"
     }
    },
-   "table": "workspace.task_user_state",
+   "table": "projects.task_user_state",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -227751,7 +227751,7 @@
      "type": "object"
     }
    },
-   "table": "workspace.threads",
+   "table": "projects.threads",
    "title_column": "title",
    "update": "planned",
    "view": "yes"
@@ -240889,7 +240889,7 @@
      "type": "object"
     }
    },
-   "table": "workspace.war_rooms",
+   "table": "projects.war_rooms",
    "title_column": "title",
    "update": "planned",
    "view": "yes"

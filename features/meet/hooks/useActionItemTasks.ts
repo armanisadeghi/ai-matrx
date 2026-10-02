@@ -3,7 +3,7 @@
 // features/meet/hooks/useActionItemTasks.ts
 //
 // ACTION ITEMS → PLATFORM TASKS (Meet wave 3). An action item the wrap-up wrote
-// becomes a real `workspace.tasks` row through the ONE task writer
+// becomes a real `projects.tasks` row through the ONE task writer
 // (`createTask`), carrying its provenance on the task itself:
 //
 //   source_type = "meet_note", source_id = the action item's row id,
@@ -19,7 +19,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { createTask } from "@/features/tasks/services/taskService";
 import type { TaskStatus } from "@/features/tasks/constants/status";
 
@@ -90,7 +90,7 @@ export function useActionItemTasks(args: {
       return undefined;
     }
     let live = true;
-    void workspaceDb(supabase)
+    void projectsDb(supabase)
       .from("tasks")
       .select("id,status,due_date,assignee_id,title,source_id")
       .eq("source_type", MEET_NOTE_SOURCE)

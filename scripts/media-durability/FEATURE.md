@@ -26,7 +26,7 @@ ruling, verbatim:
 **Not defects, left alone:** time-boxed share links (a security *feature*), TTL caches,
 transient in-flight payloads, audit/log/error-capture rows where the expiring string
 *is the data*, `mtx_media_heal_queue` (whose job is to hold the offending URL), verbatim
-third-party scrape/search responses, and retired `graveyard.*` tables.
+third-party scrape/search responses, and retired `deprecated.*` tables.
 
 ## The hard safety rule
 
@@ -106,7 +106,7 @@ release.
 
 `--full` batches **per schema** (`p_schema`) to stay under the PostgREST statement
 timeout. As of 2026-08-11 it completes **41 of 49 schemas**; the eight biggest — `chat`,
-`docproc`, `graveyard`, `history`, `public`, `scraper`, `seo`, `web` — still time out
+`docproc`, `deprecated`, `history`, `public`, `scraper`, `seo`, `web` — still time out
 and are **named in the output** as *not covered*. That is deliberate: a patrol that
 silently skips the biggest tables reads as "all clear" when it isn't.
 

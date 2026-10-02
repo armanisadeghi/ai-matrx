@@ -126,7 +126,7 @@ function instanceRow(child: (typeof CHILDREN)[number]) {
     // creation order would produce a different list and be caught.
     created_at: `2026-09-13T00:00:${String(59 - child.position).padStart(2, "0")}.000Z`,
     created_by: null,
-    created_by_tier: "ai",
+    created_by_tier: "agent",
     created_by_system: "chat_kind_emission",
     organization_id: "7cd12da2-2213-4378-8fba-a9e2dc4ea657",
     archived_at: null,

@@ -1,13 +1,13 @@
 ---
 name: db-move-table-schema
-description: "Relocating a live, still-used table to another Postgres schema with every reference intact. Use when asked to move or rehome a table into a schema, or to pull a table out of public into a domain schema. NOT for retiring a table (use db-graveyard-table)."
+description: "Relocating a live, still-used table to another Postgres schema with every reference intact. Use when asked to move or rehome a table into a schema, or to pull a table out of public into a domain schema. NOT for retiring a table (use db-deprecate-table)."
 ---
 
 # Move a table to a new schema
 
 > Moving an uncertified `public` table into its feature schema is the useful response to a database finding on it — not patching the finding in place: [canonical-first triage](../../../../common-docs/policies/canonical-first-triage.md).
 
-Relocate `public.<table>` → `<new>.<table>` with references intact. Postgres moves most things for you; the misses are predictable. Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `brsgrqvjdzwihsvnfqkf`. Retiring a dead table → `db-graveyard-table`; bringing a table onto the platform standard → `db-canonicalize-table`.
+Relocate `public.<table>` → `<new>.<table>` with references intact. Postgres moves most things for you; the misses are predictable. Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `brsgrqvjdzwihsvnfqkf`. Retiring a dead table → `db-deprecate-table`; bringing a table onto the platform standard → `db-canonicalize-table`.
 
 ## What `ALTER TABLE … SET SCHEMA` carries automatically
 The table's columns, PK, indexes, CHECK/UNIQUE/FK constraints (its own **and** inbound FK constraints — cross-schema FKs keep working), **RLS policies, triggers, and owned sequences** all follow. You do **not** re-create these.
@@ -57,7 +57,7 @@ where n.nspname not like 'pg_%' and n.nspname<>'information_schema'
 group by n.nspname
 having not has_schema_privilege('authenticated',n.nspname,'USAGE')
    and count(*) filter (where has_table_privilege('authenticated', format('%I.%I',n.nspname,c.relname),'SELECT'))>0;
--- expected leftovers: cron, graveyard (internal/retired — correctly NO usage). Anything else FE-facing = bug.
+-- expected leftovers: cron, deprecated (internal/retired — correctly NO usage). Anything else FE-facing = bug.
 ```
 
 ## Step 4 — Repoint the misses

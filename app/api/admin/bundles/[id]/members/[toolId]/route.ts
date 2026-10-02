@@ -5,9 +5,9 @@
 // role='member'); the alias lives in the edge's metadata.local_alias.
 // Writes go through the signed-in admin's OWN client, never the service-role
 // admin client: `platform._stamp_actor_tier` refuses a service-role write to
-// platform.associations (tier `code`, no actor_system → 23514), and RLS's
+// platform.associations (tier `system`, no actor_system → 23514), and RLS's
 // `platform_admin_all` already lets a platform admin write every edge. The
-// admin clicking is the author; their session stamps `human` + their id.
+// admin clicking is the author; their session stamps `user` + their id.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";

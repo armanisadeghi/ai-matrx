@@ -158,9 +158,9 @@ export async function createAgentFromSeed(
  * trigger must not be the thing that CHOOSES the tenant.
  * Writes through the signed-in admin's OWN client, never the service-role
  * admin client: `platform._stamp_actor_tier` refuses a service-role write
- * (tier `code`, no actor_system) with 23514, and RLS's `platform_admin_all`
+ * (tier `system`, no actor_system) with 23514, and RLS's `platform_admin_all`
  * already lets a platform admin insert any agent.definition row. The person
- * clicking is the author, and their session stamps `human` + their id.
+ * clicking is the author, and their session stamps `user` + their id.
  */
 export async function createSystemAgentFromSeed(
   seed: Omit<Partial<AgentDefinition>, "id">,

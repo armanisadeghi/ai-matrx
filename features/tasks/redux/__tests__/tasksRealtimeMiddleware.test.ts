@@ -3,7 +3,7 @@
 // and only after a reload). These tests are the guard for the two things that
 // make the wiring correct rather than merely present:
 //
-//  - SCOPE. RLS on `workspace.tasks` delivers far more than this list carries
+//  - SCOPE. RLS on `projects.tasks` delivers far more than this list carries
 //    (`pub_read` alone hands every public task in the system to every
 //    subscriber). A row that the list would not show must never reach the
 //    slice, and one that stops qualifying must leave it.
@@ -16,7 +16,7 @@ import { TASKS_TABLE } from "@/features/tasks/realtime/rowContract";
 
 // The slices reach Supabase at import time; nothing here makes a request.
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
-jest.mock("@/utils/supabase/workspaceDb", () => ({ workspaceDb: () => ({}) }));
+jest.mock("@/utils/supabase/projectsDb", () => ({ projectsDb: () => ({}) }));
 jest.mock("@/utils/auth/getUserId", () => ({
   requireUserId: () => "u1",
   getUserId: () => "u1",

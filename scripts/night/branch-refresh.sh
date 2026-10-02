@@ -199,7 +199,7 @@ begin;
 -- branch is disposable and the job holds its lease, so a generous bound is the right one here.
 set local statement_timeout = '20min';
 -- PROVENANCE, DECLARED. `platform._stamp_actor_tier` refuses an automated write that does not say
--- WHICH system it is ("declares actor_tier=code, but names no actor_system") — tool.definition
+-- WHICH system it is ("declares actor_tier=system, but names no actor_system") — tool.definition
 -- refused all 693 rows on 2026-09-23 01:1xZ for exactly that. This loader IS a system, and says so
 -- through the server channel the guard names. The guard is satisfied, not bypassed.
 set local app.actor_system = 'branch-refresh-seed';

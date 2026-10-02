@@ -3,8 +3,8 @@
  * db-table-refs — find every reference to a DB table (and its fields) across
  * this repo, IN EVERY NAME FORMAT.
  *
- * Companion to the `db-change` / `db-graveyard-table` / `db-move-table-schema`
- * skills. Before you graveyard, move, or drop a column of a table you MUST find
+ * Companion to the `db-change` / `db-deprecate-table` / `db-move-table-schema`
+ * skills. Before you deprecate, move, or drop a column of a table you MUST find
  * every consumer — a missed reference is how data loss / 404s / silent-wrong
  * values ship. Import-graph tools miss lazy/mid-file imports and never see
  * raw-SQL strings; this greps the raw text (via `git grep`, respecting

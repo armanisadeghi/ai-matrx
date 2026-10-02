@@ -5,14 +5,14 @@ import { ListTodo, Loader2 } from "lucide-react";
 import { OrgResourceLayout } from "../OrgResourceLayout";
 import { OrgResourceList } from "@/features/organizations/components/OrgResourceList";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { useResolvedOrganization } from "@/features/organizations/hooks";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const SELECT_COLS = "id, title, status, priority, due_date, updated_at";
 
 const fetchOwned = async (orgId: string) => {
-  const res = await workspaceDb(supabase)
+  const res = await projectsDb(supabase)
     .from("tasks")
     .select(SELECT_COLS)
     .is("deleted_at", null)

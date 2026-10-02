@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * TaskRecurrencePicker — preset-based editor for workspace.tasks.recurrence_rule
+ * TaskRecurrencePicker — preset-based editor for projects.tasks.recurrence_rule
  * (the RRULE subset in utils/recurrence.ts). Completing a recurring task rolls
  * its due date forward instead of closing it — see taskService.completeTask.
  */

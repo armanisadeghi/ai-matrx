@@ -3,7 +3,7 @@
  * mirroring `constants/priority.ts` for priorities and `constants/status.ts`
  * for the lifecycle set.
  *
- * DB: stored inside `workspace.tasks.settings` JSONB (written by
+ * DB: stored inside `projects.tasks.settings` JSONB (written by
  * `services/taskService.ts#updateTaskLabels`), so there is no CHECK constraint
  * behind it — this array IS the constraint, and it is what the label picker,
  * the surface manifests' agent-facing prose, and the surface write handlers

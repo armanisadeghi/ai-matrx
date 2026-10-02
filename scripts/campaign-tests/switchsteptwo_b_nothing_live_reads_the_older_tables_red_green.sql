@@ -1,7 +1,7 @@
 -- LANE SWITCH-STEP-TWO (2026-10-01) — RED/GREEN for switchsteptwo_b_the_new_system_stops_asking_the_older_tables.sql.
 -- CLONE ONLY, read-only, one transaction ROLLED BACK. RED on the bodies before file b: the 20 store bodies and the two
 -- pick-list views still name the older tables (workbench.udt_datasets … udt_structured_list_items) outside a comment,
--- so moving those tables to the graveyard breaks them (measured: custom.record_write, the data home, the switches panel).
+-- so moving those tables to the deprecated schema breaks them (measured: custom.record_write, the data home, the switches panel).
 -- GREEN with file b: none of them names an older data-table or pick-list relation; each moved pick-list choice carries
 -- its order (metadata.option_position) so the order survives the older items' created_at.
 --   psql -f scripts/campaign-tests/switchsteptwo_b_nothing_live_reads_the_older_tables_red_green.sql

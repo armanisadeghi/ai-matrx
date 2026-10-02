@@ -2,7 +2,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -71,7 +71,7 @@ export interface UpdateTaskInput {
   source_label?: string | null;
 }
 
-/** A reminder attached to a task (stored in workspace.tasks.reminders jsonb). */
+/** A reminder attached to a task (stored in projects.tasks.reminders jsonb). */
 export interface TaskReminder {
   id: string;
   /** Absolute fire time (ISO timestamptz) — set either this or offsetMinutes. */
@@ -105,7 +105,7 @@ export async function createTask(
     // to a own organization. Law:
     // common-docs/policies/context-is-carried-never-rebuilt.md.
     const organizationId = await ensureOrgId(input.organization_id);
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("tasks")
       .insert({
         title: input.title,
@@ -189,7 +189,7 @@ export async function getUserTasks(scope?: ListScopeWord): Promise<DatabaseTask[
   // DD-137c / §3.3: the `task` token is registered `organization`, so this opens on the
   // organization's tasks. RLS decides what is readable; this decides only where it starts.
   const listScope = await defaultListFilter("task", { userId, requested: scope });
-  let taskQuery = workspaceDb(supabase)
+  let taskQuery = projectsDb(supabase)
     .from("tasks")
     .select("*")
     .is("deleted_at", null);
@@ -210,7 +210,7 @@ export async function getProjectTasks(
 ): Promise<DatabaseTask[]> {
   // A failed read THROWS: `[]` would read as "this project has no tasks" in
   // every list, picker and export built on it.
-  const { data, error } = await workspaceDb(supabase)
+  const { data, error } = await projectsDb(supabase)
     .from("tasks")
     .select("*")
     .is("deleted_at", null)
@@ -234,7 +234,7 @@ export async function getTopLevelProjectTasks(
   projectId: string,
 ): Promise<DatabaseTask[]> {
   try {
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("tasks")
       .select("*")
       .is("deleted_at", null)
@@ -480,7 +480,7 @@ export async function updateTaskLabels(
   try {
     // Merge into existing settings — a bare `{ labels }` write used to clobber
     // every other settings key.
-    const { data: current, error: readError } = await workspaceDb(supabase)
+    const { data: current, error: readError } = await projectsDb(supabase)
       .from("tasks")
       .select("settings")
       .eq("id", taskId)
@@ -496,7 +496,7 @@ export async function updateTaskLabels(
       labels,
     };
     const { error } = await tryWriteOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("tasks")
         .update({ settings })
         .eq("id", taskId)
@@ -523,7 +523,7 @@ export async function getTaskById(
   taskId: string,
 ): Promise<DatabaseTask | null> {
   try {
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("tasks")
       .select("*")
       .is("deleted_at", null)
@@ -560,7 +560,7 @@ export async function updateTaskResult(
     // If assignee is changing, get the current task first for comparison
     let previousAssigneeId: string | null = null;
     if (updates.assignee_id !== undefined) {
-      const { data: currentTask } = await workspaceDb(supabase)
+      const { data: currentTask } = await projectsDb(supabase)
         .from("tasks")
         .select("assignee_id")
         .eq("id", taskId)
@@ -570,7 +570,7 @@ export async function updateTaskResult(
     }
 
     const { reminders, ...rest } = updates;
-    const payload: TablesUpdate<{ schema: "workspace" }, "tasks"> = {
+    const payload: TablesUpdate<{ schema: "projects" }, "tasks"> = {
       ...rest,
     };
     // The assignment notice reads the persisted actor back from the task.
@@ -592,7 +592,7 @@ export async function updateTaskResult(
     // Zero rows (RLS refused, or the task is gone) is said in words — a
     // `.single()` here used to turn it into PGRST116 and a generic toast.
     const { row: data, error } = await tryWriteOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("tasks")
         .update(payload)
         .eq("id", taskId)
@@ -657,13 +657,13 @@ async function sendTaskAssignmentNotification(
  *
  * 🚨 This was a hard `DELETE` until 2026-09-12 (DD-119). Deleting a task through
  * /tasks destroyed the row AND its subtasks, while deleting a chat on the same
- * afternoon was a soft delete whose dialog promised recovery. `workspace.tasks`
+ * afternoon was a soft delete whose dialog promised recovery. `projects.tasks`
  * is a registered entity with `deleted_at`; the platform rule is soft delete on
  * every registered entity, and the database now REFUSES a client hard delete
  * (`platform._refuse_client_hard_delete`, migrations/task_hard_delete_door_closed.sql).
  *
  * Subtasks follow automatically: `platform.soft_delete_edge` declares
- * `workspace.tasks.parent_task_id` a `cascade` edge, so the trigger stamps every
+ * `projects.tasks.parent_task_id` a `cascade` edge, so the trigger stamps every
  * subtask with this exact timestamp and `public.entity_undelete('task', id)`
  * brings back exactly the ones this removal took (db-rules §8a).
  */
@@ -679,7 +679,7 @@ export async function deleteTask(taskId: string): Promise<boolean> {
 export async function deleteTaskExplained(taskId: string): Promise<Error | null> {
   try {
     const { error } = await tryWriteOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("tasks")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", taskId)
@@ -690,7 +690,7 @@ export async function deleteTaskExplained(taskId: string): Promise<Error | null>
         noun: "task",
         alreadyDone: {
           reread: () =>
-            workspaceDb(supabase)
+            projectsDb(supabase)
               .from("tasks")
               .select("id, deleted_at")
               .eq("id", taskId)
@@ -719,7 +719,7 @@ export async function deleteTaskExplained(taskId: string): Promise<Error | null>
  * (`useSubtasksRead`).
  */
 export async function getSubtasks(taskId: string): Promise<DatabaseTask[]> {
-  const { data, error } = await workspaceDb(supabase)
+  const { data, error } = await projectsDb(supabase)
     .from("tasks")
     .select("*")
     .is("deleted_at", null)
@@ -886,7 +886,7 @@ export async function getSharedWithMeTasks(): Promise<DatabaseTask[]> {
 
     const taskIds = grants.map((g) => g.resourceId);
 
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("tasks")
       .select("*")
       .is("deleted_at", null)

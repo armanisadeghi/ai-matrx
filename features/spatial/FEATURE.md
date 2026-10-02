@@ -115,7 +115,7 @@ each stage's tile is added when that stage's request starts.
 
 ## Saved boards
 
-`workspace.spatial_boards` (token `spatial_board`, certified, soft delete, versioned; columns
+`projects.spatial_boards` (token `spatial_board`, certified, soft delete, versioned; columns
 `title`, `description`, `camera`, `nodes`, `edges`, `settings`, `last_opened_at` + the base
 contract). The stored shape is `board/document.ts` (parse reports every malformed node; groups and
 shapes ride in `nodes` flagged; JSON Canvas 1.0 export). The home board is the row whose

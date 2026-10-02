@@ -77,14 +77,14 @@ function predicatesFor(written_by?: PartyListQuery["filters"]["written_by"]) {
 describe("the Customers grid's one provenance chip is a real predicate", () => {
   it("'Added by an agent' narrows to rows an AI created", () => {
     expect(predicatesFor("agent")).toEqual([
-      { method: "eq", args: ["created_by_tier", "ai"] },
+      { method: "eq", args: ["created_by_tier", "agent"] },
     ]);
   });
 
   it("'Agent-written then edited' adds the second fact, it is not a third kind", () => {
     expect(predicatesFor("agent_edited")).toEqual([
-      { method: "eq", args: ["created_by_tier", "ai"] },
-      { method: "eq", args: ["updated_by_tier", "human"] },
+      { method: "eq", args: ["created_by_tier", "agent"] },
+      { method: "eq", args: ["updated_by_tier", "user"] },
     ]);
   });
 
@@ -98,12 +98,12 @@ describe("the Customers grid's one provenance chip is a real predicate", () => {
 
   it("a person's contact is absent from the agent filter by construction", () => {
     // The chair's own control, stated as the predicate that enforces it: the
-    // filter asks for created_by_tier = 'ai', and a person's row carries
-    // 'human' or NULL. Neither equals 'ai', so no `.eq` can return it — there
+    // filter asks for created_by_tier = 'agent', and a person's row carries
+    // 'user' or NULL. Neither equals 'agent', so no `.eq` can return it — there
     // is no branch in which a hand-created contact appears under this chip.
     const [only] = predicatesFor("agent");
-    expect(only.args).toEqual(["created_by_tier", "ai"]);
-    expect(["human", null]).not.toContain(only.args[1]);
+    expect(only.args).toEqual(["created_by_tier", "agent"]);
+    expect(["user", null]).not.toContain(only.args[1]);
   });
 });
 

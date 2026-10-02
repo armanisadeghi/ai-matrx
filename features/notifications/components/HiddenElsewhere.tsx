@@ -32,7 +32,7 @@ import {
   undismissTask,
   unsnoozeTask,
 } from "@/features/tasks/services/taskUserStateService";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { supabase } from "@/utils/supabase/client";
 import { fullTime } from "../presentation";
 import { useWorkWaiting } from "../useInbox";
@@ -118,7 +118,7 @@ async function loadHidden(userId: string): Promise<HiddenAnswer> {
     (t) => t.dismissed_at !== null || (t.snoozed_until !== null && Date.parse(t.snoozed_until) > now),
   );
   if (hiddenTasks.length) {
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("tasks")
       .select("id, title")
       .is("deleted_at", null)

@@ -1100,14 +1100,14 @@ export async function remediateBrokenMapping(
   // the DB trigger re-validates this write).
   //
   // `sb` is the SIGNED-IN admin's own client, never the service-role client.
-  // A service-role write names no actor (tier `code`, no `app.actor_system`),
+  // A service-role write names no actor (tier `system`, no `app.actor_system`),
   // so `platform._stamp_actor_tier` refuses it with 23514 — this route failed
   // on every call until 2026-09-25. And `platform.associations` refuses every
   // direct client INSERT/UPDATE/DELETE (`associations_client_*_refused`), so
   // the write goes through the registered door, `public.assoc_add`: it upserts
   // on (source, target, role) and replaces the payload when `p_payload_kind`
   // is set. Reads pass `assoc_select` (platform admin). The admin's session
-  // stamps `human` + their id; assoc_add's access ladder (`iam.has_access` on
+  // stamps `user` + their id; assoc_add's access ladder (`iam.has_access` on
   // both endpoints) decides, so an admin cannot rewrite a binding on an agent
   // they have no access to — that refusal is reported as Forbidden (403).
   const { data: row, error: readErr } = await sb

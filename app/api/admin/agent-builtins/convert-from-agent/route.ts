@@ -17,7 +17,7 @@ import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
  * Every read and write here goes through the SIGNED-IN admin's own client, never
  * the service-role admin client. Two reasons, both real:
  *   1. Provenance. `platform._stamp_actor_tier` refuses (23514) any write that
- *      resolves to tier `code` with no `app.actor_system` — which is exactly what
+ *      resolves to tier `system` with no `app.actor_system` — which is exactly what
  *      a service-role write is (no auth.uid(), no GUC). The person clicking
  *      "Create system agent" IS the author, and their own session stamps
  *      `human` + their id. That is the correct provenance, not a workaround.

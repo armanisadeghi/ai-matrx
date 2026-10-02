@@ -8,7 +8,7 @@ import {
   PayloadAction,
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -71,7 +71,7 @@ export const fetchProject = createAsyncThunk<FetchProjectResult, string>(
       return { status: "skipped" }; // already fresh full-data
     }
 
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("projects")
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
@@ -105,7 +105,7 @@ export const fetchProject = createAsyncThunk<FetchProjectResult, string>(
 export const fetchOrgProjects = createAsyncThunk(
   "projects/fetchByOrg",
   async (orgId: string) => {
-    const { data, error } = await workspaceDb(supabase)
+    const { data, error } = await projectsDb(supabase)
       .from("projects")
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
@@ -137,7 +137,7 @@ export const createProjectThunk = createAsyncThunk(
     description?: string;
   }) => {
     const userId = requireUserId();
-    const { data: proj, error } = await workspaceDb(supabase)
+    const { data: proj, error } = await projectsDb(supabase)
       .from("projects")
       .insert({
         ...data,
@@ -180,7 +180,7 @@ export const updateProjectThunk = createAsyncThunk(
     };
   }) => {
     await writeOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("projects")
         .update(params.patch)
         .eq("id", params.id)
@@ -194,10 +194,10 @@ export const updateProjectThunk = createAsyncThunk(
 export const deleteProjectThunk = createAsyncThunk(
   "projects/delete",
   async (projectId: string) => {
-    // Soft delete, never a hard one: `workspace.projects` is a registered
+    // Soft delete, never a hard one: `projects.projects` is a registered
     // entity with `deleted_at` and every reader filters it (db-rules §8).
     await writeOne(
-      workspaceDb(supabase)
+      projectsDb(supabase)
         .from("projects")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", projectId)
@@ -208,7 +208,7 @@ export const deleteProjectThunk = createAsyncThunk(
         noun: "project",
         alreadyDone: {
           reread: () =>
-            workspaceDb(supabase)
+            projectsDb(supabase)
               .from("projects")
               .select("id, deleted_at")
               .eq("id", projectId)

@@ -77,7 +77,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { supabase } from "@/utils/supabase/client";
-import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -141,7 +141,7 @@ type SortKey = "name" | "org" | "open" | "done" | "updated";
 type OrgMap = Map<string, { name: string; slug: string }>;
 
 type ProjectListRow = Pick<
-  Tables<{ schema: "workspace" }, "projects">,
+  Tables<{ schema: "projects" }, "projects">,
   | "id"
   | "name"
   | "slug"
@@ -156,7 +156,7 @@ type ProjectListRow = Pick<
 >;
 
 type TaskSummaryRow = Pick<
-  Tables<{ schema: "workspace" }, "tasks">,
+  Tables<{ schema: "projects" }, "tasks">,
   "id" | "project_id" | "status" | "parent_task_id" | "title"
 >;
 
@@ -272,7 +272,7 @@ export function ProjectsHub({
       try {
         const data = await readAllRows<ProjectListRow>(
           ({ from, to }) =>
-            workspaceDb(supabase)
+            projectsDb(supabase)
               .from("projects")
               .select(
                 "id, name, slug, description, organization_id, created_by, updated_at, status, priority, start_date, target_date",
@@ -282,7 +282,7 @@ export function ProjectsHub({
               .order("updated_at", { ascending: false })
               .order("id", { ascending: true })
               .range(from, to),
-          { label: "workspace.projects" },
+          { label: "projects.projects" },
         );
         if (cancelled) return;
         setProjects(
@@ -333,7 +333,7 @@ export function ProjectsHub({
       try {
         const data = await readAllRows<TaskSummaryRow>(
           ({ from, to }) =>
-            workspaceDb(supabase)
+            projectsDb(supabase)
               .from("tasks")
               .select("id, project_id, status, parent_task_id, title", {
                 count: "exact",
@@ -342,7 +342,7 @@ export function ProjectsHub({
               .in("project_id", ids)
               .order("id", { ascending: true })
               .range(from, to),
-          { label: "workspace.tasks project summaries" },
+          { label: "projects.tasks project summaries" },
         );
         if (cancelled) return;
         const m = new Map<string, Stat>();
