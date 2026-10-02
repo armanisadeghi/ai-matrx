@@ -355,7 +355,8 @@ export const WORK_ITEMS: BoardItemType[] = [
       return id ? `/chat/${id}` : null;
     },
     kindLabel: "chat",
-    sleeps: true, // LANE-TRIAL
+    // Checked 2026-10-02: transcript, scroll and draft kept; no relaunch; the caret stays put; the draft sends.
+    sleeps: true,
   },
   {
     key: "note",
@@ -377,7 +378,8 @@ export const WORK_ITEMS: BoardItemType[] = [
       return id ? `/notes/${id}` : null;
     },
     kindLabel: "note",
-    sleeps: true, // LANE-TRIAL
+    // Checked 2026-10-02 (Write view): text kept, no second note, the next edit saves everything.
+    sleeps: true,
   },
   {
     key: "file",

@@ -59,8 +59,11 @@ stale text. By construction a batched tile renders once per interval instead of 
   keyboard focus inside, or `holdAwake`; frozen 8 s after it stops being needed; discarded beyond 12
   warm). A tile acts on it only with `sleeps` (React `<Activity mode="hidden">`) / `discardable`, set per
   item type (`BoardItemType.sleeps`) after a browser check — waking re-runs every effect, and content
-  whose mount effect resets itself loses work. Label and image sleep today; chat, note, document, file
-  and table are still to be checked. What must outlive a sleeping body (a chat's live run, holding the
+  whose mount effect resets itself loses work. Sleeping (browser-checked 2026-10-02): label, image,
+  chat, note, task, research, project. Awake, with the reason: document (Univer is rebuilt from the
+  server snapshot), file (`@monaco-editor/react` never re-creates its editor; previews re-download),
+  table and record (the organization gate re-resolves and unmounts the grid), war room (re-hydrate
+  swaps the stage for a skeleton), workflow run (a pause opens the floating run window). What must outlive a sleeping body (a chat's live run, holding the
   tile awake while the agent works) is the type's `Keep`, mounted outside the boundary.
 - **Nothing inside a tile takes over the board** (`engine/tile-navigation.tsx`). A tile body sees a
   board-provided app router; a page it opens (router push, link, `location.assign`, form) lands ON the
@@ -380,6 +383,11 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
+- 2026-10-02 — Sleep census: chat, note, task, research and project now sleep, each checked in the
+  browser (sleep → wake → text/scroll/draft kept, nothing relaunched or re-created, edits still save).
+  Effects that threw work away on a re-run were made idempotent at their source: the Visual rich
+  editor (Tiptap rebuilt from mount text), the inline file editor (reset + re-read), the composer
+  autofocus (stole the caret), project name/description drafts and the project task list.
 - 2026-10-02 — The meeting board is the canonical Board: `MeetingBoard` renders `UserBoard` over a
   saved board linked by `settings.meeting_id` (`getMeetingBoard`; a guest keeps the same document in
   the browser). Its five live sections became the registered item type `meeting_part`

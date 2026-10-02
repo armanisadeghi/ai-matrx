@@ -998,7 +998,8 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     bringIn: { label: "Tasks", Picker: TaskPicker },
     href: hrefFor(FEATURE_ENTITY.task, registryHref("task")),
     kindLabel: "task",
-    sleeps: true, // LANE-TRIAL
+    // Checked 2026-10-02: draft and edits kept, one insert on create, an unsaved description still saves.
+    sleeps: true,
   },
   {
     key: FEATURE_ENTITY.warRoom,
@@ -1059,7 +1060,8 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     bringIn: { label: "Research topic", Picker: ResearchPicker },
     href: hrefFor(FEATURE_ENTITY.research, registryHref("research_topic")),
     kindLabel: "research report",
-    sleeps: true, // LANE-TRIAL
+    // Checked 2026-10-02: report and scroll kept; nothing re-run or written.
+    sleeps: true,
   },
   {
     key: FEATURE_ENTITY.project,
@@ -1074,6 +1076,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     bringIn: { label: "Project", Picker: ProjectPickerPanel },
     href: hrefFor(FEATURE_ENTITY.project, registryHref("project")),
     kindLabel: "project",
-    sleeps: true, // LANE-TRIAL
+    // Checked 2026-10-02: create form and task list kept (no re-read), scroll kept, renames still save.
+    sleeps: true,
   },
 ];
