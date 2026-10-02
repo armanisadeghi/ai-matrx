@@ -30,8 +30,12 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser, type ApiClaimsUser } from "@/utils/supabase/claimsUser";
-import { PROJECT_SIGNING_KEYS } from "@/utils/supabase/projectSigningKeys";
+import { pinnedSigningKeysFor } from "@/utils/supabase/projectSigningKeys";
 import type { AuthError } from "@supabase/supabase-js";
+import {
+  endUnverifiableSession,
+  isUnverifiableTokenError,
+} from "@/utils/supabase/unverifiableSession";
 
 type ClaimsResult = { data: { user: ApiClaimsUser | null }; error: AuthError | null };
 
@@ -78,9 +82,17 @@ export async function getClientClaimsUserCached(): Promise<ClaimsResult> {
     // wrapper's own in-flight dedup already collapsed the two call sites to
     // one) still fired `jwks.json` TWICE — auth-js/jose's own remote-JWKS
     // fetch-then-retry-on-miss behavior, not a duplicate call on our side.
-    jwks: { keys: PROJECT_SIGNING_KEYS },
+    // Scoped to the authority this bundle talks to (projectSigningKeys.ts):
+    // a session minted by another project must fail here, not verify.
+    jwks: { keys: pinnedSigningKeysFor(process.env.NEXT_PUBLIC_SUPABASE_URL) },
   })
     .then((result) => {
+      // The authority SETTLED that this browser's token is not one of its own
+      // (minted by another project — live vs the nightly clone). The earliest
+      // point to end it, before any read is refused (unverifiableSession.ts).
+      if (isUnverifiableTokenError(result.error)) {
+        void endUnverifiableSession(supabase.auth, { door: "auth.getClaims", via: "claims" });
+      }
       cached = { value: result, expiresAt: Date.now() + TTL_MS };
       return result;
     })

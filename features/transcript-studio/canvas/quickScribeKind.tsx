@@ -31,14 +31,3 @@ export interface OpenQuickScribeOptions {
   /** Resume an existing Scribe session instead of minting one. */
   sessionId?: string;
 }
-
-/** Opens Quick Scribe in the canvas (or focuses the running capture). */
-export function useOpenQuickScribe() {
-  const open = useToolOpener((options: OpenQuickScribeOptions) => ({
-    kind: QUICK_SCRIBE_KIND,
-    key: "default",
-    title: TITLE,
-    data: { sessionId: options.sessionId ?? null },
-  }));
-  return (options: OpenQuickScribeOptions = {}) => open(options);
-}

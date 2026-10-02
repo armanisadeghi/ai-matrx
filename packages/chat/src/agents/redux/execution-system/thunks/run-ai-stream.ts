@@ -681,11 +681,28 @@ export async function runAiStream(
           serverMessage || "The request was rejected.",
         );
       } else if (code === 403) {
-        // A boundary the server refused on purpose — today: an attachment the
-        // caller cannot read (`attachment_access_denied`). The tenant contract
-        // worked, so this reaches the normal request-error UI but is never
-        // recorded as a system failure. Never relabelled: the server's sentence
-        // is the only one that knows what actually happened.
+        // A boundary the server refused on purpose — an attachment the caller
+        // cannot read (`attachment_access_denied`), or a guest past the free AI
+        // allowance (`guest_ai_allowance_used`). The tenant contract worked, so
+        // this reaches the normal request-error UI but is never recorded as a
+        // system failure. Never relabelled: the server's sentence is the only
+        // one that knows what actually happened.
+        //
+        // It IS handed to the host's diagnostics sink as a LOCAL, non-durable
+        // entry: that sink is the one shared error layer, and the host listens
+        // there for refusals it owns UI for (the guest allowance reminder,
+        // matrx-frontend lib/guest/guest-ai-allowance.ts). Without this the
+        // stream door was the one AI path the reminder could never see.
+        captureError({
+          source: "api-http",
+          relation: `POST ${new URL(url, "http://local").pathname}`,
+          code: errorCode ?? "forbidden",
+          message: serverMessage || "The request was refused.",
+          status: code,
+          ...(userMessage ? { userMessage } : {}),
+          raw: { serverDetail: rawErrorBody },
+          durable: false,
+        });
         throw new ExpectedRequestConflictError(
           errorCode ?? "forbidden",
           serverMessage ||

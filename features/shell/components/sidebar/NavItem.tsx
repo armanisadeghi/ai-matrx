@@ -9,7 +9,8 @@
 
 import AppLink from "@/components/navigation/AppLink";
 import ShellIcon from "../ShellIcon";
-import type { ShellNavItem } from "../../constants/nav-data";
+import { navToneIconClass, type ShellNavItem } from "../../constants/nav-data";
+import { cn } from "@/lib/utils";
 
 interface NavItemProps {
   item: ShellNavItem;
@@ -25,7 +26,7 @@ export default function NavItem({ item }: NavItemProps) {
         rel="noopener noreferrer"
         className="shell-nav-item shell-tactile-subtle"
       >
-        <span className="shell-nav-icon">
+        <span className={cn("shell-nav-icon", navToneIconClass(item.tone))}>
           <ShellIcon name={item.iconName} size={18} strokeWidth={1.75} />
         </span>
         <span className="shell-nav-label">{item.label}</span>
@@ -43,7 +44,7 @@ export default function NavItem({ item }: NavItemProps) {
       data-nav-href={item.href}
       className="shell-nav-item shell-tactile-subtle"
     >
-      <span className="shell-nav-icon">
+      <span className={cn("shell-nav-icon", navToneIconClass(item.tone))}>
         <ShellIcon name={item.iconName} size={18} strokeWidth={1.75} />
       </span>
       <span className="shell-nav-label">{item.label}</span>

@@ -30,9 +30,3 @@ export const quickNotesKind = defineCanvasKind<null>({
     },
   ],
 });
-
-/** Opens Quick Notes in the canvas (or focuses its tab). */
-export function useOpenQuickNotes() {
-  const open = useToolOpener((_: null) => ({ kind: QUICK_NOTES_KIND, key: "default", title: TITLE, data: null }));
-  return () => open(null);
-}

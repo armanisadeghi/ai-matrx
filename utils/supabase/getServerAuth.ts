@@ -40,7 +40,7 @@ import {
   isAuthTransportFailure,
   type ApiClaimsUser,
 } from "./claimsUser";
-import { PROJECT_SIGNING_KEYS } from "./projectSigningKeys";
+import { pinnedSigningKeysFor } from "./projectSigningKeys";
 
 export interface ServerAuthState {
   /** `true` when the request carries a locally verified access token. */
@@ -77,7 +77,9 @@ async function resolveOnce(): Promise<ServerAuthState> {
   } = await getClaimsUser(supabase, undefined, {
     // Pinned public key: a cold function verifies with no JWKS fetch (the
     // fetch that spent the budget on first loads — see projectSigningKeys.ts).
-    jwks: { keys: PROJECT_SIGNING_KEYS },
+    // Only the keys of the authority this build talks to: a token signed by
+    // another project (live vs the nightly clone) must never verify here.
+    jwks: { keys: pinnedSigningKeysFor(process.env.NEXT_PUBLIC_SUPABASE_URL) },
   });
   // Mirror the proxy exactly: unavailable means UNREACHABLE (or a spent
   // budget), never "the token was bad". See `isAuthTransportFailure`.

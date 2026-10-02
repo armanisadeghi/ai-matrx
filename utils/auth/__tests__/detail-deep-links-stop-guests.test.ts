@@ -25,7 +25,7 @@ describe("routeRequiresAuthentication", () => {
   });
 
   it("still stops the families it always did", () => {
-    expect(routeRequiresAuthentication("/chat")).toBe(true);
+    expect(routeRequiresAuthentication("/dashboard")).toBe(true);
     expect(routeRequiresAuthentication("/administration/reporting")).toBe(true);
     expect(routeRequiresAuthentication("/")).toBe(false);
   });

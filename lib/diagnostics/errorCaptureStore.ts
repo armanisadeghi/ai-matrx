@@ -26,6 +26,7 @@
  * feeding this store, so there is no parallel system.
  */
 
+import { noticeGuestAiAllowanceRefusal } from "@/lib/guest/guest-ai-allowance";
 import {
   collectBrowserProvenance,
   type BrowserProvenance,
@@ -804,7 +805,14 @@ function bumpUnseen(id: string, tier: ErrorTier): void {
   else if (tier === "orange") unseenOrange += 1;
 }
 
-export function captureError(input: CaptureInput): string {
+export function captureError(rawInput: CaptureInput): string {
+  // THE GUEST AI ALLOWANCE (lib/guest/guest-ai-allowance.ts). Every request and
+  // stream failure reaches this sink, so this one call is how every AI surface
+  // shows the "create a free account" reminder. The refusal is an expected
+  // product answer, so it stays in the local Inspector and is never filed.
+  const input: CaptureInput = noticeGuestAiAllowanceRefusal(rawInput)
+    ? { ...rawInput, durable: false }
+    : rawInput;
   const at = nowMs();
   occurrences += 1;
 

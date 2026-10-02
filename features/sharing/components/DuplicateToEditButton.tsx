@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Loader2, MessageSquare, GraduationCap, ListChecks } from "lucide-react";
+import { Copy, Loader2, MessageSquare, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
@@ -44,7 +44,7 @@ export function DuplicateToEditButton({
    * surfaces — those fork token-less when published to the web, by an Anyone link, or by a grant.
    */
   shareToken?: string;
-  /** Override the default per-type verb ("Study these flashcards", …). */
+  /** Override the default per-type verb ("Continue this chat", …). */
   label?: string;
   size?: "sm" | "default" | "lg";
   variant?: "default" | "outline" | "secondary";
@@ -58,7 +58,9 @@ export function DuplicateToEditButton({
     (resourceType === "conversation"
       ? "Continue this chat"
       : resourceType === "fc_set"
-        ? "Study these flashcards"
+        ? // Studying a deck never needs an account (the public page studies it
+          // in place) — this action is only ever about SAVING it.
+          "Save a copy"
         : resourceType === "quiz_session"
           ? "Take this quiz"
           : "Make a copy");
@@ -66,9 +68,7 @@ export function DuplicateToEditButton({
   const Icon =
     resourceType === "conversation"
       ? MessageSquare
-      : resourceType === "fc_set"
-        ? GraduationCap
-        : resourceType === "quiz_session"
+      : resourceType === "quiz_session"
           ? ListChecks
           : Copy;
 

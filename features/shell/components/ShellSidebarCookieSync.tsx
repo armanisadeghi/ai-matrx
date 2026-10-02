@@ -13,6 +13,7 @@
 
 import { useEffect } from "react";
 import {
+  SHELL_DOMAIN_PANEL_COOKIE,
   SHELL_SIDEBAR_COOKIE,
   SHELL_SIDEBAR_COOKIE_MAX_AGE,
 } from "@/features/shell/constants/sidebar-cookie";
@@ -24,9 +25,13 @@ export default function ShellSidebarCookieSync() {
     ) as HTMLInputElement | null;
     if (!toggle) return undefined;
 
+    // On a domain-panel family the checkbox is the PANEL's; its choice is
+    // remembered apart, so the main sidebar preference is never touched there.
     const write = () => {
+      const panel = document.querySelector(".shell-root")?.hasAttribute("data-domain-panel");
+      const name = panel ? SHELL_DOMAIN_PANEL_COOKIE : SHELL_SIDEBAR_COOKIE;
       document.cookie =
-        `${SHELL_SIDEBAR_COOKIE}=${toggle.checked ? "1" : "0"}` +
+        `${name}=${toggle.checked ? "1" : "0"}` +
         `; path=/; max-age=${SHELL_SIDEBAR_COOKIE_MAX_AGE}; samesite=lax`;
     };
 

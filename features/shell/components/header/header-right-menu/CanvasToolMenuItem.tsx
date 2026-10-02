@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useOpenQuickTool, type QuickToolKind } from "@/features/canvas/host/toolKinds";
+import { useQuickToolToggle, type QuickToolKind } from "@/features/canvas/host/toolKinds";
 import { getMenuIcon, type MenuIconKey } from "./menuIconRegistry";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
 import { MenuItemCloseLabel } from "./menuCheckboxId";
@@ -13,13 +13,14 @@ interface CanvasToolMenuItemProps {
   className?: string;
 }
 
-/** A menu row that opens a Quick Access tool as a canvas tab. */
+/** A menu row that toggles a Quick Access tool's canvas tab. */
 export function CanvasToolMenuItem({ canvasTool, icon, label, className }: CanvasToolMenuItemProps) {
-  const openTool = useOpenQuickTool();
+  const { isVisible, toggle } = useQuickToolToggle(canvasTool);
   const Icon = getMenuIcon(icon);
   return (
     <MenuItemCloseLabel>
-      <button className={cn(MENU_ITEM_CLASS, className)} onClick={() => openTool(canvasTool)}>
+      <button className={cn(MENU_ITEM_CLASS, "aria-pressed:bg-[var(--matrx-glass-bg-hover)] aria-pressed:font-medium", className)} aria-pressed={isVisible}
+        onClick={toggle}>
         <Icon />
         {label}
       </button>

@@ -19,7 +19,7 @@ jest.mock("../claimsUser", () => {
 jest.mock("react", () => ({ ...jest.requireActual("react"), cache: (fn: unknown) => fn }));
 
 import { getServerAuth } from "../getServerAuth";
-import { PROJECT_SIGNING_KEYS } from "../projectSigningKeys";
+import { pinnedSigningKeysFor } from "../projectSigningKeys";
 
 const user = { id: "u-1", app_metadata: {}, user_metadata: {} };
 const timeout = () => ({
@@ -57,5 +57,7 @@ it("a settled guest is answered once, with no retry", async () => {
 it("verifies against the pinned public key so a cold render fetches no JWKS", async () => {
   getClaimsUser.mockResolvedValueOnce({ data: { user }, error: null });
   await getServerAuth();
-  expect(getClaimsUser.mock.calls[0][2]).toEqual({ jwks: { keys: PROJECT_SIGNING_KEYS } });
+  expect(getClaimsUser.mock.calls[0][2]).toEqual({
+    jwks: { keys: pinnedSigningKeysFor(process.env.NEXT_PUBLIC_SUPABASE_URL) },
+  });
 });

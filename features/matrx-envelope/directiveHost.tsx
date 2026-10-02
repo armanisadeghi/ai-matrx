@@ -55,6 +55,7 @@ import {
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
+  CATALOG_ALIASES,
   CATALOG_NOUNS,
   CATALOG_NOUN_DISPLAY,
   DIRECTIVE_ITEM_KINDS,
@@ -74,24 +75,33 @@ import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/
 import { selectOrganizations } from "@/features/scopes/redux/selectors/tree";
 import { readDirectiveRecord } from "@/features/matrx-envelope/directiveRecordRow";
 import { explainDirectiveFailure } from "@/features/matrx-envelope/directiveFailureWords";
+import { referenceTypeDisplayLabel } from "@/features/matrx-envelope/components/reference-picker/referencePickerTypes";
 
 const DIRECTIVE_ITEM_OVERLAY_ID = "directiveItemWindow" as const;
 
 /**
- * THE AUTO-VIEW's naming half: the catalog is the authority for a noun's label,
- * family and title column. A noun the mirror does not carry returns `undefined`
- * and the package degrades to a title-cased token — legible, honestly derived,
- * never blank.
+ * THE AUTO-VIEW's naming half. A noun's LABEL is the one name the record type
+ * has everywhere — the reference picker's (`referenceTypeDisplayLabel`), so a
+ * card never says "Conversation" where the picker says "Chat". Family and title
+ * column come from the catalog; a noun it does not carry has neither.
+ * Guard: `__tests__/a-record-type-has-one-name.test.ts` (every noun and alias).
  */
 export const matrxDirectiveNouns: DirectiveNounCatalog = (
   noun: string,
 ): DirectiveNounEntry | undefined => {
-  const display = CATALOG_NOUN_DISPLAY[noun];
-  const entry = CATALOG_NOUNS[noun];
-  if (!display && !entry) return undefined;
+  // An alias reads as its canonical type.
+  const canonical = (CATALOG_ALIASES as Record<string, string>)[noun] ?? noun;
+  const display = CATALOG_NOUN_DISPLAY[canonical];
+  const entry = CATALOG_NOUNS[canonical];
+  // A type the catalog does not carry still has its one name (the picker's).
+  // ONE record type, ONE name: the picker's display name, never the server
+  // catalog's own word ("Chat", not "Conversation").
+  const label = referenceTypeDisplayLabel(noun);
+  // A group named like its type says nothing ("Create Chat · Chat").
+  const family = display?.family && display.family !== label ? display.family : null;
   return {
-    label: display?.label ?? null,
-    family: display?.family ?? null,
+    label,
+    family,
     titleColumn: entry?.title_column ?? null,
   };
 };
@@ -174,8 +184,11 @@ async function confirm(shell: DirectiveShell): Promise<DirectiveApplyResult> {
       ...(shell.force ? { force: true } : {}),
     });
     const records = appliedRecords(shell.__kind, result.receipts);
-    // Every label on screen naming a record this apply changed resolves again,
-    // so the card's own row never keeps the name it just overwrote.
+    // Every label, trash state and "old value" on screen naming a record this
+    // apply changed reads it again — the card's own row never keeps the name it
+    // just overwrote, and another card's confirm never shows the value this one
+    // replaced (G7). The package's Apply announces the same records; this host
+    // door covers any caller of `confirm` that is not the package's button.
     for (const record of records) invalidateReferenceLabel(record.id);
     return {
       applied: result.applied,

@@ -163,7 +163,11 @@ reply as the sink. Not expanded here.
   produced the wrong state), or **INCONCLUSIVE** (the runner did not finish). INCONCLUSIVE is never a
   pass. Twice on one playbook means the steps are unclear or the product is unusable at that step,
   and you find out which.
-- The preview serves the **clone**, never live (`pnpm preview:status` shows the mode). Never
+- The preview serves the **clone**, never live (`pnpm preview:status` shows the mode) — in clone mode the page,
+  the local aidream at :8200 and the database are all the nightly copy, so a chat run is honest there too; the
+  2026-10-01 "chat runs live" exception is withdrawn (2026-10-02: a live-mode run was cut in half when another
+  session flipped the shared preview back to clone — a mode flip mid-run is INCONCLUSIVE, and nobody flips the
+  default). Fixture resets on the clone need `BEGIN READ WRITE` (the clone URL's role defaults to read-only). Never
   Arman's Chrome. Never a sign-in or sign-out on a Matrx host outside the runner's own hostname.
 
 **The fix loop is cheap or it does not happen.** After the first run that reaches the end, the runner's own

@@ -232,6 +232,20 @@ export interface StudyDeckProps {
    * learner's last choice persists across sessions.
    */
   enableConfidence?: boolean;
+  /**
+   * Progress lives on THIS DEVICE (the public deck page — a guest, or anyone
+   * studying a deck they do not own). The deck then makes no per-learner
+   * reads (streak/points snapshot, due list, attempt history) and does not
+   * fire the unrequested per-grade AI coach; every AI action the learner
+   * ASKS for (Ask AI, tutor, memory aid) still goes to the server as usual.
+   */
+  deviceOnly?: boolean;
+  /**
+   * Leave the sitting. On a phone the full-screen deck's close button calls
+   * this instead of dropping to the desktop layout (a host that opened the
+   * deck as a layer closes the layer).
+   */
+  onExit?: () => void;
 }
 
 /**
@@ -304,6 +318,8 @@ export function StudyDeck(props: StudyDeckProps) {
     enableTutor = true,
     enableMemoryAids = true,
     enableConfidence = true,
+    deviceOnly = false,
+    onExit,
   } = props;
 
   const dispatch = useAppDispatch();
@@ -350,7 +366,8 @@ export function StudyDeck(props: StudyDeckProps) {
   const [engagement, setEngagement] = useState<EngagementSnapshot | null>(null);
   const [ageBand, setAgeBand] = useState<AgeBand | null>(null);
   useEffect(() => {
-    if (!completed) return undefined;
+    // On-device study has no learner record to read a streak or age band from.
+    if (!completed || deviceOnly) return undefined;
     let cancelled = false;
     void Promise.all([
       gameService.getEngagementSnapshot(sessionId),
@@ -363,7 +380,7 @@ export function StudyDeck(props: StudyDeckProps) {
     return () => {
       cancelled = true;
     };
-  }, [completed, sessionId]);
+  }, [completed, sessionId, deviceOnly]);
   // `completed` is a one-way latch (see `restart` below), not a pure
   // derivation of progress — it must survive a "Study again" reset where
   // progress itself doesn't change, so a synchronizing effect is correct
@@ -481,10 +498,13 @@ export function StudyDeck(props: StudyDeckProps) {
         resultsByCard,
         masteryByCard,
       );
-      const [dueRes, historyRes] = await Promise.all([
-        studyService.listDue(FC_CARD_ITEM_TYPE, 200),
-        studyService.listAttemptsForItem(FC_CARD_ITEM_TYPE, current.id, 5),
-      ]);
+      // On-device study has no due list or attempt history on the server.
+      const [dueRes, historyRes] = deviceOnly
+        ? [{ data: null }, { data: null }]
+        : await Promise.all([
+            studyService.listDue(FC_CARD_ITEM_TYPE, 200),
+            studyService.listAttemptsForItem(FC_CARD_ITEM_TYPE, current.id, 5),
+          ]);
       // Float FIRST, before the launch — the answer is written in front of the
       // learner, not behind a spinner on the Ask button.
       const live = helpWindow.start("Your tutor is answering");
@@ -703,7 +723,8 @@ export function StudyDeck(props: StudyDeckProps) {
       // Phase 4 stretch: cheap-model per-card micro-coaching. Fire-and-forget
       // (never blocks advancing to the next card); resolves through the
       // flashcards.micro_coach mandate (features/flashcards/data/mandates.ts).
-      if (ok && card && !coppa.blocked) {
+      // Not on device-only study: the coach is unrequested AI on every grade.
+      if (ok && card && !coppa.blocked && !deviceOnly) {
         void dispatch(
           microCoach({
             front: card.front,
@@ -1230,7 +1251,7 @@ export function StudyDeck(props: StudyDeckProps) {
           onGrade={handleGrade}
           resultsByIndex={studyResultsByIndex(cards, resultsByCard)}
           grading={grading}
-          onClose={() => setMobileDismissed(true)}
+          onClose={() => (onExit ? onExit() : setMobileDismissed(true))}
           bottomBar={mobileBottomBar}
           toolsPanel={mobileTools}
         />

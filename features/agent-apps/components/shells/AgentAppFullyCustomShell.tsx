@@ -33,10 +33,6 @@ import { selectPrimaryRequest } from "@ai-matrx/chat/agents/redux/execution-syst
 import { cancelExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { APP_RUN_ERROR_TITLE } from "@/features/agent-apps/components/app-run-error";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { useApiAuth } from "@/hooks/useApiAuth";
-import { useGuestLimit } from "@/hooks/useGuestLimit";
-import { GuestLimitWarning } from "@/components/guest/GuestLimitWarning";
-import { SignupConversionModal } from "@/components/guest/SignupConversionModal";
 import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
 import { AgentAppErrorBoundary } from "@/features/agent-apps/components/AgentAppErrorBoundary";
 import PublicMessageOptionsMenu from "@ai-matrx/chat/public-chat/components/PublicMessageOptionsMenu";
@@ -100,8 +96,6 @@ export function AgentAppFullyCustomShell({
     [sourceCode, app.allowed_imports, app.id],
   );
 
-  const { isAuthenticated, fingerprintId } = useApiAuth();
-  const guestLimit = useGuestLimit();
 
   // ── Tracking ──────────────────────────────────────────────────────────
   const { trackVisit, startRun } = useAgentAppTracker(app.id);
@@ -111,12 +105,6 @@ export function AgentAppFullyCustomShell({
     visitFiredRef.current = true;
     trackVisit();
   }, [trackVisit]);
-
-  useEffect(() => {
-    if (!fingerprintId) return;
-    guestLimit.refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fingerprintId]);
 
   // ── Hook (Tier-3 contract) ────────────────────────────────────────────
   const ctx = useAgentApp({
@@ -158,13 +146,6 @@ export function AgentAppFullyCustomShell({
     ): Promise<void> => {
       setLocalError(null);
 
-      if (!isAuthenticated && !guestLimit.allowed) {
-        setLocalError(
-          "You have reached the maximum number of free executions. Please sign up to continue.",
-        );
-        return;
-      }
-
       lastRunVariablesRef.current = variables;
       const tracker = startRun(variables);
       try {
@@ -183,7 +164,6 @@ export function AgentAppFullyCustomShell({
             )
           : ({ kind: "pending" } as const);
         recordRunOutcome(tracker, outcome);
-        guestLimit.refresh();
       } catch (err) {
         const e = err as { name?: string; message?: string };
         if (e?.name === "AbortError") return;
@@ -198,7 +178,7 @@ export function AgentAppFullyCustomShell({
         });
       }
     },
-    [ctx, guestLimit, isAuthenticated, startRun, store],
+    [ctx, startRun, store],
   );
 
   // ── Action bar (copy / canvas / preview) ──────────────────────────────
@@ -327,9 +307,9 @@ export function AgentAppFullyCustomShell({
     // `type` is rendered as the error's HEADING by every template and sample
     // app (`{error.type}`), so it is a sentence a person reads, never a code.
     error: error ? { type: APP_RUN_ERROR_TITLE, message: error } : null,
-    rateLimitInfo: !isAuthenticated
-      ? { remaining: guestLimit.remaining, total: 5 }
-      : null,
+    // The SERVER counts guest AI actions (guest_ai_allowance_used → the one
+    // reminder); the client holds no count to report.
+    rateLimitInfo: null,
     conversationId: ctx.conversationId,
     onResetConversation: () => ctx.startNewRun(),
     appName: app.name,
@@ -343,21 +323,6 @@ export function AgentAppFullyCustomShell({
   return (
     <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
       <div className="h-full flex flex-col">
-        {guestLimit.showWarning && (
-          <div className="flex-shrink-0 p-4">
-            <GuestLimitWarning
-              remaining={guestLimit.remaining}
-              onDismiss={guestLimit.dismissWarning}
-            />
-          </div>
-        )}
-
-        <SignupConversionModal
-          isOpen={guestLimit.showSignupModal}
-          onClose={guestLimit.dismissSignupModal}
-          totalUsed={guestLimit.totalUsed}
-        />
-
         <div ref={appRootRef} className="flex-1 overflow-auto">
           {/* A finished result keeps its title and its actions at the TOP as
               well as the bottom: a long answer never hides what it is, how to

@@ -174,6 +174,30 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "guest-ai-allowance-reminder",
+    tier: "yellow",
+    persist: false,
+    reason:
+      "A guest used the free AI allowance and the server refused the next AI action (403 guest_ai_allowance_used). The one reminder overlay opened (lib/guest/guest-ai-allowance.ts); this is the product working, not an incident.",
+    addedAt: "2026-10-02",
+    match: {
+      source: ["api-http", "agent-stream-error"],
+      code: "guest_ai_allowance_used",
+    },
+  },
+  {
+    id: "ai-execution-expected-refusal",
+    tier: "yellow",
+    persist: false,
+    reason:
+      "The stream door threw ExpectedRequestConflictError: the server refused the run on purpose (a 403 boundary such as guest_ai_allowance_used or attachment_access_denied, or a structured 409) and the request-error UI shows the server's own sentence. run-ai-stream already declines to file it; the thunk's rejection must not re-file it as a dead turn. Placed before the red AI-rejection pin on purpose.",
+    addedAt: "2026-10-02",
+    match: {
+      source: "redux-rejected",
+      code: "ExpectedRequestConflictError",
+    },
+  },
+  {
     id: "ai-execution-rejection-is-red",
     tier: "red",
     reason:

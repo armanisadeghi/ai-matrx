@@ -11,6 +11,10 @@ import type { DirectiveClass } from "@ai-matrx/content-ir";
 import { GENERIC_PARTY_WORDS } from "@/features/crm/party-words";
 import { referenceTypeLabel } from "@/features/scopes/utils/referenceCell";
 import { titleCaseGroupLabel } from "@/features/scopes/utils/referenceTypeGroups";
+import {
+  CATALOG_ALIASES,
+  CATALOG_NOUN_DISPLAY,
+} from "@/features/matrx-envelope/catalog-nouns.generated";
 
 /** How the picked reference leaves the picker. */
 export type ReferenceDelivery = "insert" | "copy";
@@ -57,12 +61,27 @@ export const FRIENDLY_REFERENCE_TYPE_LABELS: Readonly<Record<string, string>> = 
 };
 
 /**
- * THE name a type chooser shows for a type: the product word, in Title Case
- * like its group headings — the registry mixes "Careers portal" with
- * "Agent Template", and one list must read one way.
+ * THE name of a record type, everywhere a person sees one: the type chooser,
+ * an action card ("Update Chat"), its confirm and its tally (the directive host's
+ * noun catalog answers this). ONE record type, ONE name (G6A follow-up,
+ * 2026-10-02: a card said "Conversation" where the picker said "Chat").
+ *
+ * The product word first; then the registry's label; then the server catalog's
+ * label (a type the registry does not carry — "Settings Profile", never the
+ * token's "Ai Setting Profile"); the token last. In Title Case like its group
+ * headings — the registry mixes "Careers portal" with "Agent Template", and one
+ * list must read one way. An alias reads as its canonical type.
  */
-export function referenceTypeDisplayLabel(token: string): string {
-  const raw = FRIENDLY_REFERENCE_TYPE_LABELS[token] ?? referenceTypeLabel(token);
+export function referenceTypeDisplayLabel(type: string): string {
+  const token = (CATALOG_ALIASES as Record<string, string>)[type] ?? type;
+  const known = referenceTypeLabel(token);
+  const fromToken = token
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+  const catalog = CATALOG_NOUN_DISPLAY[token]?.label?.trim() ?? "";
+  const raw =
+    FRIENDLY_REFERENCE_TYPE_LABELS[token] ?? (known !== fromToken ? known : catalog || known);
   return raw
     .split(/\s+/)
     .map((word) => (word.includes("-") ? word : titleCaseGroupLabel(word)))

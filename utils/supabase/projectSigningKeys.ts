@@ -25,8 +25,25 @@
 //
 // These are PUBLIC keys (the JWKS endpoint serves them to anyone). Nothing
 // secret lives in this file.
+//
+// 🚨 THE PINNED KEYS BELONG TO ONE AUTH AUTHORITY — THE LIVE PROJECT. A key
+// pinned here VERIFIES a token whatever database the app is actually talking
+// to, so pinning them unconditionally made a live-minted session count as
+// "signed in" on a build wired to the nightly clone (a different project with
+// its own signing key): the server rendered the signed-in workspace, the
+// browser believed it, and every read the clone refused (PGRST301) left the
+// person on a half-working page (Arman, /marketing, 2026-10-02). Every caller
+// asks `pinnedSigningKeysFor(<the URL it talks to>)`, which hands the keys
+// over only when that URL IS the authority that owns them; any other
+// authority verifies against its own JWKS. Guard: projectSigningKeys.test.ts.
 
 import type { JWK } from "@supabase/supabase-js";
+
+/** The auth authorities the keys below were issued by (live, by every name it answers to). */
+export const PROJECT_SIGNING_KEY_AUTHORITIES: readonly string[] = [
+  "db.matrxserver.com",
+  "brsgrqvjdzwihsvnfqkf.supabase.co",
+];
 
 export const PROJECT_SIGNING_KEYS: JWK[] = [
   {
@@ -41,3 +58,19 @@ export const PROJECT_SIGNING_KEYS: JWK[] = [
     y: "39zQtkzlfQuPf_MtIhYmMdxNQpIR2Pkl11AToywaslY",
   },
 ];
+
+/**
+ * The pinned keys for the auth authority at `supabaseUrl` — the live keys when
+ * that URL is the live project, otherwise none (verification falls through to
+ * that authority's own JWKS). Never pass `PROJECT_SIGNING_KEYS` directly.
+ */
+export function pinnedSigningKeysFor(supabaseUrl: string | null | undefined): JWK[] {
+  if (!supabaseUrl) return [];
+  let host: string;
+  try {
+    host = new URL(supabaseUrl).host.toLowerCase();
+  } catch {
+    return [];
+  }
+  return PROJECT_SIGNING_KEY_AUTHORITIES.includes(host) ? PROJECT_SIGNING_KEYS : [];
+}

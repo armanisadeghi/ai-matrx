@@ -516,7 +516,13 @@ async function fetchResolutionVerdict(
   // anonymous PostgREST request or reuse another caller's resolved binding.
   const { data: auth, error: authError } = await getClaimsUser(supabase);
   const userId = auth.user?.id;
-  if (authError || !userId) {
+  // A claims error is "could not verify" (an outage, a JWKS miss), never "signed
+  // out" (claimsUser.ts) — saying "requires an authenticated session" to a
+  // signed-in person over an outage is a false sentence.
+  if (authError) {
+    throw new Error(`mandate resolution could not verify the session: ${authError.message}`);
+  }
+  if (!userId) {
     throw new Error("mandate resolution requires an authenticated session");
   }
 

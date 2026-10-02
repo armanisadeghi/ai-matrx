@@ -49,6 +49,7 @@ import {
   replaceOverrides,
   seedOverrides,
 } from "../instance-model-overrides/instance-model-overrides.slice";
+import { classOnlyBesideItsModel } from "../instance-model-overrides/offering-pin";
 import { patchConversation } from "../conversations/conversations.slice";
 
 interface CopyInstanceRequestDraftArgs {
@@ -385,20 +386,31 @@ export function copyInstanceRequestDraft({
         // door) — carrying it made a named agent run on the default chat's
         // model (W-81, PB-07 2026-10-01).
         const seeded = new Set(sourceOverrides.seededKeys ?? []);
-        const personOverrides = Object.fromEntries(
-          Object.entries(sourceOverrides.overrides).filter(
-            ([key]) => !seeded.has(key),
-          ),
-        );
-        // The destination's own launch defaults stay — re-seeded below,
-        // under any key the person did not set.
+        // A CLASS travels only with its MODEL (classOnlyBesideItsModel): a
+        // class pinned on a seeded default model must not reach an agent
+        // running another model — the server refuses the pair.
         const targetOverrides =
           state.instanceModelOverrides.byConversationId[targetConversationId];
+        const carried = classOnlyBesideItsModel(
+          {
+            ...Object.fromEntries(
+              Object.entries(sourceOverrides.overrides).filter(
+                ([key]) => !seeded.has(key),
+              ),
+            ),
+            ...Object.fromEntries(
+              sourceOverrides.removals.map((key) => [key, null]),
+            ),
+          },
+          sourceOverrides,
+          targetOverrides,
+        );
+        // The destination's own launch defaults stay — re-seeded below,
+        // under any key the person did not set. A carried model also claims
+        // the class key: a target-seeded class belongs to the target's model.
         const targetSeeded = new Set(targetOverrides?.seededKeys ?? []);
-        const personKeys = new Set([
-          ...Object.keys(personOverrides),
-          ...sourceOverrides.removals,
-        ]);
+        const personKeys = new Set(Object.keys(carried));
+        if ("model" in carried) personKeys.add("offering_id");
         const keptTargetSeeds = Object.fromEntries(
           Object.entries(targetOverrides?.overrides ?? {}).filter(
             ([key]) => targetSeeded.has(key) && !personKeys.has(key),
@@ -408,12 +420,7 @@ export function copyInstanceRequestDraft({
         dispatch(
           replaceOverrides({
             conversationId: targetConversationId,
-            changes: {
-              ...personOverrides,
-              ...Object.fromEntries(
-                sourceOverrides.removals.map((key) => [key, null]),
-              ),
-            },
+            changes: carried,
           }),
         );
         if (Object.keys(keptTargetSeeds).length > 0) {

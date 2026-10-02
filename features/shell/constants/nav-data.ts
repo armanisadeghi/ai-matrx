@@ -380,137 +380,272 @@ export interface ShellNavItem {
    * `/rag/data-stores` without duplicating the child registry.
    */
   ownedRoutePrefixes?: readonly string[];
+  /**
+   * A deliberate visual marker on the item's icon. `attention` paints it pink
+   * so a temporary holding pen (the "Other" domain) is never forgotten.
+   */
+  tone?: ShellNavTone;
 }
 
-// Primary navigation items — canonical app URLs shared by (core), (dev), and (transitional).
-export const primaryNavItems: ShellNavItem[] = [
+export type ShellNavTone = "attention";
+
+/** The icon class for a nav item's `tone` (styles/shell.css; light and dark both readable). */
+export function navToneIconClass(tone: ShellNavTone | undefined): string | undefined {
+  if (tone === "attention") return "shell-nav-icon-attention";
+  return undefined;
+}
+
+/** A named list of children that more than one surface renders (a hub page and the menu). */
+export interface ShellNavGroupDef {
+  label: string;
+  color: string;
+  children: ShellNavChild[];
+}
+
+/**
+ * Re-labels every child's subgroup. Used when a whole former top-level menu
+ * (Print, the Education Hub) folds into a domain as one subgroup.
+ */
+function inGroup(children: ShellNavChild[], group: string): ShellNavChild[] {
+  return children.map((child) => ({ ...child, group }));
+}
+
+/**
+ * The AI Work menu as it stood before the domain reorganization. Its overview
+ * page (`features/ai-work`) still lists these five doors, so they live here as
+ * ONE named list; the Chat domain takes the two `/work` destinations and the
+ * three shortcuts sit in their own domains (Chat, Agents, Coding).
+ */
+export const AI_WORK_NAV_GROUP: ShellNavGroupDef = {
+  label: "AI Work",
+  color: "violet",
+  children: [
+    {
+      label: "Overview",
+      href: "/work",
+      iconName: "LayoutDashboard",
+      exact: true,
+    },
+    {
+      label: "Provider Conversations",
+      href: "/work/conversations",
+      iconName: "MessageSquare",
+    },
+    {
+      label: "Start AI Matrx Chat",
+      href: "/chat/new",
+      iconName: "MessageCircle",
+    },
+    {
+      label: "Skills",
+      href: "/agent-connections/skills",
+      iconName: "Brain",
+    },
+    {
+      label: "Coding Connections",
+      href: "/agent-connections/plugins",
+      iconName: "Plug",
+    },
+  ],
+};
+
+/**
+ * Projects, Tasks and the War Room — the former "Workspaces" menu. The
+ * projects and tasks hubs render these as their own destination strip, so the
+ * list is named once and the Workspace domain reuses it.
+ */
+export const WORKSPACES_NAV_GROUP: ShellNavGroupDef = {
+  label: "Workspaces",
+  color: "violet",
+  children: [
+    {
+      label: "Projects",
+      href: "/projects",
+      iconName: "Folder",
+      description: "Create and manage projects, collaborate with teams",
+      color: "violet",
+      profileMenu: true,
+      dashboard: true,
+    },
+    {
+      label: "Tasks",
+      href: "/tasks",
+      iconName: "ListTodo",
+      description: "Organize and track your tasks and projects",
+      color: "emerald",
+      profileMenu: true,
+      dashboard: true,
+    },
+    {
+      label: "Tasks Window",
+      href: "/tasks",
+      iconName: NAV_WINDOW_PANEL_ICON,
+      panelAction: "open-tasks-panel",
+    },
+    {
+      label: "War Room",
+      href: "/war-room",
+      iconName: "Radar",
+      description:
+        "Session-based command center — tasks, notes, and audio side by side",
+      color: "rose",
+      profileMenu: true,
+      dashboard: true,
+    },
+    // Actions — each opens its overlay/window in place; `href` is the graceful
+    // fallback for non-action-aware surfaces (mobile sheet, ctrl-click).
+    {
+      label: "New Project",
+      href: "/projects/new",
+      iconName: "Plus",
+      action: "create-project",
+    },
+    {
+      label: "New Task",
+      href: "/tasks/new",
+      iconName: "Plus",
+      action: "create-task",
+    },
+    {
+      label: "New War Room",
+      href: "/war-room/all",
+      iconName: "Plus",
+      action: "create-war-room",
+    },
+  ],
+};
+
+/** Tables, Workbooks and Pick Lists — the former "Data" menu, gates included. */
+export const DATA_NAV_CHILDREN: ShellNavChild[] = [
   {
-    // Authed users get their personalized hub; guests get the public
-    // "browse the platform" surface (`/features`) since the dashboard
-    // is meaningless without a signed-in user — and the middleware
-    // hard-redirects guests off `/dashboard` to `/login` anyway, so
-    // pointing the sidebar there would bounce guests through an
-    // unnecessary login hop.
-    label: "AI Matrx",
-    href: "/dashboard",
-    guestHref: "/features",
-    iconName: "LayoutDashboard",
-    section: "primary",
-    dockOrder: 1,
+    label: "Tables",
+    href: "/data",
+    iconName: "Table",
+    description: "Manage your custom data or create tables in a Chat",
+    color: "cyan",
     profileMenu: true,
     dashboard: true,
-    description: "Your central hub for all activities and insights",
-    color: "sky",
   },
   {
-    // The person's own board: the one canvas where anything the platform
-    // supports is put side by side and worked on (features/spatial). Its
-    // children are the boards — theirs, and each feature's board view.
-    label: "Board",
-    href: "/board",
+    // The /make hub (lane MAKE-HOME): every thing the record store makes, in one place. It
+    // carries the record store's gate, like Records and Kits beside it.
+    label: "Make",
+    href: "/make",
     iconName: "LayoutGrid",
-    section: "primary",
+    description: "Make a table, form, booking page or dashboard",
+    color: "cyan",
+    gate: "unified-data-campaign",
+  },
+  {
+    // The unified record store's tables. It appears for every member of an
+    // organization whose record store is on, which is why it carries a
+    // gate: everywhere else the screens behind it answer with the switch's
+    // own sentence, and a destination that only says "not yet" is not a
+    // destination.
+    label: "Records",
+    href: "/data-v2",
+    iconName: "Table",
+    description: "Tables, fields and records on the unified store",
+    color: "cyan",
+    gate: "unified-data-campaign",
+  },
+  {
+    // Installable bundles — tables + an agent bound to them + a workflow. They
+    // install into the record store, so they carry the same gate as Records.
+    label: KIT_WORD.many,
+    href: KIT_ROUTES.gallery,
+    iconName: "PackagePlus",
+    description: "Install a working example: tables, an agent that reads them, and a workflow",
+    color: "cyan",
+    gate: "unified-data-campaign",
+  },
+  {
+    label: "Data Tables Window",
+    href: "/data",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    panelAction: "open-data-tables-panel",
+  },
+  {
+    label: "Workbooks",
+    href: "/workbooks",
+    iconName: "FileSpreadsheet",
+    description: "Lossless spreadsheets — multi-sheet, formulas, formatting",
+    color: "emerald",
     profileMenu: true,
     dashboard: true,
-    description: "Your own canvas — chats, notes, files, tasks and every feature, side by side",
+  },
+  {
+    label: "Pick Lists",
+    href: "/lists",
+    iconName: "ListChecks",
+    description: "Reusable option lists for forms, fields, and data",
     color: "teal",
-    guestHidden: true,
-    children: [
-      { label: "My board", href: "/board", iconName: "LayoutGrid", exact: true },
-      { label: "All boards", href: "/board/all", iconName: "Layers" },
-      { label: "War Room", href: "/war-room", iconName: "Radar", group: "Feature boards" },
-      { label: "Meetings", href: "/meetings", iconName: "Video", group: "Feature boards" },
-      { label: "Workflow runs", href: "/workflows/runs", iconName: "Workflow", group: "Feature boards" },
-    ],
-  },
-  {
-    label: "Launchpad",
-    href: USER_LAUNCHPAD_PATH,
-    iconName: "Rocket",
-    section: "primary",
-    profileMenu: false,
-    dashboard: false,
-    description:
-      "Keep one starting point open while every destination launches beside it",
-    color: "green",
-    guestHidden: true,
-    openInNewTab: true,
-  },
-  {
-    label: "AI Work",
-    href: "/work",
-    iconName: "Workflow",
-    section: "primary",
     profileMenu: true,
     dashboard: true,
-    description:
-      "Conversations and connected work across AI Matrx and coding platforms",
-    color: "violet",
-    children: [
-      {
-        label: "Overview",
-        href: "/work",
-        iconName: "LayoutDashboard",
-        exact: true,
-      },
-      {
-        label: "Provider Conversations",
-        href: "/work/conversations",
-        iconName: "MessageSquare",
-      },
-      {
-        label: "Start AI Matrx Chat",
-        href: "/chat/new",
-        iconName: "MessageCircle",
-      },
-      {
-        label: "Skills",
-        href: "/agent-connections/skills",
-        iconName: "Brain",
-      },
-      {
-        label: "Coding Connections",
-        href: "/agent-connections/plugins",
-        iconName: "Plug",
-      },
-    ],
   },
   {
-    // Sidebar points at the workspace (`/chat/new`) for authed users; for
-    // guests, the marketing landing (`/chat`) so they land somewhere
-    // meaningful instead of a composer they can't yet send from.
-    label: "Chat",
-    href: "/chat/new",
-    guestHref: "/chat",
-    iconName: "MessageCircle",
-    section: "primary",
-    dockOrder: 2,
-    profileMenu: true,
-    dashboard: false,
-    description: "Interact with our reimagined chat interface",
-    color: "indigo",
-    children: [
-      {
-        label: "Chat",
-        href: "/chat/new",
-        iconName: "MessageCircle",
-        exact: true,
-        profileMenu: true,
-      },
-      {
-        label: "Chat Window",
-        href: "/chat/new",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-chat-panel",
-      },
-      {
-        label: "Chat History Window",
-        href: "/chat/new",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-chat-history-panel",
-      },
-    ],
+    label: "Pick Lists Window",
+    href: "/lists",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    panelAction: "open-pick-lists-panel",
   },
+  // Actions — collected at the bottom below a divider.
+  {
+    label: "New Table",
+    href: "/data/create",
+    iconName: "Plus",
+    actionItem: true,
+  },
+  {
+    // Creates a blank workbook in place, then opens it.
+    label: "New Workbook",
+    href: "/workbooks",
+    iconName: "Plus",
+    action: "create-workbook",
+  },
+  {
+    // Opens the Pick List manager (create + edit) in place.
+    label: "New Pick List",
+    href: "/lists",
+    iconName: "Plus",
+    action: "create-picklist",
+  },
+];
+
+/** The Print hub's shortcuts. The full index lives at /print (features/print/hub/catalog.ts). */
+const PRINT_NAV_CHILDREN: ShellNavChild[] = [
+  { label: "All printables", href: "/print", iconName: "Printer", description: "The full index of everything this platform can print", color: "violet" },
+  { label: "Flashcard decks", href: "/print/flashcards", iconName: "Layers", description: "Decks as cut-apart cards, duplex-mirrored or stacked", color: "emerald" },
+  { label: "Cheat sheets & study aids", href: "/print/education", iconName: "GraduationCap", description: "Formula sheets, glossaries, and dated study calendars", color: "emerald" },
+  { label: "Practice tests & bubble sheets", href: "/print/exams", iconName: "ClipboardCheck", description: "A test, its scannable answer form, and the answer key", color: "emerald" },
+  { label: "Certificates & workbooks", href: "/print/certificates", iconName: "BadgeCheck", description: "Completion certificates and composed workbooks", color: "emerald" },
+  { label: "Label sheets & rolls", href: "/print/labels", iconName: "Barcode", description: "Avery sheets and roll stock, laid out inch-exact", color: "amber" },
+  { label: "QR codes", href: "/print/qr", iconName: "QrCode", description: "QR symbols with their real capacity and scan margin shown", color: "amber" },
+  { label: "Branded QR", href: "/print/branded-qr", iconName: "QrCode", color: "amber" },
+  { label: "Barcodes", href: "/print/barcodes", iconName: "Barcode", description: "Code 128, EAN and UPC at scanner-legal widths", color: "amber" },
+  { label: "ZPL labels", href: "/print/zpl", iconName: "Barcode", color: "amber" },
+  { label: "Markdown to print or PDF", href: "/print/documents", iconName: "FileText", description: "Written content as a styled document or a PDF", color: "blue" },
+  { label: "Booklet imposition", href: "/print/booklet", iconName: "BookOpen", description: "Pages reordered so a folded stack reads in order", color: "blue" },
+  { label: "Order printed copies", href: "/print/order", iconName: "Printer", description: "Price a real book and have it printed, bound, and shipped", color: "violet" },
+];
+
+/*
+ * PRIMARY NAVIGATION — THE DOMAIN TREE (Arman, 2026-10-02).
+ *
+ * The top level is the product domains of common-docs/policies/domain-tree.md
+ * ("Product — what users see"), in that order, then ONE "Industries" entry,
+ * then a temporary "Other" holding pen (pink icon) for anything with no clear
+ * home yet. Every Other row has a line in common-docs/operations/conflicts.md.
+ *
+ * NOTHING IS LOST: every href the menu reached before this reorganization is
+ * frozen in features/shell/__tests__/nav-no-loss.test.ts, which fails if one
+ * stops being reachable. Never delete a destination here — the domain tree
+ * forbids it; move it, or park it in Other.
+ *
+ * Each destination href lives in exactly ONE domain (no cross-domain
+ * shortcuts), so the group that lights up for a route is unambiguous.
+ */
+export const primaryNavItems: ShellNavItem[] = [
   {
     // Sidebar points at the gallery (`/agents/all`) for authed users; for
     // guests, the marketing landing (`/agents`) so they see the pitch
@@ -520,496 +655,106 @@ export const primaryNavItems: ShellNavItem[] = [
     guestHref: "/agents",
     iconName: AGENT_ICON_NAME,
     section: "primary",
-    dockOrder: 3,
     profileMenu: true,
     dashboard: true,
     description: "AI Agent Harness Management",
     color: "blue",
     children: [
-      {
-        label: "All Agents",
-        href: "/agents/all",
-        iconName: "List",
-        exact: true,
-      },
-      {
-        label: "Templates",
-        href: "/agents/templates",
-        iconName: "LayoutTemplate",
-      },
-      { label: "Shortcuts", href: "/agents/shortcuts", iconName: "Zap" },
-      { label: "Categories", href: "/agents/categories", iconName: "Folder" },
-      {
-        label: "Content Blocks",
-        href: "/agent-connections/render-blocks",
-        iconName: "FileText",
-      },
-      {
-        label: "Agent Connections",
-        href: "/agent-connections",
-        iconName: "Plug",
-        description:
-          "Tools, skills, MCP servers, and plugins your agents can reach",
-      },
-      {
-        label: "Agent Connections Window",
-        href: "/agent-connections",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-agent-connections-panel",
-      },
+      { label: "All Agents", href: "/agents/all", iconName: "List", exact: true, group: "Agents" },
+      { label: "Templates", href: "/agents/templates", iconName: "LayoutTemplate", group: "Agents" },
+      { label: "Shortcuts", href: "/agents/shortcuts", iconName: "Zap", group: "Agents" },
+      { label: "Categories", href: "/agents/categories", iconName: "Folder", group: "Agents" },
+      { label: "Org Chart", href: "/agents/org-chart", iconName: "Network", group: "Agents" },
       {
         label: "Agent Battle",
         href: "/agents/battle",
         iconName: "Swords",
-        description:
-          "Compare agents side by side — models, prompts, and outputs",
+        description: "Compare agents side by side — models, prompts, and outputs",
+        group: "Agents",
       },
+      { label: "Compare Agents", href: "/agents/compare", iconName: "GitCompareArrows", group: "Agents" },
       {
-        // Moved out of admin on Arman's ruling (2026-09-20): a playground is
-        // normal UI, never an admin page.
-        label: "Decisions",
-        href: "/decisions",
-        iconName: "Scale",
-        description:
-          "Ask a typed decision model named Choice, Score, and Noul questions",
+        label: "Agent Connections",
+        href: "/agent-connections",
+        iconName: "Plug",
+        description: "Tools, skills, MCP servers, and plugins your agents can reach",
+        group: "Build with",
       },
-      {
-        label: "Agent Settings Window",
-        href: "/agents/all",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-agent-settings-panel",
-      },
-      {
-        label: "Agent Advanced Editor Window",
-        href: "/agents/all",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-agent-advanced-editor-panel",
-      },
-      {
-        label: "Run History Window",
-        href: "/agents/all",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-run-history-panel",
-      },
-      {
-        label: "Import Agent Window",
-        href: "/agents/new/import",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-import-agent-panel",
-      },
-      // Actions — collected at the bottom below a divider.
-      {
-        label: "New Agent",
-        href: "/agents/new",
-        iconName: "Plus",
-        actionItem: true,
-      },
+      { label: "Skills", href: "/agent-connections/skills", iconName: "Brain", group: "Build with" },
+      { label: "Content Blocks", href: "/agent-connections/render-blocks", iconName: "FileText", group: "Build with" },
+      { label: "Term Lists", href: "/resources/term-lists", iconName: "ListChecks", group: "Build with" },
+      { label: "Surfaces", href: "/surfaces", iconName: "LayoutPanelLeft", group: "Build with" },
+      { label: "Agent Connections Window", href: "/agent-connections", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-agent-connections-panel" },
+      { label: "Agent Settings Window", href: "/agents/all", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-agent-settings-panel" },
+      { label: "Agent Advanced Editor Window", href: "/agents/all", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-agent-advanced-editor-panel" },
+      { label: "Run History Window", href: "/agents/all", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-run-history-panel" },
+      { label: "Import Agent Window", href: "/agents/new/import", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-import-agent-panel" },
+      { label: "New Agent", href: "/agents/new", iconName: "Plus", actionItem: true },
     ],
   },
   {
-    // Masterwork — the feature. The Studio is one surface INSIDE it (the
-    // house pattern: the app is named for the thing, never for one room).
-    label: "Masterwork",
-    href: "/masterwork",
-    iconName: "BookOpen",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description:
-      "Your expertise as a Rulebook — rules the AI enforces exactly your way",
-    color: "violet",
-    children: [
-      {
-        label: "All Rulebooks",
-        href: "/masterwork/all",
-        iconName: "List",
-      },
-      {
-        // The standing Approach catalog — every way to build a Rulebook,
-        // including the ones still being built. An Approach you can only meet
-        // inside a funnel is one you cannot find (Arman, 2026-08-21).
-        label: "Ways to build one",
-        href: "/masterwork/approaches",
-        iconName: "Compass",
-        description: "Every way to capture what you know — and what's coming",
-      },
-      {
-        // Encore — the Operator door: run a released Masterwork.
-        label: "Encore",
-        href: "/masterwork/encore",
-        iconName: "Zap",
-        description: "Run a released Masterwork — expert judgment on demand",
-      },
-      {
-        // The provider gallery lives in (public) because "how do I export my
-        // ChatGPT history" is anonymous search traffic — but it is a real
-        // Masterwork capture lane, and until 2026-08-19 a signed-in Expert had
-        // no way to reach it from anywhere in the app.
-        label: "Import your AI chats",
-        href: "/import/ai-chats",
-        iconName: "FileInput",
-        description:
-          "Export your history from ChatGPT, Claude, Gemini and more — then turn it into rules",
-      },
-    ],
-  },
-  {
-    // Group parent — notes & cloud documents.
-    label: "Docs",
-    href: "/notes",
-    iconName: "NotepadText",
-    section: "primary",
-    dockOrder: 4,
-    profileMenu: false,
-    dashboard: false,
-    description: "Notes, cloud documents, and visual maps",
-    color: "amber",
-    children: [
-      {
-        label: "Notes",
-        href: "/notes",
-        iconName: "NotebookPen",
-        description: "Create and manage your notes and documents",
-        color: "amber",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Documents",
-        href: "/documents",
-        iconName: "FileText",
-        description: "Cloud documents — realtime co-editing, full history",
-        color: "indigo",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Visual Maps",
-        href: "/maps",
-        iconName: "Network",
-        description: "Think visually with editable boxes, sections, and arrows",
-        color: "violet",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Notes Window",
-        href: "/notes",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-notes-panel",
-      },
-      // Actions — collected at the bottom below a divider.
-      {
-        // Creates a blank draft note in place, then opens it.
-        label: "New Note",
-        href: "/notes",
-        iconName: "Plus",
-        action: "create-note",
-      },
-      {
-        // Creates a blank cloud document in place, then opens it.
-        label: "New Document",
-        href: "/documents",
-        iconName: "Plus",
-        action: "create-document",
-      },
-    ],
-  },
-  {
-    // Group parent — Tables, Workbooks, and Pick Lists.
-    label: "Data",
-    href: "/data",
-    iconName: "Table",
-    section: "primary",
-    dockOrder: 5,
-    profileMenu: false,
-    dashboard: false,
-    description: "Tables, workbooks, and pick lists",
-    color: "cyan",
-    children: [
-      {
-        label: "Tables",
-        href: "/data",
-        iconName: "Table",
-        description: "Manage your custom data or create tables in a Chat",
-        color: "cyan",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        // The /make hub (lane MAKE-HOME): every thing the record store makes, in one place. It
-        // carries the record store's gate, like Records and Kits beside it.
-        label: "Make",
-        href: "/make",
-        iconName: "LayoutGrid",
-        description: "Make a table, form, booking page or dashboard",
-        color: "cyan",
-        gate: "unified-data-campaign",
-      },
-      {
-        // The unified record store's tables. It appears for every member of an
-        // organization whose record store is on, which is why it carries a
-        // gate: everywhere else the screens behind it answer with the switch's
-        // own sentence, and a destination that only says "not yet" is not a
-        // destination.
-        label: "Records",
-        href: "/data-v2",
-        iconName: "Table",
-        description: "Tables, fields and records on the unified store",
-        color: "cyan",
-        gate: "unified-data-campaign",
-      },
-      {
-        // Installable bundles — tables + an agent bound to them + a workflow. They
-        // install into the record store, so they carry the same gate as Records.
-        label: KIT_WORD.many,
-        href: KIT_ROUTES.gallery,
-        iconName: "PackagePlus",
-        description: "Install a working example: tables, an agent that reads them, and a workflow",
-        color: "cyan",
-        gate: "unified-data-campaign",
-      },
-      {
-        label: "Data Tables Window",
-        href: "/data",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-data-tables-panel",
-      },
-      {
-        label: "Workbooks",
-        href: "/workbooks",
-        iconName: "FileSpreadsheet",
-        description:
-          "Lossless spreadsheets — multi-sheet, formulas, formatting",
-        color: "emerald",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Pick Lists",
-        href: "/lists",
-        iconName: "ListChecks",
-        description: "Reusable option lists for forms, fields, and data",
-        color: "teal",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Pick Lists Window",
-        href: "/lists",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-pick-lists-panel",
-      },
-      // Actions — collected at the bottom below a divider.
-      {
-        label: "New Table",
-        href: "/data/create",
-        iconName: "Plus",
-        actionItem: true,
-      },
-      {
-        // Creates a blank workbook in place, then opens it.
-        label: "New Workbook",
-        href: "/workbooks",
-        iconName: "Plus",
-        action: "create-workbook",
-      },
-      {
-        // Opens the Pick List manager (create + edit) in place.
-        label: "New Pick List",
-        href: "/lists",
-        iconName: "Plus",
-        action: "create-picklist",
-      },
-    ],
-  },
-  {
-    // Group parent — sidebar-only organizational node. Real destinations
-    // (My Orgs, Scopes, Context) live on the children so they still appear
-    // as dashboard tiles / profile entries via the flatten step.
-    label: "My Orgs",
-    href: "/organizations",
-    iconName: "Building2",
-    section: "primary",
-    dockOrder: 6,
-    profileMenu: false,
-    dashboard: false,
-    description: "Your teams, scopes, and shared context",
-    color: "sky",
-    guestHidden: true,
-    children: [
-      {
-        label: "My Orgs",
-        href: "/organizations",
-        iconName: "Building2",
-        description: "Your teams and shared workspaces",
-        color: "sky",
-        profileMenu: true,
-        dashboard: true,
-        guestHidden: true,
-      },
-      {
-        label: "Scopes",
-        href: "/scopes",
-        iconName: "Layers",
-        description:
-          "Define the dimensions your team works in — clients, products, teams, repos. Scopes carry context into every agent run.",
-        color: "emerald",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Vault",
-        href: "/vault",
-        iconName: "ShieldCheck",
-        description:
-          "Every login, API key, and token the platform signs in with — encrypted, shareable one-to-one, and usable by agents without ever showing them the value.",
-        color: "amber",
-        profileMenu: true,
-        dashboard: true,
-        guestHidden: true,
-      },
-      {
-        label: "Context Switcher Window",
-        href: "/scopes",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-context-switcher-panel",
-      },
-      {
-        label: "Vault Window",
-        href: "/vault",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-vault-panel",
-      },
-      // Actions — collected at the bottom below a divider. `?create=1` opens
-      // the canonical Create Organization modal on the launcher page.
-      {
-        label: "New Org",
-        href: "/organizations?create=1",
-        iconName: "Plus",
-        actionItem: true,
-      },
-    ],
-  },
-  {
-    // Knowledge umbrella. Authed users jump straight to the live
-    // workspace still needs to be created; guests hit `/knowledge` (the
-    // KnowledgeShowcasePage — an informational map of the system, no
-    // auth required). `/knowledge/graph` is the graph sub-route.
-    label: "Knowledge",
-    href: "/knowledge",
-    guestHref: "/knowledge",
-    iconName: "Database",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description:
-      "Knowledge data stores, knowledge graph, deep research, and org-wide search",
-    color: "amber",
-    children: [
-      {
-        label: "Research",
-        href: "/research",
-        iconName: "FlaskConical",
-        description: "Deep research with automated topic analysis",
-        color: "purple",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Knowledge Graph",
-        href: "/knowledge/graph",
-        iconName: "Network",
-      },
-      {
-        label: "Extractions",
-        href: "/knowledge/extractions",
-        iconName: "Table",
-        description:
-          "Review, manage, and export structured datasets extracted from documents",
-      },
-      {
-        label: "Data Stores",
-        href: "/knowledge/data-stores",
-        iconName: "Database",
-        group: "Knowledge",
-      },
-      {
-        label: "Knowledge hub",
-        href: "/knowledge/hub",
-        iconName: "Search",
-        group: "Knowledge",
-      },
-      {
-        label: "Search Lab",
-        href: SEARCH_LAB_PATH,
-        iconName: "FlaskConical",
-        group: "Knowledge",
-      },
-      {
-        label: "Sources",
-        href: "/knowledge/library",
-        iconName: "FileText",
-        group: "Knowledge",
-      },
-      {
-        label: "Library Catalog",
-        href: "/knowledge/library-catalog",
-        iconName: "BookOpen",
-        group: "Knowledge",
-      },
-      {
-        label: "Repositories",
-        href: "/knowledge/repositories",
-        iconName: "Code2",
-        group: "Knowledge",
-      },
-      {
-        label: "Suggestions",
-        href: "/suggestions",
-        iconName: "Lightbulb",
-        description:
-          "Review AI-found field values and scope links from your notes, tasks, and files",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "News",
-        href: "/news",
-        iconName: "Newspaper",
-        description: "Top headlines and curated news feeds",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "News Window",
-        href: "/news",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-news-panel",
-      },
-      // Actions — collected at the bottom below a divider.
-      {
-        label: "New Research",
-        href: "/research/topics/new",
-        iconName: "Plus",
-        actionItem: true,
-      },
-    ],
-  },
-  {
-    label: "Agent Apps",
+    // applets (> agent-apps): real apps built with agents, own UI and landing.
+    label: "Applets",
     href: "/agent-apps",
     iconName: "Puzzle",
     section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Browse and run interactive apps built from agents",
+    profileMenu: false,
+    dashboard: false,
+    description: "Apps built from agents",
     color: "emerald",
+    children: [
+      {
+        label: "Agent Apps",
+        href: "/agent-apps",
+        iconName: "Puzzle",
+        exact: true,
+        description: "Browse and run interactive apps built from agents",
+        color: "emerald",
+        profileMenu: true,
+        dashboard: true,
+      },
+      { label: "App Templates", href: "/agent-apps/templates", iconName: "LayoutTemplate" },
+    ],
   },
   {
+    // Sidebar points at the workspace (`/chat/new`) for authed users; for
+    // guests, the marketing landing (`/chat`).
+    label: "Chat",
+    href: "/chat/new",
+    guestHref: "/chat",
+    iconName: "MessageCircle",
+    section: "primary",
+    profileMenu: true,
+    dashboard: false,
+    description: "Interact with our reimagined chat interface",
+    color: "indigo",
+    // AI Work (/work) is the chat domain's ai-work feature.
+    ownedRoutePrefixes: ["/work"],
+    children: [
+      { label: "Chat", href: "/chat/new", iconName: "MessageCircle", exact: true, profileMenu: true, group: "Chat" },
+      { label: "Voice", href: "/chat/voice", iconName: "Mic", group: "Chat" },
+      { label: "Talk", href: "/chat/talk", iconName: "Speech", group: "Chat" },
+      ...AI_WORK_NAV_GROUP.children
+        .filter((child) => child.href.startsWith("/work"))
+        .map((child): ShellNavChild => ({
+          ...child,
+          group: "AI Work",
+          description:
+            "Conversations and connected work across AI Matrx and coding platforms",
+          color: "violet",
+          profileMenu: child.href === "/work",
+          dashboard: child.href === "/work",
+        })),
+      { label: "Chat Window", href: "/chat/new", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-chat-panel" },
+      { label: "Chat History Window", href: "/chat/new", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-chat-history-panel" },
+    ],
+  },
+  {
+    // ONE Workflows: the in-app catalog where a workflow is RUN and watched,
+    // AND the external Vite canvas app (apps/workflow-studio) where the graph
+    // is authored. /workflows itself is the marketing page; the signed-in
+    // catalog is /workflows/all.
     label: "Workflows",
-    // /workflows is reserved for the marketing page; the signed-in catalog is
-    // /workflows/all (it redirects, but nav should not spend a hop on it).
     href: "/workflows/all",
     iconName: "Workflow",
     section: "primary",
@@ -1017,12 +762,41 @@ export const primaryNavItems: ShellNavItem[] = [
     dashboard: true,
     description: "Run multi-step workflows and watch every step live",
     color: "cyan",
+    ownedRoutePrefixes: ["/schedules"],
+    children: [
+      { label: "All Workflows", href: "/workflows/all", iconName: "Workflow", exact: true, group: "Workflows" },
+      {
+        label: "Workflow Studio",
+        href: WORKFLOWS_APP_URL,
+        external: true,
+        iconName: "Workflow",
+        description: "Design workflow graphs on the canvas (opens the studio app)",
+        color: "purple",
+        profileMenu: true,
+        dashboard: true,
+        group: "Workflows",
+      },
+      { label: "Workflow Runs", href: "/workflows/runs", iconName: "Workflow", group: "Workflows" },
+      { label: "Waiting on You", href: "/workflows/waiting", iconName: "Inbox", group: "Workflows" },
+      { label: "Analyze Runs", href: "/workflows/runs/analyze", iconName: "BarChart3", group: "Workflows" },
+      { label: "Workflow Battle", href: "/workflows/battle", iconName: "Swords", group: "Workflows" },
+      { label: "Orchestras", href: "/agents/orchestras", iconName: "Users", group: "Workflows" },
+      {
+        label: "Schedules",
+        href: "/schedules",
+        iconName: "CalendarClock",
+        description: "Create and manage recurring agent and task schedules",
+        color: "blue",
+        profileMenu: true,
+        dashboard: true,
+        group: "Automations",
+      },
+      { label: "New Schedule", href: "/schedules/new", iconName: "Plus", actionItem: true },
+    ],
   },
   {
     // Intelligence (Arman, 2026-09-25): how agents, workflows and models serve
-    // the application. A group parent — for now it holds only Mandates; more
-    // will come. Mandates are never under Agents. Agents and Workflows stay
-    // top-level items.
+    // the application. Mandates are never under Agents.
     label: "Intelligence",
     href: "/mandates/list-preview",
     iconName: INTELLIGENCE_ICON_NAME,
@@ -1034,8 +808,7 @@ export const primaryNavItems: ShellNavItem[] = [
     children: [
       {
         // The per-feature intelligence pages (features/mandates/
-        // feature-intelligence): every part of the app that uses AI, with its
-        // job count; each opens /intelligence/<feature>.
+        // feature-intelligence): every part of the app that uses AI.
         label: "By feature",
         href: "/intelligence",
         iconName: "LayoutGrid",
@@ -1051,39 +824,135 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
+      { label: "All Mandates", href: "/mandates", iconName: "List", exact: true },
+      {
+        // Moved out of admin on Arman's ruling (2026-09-20): a playground is
+        // normal UI, never an admin page.
+        label: "Decisions",
+        href: "/decisions",
+        iconName: "Scale",
+        description: "Ask a typed decision model named Choice, Score, and Noul questions",
+      },
+      { label: "Review Answers", href: "/decisions/review", iconName: "ClipboardCheck" },
+      { label: "Agent Drift", href: "/reports/agent-drift", iconName: "GitCompareArrows" },
+      { label: "Assists", href: "/assists", iconName: "Lightbulb" },
+      { label: "New Mandate", href: "/mandates/new-preview", iconName: "Plus", actionItem: true },
     ],
   },
   {
-    // User-facing Shape System studio (features/content-ir/studio/).
-    label: "Shapes",
-    href: SHAPES_ALL_HREF,
-    guestHref: SHAPES_ROUTE_BASE,
-    iconName: "Shapes",
+    // Masterwork — the feature. The Studio is one surface INSIDE it.
+    label: "Masterwork",
+    href: "/masterwork",
+    iconName: "BookOpen",
     section: "primary",
     profileMenu: true,
     dashboard: true,
-    description: "Design custom structured-content shapes with an agent",
+    description: "Your expertise as a Rulebook — rules the AI enforces exactly your way",
     color: "violet",
-  },
-  {
-    label: "Reports",
-    href: "/reports",
-    iconName: "FileChartColumn",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Cross-cutting reports — agent drift and more",
-    color: "amber",
     children: [
+      { label: "Masterwork", href: "/masterwork", iconName: "BookOpen", exact: true },
+      { label: "All Rulebooks", href: "/masterwork/all", iconName: "List" },
       {
-        label: "Agent Drift",
-        href: "/reports/agent-drift",
-        iconName: "GitCompareArrows",
+        // The standing Approach catalog — every way to build a Rulebook.
+        label: "Ways to build one",
+        href: "/masterwork/approaches",
+        iconName: "Compass",
+        description: "Every way to capture what you know — and what's coming",
+      },
+      { label: "Vision Interviews", href: "/masterwork/vision-interview", iconName: "Mic" },
+      {
+        // Encore — the Operator door: run a released Masterwork.
+        label: "Encore",
+        href: "/masterwork/encore",
+        iconName: "Zap",
+        description: "Run a released Masterwork — expert judgment on demand",
+      },
+      {
+        // The provider gallery lives in (public) — anonymous search traffic —
+        // but it is a real Masterwork capture lane.
+        label: "Import your AI chats",
+        href: "/import/ai-chats",
+        iconName: "FileInput",
+        description: "Export your history from ChatGPT, Claude, Gemini and more — then turn it into rules",
       },
     ],
   },
   {
-    // Group parent — Podcasts, Artifacts, and CMS sites.
+    // Knowledge umbrella. Guests hit `/knowledge` (the showcase page).
+    label: "Knowledge",
+    href: "/knowledge",
+    guestHref: "/knowledge",
+    iconName: "Database",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description: "Knowledge data stores, knowledge graph, deep research, and org-wide search",
+    color: "amber",
+    children: [
+      {
+        label: "Research",
+        href: "/research",
+        iconName: "FlaskConical",
+        description: "Deep research with automated topic analysis",
+        color: "purple",
+        profileMenu: true,
+        dashboard: true,
+        group: "Research",
+      },
+      {
+        label: "News",
+        href: "/news",
+        iconName: "Newspaper",
+        description: "Top headlines and curated news feeds",
+        profileMenu: true,
+        dashboard: true,
+        group: "Research",
+      },
+      {
+        label: "Webscraper",
+        href: "/scraper",
+        guestHref: "/features",
+        iconName: "Globe",
+        description: "Extract and process data from web sources",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+        group: "Research",
+      },
+      { label: "Knowledge Graph", href: "/knowledge/graph", iconName: "Network", group: "Knowledge" },
+      {
+        label: "Extractions",
+        href: "/knowledge/extractions",
+        iconName: "Table",
+        description: "Review, manage, and export structured datasets extracted from documents",
+        group: "Knowledge",
+      },
+      { label: "Data Stores", href: "/knowledge/data-stores", iconName: "Database", group: "Knowledge" },
+      { label: "Knowledge hub", href: "/knowledge/hub", iconName: "Search", group: "Knowledge" },
+      { label: "Search Lab", href: SEARCH_LAB_PATH, iconName: "FlaskConical", group: "Knowledge" },
+      { label: "Sources", href: "/knowledge/library", iconName: "FileText", group: "Knowledge" },
+      { label: "Library Catalog", href: "/knowledge/library-catalog", iconName: "BookOpen", group: "Knowledge" },
+      { label: "Curate Library", href: "/knowledge/library-curate", iconName: "BookmarkCheck", group: "Knowledge" },
+      { label: "Repositories", href: "/knowledge/repositories", iconName: "Code2", group: "Knowledge" },
+      {
+        label: "Suggestions",
+        href: "/suggestions",
+        iconName: "Lightbulb",
+        description: "Review AI-found field values and scope links from your notes, tasks, and files",
+        profileMenu: true,
+        dashboard: true,
+        group: "Knowledge",
+      },
+      { label: "Pipeline Flow", href: "/knowledge/flow", iconName: "Workflow", group: "About" },
+      { label: "About Knowledge", href: "/knowledge/about", iconName: "CircleHelp", group: "About" },
+      { label: "News Window", href: "/news", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-news-panel" },
+      { label: "Web Scraper Window", href: "/scraper", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-web-scraper-panel" },
+      { label: "Site Workbench Window", href: "/tools/pdf-extractor", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-site-workbench-panel" },
+      { label: "New Research", href: "/research/topics/new", iconName: "Plus", actionItem: true },
+    ],
+  },
+  {
+    // Podcasts, Artifacts, CMS sites and HTML pages.
     label: "Publish",
     href: "/podcast",
     iconName: "Megaphone",
@@ -1092,8 +961,7 @@ export const primaryNavItems: ShellNavItem[] = [
     dashboard: false,
     description: "Podcasts, agent artifacts, and published sites",
     color: "violet",
-    // CMS is a child destination in this group but lives in its own route
-    // namespace. Keep Publish selected throughout that child route tree.
+    // CMS lives in its own route namespace. Keep Publish selected there.
     ownedRoutePrefixes: ["/cms"],
     children: [
       {
@@ -1123,101 +991,22 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
-      // Actions — collected at the bottom below a divider.
-      {
-        label: "New Podcast",
-        href: "/podcast/studio/create",
-        iconName: "Plus",
-        actionItem: true,
-      },
-    ],
-  },
-
-  {
-    // Group parent — Projects, Tasks, and the War Room.
-    label: "Workspaces",
-    href: "/projects",
-    iconName: "LayoutGrid",
-    section: "primary",
-    dockOrder: 7,
-    profileMenu: false,
-    dashboard: false,
-    description: "Projects, tasks, and the War Room",
-    color: "violet",
-    children: [
-      // Destinations — rendered top-to-bottom. The create actions below are
-      // collected into their own section at the bottom of the menu by
-      // `partitionNavChildren`, regardless of source order.
-      {
-        label: "Projects",
-        href: "/projects",
-        iconName: "Folder",
-        description: "Create and manage projects, collaborate with teams",
-        color: "violet",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Tasks",
-        href: "/tasks",
-        iconName: "ListTodo",
-        description: "Organize and track your tasks and projects",
-        color: "emerald",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Tasks Window",
-        href: "/tasks",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-tasks-panel",
-      },
-      {
-        label: "War Room",
-        href: "/war-room",
-        iconName: "Radar",
-        description:
-          "Session-based command center — tasks, notes, and audio side by side",
-        color: "rose",
-        profileMenu: true,
-        dashboard: true,
-      },
-      // Actions — every "add" for this group, grouped together below a divider.
-      // Each opens its overlay/window in place; `href` is the graceful fallback
-      // for non-action-aware surfaces (mobile sheet, ctrl-click new tab).
-      {
-        label: "New Project",
-        href: "/projects/new",
-        iconName: "Plus",
-        action: "create-project",
-      },
-      {
-        label: "New Task",
-        href: "/tasks/new",
-        iconName: "Plus",
-        action: "create-task",
-      },
-      {
-        label: "New War Room",
-        href: "/war-room/all",
-        iconName: "Plus",
-        action: "create-war-room",
-      },
+      { label: "HTML Pages", href: "/cms/html-pages", iconName: "FileText" },
+      { label: "New Podcast", href: "/podcast/studio/create", iconName: "Plus", actionItem: true },
     ],
   },
   {
-    // Sidebar points at the workspace (`/files/all`) for authed users; for
-    // guests, the marketing landing (`/files`).
-    label: "Files",
+    // file-service, images, audio-tts, transcription, pdf, media-capture,
+    // media-source-catalog, product-capture, printing.
+    label: "Media",
     href: "/files/all",
     guestHref: "/files",
-    iconName: "FolderOpen",
+    iconName: "Images",
     section: "primary",
-    dockOrder: 8,
     profileMenu: false,
     dashboard: false,
-    description: "Browse and manage your files and documents",
-    color: "blue",
+    description: "Files, images, audio, capture and print",
+    color: "pink",
     children: [
       {
         label: "Files",
@@ -1228,216 +1017,333 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "blue",
         profileMenu: true,
         dashboard: true,
+        group: "Files",
+      },
+      { label: "Recents", href: "/files/recents", iconName: "CalendarClock", group: "Files" },
+      { label: "Starred", href: "/files/starred", iconName: "Star", group: "Files" },
+      { label: "Shared", href: "/files/shared", iconName: "Share2", group: "Files" },
+      { label: "Folders", href: "/files/folders", iconName: "Folder", group: "Files" },
+      { label: "Photos", href: "/files/photos", iconName: "Image", group: "Files" },
+      { label: "Google Drive", href: "/files/google-drive", iconName: "FolderOpen", group: "Files" },
+      { label: "File Requests", href: "/files/requests", iconName: "Inbox", group: "Files" },
+      { label: "File Activity", href: "/files/activity", iconName: "List", group: "Files" },
+      { label: "File Webhooks", href: "/files/webhooks", iconName: "Webhook", group: "Files" },
+      { label: "File Trash", href: "/files/trash", iconName: "Trash2", group: "Files" },
+      {
+        label: "Images",
+        href: "/images",
+        iconName: "Aperture",
+        description: "Browse, generate, edit, annotate, and convert images",
+        color: "pink",
+        profileMenu: true,
+        dashboard: true,
+        group: "Images & video",
       },
       {
-        label: "Files Window",
-        href: "/files/all",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-files-panel",
+        // Media Source Catalog — paste a channel, get every video catalogued.
+        label: "Libraries",
+        href: "/libraries",
+        iconName: "Video",
+        description: "Catalogue a whole YouTube channel, then transcribe and act on it.",
+        color: "red",
+        profileMenu: true,
+        dashboard: true,
+        group: "Images & video",
+      },
+      { label: "Camera", href: "/camera", iconName: "Aperture", group: "Images & video" },
+      {
+        // Transcripts — `/transcripts` is BOTH the public landing and the
+        // processor workspace (server-side branched).
+        label: "All Transcripts",
+        href: "/transcripts",
+        iconName: "Mic",
+        exact: true,
+        description: "Record, transcribe, and manage audio.",
+        color: "rose",
+        profileMenu: true,
+        dashboard: true,
+        group: "Transcripts",
+      },
+      { label: "Processor", href: "/transcripts/processor", iconName: "FileText", group: "Transcripts" },
+      { label: "Studio", href: "/transcripts/studio", iconName: "Columns2", group: "Transcripts" },
+      { label: "Scribe", href: "/transcripts/scribe", iconName: "Mic", group: "Transcripts" },
+      { label: "Unsorted Scribe", href: "/transcripts/scribe/unsorted", iconName: "Inbox", group: "Transcripts" },
+      { label: "Cleanup", href: "/transcripts/cleanup", iconName: "Eraser", group: "Transcripts" },
+      {
+        label: "PDF Extractor",
+        href: "/tools/pdf-extractor",
+        iconName: "FileScan",
+        description: "Upload, extract, and process PDF documents",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+        group: "Capture",
       },
       {
-        label: "File Upload Window",
-        href: "/files/all",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-file-upload-panel",
+        label: "Scanner",
+        href: "/tools/scanner",
+        iconName: "ScanLine",
+        description: "Use your phone as a scanner — photos to one searchable PDF",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+        group: "Capture",
       },
+      {
+        label: "Product Capture",
+        href: "/tools/product-capture",
+        iconName: "PackagePlus",
+        exact: true,
+        description: "Rapid-fire product photos, QR item switching, and voice notes ahead of listing",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+        group: "Capture",
+      },
+      {
+        label: "Instant Capture",
+        href: "/tools/product-capture/instant",
+        iconName: "ScanLine",
+        description: "Capture product photos and process them on the spot — the analysis streams back live",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+        group: "Capture",
+      },
+      {
+        label: "Product Pipeline",
+        href: "/tools/product-capture/manage",
+        iconName: "TableProperties",
+        description: "Manage captured products through AI analysis, research, review, and listing approval",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+        group: "Capture",
+      },
+      { label: "All Products", href: "/tools/product-capture/all", iconName: "Package", group: "Capture" },
+      { label: "Product Questions", href: "/tools/product-capture/answer", iconName: "CircleHelp", group: "Capture" },
+      { label: "Needs You", href: "/capture/needs-you", iconName: "Inbox", group: "Capture" },
+      ...inGroup(PRINT_NAV_CHILDREN, "Print"),
+      { label: "Files Window", href: "/files/all", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-files-panel" },
+      { label: "File Upload Window", href: "/files/all", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-file-upload-panel" },
+      { label: "Gallery Window", href: "/images", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-gallery-panel" },
+      { label: "Crop Studio Window", href: "/images", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-crop-studio-panel" },
+      { label: "Transcript Studio Window", href: "/transcripts/studio", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-transcript-studio-panel" },
+      { label: "Voice Pad Window", href: "/transcripts", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-voice-pad-panel" },
+      { label: "Advanced Voice Pad Window", href: "/transcripts", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-advanced-voice-pad-panel" },
+      { label: "AI Voice Window", href: "/transcripts", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-ai-voice-panel" },
+      { label: "Transcription Cleanup Window", href: "/transcripts/cleanup", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-transcription-cleanup-panel" },
+      { label: "PDF Extractor Window", href: "/tools/pdf-extractor", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-pdf-extractor-panel" },
+      { label: "New Transcript", href: "/transcripts/new", iconName: "Plus", actionItem: true },
     ],
   },
   {
-    // HR — SPEC-UI-IA §2.1. ONE primary entry with the section children below;
-    // WHICH of those children a given person sees inside `/hr` is resolved by
-    // `resolveHrNav` from their CAPABILITIES, never from a role string, and an
-    // employee's face of an item points at their own `/hr/me/*` surface.
-    //
-    // ⚠️ MODULE-OFF ABSENCE IS NOT ENFORCED HERE, AND CANNOT BE. SPEC-UI-IA §6
-    // says the HR nav item is ABSENT for an org with `hr.module.enabled=false`.
-    // This file is static, server-agnostic data filtered only by
-    // `navItemsForViewer(items, isAuthenticated)` — there is no per-org runtime
-    // gate, and adding one would make EVERY page in the app resolve HR context
-    // to draw its sidebar. So the absence is enforced one step in: `/hr` itself
-    // renders the enable door for an owner/admin and a plain not-enabled page
-    // for everyone else (`HrModuleOff`), and every §6 entry point renders its
-    // absent state. Named rather than silently skipped.
-    /*
-      🚨 THE HR DOORS ARE BUILT, NOT SPELLED — AND `NO_EMPLOYER` IS THE HONEST ARGUMENT.
-
-      `features/hr/routes.ts` bans hand-assembled `/hr/*` URLs because the employer travels in
-      `?org=` and HR is strictly single-employer: a link that drops it lands the user in a
-      DIFFERENT employer. Proven on 2026-08-28 as `admin@admin.com`, who reaches six employers —
-      from `/hr/people?org=<Castellano>` the sidebar's bare `/hr/people` re-resolved to the
-      active-org selection and rewrote every link on the page to a different employer, and bare
-      `/hr` landed in a third.
-
-      This file genuinely CANNOT carry the employer, for the reason stated just above: it is
-      static, server-agnostic data with no per-org runtime gate, and giving it one would make
-      every page in the app resolve HR context just to draw a sidebar. So it passes `null`
-      VISIBLY — which is exactly the case `routes.ts` reserves `null` for — and the honesty is
-      moved to the LANDING: the page names the employer it opened. Where a route mounts `HrShell`
-      that is the pinned context bar plus the switcher; on the thirteen `/hr` routes that mount
-      `PageHeader` instead — `/hr/tasks`, `/hr/tasks/[instanceId]` and the `/hr/me/*` family — it
-      is `HrPageState`'s substitution notice (`useHrContext` law B). Corrected 2026-08-29: this
-      comment used to claim EVERY `/hr/*` route renders `HrShell`, which was never true, and the
-      routes it was wrong about were the deep-link landings where employers actually get crossed.
-      The sidebar therefore never claims an employer it does not know; the page it opens states
-      the one it resolved.
-
-      Building them also keeps this file HONEST ABOUT PATHS: a route renamed in `routes.ts` now
-      moves the sidebar with it instead of leaving eighteen 404s nobody grep'd for.
-    */
-    label: "HR",
-    href: hrHref(NO_EMPLOYER),
-    iconName: "Users",
+    // dashboard, launchpad, boards, notes, documents, visual-maps,
+    // tasks-and-projects, war-room, data-tables, reports, utilities, shapes.
+    // Authed users get their hub; guests get the public `/features` page
+    // (the middleware hard-redirects guests off `/dashboard`).
+    label: "Workspace",
+    href: "/dashboard",
+    guestHref: "/features",
+    iconName: "LayoutDashboard",
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "People, time, pay and everything an employer has to keep",
-    color: "indigo",
-    guestHidden: true,
+    description: "Your hub, docs, data and projects",
+    color: "sky",
     children: [
       {
-        label: "HR Home",
-        href: hrHref(NO_EMPLOYER),
+        label: "Dashboard",
+        href: "/dashboard",
+        guestHref: "/features",
         iconName: "LayoutDashboard",
-        exact: true,
-        description: "What needs you today",
-        color: "indigo",
-        guestHidden: true,
-      },
-      {
-        label: "My Info",
-        href: hrMeHref(NO_EMPLOYER),
-        iconName: "User",
-        description: "Your own record — always yours, in every role",
-        color: "indigo",
+        description: "Your central hub for all activities and insights",
+        color: "sky",
         profileMenu: true,
-        guestHidden: true,
+        dashboard: true,
+        group: "Home",
       },
       {
-        label: "People",
-        href: hrPeopleHref({ org: NO_EMPLOYER }),
-        iconName: "Users",
-        description: "The employee directory and the org chart",
-        color: "indigo",
+        label: "Launchpad",
+        href: USER_LAUNCHPAD_PATH,
+        iconName: "Rocket",
+        description: "Keep one starting point open while every destination launches beside it",
+        color: "green",
         guestHidden: true,
+        group: "Home",
       },
       {
-        label: "Hiring",
-        href: hrHiringHref(NO_EMPLOYER),
-        iconName: "Handshake",
-        description: "Requisitions, candidates, interviews and offers",
-        color: "indigo",
+        // The person's own board: the one canvas where anything the platform
+        // supports is put side by side (features/spatial).
+        label: "My board",
+        href: "/board",
+        iconName: "LayoutGrid",
+        exact: true,
+        description: "Your own canvas — chats, notes, files, tasks and every feature, side by side",
+        color: "teal",
+        profileMenu: true,
+        dashboard: true,
         guestHidden: true,
+        group: "Home",
       },
+      { label: "All boards", href: "/board/all", iconName: "Layers", guestHidden: true, group: "Home" },
       {
-        label: "Time",
-        href: hrTimeHref(NO_EMPLOYER),
-        iconName: "CalendarClock",
-        description: "Timesheets, punches, exceptions and pay periods",
-        color: "indigo",
-        guestHidden: true,
-      },
-      {
-        label: "Schedule",
-        href: hrScheduleHref(NO_EMPLOYER),
-        iconName: "CalendarDays",
-        description: "Build, publish and staff the schedule",
-        color: "indigo",
-        guestHidden: true,
-      },
-      {
-        label: "Time Off",
-        href: hrLeaveHref(NO_EMPLOYER),
-        iconName: "HeartPulse",
-        description: "Requests, balances and the team calendar",
-        color: "indigo",
-        guestHidden: true,
-      },
-      {
-        label: "Onboarding",
-        href: hrOnboardingHref(NO_EMPLOYER),
-        iconName: "ClipboardCheck",
-        description: "New-hire runs, templates and offboarding",
-        color: "indigo",
-        guestHidden: true,
+        label: "Notes",
+        href: "/notes",
+        iconName: "NotebookPen",
+        description: "Create and manage your notes and documents",
+        color: "amber",
+        profileMenu: true,
+        dashboard: true,
+        group: "Docs",
       },
       {
         label: "Documents",
-        href: hrDocumentsHref(NO_EMPLOYER),
+        href: "/documents",
         iconName: "FileText",
-        description: "The library, acknowledgments and signatures",
+        description: "Cloud documents — realtime co-editing, full history",
         color: "indigo",
-        guestHidden: true,
+        profileMenu: true,
+        dashboard: true,
+        group: "Docs",
       },
       {
-        label: "Training",
-        href: hrTrainingHref(NO_EMPLOYER),
-        iconName: "GraduationCap",
-        description: "Assignments, certifications and compliance",
-        color: "indigo",
-        guestHidden: true,
+        label: "Visual Maps",
+        href: "/maps",
+        iconName: "Network",
+        description: "Think visually with editable boxes, sections, and arrows",
+        color: "violet",
+        profileMenu: true,
+        dashboard: true,
+        group: "Docs",
+      },
+      ...inGroup(
+        WORKSPACES_NAV_GROUP.children.filter((child) => !child.panelAction && !isNavActionChild(child)),
+        "Projects",
+      ),
+      ...inGroup(
+        DATA_NAV_CHILDREN.filter((child) => !child.panelAction && !isNavActionChild(child)),
+        "Data",
+      ),
+      {
+        label: "Reports",
+        href: "/reports",
+        iconName: "FileChartColumn",
+        description: "Cross-cutting reports — agent drift and more",
+        color: "amber",
+        profileMenu: true,
+        dashboard: true,
+        group: "Data",
       },
       {
-        label: "Performance",
-        href: hrPerformanceHref(NO_EMPLOYER),
-        iconName: "Target",
-        description: "Reviews — yours, and your team's",
-        color: "indigo",
-        guestHidden: true,
+        // User-facing Shape System studio (features/content-ir/studio/).
+        label: "Shapes",
+        href: SHAPES_ALL_HREF,
+        guestHref: SHAPES_ROUTE_BASE,
+        iconName: "Shapes",
+        description: "Design custom structured-content shapes with an agent",
+        color: "violet",
+        profileMenu: true,
+        dashboard: true,
+        group: "Data",
       },
       {
-        label: "Assets",
-        href: hrAssetsHref(NO_EMPLOYER),
-        iconName: "Package",
-        description: "Equipment issued, assigned and recovered",
-        color: "indigo",
-        guestHidden: true,
+        label: "Markdown Studio",
+        href: "/markdown-studio",
+        iconName: "PenLine",
+        description: "Interactive markdown editor and parser comparison",
+        color: "slate",
+        profileMenu: true,
+        dashboard: true,
+        group: "Utilities",
       },
       {
-        label: "Engagement",
-        href: hrEngagementHref(NO_EMPLOYER),
-        iconName: "Megaphone",
-        description: "Announcements, pulse surveys and recognition",
-        color: "indigo",
-        guestHidden: true,
+        label: "Data Truncator",
+        href: "/free/data-truncator",
+        iconName: "Scissors",
+        description: "Trim and preview truncated text for UI limits",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+        group: "Utilities",
       },
       {
-        label: "Compliance",
-        href: hrComplianceHref(NO_EMPLOYER),
-        iconName: "ShieldCheck",
-        description: "Exceptions, work authorization and access review",
-        color: "indigo",
-        guestHidden: true,
+        label: "Character Counter",
+        href: "/free/character-counter",
+        iconName: "TextCursorInput",
+        description: "Count characters, words, limits, and keyword density locally",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+        group: "Utilities",
       },
       {
-        label: "HR Tasks",
-        href: hrTasksHref(NO_EMPLOYER),
-        iconName: "ListTodo",
-        description: "Everything in HR waiting on a decision from you",
-        color: "indigo",
-        guestHidden: true,
+        label: "UUID Generator",
+        href: "/free/uuid/generator",
+        iconName: "Hash",
+        description: "Generate UUIDs on the client — single or bulk",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+        group: "Utilities",
       },
       {
-        label: "HR Reports",
-        href: hrReportsHref(NO_EMPLOYER),
-        iconName: "BarChart3",
-        description: "Headcount, turnover, cost and compliance reporting",
-        color: "indigo",
-        guestHidden: true,
+        label: "Zip Code Heatmap",
+        href: "/free/zip-code-heatmap",
+        iconName: "Map",
+        description: "Visualize US zip code density on an interactive map",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+        group: "Utilities",
       },
+      { label: "Notes Window", href: "/notes", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-notes-panel" },
+      ...WORKSPACES_NAV_GROUP.children.filter((child) => child.panelAction),
+      ...DATA_NAV_CHILDREN.filter((child) => child.panelAction),
+      { label: "JSON Truncator Window", href: "/free/data-truncator", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-json-truncator-panel" },
+      { label: "Character Counter Window", href: "/free/character-counter", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-character-counter-panel" },
+      // Creates a blank draft note / cloud document in place, then opens it.
+      { label: "New Note", href: "/notes", iconName: "Plus", action: "create-note" },
+      { label: "New Document", href: "/documents", iconName: "Plus", action: "create-document" },
+      ...WORKSPACES_NAV_GROUP.children.filter(isNavActionChild),
+      ...DATA_NAV_CHILDREN.filter(isNavActionChild),
+    ],
+  },
+  {
+    // Hidden from guests — DMs and team threads have no meaningful guest
+    // experience. Direct-URL access still renders the marketing landing.
+    label: "Communications",
+    href: "/messages",
+    iconName: "Mail",
+    section: "primary",
+    profileMenu: false,
+    dashboard: false,
+    description: "Messages, meetings and notifications",
+    color: "pink",
+    guestHidden: true,
+    children: [
       {
-        label: "HR Settings",
-        href: hrSettingsHref(null, { org: NO_EMPLOYER }),
-        iconName: "Settings",
-        description: "How HR works for this employer",
-        color: "indigo",
+        label: "Messages",
+        href: "/messages",
+        iconName: "MessageSquare",
+        description: "Direct messages and conversations",
+        color: "pink",
+        profileMenu: true,
+        dashboard: true,
         guestHidden: true,
       },
+      { label: "Meetings", href: "/meetings", iconName: "Video", guestHidden: true },
+      { label: "Notifications", href: "/notifications", iconName: "Inbox", guestHidden: true },
+      { label: "Message Templates", href: "/chat/message-templates", iconName: "MessageSquareQuote", guestHidden: true },
+      { label: "Your Staff", href: "/staff", iconName: "Users", guestHidden: true },
+      { label: "Email Window", href: "/messages", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-email-panel", guestHidden: true },
+      { label: "Messages Window", href: "/messages", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-messages-panel", guestHidden: true },
     ],
   },
   {
     label: "CRM",
     href: "/crm",
-    iconName: "Users",
+    iconName: "Handshake",
     section: "primary",
     profileMenu: false,
     dashboard: false,
@@ -1449,40 +1355,18 @@ export const primaryNavItems: ShellNavItem[] = [
         label: "People & Companies",
         href: "/crm",
         iconName: "Users",
-        description:
-          "Manage people, companies, contact methods, and relationship history",
+        exact: true,
+        description: "Manage people, companies, contact methods, and relationship history",
         color: "teal",
         profileMenu: true,
         dashboard: true,
         guestHidden: true,
       },
       {
-        label: "CRM Manager Window",
-        href: "/crm",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-crm-manager-panel",
-        guestHidden: true,
-      },
-      {
-        label: "New Person",
-        href: "/crm",
-        iconName: "Plus",
-        action: "create-crm-person",
-        guestHidden: true,
-      },
-      {
-        label: "New Company",
-        href: "/crm",
-        iconName: "Plus",
-        action: "create-crm-company",
-        guestHidden: true,
-      },
-      {
         label: "Deals",
         href: "/crm/deals",
         iconName: "Handshake",
-        description:
-          "Track deals through kanban pipelines — value, stage, owner, and expected close",
+        description: "Track deals through kanban pipelines — value, stage, owner, and expected close",
         color: "teal",
         profileMenu: true,
         dashboard: true,
@@ -1492,299 +1376,100 @@ export const primaryNavItems: ShellNavItem[] = [
         label: "Outreach Lists",
         href: "/crm/outreach-lists",
         iconName: "Megaphone",
-        description:
-          "Build calling and outreach lists over your CRM records and work them from a queue",
+        description: "Build calling and outreach lists over your CRM records and work them from a queue",
         color: "teal",
         profileMenu: true,
         dashboard: true,
         guestHidden: true,
       },
+      { label: "Outreach Inbox", href: "/crm/inbox", iconName: "Inbox", guestHidden: true },
+      { label: "Chasebox", href: "/crm/chasebox", iconName: "Mail", guestHidden: true },
       {
         label: "Sending Mailboxes",
         href: "/crm/sending-identities",
         iconName: "Send",
-        description:
-          "Connect the mailbox your outreach is sent from, prove you own its domain, and watch its delivery health",
+        description: "Connect the mailbox your outreach is sent from, prove you own its domain, and watch its delivery health",
         color: "teal",
         profileMenu: true,
         dashboard: true,
         guestHidden: true,
       },
+      { label: "Import Contacts", href: "/crm/import", iconName: "FileInput", guestHidden: true },
+      { label: "Duplicates", href: "/crm/duplicates", iconName: "Users", guestHidden: true },
+      { label: "CRM Manager Window", href: "/crm", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-crm-manager-panel", guestHidden: true },
+      { label: "New Person", href: "/crm", iconName: "Plus", action: "create-crm-person", guestHidden: true },
+      { label: "New Company", href: "/crm", iconName: "Plus", action: "create-crm-company", guestHidden: true },
     ],
   },
   {
-    // Group parent — Utilities. Real destinations live on the children so
-    // they still surface as dashboard tiles / profile entries via flatten.
-    label: "Utilities",
-    href: "/tools/pdf-extractor",
-    iconName: "Wrench",
+    label: "Marketing",
+    href: "/marketing",
+    iconName: "TrendingUp",
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "Handy document and data tools",
-    color: "orange",
-    children: [
-      {
-        label: "PDF Extractor",
-        href: "/tools/pdf-extractor",
-        iconName: "FileScan",
-        description: "Upload, extract, and process PDF documents",
-        color: "orange",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "PDF Extractor Window",
-        href: "/tools/pdf-extractor",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-pdf-extractor-panel",
-      },
-      {
-        label: "Scanner",
-        href: "/tools/scanner",
-        iconName: "ScanLine",
-        description:
-          "Use your phone as a scanner — photos to one searchable PDF",
-        color: "orange",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Product Capture",
-        href: "/tools/product-capture",
-        iconName: "PackagePlus",
-        description:
-          "Rapid-fire product photos, QR item switching, and voice notes ahead of listing",
-        color: "orange",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Instant Capture",
-        href: "/tools/product-capture/instant",
-        iconName: "ScanLine",
-        description:
-          "Capture product photos and process them on the spot — the analysis streams back live",
-        color: "orange",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Product Pipeline",
-        href: "/tools/product-capture/manage",
-        iconName: "TableProperties",
-        description:
-          "Manage captured products through AI analysis, research, review, and listing approval",
-        color: "orange",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Webscraper",
-        href: "/scraper",
-        guestHref: "/features",
-        iconName: "Globe",
-        description: "Extract and process data from web sources",
-        color: "orange",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Web Scraper Window",
-        href: "/scraper",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-web-scraper-panel",
-      },
-      {
-        label: "Site Workbench Window",
-        href: "/tools/pdf-extractor",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-site-workbench-panel",
-      },
-      {
-        label: "JSON Truncator Window",
-        href: "/free/data-truncator",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-json-truncator-panel",
-      },
-      {
-        label: "Markdown Studio",
-        href: "/markdown-studio",
-        iconName: "PenLine",
-        description: "Interactive markdown editor and parser comparison",
-        color: "slate",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Data Truncator",
-        href: "/free/data-truncator",
-        iconName: "Scissors",
-        description: "Trim and preview truncated text for UI limits",
-        color: "orange",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Character Counter",
-        href: "/free/character-counter",
-        iconName: "TextCursorInput",
-        description:
-          "Count characters, words, limits, and keyword density locally",
-        color: "orange",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Character Counter Window",
-        href: "/free/character-counter",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-character-counter-panel",
-      },
-      {
-        label: "UUID Generator",
-        href: "/free/uuid/generator",
-        iconName: "Hash",
-        description: "Generate UUIDs on the client — single or bulk",
-        color: "orange",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Zip Code Heatmap",
-        href: "/free/zip-code-heatmap",
-        iconName: "Map",
-        description: "Visualize US zip code density on an interactive map",
-        color: "orange",
-        profileMenu: true,
-        dashboard: true,
-      },
-    ],
+    description: "Brands and websites, planning, search and reach, channels, intelligence, and measurement",
+    color: "green",
+    // GENERATED from features/marketing/lib/marketing-nav.ts — the ONE
+    // declaration of this module's shape. Never hand-edit these children.
+    children: marketingNavChildren(),
   },
   {
-    // Group parent — Media.
-    label: "Media",
-    href: "/images",
-    iconName: "Images",
+    // HR — SPEC-UI-IA §2.1. ONE primary entry with the section children below;
+    // WHICH of those children a given person sees inside `/hr` is resolved by
+    // `resolveHrNav` from their CAPABILITIES, never from a role string.
+    //
+    // ⚠️ MODULE-OFF ABSENCE IS NOT ENFORCED HERE, AND CANNOT BE: this file is
+    // static, server-agnostic data. `/hr` itself renders the enable door for
+    // an owner/admin and a plain not-enabled page for everyone else.
+    /*
+      🚨 THE HR DOORS ARE BUILT, NOT SPELLED — AND `NO_EMPLOYER` IS THE HONEST ARGUMENT.
+
+      `features/hr/routes.ts` bans hand-assembled `/hr/*` URLs because the employer travels in
+      `?org=` and HR is strictly single-employer. This file genuinely CANNOT carry the employer
+      (static data, no per-org runtime gate), so it passes `null` VISIBLY and the honesty is
+      moved to the LANDING: the page names the employer it opened (HrShell's context bar, or
+      `HrPageState`'s substitution notice on the PageHeader routes). Building the hrefs also
+      keeps this file honest about paths: a route renamed in `routes.ts` moves the sidebar too.
+    */
+    label: "Human Resources",
+    href: hrHref(NO_EMPLOYER),
+    iconName: "Users",
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "Images and visual media tools",
-    color: "pink",
+    description: "People, time, pay and HR records",
+    color: "indigo",
+    guestHidden: true,
     children: [
-      {
-        label: "Images",
-        href: "/images",
-        iconName: "Aperture",
-        description: "Browse, generate, edit, annotate, and convert images",
-        color: "pink",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Gallery Window",
-        href: "/images",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-gallery-panel",
-      },
-      {
-        label: "Crop Studio Window",
-        href: "/images",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-crop-studio-panel",
-      },
+      { label: "HR Home", href: hrHref(NO_EMPLOYER), iconName: "LayoutDashboard", exact: true, description: "What needs you today", color: "indigo", guestHidden: true },
+      { label: "My Info", href: hrMeHref(NO_EMPLOYER), iconName: "User", description: "Your own record — always yours, in every role", color: "indigo", profileMenu: true, guestHidden: true },
+      { label: "People", href: hrPeopleHref({ org: NO_EMPLOYER }), iconName: "Users", description: "The employee directory and the org chart", color: "indigo", guestHidden: true },
+      { label: "Hiring", href: hrHiringHref(NO_EMPLOYER), iconName: "Handshake", description: "Requisitions, candidates, interviews and offers", color: "indigo", guestHidden: true },
+      { label: "Time", href: hrTimeHref(NO_EMPLOYER), iconName: "CalendarClock", description: "Timesheets, punches, exceptions and pay periods", color: "indigo", guestHidden: true },
+      { label: "Schedule", href: hrScheduleHref(NO_EMPLOYER), iconName: "CalendarDays", description: "Build, publish and staff the schedule", color: "indigo", guestHidden: true },
+      { label: "Time Off", href: hrLeaveHref(NO_EMPLOYER), iconName: "HeartPulse", description: "Requests, balances and the team calendar", color: "indigo", guestHidden: true },
+      { label: "Onboarding", href: hrOnboardingHref(NO_EMPLOYER), iconName: "ClipboardCheck", description: "New-hire runs, templates and offboarding", color: "indigo", guestHidden: true },
+      { label: "Documents", href: hrDocumentsHref(NO_EMPLOYER), iconName: "FileText", description: "The library, acknowledgments and signatures", color: "indigo", guestHidden: true },
+      { label: "Training", href: hrTrainingHref(NO_EMPLOYER), iconName: "GraduationCap", description: "Assignments, certifications and compliance", color: "indigo", guestHidden: true },
+      { label: "Performance", href: hrPerformanceHref(NO_EMPLOYER), iconName: "Target", description: "Reviews — yours, and your team's", color: "indigo", guestHidden: true },
+      { label: "Assets", href: hrAssetsHref(NO_EMPLOYER), iconName: "Package", description: "Equipment issued, assigned and recovered", color: "indigo", guestHidden: true },
+      { label: "Engagement", href: hrEngagementHref(NO_EMPLOYER), iconName: "Megaphone", description: "Announcements, pulse surveys and recognition", color: "indigo", guestHidden: true },
+      { label: "Compliance", href: hrComplianceHref(NO_EMPLOYER), iconName: "ShieldCheck", description: "Exceptions, work authorization and access review", color: "indigo", guestHidden: true },
+      { label: "HR Tasks", href: hrTasksHref(NO_EMPLOYER), iconName: "ListTodo", description: "Everything in HR waiting on a decision from you", color: "indigo", guestHidden: true },
+      { label: "HR Reports", href: hrReportsHref(NO_EMPLOYER), iconName: "BarChart3", description: "Headcount, turnover, cost and compliance reporting", color: "indigo", guestHidden: true },
+      { label: "HR Settings", href: hrSettingsHref(null, { org: NO_EMPLOYER }), iconName: "Settings", description: "How HR works for this employer", color: "indigo", guestHidden: true },
     ],
   },
   {
-    // Media Source Catalog — paste a channel, get every video catalogued in
-    // seconds, then transcribe and act on a selection (features/source-library).
-    label: "Libraries",
-    href: "/libraries",
-    iconName: "Video",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Catalogue a whole YouTube channel, then transcribe and act on it.",
-    color: "red",
-  },
-  {
-    // Transcripts umbrella — one feature, slash-versioned sub-routes.
-    // `/transcripts` is BOTH the public landing (for guests) AND the
-    // canonical processor workspace (for authed users); server-side
-    // branched in `app/(core)/transcripts/page.tsx`. Studio + Scribe
-    // live as sub-routes. Old `/transcription/*` URLs redirect via
-    // `next.config.js`.
-    label: "Transcripts",
-    href: "/transcripts",
-    iconName: "Mic",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Record, transcribe, and manage audio.",
-    color: "rose",
-    children: [
-      {
-        label: "All Transcripts",
-        href: "/transcripts",
-        iconName: "List",
-        exact: true,
-      },
-      {
-        label: "Processor",
-        href: "/transcripts/processor",
-        iconName: "FileText",
-      },
-      { label: "Studio", href: "/transcripts/studio", iconName: "Columns2" },
-      {
-        label: "Transcript Studio Window",
-        href: "/transcripts/studio",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-transcript-studio-panel",
-      },
-      { label: "Scribe", href: "/transcripts/scribe", iconName: "Mic" },
-      { label: "Cleanup", href: "/transcripts/cleanup", iconName: "Eraser" },
-      {
-        label: "Voice Pad Window",
-        href: "/transcripts",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-voice-pad-panel",
-      },
-      {
-        label: "Advanced Voice Pad Window",
-        href: "/transcripts",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-advanced-voice-pad-panel",
-      },
-      {
-        label: "AI Voice Window",
-        href: "/transcripts",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-ai-voice-panel",
-      },
-      {
-        label: "Transcription Cleanup Window",
-        href: "/transcripts/cleanup",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-transcription-cleanup-panel",
-      },
-      // Actions — collected at the bottom below a divider.
-      {
-        label: "New Transcript",
-        href: "/transcripts/new",
-        iconName: "Plus",
-        actionItem: true,
-      },
-    ],
-  },
-  {
-    // Group parent — Code workspace and Sandboxes.
-    label: "Code",
+    // code-workspace, agent-fs, coding-session-bridge, ide-plugins.
+    label: "Coding",
     href: "/code",
     iconName: "Code2",
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "Code workspace and sandboxes",
+    description: "Code, sandboxes and devices",
     color: "indigo",
     children: [
       {
@@ -1814,223 +1499,178 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
-      {
-        label: "Code Editor Window",
-        href: "/code",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-code-editor-panel",
-      },
-      {
-        label: "Smart Code Editor Window",
-        href: "/code",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-smart-code-editor-panel",
-      },
-      {
-        label: "Code Files Window",
-        href: "/code",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-code-files-panel",
-      },
-      // Actions — collected at the bottom below a divider. `?create=1` opens
-      // the canonical Create Sandbox modal on the sandbox list page.
-      {
-        label: "New Sandbox",
-        href: "/sandbox?create=1",
-        iconName: "Plus",
-        actionItem: true,
-      },
+      { label: "Coding Connections", href: "/agent-connections/plugins", iconName: "Plug" },
+      { label: "Code Editor Window", href: "/code", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-code-editor-panel" },
+      { label: "Smart Code Editor Window", href: "/code", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-smart-code-editor-panel" },
+      { label: "Code Files Window", href: "/code", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-code-files-panel" },
+      // `?create=1` opens the canonical Create Sandbox modal on the list page.
+      { label: "New Sandbox", href: "/sandbox?create=1", iconName: "Plus", actionItem: true },
     ],
   },
   {
-    label: "Automations",
-    href: "/schedules",
-    iconName: "CalendarClock",
+    // google, microsoft, github, bing, mcp-connections, provider-access,
+    // connector-catalog. Provider sign-in screens still live inside the
+    // features that use them (Marketing connections, Agent Connections).
+    label: "Integrations",
+    href: "/connected-sources",
+    iconName: "Plug",
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "Scheduled agent and task runs",
-    color: "blue",
+    description: "Connected sources and your own computer",
+    color: "sky",
+    guestHidden: true,
+    children: [
+      { label: "Connected Sources", href: "/connected-sources", iconName: "Link2", guestHidden: true },
+      { label: "Connect a Computer", href: "/connect-computer", iconName: "Laptop", guestHidden: true },
+    ],
+  },
+  {
+    // The user-facing half of platform: organizations, scopes-context,
+    // settings, vault-secrets, approvals, trash-and-exports.
+    label: "Account",
+    href: "/organizations",
+    iconName: "Building2",
+    section: "primary",
+    profileMenu: false,
+    dashboard: false,
+    description: "Orgs, scopes, vault and settings",
+    color: "sky",
     children: [
       {
-        label: "Schedules",
-        href: "/schedules",
-        iconName: "CalendarClock",
-        description: "Create and manage recurring agent and task schedules",
-        color: "blue",
+        label: "My Orgs",
+        href: "/organizations",
+        iconName: "Building2",
+        description: "Your teams and shared workspaces",
+        color: "sky",
         profileMenu: true,
         dashboard: true,
-      },
-      // Actions — collected at the bottom below a divider.
-      {
-        label: "New Schedule",
-        href: "/schedules/new",
-        iconName: "Plus",
-        actionItem: true,
-      },
-    ],
-  },
-  {
-    label: "Legal Hub",
-    href: "/legal",
-    iconName: "Scale",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Legal tools, calculators, and case utilities",
-    color: "slate",
-  },
-  {
-    // Placeholder until a dedicated /medical landing ships.
-    label: "Medical Hub (Soon)",
-    href: "/education",
-    iconName: "HeartPulse",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Medical calculators and clinical tools — coming soon",
-    color: "rose",
-  },
-  {
-    label: "Education Hub",
-    href: "/education",
-    iconName: "GraduationCap",
-    section: "primary",
-    profileMenu: false,
-    dashboard: false,
-    description: "AI study platform — flashcards, quizzes, tutor, and more",
-    color: "emerald",
-    children: educationNavChildren(),
-  },
-  {
-    // The Print hub. The full index of printables lives at /print
-    // (features/print/hub/catalog.ts is its ONE list) — these children are the
-    // shortcuts worth a sidebar row, not a mirror of that catalog.
-    label: "Print",
-    href: "/print",
-    iconName: "Printer",
-    section: "primary",
-    profileMenu: false,
-    dashboard: false,
-    description:
-      "Everything you can put on paper — decks, study aids, tests, certificates, labels, codes, documents",
-    color: "violet",
-    children: [
-      {
-        label: "All printables",
-        href: "/print",
-        iconName: "Printer",
-        group: "Print hub",
-        description: "The full index of everything this platform can print",
-        color: "violet",
+        guestHidden: true,
+        group: "Organizations",
       },
       {
-        label: "Flashcard decks",
-        href: "/print/flashcards",
+        label: "Scopes",
+        href: "/scopes",
         iconName: "Layers",
-        group: "Education",
-        description: "Decks as cut-apart cards, duplex-mirrored or stacked",
+        description:
+          "Define the dimensions your team works in — clients, products, teams, repos. Scopes carry context into every agent run.",
         color: "emerald",
+        profileMenu: true,
+        dashboard: true,
+        group: "Organizations",
       },
+      { label: "Context Items", href: "/context-items", iconName: "ListTree", guestHidden: true, group: "Organizations" },
+      { label: "Approvals", href: "/approvals", iconName: "ClipboardCheck", guestHidden: true, group: "Organizations" },
       {
-        label: "Cheat sheets & study aids",
-        href: "/print/education",
-        iconName: "GraduationCap",
-        group: "Education",
-        description: "Formula sheets, glossaries, and dated study calendars",
-        color: "emerald",
-      },
-      {
-        label: "Practice tests & bubble sheets",
-        href: "/print/exams",
-        iconName: "ClipboardCheck",
-        group: "Education",
-        description: "A test, its scannable answer form, and the answer key",
-        color: "emerald",
-      },
-      {
-        label: "Certificates & workbooks",
-        href: "/print/certificates",
-        iconName: "BadgeCheck",
-        group: "Education",
-        description: "Completion certificates and composed workbooks",
-        color: "emerald",
-      },
-      {
-        label: "Label sheets & rolls",
-        href: "/print/labels",
-        iconName: "Barcode",
-        group: "Labels & codes",
-        description: "Avery sheets and roll stock, laid out inch-exact",
+        label: "Vault",
+        href: "/vault",
+        iconName: "ShieldCheck",
+        description:
+          "Every login, API key, and token the platform signs in with — encrypted, shareable one-to-one, and usable by agents without ever showing them the value.",
         color: "amber",
+        profileMenu: true,
+        dashboard: true,
+        guestHidden: true,
+        group: "You",
       },
+      { label: "Settings", href: SETTINGS_BASE, iconName: "Settings", exact: true, color: "slate", group: "You" },
+      { label: "Welcome", href: "/welcome", iconName: "Rocket", guestHidden: true, group: "You" },
+      { label: "Access Log", href: "/me/access-log", iconName: "Eye", guestHidden: true, group: "You" },
+      { label: "Bring Your Export", href: "/exports", iconName: "FileInput", guestHidden: true, group: "You" },
+      { label: "Trash", href: "/trash", iconName: "Trash2", exact: true, color: "slate", guestHidden: true, group: "You" },
+      { label: "Context Switcher Window", href: "/scopes", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-context-switcher-panel" },
+      { label: "Preferences Window", href: SETTINGS_BASE, iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-preferences-panel" },
+      { label: "Vault Window", href: "/vault", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-vault-panel", guestHidden: true },
+      // `?create=1` opens the canonical Create Organization modal.
+      { label: "New Org", href: "/organizations?create=1", iconName: "Plus", actionItem: true, guestHidden: true },
+    ],
+  },
+  {
+    // ONE pinnable Industries menu (domain tree): education, legal, commerce,
+    // medical. About 50 are planned; some become separate products.
+    label: "Industries",
+    href: "/education",
+    iconName: "Landmark",
+    section: "primary",
+    profileMenu: false,
+    dashboard: false,
+    description: "Education, legal, commerce and medical",
+    color: "emerald",
+    ownedRoutePrefixes: ["/legal", "/commerce"],
+    children: [
+      ...educationNavChildren().map((child) => ({
+        ...child,
+        group: `Education · ${child.group ?? "Hub"}`,
+      })),
+      { label: "Create a Study Kit", href: "/education/start", iconName: "Plus", group: "Education · More" },
+      { label: "Overview", href: "/education/overview", iconName: "LayoutDashboard", group: "Education · More" },
+      { label: "Learn", href: "/education/learn", iconName: "BookOpen", group: "Education · More" },
+      { label: "Library", href: "/education/library", iconName: "BookOpen", exact: true, group: "Education · More" },
+      { label: "Community Library", href: "/education/library/community", iconName: "Users", group: "Education · More" },
+      { label: "Library Suggestions", href: "/education/library/suggestions", iconName: "Lightbulb", group: "Education · More" },
+      { label: "Progress", href: "/education/progress", iconName: "BarChart3", exact: true, group: "Education · More" },
+      { label: "Learning Gain", href: "/education/progress/learning-gain", iconName: "TrendingUp", group: "Education · More" },
+      { label: "Sessions", href: "/education/sessions", iconName: "CalendarClock", group: "Education · More" },
+      { label: "Join a Class", href: "/education/classes/join", iconName: "LogIn", group: "Education · More" },
+      { label: "Host a Game", href: "/education/game/host", iconName: "Gamepad2", group: "Education · More" },
+      { label: "Join a Game", href: "/education/game/join", iconName: "Gamepad2", group: "Education · More" },
+      { label: "Solo Arcade", href: "/education/game/solo", iconName: "Gamepad2", group: "Education · More" },
+      { label: "Education Features", href: "/education/features", iconName: "List", group: "Education · More" },
+      { label: "Your Education Data", href: "/education/data", iconName: "Database", group: "Education · More" },
+      { label: "Offline", href: "/education/offline", iconName: "Eye", group: "Education · More" },
       {
-        label: "QR codes",
-        href: "/print/qr",
-        iconName: "QrCode",
-        group: "Labels & codes",
-        description: "QR symbols with their real capacity and scan margin shown",
-        color: "amber",
+        label: "Legal Hub",
+        href: "/legal",
+        iconName: "Scale",
+        exact: true,
+        description: "Legal tools, calculators, and case utilities",
+        color: "slate",
+        profileMenu: true,
+        dashboard: true,
+        group: "Legal",
       },
+      { label: "CA Workers' Comp", href: "/legal/ca-wc", iconName: "Scale", exact: true, group: "Legal" },
+      { label: "WC Cases", href: "/legal/ca-wc/cases", iconName: "FolderOpen", group: "Legal" },
+      { label: "PD Ratings Calculator", href: "/legal/ca-wc/pd-ratings-calculator", iconName: "Hash", group: "Legal" },
+      { label: "WC Utilities", href: "/legal/ca-wc/utilities", iconName: "Wrench", group: "Legal" },
+      { label: "Intake", href: "/commerce/intake", iconName: "PackagePlus", exact: true, group: "Commerce" },
+      { label: "Instant Intake", href: "/commerce/intake/instant", iconName: "ScanLine", group: "Commerce" },
+      { label: "Intake Answers", href: "/commerce/intake/answer", iconName: "CircleHelp", group: "Commerce" },
+      { label: "Intake Assets", href: "/commerce/intake/assets", iconName: "Images", group: "Commerce" },
+      { label: "Needs Attention", href: "/commerce/attention", iconName: "Inbox", group: "Commerce" },
+      { label: "Triage", href: "/commerce/triage", iconName: "ListChecks", group: "Commerce" },
+      { label: "Drafts", href: "/commerce/drafts", iconName: "FileText", group: "Commerce" },
+      { label: "QR Labels", href: "/commerce/labels", iconName: "QrCode", exact: true, group: "Commerce" },
+      { label: "Certified Printers", href: "/commerce/labels/printers", iconName: "Printer", group: "Commerce" },
+      { label: "Connect a Store", href: "/commerce/stores/connect", iconName: "Link2", group: "Commerce" },
       {
-        label: "Barcodes",
-        href: "/print/barcodes",
-        iconName: "Barcode",
-        group: "Labels & codes",
-        description: "Code 128, EAN and UPC at scanner-legal widths",
-        color: "amber",
-      },
-      {
-        label: "Markdown to print or PDF",
-        href: "/print/documents",
-        iconName: "FileText",
-        group: "Documents",
-        description: "Written content as a styled document or a PDF",
-        color: "blue",
-      },
-      {
-        label: "Booklet imposition",
-        href: "/print/booklet",
-        iconName: "BookOpen",
-        group: "Documents",
-        description: "Pages reordered so a folded stack reads in order",
-        color: "blue",
-      },
-      {
-        label: "Order printed copies",
-        href: "/print/order",
-        iconName: "Printer",
-        group: "Order",
-        description: "Price a real book and have it printed, bound, and shipped",
-        color: "violet",
+        // Placeholder until a dedicated /medical landing ships (domain tree:
+        // "Medical Hub (soon)" — added when work starts). Listed in
+        // common-docs/operations/conflicts.md: it borrows the /education href.
+        label: "Medical Hub (Soon)",
+        href: "/education",
+        iconName: "HeartPulse",
+        description: "Medical calculators and clinical tools — coming soon",
+        color: "rose",
+        profileMenu: true,
+        dashboard: true,
+        group: "Medical",
       },
     ],
   },
   {
-    label: "Marketing",
-    href: "/marketing",
-    iconName: "TrendingUp",
+    // TEMPORARY holding pen (Arman, 2026-10-02): destinations with no clear
+    // domain yet. The pink icon is deliberate — it is a reminder to place
+    // them. Every row here has a line in common-docs/operations/conflicts.md.
+    label: "Other",
+    href: "/search",
+    iconName: "CircleHelp",
+    tone: "attention",
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description:
-      "Brands and websites, planning, search and reach, channels, intelligence, and measurement",
-    color: "green",
-    // GENERATED from features/marketing/lib/marketing-nav.ts — the ONE
-    // declaration of this module's shape. Never hand-edit these children; add
-    // the surface to MARKETING_PILLARS and it appears here, on the /marketing
-    // hub, and in the route metadata together.
-    children: marketingNavChildren(),
-  },
-  {
-    label: "Games",
-    href: "/free/games/matrx-jump",
-    iconName: "Gamepad2",
-    section: "primary",
-    profileMenu: false,
-    dashboard: false,
-    description: "Free browser games built on the platform",
-    color: "purple",
+    description: "Not yet placed in a domain",
+    color: "pink",
     children: [
       {
         label: "Matrx Jump",
@@ -2040,6 +1680,7 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "purple",
         profileMenu: true,
         dashboard: true,
+        group: "Games",
       },
       {
         label: "Tic Tac Toe",
@@ -2049,64 +1690,13 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "purple",
         profileMenu: true,
         dashboard: true,
+        group: "Games",
       },
+      { label: "Search", href: "/search", iconName: "Search", group: "Unplaced" },
+      { label: "Browse Features", href: "/features", iconName: "LayoutGrid", group: "Unplaced" },
+      { label: "Acquisition Console", href: "/acquisition", iconName: "Radar", exact: true, guestHidden: true, group: "Unplaced" },
+      { label: "Acquisition Blocks", href: "/acquisition/blocks", iconName: "Boxes", guestHidden: true, group: "Unplaced" },
     ],
-  },
-  {
-    // Hidden from guests — DMs and team threads have no meaningful guest
-    // experience. Direct-URL access still renders the marketing landing
-    // via the page-level server-side auth branch.
-    label: "Communication",
-    href: "/messages",
-    iconName: "Mail",
-    section: "primary",
-    profileMenu: false,
-    dashboard: false,
-    description: "Direct messages, email, and messaging windows",
-    color: "pink",
-    guestHidden: true,
-    children: [
-      {
-        label: "Messages",
-        href: "/messages",
-        iconName: "MessageSquare",
-        description: "Direct messages and conversations",
-        color: "pink",
-        profileMenu: true,
-        dashboard: true,
-        guestHidden: true,
-      },
-      {
-        label: "Email Window",
-        href: "/messages",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-email-panel",
-        guestHidden: true,
-      },
-      {
-        label: "Messages Window",
-        href: "/messages",
-        iconName: NAV_WINDOW_PANEL_ICON,
-        panelAction: "open-messages-panel",
-        guestHidden: true,
-      },
-    ],
-  },
-  {
-    // The external Vite canvas app (apps/workflow-studio) where the GRAPH is
-    // authored. Renamed from "Workflows" 2026-08-18: the in-app /workflows
-    // route is where a workflow is RUN and watched, and two nav rows sharing
-    // one label collided on React's key AND left the user unable to tell the
-    // two destinations apart.
-    label: "Workflow Studio",
-    href: WORKFLOWS_APP_URL,
-    external: true,
-    iconName: "Workflow",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Design workflow graphs on the canvas (opens the studio app)",
-    color: "purple",
   },
 ];
 
@@ -2157,9 +1747,20 @@ export const adminNavItems: ShellNavItem[] = [
   },
 ];
 
-export const dockItems = primaryNavItems
-  .filter((item) => item.dockOrder != null)
-  .sort((a, b) => (a.dockOrder ?? 0) - (b.dockOrder ?? 0));
+/**
+ * The phone's bottom dock — the eight most-used destinations, unchanged by the
+ * domain reorganization (the dock is a launcher, not the menu tree).
+ */
+export const dockItems: ShellNavItem[] = [
+  { label: "AI Matrx", href: "/dashboard", guestHref: "/features", iconName: "LayoutDashboard", section: "primary", dockOrder: 1 },
+  { label: "Chat", href: "/chat/new", guestHref: "/chat", iconName: "MessageCircle", section: "primary", dockOrder: 2 },
+  { label: "Agents", href: "/agents/all", guestHref: "/agents", iconName: AGENT_ICON_NAME, section: "primary", dockOrder: 3 },
+  { label: "Docs", href: "/notes", iconName: "NotepadText", section: "primary", dockOrder: 4 },
+  { label: "Data", href: "/data", iconName: "Table", section: "primary", dockOrder: 5 },
+  { label: "My Orgs", href: "/organizations", iconName: "Building2", section: "primary", dockOrder: 6, guestHidden: true },
+  { label: "Workspaces", href: "/projects", iconName: "LayoutGrid", section: "primary", dockOrder: 7 },
+  { label: "Files", href: "/files/all", guestHref: "/files", iconName: "FolderOpen", section: "primary", dockOrder: 8 },
+];
 
 export interface ShellNavChildSection {
   label?: string;
@@ -2257,7 +1858,14 @@ export function navItemsForViewer<T extends ShellNavItem | ShellNavChild>(
     .map((item) => {
       const guestHref =
         "guestHref" in item ? (item as ShellNavItem).guestHref : undefined;
-      return guestHref ? { ...item, href: guestHref } : item;
+      const children =
+        "children" in item ? (item as ShellNavItem).children : undefined;
+      // Children carry the same guest fields: a former top-level row folded
+      // into a domain keeps hiding from (or re-pointing for) guests.
+      const next = guestHref ? { ...item, href: guestHref } : item;
+      return children
+        ? { ...next, children: navItemsForViewer(children, false) }
+        : next;
     });
 }
 

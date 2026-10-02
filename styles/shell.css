@@ -422,8 +422,10 @@
   inset: 0;
   overflow: clip; /* 'clip' doesn't create a stacking context like 'hidden' does — backdrop-filter works through it in Chromium */
   display: grid;
-  /* Default: collapsed sidebar on desktop */
-  grid-template-columns: var(--shell-sidebar-w) 1fr;
+  /* Default: collapsed sidebar on desktop. The first track also carries the
+     shell chat dock's width (--shell-chat-w, published by ShellChatDock; 0px
+     when closed), so the header and page sit right of both. */
+  grid-template-columns: calc(var(--shell-sidebar-w) + var(--shell-chat-w, 0px)) 1fr;
   grid-template-rows: var(--shell-header-h) 1fr;
   grid-template-areas:
     "sidebar header"
@@ -510,7 +512,7 @@
    A child-combinator :has is re-checked only when .shell-root's own children
    change, never on insertions deeper in the app (PAGE-WIDE :has above). */
 .shell-root:has(> #shell-sidebar-toggle:checked) {
-  grid-template-columns: var(--shell-sidebar-w-expanded) 1fr;
+  grid-template-columns: calc(var(--shell-sidebar-w-expanded) + var(--shell-chat-w, 0px)) 1fr;
 }
 
 /* Sidebar brand section */
@@ -698,6 +700,19 @@ button.shell-nav-item {
 
 .shell-nav-item:hover .shell-nav-icon {
   color: var(--shell-nav-icon-hover);
+}
+
+/* A deliberate attention marker (nav-data `tone: "attention"`): the pink icon
+   on the temporary "Other" domain, so nobody forgets its rows need a home. */
+.shell-nav-icon.shell-nav-icon-attention,
+.shell-nav-item:hover .shell-nav-icon.shell-nav-icon-attention,
+.shell-active-pill .shell-nav-icon.shell-nav-icon-attention {
+  color: rgb(236, 72, 153); /* pink-500 */
+}
+.dark .shell-nav-icon.shell-nav-icon-attention,
+.dark .shell-nav-item:hover .shell-nav-icon.shell-nav-icon-attention,
+.dark .shell-active-pill .shell-nav-icon.shell-nav-icon-attention {
+  color: rgb(244, 114, 182); /* pink-400 */
 }
 
 .shell-nav-label {
@@ -909,6 +924,11 @@ button.shell-nav-item {
 .shell-nav-flyout {
   min-width: 12rem;
   max-width: 16rem;
+  /* Domain menus can be long (Media, Industries): never taller than the
+     viewport — the panel scrolls instead of running off-screen. */
+  max-height: calc(100dvh - 1rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
@@ -1053,7 +1073,7 @@ button.shell-nav-flyout-item {
 @media (min-width: 1024px) {
   .shell-root[data-settings-route],
   .shell-root[data-settings-route]:has(> #shell-sidebar-toggle:checked) {
-    grid-template-columns: 15rem 1fr;
+    grid-template-columns: calc(15rem + var(--shell-chat-w, 0px)) 1fr;
   }
 
   .shell-root[data-settings-route] .shell-sidebar,
@@ -2268,7 +2288,9 @@ html[data-board-embed] .shell-header,
 html[data-board-embed] .shell-sidebar,
 html[data-board-embed] .shell-user-block,
 html[data-board-embed] .shell-mobile-trigger,
-html[data-board-embed] .shell-dock {
+html[data-board-embed] .shell-dock,
+html[data-board-embed] .shell-chat-dock,
+html[data-board-embed] .shell-chat-toggle {
   display: none !important;
 }
 html[data-board-embed] .shell-main {
@@ -2783,6 +2805,88 @@ html[data-board-embed] .shell-main {
      target is wider than its pill by --matrx-tap-gap, half of it on each side,
      so the gutter subtracts that half — the targets themselves stay touching. */
   padding-right: max(0px, calc(var(--shell-edge-gutter) - var(--matrx-tap-gap, 0px) / 2));
+}
+
+/* THE SHELL CHAT DOCK (ShellChatDock): fixed beside the sidebar, full height,
+   following the sidebar's width in both states. Desktop only; phones open the
+   chat as a sheet. */
+.shell-chat-dock {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: var(--shell-sidebar-w);
+  z-index: 29;
+  transition: left 600ms var(--shell-ease-smooth);
+}
+
+.shell-root > #shell-sidebar-toggle:checked ~ .shell-chat-dock,
+.shell-root > #shell-sidebar-toggle:checked ~ * .shell-chat-dock {
+  left: var(--shell-sidebar-w-expanded);
+}
+
+.shell-root[data-settings-route] .shell-chat-dock,
+.shell-root[data-settings-route] > #shell-sidebar-toggle:checked ~ .shell-chat-dock {
+  left: 15rem;
+}
+
+/* Layouts with no sidebar column leave the dock no room: it stands aside. */
+.shell-root[data-no-sidebar] .shell-chat-dock,
+.shell-root[data-no-sidebar] .shell-chat-toggle,
+.shell-root[data-pathname^="/administration/launchpad"] .shell-chat-dock,
+.shell-root[data-pathname^="/administration/launchpad"] .shell-chat-toggle {
+  display: none !important;
+}
+
+/* THE CHAT BUTTON NEVER MOVES (owner, 2026-10-02): one button, fixed at the
+   chat column's left edge on the header's line. Closed, it is the first thing
+   in the header; open, the same pixel sits inside the chat's own header row.
+   Nothing reflows around it — the header and the dock's top row each reserve
+   its room. It follows only the sidebar's edge, which it must. The offset
+   lands the VISIBLE circle on the shell gutter (no padding around the tap
+   button: the tap-target guard). */
+.shell-root {
+  --shell-chat-toggle-x: calc(var(--shell-edge-gutter) - var(--matrx-tap-gap, 0px) / 2);
+  --shell-chat-toggle-room: calc(var(--shell-chat-toggle-x) + var(--matrx-tap-box, 2.375rem));
+}
+
+.shell-chat-toggle {
+  display: none;
+  flex-shrink: 0;
+  pointer-events: auto;
+}
+
+.shell-root[data-shell-chat-available] .shell-chat-toggle {
+  display: flex;
+}
+
+@media (min-width: 1024px) {
+  .shell-root[data-shell-chat-available] .shell-chat-toggle {
+    position: fixed;
+    top: 0;
+    left: calc(var(--shell-sidebar-w) + var(--shell-chat-toggle-x));
+    z-index: 31;
+    height: 2.75rem;
+    align-items: center;
+    transition: left 600ms var(--shell-ease-smooth);
+  }
+
+  .shell-root > #shell-sidebar-toggle:checked ~ * .shell-chat-toggle {
+    left: calc(var(--shell-sidebar-w-expanded) + var(--shell-chat-toggle-x));
+  }
+
+  .shell-root[data-settings-route] .shell-chat-toggle,
+  .shell-root[data-settings-route] > #shell-sidebar-toggle:checked ~ * .shell-chat-toggle {
+    left: calc(15rem + var(--shell-chat-toggle-x));
+  }
+
+  .shell-root[data-shell-chat-available] .shell-header {
+    padding-left: var(--shell-chat-toggle-room);
+  }
+}
+
+/* The dock's top row starts after the button that sits over it. */
+.shell-chat-dock-header {
+  padding-left: var(--shell-chat-toggle-room);
 }
 
 /* The phone's left control gets the same gutter, so both ends match there

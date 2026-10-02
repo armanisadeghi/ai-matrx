@@ -2,9 +2,6 @@ import { routeRequiresAuthentication } from "@/utils/auth/protected-routes";
 
 describe("protected workspace routes", () => {
   it.each([
-    "/chat",
-    "/chat/new",
-    "/chat/conversation-1?view=focus",
     "/education/flashcards",
     "/education/flashcards/set-123",
     "/education/flashcards/set-123/study?mode=classic",
@@ -41,6 +38,11 @@ describe("protected workspace routes", () => {
     "/agents",
     "/agents/all",
     "/p/public-app",
+    // Every feature is free for guests; only AI actions are counted, and the
+    // SERVER counts them (guest_ai_allowance_used). Chat is the product.
+    "/chat",
+    "/chat/new",
+    "/chat/conversation-1",
   ])("keeps public acquisition route %s public", (pathname) => {
     expect(routeRequiresAuthentication(pathname)).toBe(false);
   });

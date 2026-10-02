@@ -143,6 +143,7 @@ import { ClipboardFallbackHost } from "@/components/dialogs/clipboard-fallback/C
 // Guests are first-class users — without this mount their backend calls go
 // out with no X-Fingerprint-ID header and the server can't identify them.
 import { GlobalAuthSync } from "@/features/auth/components/GlobalAuthSync";
+import { GuestAiAllowanceBridge } from "@/components/guest/GuestAiAllowanceBridge";
 import { SandboxGateHost } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { ScopeMismatchDialogHost } from "@/components/dialogs/scope-mismatch/ScopeMismatchDialogHost";
@@ -213,6 +214,8 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                         <AlchemySessionPortal />
                                         <React.Fragment>
                                           <GlobalAuthSync />
+                                          {/* THE one guest reminder: opens on the server's guest_ai_allowance_used refusal. */}
+                                          <GuestAiAllowanceBridge />
                                           {/* One authenticated lifecycle runtime for Core, Code, and Admin. */}
                                           <SandboxLifecycleObserver />
                                           <SandboxLifecycleController />

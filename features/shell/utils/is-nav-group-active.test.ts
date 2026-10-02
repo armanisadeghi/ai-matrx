@@ -63,18 +63,23 @@ describe("shell navigation route ownership", () => {
     );
   });
 
-  it("does not activate a group from a shortcut child in another module", () => {
-    const aiWork = primaryNavItems.find((item) => item.label === "AI Work");
-    const chat = primaryNavItems.find((item) => item.label === "Chat");
-    expect(aiWork).toBeDefined();
-    expect(chat).toBeDefined();
+  it("lights the one domain that holds a route, across route namespaces", () => {
+    const owner = (path: string) => findOwningNavItem(path, primaryNavItems)?.label;
 
-    expect(isNavGroupActive("/chat/new", aiWork!)).toBe(false);
-    expect(isNavGroupActive("/chat/new", chat!)).toBe(true);
-    expect(isNavGroupActive("/chat", aiWork!)).toBe(false);
-    expect(isNavGroupActive("/chat", chat!)).toBe(true);
-    expect(isNavGroupActive("/work", aiWork!)).toBe(true);
-    expect(isNavGroupActive("/work", chat!)).toBe(false);
+    expect(owner("/work")).toBe("Chat");
+    expect(owner("/work/conversations")).toBe("Chat");
+    expect(owner("/chat/new")).toBe("Chat");
+    expect(owner("/chat/message-templates")).toBe("Communications");
+    expect(owner("/agents/orchestras")).toBe("Workflows");
+    expect(owner("/agents/all")).toBe("Agents");
+    expect(owner("/agent-connections/plugins")).toBe("Coding");
+    expect(owner("/agent-connections/skills")).toBe("Agents");
+    expect(owner("/notes")).toBe("Workspace");
+    expect(owner("/transcripts/studio")).toBe("Media");
+    expect(owner("/print/qr")).toBe("Media");
+    expect(owner("/legal/ca-wc/cases")).toBe("Industries");
+    expect(owner("/free/games/tic-tac-toe")).toBe("Other");
+    expect(owner("/free/data-truncator")).toBe("Workspace");
   });
 
   it("activates Publish for nested CMS routes through its CMS child", () => {
@@ -107,18 +112,18 @@ describe("shell navigation route ownership", () => {
       }
 
       const owner = findOwningNavItem(href, primaryNavItems);
-      if (href.startsWith("/chat")) {
+      if (href.startsWith("/chat") && !href.startsWith("/chat/message-templates")) {
         if (owner?.label !== "Chat") {
           unexpected.push(`${href} owner ${owner?.label ?? "none"}`);
         }
       }
       if (href === "/work" || href.startsWith("/work/")) {
-        if (owner?.label !== "AI Work") {
+        if (owner?.label !== "Chat") {
           unexpected.push(`${href} owner ${owner?.label ?? "none"}`);
         }
       }
       if (href === "/education" || href.startsWith("/education/")) {
-        if (owner?.label !== "Education Hub") {
+        if (owner?.label !== "Industries") {
           unexpected.push(`${href} owner ${owner?.label ?? "none"}`);
         }
       }

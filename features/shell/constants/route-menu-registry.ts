@@ -71,6 +71,7 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     pathPattern: AGENT_RUN_PATH_PATTERN,
     iconName: "Webhook",
     label: "Agent Runs",
+    layout: "panel",
     importFn: () =>
       import("@ai-matrx/chat/agents/components/shell/AgentRunSidebarMenu"),
   },
@@ -94,12 +95,14 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     pathPattern: /^\/chat(?:\/|$)/,
     iconName: "MessageCircle",
     label: "Chats",
+    layout: "panel",
     importFn: () => import("@ai-matrx/chat/agents/components/chat/ChatSidebarMenu"),
   },
   {
     pathPattern: /^\/staff(?:\/|$)/,
     iconName: "Users",
     label: "Your staff",
+    layout: "panel",
     importFn: () =>
       import("@/features/personal-staff/components/StaffSidebarMenu"),
   },
@@ -107,6 +110,7 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     pathPattern: /^\/code(?:\/|$)/,
     iconName: "Code2",
     label: "Code Workspace",
+    layout: "panel",
     importFn: () => import("@/features/code/shell/CodeSidebarMenu"),
   },
   {
@@ -121,6 +125,7 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     pathPattern: RESEARCH_TOPIC_PATH_PATTERN,
     iconName: "FlaskConical",
     label: "Research Topic",
+    layout: "panel",
     importFn: () =>
       import("@/features/research/components/shell/ResearchTopicSidebarMenu"),
   },
@@ -128,6 +133,7 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     pathPattern: /^\/images(?:\/|$)/,
     iconName: "Images",
     label: "Images",
+    layout: "panel",
     importFn: () =>
       import("@/features/image-manager/components/ImagesSidebarMenu"),
   },

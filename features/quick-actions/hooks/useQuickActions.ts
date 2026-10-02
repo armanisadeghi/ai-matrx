@@ -9,12 +9,8 @@ import {
   type OpenAgentRunWindowOptions,
 } from "@/features/overlays/openers/agentRunWindow";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
+import { useQuickToolToggle } from "@/features/canvas/host/toolKinds";
 import { resolveMandate } from "@ai-matrx/chat/mandates/service";
-import { useOpenQuickChat } from "@/features/quick-actions/canvas/quickChatKind";
-import { useOpenQuickData } from "@/features/quick-actions/canvas/quickDataKind";
-import { useOpenScratchpad } from "@/features/quick-actions/canvas/scratchpadKind";
-import { useOpenQuickNotes } from "@/features/notes/canvas/quickNotesKind";
-import { useOpenQuickTasks } from "@/features/tasks/canvas/quickTasksKind";
 
 export type OpenChatWindowOptions = Pick<
   OpenAgentRunWindowOptions,
@@ -22,7 +18,7 @@ export type OpenChatWindowOptions = Pick<
 >;
 
 /**
- * Hook for opening the quick tools from anywhere in the app. Chat, Notes,
+ * Hook for launching the quick tools from anywhere in the app. Chat, Notes,
  * Tasks, Data and the Scratchpad open as canvas tabs; the rest are windows.
  *
  * @example
@@ -34,15 +30,16 @@ export function useQuickActions() {
   const dispatch = useAppDispatch();
   const openAgentRunWindow = useOpenAgentRunWindow();
 
-  const openQuickNotesTab = useOpenQuickNotes();
-  const openQuickTasksTab = useOpenQuickTasks();
-  const openQuickChatTab = useOpenQuickChat();
-  const openQuickDataTab = useOpenQuickData();
-  const openScratchpadTab = useOpenScratchpad();
+  // Launchers behave like toolbar icons: a press opens, focuses, or (in front) closes/hides.
+  const notes = useQuickToolToggle("quick-notes");
+  const tasks = useQuickToolToggle("quick-tasks");
+  const chat = useQuickToolToggle("quick-chat");
+  const data = useQuickToolToggle("quick-data");
+  const scratchpad = useQuickToolToggle("global-scratchpad");
 
-  const openQuickNotes = () => void openQuickNotesTab();
-  const openQuickTasks = () => void openQuickTasksTab({});
-  const openQuickChat = () => void openQuickChatTab({});
+  const openQuickNotes = notes.toggle;
+  const openQuickTasks = tasks.toggle;
+  const openQuickChat = chat.toggle;
 
   /**
    * Opens the floating Chat window panel (`agentRunWindow`) with the same
@@ -77,7 +74,7 @@ export function useQuickActions() {
     [openAgentRunWindow],
   );
 
-  const openQuickData = () => void openQuickDataTab({});
+  const openQuickData = data.toggle;
 
   const openQuickFiles = useCallback(
     (data?: any) => {
@@ -107,9 +104,17 @@ export function useQuickActions() {
   }, [dispatch]);
 
   /** The user's global scratchpad — one click from any page. */
-  const openScratchpad = () => void openScratchpadTab();
+  const openScratchpad = scratchpad.toggle;
 
   return {
+    /** Which launchers' tabs are in front right now — for pressed states. */
+    isVisible: {
+      notes: notes.isVisible,
+      tasks: tasks.isVisible,
+      chat: chat.isVisible,
+      data: data.isVisible,
+      scratchpad: scratchpad.isVisible,
+    },
     openScratchpad,
     openQuickNotes,
     openQuickTasks,

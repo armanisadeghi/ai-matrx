@@ -371,6 +371,13 @@ const AuthGateDialog = lazyOverlay(
     })),
   { ssr: false },
 );
+const SignupConversionModal = lazyOverlay(
+  () =>
+    import("@/components/guest/SignupConversionModal").then((m) => ({
+      default: m.SignupConversionModal,
+    })),
+  { ssr: false },
+);
 const GscDrilldownWindow = lazyOverlay(
   () =>
     import("@/features/marketing/search-console/windows/GscDrilldownWindow"),
@@ -1369,6 +1376,9 @@ export default function OverlayController() {
       selectIsOverlayOpen(s, "announcements"),
     ),
     authGate: useAppSelector((s) => selectIsOverlayOpen(s, "authGate")),
+    guestAiAllowance: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "guestAiAllowance"),
+    ),
     browserFrameWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "browserFrameWindow"),
     ),
@@ -1814,6 +1824,9 @@ export default function OverlayController() {
       string,
       unknown
     > | null,
+    guestAiAllowance: useAppSelector((s) =>
+      selectOverlayData(s, "guestAiAllowance"),
+    ) as Record<string, unknown> | null,
     browserFrameWindow: useAppSelector((s) =>
       selectOverlayData(s, "browserFrameWindow"),
     ) as Record<string, unknown> | null,
@@ -3663,6 +3676,23 @@ export default function OverlayController() {
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "announcements" }))
             }
+          />
+        );
+      })()}
+
+      {/* guestAiAllowance — THE one guest reminder (lib/guest/guest-ai-allowance.ts) */}
+      {(() => {
+        const isOpen = isOpenById.guestAiAllowance;
+        const data = dataById.guestAiAllowance as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <SignupConversionModal
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "guestAiAllowance" }))
+            }
+            message={typeof data?.message === "string" ? data.message : null}
           />
         );
       })()}

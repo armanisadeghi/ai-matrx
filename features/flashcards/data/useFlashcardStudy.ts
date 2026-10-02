@@ -157,6 +157,27 @@ export interface UseFlashcardStudyOptions {
   round?: { size: number; key: number; cardIds?: readonly string[] | null };
 }
 
+/**
+ * Learn mode's working-queue step, shared by every Learn driver (this hook and
+ * the on-device public deck, useLocalFlashcardStudy): the graded card leaves
+ * the queue; a wrong/partial grade puts it back `LEARN_REQUEUE_OFFSET` slots
+ * ahead so it resurfaces soon. Pure — returns a new array.
+ */
+export function requeueAfterGrade<T extends { id: string }>(
+  queue: readonly T[],
+  card: T,
+  result: ReviewResult,
+): T[] {
+  const idx = queue.findIndex((c) => c.id === card.id);
+  if (idx === -1) return queue as T[];
+  const next = queue.slice(0, idx).concat(queue.slice(idx + 1));
+  if (result !== "correct") {
+    const insertAt = Math.min(idx + LEARN_REQUEUE_OFFSET, next.length);
+    next.splice(insertAt, 0, card);
+  }
+  return next;
+}
+
 function clampIndex(index: number, length: number): number {
   if (length <= 0) return 0;
   if (index < 0) return 0;
@@ -532,16 +553,7 @@ export function useFlashcardStudy(
         // Learn mode: remove the card from the working queue; a wrong/
         // partial grade reinserts it a few slots ahead instead of at the
         // very end, so it resurfaces soon rather than "never again".
-        setCards((prevCards) => {
-          const idx = prevCards.findIndex((c) => c.id === card.id);
-          if (idx === -1) return prevCards;
-          const next = prevCards.slice(0, idx).concat(prevCards.slice(idx + 1));
-          if (result !== "correct") {
-            const insertAt = Math.min(idx + LEARN_REQUEUE_OFFSET, next.length);
-            next.splice(insertAt, 0, card);
-          }
-          return next;
-        });
+        setCards((prevCards) => requeueAfterGrade(prevCards, card, result));
         if (result === "correct") {
           setMasteredIds((prev) => new Set(prev).add(card.id));
         }

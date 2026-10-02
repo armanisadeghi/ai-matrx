@@ -13,13 +13,17 @@
 
 import {
   canvasItemId,
+  selectCanvasKindVisibility,
+  toggleKind,
   type CanvasController,
   type CanvasItemId,
   type CanvasJson,
+  type CanvasKindVisibility,
   type CanvasState,
 } from "@ai-matrx/canvas";
 import { useOptionalCanvas, useOptionalCanvasState } from "@ai-matrx/canvas/react";
 import { openCanvasItem } from "./openCanvasItem";
+import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 
 export interface ToolOpenInput {
   kind: string;
@@ -45,6 +49,38 @@ export function openToolInCanvas(canvas: CanvasController | null, input: ToolOpe
     title: keep ? undefined : input.title,
     data: keep ? undefined : input.data,
   });
+}
+
+export interface ToolToggleInput {
+  kind: string;
+  key?: string;
+  title: string;
+  data: CanvasJson;
+  /** What a press does while the tab is in front: close it (default) or put the canvas away. */
+  whenVisible?: "close" | "hide";
+}
+
+/**
+ * A toolbar-icon press: absent -> open + reveal, behind -> bring forward, in
+ * front -> close (or hide). The package owns the three states (`toggleKind`);
+ * this adds the host's rule that a canvas with no column on screen announces
+ * the refusal instead of dropping the press. Returns what the tab is now, or
+ * null after announcing.
+ */
+export function toggleToolInCanvas(canvas: CanvasController | null, input: ToolToggleInput): CanvasKindVisibility | null {
+  if (!canvas || !canvas.isPresented()) {
+    reportCanvasOpenDrop({ reason: "canvas-unavailable", requested: input.title, detail: `${input.kind}::${input.key ?? "default"}` });
+    return null;
+  }
+  return toggleKind(canvas, input);
+}
+
+/** A launcher's pressed state plus its press: `isVisible` is true only while the tab is in front. */
+export function useToolToggle(input: ToolToggleInput): { isVisible: boolean; toggle: () => void } {
+  const canvas = useOptionalCanvas();
+  const key = input.key ?? "default";
+  const isVisible = useOptionalCanvasState((state) => selectCanvasKindVisibility(state, input.kind, key) === "visible", false);
+  return { isVisible, toggle: () => void toggleToolInCanvas(canvas, input) };
 }
 
 type CanvasRecord = { readonly [key: string]: CanvasJson | undefined };

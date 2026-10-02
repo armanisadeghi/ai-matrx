@@ -24,7 +24,8 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
+import { noteRecordChanged, useRecordRevision } from "@ai-matrx/content-ir-react";
 
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { supabase } from "@/utils/supabase/client";
@@ -983,16 +984,15 @@ export type ReferenceResolutionStatus =
  * after this very page renamed it (LANE-C, 2026-10-02: an Update card's row
  * still read "LANE-C timing probe 1" beside its own "Updated task. → LANE-C
  * probe renamed" tally). A writer that changes a record announces it here and
- * every label naming that record resolves again. One counter per record id;
- * a bump re-runs only the hooks that name it.
+ * every label naming that record resolves again.
+ *
+ * ONE change counter per record for the whole page — the content-ir package's
+ * (`noteRecordChanged` / `recordRevision`), which every directive apply already
+ * bumps. A second counter here once meant a label re-read after an apply while
+ * an Update card's "old value" did not (G7, 2026-10-02).
  */
-const referenceLabelVersions = new Map<string, number>();
-const referenceLabelListeners = new Set<() => void>();
-
 export function invalidateReferenceLabel(id: string): void {
-  if (!id) return;
-  referenceLabelVersions.set(id, (referenceLabelVersions.get(id) ?? 0) + 1);
-  for (const listener of referenceLabelListeners) listener();
+  noteRecordChanged(id);
 }
 
 /**
@@ -1036,22 +1036,13 @@ function readLabelOnce(key: string, read: () => Promise<unknown>): Promise<unkno
   return started;
 }
 
-function subscribeReferenceLabels(listener: () => void): () => void {
-  referenceLabelListeners.add(listener);
-  return () => referenceLabelListeners.delete(listener);
-}
-
 /**
  * The change counter `invalidateReferenceLabel` bumps for one record — so any
  * other read of that record (a directive card's trash state) re-reads when a
  * writer on this page changes it, exactly as its label does.
  */
 export function useReferenceRecordVersion(id: string): number {
-  return useSyncExternalStore(
-    subscribeReferenceLabels,
-    () => referenceLabelVersions.get(id) ?? 0,
-    () => 0,
-  );
+  return useRecordRevision(id);
 }
 
 export function useResolvedReferenceLabel(
@@ -1064,11 +1055,7 @@ export function useResolvedReferenceLabel(
 
   const refKey = JSON.stringify(ref);
   const recordId = typeof ref.id === "string" ? ref.id : "";
-  const version = useSyncExternalStore(
-    subscribeReferenceLabels,
-    () => referenceLabelVersions.get(recordId) ?? 0,
-    () => 0,
-  );
+  const version = useRecordRevision(recordId);
   // A name another label already read is shown on the FIRST paint.
   const known = resolvedLabels.get(`${type}:${refKey}:${version}`);
   const [value, setValue] = useState<string | undefined>(known);

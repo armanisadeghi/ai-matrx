@@ -99,6 +99,12 @@ import {
   bypassesSessionWait,
   isAnonymousByDesign,
 } from "@/utils/supabase/anonymousByDesignDoors";
+import {
+  confirmUnverifiableSession,
+  endUnverifiableSession,
+  isUnverifiableTokenRefusal,
+  type UnverifiableSessionAuth,
+} from "@/utils/supabase/unverifiableSession";
 
 /** How long a request may wait for the first auth report before going anyway. */
 export const SESSION_ATTACH_BUDGET_MS = 3_000;
@@ -142,6 +148,8 @@ interface AuthLike {
   onAuthStateChange(
     callback: (event: string, session: unknown) => void,
   ): unknown;
+  getClaims?: UnverifiableSessionAuth["getClaims"];
+  signOut?: UnverifiableSessionAuth["signOut"];
 }
 
 interface ClientLike {
@@ -457,6 +465,35 @@ export function shouldRecoverSession(ctx: BarrierCallContext): boolean {
 }
 
 /**
+ * SEAM 2a — is this refusal a session the database can NEVER verify?
+ *
+ * A token minted by a different auth authority (live vs the nightly clone, or
+ * yesterday's clone) is refused with 401 PGRST301 on every request, and
+ * re-resolving the session hands back the same foreign token — a retry cannot
+ * help. When the authority confirms it (`getClaims` → `bad_jwt` / bad
+ * signature), the session is ended on this device and the person is sent to
+ * sign in (unverifiableSession.ts). Returns true when it did that; the caller
+ * must then NOT retry.
+ */
+export async function endSessionIfUnverifiable(
+  ctx: BarrierCallContext,
+  result: RefusalLike,
+): Promise<boolean> {
+  if (!isUnverifiableTokenRefusal(result)) return false;
+  const auth = boundAuth;
+  if (!auth?.getClaims || !auth.signOut) return false;
+  if (!(await confirmUnverifiableSession({ getClaims: auth.getClaims.bind(auth) }))) {
+    return false;
+  }
+  markSession(false);
+  await endUnverifiableSession(
+    { signOut: auth.signOut.bind(auth) },
+    { door: doorName(ctx), via: "postgrest" },
+  );
+  return true;
+}
+
+/**
  * SEAM 2 — a refused request asks for its session back, once.
  *
  * `getSession()` first, because that is what triggers `auth-js`'s own
@@ -464,7 +501,9 @@ export function shouldRecoverSession(ctx: BarrierCallContext): boolean {
  * wait for the next auth-state change, which is how a sign-in in another tab
  * (the cookie is domain-wide) reaches this one.
  *
- * Returns true when a token exists and the caller should retry.
+ * Returns true when a token exists and the caller should retry. It announces
+ * NOTHING on success: a token in hand is not a served read. The caller reports
+ * the retry's real outcome through `reportSessionRetryOutcome`.
  */
 export async function recoverSessionForRetry(
   ctx: BarrierCallContext,
@@ -483,8 +522,25 @@ export async function recoverSessionForRetry(
     recovered = await waitForAttach(SESSION_RECOVERY_BUDGET_MS);
     if (!recovered) waitSuppressedUntil = Date.now() + WAIT_COOLDOWN_MS;
   }
-  announceBarrierFired(ctx, recovered);
+  if (!recovered) announceUnrecovered(ctx, "no_session");
   return recovered;
+}
+
+/**
+ * After the one retry: announce what ACTUALLY happened. "Recovered" is said
+ * only when the retried request was not refused again — a log line that says
+ * "served, nothing was lost" for a read the database refused twice is the lie
+ * this exists to end (2026-10-02, PGRST301 on every retry).
+ */
+export function reportSessionRetryOutcome(
+  ctx: BarrierCallContext,
+  retried: RefusalLike,
+): void {
+  if (isSessionRefusal(retried)) {
+    announceUnrecovered(ctx, "refused_again");
+    return;
+  }
+  announceRecovered(ctx);
 }
 
 /**
@@ -492,36 +548,37 @@ export async function recoverSessionForRetry(
  * fix. Both outcomes are announced; only the failure is durable, because a
  * repaired read is news for the Error Inspector, not for the repair queue.
  */
-function announceBarrierFired(
+function announceRecovered(ctx: BarrierCallContext): void {
+  const door = doorName(ctx);
+  console.warn(
+    `[sessionBarrier] ${door} was refused because the request carried no ` +
+      `session (42501/401). The session re-resolved and the retry was served. ` +
+      `This firing means a real session-availability bug got past the ` +
+      `proactive wait — it is not routine.`,
+  );
+  captureError({
+    source: "supabase-postgrest",
+    operation: "unknown",
+    schema: ctx.schema,
+    relation: ctx.relation,
+    code: "SESSION_BARRIER_RECOVERED",
+    message:
+      `${door} was refused for having no session, the session re-resolved, ` +
+      `and the read was retried once and served. Nothing was lost; the race ` +
+      `that caused it is DD-237.`,
+    status: 401,
+    sessionState: "attached",
+    // Recovered, announced, and visible in the inspector — not a server-side
+    // repair job. The failure below is.
+    durable: false,
+  });
+}
+
+function announceUnrecovered(
   ctx: BarrierCallContext,
-  recovered: boolean,
+  why: "no_session" | "refused_again",
 ): void {
   const door = doorName(ctx);
-  if (recovered) {
-    console.warn(
-      `[sessionBarrier] ${door} was refused because the request carried no ` +
-        `session (42501/401). The session re-resolved and the request is being ` +
-        `retried once. This firing means a real session-availability bug got ` +
-        `past the proactive wait — it is not routine.`,
-    );
-    captureError({
-      source: "supabase-postgrest",
-      operation: "unknown",
-      schema: ctx.schema,
-      relation: ctx.relation,
-      code: "SESSION_BARRIER_RECOVERED",
-      message:
-        `${door} was refused for having no session, the session re-resolved, ` +
-        `and the read was retried once and served. Nothing was lost; the race ` +
-        `that caused it is DD-237.`,
-      status: 401,
-      sessionState: "attached",
-      // Recovered, announced, and visible in the inspector — not a server-side
-      // repair job. The failure below is.
-      durable: false,
-    });
-    return;
-  }
   captureError({
     source: "supabase-postgrest",
     operation: "unknown",
@@ -529,10 +586,14 @@ function announceBarrierFired(
     relation: ctx.relation,
     code: "SESSION_BARRIER_UNRECOVERED",
     message:
-      `${door} was refused for having no session and the session did not come ` +
-      `back within ${SESSION_RECOVERY_BUDGET_MS} ms. The auth cookie is still ` +
-      `in this browser, so the session is lapsed rather than absent — sign in ` +
-      `again to repair it. The read was NOT retried and its data is missing.`,
+      why === "refused_again"
+        ? `${door} was refused for having no session, the session re-resolved, ` +
+          `and the retry was refused again. The read was NOT served and its ` +
+          `data is missing — sign in again to repair it.`
+        : `${door} was refused for having no session and the session did not ` +
+          `come back within ${SESSION_RECOVERY_BUDGET_MS} ms. The auth cookie is ` +
+          `still in this browser, so the session is lapsed rather than absent — ` +
+          `sign in again to repair it. The read was NOT retried and its data is missing.`,
     status: 401,
     sessionState: sessionStateMarker(),
     durable: true,

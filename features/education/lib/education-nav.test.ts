@@ -42,7 +42,7 @@ describe("education shell navigation", () => {
 
   it("reaches every tool from the Education Hub shell item", () => {
     const educationItem = primaryNavItems.find(
-      (item) => item.label === "Education Hub",
+      (item) => item.label === "Industries",
     );
 
     if (!educationItem?.children) {

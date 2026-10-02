@@ -17,7 +17,7 @@
  */
 
 import { isUuidShape } from "@ai-matrx/kit/uuid";
-import type { DirectiveRecordRef } from "@ai-matrx/content-ir-react";
+import { recordRevision, type DirectiveRecordRef } from "@ai-matrx/content-ir-react";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
@@ -35,7 +35,11 @@ function tableFor(noun: string): { schema: string; table: string } | null {
     : { schema: entry.table.slice(0, dot), table: entry.table.slice(dot + 1) };
 }
 
-/** Concurrent reads of one record share one request. */
+/**
+ * Concurrent reads of one record share one request — within one REVISION of it
+ * (`recordRevision`, bumped by every write this page makes). A read started
+ * before a write is never handed to a reader asking after it (G7, 2026-10-02).
+ */
 const inFlight = new Map<string, Promise<Record<string, unknown> | null>>();
 
 export function readDirectiveRecord(
@@ -43,7 +47,7 @@ export function readDirectiveRecord(
 ): Promise<Record<string, unknown> | null> {
   const where = tableFor(ref.noun);
   if (!where || !isUuidShape(ref.id)) return Promise.resolve(null);
-  const key = `${ref.noun}:${ref.id}`;
+  const key = `${ref.noun}:${ref.id}#${recordRevision(ref.id)}`;
   const pending = inFlight.get(key);
   if (pending) return pending;
   // The table comes from the catalog at run time, so the read goes through the

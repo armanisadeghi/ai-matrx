@@ -142,10 +142,11 @@ describe("the first paint of a Large Route is already its route view", () => {
 });
 
 describe("the domain panel", () => {
-  it("shows Marketing's menu beside the strip, and only on its own family", () => {
+  it("shows a domain's menu beside the strip only where the family opts in", () => {
     expect(isDomainPanelPath("/marketing")).toBe(true);
     expect(isDomainPanelPath("/marketing/brands/b1")).toBe(true);
     expect(isDomainPanelPath("/notes")).toBe(false);
-    expect(isDomainPanelPath("/chat")).toBe(false);
+    expect(isDomainPanelPath("/chat")).toBe(true);
+    expect(isDomainPanelPath("/administration")).toBe(false);
   });
 });

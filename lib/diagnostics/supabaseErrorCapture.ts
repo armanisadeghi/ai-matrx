@@ -41,8 +41,10 @@ import {
   awaitSessionBeforeSend,
   canSendImmediately,
   installSessionBarrier,
+  endSessionIfUnverifiable,
   isSessionRefusal,
   recoverSessionForRetry,
+  reportSessionRetryOutcome,
   sessionStateMarker,
   shouldRecoverSession,
 } from "@/utils/supabase/sessionBarrier";
@@ -410,9 +412,22 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
           // the statement does anything and PostgREST runs each request in its
           // own transaction, so replaying a refused write replays nothing.
           let sessionRetried = false;
+          // Set while the one session retry is in flight, so its OWN result —
+          // not the token that preceded it — decides what gets announced.
+          let awaitingRetryOutcome = false;
           const execute = (retryIndex: number): unknown =>
             Reflect.apply(thenFn, target, [
               async (res: unknown) => {
+                if (awaitingRetryOutcome) {
+                  awaitingRetryOutcome = false;
+                  try {
+                    if (res && typeof res === "object") {
+                      reportSessionRetryOutcome(ctx, res as PostgrestLikeResult);
+                    }
+                  } catch {
+                    /* reporting must never eat the result */
+                  }
+                }
                 if (
                   res &&
                   typeof res === "object" &&
@@ -431,8 +446,14 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
                     shouldRecoverSession(ctx)
                   ) {
                     sessionRetried = true;
-                    if (await recoverSessionForRetry(ctx)) {
-                      return execute(retryIndex);
+                    // A token this database can never verify (minted by another
+                    // auth authority) is ended and the person sent to sign in —
+                    // retrying it would only repeat the same refusal.
+                    if (!(await endSessionIfUnverifiable(ctx, res as PostgrestLikeResult))) {
+                      if (await recoverSessionForRetry(ctx)) {
+                        awaitingRetryOutcome = true;
+                        return execute(retryIndex);
+                      }
                     }
                   }
                 } catch {

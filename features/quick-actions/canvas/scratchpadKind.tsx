@@ -63,9 +63,3 @@ export function useOpenScratchpadPanel() {
     replaceData: Boolean(options?.gateConversationId),
   }));
 }
-
-/** Opens the scratchpad from a door with no chat behind it. */
-export function useOpenScratchpad() {
-  const open = useOpenScratchpadPanel();
-  return () => open(undefined);
-}

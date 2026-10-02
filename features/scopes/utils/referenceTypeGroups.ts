@@ -83,7 +83,8 @@ export function decodeLabelEntities(raw: string): string {
 
 /**
  * Title Case for a group label: every word starts upper-case; a word that is
- * already upper-case (AI, CRM, PDF) is kept; joiners ("&", "and") stay.
+ * already upper-case (AI, CRM, PDF) or carries its own capitals (eBay, iOS) is
+ * kept; joiners ("&", "and") stay.
  */
 export function titleCaseGroupLabel(raw: string): string {
   return decodeLabelEntities(raw)
@@ -93,6 +94,8 @@ export function titleCaseGroupLabel(raw: string): string {
     .map((word) => {
       if (word === "&") return word;
       if (word === word.toUpperCase()) return word;
+      // A brand's own casing ("eBay") is its name, never "EBay".
+      if (/[A-Z]/.test(word.slice(1))) return word;
       return word.charAt(0).toUpperCase() + word.slice(1);
     })
     .join(" ");

@@ -29,6 +29,12 @@ export interface SurfaceManifestSource {
   getSurfaceAncestry(surfaceName: string): string[];
   /** Direct children (manifests whose `inheritsFrom` names it), in declaration order. */
   getSurfaceChildren(surfaceName: string): string[];
+  /**
+   * The app section a surface's page sits in ("Marketing" for the brand
+   * cockpit) — the host's own navigation names it; null when no section owns
+   * the page. Optional: a host without sections omits it.
+   */
+  getSurfaceSection?(surfaceName: string): string | null;
 }
 
 const SLOT = Symbol.for("@ai-matrx/chat/surfaces/manifest-source");
@@ -108,6 +114,11 @@ export function getSurfaceAncestry(surfaceName: string): string[] {
 /** Direct children of a surface, in declaration order. */
 export function getSurfaceChildren(surfaceName: string): string[] {
   return source().getSurfaceChildren(surfaceName);
+}
+
+/** The app section a surface sits in ("Marketing"), or null (`SurfaceManifestSource.getSurfaceSection`). */
+export function getSurfaceSectionLabel(surfaceName: string): string | null {
+  return source().getSurfaceSection?.(surfaceName) ?? null;
 }
 
 /**

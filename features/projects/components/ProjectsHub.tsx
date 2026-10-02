@@ -64,7 +64,7 @@ import {
   MetricNavigation,
   type MetricNavigationItem,
 } from "@/components/navigation/MetricNavigation";
-import { primaryNavItems } from "@/features/shell/constants/nav-data";
+import { WORKSPACES_NAV_GROUP } from "@/features/shell/constants/nav-data";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
@@ -174,17 +174,15 @@ function projectStatus(value: string): ProjectStatus {
 }
 
 function workspaceDestinations(): MetricNavigationItem[] {
-  const workspaces = primaryNavItems.find(
-    (item) => item.label === "Workspaces",
-  );
-  return (workspaces?.children ?? [])
+  const workspaces = WORKSPACES_NAV_GROUP;
+  return workspaces.children
     .filter((item) => !item.action && !item.actionItem && !item.panelAction)
     .map((item) => ({
       key: item.href,
       label: item.label,
       href: item.href,
       iconName: item.iconName,
-      color: item.color ?? workspaces?.color,
+      color: item.color ?? workspaces.color,
       description: item.description,
       external: item.external,
     }));

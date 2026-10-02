@@ -10,9 +10,6 @@ import React, {
 import dynamic from "next/dynamic";
 import { AlertCircle, Copy, Check, MoreHorizontal } from "lucide-react";
 import { useApiAuth } from "@/hooks/useApiAuth";
-import { useGuestLimit } from "@/hooks/useGuestLimit";
-import { GuestLimitWarning } from "@/components/guest/GuestLimitWarning";
-import { SignupConversionModal } from "@/components/guest/SignupConversionModal";
 import { compileSlotComponent } from "../utils/compile-slot";
 import { AgentAppErrorBoundary } from "./AgentAppErrorBoundary";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -185,18 +182,11 @@ function ShellOnSurface({
   Shell: ShellComponent;
 }) {
   const { isAuthenticated, fingerprintId } = useApiAuth();
-  const guestLimit = useGuestLimit();
-
-  useEffect(() => {
-    if (!fingerprintId) return;
-    guestLimit.refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fingerprintId]);
 
   const hostHolder = useAppHolder(app);
 
-  // Read at scope-build time, never snapshotted: `guest_runs_remaining` drops
-  // as the visitor runs the app, and the fingerprint resolves asynchronously.
+  // Read at scope-build time, never snapshotted: the fingerprint resolves
+  // asynchronously.
   const surface: AgentAppSurfaceBinding = {
     surfaceName,
     getHostValues: () => ({
@@ -211,7 +201,6 @@ function ShellOnSurface({
       shell_kind: app.shell_kind ?? "fully_custom",
       is_authenticated: isAuthenticated,
       guest_fingerprint_id: fingerprintId ?? undefined,
-      guest_runs_remaining: !isAuthenticated ? guestLimit.remaining : undefined,
     }),
   };
 
@@ -292,13 +281,6 @@ function CustomComponentRenderer({
   // The standard templates only consume `response`, not raw events.
   const streamEvents: TypedStreamEvent[] = useMemo(() => [], []);
 
-  const guestLimit = useGuestLimit();
-
-  useEffect(() => {
-    if (!fingerprintId) return;
-    guestLimit.refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fingerprintId]);
 
   // Non-blocking execution tracking — writes a row to `aga_executions` for
   // every visit/run/complete/error. Tracker fires fetch with keepalive:true
@@ -415,15 +397,6 @@ function CustomComponentRenderer({
           return;
         }
 
-        if (!isAuthenticated && !guestLimit.allowed) {
-          setLocalError({
-            type: APP_RUN_ERROR_TITLE,
-            message:
-              "You have reached the maximum number of free executions. Please sign up to continue.",
-          });
-          return;
-        }
-
         // REFUSE before the launch when no Holder resolved. Loud, and never a
         // fallback to the pinned id: an app whose mandate is missing, disabled
         // or held by something that cannot run yet must say so, not quietly
@@ -511,9 +484,6 @@ function CustomComponentRenderer({
                       shell_kind: app.shell_kind ?? "fully_custom",
                       is_authenticated: isAuthenticated,
                       guest_fingerprint_id: fingerprintId ?? undefined,
-                      guest_runs_remaining: !isAuthenticated
-                        ? guestLimit.remaining
-                        : undefined,
                       user_input: userInput,
                       form_variable_values: validVariables,
                     }),
@@ -540,7 +510,6 @@ function CustomComponentRenderer({
           ? await waitForRunOutcome(store, launchedConversationId, [])
           : ({ kind: "pending" } as const);
         recordRunOutcome(runTracker, outcome);
-        guestLimit.refresh();
       } catch (err: unknown) {
         const e = err as { name?: string; message?: string };
         if (e?.name === "AbortError") {
@@ -568,7 +537,6 @@ function CustomComponentRenderer({
       slug,
       isAuthenticated,
       fingerprintId,
-      guestLimit,
       validateVariables,
       dispatch,
       startRun,
@@ -650,7 +618,6 @@ function CustomComponentRenderer({
       shell_kind: app.shell_kind ?? "fully_custom",
       is_authenticated: isAuthenticated,
       guest_fingerprint_id: fingerprintId ?? undefined,
-      guest_runs_remaining: !isAuthenticated ? guestLimit.remaining : undefined,
       user_input: lastRunInputRef.current.userInput,
       form_variable_values: lastRunInputRef.current.variables,
       conversation_id: conversationId ?? undefined,
@@ -670,21 +637,6 @@ function CustomComponentRenderer({
   return (
     <MaybeSurfaceRuntimeProvider surfaceName={surfaceName} getScope={buildScope}>
       <div className="h-full flex flex-col">
-        {guestLimit.showWarning && (
-          <div className="flex-shrink-0 p-4">
-            <GuestLimitWarning
-              remaining={guestLimit.remaining}
-              onDismiss={guestLimit.dismissWarning}
-            />
-          </div>
-        )}
-
-        <SignupConversionModal
-          isOpen={guestLimit.showSignupModal}
-          onClose={guestLimit.dismissSignupModal}
-          totalUsed={guestLimit.totalUsed}
-        />
-
         <div className="flex-1 overflow-auto">
           {CustomUIComponent ? (
             <AgentAppErrorBoundary appName={app.name}>
@@ -703,11 +655,10 @@ function CustomComponentRenderer({
                   isStreaming={!isStreamComplete && isExecuting}
                   isExecuting={isExecuting}
                   error={error}
-                  rateLimitInfo={
-                    !isAuthenticated
-                      ? { remaining: guestLimit.remaining, total: 5 }
-                      : null
-                  }
+                  // The SERVER counts guest AI actions now
+                  // (guest_ai_allowance_used → the one reminder); the client
+                  // holds no count to report.
+                  rateLimitInfo={null}
                   conversationId={conversationId}
                   onResetConversation={resetConversation}
                 />

@@ -309,6 +309,9 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
     getRawManifest: (surfaceName) => app().getRawManifest(surfaceName),
     getSurfaceAncestry: (surfaceName) => app().getSurfaceAncestry(surfaceName),
     getSurfaceChildren: (surfaceName) => app().getSurfaceChildren(surfaceName),
+    getSurfaceSection: (surfaceName) =>
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      (require("@/features/surfaces/manifests/surface-section") as typeof import("@/features/surfaces/manifests/surface-section")).getSurfaceSection(surfaceName),
   });
 }
 

@@ -18,6 +18,7 @@ import { createPortal } from "react-dom";
 import ShellIcon from "../ShellIcon";
 import {
   NAV_WINDOW_PANEL_ICON,
+  navToneIconClass,
   partitionNavChildren,
   type ShellNavChild,
   type ShellNavItem,
@@ -273,7 +274,7 @@ export default function NavFlyoutGroup({
         )}
         onFocus={scheduleOpen}
       >
-        <span className="shell-nav-icon">
+        <span className={cn("shell-nav-icon", navToneIconClass(item.tone))}>
           <ShellIcon name={item.iconName} size={18} strokeWidth={1.75} />
         </span>
         <span className="shell-nav-label">{item.label}</span>
@@ -315,7 +316,8 @@ export default function NavFlyoutGroup({
             <div className="shell-nav-flyout-header">{item.label}</div>
             {sections.map((section) => (
               <div key={section.label ?? section.items[0]?.href}>
-                {section.label ? (
+                {/* A section named like the menu itself would repeat the header. */}
+                {section.label && section.label.toLowerCase() !== item.label.toLowerCase() ? (
                   <div className="shell-nav-flyout-section">
                     {section.label}
                   </div>
