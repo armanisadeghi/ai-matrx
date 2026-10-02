@@ -23,7 +23,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { useDialogContainer } from "@host/components/ui/dialog";
+import { useDialogContainer } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { cn } from "@host/lib/utils";

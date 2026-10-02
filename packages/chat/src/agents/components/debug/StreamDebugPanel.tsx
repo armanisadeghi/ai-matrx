@@ -12,8 +12,8 @@ import {
 } from "../../redux/execution-system/active-requests/active-requests.selectors";
 import { cn } from "@host/lib/utils";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
-import { ScrollArea } from "@host/components/ui/scroll-area";
-import { Badge } from "@host/components/ui/badge";
+import { ScrollArea } from "@ai-matrx/design-system";
+import { Badge } from "@ai-matrx/design-system";
 import {
   Copy,
   Check,

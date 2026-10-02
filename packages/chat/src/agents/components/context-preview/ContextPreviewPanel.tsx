@@ -24,7 +24,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Braces, FileCode2, RefreshCw } from "lucide-react";
 import { cn } from "@host/lib/utils";
 import { Skeleton } from "@ai-matrx/design-system";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";

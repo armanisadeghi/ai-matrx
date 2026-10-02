@@ -27,7 +27,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@host/components/ui/alert-dialog";
+} from "@ai-matrx/design-system";
 import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,

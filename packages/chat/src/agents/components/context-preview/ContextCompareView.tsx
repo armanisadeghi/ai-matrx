@@ -41,8 +41,8 @@ import { AlertTriangle, ChevronDown, GitCompareArrows, MessageSquareText, Refres
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { cn } from "@host/lib/utils";
 import { Skeleton } from "@ai-matrx/design-system";
-import { Button } from "@host/components/ui/button";
-import { Textarea } from "@host/components/ui/textarea";
+import { Button } from "@ai-matrx/design-system";
+import { Textarea } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
 import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
 import MarkdownStream from "@host/components/MarkdownStream";

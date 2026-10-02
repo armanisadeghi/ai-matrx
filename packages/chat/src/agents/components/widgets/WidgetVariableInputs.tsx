@@ -12,7 +12,7 @@
  * (number / slider → number input; everything else → textarea).
  */
 
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import type { VariableDefinition } from "../../types/agent-definition.types";
 import { ProTextarea } from "@host/components/official/ProTextarea";
 

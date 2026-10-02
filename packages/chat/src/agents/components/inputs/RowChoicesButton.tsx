@@ -22,7 +22,7 @@ import {
   CommandGroup,
   CommandItem,
   CommandList,
-} from "@host/components/ui/command";
+} from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { toggleMultiValue, type RowChoices } from "./collapsed-row";
 

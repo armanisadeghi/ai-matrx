@@ -31,7 +31,7 @@ import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { selectShowFreeformInput } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsExecuting } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { selectAllResourcesResolved } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import type { VariablesPanelStyle } from "../../../types/instance.types";
 import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";

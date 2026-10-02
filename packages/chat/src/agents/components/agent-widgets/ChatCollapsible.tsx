@@ -8,8 +8,8 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@host/components/ui/collapsible";
-import { Button } from "@host/components/ui/button";
+} from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
 import { Check, ChevronDown, Loader2, Webhook, X } from "lucide-react";
 import { AgentRunner } from "../smart/AgentRunner";
 

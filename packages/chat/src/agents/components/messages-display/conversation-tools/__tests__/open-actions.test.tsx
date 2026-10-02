@@ -15,7 +15,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@host/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import AdvancedMenu from "@host/components/official/AdvancedMenu";
 import { Pin, Copy } from "lucide-react";
 import { openActions } from "../useMessageListInteractions";

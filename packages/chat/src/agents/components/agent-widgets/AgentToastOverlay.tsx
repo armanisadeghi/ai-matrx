@@ -8,7 +8,7 @@ import {
   selectIsExecuting,
 } from "../../redux/execution-system/selectors/aggregate.selectors";
 import { useRetainLatestRequestForViewer } from "../../redux/execution-system/active-requests/useRetainRequestForViewer";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Check, Loader2, Minimize2, X } from "lucide-react";
 import { AgentRunner } from "../smart/AgentRunner";
 import { AnswerTextPreview } from "@host/components/official/structured-value/AnswerTextPreview";

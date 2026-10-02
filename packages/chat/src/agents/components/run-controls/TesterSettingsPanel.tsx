@@ -1,4 +1,4 @@
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
 import {
   Select,
@@ -6,7 +6,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@host/components/ui/select";
+} from "@ai-matrx/design-system";
 import {
   VARIABLE_PANEL_STYLE_OPTIONS,
   type VariablesPanelStyle,

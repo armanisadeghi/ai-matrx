@@ -1,5 +1,5 @@
 import React from "react";
-import { Slider } from "@host/components/ui/slider";
+import { Slider } from "@ai-matrx/design-system";
 
 interface SliderInputProps {
   value: string;

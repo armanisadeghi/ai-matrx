@@ -13,7 +13,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import {

@@ -104,7 +104,7 @@ jest.mock("@host/utils/auth/getUserId", () => ({
 }));
 
 import { makeStore } from "@host/lib/redux/store";
-import { TooltipProvider } from "@host/components/ui/tooltip";
+import { TooltipProvider } from "@ai-matrx/design-system";
 import { ConversationHistorySidebar } from "../ConversationHistorySidebar";
 
 async function flush(ms: number) {

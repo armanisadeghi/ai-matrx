@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectIsExecuting } from "../../redux/execution-system/selectors/aggregate.selectors";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { MessageSquare, Minimize2, X } from "lucide-react";
 import { AgentRunner } from "../smart/AgentRunner";
 

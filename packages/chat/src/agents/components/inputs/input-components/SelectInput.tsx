@@ -5,7 +5,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@host/components/ui/select";
+} from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { calcCols } from "./useContainerColumns";
 import { ProTextarea } from "@host/components/official/ProTextarea";

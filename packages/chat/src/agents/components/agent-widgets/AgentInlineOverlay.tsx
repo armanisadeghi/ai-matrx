@@ -24,7 +24,7 @@
  */
 
 import { useEffect } from "react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { X } from "lucide-react";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectInstanceStatus } from "../../redux/execution-system/conversations/conversations.selectors";

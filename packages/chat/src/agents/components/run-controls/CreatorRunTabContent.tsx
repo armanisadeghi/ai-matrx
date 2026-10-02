@@ -35,7 +35,7 @@ import {
   selectMemoryDegraded,
 } from "../../redux/execution-system/observational-memory/observational-memory.selectors";
 import { Switch } from "@host/components/ui/switch";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import { startNewConversation } from "../../redux/execution-system/thunks/create-instance.thunk";
 import { setBuilderAdvancedSettings } from "../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectUseStructuredSystemInstruction } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";

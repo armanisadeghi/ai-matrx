@@ -9,7 +9,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
-import { TooltipProvider } from "@host/components/ui/tooltip";
+import { TooltipProvider } from "@ai-matrx/design-system";
 import inboxReducer, {
   addInboxItem,
   type ConversationInboxItem,

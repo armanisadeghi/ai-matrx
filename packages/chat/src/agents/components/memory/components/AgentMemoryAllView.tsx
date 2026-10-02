@@ -8,7 +8,7 @@
  */
 
 import { Loader2 } from "lucide-react";
-import { Badge } from "@host/components/ui/badge";
+import { Badge } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import {
   displayTitleForMemory,

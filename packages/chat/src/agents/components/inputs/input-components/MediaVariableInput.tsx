@@ -33,9 +33,9 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
-import { Dialog, DialogContent, DialogTitle } from "@host/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@ai-matrx/design-system";
 import { FileRagBadge } from "@host/features/files/components/core/FileBadges/FileRagBadge";
 import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
 import { InlineMediaRef } from "@ai-matrx/media/react";

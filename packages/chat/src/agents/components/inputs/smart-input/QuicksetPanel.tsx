@@ -10,7 +10,7 @@ import { useComputeTargets } from "@host/hooks/sandbox/use-compute-targets";
 import { useEffect, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { Switch } from "@host/components/ui/switch";
-import { Separator } from "@host/components/ui/separator";
+import { Separator } from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,

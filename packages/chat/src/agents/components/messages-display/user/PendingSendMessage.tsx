@@ -20,7 +20,7 @@ import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { selectPreSend } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setPreSend } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import { smartExecute } from "../../../redux/execution-system/thunks/smart-execute.thunk";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 
 /**

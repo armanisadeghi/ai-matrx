@@ -20,8 +20,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@host/components/ui/alert-dialog";
-import { Button } from "@host/components/ui/button";
+} from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { NotePickerPopover } from "@host/features/notes/components/NotePickerPopover";
 import { useWorkingDocument } from "../../hooks/useWorkingDocument";

@@ -22,7 +22,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@host/components/ui/alert-dialog";
+} from "@ai-matrx/design-system";
 import {
   Drawer,
   DrawerContent,
@@ -30,8 +30,8 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-} from "@host/components/ui/drawer";
-import { Button } from "@host/components/ui/button";
+} from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectToolCallsForMessage } from "../../../redux/execution-system/observability/observability.selectors";

@@ -9,8 +9,8 @@
  */
 
 import { Loader2, RefreshCw, Save } from "lucide-react";
-import { Button } from "@host/components/ui/button";
-import { Slider } from "@host/components/ui/slider";
+import { Button } from "@ai-matrx/design-system";
+import { Slider } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { importanceScore, importanceTier } from "../types";
 import {

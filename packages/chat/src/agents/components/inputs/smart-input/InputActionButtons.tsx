@@ -21,7 +21,7 @@ import {
   CircleStop,
   AudioLines,
 } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import { announceComingSoon } from "@host/lib/coming-soon/announce";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";

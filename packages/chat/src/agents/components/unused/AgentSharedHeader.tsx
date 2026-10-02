@@ -22,7 +22,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@host/components/ui/alert-dialog";
+} from "@ai-matrx/design-system";
 
 type AgentPageMode = "view" | "edit" | "run" | "versions";
 type ModeOption = AgentPageMode | "new";

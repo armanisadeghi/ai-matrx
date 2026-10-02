@@ -13,7 +13,7 @@ import {
   ServerCrash,
   XCircle,
 } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { ProviderRetryPayload } from "@host/types/python-generated/stream-events";
 import { cn } from "@host/lib/utils";
 

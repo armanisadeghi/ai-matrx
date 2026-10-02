@@ -19,7 +19,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "@host/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import {
   COMPOSER_MODES,

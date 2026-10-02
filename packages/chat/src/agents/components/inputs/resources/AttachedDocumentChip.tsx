@@ -12,7 +12,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@host/components/ui/tooltip";
+} from "@ai-matrx/design-system";
 import { resolveResourceAttachmentTileTheme } from "../../messages-display/user/resourceAttachmentTile.theme";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
 import type { DocumentRepresentation } from "../../../types/instance.types";

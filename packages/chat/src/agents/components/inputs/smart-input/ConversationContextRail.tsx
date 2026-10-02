@@ -55,13 +55,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@host/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import { openAfterCurrentLayerCloses } from "@host/components/dialogs/confirm/after-current-layer-closes";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@host/components/ui/tooltip";
+} from "@ai-matrx/design-system";
 import {
   openCanvas,
   closeCanvas,

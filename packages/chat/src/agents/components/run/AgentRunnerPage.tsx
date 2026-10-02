@@ -30,7 +30,7 @@ import { AgentConversationColumn } from "../shared/AgentConversationColumn";
 import { useComposerMode } from "../inputs/smart-input/composer/useComposerMode";
 import { ChatRoomSkeleton } from "../chat/ChatRoomSkeleton";
 import { AlertTriangle, Loader2, RotateCw, TestTube2 } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { AgentRunHeader } from "./AgentRunHeader";
 import { DebugSessionActivator } from "../debug/DebugSessionActivator";

@@ -27,7 +27,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@host/components/ui/tooltip";
+} from "@ai-matrx/design-system";
 import type { ContextItemBodyProps } from "../types";
 import { ResourceSnapshotView } from "./ResourceSnapshotView";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";

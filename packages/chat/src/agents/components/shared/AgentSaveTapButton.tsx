@@ -12,7 +12,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@host/components/ui/alert-dialog";
+} from "@ai-matrx/design-system";
 import { AgentSettingsModal } from "@host/features/agents/components/settings-management/AgentSettingsModal";
 import { cn } from "@host/lib/utils";
 import { useAgentSaveAction } from "./useAgentSaveAction";

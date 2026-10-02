@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readStructuredList } from "../../utils/variable-customcomponent";
 import { ChevronRight, ChevronUp } from "lucide-react";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,

@@ -45,7 +45,7 @@ import { setShowCreatorPanel } from "@host/lib/redux/preferences/creatorDebugSli
 jest.mock("../../inputs/smart-input/SmartAgentInput", () => ({
   SmartAgentInput: () => null,
 }));
-import { TooltipProvider } from "@host/components/ui/tooltip";
+import { TooltipProvider } from "@ai-matrx/design-system";
 // The app root's one Alchemy action registry (AlchemyHost, ALC-15): the
 // assistant turn's rich-document action bar reads it.
 import { AlchemyActionsTestHost } from "@host/test-utils/alchemy-actions-host";

@@ -3,10 +3,10 @@
 import { useCallback, type ReactNode } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Button } from "@host/components/ui/button";
-import { Badge } from "@host/components/ui/badge";
-import { ScrollArea } from "@host/components/ui/scroll-area";
-import { Separator } from "@host/components/ui/separator";
+import { Button } from "@ai-matrx/design-system";
+import { Badge } from "@ai-matrx/design-system";
+import { ScrollArea } from "@ai-matrx/design-system";
+import { Separator } from "@ai-matrx/design-system";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   Undo2,

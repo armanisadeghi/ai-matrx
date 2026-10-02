@@ -14,18 +14,18 @@ import {
 import { setUserVariableValue } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectShowVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { toggleVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
 import { Checkbox } from "@host/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@host/components/ui/radio-group";
+import { RadioGroup, RadioGroupItem } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@host/components/ui/select";
+} from "@ai-matrx/design-system";
 import { ChevronDown } from "lucide-react";
 import { VoiceTextarea } from "@host/components/official/VoiceTextarea";
 import { formatText } from "@ai-matrx/kit/text-case";

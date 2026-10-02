@@ -24,7 +24,7 @@ import { isScopesRpcErr } from "@host/features/scopes/types";
 import type { ContextValueType } from "@host/features/agent-context/types";
 import type { ScopeNode, ScopeTypeNode } from "@host/features/scopes/types";
 import { DynamicIcon } from "@ai-matrx/icons";
-import { Badge } from "@host/components/ui/badge";
+import { Badge } from "@ai-matrx/design-system";
 import { ContextValueRow } from "@host/features/scopes/components/reference/ContextValueRow";
 import type { ContextItemBodyProps } from "../types";
 

@@ -25,9 +25,9 @@
 
 import React, { useCallback } from "react";
 import { Beaker } from "lucide-react";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
-import { Separator } from "@host/components/ui/separator";
+import { Separator } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {

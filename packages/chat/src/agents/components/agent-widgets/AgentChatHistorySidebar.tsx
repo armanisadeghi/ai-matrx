@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { ScrollArea } from "@host/components/ui/scroll-area";
+import { ScrollArea } from "@ai-matrx/design-system";
 import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
 import { selectInstanceAgentId } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { fetchAgentConversations } from "../../redux/conversation-list/conversation-list.thunks";

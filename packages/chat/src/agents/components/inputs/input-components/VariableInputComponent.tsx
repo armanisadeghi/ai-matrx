@@ -27,9 +27,9 @@ import {
   type VariableCustomComponent,
 } from "../../../types/agent-definition.types";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import { useContainerWidth } from "./useContainerColumns";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Dices } from "lucide-react";
 import { IMAGE_ROLE_META } from "@ai-matrx/agents";
 import { choiceControlFor } from "../../../utils/choice-rule";

@@ -10,14 +10,14 @@
 
 import { useState } from "react";
 import { getIconComponent } from "@ai-matrx/icons";
-import { Button } from "@host/components/ui/button";
-import { Separator } from "@host/components/ui/separator";
-import { Badge } from "@host/components/ui/badge";
+import { Button } from "@ai-matrx/design-system";
+import { Separator } from "@ai-matrx/design-system";
+import { Badge } from "@ai-matrx/design-system";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@host/components/ui/collapsible";
+} from "@ai-matrx/design-system";
 import { useAgentLauncherTester } from "../../hooks/useAgentLauncherTester";
 import {
   getAllDisplayTypes,

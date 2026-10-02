@@ -12,9 +12,9 @@ import {
   DrawerContent,
   DrawerDescription,
   DrawerTitle,
-} from "@host/components/ui/drawer";
+} from "@ai-matrx/design-system";
 import { DiffViewer } from "@ai-matrx/diff/react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { cn } from "@host/lib/utils";
 import { useAppSelector } from "@host/lib/redux/hooks";

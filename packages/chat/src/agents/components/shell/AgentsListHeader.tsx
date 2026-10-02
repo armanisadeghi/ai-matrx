@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { FileChartColumn, Webhook } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { useDriftAlerts } from "../../hooks/useDriftAlerts";
 import { DriftSeverityBadge } from "@host/features/agents/components/usages/DriftSeverityBadge";

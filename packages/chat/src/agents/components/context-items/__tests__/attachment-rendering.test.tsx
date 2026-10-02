@@ -25,7 +25,9 @@ jest.mock("@host/features/scraper/parts/ScrapedContentPretty", () => ({
   ),
 }));
 
-jest.mock("@host/components/ui/hover-card", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual<Record<string, unknown>>("@ai-matrx/design-system"),
+  ...({
   HoverCard: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -35,6 +37,7 @@ jest.mock("@host/components/ui/hover-card", () => ({
   HoverCardContent: ({ children }: { children: React.ReactNode }) => (
     <aside data-testid="hover-content">{children}</aside>
   ),
+}),
 }));
 
 jest.mock("@host/features/agents/components/previews/NoteHoverPreview", () => ({

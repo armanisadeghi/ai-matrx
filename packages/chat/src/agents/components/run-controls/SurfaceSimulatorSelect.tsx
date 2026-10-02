@@ -21,7 +21,7 @@
 import { useEffect, useState } from "react";
 import { Check, Monitor, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import {
   Command,
   CommandEmpty,
@@ -29,7 +29,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@host/components/ui/command";
+} from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   MessageSquare,
   History,

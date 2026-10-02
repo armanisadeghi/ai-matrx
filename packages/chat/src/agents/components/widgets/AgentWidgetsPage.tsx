@@ -55,9 +55,9 @@ import {
   agentWidgetTesterSummary,
   buildAgentWidgetVariableRows,
 } from "../../format";
-import { Label } from "@host/components/ui/label";
-import { Button } from "@host/components/ui/button";
-import { Badge } from "@host/components/ui/badge";
+import { Label } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
+import { Badge } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,7 +65,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@host/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import { ProTextarea } from "@host/components/official/ProTextarea";
 import { afterCurrentLayerCloses } from "@host/components/dialogs/confirm/after-current-layer-closes";
 

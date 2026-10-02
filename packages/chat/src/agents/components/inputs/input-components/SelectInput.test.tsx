@@ -8,22 +8,25 @@ import { SelectInput } from "./SelectInput";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@host/components/ui/select", () => ({
-  Select: ({
-    children,
-    onValueChange,
-  }: {
-    children: ReactNode;
-    onValueChange: (value: string) => void;
-  }) => (
-    <button type="button" onClick={() => onValueChange("3")}>
-      {children}
-    </button>
-  ),
-  SelectContent: ({ children }: { children: ReactNode }) => children,
-  SelectItem: ({ children }: { children: ReactNode }) => children,
-  SelectTrigger: ({ children }: { children: ReactNode }) => children,
-  SelectValue: () => null,
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual<Record<string, unknown>>("@ai-matrx/design-system"),
+  ...{
+    Select: ({
+      children,
+      onValueChange,
+    }: {
+      children: ReactNode;
+      onValueChange: (value: string) => void;
+    }) => (
+      <button type="button" onClick={() => onValueChange("3")}>
+        {children}
+      </button>
+    ),
+    SelectContent: ({ children }: { children: ReactNode }) => children,
+    SelectItem: ({ children }: { children: ReactNode }) => children,
+    SelectTrigger: ({ children }: { children: ReactNode }) => children,
+    SelectValue: () => null,
+  },
 }));
 
 jest.mock("@host/components/official/ProTextarea", () => ({

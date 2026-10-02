@@ -2,7 +2,7 @@
 
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { Dialog, DialogContent } from "@host/components/ui/dialog";
+import { Dialog, DialogContent } from "@ai-matrx/design-system";
 import { AgentRunner } from "../smart/AgentRunner";
 import { useAgentShellAddress } from "./useAgentShellAddress";
 

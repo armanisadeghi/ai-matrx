@@ -30,7 +30,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { Alert, AlertDescription } from "@host/components/ui/alert";
+import { Alert, AlertDescription } from "@ai-matrx/design-system";
 import { MillerColumnsCore } from "@host/features/scopes/components/active-context/miller-columns/MillerColumns";
 import {
   drillPathForScope,

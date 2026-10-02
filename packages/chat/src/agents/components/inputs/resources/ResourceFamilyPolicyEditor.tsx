@@ -1,16 +1,16 @@
 "use client";
 
 import { Loader2, Plus, X } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@host/components/ui/checkbox";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@host/components/ui/select";
+} from "@ai-matrx/design-system";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
 import type { DocumentRepresentation } from "../../../types/instance.types";
 import { useFileResourceFamily } from "@host/features/files/hooks/useFileResourceFamily";

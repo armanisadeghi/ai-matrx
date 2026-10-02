@@ -37,7 +37,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@host/components/ui/tooltip";
+} from "@ai-matrx/design-system";
 import { selectInboxItems } from "../../../redux/execution-system/inbox/inbox.selectors";
 import { TERMINAL_RUNTIME_STATUSES } from "../../../runtime-reconnect/types";
 import { selectIsExecuting } from "../../../redux/execution-system/selectors/aggregate.selectors";

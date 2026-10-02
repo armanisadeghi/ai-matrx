@@ -31,7 +31,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@host/components/ui/tooltip";
+} from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverAnchor,

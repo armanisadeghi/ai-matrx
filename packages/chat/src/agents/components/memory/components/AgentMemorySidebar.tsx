@@ -18,7 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";
 import {
@@ -26,7 +26,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@host/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import {
   displayTitleForMemory,

@@ -25,8 +25,11 @@ jest.mock("../../../hooks/useAgentLauncher", () => ({
 jest.mock("../../../hooks/useWidgetHandle", () => ({ useWidgetHandle: () => ({}) }));
 jest.mock("../../../redux/agent-definition/selectors", () => ({ selectAgentName: () => () => "" }));
 jest.mock("@host/components/official/entity-ref/EntityDoorControls", () => ({ EntityDoorControls: () => null }));
-jest.mock("@host/components/ui/scroll-area", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual<Record<string, unknown>>("@ai-matrx/design-system"),
+  ...({
   ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}),
 }));
 jest.mock("@host/components/official/structured-value/AnswerValueView", () => ({
   AnswerValueView: () => <div data-testid="answer-value-view" />,

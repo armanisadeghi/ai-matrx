@@ -29,7 +29,7 @@ import {
   createRequest,
   setRequestStatus,
 } from "../../../redux/execution-system/active-requests/active-requests.slice";
-import { TooltipProvider } from "@host/components/ui/tooltip";
+import { TooltipProvider } from "@ai-matrx/design-system";
 import { AlchemyActionsTestHost } from "@host/test-utils/alchemy-actions-host";
 import { AgentAssistantMessage } from "../assistant/AgentAssistantMessage";
 

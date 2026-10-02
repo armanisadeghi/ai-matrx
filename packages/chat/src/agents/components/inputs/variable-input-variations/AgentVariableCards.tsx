@@ -20,7 +20,7 @@ import { AudioVariableInput } from "../input-components/AudioVariableInput";
 import { VideoVariableInput } from "../input-components/VideoVariableInput";
 import { DocumentVariableInput } from "../input-components/DocumentVariableInput";
 import { YoutubeVariableInput } from "../input-components/YoutubeVariableInput";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { ArrowRight, Minus, Plus } from "lucide-react";
 
 interface AgentVariableInputCardProps {

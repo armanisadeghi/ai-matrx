@@ -35,7 +35,7 @@ import {
   FieldHelp,
 } from "@host/components/official/ConfigurationFields";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
 import {
@@ -62,10 +62,10 @@ import {
 } from "@host/lib/redux/slices/agent-settings/settings-catalogue";
 import type { ControlDefinition } from "@host/lib/redux/slices/agent-settings/types";
 import { SettingControlInput } from "@host/features/agents/components/settings-management/controls/SettingControlInput";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
-import { Textarea } from "@host/components/ui/textarea";
+import { Textarea } from "@ai-matrx/design-system";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
 import { parseRequestOverrides } from "../../redux/execution-system/utils/request-overrides";
 import type { LLMParams } from "../../types/agent-api-types";

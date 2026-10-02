@@ -17,7 +17,7 @@ import {
 } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import type { VariableDefinition } from "../../../types/agent-definition.types";
 import { ChevronDown, ChevronRight, Minus, Plus, Play } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { AppDispatch } from "@host/lib/redux/store";
 
 interface ChatAssistantVariableInputsProps {

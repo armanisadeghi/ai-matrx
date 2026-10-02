@@ -15,19 +15,19 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hoo
 import { CHAT_CONTEXT_MENU_PROPS } from "../chat/agent-context/buildChatContextData";
 import { buildRunControlsApplicationScope } from "../chat/agent-context/buildChatRunConfiguration";
 import { cn } from "@host/lib/utils";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
-import { Label } from "@host/components/ui/label";
+import { Label } from "@ai-matrx/design-system";
 import { ProInput } from "@host/components/official/ProInput";
 import { ProTextarea } from "@host/components/official/ProTextarea";
-import { Separator } from "@host/components/ui/separator";
+import { Separator } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@host/components/ui/select";
+} from "@ai-matrx/design-system";
 import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
 import type { DirectiveApplyPolicy } from "@host/lib/redux/preferences/userPreferencesSlice";
 import {

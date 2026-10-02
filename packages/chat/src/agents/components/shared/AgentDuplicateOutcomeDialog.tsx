@@ -16,16 +16,16 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@host/components/ui/dialog";
+} from "@ai-matrx/design-system";
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from "@host/components/ui/drawer";
-import { Alert, AlertDescription } from "@host/components/ui/alert";
-import { Button } from "@host/components/ui/button";
+} from "@ai-matrx/design-system";
+import { Alert, AlertDescription } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
 
 export type DuplicateOutcomeState = "loading" | "success" | "error";

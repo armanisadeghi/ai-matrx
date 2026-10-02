@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@host/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import type { EditorMode } from "@host/features/notes/components/NoteEditorCore";
 import {

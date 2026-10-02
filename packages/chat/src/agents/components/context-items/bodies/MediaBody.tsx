@@ -15,7 +15,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@host/components/ui/tooltip";
+} from "@ai-matrx/design-system";
 import type { ContextItemBodyProps } from "../types";
 import { VideoPublishDate } from "@host/features/files/blocks/video/VideoPublishDate";
 import { videoPublishDateFromMetadata } from "@host/lib/media/video-date";
