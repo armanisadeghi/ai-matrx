@@ -510,23 +510,44 @@ describe("values the server added are shown and governable", () => {
     return state;
   }
 
-  // RULES.md §5 `delivered` (Arman, 2026-10-01: the full view showed the
-  // page's Organization copy while the model read the server's). A row the
-  // receipt carries delivered text for shows THAT; the send rows never carry it.
-  it("carries what the model read onto the displayed row, never onto the wire", () => {
+  // RULES.md §5/§5b (Arman, 2026-10-01: the full view showed the page's
+  // Organization copy while the model read the server's; a server-shaped value
+  // is fetched on demand). A row the receipt carries a delivered REF for gets
+  // it (size + hash — the detail fetches the text); the send rows never carry it.
+  it("carries the model's delivered ref onto the displayed row, never onto the wire", () => {
     const state = afterTurn(true, true);
     const ctx = (state as unknown as { instanceContext: { receiptByConversationId: Record<string, { receipt: { rows: Record<string, unknown>[] } }> } }).instanceContext;
-    const element = '    <object key="plain" label="Plain value" format="text">\nStandup notes, as the server rendered them\n    </object>';
     ctx.receiptByConversationId.c1!.receipt.rows[0] = {
       ...ctx.receiptByConversationId.c1!.receipt.rows[0],
-      delivered: { text: element, chars: element.length, truncated: false, sha256: "a" },
+      delivered: { chars: 94, sha256: "a" },
     };
     const shown = selectDisplayContextRows("c1")(state) as unknown as Array<Record<string, unknown>>;
     const plain = shown.find((r) => r.key === "plain")!;
-    expect((plain.delivered as { text: string }).text).toBe(element);
+    expect(plain.delivered).toEqual({ chars: 94, sha256: "a" });
     expect(plain).not.toHaveProperty("serverRendered");
     expect(plain.value).toBe("Standup notes");
-    expect(JSON.stringify(build(state).context)).not.toContain("as the server rendered them");
+    expect(JSON.stringify(build(state).context)).not.toContain('"sha256"');
+  });
+
+  // Item 3 (2026-10-01): a server-authoritative row's chars are the server's
+  // delivered total (its statement plus the catalog it rode with) — never the
+  // page's copy.
+  it("an Organization row counts what the server stated, never the page's copy", () => {
+    const state = afterTurn(true, true);
+    const ctx = (state as unknown as { instanceContext: { receiptByConversationId: Record<string, { receipt: { rows: Record<string, unknown>[]; blocks?: unknown[] } }> } }).instanceContext;
+    const entry = ctx.receiptByConversationId.c1!.receipt;
+    entry.rows.push({
+      ...receiptRow("organization", "Organization", "server", "inline"),
+      chars: 40,
+      delivered: { chars: 471, sha256: "o" },
+    });
+    entry.blocks = [
+      { id: "organization_catalog", label: "Organization Catalog", delivered: { chars: 128864, sha256: "c" } },
+      { id: "sandbox_briefing", label: "Sandbox Briefing", delivered: { chars: 900, sha256: "s" } },
+    ];
+    const shown = selectDisplayContextRows("c1")(state);
+    const org = shown.find((r) => r.key === "organization")!;
+    expect(org.chars).toBe(471 + 128864);
   });
 
   it("lists each server-added value after the client's own, with its real name and surface key", () => {
