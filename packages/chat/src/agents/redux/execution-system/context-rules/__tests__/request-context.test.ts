@@ -24,7 +24,7 @@ import {
   selectResolvedContextRows,
 } from "../request-context";
 
-jest.mock("@host/features/surfaces/manifests/registry", () => ({
+jest.mock("../../../../../surfaces/runtime/registry", () => ({
   getManifest: (name: string) =>
     name === "matrx-user/demo"
       ? {

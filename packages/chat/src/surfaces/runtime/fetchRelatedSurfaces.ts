@@ -12,7 +12,7 @@ import {
   getManifest,
   getSurfaceAncestry,
   getSurfaceChildren,
-} from "@host/features/surfaces/manifests/registry";
+} from "./registry";
 import { getSurfaceDisplayLabel } from "../utils/surface-display";
 
 export interface RelatedSurfaceRef {

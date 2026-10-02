@@ -19,7 +19,7 @@
  * `client.mcp` (deduped), and one without MUST NOT emit `client.mcp` at all.
  */
 
-jest.mock("@host/features/surfaces/manifests/registry", () => ({
+jest.mock("../../../../../surfaces/runtime/registry", () => ({
   getManifest: () => undefined,
 }));
 

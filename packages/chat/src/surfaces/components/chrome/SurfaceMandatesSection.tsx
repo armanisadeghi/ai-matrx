@@ -44,7 +44,7 @@ import {
 
 import { cn } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "../../runtime/registry";
 import { useLiveSurfaceMandates } from "../../runtime/surface-mandates";
 import { useAvailableHere } from "../../runtime/available-here";
 import {

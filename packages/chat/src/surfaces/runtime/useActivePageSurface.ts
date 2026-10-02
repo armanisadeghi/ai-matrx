@@ -28,7 +28,7 @@
  */
 
 import { usePathname } from "next/navigation";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "./registry";
 import {
   useSurfaceRuntime,
   type SurfaceRuntimeValue,

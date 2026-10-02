@@ -38,7 +38,7 @@ import type { ApplicationScope } from "../../agents/types/scope.types";
 import {
   getManifest,
   getSurfaceAncestry,
-} from "@host/features/surfaces/manifests/registry";
+} from "./registry";
 import type { SurfaceScopePayload } from "../types";
 import {
   getSurfaceRuntimeStack,

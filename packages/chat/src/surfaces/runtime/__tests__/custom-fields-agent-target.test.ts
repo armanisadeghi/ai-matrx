@@ -11,7 +11,7 @@ const mockToastSuccess = jest.fn();
 jest.mock("../../../host/notify", () => ({
   toast: { error: jest.fn(), success: mockToastSuccess },
 }));
-jest.mock("@host/features/surfaces/manifests/registry", () => ({
+jest.mock("../registry", () => ({
   getManifest: () => undefined,
 }));
 jest.mock("@host/features/content-ir/registry/schema-source-kind-tables", () => ({

@@ -10,7 +10,7 @@
  */
 
 import type { ApplicationScope } from "../../agents/types/scope.types";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "../runtime/registry";
 import { ATTACHED_DOCUMENT_KEY_PREFIX } from "./document-evidence";
 
 export function alwaysOnSurfaceKeys(

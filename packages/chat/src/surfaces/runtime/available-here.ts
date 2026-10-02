@@ -37,7 +37,7 @@ import {
   type OfferRefusal,
 } from "@host/features/context-menu-v3/model/requirement-gate";
 import { BASELINE_VALUE_NAMES } from "@host/features/surfaces/manifests/_baseline.manifest";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "./registry";
 import { useSurfaceConfig } from "../hooks/useSurfaceConfig";
 import type { MenuConfig } from "../config/namespace-registry";
 import { useLiveSurfaceScope } from "./useLiveSurfaceScope";

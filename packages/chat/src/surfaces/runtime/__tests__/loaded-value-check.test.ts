@@ -10,7 +10,7 @@
  *   - in production it never blocks the person (law 6: validation offers).
  */
 import { withScopeContributions } from "../SurfaceRuntimeContext";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "../registry";
 
 const SURFACE = "matrx-user/notes";
 

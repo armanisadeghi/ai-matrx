@@ -30,7 +30,7 @@ import {
   systemRowsToResolved,
   withheldKeys,
 } from "@ai-matrx/agents/context";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "../../../../surfaces/runtime/registry";
 import {
   BASELINE_VALUES,
   OWN_CONVERSATION_WITHHELD,

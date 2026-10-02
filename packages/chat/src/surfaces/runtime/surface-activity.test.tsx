@@ -4,7 +4,7 @@
  * same-name registrations are a coin flip (FOUND_DEFECTS D194), and an agent's
  * write would land in whichever copy mounted last.
  */
-jest.mock("@host/features/surfaces/manifests/registry", () => ({
+jest.mock("./registry", () => ({
   getManifest: (name: string) =>
     name === "matrx-user/test-note"
       ? {

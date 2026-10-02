@@ -33,7 +33,7 @@ jest.mock("../../../../../surfaces/runtime/SurfaceRuntimeContext", () => ({
   isPageOwnConversation: (id: string | null | undefined) => Boolean(id && owners[id]),
 }));
 
-jest.mock("@host/features/surfaces/manifests/registry", () => ({
+jest.mock("../../../../../surfaces/runtime/registry", () => ({
   getManifest: (name: string) =>
     name === "matrx-user/agent-comparison-model"
       ? {

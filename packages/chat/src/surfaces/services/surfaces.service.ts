@@ -10,7 +10,7 @@ import type {
   SurfaceValue,
 } from "../types";
 import type { ApplyManifestSyncResult } from "@host/features/surfaces/services/manifest-sync.service";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "../runtime/registry";
 import { associationsService } from "@host/features/scopes/service/associationsService";
 import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";
 import {

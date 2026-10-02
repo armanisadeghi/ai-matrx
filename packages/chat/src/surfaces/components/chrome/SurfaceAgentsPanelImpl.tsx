@@ -20,7 +20,7 @@ import { useActivePageSurface } from "../../runtime/useActivePageSurface";
 import { getRelatedSurfaces } from "../../runtime/fetchRelatedSurfaces";
 import { getSurfaceDisplayLabel } from "../../utils/surface-display";
 import { SurfaceBoundAgentsList } from "@host/features/surfaces/components/bind/SurfaceBoundAgentsList";
-import { surfaceAcceptsAgentBindings } from "@host/features/surfaces/manifests/registry";
+import { surfaceAcceptsAgentBindings } from "../../runtime/registry";
 import { SurfaceMandatesSection } from "./SurfaceMandatesSection";
 import { SurfaceConversationsSection } from "./SurfaceConversationsSection";
 import { PageIntelligenceSection } from "./PageIntelligenceSection";

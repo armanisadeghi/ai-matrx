@@ -29,7 +29,7 @@
  *    never declared, and a caller cannot invent one.
  */
 
-import { getAllManifests, getManifest } from "@host/features/surfaces/manifests/registry";
+import { getAllManifests, getManifest } from "./registry";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import { toast } from "../../host/notify";
 

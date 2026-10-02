@@ -287,3 +287,27 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
     value: { ...existing, escape: cssEscape },
   });
 }
+
+/**
+ * THE APP'S SURFACE MANIFESTS, REGISTERED WITH `@ai-matrx/chat` AS THE APP DOES
+ * AT STARTUP (P19, `providers/chat-surface-manifests.ts`). Lazy: the registry
+ * (every manifest) loads only when package code first looks a surface up, and
+ * through the test's own module registry — so a test that `jest.mock`s
+ * `@/features/surfaces/manifests/registry` still hands the package its mock,
+ * exactly as before the package stopped importing the registry. A test that
+ * mocks `@ai-matrx/chat/surfaces/runtime/registry` itself never reaches this.
+ */
+{
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const seam = require("@ai-matrx/chat/surfaces/runtime/registry") as typeof import("@ai-matrx/chat/surfaces/runtime/registry");
+  const app = () =>
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("@/features/surfaces/manifests/registry") as typeof import("@/features/surfaces/manifests/registry");
+  seam.registerSurfaceManifests({
+    getManifest: (surfaceName) => app().getManifest(surfaceName),
+    getAllManifests: () => app().getAllManifests(),
+    getRawManifest: (surfaceName) => app().getRawManifest(surfaceName),
+    getSurfaceAncestry: (surfaceName) => app().getSurfaceAncestry(surfaceName),
+    getSurfaceChildren: (surfaceName) => app().getSurfaceChildren(surfaceName),
+  });
+}

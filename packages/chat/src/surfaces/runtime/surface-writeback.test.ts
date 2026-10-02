@@ -17,7 +17,7 @@ jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   captureError: mockCaptureError,
 }));
 
-jest.mock("@host/features/surfaces/manifests/registry", () => ({
+jest.mock("./registry", () => ({
   getManifest: mockGetManifest,
 }));
 

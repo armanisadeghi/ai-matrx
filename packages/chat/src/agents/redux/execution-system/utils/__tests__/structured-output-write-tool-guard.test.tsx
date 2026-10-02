@@ -32,7 +32,7 @@
 const mockGetManifest = jest.fn();
 const mockSelectIn = jest.fn();
 
-jest.mock("@host/features/surfaces/manifests/registry", () => ({
+jest.mock("../../../../../surfaces/runtime/registry", () => ({
   getManifest: (name: string) => mockGetManifest(name),
 }));
 

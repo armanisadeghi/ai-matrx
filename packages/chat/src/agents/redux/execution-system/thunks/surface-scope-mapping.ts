@@ -28,7 +28,7 @@ import {
   readSurfaceScopeValue,
   resolveValueMappings,
 } from "../../../../surfaces/utils/value-mapping-resolver";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "../../../../surfaces/runtime/registry";
 import type { VariableDefinition } from "../../../types/agent-definition.types";
 import type { InstanceContextEntry } from "../../../types/instance.types";
 import type { ApplicationScope } from "../../../types/scope.types";

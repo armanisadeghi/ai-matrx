@@ -26,7 +26,7 @@ import { invalidateSurfaceBoundAgents } from "./surface-bound-agents.service";
 import {
   getSurfaceAncestry,
   surfaceAcceptsAgentBindings,
-} from "@host/features/surfaces/manifests/registry";
+} from "../runtime/registry";
 import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import {
   isValueMappingMap,

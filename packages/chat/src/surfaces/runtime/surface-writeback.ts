@@ -41,7 +41,7 @@
  */
 
 import { kindValidator } from "@host/features/content-ir/registry/kind-schema-source";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "./registry";
 import {
   isSurfaceWritePatch,
   resolveSurfaceWritePatch,

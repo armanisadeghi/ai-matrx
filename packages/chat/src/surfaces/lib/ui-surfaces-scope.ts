@@ -8,7 +8,7 @@
  */
 
 import type { SurfaceScopePayload } from "../types";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "../runtime/registry";
 import {
   createAdminUiSurfacesScope,
   type UiSurfaceScopeEntry,

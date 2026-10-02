@@ -41,7 +41,7 @@ import {
   executionOrganizationForRequest,
 } from "../utils/required-organization";
 import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "../../../../surfaces/runtime/registry";
 import {
   claimSubmit,
   isDuplicateSubmittedInput,

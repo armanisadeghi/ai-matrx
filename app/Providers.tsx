@@ -81,6 +81,10 @@ import { DetailHost } from "@/features/window-panels/detail/DetailHost";
 import { AgentCatalogHost } from "@/providers/AgentCatalogHost";
 // THE ONE `@ai-matrx/chat` host mount (ports wired to this app). See providers/ChatHostAdapter.tsx.
 import { ChatHostAdapter } from "@/providers/ChatHostAdapter";
+// The app's surface manifests, handed to `@ai-matrx/chat` (P19): the side-effect
+// import registers them for the server layer; the component does it in the browser.
+import "@/providers/chat-surface-manifests";
+import { ChatSurfaceRegistrations } from "@/providers/ChatSurfaceRegistrations";
 import { MatrxDataTableHost } from "@/components/official/MatrxDataTableHost";
 // The live host for `openAgentPeek(agentId)` — the app service bound to the
 // picker's `openPeek` port. Slim shell; the WindowPanel body is lazy.
@@ -178,6 +182,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
     <ReactQueryProvider>
       <StoreProvider initialState={initialReduxState}>
         <ChatHostAdapter>
+        <ChatSurfaceRegistrations />
         <AssociationsHost>
           <DetailHost>
             <AgentCatalogHost>

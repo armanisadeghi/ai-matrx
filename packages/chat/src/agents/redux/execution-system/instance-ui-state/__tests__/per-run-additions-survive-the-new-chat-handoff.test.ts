@@ -32,7 +32,7 @@
  * `client.mcp`. Only its network/registry dependencies are stubbed.
  */
 
-jest.mock("@host/features/surfaces/manifests/registry", () => ({
+jest.mock("../../../../../surfaces/runtime/registry", () => ({
   getManifest: () => undefined,
 }));
 

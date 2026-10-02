@@ -21,7 +21,7 @@ import {
   wasPageOwnConversationOf,
   wasSurfaceMountedThisSession,
 } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "../../../../surfaces/runtime/registry";
 import { withBaselineScope } from "../../../../surfaces/utils/baseline-scope";
 import { withLiveSurfaceContext } from "../../../../surfaces/runtime/surface-chain";
 import { isPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";

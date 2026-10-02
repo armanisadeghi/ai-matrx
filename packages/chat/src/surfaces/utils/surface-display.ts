@@ -9,7 +9,7 @@
  */
 
 import type { SurfaceManifest, SurfaceValueGroup } from "../types";
-import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { getManifest } from "../runtime/registry";
 
 /** Tokens that stay fully uppercase in slug-derived fallback labels. */
 const ACRONYMS = new Set([

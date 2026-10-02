@@ -29,7 +29,7 @@ jest.mock("../../../../../surfaces/hooks/useAgentNames", () => ({
 jest.mock("../../../agent-definition/selectors", () => ({
   selectAgentById: () => undefined,
 }));
-jest.mock("@host/features/surfaces/manifests/registry", () => ({
+jest.mock("../../../../../surfaces/runtime/registry", () => ({
   getManifest: mockGetManifest,
 }));
 jest.mock("../../../../../host/notify", () => ({

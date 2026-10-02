@@ -22,7 +22,7 @@ jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
-jest.mock("@host/features/surfaces/manifests/registry", () => ({
+jest.mock("../registry", () => ({
   getManifest: mockGetManifest,
 }));
 jest.mock("@host/features/content-ir/registry/schema-source-kind-tables", () => ({
