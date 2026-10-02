@@ -2,6 +2,12 @@ import "server-only";
 import { createClient } from "@/utils/supabase/server";
 import { getShareableResource } from "@/utils/permissions/registry";
 import { PUBLIC_LANE_TYPES, publicLaneSelect } from "@/utils/permissions/publicLane";
+// The public card shape is owned by the flashcards feature (both public lanes
+// read it).
+import type {
+  PublicFlashcard,
+  PublicFlashcardSetPayload,
+} from "@/features/flashcards/data/publicDeck";
 
 /**
  * Server loader for the indexable public viewer (`/p/e/[resourceType]/[id]`).
@@ -17,22 +23,6 @@ import { PUBLIC_LANE_TYPES, publicLaneSelect } from "@/utils/permissions/publicL
  * cards) it delegates to an anon SECURITY DEFINER read RPC; base rows are read
  * generically through the registry so a new public type Just Works.
  */
-
-export interface PublicFlashcard {
-  id: string;
-  front: string;
-  back: string;
-  card_kind?: string | null;
-  difficulty?: string | null;
-  topic?: string | null;
-  lesson?: string | null;
-  position?: number | null;
-  /** Durable face-image URLs (hotlinked/CDN) — a bare file_id is unusable anon. */
-  front_image_url?: string | null;
-  front_image_alt?: string | null;
-  back_image_url?: string | null;
-  back_image_alt?: string | null;
-}
 
 export interface PublicResource {
   resourceType: string;
@@ -80,7 +70,7 @@ export async function loadPublicResource(
   // Flashcard sets: rich anon read (set + ordered cards) via SECURITY DEFINER RPC.
   if (entry.resourceType === "fc_set") {
     const { data } = await supabase.rpc("get_public_flashcard_set", { p_set_id: id });
-    const r = data as { success?: boolean; set?: Record<string, unknown>; cards?: PublicFlashcard[] } | null;
+    const r = data as PublicFlashcardSetPayload | null;
     if (!r?.success || !r.set) return null;
     return {
       resourceType: "fc_set",

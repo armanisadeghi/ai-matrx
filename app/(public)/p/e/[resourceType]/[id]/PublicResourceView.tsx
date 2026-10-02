@@ -8,10 +8,12 @@ import {
   RichContentStaticInline,
   RichContentStaticStandard,
 } from "@/components/rich-content/RichContentStaticProse";
-import { ArrowUpRight, Layers } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { resolveShareSourceSurface } from "@/features/sharing/lenses/source-surface";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
+import { PublicHeaderActionsPortal } from "@/components/matrx/PublicHeaderActionsPortal";
+import { PublicFlashcardDeck } from "@/features/flashcards/components/public/PublicFlashcardDeck";
 import { isForkable } from "@/utils/permissions/shareLinks";
 import type { PublicResource } from "../../loadPublicResource";
 
@@ -34,79 +36,6 @@ function Markdown({
 function str(row: Record<string, unknown>, key: string): string {
   const v = row[key];
   return typeof v === "string" ? v : "";
-}
-
-/** Flashcard set — read-only card list + study/copy CTA. The SEO body. */
-function FlashcardSetRenderer({ resource }: { resource: PublicResource }) {
-  const cards = resource.cards ?? [];
-  return (
-    <div className="mx-auto w-full max-w-3xl">
-      <div className="mb-6 flex items-center gap-2 text-muted-foreground">
-        <Layers className="h-4 w-4" />
-        <span className="text-sm font-medium">
-          {cards.length} {cards.length === 1 ? "card" : "cards"}
-        </span>
-      </div>
-      {resource.description && (
-        <p className="mb-8 text-lg text-muted-foreground">
-          <RichContentStaticInline source={resource.description} />
-        </p>
-      )}
-      <ol className="space-y-3">
-        {cards.map((card, i) => (
-          <li
-            key={card.id}
-            className="rounded-xl border border-border bg-card p-5 sm:flex sm:items-start sm:gap-5"
-          >
-            <span className="mb-2 block text-xs font-semibold text-muted-foreground sm:mb-0 sm:w-8 sm:shrink-0 sm:pt-0.5">
-              {i + 1}
-            </span>
-            <div className="grid gap-3 sm:flex-1 sm:grid-cols-2">
-              <div>
-                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Term
-                </p>
-                {card.front_image_url && (
-                  // Server-rendered durable URL (SEO + anon; alt is real alt
-                  // text, so a rotted hotlink degrades to its description).
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={card.front_image_url}
-                    alt={card.front_image_alt ?? ""}
-                    loading="lazy"
-                    className="mb-2 max-h-40 w-auto rounded-md"
-                  />
-                )}
-                <div className="text-foreground">
-                  {card.front ? <Markdown content={card.front} /> : "—"}
-                </div>
-              </div>
-              <div className="sm:border-l sm:border-border sm:pl-5">
-                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Definition
-                </p>
-                {card.back_image_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={card.back_image_url}
-                    alt={card.back_image_alt ?? ""}
-                    loading="lazy"
-                    className="mb-2 max-h-40 w-auto rounded-md"
-                  />
-                )}
-                <div className="text-foreground">
-                  {card.back ? <Markdown content={card.back} /> : "—"}
-                </div>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ol>
-      {cards.length === 0 && (
-        <p className="text-muted-foreground">This set has no cards yet.</p>
-      )}
-    </div>
-  );
 }
 
 /** Markdown types (note, message_template). */
@@ -138,8 +67,6 @@ function GenericRenderer({ resource }: { resource: PublicResource }) {
 
 function renderBody(resource: PublicResource): React.ReactNode {
   switch (resource.resourceType) {
-    case "fc_set":
-      return <FlashcardSetRenderer resource={resource} />;
     case "note":
     case "message_template":
       return <MarkdownRenderer resource={resource} />;
@@ -157,57 +84,67 @@ export function PublicResourceView({ resource }: { resource: PublicResource }) {
   const source = resolveShareSourceSurface({
     resourceType: resource.resourceType,
   });
+  const isDeck = resource.resourceType === "fc_set";
+
+  // The public layout owns the page chrome (PublicHeader / PublicFooter);
+  // this view adds its actions to that header, never a second toolbar.
+  const headerActions = (
+    <PublicHeaderActionsPortal>
+      {forkable && !isDeck && (
+        <DuplicateToEditButton
+          resourceType={resource.resourceType}
+          resourceId={resource.resourceId}
+          returnPath={returnPath}
+          size="sm"
+        />
+      )}
+      <Button asChild size="sm" variant="outline" className="h-7 px-2 sm:px-3">
+        <Link href={source.href} aria-label={source.label}>
+          <span className="hidden sm:inline">{source.label}</span>
+          <ArrowUpRight className="h-4 w-4 sm:ml-1" />
+        </Link>
+      </Button>
+    </PublicHeaderActionsPortal>
+  );
+
+  if (isDeck) {
+    // Studied in place by anyone, signed in or not (features/flashcards/
+    // components/public). Saving a copy needs an account; studying never does.
+    return (
+      <div className="bg-textured">
+        {headerActions}
+        <PublicFlashcardDeck
+          setId={resource.resourceId}
+          title={resource.title}
+          description={resource.description}
+          label={resource.displayLabel}
+          cards={resource.cards ?? []}
+          saveAction={
+            forkable ? (
+              <DuplicateToEditButton
+                resourceType={resource.resourceType}
+                resourceId={resource.resourceId}
+                returnPath={returnPath}
+                size="sm"
+                variant="outline"
+              />
+            ) : undefined
+          }
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-textured">
-      <header className="flex items-center justify-between border-b border-border/60 bg-card/40 px-4 backdrop-blur sm:px-6" style={{ height: "3.5rem" }}>
-        <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
-          AI Matrx
-        </Link>
-        <div className="flex items-center gap-2">
-          {forkable && (
-            <DuplicateToEditButton
-              resourceType={resource.resourceType}
-              resourceId={resource.resourceId}
-              returnPath={returnPath}
-              size="sm"
-            />
-          )}
-          <Button asChild size="sm" variant="outline">
-            <Link href={source.href}>
-              {source.label}
-              <ArrowUpRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
+    <div className="bg-textured px-4 py-8 sm:px-6 sm:py-12">
+      {headerActions}
+      <div className="mx-auto mb-8 w-full max-w-3xl">
+        <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+          {resource.displayLabel}
         </div>
-      </header>
-
-      <main className="flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <div className="mx-auto mb-8 w-full max-w-3xl">
-          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-            {resource.displayLabel}
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">{resource.title}</h1>
-        </div>
-        {renderBody(resource)}
-      </main>
-
-      <footer className="border-t border-border/60 px-4 py-6 text-center sm:px-6">
-        <p className="text-sm text-muted-foreground">
-          Published on{" "}
-          <Link href="/" className="font-medium text-primary hover:underline">
-            AI Matrx
-          </Link>
-          {" — "}
-          <Link
-            href={source.href}
-            className="font-medium text-primary hover:underline"
-          >
-            build and share your own
-          </Link>
-          .
-        </p>
-      </footer>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{resource.title}</h1>
+      </div>
+      {renderBody(resource)}
     </div>
   );
 }

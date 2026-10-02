@@ -32,6 +32,7 @@ import {
 import { KindInstanceRenderer } from "@/features/sharing/lenses/kind-instance";
 import { SharedFileLens } from "@/features/sharing/lenses/file-lens";
 import { ConversationShareLens } from "@/features/sharing/lenses/conversation-lens";
+import { FlashcardSetShareLens } from "@/features/sharing/lenses/flashcard-set-lens";
 
 export interface ShareLensProps {
   /** The resolved share payload (registry `public_columns` projection). */
@@ -60,6 +61,9 @@ const SHARE_LENS_REGISTRY: Record<string, ShareLensRender> = {
     <CanvasRenderer result={p.result} token={p.token} />
   ),
   fc_card: (p) => <FlashcardRenderer result={p.result} />,
+  // A shared deck is the public study page itself — the SAME component as
+  // the indexable /p/e/fc_set viewer.
+  fc_set: (p) => <FlashcardSetShareLens result={p.result} token={p.token} />,
   file: (p) => <SharedFileLens result={p.result} token={p.token} />,
   // A shared AI chat shows its messages (access ladder T-19) — the transcript
   // arrives as `result.children`, narrowed by the database.
