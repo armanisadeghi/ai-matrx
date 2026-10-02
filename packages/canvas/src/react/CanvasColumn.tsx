@@ -41,9 +41,11 @@ export function useCanvasColumnWidth(): number | null {
 export interface CanvasColumnProps {
   readonly className?: string;
   readonly style?: CSSProperties;
+  /** Called with the live width while the edge is dragged, then null — lets a host shell reflow in step. */
+  readonly onLiveWidth?: (width: number | null) => void;
 }
 
-export function CanvasColumn({ className, style }: CanvasColumnProps) {
+export function CanvasColumn({ className, style, onLiveWidth }: CanvasColumnProps) {
   const isOpen = useCanvasState(selectCanvasIsOpen);
   const isFullscreen = useCanvasState(selectCanvasIsFullscreen);
   const width = useCanvasState(selectCanvasWidth);
@@ -60,7 +62,15 @@ export function CanvasColumn({ className, style }: CanvasColumnProps) {
       aria-label="Canvas"
       style={{ ...style, ["--mxc-width" as string]: `${shown}px` }}
     >
-      {!isFullscreen ? <WidthHandle width={width} onDrag={setDragWidth} /> : null}
+      {!isFullscreen ? (
+        <WidthHandle
+          width={width}
+          onDrag={(next) => {
+            setDragWidth(next);
+            onLiveWidth?.(next);
+          }}
+        />
+      ) : null}
       <div className="mxc-layout">
         <LayoutNodeView node={layout} />
       </div>

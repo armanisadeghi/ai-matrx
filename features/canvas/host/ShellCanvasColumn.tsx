@@ -38,5 +38,13 @@ export function ShellCanvasColumn() {
     [],
   );
 
-  return <CanvasColumn className="shell-canvas-column" />;
+  return (
+    <CanvasColumn
+      className="shell-canvas-column"
+      onLiveWidth={(live) => {
+        // The page follows the edge while it is dragged; the stored width takes over on release.
+        if (live !== null) document.documentElement.style.setProperty("--shell-canvas-w", `${live}px`);
+      }}
+    />
+  );
 }
