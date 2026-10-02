@@ -120,6 +120,20 @@ export function useConversationContextChipShown(conversationId: string): boolean
   return rows.length > 0 || (!ownPage && (Boolean(stamped) || Boolean(off?.previousSurfaceName)));
 }
 
+/**
+ * The page a conversation's values come from — the stamped launch surface (or
+ * the one its page switch turned off) — never the page's own conversation.
+ * One derivation for the chip's label and the full view's title.
+ */
+export function useValueGroupSurface(conversationId: string): string | null {
+  const stamped = useAppSelector(
+    (state) => state.conversations.byConversationId[conversationId]?.surfaceName ?? null,
+  );
+  const off = useAppSelector(selectPageContextOff(conversationId));
+  const ownPage = useIsPageOwnConversation(conversationId);
+  return ownPage ? null : (stamped ?? off?.previousSurfaceName ?? null);
+}
+
 export function ConversationContextChip({
   conversationId,
   onOpenFullView,
@@ -151,18 +165,12 @@ export function ConversationContextChip({
   const receiptEntry = useAppSelector(
     (state) => state.instanceContext.receiptByConversationId[conversationId],
   );
-  const stamped = useAppSelector(
-    (state) => state.conversations.byConversationId[conversationId]?.surfaceName ?? null,
-  );
   const off = useAppSelector(selectPageContextOff(conversationId));
   // The page's OWN conversation never shares the page (it IS the page), so its
   // chip names no page and offers no page switch — even when an older launch
   // stamped one on it. Reactive: the page's provider may register after the
   // chip first renders (a route swap remounts it).
-  const ownPage = useIsPageOwnConversation(conversationId);
-  const surfaceName = ownPage
-    ? null
-    : (stamped ?? off?.previousSurfaceName ?? null);
+  const surfaceName = useValueGroupSurface(conversationId);
 
   // The agent's own layer (Context Policies, kill switch) decides what each
   // row delivers. Until its definition is read, the chip shows the count and

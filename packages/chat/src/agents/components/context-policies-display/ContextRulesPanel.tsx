@@ -35,6 +35,8 @@ import {
 import {
   useMandateKillSwitch,
   useSaveContextRule,
+  useValueGroupSurface,
+  valueGroupName,
 } from "../inputs/smart-input/ConversationContextChip";
 import { AgentEditAccessBadge } from "@host/features/agents/components/context-policies-management/AgentEditAccessControl";
 import { decodeAgentEditAccess } from "../../utils/agent-edit-access";
@@ -46,8 +48,6 @@ import {
   selectDisplayReceiptBlocks,
   selectDisplayReceiptMessageId,
 } from "../../redux/execution-system/context-rules/context-viewer";
-import { resolveClientSurface } from "../../redux/execution-system/utils/build-tool-injection";
-import { getSurfaceDisplayLabel } from "../../../surfaces/utils/surface-display";
 
 /**
  * RULES.md §5a: the server states these values itself and drops the page's
@@ -85,12 +85,9 @@ export function ContextRulesPanel({
     selectDisplayReceiptMessageId(state, conversationId),
   );
   const blocks = useAppSelector((state) => selectDisplayReceiptBlocks(state, conversationId));
-  // The title names the page the values come from — never the word "context"
-  // (Arman, 2026-10-01); a conversation with no page has no title text.
-  const pageName = useAppSelector((state) => {
-    const surface = resolveClientSurface(state, conversationId);
-    return surface ? getSurfaceDisplayLabel(surface) : "";
-  });
+  // The title is the chip's own group name — the page the values come from —
+  // never the word "context" (Arman, 2026-10-01); no page, no title text.
+  const pageName = valueGroupName(useValueGroupSurface(conversationId));
   const loadView: ContextViewLoader = (target) =>
     dispatch(loadContextView({ conversationId, messageId: receiptMessageId, agentId }, target));
   const mandateKey = useAppSelector(
