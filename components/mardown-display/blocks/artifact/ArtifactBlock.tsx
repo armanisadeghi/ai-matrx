@@ -11,9 +11,8 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectCanvasIsAvailable } from "@/features/canvas/redux/canvasSlice";
-import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
+import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
+import type { CanvasContentType } from "@/features/canvas/canvasContent";
 import { resolveCanvasType } from "@/features/canvas/artifact-types/artifact-type-registry";
 import {
   ArtifactRender,
@@ -80,7 +79,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
 }) => {
   const { open } = useCanvas();
   const { openArtifact } = useOpenArtifactInCanvas();
-  const isCanvasAvailable = useAppSelector(selectCanvasIsAvailable);
+  const { isCanvasAvailable } = useCanvasOpenGuard();
 
   const artifactTitle =
     serverData?.title || metadata?.artifactTitle || "Artifact";

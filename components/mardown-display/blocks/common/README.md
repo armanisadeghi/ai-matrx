@@ -51,7 +51,7 @@ See `ContentBlockWrapper.tsx` for complete prop list.
 
 ### 1. Define the Type
 
-Add to `CanvasContentType` in `lib/redux/slices/canvasSlice.ts`:
+Add to `CanvasContentType` in `features/canvas/canvasContent.ts`:
 ```typescript
 export type CanvasContentType = 'quiz' | 'your_type' | ...
 ```
@@ -178,7 +178,7 @@ const customActions = [
 
 ## Key Files to Modify
 
-1. `lib/redux/slices/canvasSlice.ts` - Add type definition
+1. `features/canvas/canvasContent.ts` - Add type definition
 2. `content-splitter.ts` - Add JSON detection
 3. `EnhancedChatMarkdown.tsx` - Add rendering
 4. `CanvasRenderer.tsx` - Add canvas support

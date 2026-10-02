@@ -17,8 +17,8 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectCanvasIsAvailable, type CanvasContent, type CanvasContentType } from "@/features/canvas/redux/canvasSlice";
+import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
+import type { CanvasContent, CanvasContentType } from "@/features/canvas/canvasContent";
 import IconButton from "@/components/official/IconButton";
 import { toast } from "@/lib/toast";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
@@ -109,7 +109,7 @@ const ContentBlockWrapper: React.FC<ContentBlockWrapperProps> = ({
     // Canvas integration
     const { open: openCanvas } = useCanvas();
     const { openArtifact } = useOpenArtifactInCanvas();
-    const isCanvasAvailable = useAppSelector(selectCanvasIsAvailable);
+    const { isCanvasAvailable } = useCanvasOpenGuard();
     
     // ESC key handler
     useEffect(() => {

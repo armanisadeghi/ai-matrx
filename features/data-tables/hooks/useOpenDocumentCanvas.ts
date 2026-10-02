@@ -30,7 +30,7 @@ import { useCallback } from "react";
 
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
-import type { CanvasContent } from "@/features/canvas/redux/canvasSlice";
+import type { CanvasContent } from "@/features/canvas/canvasContent";
 
 export interface OpenDocumentCanvasOptions {
   /** `udt_documents.id` — the identity the pane is bound to. */

@@ -9,7 +9,7 @@
  * config, 2026-09-08):
  *  - `(core)` renders `AppShell` for every route beneath it (`app/(core)/layout.tsx`) — sidebar,
  *    header, org switcher. Wrong for a stage, and wrong for a guest who has no account to switch.
- *  - bare `(public)` renders `PublicHeader` + `PublicFooter` + `CanvasSideSheet`
+ *  - bare `(public)` renders `PublicHeader` + `PublicFooter` + `ShellCanvasColumn`
  *    (`app/(public)/layout.tsx`) AND — the part that actually breaks Meet — passes NO
  *    `initialReduxState`, so a signed-in person arrives as a guest in Redux: no user, no org, and
  *    therefore an inert `<MeetHost>` and an inert `<MessagingHost>`. A host with no org cannot

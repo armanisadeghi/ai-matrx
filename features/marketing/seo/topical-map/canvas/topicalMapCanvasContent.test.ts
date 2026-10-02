@@ -6,7 +6,7 @@
 // NON_PERSISTABLE_CANVAS_TYPES the pointer read as persistable — a
 // canvas_items row would have frozen a stale copy of a live map.
 
-import { isPersistableCanvasType } from "@/features/canvas/redux/canvasSlice";
+import { isPersistableCanvasType } from "@/features/canvas/canvasContent";
 import { readToolResultCanvasOffer } from "@/features/canvas/tool-results/toolResultCanvasRegistry";
 
 import {

@@ -10,7 +10,7 @@
  * WHAT IT DOES RENDER, AND WHY EXACTLY THIS MUCH
  * ----------------------------------------------
  * `app/(public)/layout.tsx` is the model: `<Providers>` around the children, **without**
- * `getServerAuth()` and **without** `AppShell`. `PublicHeader` / `PublicFooter` / `CanvasSideSheet`
+ * `getServerAuth()` and **without** `AppShell`. `PublicHeader` / `PublicFooter` / `ShellCanvasColumn`
  * are stripped — marketing chrome and a canvas front door have no business on a time clock. The
  * root `app/layout.tsx` still runs above this and supplies fonts, theme and the toaster.
  *

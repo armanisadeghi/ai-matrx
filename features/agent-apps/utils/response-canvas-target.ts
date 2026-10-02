@@ -10,7 +10,7 @@
  */
 
 import { detectKindInJsonText } from "@/features/canvas/artifact-types/storedKindValue";
-import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
+import type { CanvasContentType } from "@/features/canvas/canvasContent";
 import { findEmbeddedKindJsonRegions } from "@/features/content-ir/surfaces/embedded-kind-json";
 import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";

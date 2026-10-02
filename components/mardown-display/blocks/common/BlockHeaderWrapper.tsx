@@ -17,7 +17,7 @@ import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-r
 import IconButton from "@/components/official/IconButton";
 import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
+import type { CanvasContentType } from "@/features/canvas/canvasContent";
 
 export interface BlockHeaderWrapperProps {
   // Header left side

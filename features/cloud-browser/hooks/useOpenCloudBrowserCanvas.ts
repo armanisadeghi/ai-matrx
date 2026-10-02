@@ -18,11 +18,8 @@
 
 import { useCallback } from "react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import {
-  offerCanvasItem,
-  type CanvasContent,
-} from "@/features/canvas/redux/canvasSlice";
+import { useArtifactCanvas } from "@/features/canvas/host/useArtifactCanvas";
+import type { CanvasContent } from "@/features/canvas/canvasContent";
 
 export interface OpenCloudBrowserCanvasOptions {
   initialProfileId?: string | null;
@@ -77,18 +74,18 @@ export function useOpenCloudBrowserCanvas() {
 /**
  * Make the browser pane AVAILABLE without putting it on screen.
  *
- * `cloud_browser` is NON_PERSISTABLE and the canvas slice is not persisted, so
- * nothing restores this pane after a reload — exactly the shape that stranded
+ * `cloud_browser` is NON_PERSISTABLE, so nothing restores this pane after a
+ * reload — exactly the shape that stranded
  * the Sandbox behind a hidden one-item switcher on 2026-09-15. While a run is
  * live its surface keeps offering it, so the switcher always has a door to it.
  * See `features/canvas/liveSourceReachability.ts`.
  */
 export function useOfferCloudBrowserCanvas() {
-  const dispatch = useAppDispatch();
+  const { offer } = useArtifactCanvas();
   return useCallback(
     (opts: OpenCloudBrowserCanvasOptions = {}) => {
-      dispatch(offerCanvasItem(buildCloudBrowserCanvasContent(opts)));
+      offer(buildCloudBrowserCanvasContent(opts));
     },
-    [dispatch],
+    [offer],
   );
 }

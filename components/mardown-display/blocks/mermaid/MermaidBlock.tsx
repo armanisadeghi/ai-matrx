@@ -40,7 +40,7 @@ import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
-import { selectCanvasIsAvailable } from "@/features/canvas/redux/canvasSlice";
+import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { selectMermaidPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
@@ -128,7 +128,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
   const dispatch = useAppDispatch();
   const { open } = useCanvas();
   const { openArtifact } = useOpenArtifactInCanvas();
-  const isCanvasAvailable = useAppSelector(selectCanvasIsAvailable);
+  const { isCanvasAvailable } = useCanvasOpenGuard();
   const appMode = useThemeMode();
   const userPrefs = useAppSelector(selectMermaidPreferences);
 
