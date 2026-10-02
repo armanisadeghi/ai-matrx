@@ -50,10 +50,8 @@ import {
   type ResultDensity,
 } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
 import { ResultJson } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultJson";
-import {
-  humanizeKey,
-  isPlainObject,
-} from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
+import { isPlainObject } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /**
@@ -154,7 +152,7 @@ export function StructuredValueView({
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/50 pt-1.5 text-[11px] text-muted-foreground">
           {kind ? (
             <span title={kind}>
-              {humanizeKey(kind)}
+              {humanizeIdentifier(kind) || kind}
               <span className="text-muted-foreground/70">{` — ${note}`}</span>
             </span>
           ) : null}
