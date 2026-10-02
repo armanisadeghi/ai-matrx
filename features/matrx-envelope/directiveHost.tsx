@@ -94,11 +94,14 @@ export const matrxDirectiveNouns: DirectiveNounCatalog = (
   const display = CATALOG_NOUN_DISPLAY[canonical];
   const entry = CATALOG_NOUNS[canonical];
   // A type the catalog does not carry still has its one name (the picker's).
+  // ONE record type, ONE name: the picker's display name, never the server
+  // catalog's own word ("Chat", not "Conversation").
+  const label = referenceTypeDisplayLabel(noun);
+  // A group named like its type says nothing ("Create Chat · Chat").
+  const family = display?.family && display.family !== label ? display.family : null;
   return {
-    // ONE record type, ONE name: the picker's display name, never the server
-    // catalog's own word ("Chat", not "Conversation").
-    label: referenceTypeDisplayLabel(noun),
-    family: display?.family ?? null,
+    label,
+    family,
     titleColumn: entry?.title_column ?? null,
   };
 };
