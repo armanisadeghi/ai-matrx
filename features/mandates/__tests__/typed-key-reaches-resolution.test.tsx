@@ -47,15 +47,20 @@ const AGENT = "11111111-2222-4333-8444-555555555555";
 /** Every `mandate_key` the resolution door was actually asked for, in order. */
 let askedKeys: string[] = [];
 
-jest.mock("@/lib/api/errors", () => ({
-  BackendApiError: class extends Error {
-    status: number;
-    constructor(init: { status: number }) {
-      super("backend");
-      this.status = init.status;
-    }
-  },
-}));
+// The error model is @ai-matrx/agents/matrx's (P9): the package's `instanceof`
+// checks see this stand-in only when it IS that class.
+jest.mock("@/lib/api/errors", () => {
+  const { BackendApiError: Real } = jest.requireActual("@ai-matrx/agents/matrx") as {
+    BackendApiError: new (init: { code: string; detail: string; userMessage: string; status: number }) => Error;
+  };
+  return {
+    BackendApiError: class extends Real {
+      constructor(init: { status: number }) {
+        super({ code: "http_error", detail: "backend", userMessage: "backend", status: init.status });
+      }
+    },
+  };
+});
 
 jest.mock("@/lib/python-client", () => ({
   getJson: async (path: string) => {

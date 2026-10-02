@@ -19,15 +19,20 @@ const KEY = "test.workflow_holder" as MandateKey;
 
 let verdict: Record<string, unknown> = {};
 
-jest.mock("@/lib/api/errors", () => ({
-  BackendApiError: class extends Error {
-    status: number;
-    constructor(init: { status: number }) {
-      super("backend");
-      this.status = init.status;
-    }
-  },
-}));
+// The error model is @ai-matrx/agents/matrx's (P9): the package's `instanceof`
+// checks see this stand-in only when it IS that class.
+jest.mock("@/lib/api/errors", () => {
+  const { BackendApiError: Real } = jest.requireActual("@ai-matrx/agents/matrx") as {
+    BackendApiError: new (init: { code: string; detail: string; userMessage: string; status: number }) => Error;
+  };
+  return {
+    BackendApiError: class extends Real {
+      constructor(init: { status: number }) {
+        super({ code: "http_error", detail: "backend", userMessage: "backend", status: init.status });
+      }
+    },
+  };
+});
 jest.mock("@/lib/python-client", () => ({
   getJson: async () => ({
     data: verdict,
