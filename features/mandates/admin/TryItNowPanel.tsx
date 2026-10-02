@@ -549,7 +549,7 @@ export function TryItNowPanel({
       />
       {allowPrincipalSelection && !adminSeat ? (
         <PropertyRow
-          label="Test context"
+          label="Test as"
           value={
             testMode === "display" ? (
               "My effective Mandate Holder"

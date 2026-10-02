@@ -322,7 +322,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
       </div>
 
       {/* ── Context (org → scopes → project → task) ──────────────────── */}
-      <SectionHeader icon={Hash} label="Context" />
+      <SectionHeader icon={Hash} label="Scopes" />
       <div className="px-1" data-surface-value="note_scope_assignments">
         <NoteContextSection noteId={noteId} />
       </div>

@@ -192,8 +192,8 @@ try {
   await page.screenshot({ path: `${OUT}/${shot++}-miller-popover.png`, fullPage: false });
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Open full WindowPanel" }).click();
-  const win = page.locator('[data-overlay-id="contextSwitcherWindow"], [role="dialog"]').filter({ hasText: "Working Context" }).first();
-  const title = page.getByText("Working Context", { exact: true }).first();
+  const win = page.locator('[data-overlay-id="contextSwitcherWindow"], [role="dialog"]').filter({ hasText: "Scopes" }).first();
+  const title = page.getByText("Scopes", { exact: true }).first();
   await until("context switcher window", async () => (await title.count()) > 0 && (await title.isVisible()), 60000);
   // The full variant inside the window carries the Projects / Tasks row; wait for its columns.
   await until("window columns", async () => (await page.getByText("Projects", { exact: true }).count()) > 0, 60000);

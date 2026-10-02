@@ -112,7 +112,7 @@ export const ALL_TABS: TabDefinition[] = [
   { id: "settings", label: "Settings", icon: Cpu },
   { id: "variables", label: "Variables", icon: Variable, inlineSave: true },
   { id: "tools", label: "Tools", icon: Wrench, inlineSave: true },
-  { id: "context", label: "Context", icon: Layers, inlineSave: true },
+  { id: "context", label: "Context policies", icon: Layers, inlineSave: true },
   { id: "share", label: "Share", icon: Share2, inlineSave: true },
   { id: "run", label: "Run", icon: Play, inlineSave: true },
   { id: "history", label: "History", icon: Clock, inlineSave: true },

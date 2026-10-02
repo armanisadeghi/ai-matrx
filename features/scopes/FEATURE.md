@@ -1,6 +1,6 @@
 # FEATURE.md — `features/scopes` (LOCAL MECHANICS ONLY)
 
-> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/account/scopes-context/STATE.md — read it before touching this feature in ANY repo.
 
 **The model, the invariants' rationale, the data model, the resolution contract, the delivery
 path, the migration status and the change history are NOT in this file** — they were centralized

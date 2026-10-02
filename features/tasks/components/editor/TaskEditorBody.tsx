@@ -485,7 +485,7 @@ export function TaskEditorBody({
               />
             </PropertyRow>
 
-            <PropertyRow icon={Tag} label="Context" compact={compact}>
+            <PropertyRow icon={Tag} label="Scopes" compact={compact}>
               <TaskContextPicker
                 taskId={taskId}
                 className={

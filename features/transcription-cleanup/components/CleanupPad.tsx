@@ -2489,7 +2489,7 @@ export default function CleanupPad({
           <>
             <SidebarSectionLabel
               icon={SlidersHorizontal}
-              label="Working Context"
+              label="Scopes"
             />
             <ActiveContextButton size="sm" triggerClassName="w-full" />
           </>

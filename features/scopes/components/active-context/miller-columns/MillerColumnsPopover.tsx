@@ -44,7 +44,7 @@ export function MillerColumnsPopover({
   className,
   variant = "condensed",
   universe,
-  sheetTitle = "Select context",
+  sheetTitle = "Select scopes",
   ...pickerProps
 }: MillerColumnsPopoverProps) {
   const isMobile = useIsMobile();
@@ -57,7 +57,7 @@ export function MillerColumnsPopover({
   const triggerNode = trigger ?? (
     <Button variant="outline" size="sm" className="gap-1.5">
       <Columns3 className="h-3.5 w-3.5" />
-      Select context
+      Select scopes
     </Button>
   );
   const pickerClassName = cn(

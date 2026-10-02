@@ -213,7 +213,7 @@ export function ExtractionCatalogClient() {
                 ...previous,
                 [row.jobId]: result.selection.scopeIds,
               }));
-              toast.success("Context updated");
+              toast.success("Scopes updated");
             }
           }}
         />
@@ -343,11 +343,11 @@ export function ExtractionCatalogClient() {
                           }
                           size="sm"
                           onClick={() => setShowFilter((value) => !value)}
-                          title="Filter by context"
+                          title="Filter by scope"
                         >
                           <Filter className="h-4 w-4 sm:mr-2" />
                           <span className="hidden sm:inline">
-                            Context
+                            Scopes
                             {filterScopeIds.length > 0
                               ? ` (${filterScopeIds.length})`
                               : ""}

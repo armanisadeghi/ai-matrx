@@ -403,7 +403,7 @@ export function QuickPick({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder={placeholder}
-            aria-label="Search context"
+            aria-label="Search scopes"
             className="h-9 w-full bg-transparent pl-8 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground"
             style={{ fontSize: "16px" }}
           />
@@ -415,7 +415,7 @@ export function QuickPick({
         ref={listRef}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1 scrollbar-thin"
         role="listbox"
-        aria-label="Context results"
+        aria-label="Scope results"
       >
         {u.treeStatus === "loading" && <SkeletonRows count={6} />}
         {u.treeStatus === "error" && (

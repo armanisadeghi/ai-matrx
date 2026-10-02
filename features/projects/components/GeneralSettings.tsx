@@ -99,7 +99,7 @@ export function GeneralSettings({
         </Field>
       </div>
 
-      <Field label="Context">
+      <Field label="Scopes">
         <ProjectContextPicker
           project={proj}
           canEdit={canEdit}

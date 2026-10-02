@@ -790,6 +790,9 @@ if $STRICT; then
         # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
         # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
+        # THE WORD CONTEXT — on screen it names only what an agent receives (Arman,
+        # 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
+        "On-screen \"context\" that is not context (scopes, rules, settings)|pnpm check:context-word --strict"
         # ZERO-WIDTH LAYERS — a fixed-width child in a width-less absolute
         # (pan/zoom) layer is squeezed to 0px by the phone max-width default
         # (2026-09-28: org charts, React Flow). Zero findings; advisory here.
@@ -1393,6 +1396,9 @@ else
         # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
         # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
+        # THE WORD CONTEXT — on screen it names only what an agent receives (Arman,
+        # 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
+        "On-screen \"context\" that is not context (scopes, rules, settings)|pnpm check:context-word --strict"
         # ZERO-WIDTH LAYERS — a fixed-width child in a width-less absolute
         # (pan/zoom) layer is squeezed to 0px by the phone max-width default
         # (2026-09-28: org charts, React Flow). Zero findings; advisory here.

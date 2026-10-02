@@ -104,7 +104,7 @@ export default function ScopeMismatchDialogHostImpl() {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            This chat&apos;s context differs from your current selection
+            This chat&apos;s scopes differ from your current selection
           </DialogTitle>
           <DialogDescription>
             Choose which scopes this chat should run under. Dismissing
@@ -117,7 +117,7 @@ export default function ScopeMismatchDialogHostImpl() {
             items={request?.current ?? []}
           />
           <ScopeSetList
-            heading="This chat's context"
+            heading="This chat's scopes"
             items={request?.chat ?? []}
           />
         </div>
@@ -127,7 +127,7 @@ export default function ScopeMismatchDialogHostImpl() {
             variant="outline"
             onClick={() => resolveWith("keep")}
           >
-            Keep chat&apos;s context
+            Keep chat&apos;s scopes
           </Button>
           <Button
             type="button"

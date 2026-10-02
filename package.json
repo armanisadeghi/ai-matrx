@@ -351,6 +351,8 @@
     "check:interface-text": "node scripts/interface-text/check-interface-text.mjs",
     "check:interface-text:self-test": "node scripts/interface-text/check-interface-text.mjs --self-test",
     "check:owner-words": "node scripts/interface-text/check-owner-words.mjs",
+    "check:context-word": "node scripts/interface-text/check-context-word.mjs",
+    "check:context-word:self-test": "node scripts/interface-text/check-context-word.mjs --self-test",
     "check:tests-asserting-removed-text": "node scripts/interface-text/tests-asserting-removed-text.mjs",
     "check:favicon-letters": "tsx scripts/check-favicon-letters.ts",
     "check:favicon-letters:self-test": "tsx scripts/check-favicon-letters.ts --self-test",

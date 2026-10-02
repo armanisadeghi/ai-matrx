@@ -737,7 +737,7 @@ function TabErrorFallback({
           {showDetails && (
             <div className="bg-card px-4 py-4 space-y-5 text-sm">
               {/* Context row */}
-              <AdminSection label="Context">
+              <AdminSection label="Location">
                 <AdminKV label="Tab" value={`${tabLabel} (${tabId})`} />
                 <AdminKV label="Route" value={context.route} mono />
                 <AdminKV
@@ -1713,7 +1713,7 @@ function UnavailableDataNotice({
 
           {showDetails && (
             <div className="bg-card px-4 py-4 space-y-5 text-sm">
-              <AdminSection label="Context">
+              <AdminSection label="Location">
                 <AdminKV label="Tab" value={`${tabLabel} (${tabId})`} />
                 <AdminKV label="Route" value={context.route} mono />
                 <AdminKV

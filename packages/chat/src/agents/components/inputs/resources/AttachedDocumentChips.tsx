@@ -355,7 +355,7 @@ export function AttachedDocumentChips({
         resourceId: link.resourceId,
         error: attachResult.error,
       });
-      toast.error(`Couldn't update document context: ${attachResult.error}`);
+      toast.error(`Couldn't update document settings: ${attachResult.error}`);
       return false;
     }
     if (edgeKind === "processed_document") {

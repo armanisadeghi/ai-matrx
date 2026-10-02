@@ -713,7 +713,7 @@ export default function MobileTaskDetails({
               {/* Context — org, scopes, project (compact) */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Context
+                  Scopes
                 </label>
                 <TaskContextPicker taskId={task.id} taskTitle={task.title} />
               </div>

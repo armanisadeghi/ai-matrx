@@ -63,7 +63,7 @@ export function ClearContextButton({
     <button
       type="button"
       onClick={handleClick}
-      title="Clear context"
+      title="Clear scopes"
       className={cn(
         "group inline-flex shrink-0 items-center rounded-md font-medium transition-colors hover:opacity-80",
         sizeCls,
@@ -72,7 +72,7 @@ export function ClearContextButton({
     >
       <Eraser className={cn("shrink-0", iconCls, CLEAR_CONTEXT_ICON_CLASS)} />
       <span className={cn("whitespace-nowrap", CLEAR_CONTEXT_LABEL_CLASS)}>
-        Context
+        Scopes
       </span>
     </button>
   );

@@ -134,7 +134,7 @@ export function FileContextPicker({
           <ContextSummaryChips
             value={summary}
             size={size}
-            emptyText="Set context…"
+            emptyText="Set scopes…"
             className="min-w-0 flex-1"
           />
           <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -178,5 +178,5 @@ export function FileContextSection({
 }
 
 /** Menu label + icon shared by file action menus. */
-export const FILE_CONTEXT_MENU_LABEL = "Set context";
+export const FILE_CONTEXT_MENU_LABEL = "Set scopes";
 export const FileContextMenuIcon = Building2;

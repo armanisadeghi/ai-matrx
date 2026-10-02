@@ -241,7 +241,7 @@ export function NoteMetadataBar({
               ? "bg-primary/10 text-primary"
               : "border border-dashed border-border text-muted-foreground hover:text-primary",
           )}
-          title="Set context for this note"
+          title="Set scopes for this note"
         >
           <Network className="h-3 w-3" />
           {noteTaskId

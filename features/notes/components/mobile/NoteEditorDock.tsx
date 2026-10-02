@@ -161,7 +161,7 @@ export function NoteEditorDock({
     // duplicated it and downloaded silently.
     {
       key: "context",
-      label: "Context",
+      label: "Scopes",
       tooltip: "Organization, project and scopes",
       Icon: Network,
       onPress: (index: number) => {
@@ -352,11 +352,11 @@ export function NoteEditorDock({
       <BottomSheet
         open={sheetOpen === "context"}
         onOpenChange={(open) => setSheetOpen(open ? "context" : null)}
-        title="Note Context"
+        title="Note scopes"
         // Solid like the More sheet: the note's text showed through the glass.
         surface="solid"
       >
-        <BottomSheetHeader title="Note Context" />
+        <BottomSheetHeader title="Note scopes" />
         <BottomSheetBody>
           <div className="px-2 py-2">
             <NoteContextSection noteId={noteId} embedded />

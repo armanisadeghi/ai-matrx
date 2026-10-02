@@ -681,7 +681,7 @@ export default function TaskDetailsPanel({
         {/* Context — org, scopes, project (compact) */}
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground">
-            Context
+            Scopes
           </label>
           <TaskContextPicker taskId={task.id} taskTitle={task.title} />
         </div>

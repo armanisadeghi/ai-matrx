@@ -11,7 +11,7 @@ export interface ActiveDrillDeckProps {
 /** Surface-A adapter: the reusable Drill Deck backed by appContextSlice. */
 export function ActiveDrillDeck({
   className,
-  rootLabel = "Working Context",
+  rootLabel = "Scopes",
 }: ActiveDrillDeckProps) {
   const { universe, engine } = useActiveContextSelectionEngine();
 

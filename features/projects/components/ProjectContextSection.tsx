@@ -171,7 +171,7 @@ export function ProjectContextPicker({
       <ContextSummaryChips
         value={summary}
         size={size}
-        emptyText="No context"
+        emptyText="No scopes"
         className={className}
       />
     );
@@ -194,7 +194,7 @@ export function ProjectContextPicker({
           <ContextSummaryChips
             value={summary}
             size={size}
-            emptyText="Set context…"
+            emptyText="Set scopes…"
             className="min-w-0 flex-1"
           />
           <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />

@@ -3,7 +3,7 @@
  *
  * The defect (a11y pass on /education/tutor/new, 2026-09-28, reproduced on
  * /chat with Playwright): the composer's Send button — and its Stop, Attach,
- * Documents & context, Live audio, row-choices and expand controls — carried
+ * Documents & scopes, Live audio, row-choices and expand controls — carried
  * `tabIndex={-1}`. Tab went textarea → "Record audio" and never reached Send,
  * so a keyboard or switch user could send only if they knew Enter did it.
  * WCAG 2.1.1: every function of the page is operable from the keyboard.

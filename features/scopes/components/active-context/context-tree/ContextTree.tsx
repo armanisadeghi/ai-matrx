@@ -689,7 +689,7 @@ export function ContextTree({
             onKeyDown={onKeyDown}
             placeholder="Search…"
             className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground/60 md:text-xs"
-            aria-label="Search context tree"
+            aria-label="Search scopes"
           />
         </div>
       )}

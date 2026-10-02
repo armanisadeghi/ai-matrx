@@ -256,7 +256,7 @@ export function ContextDocsMenuBody({
       <ScratchRow conversationId={conversationId} onOpen={onClose} />
 
       <div className="border-t border-border px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-        Context
+        Scopes
       </div>
       <div className="px-2 pb-2">
         <ActiveContextTree conversationId={conversationId} />
@@ -283,8 +283,8 @@ export function ContextDocsMenu({ conversationId }: ContextDocsMenuProps) {
   const triggerButton = (
     <button
       type="button"
-      title="Documents & context"
-      aria-label="Documents & context"
+      title="Documents & scopes"
+      aria-label="Documents & scopes"
       onClick={isMobile ? () => setOpen(true) : undefined}
       className={cn(
         "relative flex h-8 w-8 items-center justify-center rounded-full transition-colors",
@@ -305,9 +305,9 @@ export function ContextDocsMenu({ conversationId }: ContextDocsMenuProps) {
         <BottomSheet
           open={open}
           onOpenChange={setOpen}
-          title="Documents & context"
+          title="Documents & scopes"
         >
-          <BottomSheetHeader title="Documents & context" />
+          <BottomSheetHeader title="Documents & scopes" />
           <BottomSheetBody>
             <ContextDocsMenuBody
               conversationId={conversationId}

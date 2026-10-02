@@ -32,7 +32,7 @@ export function DrillDeckPopover({
   align = "start",
   contentClassName,
   className,
-  rootLabel = "Context",
+  rootLabel = "Scopes",
   ...pickerProps
 }: DrillDeckPopoverProps) {
   const isMobile = useIsMobile();
@@ -45,7 +45,7 @@ export function DrillDeckPopover({
   const triggerNode = trigger ?? (
     <Button variant="outline" size="sm" className="gap-1.5">
       <ListTree className="h-3.5 w-3.5" />
-      Select context
+      Select scopes
     </Button>
   );
   const picker = open ? (

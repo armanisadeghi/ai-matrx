@@ -163,7 +163,7 @@ export function ActiveContextLensChip({
           <ContextSheet
             open={open}
             onOpenChange={setOpen}
-            title="Working context"
+            title="Scopes"
           >
             {picker}
           </ContextSheet>

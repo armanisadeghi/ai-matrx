@@ -969,7 +969,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                     subtitle: "Extraction dataset",
                     icon: Layers,
                   }}
-                  onSaved={(r) => r.ok && toast.success("Context updated")}
+                  onSaved={(r) => r.ok && toast.success("Scopes updated")}
                 />
               </span>
             )}

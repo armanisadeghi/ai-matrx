@@ -101,7 +101,7 @@ const QUICKSET_TAB: RunControlsTabDef = {
 };
 const CONTEXT_TAB: RunControlsTabDef = {
   id: "context",
-  label: "Context",
+  label: "Scopes",
   icon: Layers,
 };
 const DOCUMENT_TAB: RunControlsTabDef = {
@@ -235,7 +235,7 @@ export function useRunControlsState(
       return <TabStatusDot label="overridden" />;
     }
     if (tabId === "context" && hasActiveContext) {
-      return <TabStatusDot label="working context set" />;
+      return <TabStatusDot label="scopes set" />;
     }
     if (tabId === "document" && anyDocActive) {
       return <TabStatusDot label="document active" />;

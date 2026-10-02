@@ -23,11 +23,11 @@ export function DrillDeckContextWindow({
     <NonEditableContextMenu
       sourceFeature="system"
       contentSource={{ type: "raw" }}
-      contextData={{ content: "Working Context" }}
+      contextData={{ content: "Scopes" }}
     >
       <WindowPanel
         id="drill-deck-context-window"
-        title="Working Context"
+        title="Scopes"
         onClose={onClose}
         minWidth={300}
         minHeight={360}

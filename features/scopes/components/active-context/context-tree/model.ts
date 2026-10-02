@@ -508,5 +508,5 @@ export function summarizeSelection(sel: DenseSelection): string {
   p(sel.itemRefs.length, "field");
   p(sel.projectIds.length, "project");
   p(sel.taskIds.length, "task");
-  return parts.length ? parts.join(" · ") : "No context";
+  return parts.length ? parts.join(" · ") : "No scopes";
 }

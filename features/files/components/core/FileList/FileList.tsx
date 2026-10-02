@@ -193,7 +193,7 @@ export function FileList({
                 direction={sort.sortDir}
                 onClick={handleHeaderClick}
               />
-              {showContext && <span>Context</span>}
+              {showContext && <span>Scopes</span>}
               <span className="w-6" />
             </div>
             <div className="flex-1 overflow-auto" role="rowgroup">

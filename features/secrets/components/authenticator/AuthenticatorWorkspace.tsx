@@ -275,7 +275,7 @@ export function AuthenticatorWorkspace() {
             <div className="border-b border-border sm:border-x">
               <OrganizationRequiredNotice
                 compact
-                description="Authenticator codes are loaded in one organization context. Pick one below and the list loads automatically."
+                description="Authenticator codes are loaded for one organization. Pick one below and the list loads automatically."
               />
             </div>
           ) : error ? (

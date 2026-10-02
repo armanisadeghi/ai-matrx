@@ -450,7 +450,7 @@ export function ProjectRecordWorkspace({
                   {/* Context: org + scope types/scopes (persists to project) */}
                   <div className="mt-3 max-w-xl">
                     <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                      Context
+                      Scopes
                     </p>
                     <ProjectContextPicker
                       project={project}

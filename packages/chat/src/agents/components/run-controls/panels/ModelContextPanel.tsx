@@ -137,7 +137,7 @@ export function ModelContextPanel({ conversationId }: ModelContextPanelProps) {
         state={organizationState}
         what="Context measurements"
         title="Choose an organization to read context"
-        description="Context measurements are read in one organization's context, and none is selected for this session."
+        description="Context measurements are read in one organization, and none is selected for this session."
       />
     );
   }

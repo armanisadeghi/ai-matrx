@@ -59,7 +59,7 @@ const groups: SurfaceValueGroup[] = [
   },
   {
     key: "working_context",
-    label: "Working context",
+    label: "Active scopes",
     sortOrder: 500,
     description:
       "The user's globally-active context selections (the header context chip) while working in this room.",

@@ -613,7 +613,7 @@ function HierarchyTree({
                 <button
                   type="button"
                   onClick={() => onToggleOrg(o.id)}
-                  title="Include this organization in the context (a scope alone never implies its org)"
+                  title="Include this organization (a scope alone never implies its org)"
                   className={cn(
                     "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
                     selOrgs.has(o.id)
@@ -1562,7 +1562,7 @@ export function ContextAssignmentField({
           ) : loadingTree ? (
             <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading your context…
+              Loading your scopes…
             </div>
           ) : (
             <>

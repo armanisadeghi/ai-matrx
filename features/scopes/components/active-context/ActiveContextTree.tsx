@@ -126,7 +126,7 @@ export function ActiveContextTree({
           console.error(
             `[active-context] selected field ${ref} could not be resolved into a request attachment`,
           );
-          toast.error("Couldn't attach that context field");
+          toast.error("Couldn't attach that context item");
           continue;
         }
         dispatch(

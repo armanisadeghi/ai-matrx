@@ -49,13 +49,13 @@ export function ThreadContextOverride({
           <button
             type="button"
             onClick={(e) => e.stopPropagation()}
-            aria-label="Tile context"
+            aria-label="Tile scopes"
             title={
               ctx.isOverridden
-                ? "Tile context (overridden)"
+                ? "Tile scopes (overridden)"
                 : hasContext
-                  ? "Tile context (inherited from session)"
-                  : "Set tile context"
+                  ? "Tile scopes (inherited from session)"
+                  : "Set tile scopes"
             }
             className={cn(
               "grid place-items-center size-6 rounded-md transition-colors relative",
@@ -83,14 +83,14 @@ export function ThreadContextOverride({
       >
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-foreground">
-            Tile context
+            Tile scopes
           </span>
           {ctx.isOverridden ? (
             <button
               type="button"
               onClick={() => dispatch(clearThreadContextOverrideThunk(threadId))}
               className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-              title="Reset to the War Room's context"
+              title="Reset to the War Room's scopes"
             >
               <RotateCcw className="size-3" />
               Reset to session

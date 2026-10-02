@@ -278,7 +278,7 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
 
   const copyPassage = (text: string) => {
     if (!navigator.clipboard?.writeText) {
-      toast.error("Clipboard unavailable in this context");
+      toast.error("Clipboard unavailable here");
       return;
     }
     navigator.clipboard

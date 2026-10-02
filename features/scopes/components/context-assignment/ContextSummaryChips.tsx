@@ -44,7 +44,7 @@ export interface ContextSummaryChipsProps {
 
 export function ContextSummaryChips({
   value,
-  emptyText = "No context",
+  emptyText = "No scopes",
   size = "default",
   className,
 }: ContextSummaryChipsProps) {

@@ -292,7 +292,7 @@ function OrgCard({
           <div className="flex items-center gap-1.5 mb-2">
             <FolderTree className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
             <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Context
+              Scopes
             </span>
           </div>
           <div className="max-h-56 overflow-y-auto">

@@ -239,7 +239,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
         onClose();
         return;
       }
-      toast.info("HTML preview not available in this context");
+      toast.info("HTML preview not available here");
       return;
     }
     await copyToClipboard(content, {
@@ -264,7 +264,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       onQuickHtmlShare();
       onClose();
     } else {
-      toast.info("Share not available in this context");
+      toast.info("Share not available here");
     }
   };
 
@@ -274,7 +274,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
         onOpenCanvas();
         onClose();
       } else {
-        toast.info("Canvas not available in this context");
+        toast.info("Canvas not available here");
       }
     } else {
       requireAuth(

@@ -260,7 +260,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
            * a file discoverable structurally and feeds Knowledge/NER downstream.
            */}
           {file.source.kind === "real" ? (
-            <Section title="Context">
+            <Section title="Scopes">
               <div className="px-3 py-2">
                 <FileContextInfoRow fileId={fileId} fileName={file.fileName} />
               </div>
@@ -577,7 +577,7 @@ function FileContextInfoRow({
       <ContextSummaryChips
         size="sm"
         value={{ scopeIds: es.scopeIds }}
-        emptyText="No context — invisible to scoped Knowledge, NER, and agents. Click the shield to assign."
+        emptyText="No scopes — invisible to scoped Knowledge, NER, and agents. Click the shield to assign."
       />
     </div>
   );

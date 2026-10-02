@@ -495,7 +495,7 @@ function ScopeSidebar({
       <div className="border-b px-2 py-2">
         <div className="mb-2 flex items-center gap-2 px-1 text-xs">
           <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="font-semibold">Working context</span>
+          <span className="font-semibold">Scopes</span>
         </div>
         <ActiveContextPanel
           checkboxVariant="standard"

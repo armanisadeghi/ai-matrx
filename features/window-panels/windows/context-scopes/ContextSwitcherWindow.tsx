@@ -31,9 +31,9 @@ function WorkingContextCapture() {
   const scopes = useAppSelector(selectScopeSelectionsContext);
   usePageCapture(() =>
     dialogCapture({
-      title: "Working Context",
+      title: "Scopes",
       route: typeof window !== "undefined" ? window.location.pathname : "",
-      dialog: "Working Context window",
+      dialog: "Scopes window",
       selection: {
         Organization: { id: orgId, name: orgName },
         Project: { id: projectId, name: projectName },
@@ -43,7 +43,7 @@ function WorkingContextCapture() {
         {
           id: "scope-selections",
           title: "Selected scopes by scope type",
-          description: "Scope type id to the chosen scope id, as the working context holds them.",
+          description: "Each scope type id mapped to its chosen scope id.",
           role: "data",
           value: scopes,
         },
@@ -70,11 +70,11 @@ export function ContextSwitcherWindow({
     <NonEditableContextMenu
       sourceFeature="system"
       contentSource={{ type: "raw" }}
-      contextData={{ content: "Working Context" }}
+      contextData={{ content: "Scopes" }}
     >
       <WindowPanel
         id={`context-switcher-${instanceId}`}
-        title="Working Context"
+        title="Scopes"
         onClose={onClose}
         minWidth={680}
         minHeight={500}

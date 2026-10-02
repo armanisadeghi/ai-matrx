@@ -120,8 +120,8 @@ export function ActiveContextButton({
       )}
       title={
         warnEmpty
-          ? "No working context set — your agents have nothing to act within"
-          : "Working context — what your agents act within"
+          ? "No scopes set — your agents have nothing to act within"
+          : "Scopes — what your agents act within"
       }
     >
       <span className="relative inline-flex shrink-0">
@@ -159,7 +159,7 @@ export function ActiveContextButton({
             />
           </span>
         ) : (
-          <span className="text-muted-foreground">Set context</span>
+          <span className="text-muted-foreground">Set scopes</span>
         ))}
     </button>
   );
@@ -173,7 +173,7 @@ export function ActiveContextButton({
             <ContextSheet
               open={open}
               onOpenChange={setOpen}
-              title="Working context"
+              title="Scopes"
               headerTrailing={
                 hasContext ? (
                   <ClearContextButton

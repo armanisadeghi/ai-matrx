@@ -298,7 +298,7 @@ export function QuicksetPanel({
       <Separator />
 
       <div className="space-y-1.5">
-        <Row label="Active Context">
+        <Row label="Scopes">
           <ActiveContextLensChip conversationId={conversationId} align="end" />
         </Row>
         <ToggleRow
