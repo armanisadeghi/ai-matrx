@@ -62,9 +62,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@ai-matrx/design-system";
-import { useArtifactCanvas } from "@host/features/canvas/host/useArtifactCanvas";
-import { useCanvasSources } from "@host/features/canvas/host/canvasSources";
-import { readArtifactPointerId } from "@host/features/canvas/artifact-types/artifactId";
+import { useChatCanvasOpeners, useChatCanvasView } from "../../../../host/canvas";
 import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
 import { selectCloudBrowserRunLive } from "@host/features/cloud-browser/redux/cloudBrowserSlice";
 import {
@@ -253,14 +251,12 @@ export function ConversationContextRail({
   const showScratchPill = scratchEnabled || attachedScratchIds.length > 0;
 
   // ── Canvas state for the doc pills' show/hide toggle ─────────────────────
-  const canvas = useArtifactCanvas();
-  const { isOpen: canvasOpen, activeSourceId: currentCanvasSourceId } =
-    useCanvasSources();
-  const currentCanvasContent = canvas.activeContent;
-  const currentCanvasArtifactId =
-    currentCanvasContent?.metadata?.canvasItemId ??
-    readArtifactPointerId(currentCanvasContent?.data) ??
-    null;
+  const canvas = useChatCanvasOpeners();
+  const {
+    isOpen: canvasOpen,
+    activeSourceId: currentCanvasSourceId,
+    activeArtifactId: currentCanvasArtifactId,
+  } = useChatCanvasView();
 
   // ── Agent lists (plan / tasks / todos). Hydrate + live-subscribe here so the
   // rail is the single owner now that the standalone chip is gone. ──────────
@@ -340,7 +336,7 @@ export function ConversationContextRail({
       canvas.hide();
       return;
     }
-    canvas.openContent({
+    canvas.open({
       type: kind === "scratch" ? "scratchpad" : "working_document",
       // gateConversationId: the CHAT this pill lives in — lets the canvas
       // scratch panel offer its per-document "Share with this chat" toggle.

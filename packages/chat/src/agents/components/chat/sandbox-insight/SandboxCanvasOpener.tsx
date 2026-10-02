@@ -24,7 +24,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useAppSelector } from "../../../../store/hooks";
 import { getEffectiveSandboxRef } from "@host/lib/sandbox/active-binding";
-import { useCanvasSources } from "@host/features/canvas/host/canvasSources";
+import { useChatCanvasView } from "../../../../host/canvas";
 import { selectToolCallsForConversation } from "../../../redux/execution-system/observability/observability.selectors";
 import { selectLiveToolLifecycleByConversation } from "../../../redux/execution-system/active-requests/active-requests.selectors";
 import { isSandboxTool } from "./sandbox-activity";
@@ -86,7 +86,7 @@ export function SandboxCanvasOpener({
     isOpen: canvasIsOpen,
     sourceIds: canvasSourceIds,
     activeSourceId,
-  } = useCanvasSources();
+  } = useChatCanvasView();
   const sourceId = sandboxRowId
     ? sandboxCanvasSourceId(conversationId, sandboxRowId)
     : null;

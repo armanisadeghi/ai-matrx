@@ -40,6 +40,7 @@ import { createUnhostedWindows } from "./defaults/windows";
 import { createDbCatalogGetter } from "./defaults/catalog";
 import { createDefaultChrome } from "./defaults/chrome";
 import { createDbFeedback } from "./defaults/feedback";
+import { createUnhostedCanvas } from "./defaults/canvas";
 
 /** The platform's production addresses — the default `routes`. */
 export const DEFAULT_CHAT_ROUTES: ChatRoutes = Object.freeze({
@@ -60,6 +61,7 @@ const PORTS: readonly ChatPortName[] = [
   "chrome",
   "feedback",
   "routes",
+  "canvas",
 ];
 
 const EMPTY_REGISTRATIONS: ChatRegistrations = Object.freeze({});
@@ -136,6 +138,7 @@ export function resolveChatHost(host: ChatHost): ResolvedChatHost {
     chrome: { ...createDefaultChrome(), ...host.chrome },
     feedback: host.feedback ?? createDbFeedback(db, () => ref.identity),
     routes: { ...DEFAULT_CHAT_ROUTES, ...host.routes },
+    canvas: host.canvas ?? createUnhostedCanvas(() => ref.diagnostics),
     overridden,
   } satisfies ResolvedChatHost);
   return ref;

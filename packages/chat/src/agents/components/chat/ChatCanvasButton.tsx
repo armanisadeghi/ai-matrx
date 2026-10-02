@@ -17,8 +17,7 @@
 import { Columns2 } from "lucide-react";
 import { useAppDispatch } from "../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
-import { useArtifactCanvas } from "@host/features/canvas/host/useArtifactCanvas";
-import { useCanvasSources } from "@host/features/canvas/host/canvasSources";
+import { useChatCanvasOpeners, useChatCanvasView } from "../../../host/canvas";
 import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
 import { setConversationDocumentEnabledThunk } from "../../redux/execution-system/instance-working-document/instance-working-document.thunks";
 
@@ -30,8 +29,8 @@ interface ChatCanvasButtonProps {
 
 export function ChatCanvasButton({ conversationId }: ChatCanvasButtonProps) {
   const dispatch = useAppDispatch();
-  const canvas = useArtifactCanvas();
-  const { isOpen, sourceIds } = useCanvasSources();
+  const canvas = useChatCanvasOpeners();
+  const { isOpen, sourceIds } = useChatCanvasView();
   const itemCount = sourceIds.length;
   const workingDocSourceId = conversationId
     ? `wd:${conversationId}:working`
@@ -64,7 +63,7 @@ export function ChatCanvasButton({ conversationId }: ChatCanvasButtonProps) {
         enabled: true,
       }),
     );
-    canvas.openContent({
+    canvas.open({
       type: "working_document",
       data: { conversationId, kind: "working" },
       metadata: {

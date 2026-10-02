@@ -21,9 +21,9 @@
  * to `canvas_items`.
  */
 
-import type { CanvasContent } from "@host/features/canvas/canvasContent";
+import type { ChatCanvasContent } from "../../../../host/contract";
+import { useChatCanvasOpeners } from "../../../../host/canvas";
 import { useCanvasOpenGuard } from "@host/features/canvas/hooks/useCanvasOpenGuard";
-import { useCanvasOpeners } from "@host/features/canvas/host/canvasSources";
 import { keepLiveSourceReachable } from "@host/features/canvas/liveSourceReachability";
 
 export interface OpenSandboxCanvasOptions {
@@ -50,7 +50,7 @@ export function buildSandboxCanvasContent({
   sandboxRowId,
   conversationId,
   fallbackName,
-}: OpenSandboxCanvasOptions): CanvasContent {
+}: OpenSandboxCanvasOptions): ChatCanvasContent {
   return {
     type: "sandbox",
     data: {
@@ -69,7 +69,7 @@ export function useOpenSandboxCanvas() {
   const { ensureCanvasReachable } = useCanvasOpenGuard();
   // Stable openers that never subscribe to canvas state — the opener's effect
   // calls these, and a subscribing hook would re-offer on every tab update.
-  const canvas = useCanvasOpeners();
+  const canvas = useChatCanvasOpeners();
 
   const open = (opts: OpenSandboxCanvasOptions): boolean => {
     // A route with no canvas surface would swallow this open entirely — the

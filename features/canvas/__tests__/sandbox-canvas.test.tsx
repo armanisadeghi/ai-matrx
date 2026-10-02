@@ -7,8 +7,10 @@
  * documents and artifacts — opened on demand, never owning the region.
  *
  * Everything under test runs for real: the real `@ai-matrx/canvas` controller
- * and reducer (driven through the real `useOpenSandboxCanvas` hook), the real
- * decision function, the real `CanvasBody` switch, the real tool filter.
+ * and reducer (driven through the real `useOpenSandboxCanvas` hook, reaching
+ * the canvas through the app's real chat `canvas` port), the real decision
+ * function, the real `CanvasBody` switch, the real tool filter. It lives
+ * app-side because it proves the chat package and the app's canvas together.
  *
  * Proven failing before passing:
  *   1. registered-type   → removed `case "sandbox"` from CanvasBody;
@@ -34,36 +36,39 @@ import {
   type CanvasStoreBinding,
 } from "@ai-matrx/canvas";
 import { CanvasProvider, useCanvas } from "@ai-matrx/canvas/react";
+import type { ChatDb, ChatHost } from "@ai-matrx/chat/host";
+import { ChatProvider } from "@ai-matrx/chat/host/react";
 import {
   NON_PERSISTABLE_CANVAS_TYPES,
   isPersistableCanvasType,
   getDefaultTitle,
   type CanvasContent,
-} from "@host/features/canvas/canvasContent";
-import { CanvasBody } from "@host/features/canvas/core/CanvasBody";
-import { useArtifactCanvas } from "@host/features/canvas/host/useArtifactCanvas";
-import { canvasItemSourceId } from "@host/features/canvas/host/canvasSources";
+} from "@/features/canvas/canvasContent";
+import { CanvasBody } from "@/features/canvas/core/CanvasBody";
+import { useArtifactCanvas } from "@/features/canvas/host/useArtifactCanvas";
+import { canvasItemSourceId } from "@/features/canvas/host/canvasSources";
+import { appChatCanvasPort } from "@/features/canvas/host/chatCanvasPort";
 import {
   buildSandboxCanvasContent,
   decideSandboxCanvasAction,
   sandboxCanvasSourceId,
   useOpenSandboxCanvas,
   type OpenSandboxCanvasOptions,
-} from "../useOpenSandboxCanvas";
-import { isSandboxTool } from "../sandbox-activity";
+} from "@ai-matrx/chat/agents/components/chat/sandbox-insight/useOpenSandboxCanvas";
+import { isSandboxTool } from "@ai-matrx/chat/agents/components/chat/sandbox-insight/sandbox-activity";
 import {
   readSandboxCanvasMemory,
   writeSandboxCanvasMemory,
-} from "../sandboxCanvasMemory";
+} from "@ai-matrx/chat/agents/components/chat/sandbox-insight/sandboxCanvasMemory";
 
 // The two leaves that would open a pty / fetch a file tree. Their PRESENCE is
 // what is asserted here, not their internals.
-jest.mock("@host/features/code/terminal/SimpleTerminal", () => ({
+jest.mock("@/features/code/terminal/SimpleTerminal", () => ({
   SimpleTerminal: ({ sandboxId }: { sandboxId: string | null }) => (
     <div data-testid="simple-terminal">{sandboxId}</div>
   ),
 }));
-jest.mock("../../../debug/SandboxFileViewer", () => ({
+jest.mock("@ai-matrx/chat/agents/components/debug/SandboxFileViewer", () => ({
   SandboxFileViewer: ({ sandboxRowId }: { sandboxRowId: string }) => (
     <div data-testid="sandbox-file-viewer">{sandboxRowId}</div>
   ),
@@ -116,6 +121,24 @@ function PresentedColumn() {
   return null;
 }
 
+/**
+ * The chat host as the app mounts it, reduced to what this opener reads: the
+ * app's canvas port (the real binding) over a structural Supabase stand-in.
+ */
+const query = { select: () => query, eq: () => query, maybeSingle: async () => ({ data: null, error: null }) };
+const chatHost: ChatHost = {
+  db: {
+    auth: {
+      getSession: async () => ({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+    },
+    rpc: async () => ({ data: null, error: null }),
+    from: () => query,
+  } as unknown as ChatDb,
+  canvas: appChatCanvasPort,
+};
+const chatStore = configureStore({ reducer: { probe: () => 0 } });
+
 function drive(steps: Array<(api: CanvasApi, store: CanvasStoreBinding) => void>): CanvasState {
   const store = createCanvasStore();
   const api: { current: CanvasApi | null } = { current: null };
@@ -136,10 +159,12 @@ function drive(steps: Array<(api: CanvasApi, store: CanvasStoreBinding) => void>
   const root = createRoot(container);
   act(() => {
     root.render(
-      <CanvasProvider store={store} persistence={null} hotkeys={false}>
-        <PresentedColumn />
-        <Probe />
-      </CanvasProvider>,
+      <ChatProvider host={chatHost} store={chatStore}>
+        <CanvasProvider store={store} persistence={null} hotkeys={false}>
+          <PresentedColumn />
+          <Probe />
+        </CanvasProvider>
+      </ChatProvider>,
     );
   });
   for (const step of steps) {
@@ -181,7 +206,7 @@ describe("the sandbox is a registered canvas content type", () => {
     await act(async () => {
       root.render(
         <Provider store={store}>
-          <CanvasBody content={sandboxContent} />
+          <CanvasBody content={{ ...sandboxContent, type: "sandbox" }} />
         </Provider>,
       );
     });

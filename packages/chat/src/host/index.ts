@@ -43,4 +43,5 @@ export type { ChatWindowOpeners } from "./window-openers";
 export { createDbCatalogGetter } from "./defaults/catalog";
 export { createDefaultChrome, DEFAULT_CHROME_STYLES } from "./defaults/chrome";
 export { createDbFeedback } from "./defaults/feedback";
+export { createUnhostedCanvas, UNHOSTED_CANVAS_VIEW } from "./defaults/canvas";
 export { DEFAULT_CHAT_ROUTES } from "./configure";

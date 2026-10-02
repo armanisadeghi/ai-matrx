@@ -361,6 +361,71 @@ export interface ChatRoutes {
   workflowStudio: string;
 }
 
+// ── Canvas: the host's docked workspace column ─────────────────────────────
+
+/**
+ * What the package puts on the host's canvas. The host owns the content
+ * vocabulary (`type`) and its renderers; the package only names a type it
+ * expects the host to know ("working_document", "scratchpad", "sandbox",
+ * "code") and a pointer in `data`. A type the host does not know is refused
+ * by the host, loudly.
+ */
+export interface ChatCanvasContent {
+  type: string;
+  data: unknown;
+  metadata?: {
+    title?: string;
+    conversationId?: string;
+    /** The producer's stable identity for its tab — opening twice reuses it. */
+    sourceMessageId?: string;
+    /** A saved artifact (`canvas_items.id`) the tab shows. */
+    canvasItemId?: string;
+  };
+}
+
+/** A saved artifact opened by pointer — the row is the truth, never a copy. */
+export interface ChatCanvasPointer {
+  artifactId: string;
+  type: string;
+  metadata?: ChatCanvasContent["metadata"];
+}
+
+/** What the canvas holds right now, read as strings. */
+export interface ChatCanvasView {
+  /** Is the canvas column showing? */
+  readonly isOpen: boolean;
+  /** Source ids of every tab (a tab with no source contributes its own id). */
+  readonly sourceIds: readonly string[];
+  /** Source id of the tab the person is looking at, or null. */
+  readonly activeSourceId: string | null;
+  /** The saved artifact (`canvas_items.id`) on screen, or null. */
+  readonly activeArtifactId: string | null;
+}
+
+/** Verbs on the canvas. Each returns false (and the host says why) when it cannot. */
+export interface ChatCanvasOpeners {
+  /** A canvas column exists on this screen. */
+  readonly isAvailable: boolean;
+  /** Shows the content now. */
+  open(content: ChatCanvasContent): boolean;
+  /** Adds a tab without revealing the canvas or stealing focus. */
+  offer(content: ChatCanvasContent): boolean;
+  openPointer(pointer: ChatCanvasPointer): boolean;
+  hide(): void;
+  toggle(): void;
+}
+
+/**
+ * Canvas port. Both members are React hooks, called during render.
+ * `useOpeners` must return referentially stable functions and must NOT
+ * subscribe to canvas state (headless openers call it from effects).
+ * Default: no canvas — every verb refuses and says so (`defaults/canvas.ts`).
+ */
+export interface ChatCanvasPort {
+  useView(): ChatCanvasView;
+  useOpeners(): ChatCanvasOpeners;
+}
+
 export interface ChatHost {
   /** R10 connection contract — the ONLY required value. Authenticated, RLS applies. */
   db: ChatDb;
@@ -402,6 +467,8 @@ export interface ChatHost {
   feedback?: ChatFeedbackPort;
   /** Default: the platform's production addresses (`DEFAULT_CHAT_ROUTES`). */
   routes?: Partial<ChatRoutes>;
+  /** Default: no canvas here — every open refuses and says so. */
+  canvas?: ChatCanvasPort;
 }
 
 export type ChatPortName =
@@ -417,7 +484,8 @@ export type ChatPortName =
   | "registry"
   | "chrome"
   | "feedback"
-  | "routes";
+  | "routes"
+  | "canvas";
 
 /** Every port present. `overridden` names the ports the host supplied itself. */
 export interface ResolvedChatHost {
@@ -436,5 +504,6 @@ export interface ResolvedChatHost {
   chrome: ChatChromePort;
   feedback: ChatFeedbackPort;
   routes: ChatRoutes;
+  canvas: ChatCanvasPort;
   overridden: ReadonlySet<ChatPortName>;
 }

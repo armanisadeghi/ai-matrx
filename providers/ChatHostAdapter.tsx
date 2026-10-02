@@ -29,6 +29,8 @@
 //                 sheet, the nav drawer, canvas chrome, full-screen layers
 //   feedback    → the `submitFeedback` action (the in-app feedback window's path)
 //   routes      → nav-data's Workflow Studio address
+//   canvas      → the app's @ai-matrx/canvas binding (features/canvas/host):
+//                 content-typed opens, tab sources, the artifact on screen
 //
 // Inside StoreProvider: every port reads the live store, and the same store is
 // handed to the package (`store`), which keeps its `chatHost` slice synced.
@@ -141,6 +143,7 @@ import {
   openShellMobileMenu,
 } from "@/features/shell/utils/closeShellMobileMenu";
 import { pushFullScreenLayer } from "@/features/shell/canvas-chrome/open-layer";
+import { appChatCanvasPort } from "@/features/canvas/host/chatCanvasPort";
 
 const DEFAULT_SERVER_URL = "https://server.app.matrxserver.com";
 
@@ -347,6 +350,7 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
     chrome: appChrome,
     feedback: { submit: (input) => submitFeedback(input) },
     routes: { workflowStudio: WORKFLOWS_APP_URL },
+    canvas: appChatCanvasPort,
   };
 
   // The app's store IS the chat store (its root reducer spreads chatReducers):
