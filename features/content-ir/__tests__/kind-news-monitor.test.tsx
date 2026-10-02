@@ -81,7 +81,7 @@ describe("news monitor kinds — views", () => {
     expect(html).toContain("State Rep. Sheehan sponsors free shred event");
     expect(html).toContain("freshness unverified — not independently corroborated");
     expect(html).toContain("1 independent corroborating domain(s) of the 2 required");
-    expect(html).toContain("Google news");
+    expect(html).toContain("Google News");
     expect(html).toContain("58 items");
   });
 
@@ -107,7 +107,7 @@ describe("news monitor kinds — views", () => {
     );
     expect(html).toContain("Watch / context · 1");
     expect(html).toContain("No bridge to e-waste recycling.");
-    expect(html).toContain("No client standing");
+    expect(html).toContain("No Client Standing");
   });
 
   it("set-aside lists carry counts AND lists, and say when the run kept counts only", () => {

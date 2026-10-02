@@ -497,7 +497,7 @@ const FIXTURES: Fixture[] = [
     visible: [
       "The verdict",
       "no conversion tag",
-      "Ga4 present",
+      "Ga4 Present",
       "Add a conversion tag",
       "What this read could not see",
       "invisible to this read",
@@ -532,7 +532,7 @@ const FIXTURES: Fixture[] = [
     visible: [
       "Nothing was written",
       "The change it would make",
-      "Would update",
+      "Would Update",
       "UNIQUE-UPDATE-MARKER-7c3d",
     ],
     absent: ["This read returned no rows"],
@@ -700,7 +700,7 @@ const FIXTURES: Fixture[] = [
     visible: [
       "Nothing was written",
       "The change it would make",
-      "Would delete",
+      "Would Delete",
       "UNIQUE-DELETE-MARKER-9f2a",
     ],
   },

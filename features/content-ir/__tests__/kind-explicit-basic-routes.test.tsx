@@ -155,7 +155,7 @@ const FIXTURES: Fixture[] = [
     // The nested `item_error` object sits in a table cell, where the floor
     // collapses it behind an Expand affordance ("{3 fields}") rather than
     // dumping it — so the reader-visible proof is the per-item receipt row.
-    visible: ["succeeded", "failed", "Item error", "{3 fields}"],
+    visible: ["succeeded", "failed", "Item Error", "{3 fields}"],
   },
   {
     kind: "criteria_gate_result",

@@ -44,7 +44,7 @@ describe("the showcase never prints schema fields at the parent", () => {
     const html = renderToString(
       <StructuredValueView value={deliver} density="full" footer={false} />,
     );
-    expect(html).not.toMatch(/Physician note/);
+    expect(html).not.toMatch(/Physician Note/);
     expect(html).not.toMatch(/>None</);
   });
 
@@ -53,7 +53,7 @@ describe("the showcase never prints schema fields at the parent", () => {
       <StructuredValueView value={deliver} density="full" footer={false} />,
     );
     expect(html).not.toMatch(/>false</);
-    expect(html).not.toMatch(/Physician first/);
+    expect(html).not.toMatch(/Physician First/);
   });
 
   it("renders a TRUE flag as a badge that reads Yes, never the token true", () => {
@@ -82,7 +82,7 @@ describe("the showcase never prints schema fields at the parent", () => {
         <StructuredValueView value={regimen} density="full" footer={false} />
       </StructuredDocumentPresentationProvider>,
     );
-    expect(html).toMatch(/Physician note/);
+    expect(html).toMatch(/Physician Note/);
   });
 
   it("never leaks a raw snake_case key as a heading", () => {
@@ -90,7 +90,7 @@ describe("the showcase never prints schema fields at the parent", () => {
       <StructuredValueView value={deliver} density="full" footer={false} />,
     );
     expect(html).not.toMatch(/>watsons_words</);
-    expect(html).toMatch(/Watsons words/);
+    expect(html).toMatch(/Watsons Words/);
   });
 
   it("prefers the schema's own title over anything derived from the key", () => {
@@ -116,6 +116,6 @@ describe("the showcase never prints schema fields at the parent", () => {
       </StructuredDocumentPresentationProvider>,
     );
     expect(html).toMatch(/Watson&#x27;s words/);
-    expect(html).not.toMatch(/Watsons words/);
+    expect(html).not.toMatch(/Watsons Words/);
   });
 });

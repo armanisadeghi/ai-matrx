@@ -209,7 +209,7 @@ describe("the permalink renders the SAME deliverable the live run showed", () =>
     // goes through the markdown pipeline, which only paints in a browser, so
     // the routed payload is where this guard reads it — the live check is the
     // preview walk recorded on W36.
-    expect(text).toContain("Watsons words");
+    expect(text).toContain("Watsons Words");
     expect(
       String((showcase?.payload as Record<string, unknown>).watsons_words),
     ).toContain("Your boy of two and a half is not stubborn");

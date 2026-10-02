@@ -239,7 +239,7 @@ const FIXTURES: Fixture[] = [
       fields: { code: "4000", name: "Revenue" },
       hidden_fields: [],
     },
-    visible: ["4000 · Revenue", "Chart of account", "finance.chart_of_account"],
+    visible: ["4000 · Revenue", "Chart Of Account", "finance.chart_of_account"],
   },
   {
     name: "a row with no organization stamp says so, with the remedy",
@@ -286,7 +286,7 @@ const FIXTURES: Fixture[] = [
   {
     name: "an unmodelled scalar the component did not promote still reaches the reader",
     data: { ...CANONICAL, read_at: "2026-09-18T09:00:00Z", row_version: 7 },
-    visible: ["Read at", "2026-09-18T09:00:00Z", "Row version", "7"],
+    visible: ["Read At", "2026-09-18T09:00:00Z", "Row Version", "7"],
   },
 ];
 

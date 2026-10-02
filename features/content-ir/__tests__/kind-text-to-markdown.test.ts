@@ -92,25 +92,25 @@ describe("kindTextToMarkdown — V4 shapes never leave raw kind JSON", () => {
   it("a truncated kind in an unclosed fence is a one-line 'did not finish' note", () => {
     const md = kindTextToMarkdown('Intro\n```json\n{"__kind": "flashcard_set", "title": "Cell bi');
     noRaw(md);
-    expect(md).toBe("Intro\n\nFlashcard set did not finish");
+    expect(md).toBe("Intro\n\nFlashcard Set did not finish");
   });
 
   it("a truncated kind in a CLOSED fence (invalid JSON) is the note", () => {
     const md = kindTextToMarkdown('Intro\n```json\n{"__kind": "flashcard_set", "title": \n```\nAfter');
     noRaw(md);
-    expect(md).toContain("Flashcard set did not finish");
+    expect(md).toContain("Flashcard Set did not finish");
     expect(md).toContain("After");
   });
 
   it("a truncated bare kind at the tail is the note; the prose before it stays", () => {
     const md = kindTextToMarkdown('Here you go: {"__kind": "flashcard_set", "cards": [{"front": "Pow');
     noRaw(md);
-    expect(md).toBe("Here you go:\n\nFlashcard set did not finish");
+    expect(md).toBe("Here you go:\n\nFlashcard Set did not finish");
   });
 
   it("a whole-text truncated kind is the note", () => {
     expect(kindTextToMarkdown('{"__kind": "flashcard_set", "title": "Ce')).toBe(
-      "Flashcard set did not finish",
+      "Flashcard Set did not finish",
     );
   });
 

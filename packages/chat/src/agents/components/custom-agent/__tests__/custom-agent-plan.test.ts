@@ -21,7 +21,7 @@ describe("buildValueSources", () => {
     expect(buildValueSources(scope).map((s) => [s.id, s.label])).toEqual([
       ["selection", "Selected text"],
       ["content", "Whole content"],
-      ["note_title", "Note title"],
+      ["note_title", "Note Title"],
     ]);
   });
 

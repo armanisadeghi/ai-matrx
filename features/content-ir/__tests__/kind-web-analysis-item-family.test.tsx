@@ -115,7 +115,7 @@ const FIXTURES: Fixture[] = [
       ],
     },
     visible: [
-      "Broken images",
+      "Broken Images",
       "3 issues found",
       "1,420 checked",
       "broken-image placeholder",
@@ -133,7 +133,7 @@ const FIXTURES: Fixture[] = [
       evidence: [],
       recommendations: [],
     },
-    visible: ["Https enforcement", "No issues found", "one hop"],
+    visible: ["Https Enforcement", "No issues found", "one hop"],
   },
   {
     // RAGGED evidence rows (no shared key set) — must still render, as titled
@@ -149,7 +149,7 @@ const FIXTURES: Fixture[] = [
       ],
       recommendations: ["Preload the pricing hero image."],
     },
-    visible: ["Cwv lcp", "1 issue found", "past the budget", "Preload the pricing hero image"],
+    visible: ["Cwv Lcp", "1 issue found", "past the budget", "Preload the pricing hero image"],
   },
 ];
 

@@ -57,7 +57,7 @@ describe("AnswerTextPreview", () => {
     const host = mount(<AnswerTextPreview text={'Hi {"__kind": "quiz_set", "ti'} streaming={false} />);
     expect(host.querySelector("[data-kind-loader]")).toBeNull();
     const broken = host.querySelector('[data-kind-broken="quiz_set"]');
-    expect(broken?.textContent).toBe("Quiz set did not finish");
+    expect(broken?.textContent).toBe("Quiz Set did not finish");
     expect(broken!.textContent!.length).toBeLessThanOrEqual(60);
   });
 });
@@ -70,7 +70,7 @@ describe("VoiceTranscriptTurn", () => {
   it("a finished turn whose kind never completed reads its broken line", () => {
     const text = 'Here {"__kind": "quiz_set", "ti';
     const turn = { id: "t", role: "assistant", status: "complete", text, text_reveal_index: text.length };
-    expect(mount(<VoiceTranscriptTurn turn={turn as never} />).textContent).toContain("Quiz set did not finish");
+    expect(mount(<VoiceTranscriptTurn turn={turn as never} />).textContent).toContain("Quiz Set did not finish");
   });
 });
 
@@ -93,7 +93,7 @@ describe("RunRow", () => {
   it("a summary whose kind never finished says so, never loads forever", () => {
     const host = mount(<RunRow run={{ ...run, result_summary: 'Done {"__kind": "quiz_set", "ti' } as never} />);
     expect(host.textContent).not.toContain("__kind");
-    expect(host.textContent).toContain("Quiz set did not finish");
+    expect(host.textContent).toContain("Quiz Set did not finish");
   });
   it("a kindless summary is unchanged", () => {
     const host = mount(<RunRow run={{ ...run, result_summary: "Sent 3 emails" } as never} />);
@@ -106,7 +106,7 @@ describe("answerFieldText — an editable prose field filled by a stream", () =>
     expect(answerFieldText(SET_JSON, false)).not.toContain("__kind");
     const partial = answerFieldText('Notes {"__kind": "quiz_set", "ti', true);
     expect(partial).not.toContain("__kind");
-    expect(partial).toContain("Quiz set");
+    expect(partial).toContain("Quiz Set");
     expect(answerFieldText("Cleaned text.", false)).toBe("Cleaned text.");
   });
 });

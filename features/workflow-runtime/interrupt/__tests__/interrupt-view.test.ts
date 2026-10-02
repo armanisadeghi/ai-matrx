@@ -159,7 +159,7 @@ describe("answerFieldsOf — a VALUE contract, never a component choice", () => 
     // which is why it survives to the renderer.
     expect(byName.channel.options).toEqual(["email", "sms"]);
     // A property with no title is humanized, never shown as a raw key.
-    expect(byName.publish_now.label).toBe("Publish now");
+    expect(byName.publish_now.label).toBe("Publish Now");
   });
 
   it("carries a declared kind and a NAMED variant, and invents neither", () => {

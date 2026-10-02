@@ -24,7 +24,7 @@ describe("warningCopy", () => {
           recoverable: true,
         }),
       ),
-    ).toBe("Provider overload suspended");
+    ).toBe("Provider Overload Suspended");
   });
 
   it("keeps the regex fallback for legacy mid-string JSON", () => {

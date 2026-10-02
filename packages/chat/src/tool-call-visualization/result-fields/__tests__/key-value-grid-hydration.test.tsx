@@ -152,8 +152,8 @@ describe("KeyValueGrid hydration", () => {
     );
     expect(primaryHeaders).toEqual(["Kind", "Content", "Details"]);
     expect(container.textContent).toContain("6 details");
-    expect(container.textContent).not.toContain("Content hash");
-    expect(container.textContent).not.toContain("Source offset start");
+    expect(container.textContent).not.toContain("Content Hash");
+    expect(container.textContent).not.toContain("Source Offset Start");
 
     await act(async () => {
       root = hydrateRoot(container, <ResultTable {...props} />);
@@ -177,11 +177,11 @@ describe("KeyValueGrid hydration", () => {
     expect(notApplicableButton).toBeDefined();
     await act(async () => notApplicableButton?.click());
 
-    expect(container.textContent).toContain("Content hash");
-    expect(container.textContent).toContain("Source metadata");
-    expect(container.textContent).toContain("Source offset start");
-    expect(container.textContent).toContain("Source chunk ids");
-    expect(container.textContent).toContain("Chunk index");
+    expect(container.textContent).toContain("Content Hash");
+    expect(container.textContent).toContain("Source Metadata");
+    expect(container.textContent).toContain("Source Offset Start");
+    expect(container.textContent).toContain("Source Chunk Ids");
+    expect(container.textContent).toContain("Chunk Index");
     expect(container.textContent).toContain("8fba6bb0d5d6b2c98c0d75d48f7ad6d9");
   });
 

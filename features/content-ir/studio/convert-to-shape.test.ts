@@ -50,7 +50,7 @@ describe("convert-to-shape preflight", () => {
       {
         isValidJson: true,
         rootKind: "sales_summary",
-        suggestedName: "Sales summary",
+        suggestedName: "Sales Summary",
         errorMessage: null,
       },
     );

@@ -69,7 +69,7 @@ describe("a reloaded call with only an output preview", () => {
     );
     expect(typeof result).toBe("string");
     expect(result as string).not.toContain("__kind");
-    expect(result).toBe("Flashcard set · full output not saved");
+    expect(result).toBe("Flashcard Set · full output not saved");
     expect((result as string).length).toBeLessThanOrEqual(60);
   });
 

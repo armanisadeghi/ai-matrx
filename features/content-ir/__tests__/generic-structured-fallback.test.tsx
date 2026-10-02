@@ -287,7 +287,7 @@ describe("GenericStructuredBlock renders the shape honestly", () => {
 
     // Honest, in human words — and the exact slug stays available to us.
     expect(markup).toContain("no custom view yet");
-    expect(markup).toContain("Schema showcase");
+    expect(markup).toContain("Schema Showcase");
     expect(markup).toContain("schema_showcase");
     expect(markup).toContain("Show the raw data");
 

@@ -284,7 +284,7 @@ describe("exportArtifactMarkdown — item presentation", () => {
     );
 
     expect(markdown).toContain("# Matrx Pro");
-    expect(markdown).toContain("*Product card*");
+    expect(markdown).toContain("*Product Card*");
     expect(markdown).toContain("The enterprise tier.");
     expect(markdown).toContain("- **price:** $99/mo");
     expect(markdown).toContain("- **seats:** 25");
@@ -371,7 +371,7 @@ describe("exportArtifactMarkdown — string + fallback paths", () => {
     const value = { [KIND_KEY]: "totally_unknown_kind", payload: [1, 2, 3] };
     const { markdown } = exportArtifactMarkdown(row("mystery", value));
 
-    expect(markdown).toContain("# Totally unknown kind");
+    expect(markdown).toContain("# Totally Unknown Kind");
     // Every field still appears — as words, never JSON (kind-never-raw O1).
     expect(markdown).toContain("**Payload:** 1, 2, 3");
     expect(markdown).not.toContain("```json");

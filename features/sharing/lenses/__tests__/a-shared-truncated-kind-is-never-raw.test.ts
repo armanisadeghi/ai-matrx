@@ -37,7 +37,7 @@ describe("a shared tool step whose output was too large", () => {
       output_truncated: true,
       output_preview: '{"__kind":"flashcard_set","title":"Cell biology","cards":[{"fr',
     });
-    expect(output).toBe("Flashcard set · full output not saved");
+    expect(output).toBe("Flashcard Set · full output not saved");
   });
 
   it("keeps a prose preview as its text", () => {

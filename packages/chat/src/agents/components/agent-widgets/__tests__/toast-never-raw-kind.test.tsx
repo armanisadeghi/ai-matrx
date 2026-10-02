@@ -67,7 +67,7 @@ describe("AgentToastOverlay (collapsed)", () => {
     const host = mount();
     expect(host.querySelector('[data-kind-loader]')).toBeNull();
     expect(host.querySelector('[data-kind-broken="flashcard_set"]')).not.toBeNull();
-    expect(host.textContent).toContain("Flashcard set did not finish");
+    expect(host.textContent).toContain("Flashcard Set did not finish");
   });
   it("kindless text is unchanged", () => {
     answer = "All done.";

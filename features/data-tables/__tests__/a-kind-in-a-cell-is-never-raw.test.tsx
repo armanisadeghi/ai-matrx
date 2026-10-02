@@ -107,7 +107,7 @@ describe("KindCellPeek", () => {
         />,
       ),
     );
-    expect(container.textContent).toBe("Flashcard set · unreadable");
+    expect(container.textContent).toBe("Flashcard Set · unreadable");
   });
 });
 

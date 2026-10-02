@@ -144,12 +144,12 @@ describe("the fallback law", () => {
 
   it("still explains itself with nothing but an item key", () => {
     const resolved = resolveFindingRemedy({ itemKey: "some_new_check" });
-    expect(resolved.title).toBe("Some new check");
+    expect(resolved.title).toBe("Some New Check");
     expect(resolved.explanation).toContain("this page");
   });
 
   it("humanizeItemKey never returns an empty label", () => {
     expect(humanizeItemKey("___")).toBe("Unnamed check");
-    expect(humanizeItemKey("redirect_chain")).toBe("Redirect chain");
+    expect(humanizeItemKey("redirect_chain")).toBe("Redirect Chain");
   });
 });
