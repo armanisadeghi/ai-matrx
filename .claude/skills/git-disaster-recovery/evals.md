@@ -20,7 +20,7 @@ field guide and this record.
 - Window: 2026-09-19 19:28–20:31 Pacific
 - Repo of first recovery: `aidream`
 - Standing law written during the run:
-  [unmerged-work-intake](/policies/unmerged-work-intake.md)
+  [unmerged-work-intake](/policies/shared-checkout.md)
 - Size split written the same day:
   [aidream-release-obstacles](/operations/scheduled-tasks/aidream-release-obstacles.md)
 
@@ -69,7 +69,7 @@ The first draft was a diary of two nights organized as stages. On the frontend
 run it produced seven hours of inventory and owner hunting before any easy file
 landed. Rewritten as six steps: freeze, shrink the dirty set, land PRs and clean
 leftovers, find owners for what is left, point the folder at GitHub, release.
-Aidream-only facts moved to `field-log.md`. Prompts became three four-line
+Aidream-only facts were dropped (git holds them). Prompts became three four-line
 messages. The "ask before the reset" gate was removed: once every dirty path is
 proven dropped, landed, or on a named branch, the agent does it and reports.
 First test of the rewrite: the matrx-frontend pile, same day. Record it below.

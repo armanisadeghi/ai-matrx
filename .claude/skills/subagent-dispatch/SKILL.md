@@ -73,7 +73,7 @@ worker's own commits (short SHA + subject), evidence, and what it could NOT veri
 | `DONE_WITH_CONCERNS` | Done, with a named doubt | Correctness/scope doubt → resolve before review. Observation → hand it to the reviewer as a named risk. |
 | `NEEDS_CONTEXT` | A specific fact the owner holds is missing | Answer exactly; resume the same agent. |
 | `ESCALATE` | Needs a stronger lane, more effort, or a ruling | Change something: more context, split the task, a ruling, or one lane up. Never re-run the same lane unchanged. |
-| `BLOCKED_HUMAN_ONLY` | One human-only gate, after recovery was exhausted | Verify the gate is real ([defect-ownership](/policies/defect-ownership.md) § The decision before ending an execution task, item 3). Login, tooling, tests, preview, deploy lag → send back as repair work. |
+| `BLOCKED_HUMAN_ONLY` | One human-only gate, after recovery was exhausted | Verify the gate is real ([defect-ownership](/policies/reality-is-the-referee.md) § The decision before ending an execution task, item 3). Login, tooling, tests, preview, deploy lag → send back as repair work. |
 
 A worker never dispatches a reviewer of its own work — it counts for nothing and duplicates your seat.
 
@@ -133,12 +133,12 @@ A reviewer's finding is a lead, exactly like a builder's report. For each, in or
 5. Unclear items: clarify ALL before fixing ANY — half-understood related findings produce wrong fixes.
 
 Technical rulings are yours and live in the ledger/register; only genuine vision rulings reach Arman,
-batched per the check-in contract (the `take` skill: aidream, matrx-frontend, common-docs).
+through the `ask-arman` skill.
 
 ## 6. Before YOU claim done
 
 The owner's claim needs the same fresh evidence as a worker's: the claim → evidence table in
-[verify-live-state](/policies/verify-live-state.md) §4. An agent's "success" is verified by its
+[verify-live-state](/policies/reality-is-the-referee.md) §4. An agent's "success" is verified by its
 commits and a re-run, never by its words. And the outcome is shown the way the user meets it —
 from his seat, doing what he said he does; a table of counts is instrumentation, not done
 ([reality is the referee](/policies/reality-is-the-referee.md)).

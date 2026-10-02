@@ -1,10 +1,10 @@
 ---
 name: ask-arman
 type: Skill
-title: "ask-arman — the homework gate and the filing of every question for Arman"
-description: "The gate and the filing for any question an agent wants Arman to decide. Use when about to ask him anything, end a turn on a question for him, write 'needs Arman's decision', or mark work blocked on him. NOT for a step only he can perform on a screen or an account (use a guided session)."
+title: "ask-arman — the homework gate, the Question Desk, and the interview"
+description: "The gate and path for any question an agent wants Arman to decide. Use when about to ask him anything, ending a turn on a question for him, writing 'needs Arman's decision', marking work blocked on him, or on /ask-arman. NOT for a step only he can perform (use a guided session)."
 tags: [questions, decisions, arman, discipline, operations]
-timestamp: 2026-09-12T00:00:00Z
+timestamp: 2026-10-02T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -13,136 +13,101 @@ timestamp: 2026-09-12T00:00:00Z
      common-docs/meta/scripts/sync_skills.py. Edit the canonical, run the
      sync, and commit each repo. Edits made here are overwritten and lost. -->
 
-# ask-arman — the homework gate and the filing
+# ask-arman — the homework gate, the desk, the interview
 
-**The disease this skill ends** (Arman, 2026-09-12, verbatim): *"questions become their lazy
-excuse to get out of things. So they'll often ask me questions where the answers are already in
-the codebase or in the documentation, and they won't go dig out that information. Instead,
-they'll present it to me as a question — or they'll ask me a question about something that if
-they were to do a little bit more homework and get me better information, they either wouldn't
-need to ask the question or I could instantly answer it, but they don't do the job."* And on the
-shape: *"when they say, you know, document seven section eight b q one c two, and then they ask
-me some silly question… it's impossible for me to answer that question."*
+How every sentence to him is shaped: [talk to Arman like a person](/policies/talk-to-arman-like-a-person.md).
+Default to stating numbered
+decisions, then one "confirm and I start". This skill is the path a real question travels.
 
-He talks to thirty or forty agents at once and reads none of what they write. So a question
-reaches him only through two gates — yours (below) and the desk's — and it never stops your
-work. The law of the words is [talk to Arman like a person](/policies/talk-to-arman-like-a-person.md);
-the register is [the Question Ledger](/operations/questions.md); the interviewer is
-[question-desk](/skills/question-desk/SKILL.md).
+## 1. The homework gate — run in order, record each result
 
-## The homework gate — five tests, each recorded in the row
+The first test that says "not a question" ends it.
 
-Run them in order. The first that says "not a question" ends the matter.
+0. **Boss or user?** Would the question exist if he had never used the product himself? A
+   question about ONE organization's content, taste or settings is a customer's: make it an
+   onboarding step, a starter kit, or a knob with a default ([ask the boss](/policies/talk-to-arman-like-a-person.md)).
+0b. **Does any answer change what he will see?** If not, decide and record it.
+1. **A fact?** Code, the DB, a doc or the web settles it: look it up (a `quick` lane if tedious).
+2. **Already ruled or delegated?** Grep the SUBJECT nouns across the owning node's
+   `DECISIONS.md` and `VISION.md`, the vocabulary lexicon, [conflicts](/operations/conflicts.md),
+   and `question_desk(action='list_answers')`. A dated ruling → apply and cite it. "Research the
+   best and decide" → decide, record the reason in `DECISIONS.md`, tell him.
+3. **Table stakes, a knob, a limit or a number?** Decide it
+   ([table stakes](/policies/talk-to-arman-like-a-person.md),
+   [limits are knobs](/policies/limits-are-knobs-agents-set-them.md)).
+4. **Do the champions agree?** ([champions](/policies/champions.md)) Do what they do, name
+   who, list it as "decided — override by number".
+5. **A human step?** His account, his screen, money, a credential → one guided session in chat
+   ([rule 11](/policies/talk-to-arman-like-a-person.md)), not a question.
 
-**Before test 0 — default to telling him, not asking him.** Most of what agents send him should be
-numbered DECISIONS in the voice of the best engineer alive, each with its reason and its champion
-(including saying plainly when a doctrine line or an "Arman said" claim is wrong), then ONE gentle
-"confirm and I start", then take charge and finish: [tell me, don't ask me](/policies/tell-me-dont-ask-me.md).
+## 2. Never stop — the default in force
 
-0. **Are you asking the boss, or the user?** *Would this question exist if Arman had never used
-   the product himself?* If it exists only because he owns a recycling company, an SEO brand, a
-   site or a team — the content, taste or configuration of ONE organization — it is not his
-   question and never reaches him. Convert it: make the product ask its own user (an onboarding
-   step or a starter kit), make it a knob with a default, or decide it and record it. Law:
-   [ask the boss, not the user](/policies/ask-the-builder-not-the-user.md). Arman, 2026-09-12:
-   *"they're not asking me as the developer building this platform. They're asking me as the
-   user and that's a horrible waste of our development resources."*
-0b. **Would the answer change what he will see?** A question whose every answer leaves the
-   user-visible outcome the same is not his — decide it, record it, move on. Asking him to
-   approve deleting a test row, or to choose between two internal shapes, is the disease
-   wearing diligence ([reality is the referee](/policies/reality-is-the-referee.md)).
-1. **Is it a fact?** Anything code, the database, a document, or the web can settle is looked
-   up, never asked. "Does X exist", "which table", "what does the endpoint return", "what did
-   the last run do" — dispatch a `quick` lane if it is tedious. Record where you looked.
-2. **Did he already rule, or delegate?** Search the owning node's `DECISIONS.md` and
-   `VISION.md`, the vocabulary lexicon, the [conflict register](/operations/conflicts.md)
-   (laws 3a and 3h), the ledger's answered rows, and the attention board. A dated verbatim
-   ruling → apply it and cite it. His last word was "research the best and decide" → the
-   decision is yours: research the champions, decide with the companion machinery
-   ([decisions must be complete](/policies/decisions-must-be-complete.md)), record the reason in
-   `DECISIONS.md`, and tell him what you decided. Re-asking either is the defect.
-3. **Is it table stakes, a knob, a limit, or a number?** Streaming, persistence, resume, never
-   losing input are always yes ([table stakes](/policies/table-stakes-are-never-a-question.md));
-   a ceiling or a threshold is a knob you set with a dated review
-   ([limits are knobs](/policies/limits-are-knobs-agents-set-them.md)); a number that is really
-   a mechanism gets the mechanism.
-4. **Can established practice decide it?** Look at how the champions for this discipline handle
-   the same fork ([champions](/policies/champions.md)). If every mature product does the same
-   thing, do that, name who you followed, and list it as "decided — override by number" in your
-   check-in. Most forks die here.
-5. **Is it a human step rather than a question?** His account, his screen, his eyes on a real
-   page, money to add, a credential only he holds → a guided session on the
-   [attention board](/operations/attention.md) per [human steps are guided sessions](/policies/human-steps-are-guided-sessions.md),
-   not a ledger row.
+Write which way you go if he never answers, how it reverses, and keep building on it. Only a
+**one-way door** (real data deleted, money spent, something sent outside, a contract bound)
+waits; everything around it proceeds.
 
-What survives is a real question: vision, product semantics, money, brand, legal, a promise to a
-customer, deleting real data, or a genuinely open-ended direction. Record the five results in one
-line each — a row without them is bounced.
+## 3. File it on the Question Desk
 
-## Never stop — the default in force
+The desk is the in-app surface `/administration/question-desk/<interview id>`, driven by the
+AI Dream MCP tool `question_desk`. There is no markdown ledger.
 
-A real question still does not stop you. Decide which way you would go if he never answered,
-write it in the row as the default in force, say how it reverses, and keep building on it. The
-one exception is a **one-way door**: real data deleted, money spent, something sent outside the
-company, a contract bound. That branch waits; everything around it proceeds. Marking a task
-"blocked on Arman" while a reversible default exists is the lazy exit this skill exists to end.
+1. `question_desk(action='list_interviews')`, then `get_interview` on the open ones; a question
+   on the same subject exists → add yourself through `update_question` (`also_asked_by`), adopt
+   its default, stop.
+2. Otherwise `create_interview` (respondent Arman; needs full MCP access) or reuse an open one,
+   then `add_question` with `slug`, `title`, `question` and `fields`: the five parts
+   (`ruled_before`, `the_best_do`, `today`, `implications`, `recommendation`), `background`,
+   `default_in_force`, `door`, `node` (a real `systems/…` or `projects/…` path), `checked`
+   (your gate results), `filed_chat_title`, `filed_session_id`.
+3. `update_question(status='researched')` once all five parts are filled (the tool refuses
+   otherwise).
 
-## The row — file it, deduplicated
+## 4. Say it in chat
 
-The ledger row below stays the filing contract — file here first, always. The desk later mirrors
-a researched row into the in-app Question Desk (the `question_desk` MCP tool), which is where
-Arman actually reads and answers it; you never file directly into that tool yourself.
+Number it, one or two sentences a stranger needs, ONE direct question, the best practice and
+your recommendation (or "this one is open-ended"), then the admin URL the tool returned and:
+*"I'm proceeding on my recommendation, which is reversible."* No path, id, code or codename in
+the sentence. Keep working.
 
-1. `grep -i` [the ledger](/operations/questions.md) for the subject's nouns. A row on the same
-   subject already exists → add one `Also asked by:` line with your chat title and session id,
-   adopt its default, and stop here.
-2. Otherwise add a row under **Open** in the exact shape the ledger prescribes (copy its
-   template; every field filled; the five parts filled as far as your homework reached — the
-   desk completes them). `Filed` carries your chat's first prompt or title in twelve words and
-   your session id — the desk needs both to bring the answer back.
-3. Commit and push common-docs (pathspec-scoped: the ledger only). An unpushed row does not exist.
+## 5. Interview mode (/ask-arman when he has time)
 
-## What you still say in chat
+1. **Gather:** every open question across `list_interviews` and the owner questions in
+   [conflicts](/operations/conflicts.md). Merge duplicate subjects.
+2. **Re-run §1 for every asker.** Close what fails with its reason and evidence; a rescue of a
+   closed row must show the ruling is absent.
+3. **Research survivors:** one `standard` brief per question fills the five parts with sources;
+   tag kind (quick/complex), door, weight.
+4. **Rounds:** open with "I have N questions to ask you and M things to tell you"; the things
+   first. Then rounds per the [grilling](/skills/grilling/SKILL.md) mechanics in plain numbered
+   chat text, `mark_asked` as each goes out, closing with how many remain and "anything you skip
+   ships with my recommendation". "I don't know" means the question failed: back to research.
+5. **Record:** answers he typed in the admin surface are already on the row; an answer given in
+   chat → `record_answer`, verbatim. Then the owning `DECISIONS.md` (his words → `VISION.md`).
+6. **Deliver:** the asking chat gets one paragraph (question, verbatim answer, where recorded)
+   via `SendMessage`, or `claude --resume <session> -p` when it is closed; then
+   `mark_delivered`. Drain the agent half of `work_loop` campaign `question-desk`
+   (`qd:overturn:*`, `qd:decide:*`, claimed by exact key) until `status` shows nothing claimable.
+7. **Close:** answered, closed-without-him (one line each), remaining, chats he must poke.
 
-You may still ask him directly, and often should — but in the same shape, and only this shape:
-number the question; one or two plain sentences of background a stranger needs; ONE direct
-question; the best practice and your recommendation, so "yes" answers it — or the words *"this
-one is open-ended"*. No path, id, section number, code, codename, or ledger id in the sentence.
-Then one more sentence, always: *"I have also filed this with the other agents' questions, so you
-can answer it here or when you sit down with the desk; meanwhile I am proceeding on my
-recommendation, which is reversible."* Then continue working — do not end the turn waiting.
+Never create a schedule for this ([no unapproved schedules](/policies/no-unapproved-schedules.md)).
 
-## Picking up the answer
+## 6. Picking up your answer
 
-When you resume, or when a message arrives saying your answer is in the ledger: open the ledger,
-find your row (search your session id), read the answer **verbatim**, apply it — reversing the
-default where it differs — record the change in your handoff or state doc, and mark the row
-`delivered` if the desk has not. His answer is already in the owning `DECISIONS.md`; never
-re-record a paraphrase.
+On resume: `question_desk(action='list_answers')` (or the bounded `wait_for_answers` when idle),
+read it verbatim, apply it, reverse the default where it differs.
 
 ## Rationalizations
 
-| Excuse (verbatim or near it) | Reality |
+| Excuse | Reality |
 |---|---|
-| "This needs Arman's decision" | Tests 1–4 were not run. Ninety percent of these die at a fact, a ruling, a knob, or a champion. |
-| "I'll ask to be safe" | Asking is not safe: it costs the scarcest account in the company and teaches him the queue wastes his time. |
-| "It's blocked on him" | Only a one-way door is blocked. Everything else has a default in force. |
-| "He'll know what I mean by the register / §4.6 / D140" | He reads none of it. A sentence he must decode is a sentence he will not answer. |
-| "Which one do you want?" | A fork without a recommendation and its companion machinery is homework handed to him. |
-| "He said 'I don't know' last time, so I'll pick" | That answer means the question failed; bring it back better, never pick silently. |
-| "I'll just ask in chat, filing is overhead" | Unfiled questions are invisible to the desk, get asked twice, and die with the chat. |
+| "This needs Arman's decision" | Tests 1–4 were not run. |
+| "It's blocked on him" | Only a one-way door blocks. |
+| "I don't guess on a permissions question" | Champions decide it; the default is reversible. |
+| "I end my turn there on that one question" | File it, say it, keep building. |
+| "Which one do you want?" | A fork without a recommendation is homework handed to him. |
 
-## Red flags — the thought before the violation
+## Red flags
 
-- "Let me check with Arman before I…" (before searching `DECISIONS.md`).
-- The word "blocked" appearing in your status while nothing is a one-way door.
-- Drafting a question that contains a path, a code, or "see".
-- More than one hard question in one message.
-- A question whose answer you could get from `grep`, a `SELECT`, or one web search.
-- "I'll ask what the limit should be."
-
-## Banned
-
-Ending a turn on an unfiled question · a row with an empty homework line · "blocked on Arman"
-with a reversible default available · a fork with no recommendation · any code, id, path, or
-section number in his sentence · re-asking anything dated in a `DECISIONS.md` · asking a fact.
+- "Let me check with Arman before I…" before grepping `DECISIONS.md`.
+- "Blocked" in your status with no one-way door.
+- A question containing a path, a code, or "see".

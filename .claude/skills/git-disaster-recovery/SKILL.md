@@ -37,17 +37,12 @@ this skill is against `origin/main` after a fresh fetch, by patch, never by
 Companions, read only when pointed:
 - [owners-and-prompts.md](owners-and-prompts.md): how to find who owns the
   few hard leftovers and the three short messages to send them.
-- [field-log.md](field-log.md): dated examples from real recoveries. They
-  are examples, not procedure. Nothing there is required on your repo.
 - [evals.md](evals.md): proof record. This skill is not proven.
 
 ## Hard bans
 
 - Never force-push.
-- Never leave a local worktree or a local branch behind. Arman, 2026-09-20:
-  "there is no reason for ever having a worktree. Updates should always be
-  made to the single source of truth that is pushed live every 30 minutes."
-  There is no intake-worktree exception either: land with git plumbing
+- Never leave a local worktree or a local branch behind. There is no intake-worktree exception either: land with git plumbing
   (`merge-tree --write-tree`, `commit-tree`, push the commit to main) or by
   pathspec commits in the shared checkout. The `unify-main` skill has the
   exact recipe. Remote branches are tolerated; local ones are forbidden.
@@ -177,8 +172,7 @@ questionable, hold it as one line.
 
 **The target is zero: zero dirty files, zero worktrees, zero local branches,
 zero remote branches besides main, zero PRs, everything on main and pushed.
-And nothing lost.** Arman, 2026-09-21: one missed twice-hourly release cost
-two full days of programming and put 35 developers and agents on hold. For
+And nothing lost.** For
 every leftover that still holds work not on main, apply these three options
 in order. An agent with no access to Arman stops at option 2 and ships.
 
@@ -266,14 +260,10 @@ paths nobody owns. Do not let that pile grow back. Every 30 minutes:
 - The loop between releases, in this order, every 30 minutes or sooner:
   pull with no rebase, merge, `pnpm sync-types` (API shapes and database
   types from the live schema), type-check, fix what it names, release.
-  Arman, 2026-09-21: "if you've been having people merge things in and
-  commit locally, then you have to pull, merge and release and you have to
-  consistently run sync-types and run a type check and fix those between
-  releases." A sync that happened three hours ago is not a state.
+  A sync that happened three hours ago is not a state.
 - A gate that stops a primary script is a bug, not a safeguard. On
   2026-09-21 the install gate refused `pnpm sync-types` for hours because a
-  dev preview was running. Arman: "Nothing should ever stop our primary
-  scripts from doing their jobs." Such a gate warns with the remedy and
+  dev preview was running. Such a gate warns with the remedy and
   proceeds; refusal is opt-in. Fix the gate the same hour, with its
   self-test proving both modes.
 - Fetch, `pull --no-rebase`, push. If the pull is refused because an
@@ -302,6 +292,11 @@ paths nobody owns. Do not let that pile grow back. Every 30 minutes:
 - The shared-checkout guard reads the whole command line. One `checkout -- .`
   or `add -A` anywhere in a chained command refuses the entire chain before
   any of it runs. Name every path.
+- Read a repo's deploy workflow before deleting a remote branch: matrx-sandbox
+  `deploy/hosted` is a CI-written deploy target. Retry git commands that hit a
+  contended index lock before believing the failure; in zsh build refspecs with
+  `printf` or land from bash. A shared helper reached from client bundles never
+  imports server-only code. Identical-second mtimes on many files mean codegen.
 
 ## Done means
 
@@ -310,8 +305,8 @@ paths nobody owns. Do not let that pile grow back. Every 30 minutes:
    owner line, or is a one-line real conflict in front of Arman.
 3. Leftover PRs, branches, worktrees, and stashes are gone or named.
 4. At least one release has gone out on the new tip.
-5. Anything this skill did not name is written into `field-log.md` and said
-   to Arman in one sentence.
+5. Anything this skill did not name is folded into this file as a rule (one
+   line) and said to Arman in one sentence.
 
 "The checkout looks better" is not done. "Inventory is complete" is not
 done. A parked cluster is not done.
@@ -359,4 +354,4 @@ Triggers dropped from the description live here so a repo grep still finds them.
 | release.sh halts, stale fingerprint, illegal halt | Step 6 |
 | Size 2, stop the line | operations/scheduled-tasks/aidream-release-obstacles.md |
 | integration every 30 minutes | operations/INTEGRATION_MAINTAINER.md |
-| unmerged work intake, three rules | policies/unmerged-work-intake.md |
+| unmerged work intake, three rules | policies/shared-checkout.md |

@@ -80,7 +80,7 @@ https://manage.aimatrx.com/administration/users/agent-review/<id>
 "It's in the agent review queue", "find it under Ready for you", a title alone, or a route to
 the reviewed page without the row — all **banned**. He has one inbox and hundreds of rows; a
 link is the difference between two seconds and a search that fails. This is
-[`policies/human-steps-are-guided-sessions.md`](/policies/human-steps-are-guided-sessions.md)
+[`policies/talk-to-arman-like-a-person.md`](/policies/talk-to-arman-like-a-person.md)
 ("ONE link") applied to this queue, and it binds agent-to-agent messages too.
 
 ### 2. THE OWNED-REVIEW RULE
@@ -200,7 +200,7 @@ Per [`policies/feature-registry.md`](/policies/feature-registry.md) § THE REGIS
   ```
 
 - **You MAY NEVER** insert, rename, or re-status a `domain`, and never flip anything to
-  `canonical` — those are Arman's, batched to him by the docs-steward.
+  `canonical` — those are Arman's, proposed to him in chat.
 - **You MAY NEVER add a repo slug you did not verify on GitHub.** `platform.repo` is synced
   from `gh repo list` (manual/steward work — there is no scheduled sync). A repo genuinely
   missing from the table is a sync gap to report, not a row to invent.

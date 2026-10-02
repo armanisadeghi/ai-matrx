@@ -180,7 +180,7 @@ behavior or delete it. Census tests carry a self-test.
 
 - Your code's boundary contract — the query emitted, payload produced, row persisted, event emitted —
   not framework mechanics (Pydantic raising, a router calling a handler, React rendering a prop).
-- Persistence: assert the LIVE row or DB machinery, not the repo's belief ([verify-live-state](/policies/verify-live-state.md) §1).
+- Persistence: assert the LIVE row or DB machinery, not the repo's belief ([verify-live-state](/policies/reality-is-the-referee.md) §1).
 - Vertical slices: one behavior → its test → its code → next. Never a batch of tests for imagined
   behavior up front.
 - Test-only helpers (reset, destroy, inject) live in test utilities, never on production modules.

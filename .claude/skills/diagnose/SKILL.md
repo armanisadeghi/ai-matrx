@@ -15,8 +15,7 @@ timestamp: 2026-09-10T00:00:00Z
 
 # diagnose — no fix without a proven cause
 
-The law is *fix the class: root cause → census the siblings → a guard proven failing-then-passing*.
-This skill is how you get the root cause. The usual AI failure: read code, form one plausible
+Fix the class (law 3, [the laws](/policies/the-nine-laws.md)); this skill is how you get the root cause. The usual AI failure: read code, form one plausible
 story, patch it, see the symptom move, ship with the real cause still in place. **If you cannot
 name the command that shows this bug red, you are guessing.** Read the owning repo's CLAUDE.md and
 the area's FEATURE.md first. Credential values never enter output.
@@ -28,7 +27,7 @@ wiring capture for an error class → `error-capture` (aidream, matrx-frontend);
 ## 0. Start from what the platform already captured
 
 Reports, ledgers, and other agents' findings are leads — reproduce them against current state
-([defect-ownership](/policies/defect-ownership.md) § Evidence and closure).
+([defect-ownership](/policies/reality-is-the-referee.md) § Evidence and closure).
 
 | Symptom lives in | Evidence lane |
 |---|---|
@@ -43,7 +42,7 @@ Reports, ledgers, and other agents' findings are leads — reproduce them agains
 Read the **first** error in a run, not the last — later errors cascade from it. Read the whole
 traceback. Check what changed: `git log` on the touched paths (many writers share the checkout),
 deployed SHA vs HEAD, env/config, and the live definition of any DB object — the migration file is
-not enough ([verify-live-state](/policies/verify-live-state.md)).
+not enough ([verify-live-state](/policies/reality-is-the-referee.md)).
 
 **A failure a user saw that no lane captured is a second defect in the same bug.** The fix includes
 structured capture at that boundary (aidream / matrx-frontend `error-capture`).

@@ -76,8 +76,7 @@ Split every open item three ways:
    doctrine pointers, the exact end state, the non-breaking constraints, the full-change
    contract (doctrine §8a: DB + ORM + types + consumers + commit/push), and the
    retreat-cycle rule (§3a: finish forward).
-2. **Split it**: too big for one session → chip the first bounded piece plus a handoff doc
-   per the `handoffs` skill; never chip "do the whole backlog".
+2. **Split it**: too big for one session → chip the first bounded piece with a self-contained brief; never chip "do the whole backlog".
 3. **Arman's list**: openness calls, machinery ratifications, schedule approvals, anything
    db-rules marks Arman-only. Direct question + your recommendation each
    (his standing format — never a doc pointer). Do NOT chip these.

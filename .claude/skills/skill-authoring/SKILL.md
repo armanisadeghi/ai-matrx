@@ -16,8 +16,8 @@ timestamp: 2026-09-12T00:00:00Z
 # skill-authoring — skills that fire, fit, and are proven
 
 A skill is a **guard on agent behavior**, so fix-the-class applies: a skill you never watched
-fail-then-pass is not a guard. These rules sit on top of the `context-docs` skill (full-document
-review, voice, never lose a rule; in aidream, matrx-frontend, common-docs) — read that too.
+fail-then-pass is not a guard. These rules sit on top of the `docs` skill (whole-document review, never lose a rule) — read
+that too.
 
 ## 1. The description is the trigger — and the listing is capped
 
@@ -146,5 +146,5 @@ description rewrite. Exempt: typo, path, and pointer fixes.
 - [ ] Guidance form matches the observed failure (§3).
 - [ ] Discipline skill: rationalization rows and red flags come from observed failures.
 - [ ] §5 run done (or exempt) and `evals.md` updated.
-- [ ] `context-docs` checklist passed (aidream, matrx-frontend, common-docs). Canonical SKILL.md? Edit the one under `common-docs/skills/` — never a synced copy — run
+- [ ] `docs` skill §2 and §8 passed. Canonical SKILL.md? Edit the one under `common-docs/skills/` — never a synced copy — run
   `sync_skills.py`, commit every touched repo.

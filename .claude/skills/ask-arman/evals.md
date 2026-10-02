@@ -46,4 +46,4 @@ first live misfire; the description names the four situations the reps were in.
 ## Rerun
 
 Same scenario, same lane, three reps per arm, after any edit. A GREEN rep that ends its turn
-waiting, asks without naming who the best are, or files nowhere is a fail.
+waiting, asks without naming who the best are, or files no `question_desk` row is a fail. (The 2026-09-12 run above filed to the retired markdown ledger.)

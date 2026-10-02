@@ -15,20 +15,19 @@ timestamp: 2026-09-12T00:00:00Z
 
 # grilling — interview by design tree
 
-Mechanic adapted from Matt Pocock's `grilling`, tuned to Arman's contract: he runs ~20 sessions,
-answers cold, and must be able to reply "yes to your rec" in seconds. Talking to him follows the
-check-in contract (the `take` skill: aidream, matrx-frontend, common-docs); guided human steps follow
-[human-steps-are-guided-sessions](/policies/human-steps-are-guided-sessions.md).
+Mechanic adapted from Matt Pocock's `grilling`. Every sentence to the owner follows
+[talk to Arman like a person](/policies/talk-to-arman-like-a-person.md); filing and delivery follow
+the [ask-arman](/skills/ask-arman/SKILL.md) skill.
 
 ## 1. Build the tree, then prune it (before any question)
 
 Draft privately: every open decision, and the decisions that hang off it. Then DELETE every node that is:
 - **Settled** — a node's DECISIONS.md or "settled — never re-ask" table, or
-  [table-stakes](/policies/table-stakes-are-never-a-question.md) (stream, persist, resume, never lose
+  [table stakes](/policies/talk-to-arman-like-a-person.md) (stream, persist, resume, never lose
   input = always yes).
 - **A fact** — dispatch a subagent (lane named). Never ask him anything you can look up.
 - **Decidable** from code, doctrine, or established best practice — decide it, with its companion
-  machinery ([decisions-must-be-complete](/policies/decisions-must-be-complete.md)). List it under
+  machinery ([decisions are complete](/policies/talk-to-arman-like-a-person.md)). List it under
   "Decided" so he can override.
 - **A number that is really a mechanism** — bring the mechanism.
 
@@ -40,7 +39,9 @@ plan — then challenge his assumptions too, still never ask facts.
 
 - **Frontier** = surviving nodes whose prerequisites are settled. A question whose answer depends on
   another question open this round waits for a later round.
-- **One complex question per round** (Arman, 2026-09-10: five quick ones or three tough-but-direct ones may share a round; never several in-depth ones — "you're basically guaranteeing that I will give you bs answers"). The rest wait in [the Question Ledger](/operations/questions.md) (the `ask-arman` row shape; the `question-desk` skill runs the rounds that clear it); order by how much of the tree each answer unblocks. Never use an older agent-recorded quote of his as evidence against a decision he made today without its source and circumstances.
+- **Round size:** per [talk to Arman like a person](/policies/talk-to-arman-like-a-person.md); the
+  rest wait on the Question Desk ([ask-arman](/skills/ask-arman/SKILL.md)), ordered by how much of
+  the tree each answer unblocks.
 - **Never block on exploration.** Send the fact-independent frontier now; only questions downstream of
   a running subagent wait. If he can step away while you explore, say so.
 - **Number continuously across rounds** (round 2 starts at Q5), so "5 yes" is never ambiguous.
@@ -56,7 +57,7 @@ emojis. Then the question, in one sentence.
   diagram of what actually happens, OR a throwaway prototype (Artifact or demo route) labeled
   PROTOTYPE. A question he cannot answer from what you gave him is a defect in the question — and often
   a sign the PATH is broken, which is the real finding.
-- **Delivery:** plain numbered chat text — **never a structured question picker** (Arman ruled 2026-09-12).
+- **Delivery:** plain numbered chat text — **never a structured question picker**.
 
 Every round ends with:
 `Decided (override by number): D1 … · D2 …` / `Anything you skip ships with my recommendation.` /
@@ -75,7 +76,7 @@ ruled it.
    explicit deferral. **"I need to see it first"** = deferral + the URL he needs. **"I don't know" /
    "we have options"** = the question failed him: research, then bring it back next round with
    better facts, best practice, and a rec — never picked silently, never re-asked as-is
-   ([decisions-must-be-complete](/policies/decisions-must-be-complete.md)).
+   ([decisions are complete](/policies/talk-to-arman-like-a-person.md)).
 
 ## 5. Done
 

@@ -113,8 +113,8 @@ The recurring worker follows this exact order:
    fixing or coordinating a named repair worker; record the reproducible defect and repair
    evidence. Commit/push, resolve delivery failures, and dispatch an independent live reviewer.
    Follow that reviewer through its result in this run. Apply the
-   [execution completion gate](/policies/defect-ownership.md) before ending (local file:
-   `/Users/armanisadeghi/code/common-docs/policies/defect-ownership.md`): recoverable
+   [execution completion gate](/policies/reality-is-the-referee.md) before ending (local file:
+   `/Users/armanisadeghi/code/common-docs/policies/reality-is-the-referee.md`): recoverable
    obstacles and pending verification require continued work, coordination, or waiting.
    Only a freshly verified human-only gate or an actual forced execution interruption
    permits an unfinished exit. Record the exact remaining work and continuation ownership;

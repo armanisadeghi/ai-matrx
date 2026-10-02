@@ -283,7 +283,7 @@ Never store raw detail, secrets, or sensitive context in parent memory.
 **Every run reviews its own friction:** what wasted effort, was misleading, or
 prevented repair? Fix the demonstrated cause in tooling or the canonical instructions,
 verify the correction, and record one compact result. If no change is justified,
-say so in state; do not churn instructions. Use context-docs/cross-repo-docs and sync
+say so in state; do not churn instructions. Use the `docs` skill and sync
 shared skill changes; never edit a distributed copy. The next context must inherit
 the improvement without reading this conversation.
 

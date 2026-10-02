@@ -36,14 +36,14 @@ dissent navigable, treat "weirdness" as the asset.
 Night 1's full evidence trail is the sibling `REGISTER.md`; read its walls table before choosing
 a subject so you inherit the fixes instead of re-hitting them.
 
-**How victory is scored (Arman, 2026-09-12): the number of things the system could not do before the
+**How victory is scored: the number of things the system could not do before the
 trial and can do after.** Keep a capability ledger in the register — one row per "could not / can now" —
 and lead the morning report with its count. The best rows are bridges: a way to move a person's or a
 source's unique knowledge into an agent's instructions, a workflow step, a tool or a function. The
 built desk is a by-product; a run that succeeded without a new row is worth nothing here (PROGRAM.md
 ruling 6).
 
-**"The developer" running a trial can be a dispatched Sonnet 5 subagent (Arman, 2026-09-12).**
+**"The developer" running a trial can be a dispatched Sonnet 5 subagent.**
 Driving the product as a non-technical Expert, judging outputs, logging walls, and writing the
 register is not complex code — it is exactly the discovery/big-task work the Sonnet lane is for.
 An owning session dispatches a Sonnet driver for the trial itself, and that driver in turn
@@ -158,7 +158,7 @@ layer, before blaming the subject.
   distils, the Conductor authors, you answer questions the way the author would.
 - **Real cases from the world this week.** Never self-authored easy examples. Find them the way the
   job would (a viral post, a real family scenario from a forum, a real blog post).
-- **Never collapse consensus (Arman's brief, 2026-09-12).** The platform's principal value is the
+- **Never collapse consensus.** The platform's principal value is the
   tacit, the idiosyncratic and the disputed. A rule seen once is a rule; recurrence is a signal on
   it, not a gate to existence. You never Approve-all a corpus, never answer a contradiction by
   picking a side when both could be true (say so — "both are right" with the condition that
@@ -188,15 +188,8 @@ layer, before blaming the subject.
   ceiling, B the cheap model raw, C our workflow on the cheap model, GT the expert's real withheld
   work blind in the pool. A "vibe-coded app vs. our build" comparison, or any report naming only
   two arms, is not a grade under this doctrine — see CORE.md §4 and advantage-stack.md §4.
-- **Subagent model/effort (Arman, 2026-09-12):** Sonnet 5 subagents for discovery and any big task
-  that doesn't need complex code — this explicitly includes driving a whole trial (reading,
-  comparing, distilling, running real cases, judging outputs, logging walls); Opus 5.5 for complex
-  code and important fixes, dispatched BY the Sonnet driver when a wall needs one; Fable/default
-  reserved for heavy reasoning and planning, never for driving a trial. See the restatement above
-  and `common-docs/policies/subagent-model-ladder.md`.
-- **Committed + confirmed on localhost is done (Arman, 2026-09-12).** Do not wait for a release or
-  a deploy train to call a fix or a step complete — commit it, verify it works on localhost, and
-  move on; the deploy agent's cadence is a separate concern from whether the trial can continue.
+- **Lanes:** [subagent model ladder](/policies/subagent-model-ladder.md); driving a trial is `quick` (Sonnet) work.
+- **Done:** [deployment is the deploy agent's job](/policies/reality-is-the-referee.md) — commit, confirm on localhost, continue.
 
 ## 3. The register and the bench — the single source of state and the only valid grade
 
@@ -228,16 +221,14 @@ Every stop is one of these; do the matching thing and keep the trial moving:
 
 | Wall | Do |
 |---|---|
-| Platform defect (silent drop, dead default, wrong error, stale cache, engine gap) | Root cause → census of siblings → shared-layer fix → guard proven failing-then-passing → push → wait for the deploy train (never run a release; >60 min = bug against the deploy agent) → rerun on the live build. Never patch the instance. |
+| Platform defect (silent drop, dead default, wrong error, stale cache, engine gap) | Fix the class (law 3, [the laws](/policies/the-nine-laws.md)) in the shared layer, push, rerun. |
 | Missing primitive the method needs | Build it as a platform node/tool in the shared layer (lane named, subagent if it is bounded), wire it through the Conductor by conversation, never by hand. |
 | Third-party switch (enable an API, approve an app, a console toggle) | Fix it yourself if you can (you have Arman's machine and logins), else write a ten-minute prompt for a Codex agent, hand it to Arman, start a watcher that wakes you when it is done, and **continue on the parts that do not need it**. It never stops the trial. |
 | **Consensus collapse** — the product merged, deduped, synthesized-by-recurrence, excluded a once-seen rule from a build, framed two positions as a problem to settle, or offered Approve-all as the only way through a large review | A wall of the shared layer, not a review step. Keep BOTH positions verbatim in the register, log the wall with the mechanism (the live ones: the evidence standing and its 3-piece knob, statement-key dedupe, cross-piece-only synthesis, the tension card's recommendation, in-place `update_rule`), fix the class on the rule atom (retained dissent, school, history), continue with both schools alive. |
 | The agent (Conductor) is wrong or stuck | Talk to it the way the Expert would; when it repeats a defect class, that is a platform wall (its instructions or tools), not a prompt to fix. |
 | A stream detaches / a turn hangs | Read the server-side truth (request rows, `system_errors`) before re-sending; a hung turn with no message to the person is itself a wall. |
 
-Dispatch subagents for bounded fixes (lane named: Sonnet for recon and basic work, Opus for most
-coding, Fable only for the rare reasoning you yourself would struggle with — that is what YOU are
-here for) and keep driving the trial yourself. Two threads at once is the norm: a fix in flight, the trial advancing.
+Dispatch subagents for bounded fixes ([ladder](/policies/subagent-model-ladder.md)) and keep driving the trial yourself. Two threads at once is the norm: a fix in flight, the trial advancing.
 
 ## 5. What "done for the night" means
 
@@ -274,7 +265,7 @@ send him a question without your recommendation.
 
 ## 7. Improve this skill before you stop
 
-REQUIRED: append to [lessons.md](lessons.md) (§8) what Arman said and what you learned, in one line each with the date, then
+REQUIRED: append to [lessons.md](lessons.md) (§8) what you learned, one dated line (Arman's own words go verbatim to the node's `VISION.md`), then
 run `python3 common-docs/meta/scripts/sync_skills.py`, commit common-docs and every synced repo.
 If a lesson changes a rule above, edit the rule — do not only append. Keep the body under 500
 lines by relocating trial-specific detail into the trial's register.

@@ -15,7 +15,7 @@ work exactly as the skill says. Whenever this skill would touch CURRENT_ERRORS i
 aidream, run the **Error-systems triage pass** below instead.
 
 Verified against live code 2026-07-12. If a pointer here is dead, fix this doc in the
-same turn (context-docs discipline).
+same turn (`docs` skill).
 
 ## The core philosophy (from the repo, not this skill)
 

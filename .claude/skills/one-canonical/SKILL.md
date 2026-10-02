@@ -2,7 +2,7 @@
 name: one-canonical
 type: Skill
 title: "one-canonical — find every instance of a thing, build one, move them all, prove none are left"
-description: "Collapsing every copy of one kind of thing (tables, UIs, utilities, hooks, APIs, renderers) into a single canonical one. Use when asked to unify, merge, converge, or 'make one X used everywhere', or before migrating callers onto a new canonical piece. NOT for docs (use dedupe-and-verify)."
+description: "Collapsing every copy of one kind of thing (tables, UIs, utilities, hooks, APIs, renderers) into a single canonical one. Use when asked to unify, merge, converge, or 'make one X used everywhere', or before migrating callers onto a new canonical piece. NOT for docs (use docs)."
 tags: [doctrine, consolidation, migration, census]
 timestamp: 2026-09-23T00:00:00Z
 ---
@@ -15,9 +15,7 @@ timestamp: 2026-09-23T00:00:00Z
 
 # one-canonical
 
-Arman, 2026-09-23: *"We always run into this and agents always screw it up because they fail at
-various steps. They never research enough."* The rich-content census took three rounds and each one
-still found surfaces the last missed. Every step below ends on a check; skipping one is the failure.
+The rich-content census took three rounds and each one still found surfaces the last missed. Every step below ends on a check; skipping one is the failure.
 
 ## 1. Start THE LIST before you search
 
@@ -38,9 +36,7 @@ Keyword grep is round one, never the last round. Each round uses a DIFFERENT met
 - read how each copy actually behaves, not just where it is.
 
 Where copies do the same job differently, list every way on the list and pick a winner per capability.
-Build the canonical one CLEAN from the winners: never promote the best existing copy and patch it
-(`one-canonical` rule, Arman 2026-09-23: *"you CANNOT start from something you already have and try
-to modify it"*).
+Build the canonical one CLEAN from the winners: never promote the best existing copy and patch it.
 
 Done when: a round using a new method adds nothing to the list.
 
@@ -48,7 +44,7 @@ Done when: a round using a new method adds nothing to the list.
 
 Work the list top to bottom. Each item: move it, verify it on its real surface, mark it done with the
 proof. No bulk "all migrated" claims. Before moving each item, screenshot it in place and apply
-[canonicalize without destroying](../../policies/canonicalize-without-destroying.md): an ordinary copy is
+[canonicalize without destroying](../../policies/no-dead-ends.md): an ordinary copy is
 replaced; a copy that is visibly better in its spot is adopted into the canonical piece (feature,
 option or new primitive) after one simple question to Arman with before/after links. Only then is
 the old copy deleted, not left beside the new one.

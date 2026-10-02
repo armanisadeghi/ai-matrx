@@ -141,12 +141,8 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    - **Hostile re-verify** — every fix set re-attacked by someone who did not write the fix.
    - **Closing verifier + production sweep** — the held targets re-proven on the deployed SHA.
    - **The owner's own hands** — on the deployed surface; his phone catches what no agent can.
-4. **Fix the class, never the instance.** Every defect gets a root cause proven by a red-capable
-   loop (`diagnose` — never a fix before the loop), a census of its siblings, and where possible
-   a structural guard proven RED-THEN-GREEN at a seam that reproduces the bug — if no such seam
-   exists, that missing seam is itself the finding (`forcing-function-tests`). Every stand-in
-   screams (loud-patches law); every opinion-shaped decision becomes an org knob; every capability
-   is built as a platform primitive, never a feature-local patch.
+4. **Fix the class** (law 3, [the laws](/policies/the-nine-laws.md)): `diagnose` before any fix,
+   guards per `forcing-function-tests`; a missing red-capable seam is itself the finding.
    **Type errors at any gate** (frontend `pnpm type-check`, `@ai-matrx/*`
    `pnpm typecheck`, dashboard `tsc`) are a fan-out under the frontend
    `type-safety` skill: one file per small agent, they never run `tsc`,
@@ -167,14 +163,9 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    wrong, keep going — a wrong ruling costs visible rework; a parked lane costs the day. Agent-doable
    work never reaches the owner; **and the reverse holds: an agent never answers on the owner's
    behalf a question that is genuinely his** (vision, money, brand, legal, deleting real data). What
-   reaches him: finished work to see, and genuine questions — each through the `ask-arman` homework
-   gate first (a fact? already ruled or delegated? a knob? champion-decidable? the *user's* question
-   rather than the boss's?), filed in the Question Ledger, and asked in the law-10 shape: plain
-   numbered chat, **one complex question per round — never a batch of hard ones**, each carrying the
-   five parts (his prior ruling quoted or "never ruled"; what the best do and why they are the
-   reference; what the system does today; the implications and their reach; one recommendation),
+   reaches him: finished work to see, and genuine questions through [ask-arman](/skills/ask-arman/SKILL.md),
    while the lane proceeds on its stated reversible default. **At every close, the exhaustive list
-   of rulings made in his absence**, each in that same five-part shape with its cost if wrong. A
+   of rulings made in his absence**, each with its cost if wrong. A
    ruling that dies with the session was a decision made in secret.
 7. **Survive on purpose.** Self-scheduled wake-ups as disconnect insurance. Recovery-first
    resumes: after any compaction or restart, regenerate and re-read the owner's own words FIRST (`user-ground-truth` — the compaction summary is a paraphrase and the register is a model), then trust the register + `git log` + origin content,
@@ -184,10 +175,7 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    bounded stretches, reconcile live children between them, chase any that finished without
    reporting. In a shared checkout, touch only what you created — never remove another lane's
    worktree, stash, or files, and never `--force` a refused removal.
-8. **A delta is not a status.** Every status begins with the terminal current truth and carries
-   every unresolved provider, agent, owner, blocker, and verification action forward until it is
-   completed and verified. "No new event" describes only the latest delta; it never means "nothing
-   remains," "no action required," or "waiting on them" while an earlier action is still open.
+8. **A delta is not a status** (law 8, [the laws](/policies/the-nine-laws.md)).
 
 ## Part 3 — The lifecycle: gates with exit criteria (the spine that makes it reproducible)
 
@@ -198,7 +186,7 @@ Each gate's exit is checkable; a campaign that skips a gate is the failure mode 
 | 0 | **Mandate** (owner) | The mandate names the vision, the theory of past failure, the process shape, and the done-means-done law (Part 1 §1, §4). |
 | 1 | **Discovery** | The owner's words exist as a ground-truth file with a fresh summary beneath (`user-ground-truth` skill) and the register opens with them. Parallel recon agents (lanes named) have written to files: what already exists, found from the user's seat and verified against live code/DB, the champion for each discipline named with why it is the reference (`policies/champions.md` — parity is the floor), capability scope IN/DEFERRED — every load-bearing claim verified, not asserted, and every report checked against what the coordinator withheld (a report that misses what the coordinator already knew is discarded, and the brief is rewritten). |
 | 2 | **Scope + attack** | A feature tree / scope list exists; a zero-authorship `plan-attack` has run; every finding adjudicated (FIX / REJECT with reason / OWNER-ONLY). The register is opened as the single tracking home; questions that are sharp-but-blocked are items, questions not yet phrasable stay named **fog** (never pre-sliced into fake items), and work past the destination is **out of scope** — closed with one line, never "deferred" back onto the frontier. |
-| 3 | **Interview + readiness** | Each lane's readiness doc front-loads its unknowns and resolves what it can itself; the coordinator runs the residue through the `ask-arman` gate, then ONE `grilling` interview in rounds (one complex question per round; the rest wait in the Question Ledger). A question that exists only because the owner is also a customer of one organization is the user's, not the boss's — it becomes an onboarding step or a knob, never his question. Exit: the frontier is empty (answered, decided-with-override, or deferred with a date). **After this, no lane ever stops to ask the owner** — a new unknown is a coordinator ruling. |
+| 3 | **Interview + readiness** | Each lane's readiness doc front-loads its unknowns and resolves what it can itself; the coordinator runs the residue through the `ask-arman` gate, then ONE `grilling` interview in rounds. A question that exists only because the owner is also a customer of one organization is the user's, not the boss's — it becomes an onboarding step or a knob, never his question. Exit: the frontier is empty (answered, decided-with-override, or deferred with a date). **After this, no lane ever stops to ask the owner** — a new unknown is a coordinator ruling. |
 | 4 | **Freeze (G1)** | A fresh judge has read the owner's words and the plan and gone to the live product as him, and reports no drift (`user-ground-truth` §3). Specs, contracts, types/mocks, and fixtures are frozen and hashed; the core schema is certified. From here a contract change is an amendment (changelog + register note + regeneration), never a silent edit. |
 | 5 | **Core** (serial) | The single critical-path core lands and certifies in order — never parallelized. |
 | 6 | **Fan-out** (parallel) | Lanes dispatched with exclusive file/schema ownership and frozen interfaces; shared inputs verified to exist BEFORE parallel dispatch (a bad ref fails here, not inside six agents). |
@@ -213,8 +201,8 @@ Each gate's exit is checkable; a campaign that skips a gate is the failure mode 
    the Part 1 §4 language verbatim.
 2. Tell the agent to run discovery first (what exists, from the user's seat + market reference + scope), then
    bring the scope list — and order the hole-poking review on it (`plan-attack`).
-3. Answer the defaults-carrying interview one round at a time (one complex question per round,
-   each with a recommendation; only un-defaultable items need words — skipping ships the default).
+3. Answer the defaults-carrying interview one round at a time (only un-defaultable items need
+   words — skipping ships the default).
 4. Say the sentence that grants the chair: *"You own this end to end. Make yourself
    replaceable, keep everything in the register, and only bring me finished work and real
    decisions."* Approve the standing wake-up/schedule if offered.

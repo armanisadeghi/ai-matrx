@@ -39,7 +39,7 @@ plan before anyone proceeded. A self-review is not an attack: the author is blin
   its author found; an attack that only reads the plan is a second author with the same blind
   spots ([reality is the referee](/policies/reality-is-the-referee.md)). The reviewer is told the
   vision and the outcome, never what the author found or where.
-- Pass **pointers, never your summary**: plan path, EVERY vision doc from the vision sweep (the `take` skill: aidream, matrx-frontend, common-docs),
+- Pass **pointers, never your summary**: plan path, EVERY `VISION.md` that speaks about the subject,
   not just the node's VISION.md, the settled-rulings path, repos. The reviewer judges the document,
   not your intent.
 

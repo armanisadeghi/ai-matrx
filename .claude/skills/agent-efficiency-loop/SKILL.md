@@ -42,9 +42,7 @@ Companions — read the one your step reaches:
   clean runs that you would put your name on it; the report that recommends it names the runs.
 - **One unit per run.** One provider, one sandbox task, one document, one customer. Every run
   is a fresh sample; never batch until the single unit is boringly clean.
-- **Fix the class, never the instance.** A wasted call has an owner: the tool, the prompt, the
-  model, or a missing platform primitive. Fix it there, with a guard proven failing-then-passing
-  (`forcing-function-tests`), and census the siblings.
+- **Fix the class** (law 3): a wasted call's owner is the tool, the prompt, the model, or a missing primitive.
 - **Run counts are yours only.** Other sessions run the same agent for their own reasons
   (repairs, quarantines). Count only runs you launched; identify them by launch time and message.
 - **Talk like a person.** Every status to the owner is plain English with a small table of
