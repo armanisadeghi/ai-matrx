@@ -18,6 +18,7 @@ import {
   getSurfaceAncestry,
   getSurfaceChildren,
 } from "@/features/surfaces/manifests/registry";
+import { getSurfaceSection } from "@/features/surfaces/manifests/surface-section";
 
 registerSurfaceManifests({
   getManifest,
@@ -25,4 +26,5 @@ registerSurfaceManifests({
   getRawManifest,
   getSurfaceAncestry,
   getSurfaceChildren,
+  getSurfaceSection,
 });

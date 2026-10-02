@@ -166,6 +166,32 @@ export function saveContextRule(args: {
   return (dispatch, getState) => applyRowPatch(dispatch, getState, args.surfaceKey, rulePatch(args.key, args.rule));
 }
 
+/**
+ * Several rules at once — a level or group switch ("AI Matrx" off, "Brand
+ * identity" on). One write per surface row: every change for that row merges
+ * as ONE patch, so the row never passes through a half-applied state and a
+ * send awaiting the writes sees all of them or none.
+ */
+export function saveContextRules(
+  changes: ReadonlyArray<{
+    surfaceKey: string;
+    key: string;
+    rule: Partial<Record<keyof SavedContextRule, SavedContextRule[keyof SavedContextRule] | undefined>> | null;
+  }>,
+): ChatThunk<Promise<void>> {
+  return (dispatch, getState) => {
+    const byRow = new Map<string, RowPatch[]>();
+    for (const change of changes) {
+      byRow.set(change.surfaceKey, [...(byRow.get(change.surfaceKey) ?? []), rulePatch(change.key, change.rule)]);
+    }
+    return Promise.all(
+      [...byRow.entries()].map(([surfaceKey, patches]) =>
+        applyRowPatch(dispatch, getState, surfaceKey, (row) => patches.reduce((acc, patch) => patch(acc), row)),
+      ),
+    ).then(() => undefined);
+  };
+}
+
 /** Reset every rule on one surface row (the chip's "reset all"). */
 export function resetContextRules(surfaceKey: string): ChatThunk<Promise<void>> {
   return (dispatch, getState) => applyRowPatch(dispatch, getState, surfaceKey, () => ({}));

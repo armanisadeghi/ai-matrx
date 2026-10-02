@@ -142,6 +142,7 @@ import {
   ensureContextRulesReady,
   reloadContextRules,
   saveContextRule,
+  saveContextRules,
   selectSavedContextRuleRows,
 } from "../context-rules.thunks";
 import type { ChatRootState } from "../../../../../store/root-state";
@@ -232,6 +233,33 @@ describe("two tabs changing different values", () => {
 
     await run(tabA, ensureContextRulesReady("standup-notes-chat"));
     expect(rulesIn(tabA)[NOTES]).toEqual({ cursor_offset: { max_inline_chars: 0 } });
+  });
+});
+
+describe("a group switch: every value in it, one write per row", () => {
+  beforeEach(() => selectWorkspace(WORKSPACE_ID));
+
+  it("turns a whole group off in ONE write and keeps the person's other rules", async () => {
+    seedRow({ note_title: { max_inline_chars: 400 }, pinned_notes: { include: true } });
+    const tab = openTab();
+    await run(tab, reloadContextRules());
+
+    await run(
+      tab,
+      saveContextRules([
+        { surfaceKey: NOTES, key: "note_title", rule: { max_inline_chars: 400, include: false } },
+        { surfaceKey: NOTES, key: "note_body", rule: { include: false } },
+        { surfaceKey: NOTES, key: "pinned_notes", rule: null },
+      ]),
+    );
+
+    expect(db.rows[0].state).toEqual({
+      note_title: { max_inline_chars: 400, include: false },
+      note_body: { include: false },
+    });
+    // Seeded at version 4: exactly one write landed.
+    expect(db.rows[0].version).toBe(5);
+    expect(rulesIn(tab)[NOTES]).toEqual(db.rows[0].state);
   });
 });
 
