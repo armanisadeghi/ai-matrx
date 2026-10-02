@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Params }) {
   return createDynamicRouteMetadata("/devices", {
     title: device?.instance_name?.trim() || "Device",
     description: "Terminal and files on this computer",
-    letter: "DV",
+    letter: "DC",
   });
 }
 
