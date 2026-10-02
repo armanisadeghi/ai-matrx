@@ -1,4 +1,3 @@
--- draft: VISION-REACH clone proof pending
 -- target: branch,production
 -- additive: yes
 --   It REPLACES two bodies, each declared below with the body it was written against. No table,
