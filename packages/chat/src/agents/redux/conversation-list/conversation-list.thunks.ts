@@ -9,7 +9,6 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
-import { getUserId } from "@host/utils/auth/getUserId";
 import type { Database } from "@host/types/database.types";
 import type { ChatThunk, ChatRootState } from "../../../store/root-state";
 import { favoritesService } from "@host/features/scopes/service/favoritesService";
@@ -27,6 +26,7 @@ import {
 } from "./conversation-list.slice";
 import { CONVERSATION_LIST_PAGE_SIZE } from "./conversation-list.types";
 import { HIDDEN_CONVERSATION_LANE } from "../conversation-history/lanes";
+import { getUserId } from "../../../host/identity";
 
 type GetAgentConversationsReturns =
   Database["public"]["Functions"]["get_agent_conversations"]["Returns"];

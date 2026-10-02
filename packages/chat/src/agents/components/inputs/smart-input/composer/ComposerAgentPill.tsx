@@ -46,9 +46,8 @@ import {
 import { composerShows } from "./composer-mode-visibility";
 import type { ComposerAgentControl, ComposerMode, ComposerSize } from "./composer-types";
 import { useComposerAgent, type ComposerAgentInfo } from "./useComposerAgent";
-import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@host/lib/organization/selection-cancelled";
 import { presentOrganizationRefusal } from "@host/lib/organizations/organizationRefusalToast";
+import { ensureOrgId, isOrganizationSelectionCancelled } from "../../../../../host/org";
 
 interface ComposerAgentPillProps {
   conversationId: string;

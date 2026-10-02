@@ -36,6 +36,7 @@ import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreference
 import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
 import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
+import { initialChatHostState } from "../../../../../store/chat-host.slice";
 import type { ChatRootState } from "../../../../../store/root-state";
 import {
   DEFAULT_BUILDER_ADVANCED_SETTINGS,
@@ -81,6 +82,8 @@ function makeState(
     >;
   } = {},
 ): ChatRootState {
+  const activeOrganizationId =
+    "organizationId" in partial ? (partial.organizationId ?? null) : SELECTED_ORGANIZATION_ID;
   const orderedIds = (partial.history ?? []).map((m) => m.id);
   const byId: Record<string, unknown> = {};
   for (const m of partial.history ?? []) {
@@ -201,10 +204,12 @@ function makeState(
     // AI execution reads ONLY the explicit active organization.
     appContext: {
       ...appContextReducer(undefined, { type: "@@INIT" }),
-      organization_id:
-        "organizationId" in partial
-          ? (partial.organizationId ?? null)
-          : SELECTED_ORGANIZATION_ID,
+      organization_id: activeOrganizationId,
+    },
+    // ...which the package reads from its own chatHost slice (P7).
+    chatHost: {
+      ...initialChatHostState,
+      org: activeOrganizationId ? { id: activeOrganizationId, name: null } : null,
     },
     // Desktop target routing is a real RootState slice. Derive defaults from
     // its reducer so this partial fixture cannot drift from production state.

@@ -13,7 +13,6 @@
 
 import type { ResolvedContextRow } from "@ai-matrx/agents/context";
 import { useAppSelector, useAppStore } from "../../../../store/hooks";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { useConversationMaterialized } from "../../../hooks/useConversationMaterialized";
 import { useContainerLinks } from "@host/features/scopes/hooks/useContainerLinks";
 import { attachmentContextKey } from "@ai-matrx/agents/context";
@@ -33,6 +32,7 @@ import {
   resolveAttachedDocumentDisplayName,
   useAttachedDocumentFileNames,
 } from "../resources/attached-documents";
+import { selectOrganizationId } from "../../../../host/org";
 
 export function useConversationDisplayRows(
   conversationId: string,

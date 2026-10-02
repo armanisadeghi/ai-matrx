@@ -14,12 +14,10 @@ import { selectHtmlPageArtifactForMessage } from "@host/lib/redux/selectors/arti
 import { setActivePageId } from "../utils/html-pages-actions";
 import { updateArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
 import { registerArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
-import {
-  selectOrganizationId,
-  selectTaskId,
-} from "@host/lib/redux/slices/appContextSlice";
+import { selectTaskId } from "@host/lib/redux/slices/appContextSlice";
 import { toast } from "../../host/notify";
 import { presentOrganizationRefusal } from "@host/lib/organizations/organizationRefusalToast";
+import { selectOrganizationId } from "../../host/org";
 
 interface HtmlPreviewBridgeProps {
   content: string;

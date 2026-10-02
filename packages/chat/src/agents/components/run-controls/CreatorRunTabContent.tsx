@@ -24,7 +24,6 @@ import { RotateCcw, AppWindow, SlidersHorizontal, Brain } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import { CHAT_WINDOWS, openOverlay } from "../../../host/windows";
 import { useChatWindows, useHasChatManagedWindow } from "../../../host/windows-react";
-import { selectIsSuperAdmin } from "@host/lib/redux/slices/userSlice";
 import {
   selectIsMemoryEnabledForConversation,
   selectMemoryCounters,
@@ -48,6 +47,7 @@ import { ClientMetricsPanel } from "./panels/ClientMetricsPanel";
 import { BackendTargetPanel } from "./panels/BackendTargetPanel";
 import { ModelContextPanel } from "./panels/ModelContextPanel";
 import { cn } from "@ai-matrx/design-system";
+import { selectIsSuperAdmin } from "../../../host/identity";
 
 // =============================================================================
 // Tab ids + labels (shared source of truth for both hosts' tab lists)

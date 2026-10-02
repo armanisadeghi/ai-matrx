@@ -60,7 +60,7 @@ import {
 } from "../../service/user-todo.service";
 import { setPlanStatus } from "../../service/agent-plan.service";
 import { confirm as confirmDialog } from "@host/components/dialogs/confirm/ConfirmDialogHost";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { selectUserId } from "../../../../host/identity";
 
 interface TaskPanelProps {
   conversationId: string;

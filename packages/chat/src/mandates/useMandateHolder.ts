@@ -15,7 +15,6 @@
 
 import { useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import {
   MandateOrganizationUnresolvedError,
   onMandateCacheInvalidated,
@@ -24,6 +23,7 @@ import {
 } from "./service";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { selectOrganizationId } from "../host/org";
 
 export interface MandateHolderState {
   holder: ResolvedMandateHolder | null;

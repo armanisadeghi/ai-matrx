@@ -38,16 +38,12 @@ import { useAgentLauncher } from "../../agents/hooks/useAgentLauncher";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "../../agents/components/chat/chat-quick-actions.config";
 import { resumeConversation } from "../../agents/redux/execution-system/thunks/resume-conversation.thunk";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import {
-  selectOrganizationId,
-  selectShouldPromptForOrganization,
-} from "@host/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext } from "@host/lib/organization/organization-gate";
-import { isOrganizationSelectionCancelled } from "@host/lib/organization/selection-cancelled";
+import { selectShouldPromptForOrganization } from "@host/lib/redux/slices/appContextSlice";
 import { selectIsCacheOnly } from "../../agents/redux/execution-system/conversations/conversations.selectors";
 import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
 import { describeLaunchError } from "./describe-launch-error";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { selectOrganizationId, ensureOrganizationContext, isOrganizationSelectionCancelled } from "../../host/org";
 
 export type CanvasWorkspaceConversation =
   | { state: "opening"; purpose: "new" | "open" }

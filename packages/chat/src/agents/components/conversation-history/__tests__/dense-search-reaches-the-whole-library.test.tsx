@@ -102,6 +102,21 @@ jest.mock("@host/utils/auth/getUserId", () => ({
   getUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
   requireUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
 }));
+// The identity seam (P7) carries the names this test stood in for above; the rest stay real.
+jest.mock("../../../../host/identity", () => {
+  const standIns: Record<string, unknown> = {
+    ...(() => ({
+  ...jest.requireActual("@host/utils/auth/getUserId"),
+  getUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
+  requireUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
+}))(),
+  };
+  const moved = ["selectUserId","selectIsAuthenticated","selectIsAdmin","selectIsSuperAdmin","getUserId","requireUserId","NotAuthenticatedError","isNotAuthenticatedError","hasBrowserSession"];
+  return {
+    ...jest.requireActual("../../../../host/identity"),
+    ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
+  };
+});
 
 import { makeStore } from "@host/lib/redux/store";
 import { TooltipProvider } from "@ai-matrx/design-system";

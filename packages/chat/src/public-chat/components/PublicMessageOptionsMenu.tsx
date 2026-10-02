@@ -31,11 +31,10 @@ import { NotesAPI } from "@host/features/notes/service/notesApi";
 import { toast } from "../../host/notify";
 import { useSelector } from "react-redux";
 import { selectUser } from "@host/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
 import { useAppDispatch } from "../../store/hooks";
 import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
 import { removeCodeSpans, replaceFences } from "@host/lib/markdown/code-ranges";
+import { selectOrganizationId, ensureOrganizationContext, isOrganizationSelectionCancelled } from "../../host/org";
 
 // Key used to store pending actions across the auth redirect
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";

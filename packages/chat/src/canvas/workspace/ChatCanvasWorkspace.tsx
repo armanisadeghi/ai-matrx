@@ -73,7 +73,6 @@ import {
   ShellChromeMode,
   useShellCanvasFullScreen,
 } from "../../host/chrome";
-import { selectIsAuthenticated } from "@host/lib/redux/selectors/userSelectors";
 import { ComposerModeSwitch } from "../../agents/components/inputs/smart-input/composer/ComposerModeSwitch";
 import type { ComposerMode } from "../../agents/components/inputs/smart-input/composer/composer-types";
 import { COMPOSER_KNOBS } from "../../agents/components/inputs/smart-input/composer/composer-mode-cookie";
@@ -97,6 +96,7 @@ import {
   type CanvasChatState,
   type CanvasWorkspaceLayout,
 } from "./workspace-cookies";
+import { selectIsAuthenticated } from "../../host/identity";
 
 const FLOATING_FALLBACK = { width: 340, height: 400 };
 /** Below this the workspace is one pane: the canvas, with chat / properties in sheets (navigation is the shell drawer). */

@@ -16,7 +16,6 @@ import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { supabase } from "@host/utils/supabase/client";
 import { db } from "../../service/supabase-typed";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { cn } from "@ai-matrx/design-system";
 import {
   upsertPlan,
@@ -29,6 +28,7 @@ import type {
   CxAgentTaskRow,
   CxUserTodoRow,
 } from "../../tools/types";
+import { selectUserId } from "../../../../host/identity";
 
 interface ConversationRow {
   id: string;

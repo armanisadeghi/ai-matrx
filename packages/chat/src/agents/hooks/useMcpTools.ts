@@ -16,7 +16,6 @@ import {
   selectMcpAvailabilityForOrganization,
   selectMcpAvailabilityStatusForOrganization,
 } from "../redux/mcp/mcp.slice";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import {
   deriveMcpConnectionState,
   type McpConnectionTruth,
@@ -30,6 +29,7 @@ import type { McpCatalogEntry } from "../types/mcp.types";
 import type { McpToolSchema } from "../services/mcp-client/tool-discovery";
 import { invokeMcpServerTool } from "../services/mcp-connections.service";
 import { useGitHubConnection } from "@host/features/github-integration/useGitHubConnection";
+import { selectOrganizationId } from "../../host/org";
 
 const EMPTY_MCP_TOOLS: McpToolSchema[] = [];
 

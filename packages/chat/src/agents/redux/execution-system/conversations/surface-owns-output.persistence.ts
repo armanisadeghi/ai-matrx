@@ -23,9 +23,9 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { Database } from "@host/types/database.types";
 import { supabase } from "@host/utils/supabase/client";
-import { hasBrowserSession } from "@host/lib/supabase/hasBrowserSession";
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { waitForConversationPersisted } from "./conversation-persistence";
+import { hasBrowserSession } from "../../../../host/identity";
 
 export const SURFACE_OWNS_OUTPUT_METADATA_KEY = "surface_owns_output";
 export const ENGINEERED_INPUTS_METADATA_KEY = "engineered_inputs";

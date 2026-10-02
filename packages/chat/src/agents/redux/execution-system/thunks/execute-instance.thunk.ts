@@ -83,7 +83,6 @@ import {
   ensureExecutionOrganization,
   executionOrganizationForRequest,
 } from "../utils/required-organization";
-import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
 import {
   resolveBackendForConversation,
   warmLocalEngineForConversation,
@@ -149,6 +148,7 @@ import { setMemoryEnabledOptimistic } from "../observational-memory/observationa
 import { persistInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
 import { persistConversationFlag } from "../conversations/surface-owns-output.persistence";
 import { extractErrorMessage } from "@ai-matrx/data/net";
+import { isOrganizationSelectionCancelled } from "../../../../host/org";
 
 /**
  * Build the three REQUIRED lifecycle fields for a first-turn request.

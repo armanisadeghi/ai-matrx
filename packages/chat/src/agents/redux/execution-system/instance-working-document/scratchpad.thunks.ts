@@ -21,7 +21,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
-import { getActiveOrgId } from "@host/lib/organizations/activeOrg";
 import {
   applyAgentWorkingDocContent,
   markWorkingDocMaterialized,
@@ -47,6 +46,7 @@ import {
   unlinkDocumentFromConversation,
   type CxWorkingDocument,
 } from "./cx-working-document.service";
+import { getActiveOrgId } from "../../../../host/org";
 
 interface ThunkConfig {
   state: ChatRootState;

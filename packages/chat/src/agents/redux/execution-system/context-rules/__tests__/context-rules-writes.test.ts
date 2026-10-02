@@ -115,6 +115,17 @@ const toastError = jest.fn();
 jest.mock("../../../../../host/notify", () => ({
   toast: { error: (...a: unknown[]) => toastError(...a), warning: jest.fn(), success: jest.fn() },
 }));
+// The identity seam (P7) carries the names this test stood in for above; the rest stay real.
+jest.mock("../../../../../host/identity", () => {
+  const standIns: Record<string, unknown> = {
+    ...(() => ({ requireUserId: () => PERSON_ID }))(),
+  };
+  const moved = ["selectUserId","selectIsAuthenticated","selectIsAdmin","selectIsSuperAdmin","getUserId","requireUserId","NotAuthenticatedError","isNotAuthenticatedError","hasBrowserSession"];
+  return {
+    ...jest.requireActual("../../../../../host/identity"),
+    ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
+  };
+});
 
 import {
   ensureSurfaceFeatureLoaded,

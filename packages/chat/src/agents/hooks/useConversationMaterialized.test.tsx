@@ -1,9 +1,9 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { useAppSelector } from "../../store/hooks";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { waitForConversationPersisted } from "../redux/execution-system/conversations/conversation-persistence";
 import { useConversationMaterialized } from "./useConversationMaterialized";
+import { selectUserId } from "../../host/identity";
 
 jest.mock("../../store/hooks", () => ({
   useAppSelector: jest.fn(),

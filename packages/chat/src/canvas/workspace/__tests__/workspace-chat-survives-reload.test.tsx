@@ -43,6 +43,22 @@ jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
 }));
 jest.mock("@host/lib/organization/organization-gate", () => ({ ensureOrganizationContext: jest.fn() }));
 jest.mock("@host/lib/organization/selection-cancelled", () => ({ isOrganizationSelectionCancelled: () => false }));
+// The org seam (P7) carries the names this test stood in for above; the rest stay real.
+jest.mock("../../../host/org", () => {
+  const standIns: Record<string, unknown> = {
+    ...(() => ({
+  selectOrganizationId: () => "org-1",
+  selectShouldPromptForOrganization: () => false,
+}))(),
+    ...(() => ({ ensureOrganizationContext: jest.fn() }))(),
+    ...(() => ({ isOrganizationSelectionCancelled: () => false }))(),
+  };
+  const moved = ["selectOrganizationId","selectOrganizationName","ensureOrgId","getActiveOrgId","isOrganizationSelectionCancelled","ensureOrganizationContext","ensureOrganizationForRequest"];
+  return {
+    ...jest.requireActual("../../../host/org"),
+    ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
+  };
+});
 
 import {
   addressWithConversation,

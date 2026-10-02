@@ -185,7 +185,6 @@ import {
 } from "@host/lib/api/run-wait";
 import { selectModelById } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
-import { getUserId } from "@host/utils/auth/getUserId";
 import { payloadSafetyStore } from "@ai-matrx/kit/payload-safety";
 import {
   startRequest as startNetRequest,
@@ -199,6 +198,7 @@ import { attachSkillConfigFromState } from "../utils/build-skill-config-for-requ
 import type { ToolSpec } from "../../../types/tool-injection.types";
 import { isUiGateKey } from "@host/lib/redux/slices/agent-settings/ui-gates";
 import { extractErrorMessage } from "@ai-matrx/data/net";
+import { getUserId } from "../../../../host/identity";
 
 // Model-gated UI flags that may ride flattened in the builder's working state
 // (e.g. `tools: { allowed: true }`, `image_urls: true`). They must not be

@@ -17,8 +17,8 @@
  */
 
 import { createClient } from "@host/utils/supabase/client";
-import { hasBrowserSession } from "@host/lib/supabase/hasBrowserSession";
 import { isJsonObject } from "@host/types/json";
+import { hasBrowserSession } from "../host/identity";
 
 /**
  * The consumer-visible field names an agent's `output_schema` declares.

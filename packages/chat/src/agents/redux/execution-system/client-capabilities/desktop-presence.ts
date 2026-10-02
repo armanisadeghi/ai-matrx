@@ -23,7 +23,7 @@
  */
 
 import { supabase } from "@host/utils/supabase/client";
-import { hasBrowserSession } from "@host/lib/supabase/hasBrowserSession";
+import { hasBrowserSession } from "../../../../host/identity";
 
 /** matrx-local heartbeats every 5 min; allow one missed beat + 60s slack. */
 const LIVE_WINDOW_MS = 11 * 60_000;

@@ -33,11 +33,11 @@ import {
   ensureExecutionOrganization,
   requireExecutionOrganizationId,
 } from "../../../redux/execution-system/utils/required-organization";
-import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
 import { isUploadCancelledError } from "@host/features/files/handler/errors";
 import { useAttachResource } from "./attach-resource";
 import { revokeTrackedObjectUrl } from "@host/lib/media/object-url-registry";
 import type { ResourceBlockType } from "../../../types/instance.types";
+import { isOrganizationSelectionCancelled } from "../../../../host/org";
 
 export interface UsePasteImageResourceOptions {
   /** Logical top-level Files folder. */

@@ -42,6 +42,17 @@ jest.mock("@host/utils/supabase/client", () => ({
   },
 }));
 jest.mock("@host/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-clinic" }));
+// The org seam (P7) carries the names this test stood in for above; the rest stay real.
+jest.mock("../../../../host/org", () => {
+  const standIns: Record<string, unknown> = {
+    ...(() => ({ ensureOrgId: async () => "org-clinic" }))(),
+  };
+  const moved = ["selectOrganizationId","selectOrganizationName","ensureOrgId","getActiveOrgId","isOrganizationSelectionCancelled","ensureOrganizationContext","ensureOrganizationForRequest"];
+  return {
+    ...jest.requireActual("../../../../host/org"),
+    ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
+  };
+});
 
 import { createAgentMemory } from "../service/agent-memory.service";
 

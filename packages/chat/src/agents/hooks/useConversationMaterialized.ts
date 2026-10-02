@@ -33,9 +33,9 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { useAppSelector } from "../../store/hooks";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { selectPrimaryRequest } from "../redux/execution-system/active-requests/active-requests.selectors";
 import { waitForConversationPersisted } from "../redux/execution-system/conversations/conversation-persistence";
+import { selectUserId } from "../../host/identity";
 
 /**
  * User-scoped ids proven to have a readable committed `chat.conversation` row.

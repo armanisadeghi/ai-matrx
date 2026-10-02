@@ -64,12 +64,28 @@ export interface ChatIdentityPort {
   getAccessToken(): Promise<string | null>;
 }
 
+/** How `ChatOrgPort.require` may ask. */
+export interface ChatOrgRequireOptions {
+  /**
+   * true: ask now. false: refuse without asking (background work).
+   * Omitted: a write's default — ask only right after the person acted, so a
+   * debounced autosave refuses instead of raising a picker mid-sentence.
+   */
+  interactive?: boolean;
+  /** Choices a server refusal already carried (its memberships), so the picker opens at once. */
+  prefetched?: readonly unknown[] | null;
+}
+
 /** Active org = where writes go and which org a server call runs in. NEVER a list filter. */
 export interface ChatOrgPort {
   active(): ChatOrganization | null;
   subscribe(listener: () => void): () => void;
-  /** Hold-and-set gate: resolves an org id the person chose, or rejects as cancelled. */
-  require(reason: string): Promise<string>;
+  /**
+   * Hold-and-set gate: resolves an org id the person chose, or rejects as
+   * cancelled (an error named `OrganizationSelectionCancelled`, "not now").
+   * Never picks one on the person's behalf.
+   */
+  require(reason: string, options?: ChatOrgRequireOptions): Promise<string>;
 }
 
 export interface ChatServerPort {

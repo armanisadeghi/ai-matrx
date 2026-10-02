@@ -9,12 +9,12 @@
 
 import { db } from "./supabase-typed";
 import { writeOne } from "@host/utils/supabase/writeOne";
-import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import type {
   CxAgentTaskRow,
   CxAgentTaskStatus,
   CxAgentTaskCreator,
 } from "../tools/types";
+import { ensureOrgId } from "../../../host/org";
 
 export interface CreateAgentTaskInput {
   conversation_id: string;

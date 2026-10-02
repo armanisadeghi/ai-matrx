@@ -21,10 +21,6 @@
 //   5. Interruption is synchronous: stop sources → send response.cancel in the
 //      same speech_started handler microtask.
 
-import {
-  ensureOrganizationContext,
-  OrganizationSelectionCancelled,
-} from "@host/lib/organization/organization-gate";
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
 import type { ChatRootState } from "../../store/root-state";
@@ -63,7 +59,6 @@ import {
   buildResponseCreate,
   buildSessionUpdate,
 } from "../transport/clientEvents";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import {
   selectActiveOrganizationId,
   selectActiveProjectId,
@@ -96,6 +91,8 @@ import {
   voiceDebugIncr,
   type MicPermissionState,
 } from "../debug/voiceDebugBus";
+import { selectUserId } from "../../host/identity";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "../../host/org";
 
 /** Server-event types too high-frequency to record individually in the debug log. */
 const HIGH_FREQ_EVENTS = new Set([
@@ -1018,7 +1015,7 @@ export function useXaiVoiceSession(
         await ensureOrganizationContext();
       }
     } catch (error) {
-      if (error instanceof OrganizationSelectionCancelled) return;
+      if (isOrganizationSelectionCancelled(error)) return;
       dispatch(
         setError({
           instanceId,

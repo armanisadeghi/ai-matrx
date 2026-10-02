@@ -40,7 +40,6 @@ import {
   ensureExecutionOrganization,
   executionOrganizationForRequest,
 } from "../utils/required-organization";
-import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
 import { getManifest } from "../../../../surfaces/runtime/registry";
 import {
   claimSubmit,
@@ -58,6 +57,7 @@ import {
   removeInboxItem,
 } from "../inbox/inbox.slice";
 import { markResourcesSubmitted } from "../instance-resources/instance-resources.slice";
+import { isOrganizationSelectionCancelled } from "../../../../host/org";
 
 interface SmartExecuteArgs {
   conversationId: string;

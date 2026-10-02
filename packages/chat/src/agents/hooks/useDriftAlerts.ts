@@ -7,11 +7,7 @@
 
 import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import {
-  selectAccessToken,
-  selectAuthReady,
-  selectUserId,
-} from "@host/lib/redux/selectors/userSelectors";
+import { selectAccessToken, selectAuthReady } from "@host/lib/redux/selectors/userSelectors";
 import {
   dismissDriftAlert,
   fetchDriftAlerts,
@@ -22,6 +18,7 @@ import {
   selectDriftAlertsStatus,
 } from "@host/features/agents/redux/usages/usages.selectors";
 import type { DriftAlertRow } from "@host/features/agents/redux/usages/usages.types";
+import { selectUserId } from "../../host/identity";
 
 export function useDriftAlerts() {
   const dispatch = useAppDispatch();

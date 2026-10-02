@@ -37,6 +37,7 @@ import overlayDataReducer from "./slices/overlayDataSlice";
 import voicePadReducer from "./slices/voicePadSlice";
 // The chat package owns its slices and mounts them under the same keys (P2).
 import { chatReducers } from "@ai-matrx/chat/store/slices";
+import { withAppChatHost } from "./chat-host-from-app";
 import windowManagerReducer from "./slices/windowManagerSlice";
 import { canvasReducer as canvasHostReducer } from "@ai-matrx/canvas";
 import textDiffReducer from "./slices/textDiffSlice";
@@ -339,7 +340,9 @@ export const createSlimRootReducer = () => {
   const combined = combineReducers(slimReducerMap);
   const withIdentityReset: typeof combined = (state, action) =>
     combined(applyIdentityReset(state, action), action);
-  return withIdentityReset;
+  // The chat package reads who is signed in and the active organization from its own
+  // `chatHost` slice; this keeps that slice equal to this app's state in the same reduction.
+  return withAppChatHost(withIdentityReset);
 };
 
 /**

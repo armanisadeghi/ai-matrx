@@ -4,7 +4,6 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import type { AgentShortcut } from "../types";
 import type { ShortcutFormData } from "@host/features/agent-shortcuts/types";
 import { agentShortcutToInsert, dbRowToAgentShortcut } from "../converters";
@@ -20,6 +19,7 @@ import {
   SHORTCUT_STORAGE_CUTOVER,
   shortcutTable,
 } from "@host/lib/supabase/shortcutStorage";
+import { selectUserId } from "../../../../host/identity";
 
 type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };
 

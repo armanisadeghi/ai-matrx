@@ -18,9 +18,9 @@ import { useState } from "react";
 import { callApi } from "@host/lib/api/call-api";
 import { useAppDispatch } from "../store/hooks";
 import { toast } from "../host/notify";
-import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
 import { getChatHost } from "../host/configure";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { isOrganizationSelectionCancelled } from "../host/org";
 
 export interface WorkflowStarterResult {
   workflow_id: string;

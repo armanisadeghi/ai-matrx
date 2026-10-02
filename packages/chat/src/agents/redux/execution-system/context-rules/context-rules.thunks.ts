@@ -33,9 +33,9 @@ import {
 } from "@ai-matrx/agents/context";
 import { surfaceUserStateActions } from "../../../../surfaces/redux/userStateSlice";
 import { surfaceUserStateService } from "../../../../surfaces/user-state/service";
-import { requireUserId } from "@host/utils/auth/getUserId";
 import { toast } from "../../../../host/notify";
-import { isOrganizationSelectionCancelled } from "@host/lib/organization/selection-cancelled";
+import { requireUserId } from "../../../../host/identity";
+import { isOrganizationSelectionCancelled } from "../../../../host/org";
 
 const EMPTY_ROWS: SavedContextRuleRows = {};
 

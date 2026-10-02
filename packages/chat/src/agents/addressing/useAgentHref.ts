@@ -19,7 +19,6 @@
 import { useContext, useEffect, useState, useSyncExternalStore } from "react";
 import { ReactReduxContext } from "react-redux";
 import type { ChatRootState } from "../../store/root-state";
-import { selectIsAdmin } from "@host/lib/redux/selectors/userSelectors";
 import {
   type AgentAddressViewer,
   agentDoorFor,
@@ -33,6 +32,7 @@ import {
   resolveAgentAddress,
   type AgentAddressResult,
 } from "./agentAddressCache";
+import { selectIsAdmin } from "../../host/identity";
 
 export interface UseAgentHrefInput {
   /** An agent id OR a version id — the hook figures out which. */

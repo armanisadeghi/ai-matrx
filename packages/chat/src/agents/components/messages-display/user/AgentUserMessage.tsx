@@ -56,11 +56,11 @@ import type {
   MessagePart,
   RenderBlockPayload,
 } from "@host/types/python-generated/stream-events";
-import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
 import {
   recordTranscriptEvent,
   shortId,
 } from "../../../redux/execution-system/messages/transcript-journal";
+import { selectIsSuperAdmin } from "../../../../host/identity";
 
 export function AgentUserMessageContent({
   conversationId,

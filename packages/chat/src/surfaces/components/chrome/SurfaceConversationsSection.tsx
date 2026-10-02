@@ -44,10 +44,10 @@ import { resumeConversation } from "../../../agents/redux/execution-system/thunk
 import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-feature-from-surface";
 import { useAgentNames } from "../../hooks/useAgentNames";
 import { useEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs.client";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
+import { selectUserId } from "../../../host/identity";
 
 const RECENT_COUNT = 2;
 /**

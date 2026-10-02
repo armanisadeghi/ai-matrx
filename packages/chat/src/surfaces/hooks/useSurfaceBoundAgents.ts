@@ -2,13 +2,13 @@
 
 import { useCallback, useState } from "react";
 import { useAppSelector } from "../../store/hooks";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import {
   fetchSurfaceMenuAgentsGrouped,
   peekSurfaceMenuAgentsGrouped,
   type SurfaceBoundAgentSection,
 } from "../services/surface-bound-agents.service";
 import { withMenuDeadline } from "@host/features/context-menu-v3/utils/menu-deadline";
+import { selectUserId } from "../../host/identity";
 
 export interface UseSurfaceBoundAgentsOptions {
   /**

@@ -37,7 +37,7 @@ import {
   peekSystemOrgId,
   resolveSystemOrgId,
 } from "@host/lib/organizations/systemOrg";
-import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
+import { ensureOrgId } from "../../host/org";
 
 const sb = () => createClient();
 

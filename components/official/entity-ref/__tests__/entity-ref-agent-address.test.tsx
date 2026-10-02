@@ -15,7 +15,9 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
-import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import { chatHostReducer } from "@ai-matrx/chat/store/chat-host.slice";
+import { withAppChatHost } from "@/lib/redux/chat-host-from-app";
 import { EntityRef } from "../EntityRef";
 import {
   __resetAgentAddressCache,
@@ -79,8 +81,21 @@ function renderRef(
   el: React.ReactElement,
   { isAdmin = true, adminLaneOpen = true } = {},
 ) {
+  // The app's own reading of who this is (lib/redux/chat-host-from-app): the chat package reads
+  // admin power from its `chatHost` slice, which the app keeps equal to `userAuth`.
   const store = configureStore({
-    reducer: { userAuth: () => ({ isAdmin, adminLaneOpen }) },
+    reducer: withAppChatHost(
+      combineReducers({
+        userAuth: () => ({
+          isAdmin,
+          adminLevel: isAdmin ? ("super_admin" as const) : null,
+          adminLaneOpen,
+        }),
+        userProfile: () => ({ userMetadata: {} }),
+        appContext: () => ({ organization_id: null }),
+        chatHost: chatHostReducer,
+      }),
+    ),
   });
   act(() => root.render(<Provider store={store}>{el}</Provider>));
 }

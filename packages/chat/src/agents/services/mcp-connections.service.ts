@@ -14,9 +14,9 @@ import { createClient } from "@host/utils/supabase/client";
 import type { McpToolSchema } from "./mcp-client/tool-discovery";
 import { AIDREAM_PRODUCTION_URL } from "@host/lib/api/endpoints";
 import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";
-import { ensureOrganizationForRequest } from "@host/lib/organization/organization-gate";
 import type { components } from "@host/types/python-generated/api-types";
 import type { AttachableAvailability } from "@host/features/connectors/attachable-resources";
+import { ensureOrganizationForRequest } from "../../host/org";
 
 function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;

@@ -15,13 +15,13 @@
 
 import { supabase } from "@host/utils/supabase/client";
 import { slugifyKey } from "@host/features/scopes/utils/slugify";
-import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import type { Database } from "@host/types/database.types";
 import type {
   AgentMemoryRow,
   CreateAgentMemoryInput,
   UpdateAgentMemoryInput,
 } from "../types";
+import { ensureOrgId } from "../../../../host/org";
 
 type AgentMemoryUpdate = Database["chat"]["Tables"]["agent_memory"]["Update"];
 

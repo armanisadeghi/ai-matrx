@@ -30,9 +30,9 @@ import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-feature-from-surface";
 import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../store/hooks";
-import { selectIsAdmin } from "@host/lib/redux/selectors/userSelectors";
 import { useOpenSurfaceContextWindow } from "../../../host/window-openers";
 import { useOpenSurfaceContextInspector } from "../../../host/window-openers";
+import { selectIsAdmin } from "../../../host/identity";
 
 export interface SurfaceAgentsPanelImplProps {
   className?: string;

@@ -53,7 +53,6 @@ import { fetchAgentsList } from "../../redux/agent-definition/thunks";
 import { callApi } from "@host/lib/api/call-api";
 import { resolveRunWait } from "@host/lib/api/run-wait";
 import { peekSelectedOrganizationId } from "@host/lib/api/organization-admission";
-import { getUserId } from "@host/utils/auth/getUserId";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { components } from "@host/types/python-generated/api-types";
 import { usePageCaptureContribution } from "@host/components/agent-copy/page-capture/usePageCapture";
@@ -61,6 +60,7 @@ import { useContextPreview, type ContextSelection } from "./useContextPreview";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@host/components/icons/domain-icons";
 import { formatCount } from "@ai-matrx/kit/format";
+import { getUserId } from "../../../host/identity";
 
 type ContextCompare = components["schemas"]["ContextCompare"];
 type CompareSide = components["schemas"]["ContextCompareSide"];

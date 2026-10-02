@@ -13,12 +13,12 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
-import { selectIsAuthenticated } from "@host/lib/redux/slices/userSlice";
 import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
 import { selectLatestConversationId } from "../../agents/redux/execution-system/selectors/aggregate.selectors";
 import { SmartAgentInput } from "../../agents/components/inputs/smart-input/SmartAgentInput";
 import { setInputPlaceholder } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { pushAppHref, replaceAppHref } from "@host/lib/deployment/navigate";
+import { selectIsAuthenticated } from "../../host/identity";
 
 const AgentPickerSheet = dynamic(
   () =>

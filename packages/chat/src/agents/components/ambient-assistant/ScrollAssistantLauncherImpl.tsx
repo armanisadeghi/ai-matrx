@@ -18,8 +18,6 @@ import { useOpenQuickChatSheet } from "../../../host/window-openers";
 import { useAuthGuardedAction } from "@host/features/auth/components/useAuthGuardedAction";
 import { useSurfaceRuntime } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import { useAppSelector } from "../../../store/hooks";
-import { selectIsAuthenticated } from "@host/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { CHAT_WINDOWS } from "../../../host/windows";
 import { useIsChatWindowOpen } from "../../../host/windows-react";
 import { cn } from "@ai-matrx/design-system";
@@ -27,6 +25,8 @@ import { IntelligenceIndicator } from "../../../surfaces/runtime/intelligence";
 import { OrganizationContextNotice } from "@host/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@host/features/organizations/useOrganizationRequired";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { selectIsAuthenticated } from "../../../host/identity";
+import { selectOrganizationId } from "../../../host/org";
 
 export interface ScrollAssistantLauncherImplProps {
   inputVariant?: "single-line" | "multiline";

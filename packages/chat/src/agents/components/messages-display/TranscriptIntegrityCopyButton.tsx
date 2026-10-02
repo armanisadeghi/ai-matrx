@@ -11,7 +11,6 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Stethoscope } from "lucide-react";
 import { useAppSelector, useAppStore } from "../../../store/hooks";
-import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
 import { selectMessageCount } from "../../redux/execution-system/messages/messages.selectors";
 import { selectStreamPhase } from "../../redux/execution-system/selectors/aggregate.selectors";
 import { writeClipboard } from "@host/components/agent-copy/clipboard";
@@ -22,6 +21,7 @@ import {
   buildTranscriptIntegrityReport,
   formatTranscriptIntegrityReport,
 } from "./transcript-integrity-report";
+import { selectIsSuperAdmin } from "../../../host/identity";
 
 interface TranscriptIntegrityCopyButtonProps {
   conversationId: string;

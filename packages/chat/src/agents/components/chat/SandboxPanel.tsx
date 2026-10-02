@@ -54,7 +54,6 @@ import {
 } from "@host/lib/sandbox/bound-target-view";
 import type { ComputeTarget } from "@host/hooks/sandbox/use-compute-targets";
 import { resolveSandboxCreateDefaults, type SandboxCreateDefaults } from "@host/lib/sandbox/sandbox-defaults";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { CloneRepoDialog } from "@host/features/code/views/sandboxes/CloneRepoDialog";
 import {
   getEffectiveStatus,
@@ -65,8 +64,9 @@ import {
 import { clearSandboxBindingCache } from "@host/lib/sandbox/active-binding";
 import { resolveBindingScope } from "@host/lib/sandbox/binding-scope";
 import type { SandboxInstance } from "@host/types/sandbox";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { ErrorNotice } from "@host/components/errors/ErrorNotice";
+import { selectUserId } from "../../../host/identity";
+import { selectOrganizationId } from "../../../host/org";
 
 interface SandboxPanelProps {
   conversationId: string | null;

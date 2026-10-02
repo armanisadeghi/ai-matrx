@@ -54,6 +54,20 @@ jest.mock("@host/features/organizations/service", () => ({
 jest.mock("@host/features/scopes/service/scopesService", () => ({
   scopesService: { getScopeTree: jest.fn() },
 }));
+// The identity seam (P7) carries the names this test stood in for above; the rest stay real.
+jest.mock("../../../../../host/identity", () => {
+  const standIns: Record<string, unknown> = {
+    ...(() => ({
+  ...jest.requireActual("@host/utils/auth/getUserId"),
+  requireUserId: () => PERSON,
+}))(),
+  };
+  const moved = ["selectUserId","selectIsAuthenticated","selectIsAdmin","selectIsSuperAdmin","getUserId","requireUserId","NotAuthenticatedError","isNotAuthenticatedError","hasBrowserSession"];
+  return {
+    ...jest.requireActual("../../../../../host/identity"),
+    ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
+  };
+});
 
 // eslint-disable-next-line no-restricted-syntax -- the real Surface A slice, as the gate dialog's own test uses it
 import appContext from "@host/lib/redux/slices/appContextSlice";

@@ -25,7 +25,6 @@ import {
 } from "../redux/agent-definition/thunks";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";
 import { selectCategoryById } from "../redux/agent-shortcut-categories/selectors";
-import { selectIsSuperAdmin } from "@host/lib/redux/slices/userSlice";
 import {
   selectModelLabelById,
   fetchModelOptions,
@@ -82,6 +81,7 @@ import { agentHref } from "@host/features/agents/browse/agentPaths";
 import { buildSystemAgentAiPayload } from "./buildSystemAgentAiPayload";
 import { useAgentAddressViewer } from "../addressing/useAgentHref";
 import { asClause } from "@ai-matrx/kit/text";
+import { selectIsSuperAdmin } from "../../host/identity";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
   if (!msg.content || !Array.isArray(msg.content)) return "";

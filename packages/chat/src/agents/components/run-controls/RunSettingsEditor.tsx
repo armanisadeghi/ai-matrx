@@ -43,7 +43,6 @@ import {
   selectIsSnapshot,
   selectReuseConversationId,
 } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectIsSuperAdmin } from "@host/lib/redux/slices/userSlice";
 import {
   clearApiOverrides,
   selectAiApiVersion,
@@ -66,6 +65,7 @@ import {
   selectMemoryDegraded,
 } from "../../redux/execution-system/observational-memory/observational-memory.selectors";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { selectIsSuperAdmin } from "../../../host/identity";
 
 interface RunSettingsEditorProps {
   conversationId: string;

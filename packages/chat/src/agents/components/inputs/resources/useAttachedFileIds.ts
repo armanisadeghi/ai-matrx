@@ -14,12 +14,12 @@
  */
 
 import { useAppSelector } from "../../../../store/hooks";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { useConversationMaterialized } from "../../../hooks/useConversationMaterialized";
 import { useContainerLinks } from "@host/features/scopes/hooks/useContainerLinks";
 import { selectInstanceResources } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
 import { parseAttachedDocumentMetadata } from "./attached-documents";
 import type { ManagedResource } from "../../../types/instance.types";
+import { selectOrganizationId } from "../../../../host/org";
 
 function fileIdOf(value: unknown): string | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;

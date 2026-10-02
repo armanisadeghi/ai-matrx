@@ -7,7 +7,6 @@
  */
 
 import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { selectResolvedBaseUrl } from "@host/lib/redux/slices/apiConfigSlice";
 import {
   selectAccessToken,
@@ -15,6 +14,7 @@ import {
 } from "@host/lib/redux/slices/userSlice";
 import type { ChatRootState } from "../../../store/root-state";
 import type { components } from "@host/types/python-generated/api-types";
+import { selectOrganizationId } from "../../../host/org";
 
 export type InvalidateAgentCacheResponse =
   components["schemas"]["InvalidateAgentCacheResponse"];

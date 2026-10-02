@@ -2,7 +2,6 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { Database, Json } from "@host/types/database.types";
 import { supabase } from "@host/utils/supabase/client";
-import { hasBrowserSession } from "@host/lib/supabase/hasBrowserSession";
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { waitForConversationPersisted } from "../conversations/conversation-persistence";
 import {
@@ -14,6 +13,7 @@ import {
   parseUiGates,
   type UiGates,
 } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import { hasBrowserSession } from "../../../../host/identity";
 
 type ConversationMetadataRow = Pick<
   Database["chat"]["Tables"]["conversation"]["Row"],

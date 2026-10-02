@@ -12,8 +12,8 @@
 
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { supabase } from "@host/utils/supabase/client";
-import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import { withOrganizationRefusalShown } from "@host/lib/organizations/organizationRefusalToast";
+import { ensureOrgId } from "../../host/org";
 
 /** A surface_key → state map for one (user, feature). '_default' is the global. */
 export type SurfaceStateRows = Record<string, Record<string, unknown>>;
@@ -124,7 +124,7 @@ export const surfaceUserStateService = {
         );
       }
 
-      const { ensureOrganizationContext } = await import("@host/lib/organization/organization-gate");
+      const { ensureOrganizationContext } = await import("../../host/org");
       const { data: created, error: insertError } = await table()
         .insert({
           user_id: userId,

@@ -16,7 +16,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@host/utils/supabase/client";
 import { tryWriteOne } from "@host/utils/supabase/writeOne";
 import { getClaimsUser } from "@host/utils/supabase/claimsUser";
-import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import {
   presentOrganizationRefusal,
   organizationRefusalMessage,
@@ -39,6 +38,7 @@ import type {
   VoiceId,
   VoiceTurn,
 } from "../types";
+import { ensureOrgId } from "../../host/org";
 
 /** `tools_enabled` in metadata is a flat name list — derive it from the set. */
 function toolNames(tools: RealtimeToolSet): string[] {

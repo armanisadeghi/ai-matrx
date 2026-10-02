@@ -29,6 +29,21 @@ jest.mock("@host/lib/local-engine/discovery", () => ({
   getCachedLocalEngine: () => null,
   supportsLocalAgentExecution: () => false,
 }));
+// The org seam (P7) carries the names this test stood in for above; the rest stay real.
+jest.mock("../../../../../host/org", () => {
+  const standIns: Record<string, unknown> = {
+    ...(() => ({
+  selectOrganizationId: (state: ChatRootState) =>
+    (state as unknown as { selectedOrganizationId: string | null })
+      .selectedOrganizationId,
+}))(),
+  };
+  const moved = ["selectOrganizationId","selectOrganizationName","ensureOrgId","getActiveOrgId","isOrganizationSelectionCancelled","ensureOrganizationContext","ensureOrganizationForRequest"];
+  return {
+    ...jest.requireActual("../../../../../host/org"),
+    ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
+  };
+});
 
 import { resolveBackendForConversation } from "../resolve-base-url";
 

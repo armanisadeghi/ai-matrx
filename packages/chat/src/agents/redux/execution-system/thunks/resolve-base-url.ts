@@ -8,7 +8,6 @@ import {
   selectAccessToken,
   selectFingerprintId,
 } from "@host/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import {
   resolveAgentSandboxRef,
   getEffectiveSandboxRef,
@@ -18,6 +17,7 @@ import {
   getCachedLocalEngine,
   supportsLocalAgentExecution,
 } from "@host/lib/local-engine/discovery";
+import { selectOrganizationId } from "../../../../host/org";
 
 export type BackendChannel =
   "global" | "override" | "ec2-dedicated" | "local-runtime";

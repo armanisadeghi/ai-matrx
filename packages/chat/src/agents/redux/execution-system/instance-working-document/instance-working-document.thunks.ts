@@ -32,7 +32,6 @@ import { applyContextDeltaToContent } from "./contextDelta";
 import { studioDocumentContentChanged } from "@host/features/transcript-studio/redux/slice";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { NotesAPI } from "@host/features/notes/service/notesApi";
-import { getActiveOrgId } from "@host/lib/organizations/activeOrg";
 import {
   refreshNoteContent,
   saveNoteField,
@@ -67,7 +66,6 @@ import {
 } from "./instance-working-document.selectors";
 import { selectIsCacheOnly } from "../conversations/conversations.selectors";
 import { waitForConversationPersisted } from "../conversations/conversation-persistence";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import {
   commitWorkingDocumentContent,
   getCxWorkingDocumentById,
@@ -78,6 +76,8 @@ import {
   unlinkDocumentFromConversation,
   updateCxWorkingDocumentContent,
 } from "./cx-working-document.service";
+import { selectUserId } from "../../../../host/identity";
+import { getActiveOrgId } from "../../../../host/org";
 
 interface ThunkConfig {
   state: ChatRootState;

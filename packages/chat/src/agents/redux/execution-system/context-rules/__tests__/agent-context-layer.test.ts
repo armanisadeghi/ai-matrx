@@ -35,6 +35,17 @@ jest.mock("@host/utils/supabase/client", () => ({
   },
 }));
 jest.mock("@host/utils/auth/getUserId", () => ({ requireUserId: () => "user-1" }));
+// The identity seam (P7) carries the names this test stood in for above; the rest stay real.
+jest.mock("../../../../../host/identity", () => {
+  const standIns: Record<string, unknown> = {
+    ...(() => ({ requireUserId: () => "user-1" }))(),
+  };
+  const moved = ["selectUserId","selectIsAuthenticated","selectIsAdmin","selectIsSuperAdmin","getUserId","requireUserId","NotAuthenticatedError","isNotAuthenticatedError","hasBrowserSession"];
+  return {
+    ...jest.requireActual("../../../../../host/identity"),
+    ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
+  };
+});
 
 import agentDefinitionReducer, {
   mergePartialAgent,

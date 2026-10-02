@@ -18,7 +18,6 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
-import { getUserId } from "@host/utils/auth/getUserId";
 import { operationFailed } from "@ai-matrx/kit/errors";
 import { ensureEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs";
 import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";
@@ -32,6 +31,7 @@ import {
   prependConversation,
 } from "./conversation-list.slice";
 import { upsertConversationIntoScopes } from "../conversation-history/slice";
+import { getUserId } from "../../../host/identity";
 
 /**
  * How many trashed rows the disclosure shows at once — the ORGANIZATION'S

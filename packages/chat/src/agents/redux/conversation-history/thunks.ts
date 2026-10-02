@@ -10,7 +10,6 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { getUserId } from "@host/utils/auth/getUserId";
 import { supabase } from "@host/utils/supabase/client";
 import type { ConversationListItem } from "../conversation-list/conversation-list.types";
 import { applyFavoritesFromUes } from "../conversation-list/conversation-list.thunks";
@@ -35,6 +34,7 @@ import {
   type SourceFacet,
 } from "./types";
 import { readListRpc } from "@host/lib/entity-list/readListRpc";
+import { getUserId } from "../../../host/identity";
 
 export interface FetchConversationHistoryArgs {
   scopeId: string;

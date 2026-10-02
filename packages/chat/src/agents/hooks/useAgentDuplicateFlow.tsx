@@ -11,7 +11,7 @@ import {
 } from "../components/shared/AgentDuplicateOutcomeDialog";
 import { isAdminSystemAgentsContext } from "../components/shared/agent-route-context";
 import { getUserMessage } from "@host/lib/api/errors";
-import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
+import { isOrganizationSelectionCancelled } from "../../host/org";
 
 interface UseAgentDuplicateFlowOptions {
   basePath?: string;

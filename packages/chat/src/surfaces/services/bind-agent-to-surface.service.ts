@@ -27,7 +27,6 @@ import {
   getSurfaceAncestry,
   surfaceAcceptsAgentBindings,
 } from "../runtime/registry";
-import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import {
   isValueMappingMap,
   sanitizeWritePolicyMap,
@@ -45,6 +44,7 @@ import { ensureOrgAvailability } from "@host/utils/permissions/service";
 // THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed
 // to store in a mapping, for every system that stores one.
 import { assertMappingsAreAnswerable } from "@host/features/mandates/provision-shapes";
+import { ensureOrgId } from "../../host/org";
 
 // ---------------------------------------------------------------------------
 // Types

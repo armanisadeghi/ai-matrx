@@ -14,7 +14,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "../../../../host/notify";
 import { useAppSelector } from "../../../../store/hooks";
-import { selectUserId } from "@host/lib/redux/slices/userSlice";
 import {
   createAgentMemory,
   listAgentMemories,
@@ -26,6 +25,7 @@ import {
   type AgentMemoryRow,
   type AgentMemoryScope,
 } from "../types";
+import { selectUserId } from "../../../../host/identity";
 
 export const ALL_MEMORIES_ID = "__all__" as const;
 export const NEW_MEMORY_ID = "__new__" as const;

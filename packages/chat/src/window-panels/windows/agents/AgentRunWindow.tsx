@@ -41,8 +41,6 @@ import type { ChatRootState } from "../../../store/root-state";
 import { toast } from "../../../host/notify";
 import { CHAT_WINDOWS } from "../../../host/windows";
 import { useChatManagedWindowCount } from "../../../host/windows-react";
-import { selectUserId } from "@host/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import {
   selectAgentById,
   selectAgentExecutionPayload,
@@ -88,6 +86,8 @@ import {
   AGENT_RUN_WINDOW_URL_MODE,
 } from "./agentRunWindowAddress";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { selectUserId } from "../../../host/identity";
+import { selectOrganizationId } from "../../../host/org";
 
 const SOURCE_FEATURE: SourceFeature = "agent-runner";
 

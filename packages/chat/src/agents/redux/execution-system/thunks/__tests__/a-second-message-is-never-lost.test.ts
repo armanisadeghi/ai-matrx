@@ -105,6 +105,20 @@ jest.mock("../../../../../host/notify", () => ({
 
 let __uuid = 0;
 jest.mock("uuid", () => ({ v4: () => `uuid-stub-${++__uuid}` }));
+// The org seam (P7) carries the names this test stood in for above; the rest stay real.
+jest.mock("../../../../../host/org", () => {
+  const standIns: Record<string, unknown> = {
+    ...(() => ({
+  isOrganizationSelectionCancelled: (error: unknown) =>
+    Boolean((error as { __cancelled?: boolean })?.__cancelled),
+}))(),
+  };
+  const moved = ["selectOrganizationId","selectOrganizationName","ensureOrgId","getActiveOrgId","isOrganizationSelectionCancelled","ensureOrganizationContext","ensureOrganizationForRequest"];
+  return {
+    ...jest.requireActual("../../../../../host/org"),
+    ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
+  };
+});
 
 import { configureStore, type UnknownAction } from "@reduxjs/toolkit";
 import conversationsReducer, {

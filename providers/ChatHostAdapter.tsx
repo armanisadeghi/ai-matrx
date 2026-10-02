@@ -7,8 +7,13 @@
 // in the package reads them yet (each port slice P4–P22 switches its call
 // sites), so mounting this changes no behaviour.
 //
-//   identity    → Redux userAuth/userProfile selectors (lane-aware admin level)
-//   org         → appContext active org; require = the canonical org gate
+//   identity    → Redux userAuth/userProfile (lane-aware admin level), read by
+//                 lib/redux/chat-host-from-app — the same reading the root
+//                 reducer uses to keep the package's `chatHost` slice equal
+//   org         → appContext active org (same reading); require = the
+//                 canonical gate: a write → `ensureOrgId` (joins boot, asks only
+//                 right after the person acted), an explicit ask →
+//                 `ensureOrganizationContext`
 //   server      → apiConfig's resolved aidream URL; bearer + X-Organization-Id
 //   notify      → lib/toast (`toast`, `recordToast`)
 //   diagnostics → the Error Inspector capture store (which persists through
@@ -50,20 +55,13 @@ import type {
 import { supabase } from "@/utils/supabase/client";
 import { useAppStore } from "@/lib/redux/hooks";
 import type { AppStore } from "@/lib/redux/store";
-import type { RootState } from "@/lib/redux/rootReducer";
+import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
 import {
-  selectAccessToken,
-  selectAdminLevel,
-  selectIsAuthenticated,
-  selectUserAvatarUrl,
-  selectUserEmail,
-  selectUserFullName,
-  selectUserId,
-} from "@/lib/redux/selectors/userSelectors";
-import {
-  selectOrganizationId,
-  selectOrganizationName,
-} from "@/lib/redux/slices/appContextSlice";
+  readAppChatIdentity,
+  readAppChatOrg,
+  sameChatIdentity,
+  sameChatOrg,
+} from "@/lib/redux/chat-host-from-app";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import {
   closeOverlay,
@@ -77,6 +75,8 @@ import {
 } from "@/lib/redux/slices/windowManagerSlice";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import type { OrganizationRequiredWireMembership } from "@/lib/organizations/organizationRequiredError";
 import { toast, recordToast } from "@/lib/toast";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { getAgentCatalog } from "@/lib/agents/catalog";
@@ -188,28 +188,10 @@ function toastOptions(options?: ChatNotifyOptions) {
 
 function reduxIdentity(store: AppStore): ChatIdentityPort {
   let last: ChatIdentity | null = null;
-  const read = (state: RootState): ChatIdentity => ({
-    userId: selectUserId(state),
-    isAuthenticated: selectIsAuthenticated(state),
-    adminLevel: selectAdminLevel(state),
-    email: selectUserEmail(state),
-    displayName: selectUserFullName(state) || null,
-    avatarUrl: selectUserAvatarUrl(state) || null,
-  });
   return {
     current() {
-      const next = read(store.getState());
-      if (
-        last &&
-        last.userId === next.userId &&
-        last.isAuthenticated === next.isAuthenticated &&
-        last.adminLevel === next.adminLevel &&
-        last.email === next.email &&
-        last.displayName === next.displayName &&
-        last.avatarUrl === next.avatarUrl
-      ) {
-        return last;
-      }
+      const next = readAppChatIdentity(store.getState());
+      if (last && sameChatIdentity(last, next)) return last;
       last = next;
       return next;
     },
@@ -222,15 +204,20 @@ function reduxOrg(store: AppStore): ChatOrgPort {
   let last: ChatOrganization | null = null;
   return {
     active() {
-      const state = store.getState();
-      const id = selectOrganizationId(state);
-      if (!id) return (last = null);
-      const name = selectOrganizationName(state);
-      if (last && last.id === id && last.name === name) return last;
-      return (last = { id, name });
+      const next = readAppChatOrg(store.getState());
+      if (sameChatOrg(last, next)) return last;
+      return (last = next);
     },
     subscribe: (listener) => store.subscribe(listener),
-    require: () => ensureOrganizationContext(),
+    require: (_reason, options) =>
+      options?.interactive === undefined && !options?.prefetched
+        ? ensureOrgId(null)
+        : ensureOrganizationContext({
+            interactive: options.interactive ?? true,
+            prefetchedOrganizations:
+              (options.prefetched as OrganizationRequiredWireMembership[] | null | undefined) ??
+              null,
+          }),
   };
 }
 

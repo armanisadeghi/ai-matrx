@@ -74,6 +74,17 @@ jest.mock("../../redux/agent-definition/selectors", () => ({
 jest.mock("../../redux/agent-definition/thunks", () => ({
   fetchAgentsList: () => ({ type: "agents/list" }),
 }));
+// The identity seam (P7) carries the names this test stood in for above; the rest stay real.
+jest.mock("../../../host/identity", () => {
+  const standIns: Record<string, unknown> = {
+    ...(() => ({ getUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7" }))(),
+  };
+  const moved = ["selectUserId","selectIsAuthenticated","selectIsAdmin","selectIsSuperAdmin","getUserId","requireUserId","NotAuthenticatedError","isNotAuthenticatedError","hasBrowserSession"];
+  return {
+    ...jest.requireActual("../../../host/identity"),
+    ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
+  };
+});
 
 import { callApi } from "@host/lib/api/call-api";
 import { ContextCompareView, focusLines } from "./ContextCompareView";

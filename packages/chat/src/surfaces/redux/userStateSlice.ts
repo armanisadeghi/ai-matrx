@@ -7,11 +7,11 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { ChatThunk } from "../../store/root-state";
-import { requireUserId } from "@host/utils/auth/getUserId";
 import {
   surfaceUserStateService,
   type SurfaceStateRows,
 } from "../user-state/service";
+import { requireUserId } from "../../host/identity";
 
 type LoadStatus = "idle" | "loading" | "ready" | "error";
 

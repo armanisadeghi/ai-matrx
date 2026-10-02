@@ -3,7 +3,7 @@
 import { CircleSlash, Loader2 } from "lucide-react";
 
 import { useAppSelector } from "../../../../store/hooks";
-import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
+import { selectIsSuperAdmin } from "../../../../host/identity";
 
 /**
  * The words for a turn that finished and produced no answer. The decision of

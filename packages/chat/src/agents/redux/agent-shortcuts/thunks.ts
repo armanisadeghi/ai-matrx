@@ -22,11 +22,9 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@host/utils/supabase/webDb";
 import { pgErrorToError } from "@ai-matrx/data";
-import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";
 import { toGlobalOwnershipRecord } from "@host/lib/organizations/globalOwnership";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { assignField } from "../shared/field-flags";
 import type {
   AgentShortcut,
@@ -1600,6 +1598,8 @@ import {
   mandateKeyOfShortcutRow,
 } from "@host/lib/supabase/shortcutStorage";
 import { storedMandateKey, type AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { selectUserId } from "../../../host/identity";
+import { ensureOrgId } from "../../../host/org";
 
 // Content-block CRUD moved to the canonical skl thunks
 // (features/agent-connections/redux/skl/thunks.ts —

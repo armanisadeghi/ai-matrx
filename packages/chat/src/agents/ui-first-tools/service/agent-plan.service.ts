@@ -8,12 +8,12 @@
  */
 
 import { db } from "./supabase-typed";
-import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import type {
   CxAgentPlanRow,
   CxPlanStatus,
 } from "../tools/types";
 import { writeOneRow } from "@host/utils/supabase/writeOne";
+import { ensureOrgId } from "../../../host/org";
 
 export interface CreateAgentPlanInput {
   conversation_id: string;

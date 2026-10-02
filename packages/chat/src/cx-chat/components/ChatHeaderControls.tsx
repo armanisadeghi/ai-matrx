@@ -15,10 +15,7 @@ import { Share2, Blocks, Camera } from "lucide-react";
 import dynamic from "next/dynamic";
 import { IconButton, PageHeaderPortal } from "../../host/chrome";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
-import {
-  selectIsAuthenticated,
-  selectIsSuperAdminDebugger,
-} from "@host/lib/redux/slices/userSlice";
+import { selectIsSuperAdminDebugger } from "@host/lib/redux/slices/userSlice";
 import {
   selectIsBlockMode,
   selectIsSnapshot,
@@ -30,6 +27,7 @@ import {
 import { usePathname, useSearchParams } from "next/navigation";
 import { ContextGaugeWidget } from "./ContextGaugeWidget";
 import { ConversationPageMenu } from "../../agents/components/chat/ConversationPageMenu";
+import { selectIsAuthenticated } from "../../host/identity";
 
 const ShareModal = dynamic(
   () =>

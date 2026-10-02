@@ -1,7 +1,6 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";
 import { duplicateAgent } from "../../redux/agent-definition/thunks";
 import { invalidateAgentCache } from "../../redux/agent-definition/invalidate-agent-cache.thunk";
@@ -57,7 +56,6 @@ import {
 } from "lucide-react";
 import { toast } from "../../../host/notify";
 import { cn } from "@ai-matrx/design-system";
-import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
@@ -84,7 +82,8 @@ import {
 } from "./agent-route-context";
 import { useAgentLifecycleActions } from "../../lifecycle/useAgentLifecycleActions";
 import { getUserMessage } from "@host/lib/api/errors";
-import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
+import { selectIsSuperAdmin } from "../../../host/identity";
+import { selectOrganizationId, isOrganizationSelectionCancelled } from "../../../host/org";
 
 const INTERFACE_VARIATIONS = [
   "Full Modal",

@@ -84,6 +84,19 @@ const mockEnsureOrgId = jest.fn(async () => "org-picked-by-the-person");
 jest.mock("@host/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: () => mockEnsureOrgId(),
 }));
+// The org seam (P7) carries the names this test stood in for above; the rest stay real.
+jest.mock("../../../../../host/org", () => {
+  const standIns: Record<string, unknown> = {
+    ...(() => ({
+  ensureOrgId: () => mockEnsureOrgId(),
+}))(),
+  };
+  const moved = ["selectOrganizationId","selectOrganizationName","ensureOrgId","getActiveOrgId","isOrganizationSelectionCancelled","ensureOrganizationContext","ensureOrganizationForRequest"];
+  return {
+    ...jest.requireActual("../../../../../host/org"),
+    ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
+  };
+});
 
 import { configureStore, type UnknownAction } from "@reduxjs/toolkit";
 import { launchAgentExecution } from "../launch-agent-execution.thunk";
@@ -104,6 +117,7 @@ import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreference
 import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
 import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
+import { initialChatHostState, type ChatHostState } from "../../../../../store/chat-host.slice";
 import { configureRecordingWindows } from "../../../../../host/__tests__/recording-windows";
 import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
 import { storedMandateKey } from "@host/features/mandates/mandate-key";
@@ -172,6 +186,13 @@ function makeStore(organizationId: string | null = "org-selected-for-test") {
         state: ReturnType<typeof appContextReducer> = initialAppContext,
         action: UnknownAction,
       ) => selectedAppContextReducer(state, action),
+      // The package reads the active organization from its own chatHost slice (P7).
+      chatHost: (
+        state: ChatHostState = {
+          ...initialChatHostState,
+          org: organizationId ? { id: organizationId, name: "Selected Test Org" } : null,
+        },
+      ) => state,
     },
   });
 }

@@ -21,7 +21,6 @@ import { AlertTriangle, FileText, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "../../../../host/notify";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { useConversationMaterialized } from "../../../hooks/useConversationMaterialized";
 import {
   useContainerLinks,
@@ -43,6 +42,7 @@ import {
 import type { Json } from "@host/types/database.types";
 import { selectInstanceResources } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
 import { removeResource } from "../../../redux/execution-system/instance-resources/instance-resources.slice";
+import { selectOrganizationId } from "../../../../host/org";
 
 function metaAsJson(
   existing: Json,

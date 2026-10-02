@@ -54,9 +54,6 @@ import { ConnectTimeoutError } from "@ai-matrx/data/net";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import type { Database } from "@host/types/database.types";
 import type { DbRpcRow } from "@host/types/supabase-rpc";
-import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
-import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import {
   selectModelById,
   type AIModelRecord,
@@ -118,6 +115,8 @@ import {
   agentDefinitionToUpdate,
   versionSnapshotRowToAgentDefinition,
 } from "./converters";
+import { selectUserId } from "../../../host/identity";
+import { selectOrganizationId, ensureOrgId } from "../../../host/org";
 
 type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };
 
