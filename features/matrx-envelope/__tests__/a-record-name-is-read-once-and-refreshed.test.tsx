@@ -18,7 +18,7 @@ import {
   invalidateReferenceLabel,
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
-import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 
 const ID = "4127fbc8-0000-4000-8000-0000000000c1";
 
