@@ -287,6 +287,8 @@ export interface RunControlsTabPanelProps {
   onResourceSelected: (resource: Resource) => void;
   onResourceDeselected?: (resource: Resource) => void;
   onClose: () => void;
+  /** Attach tab: after a pick, instead of onClose (see ResourcePickerMenu). */
+  onPicked?: () => void;
   isCreator: boolean;
   showCreatorPanel: boolean;
   showDebugAction: boolean;
@@ -303,6 +305,7 @@ export function RunControlsTabPanel({
   onResourceSelected,
   onResourceDeselected,
   onClose,
+  onPicked,
   isCreator,
   showCreatorPanel,
   showDebugAction,
@@ -346,6 +349,7 @@ export function RunControlsTabPanel({
             onResourceSelected={onResourceSelected}
             onResourceDeselected={onResourceDeselected}
             onClose={onClose}
+            onPicked={onPicked}
             attachmentCapabilities={attachmentCapabilities}
           />
         </div>

@@ -1,3 +1,0 @@
-features/agents/components/inputs/smart-input/RunControlsMenu.tsx.held	features/agents/components/inputs/smart-input/RunControlsMenu.tsx
-features/agents/components/inputs/smart-input/__tests__/sheet-attach-returns-to-index.test.tsx.held	features/agents/components/inputs/smart-input/__tests__/sheet-attach-returns-to-index.test.tsx
-features/agents/components/inputs/smart-input/run-controls-sheet-nav.ts.held	features/agents/components/inputs/smart-input/run-controls-sheet-nav.ts

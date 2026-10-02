@@ -260,9 +260,16 @@ export function RunControlsMenu({
               label: t.label,
               icon: t.icon,
               trailing: rc.tabTrailing(t.id),
-              content: (
+              // A pick in Attach (note, file, chat) returns to the tab list
+              // so the person keeps setting up the chat (PB-08, 2026-10-01).
+              content: ({ showIndex }: { showIndex: () => void }) => (
                 <div className="matrx-touch-targets contents">
-                  <RunControlsTabPanel {...panelProps} activeTab={t.id} fill />
+                  <RunControlsTabPanel
+                    {...panelProps}
+                    activeTab={t.id}
+                    fill
+                    onPicked={showIndex}
+                  />
                 </div>
               ),
             })),

@@ -164,6 +164,8 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-10-01** — Phone sheet: Attach tab content is a render function; a pick (note, file, chat) calls `showIndex` through `RunControlsTabPanel` `onPicked`, returning to Chat options instead of closing the sheet (PB-08). Needs `@ai-matrx/design-system` > 0.50.0. Guard: `smart-input/__tests__/sheet-attach-returns-to-index.test.tsx`.
+
 - **2026-09-30** — Tools owns only the registry/configured tool list; connections and attached repositories/files use the shared Connections panel in the cascading menu, classic attach menu, run-controls window, and mobile sheet. Latest-run MCP failures/counts remain visible there. Tabbed sheet headers stay fixed while their lists scroll.
 
 - **2026-09-30** — Context is ONE system (common-docs `context-delivery/RULES.md`): the context chip lists every value

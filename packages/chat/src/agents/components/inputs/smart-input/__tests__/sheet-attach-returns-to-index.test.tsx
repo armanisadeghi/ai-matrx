@@ -1,28 +1,38 @@
-matrx-auto-git-conflict-file-work-delete-this-when-resolved
-
-HELD FOR THE MOVE, written by scripts/sync-main.py
-File:        features/agents/components/inputs/smart-input/__tests__/sheet-attach-returns-to-index.test.tsx (new locally, git status '??')
-Copy:        THE HELD FILE (the working tree's version)
-Why:         held for chat package move (CPM-006); re-apply after GO. Its path is listed in .matrx/held-paths.txt, so the
-             sweep did not commit this edit there; the working tree was put back to HEAD.
-Done with it: the edit is re-applied at the file's new home, this .held file is deleted,
-and its line in _conflicts/README.md is deleted.
----------------- THE HELD FILE BELOW ----------------
 /**
  * PB-08 (2026-10-01): picking a note in the phone sheet's Attach tab closed
  * the whole "Chat options" sheet. It must return to the tab list instead;
- * every other tab's onClose still closes the sheet.
+ * leaving actions (knowledge bar, Connections, Cloud browser) still close it.
  */
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
-import { sheetPickTarget } from "../run-controls-sheet-nav";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("phone sheet: Attach returns to Chat options", () => {
-  it("routes only Attach picks back to the tab list", () => {
-    expect(sheetPickTarget("attach")).toBe("index");
-    expect(sheetPickTarget("connections")).toBe("close");
-    expect(sheetPickTarget("context")).toBe("close");
+  it("the picker ends picks with onPicked and keeps onClose for leaving", () => {
+    const picker = readFileSync(
+      join(process.cwd(), "features/resource-manager/resource-picker/ResourcePickerMenu.tsx"),
+      "utf8",
+    );
+    expect(picker).toContain("const finishPick = onPicked ?? onClose;");
+    // Picks: row-click resources, Google files, single-mode uploads, chat references.
+    expect(picker).toMatch(/const selectResource = async[\s\S]{0,300}finishPick\(\);/);
+    expect(picker).toMatch(/toast\.success\(`\$\{file\.name\} attached\.`\);\s*finishPick\(\);/);
+    expect(picker).toMatch(/selectionMode === "single"\) finishPick\(\);/);
+    expect(picker).toMatch(/appendConversationReference\([\s\S]{0,200}\);\s*finishPick\(\);/);
+    // Leaving: knowledge bar opens after the sheet closes.
+    expect(picker).toMatch(/onClose\(\);\s*openKnowledgeBar\(/);
+  });
+
+  it("the sheet hands showIndex to the Attach picker as onPicked, never onClose", () => {
+    const menu = readFileSync(join(__dirname, "../RunControlsMenu.tsx"), "utf8");
+    expect(menu).toMatch(/content: \(\{ showIndex \}[^)]*\) =>[\s\S]{0,400}onPicked=\{showIndex\}/);
+    expect(menu).not.toMatch(/onClose=\{showIndex\}/);
+    const panel = readFileSync(join(__dirname, "../RunControlsTabPanel.tsx"), "utf8");
+    expect(panel).toMatch(/<ResourcePickerMenu[\s\S]{0,400}onPicked=\{onPicked\}/);
   });
 
   it("showIndex from a tab's render function returns to the index, sheet open", async () => {

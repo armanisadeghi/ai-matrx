@@ -23,9 +23,6 @@ agent -> Needs Arman) with ` — <question> — <what was checked> — <who>` ad
 Its files stay as they are.
 
 ## Held files
-- _conflicts/2026-10-01-173648-held-for-move/features/agents/components/inputs/smart-input/RunControlsMenu.tsx.held — packages/chat/src/agents/components/inputs/smart-input/RunControlsMenu.tsx held for chat package move (CPM-006); re-apply after GO
-- _conflicts/2026-10-01-173648-held-for-move/features/agents/components/inputs/smart-input/__tests__/sheet-attach-returns-to-index.test.tsx.held — features/agents/components/inputs/smart-input/__tests__/sheet-attach-returns-to-index.test.tsx held for chat package move (CPM-006); re-apply after GO
-- _conflicts/2026-10-01-173648-held-for-move/features/agents/components/inputs/smart-input/run-controls-sheet-nav.ts.held — features/agents/components/inputs/smart-input/run-controls-sheet-nav.ts held for chat package move (CPM-006); re-apply after GO
 
 ## Needs a manager
 
