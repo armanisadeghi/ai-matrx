@@ -40,7 +40,6 @@
 -- email thread (no thread entity exists), an SMS thread (its access resolver reads created_by
 -- while the thread's owner is user_id).
 
-set local lock_timeout = '5s';
 set local statement_timeout = '120s';
 
 update platform.entity_types e

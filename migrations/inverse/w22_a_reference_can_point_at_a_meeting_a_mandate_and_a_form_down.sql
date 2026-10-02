@@ -9,7 +9,6 @@
 --   such a record is refused as pointing at a kind a record may not point at, which is exactly
 --   what running this brings back. Row locks on registry rows only.
 
-set local lock_timeout = '5s';
 set local statement_timeout = '120s';
 
 update platform.associations
