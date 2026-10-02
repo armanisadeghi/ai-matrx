@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * features/hr/time/timesheet/EmploymentPeriodDetail.tsx — ROUTE 29,
  * `/hr/time/timesheets/[employmentId]` (L3-54 … L3-57, L3-59, L3-64).
@@ -450,7 +451,7 @@ function EditHistoryPanel({ timesheet }: { timesheet: Timesheet }) {
                     {formatDateTimeInTz(entry.at, viewerTimeZone())}
                   </td>
                   <td className="py-1.5 pr-3">{entry.byName}</td>
-                  <td className="py-1.5 pr-3">{entry.field.replace(/_/g, " ")}</td>
+                  <td className="py-1.5 pr-3">{humanizeIdentifier(entry.field) || entry.field}</td>
                   <td className="py-1.5 pr-3 line-through decoration-2">
                     {entry.originalValue ?? "—"}
                   </td>

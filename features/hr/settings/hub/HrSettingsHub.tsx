@@ -19,6 +19,7 @@
 
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight } from "lucide-react";
@@ -62,7 +63,7 @@ export function HrSettingsHub() {
       cell: (row) => (
         <span className="min-w-0">
           <span className="block text-sm font-medium capitalize text-foreground">
-            {row.key.replace(/_/g, " ")}
+            {humanizeIdentifier(row.key) || row.key}
           </span>
           <span className="block font-mono text-[0.6875rem] text-muted-foreground">
             {row.full_key}
@@ -77,7 +78,7 @@ export function HrSettingsHub() {
       filter: "select",
       cell: (row) => (
         <span className="text-sm text-muted-foreground">
-          {row.feature.replace(/^hr\./, "").replace(/_/g, " ")}
+          {humanizeIdentifier(row.feature.replace(/^hr\./, "")) || row.feature}
         </span>
       ),
     },
@@ -273,7 +274,7 @@ export function HrSettingsHub() {
                 : "Nothing in the platform registry starts with hr. — which would mean HR has no configuration at all. Send this screen to whoever runs the platform.",
             }}
             detail={{
-              title: (row) => row.key.replace(/_/g, " "),
+              title: (row) => (humanizeIdentifier(row.key) || row.key),
               description: (row) => row.full_key,
               render: (row) =>
                 organizationId ? (

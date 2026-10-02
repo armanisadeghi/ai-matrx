@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Command-bar section presentation — filter digits, empty sentences, kind
  * labels, chip labels. Section keys and labels themselves come from the one
@@ -97,7 +98,7 @@ export function chipLabel(chip: QueryChip): string {
     case "type":
       return `Type: ${TYPE_CHIP_LABEL[chip.value] ?? chip.value}`;
     case "source_kind":
-      return SOURCE_KIND_CHIP_LABEL[chip.value] ?? `Kind: ${chip.value.replace(/_/g, " ")}`;
+      return SOURCE_KIND_CHIP_LABEL[chip.value] ?? `Kind: ${humanizeIdentifier(chip.value) || chip.value}`;
     case "origin":
       return `From: ${chip.value}`;
     case "within":

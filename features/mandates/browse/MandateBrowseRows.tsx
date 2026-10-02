@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/mandates/browse/MandateBrowseRows.tsx
 //
 // Compact-list view: one dense line per mandate. Same menu + row-open as the
@@ -64,7 +65,7 @@ export function MandateBrowseRows({
                   {row.label}
                 </a>
                 <Badge variant="outline" className="shrink-0 py-0 text-[10px]">
-                  {row.feature.replace(/_/g, " ")}
+                  {humanizeIdentifier(row.feature) || row.feature}
                 </Badge>
                 {/* WHOSE JOB THIS IS — the home (D-R3). On a blended list the
                     platform's jobs and an organization's own sit side by side,

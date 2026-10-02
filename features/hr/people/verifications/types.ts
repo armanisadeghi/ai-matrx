@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/hr/people/verifications/types.ts
 //
 // VERIFICATION LETTERS (SPEC-EMPLOYEES §2.2 route 17, §4.9).
@@ -205,7 +206,7 @@ export function denialBasisOf(row: HrVerificationLetterRow): string | null {
   if (!raw) return null;
   return (
     HR_VERIFICATION_DENIAL_LABELS[raw as HrVerificationDenialBasis] ??
-    raw.replace(/_/g, " ")
+    (humanizeIdentifier(raw) || raw)
   );
 }
 

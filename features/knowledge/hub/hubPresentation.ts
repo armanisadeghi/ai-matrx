@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * features/knowledge/hub/hubPresentation.ts — how the hub NAMES things: a
  * hit's kind label and icon (the registry's, never a second table), its
@@ -88,7 +89,7 @@ export function kindLabel(hit: Pick<KnowledgeHit, "entity" | "source_kind">): st
 export function tokenLabel(token: string): string {
   if (token === "tag") return "Tag";
   if (token === "conversation") return "Chat";
-  return tryGetEntityInfo(token)?.label ?? token.replace(/_/g, " ");
+  return tryGetEntityInfo(token)?.label ?? (humanizeIdentifier(token) || token);
 }
 
 /** A file's own type (the Files system's table): PDF, sheet, image, audio… by its name. */
@@ -134,7 +135,7 @@ export function isPlaceholderTitle(title: string | null | undefined): boolean {
 export function originLabel(origin: string | null | undefined): string {
   if (!origin) return "Not reported";
   // An origin this table has not named yet still reads as words ("transcription" → "Transcription"), never a raw code.
-  return ORIGIN_WORDS[origin] ?? origin.charAt(0).toUpperCase() + origin.slice(1).replace(/_/g, " ");
+  return ORIGIN_WORDS[origin] ?? (humanizeIdentifier(origin) || origin);
 }
 
 /** "Open full" — the item's own route (server href wins, then the registry). */
@@ -149,7 +150,7 @@ export function openFullHref(hit: KnowledgeHit): string | null {
 }
 
 export function dateLabel(relative: string | undefined): string {
-  return relative ? (RELATIVE_DATE_LABEL[relative] ?? relative.replace(/_/g, " ")) : "Custom range";
+  return relative ? (RELATIVE_DATE_LABEL[relative] ?? (humanizeIdentifier(relative) || relative)) : "Custom range";
 }
 
 export function hitKey(hit: Pick<KnowledgeHit, "entity" | "id">): string {

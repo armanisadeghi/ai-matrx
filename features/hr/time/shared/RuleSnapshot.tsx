@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * features/hr/time/shared/RuleSnapshot.tsx — the door behind every computed figure.
  *
@@ -401,7 +402,7 @@ function RulesSection({ calc }: { calc: CalcBlock }) {
                   {thresholds.map(([key, value]) => (
                     <div key={key} className="flex items-baseline justify-between gap-3">
                       <dt className="text-[11px] text-muted-foreground">
-                        {THRESHOLD_LABELS[key] ?? key.replace(/_/g, " ")}
+                        {THRESHOLD_LABELS[key] ?? (humanizeIdentifier(key) || key)}
                       </dt>
                       <dd className="text-[11px] font-medium">
                         {typeof value === "object"
@@ -454,7 +455,7 @@ function KeyValues({ values }: { values: Record<string, unknown> }) {
     <dl className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
       {entries.map(([key, value]) => (
         <div key={key} className="flex items-baseline justify-between gap-3 border-b border-border/60 py-1">
-          <dt className="text-xs text-muted-foreground">{key.replace(/_/g, " ")}</dt>
+          <dt className="text-xs text-muted-foreground">{humanizeIdentifier(key) || key}</dt>
           <dd className="text-right text-xs font-medium">
             {typeof value === "object" && value !== null
               ? JSON.stringify(value)

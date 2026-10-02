@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * features/hr/time/overtime/overtimeVocabulary.ts — the words this lane is allowed to use.
  *
@@ -128,7 +129,7 @@ export const THRESHOLD_AXIS_LABEL: Record<string, string> = {
 };
 
 export function thresholdAxisLabel(key: string): string {
-  return THRESHOLD_AXIS_LABEL[key] ?? key.replace(/_/g, " ");
+  return THRESHOLD_AXIS_LABEL[key] ?? (humanizeIdentifier(key) || key);
 }
 
 /**

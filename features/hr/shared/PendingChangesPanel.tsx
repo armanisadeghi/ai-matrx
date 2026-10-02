@@ -26,6 +26,7 @@
 
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -428,5 +429,5 @@ function inFlightTitle(request: HrInFlightRequest): string {
   const titled = readable
     ? readable.charAt(0).toUpperCase() + readable.slice(1)
     : "Request";
-  return request.state ? `${titled} — ${request.state.replace(/_/g, " ")}` : titled;
+  return request.state ? `${titled} — ${humanizeIdentifier(request.state) || request.state}` : titled;
 }

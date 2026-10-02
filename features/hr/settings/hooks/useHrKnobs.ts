@@ -13,6 +13,7 @@
 
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useEffect, useState } from "react";
 
 import { fetchHrKnobs } from "../../service";
@@ -42,7 +43,7 @@ function optionsFromAllowedValues(
   if (!Array.isArray(allowed) || allowed.length === 0) return undefined;
   const options = allowed
     .filter((entry) => typeof entry === "string" || typeof entry === "number")
-    .map((entry) => ({ value: String(entry), label: String(entry).replace(/_/g, " ") }));
+    .map((entry) => ({ value: String(entry), label: humanizeIdentifier(String(entry)) || String(entry) }));
   return options.length ? options : undefined;
 }
 
