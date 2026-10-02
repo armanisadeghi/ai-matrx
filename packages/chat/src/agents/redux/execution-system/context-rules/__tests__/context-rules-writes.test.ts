@@ -132,9 +132,12 @@ import {
   surfaceUserStateReducer,
 } from "../../../../../surfaces/redux/userStateSlice";
 import {
+  ensureOrganizationContext as askThroughTheAppGate,
   registerOrganizationPicker,
   settleOrganizationSelection,
 } from "@host/lib/organization/organization-gate";
+import { configureChat, _resetChatHostForTests } from "../../../../../host/configure";
+import { createFakeDb } from "../../../../../host/__tests__/fake-db";
 import {
   ensureContextRulesReady,
   reloadContextRules,
@@ -147,7 +150,13 @@ import { setStoreSingleton } from "../../../../../store/store-singleton";
 /** The app's own store, as the organization gate reads it: which workspace is selected. */
 function selectWorkspace(organizationId: string | null) {
   setStoreSingleton(
-    configureStore({ reducer: { appContext: (s = { organization_id: organizationId }) => s } }),
+    configureStore({
+      reducer: {
+        appContext: (s = { organization_id: organizationId }) => s,
+        // The package's own view of the active organization (P7), as the app keeps it.
+        chatHost: (s = { org: organizationId ? { id: organizationId, name: null } : null }) => s,
+      },
+    }),
   );
 }
 
@@ -176,7 +185,19 @@ beforeEach(() => {
   db.rows = [];
   toastError.mockClear();
   registerOrganizationPicker(null);
+  // The package asks for an organization through its host's org port; this app's port is its
+  // one gate (providers/ChatHostAdapter.tsx). A save makes the explicit ask.
+  configureChat({
+    db: createFakeDb().db,
+    org: {
+      active: () => null,
+      subscribe: () => () => undefined,
+      require: (_reason, options) =>
+        askThroughTheAppGate({ interactive: options?.interactive ?? true }),
+    },
+  });
 });
+afterEach(() => _resetChatHostForTests());
 
 describe("two tabs changing different values", () => {
   beforeEach(() => selectWorkspace(WORKSPACE_ID));

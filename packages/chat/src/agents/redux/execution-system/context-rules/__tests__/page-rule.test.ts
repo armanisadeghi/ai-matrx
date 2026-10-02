@@ -89,6 +89,8 @@ function firstTurnState(opts: {
       organization_id: "c41f9e20-3a7d-4b15-8e62-91d0a4b7f3c8",
       organization_name: "Harbor Point",
     },
+    // The package's own view of the active organization (P7), as the app keeps it.
+    chatHost: { org: { id: "c41f9e20-3a7d-4b15-8e62-91d0a4b7f3c8", name: "Harbor Point" } },
   } as unknown as ChatRootState;
 }
 

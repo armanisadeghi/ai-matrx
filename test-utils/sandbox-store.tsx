@@ -27,7 +27,10 @@
  */
 
 import type { ReactNode } from "react";
-import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import { chatHostReducer } from "@ai-matrx/chat/store/chat-host.slice";
+import { withAppChatHost } from "@/lib/redux/chat-host-from-app";
+import userProfileReducer from "@/lib/redux/slices/userProfileSlice";
 import { Provider } from "react-redux";
 import userAuthReducer, {
   setAdminLaneOpen,
@@ -52,12 +55,18 @@ export interface SandboxTestIdentity {
 }
 
 export function createSandboxTestStore(identity: SandboxTestIdentity) {
+  // `chatHost` is the chat package's view of who this is, kept equal to userAuth / appContext by
+  // the app's own root-reducer wrapper (lib/redux/chat-host-from-app) — the same in the app.
   const store = configureStore({
-    reducer: {
-      userAuth: userAuthReducer,
-      appContext: appContextReducer,
-      sandboxLifecycle: sandboxLifecycleReducer,
-    },
+    reducer: withAppChatHost(
+      combineReducers({
+        userAuth: userAuthReducer,
+        userProfile: userProfileReducer,
+        appContext: appContextReducer,
+        sandboxLifecycle: sandboxLifecycleReducer,
+        chatHost: chatHostReducer,
+      }),
+    ),
   });
   setSandboxTestIdentity(store, identity);
   return store;

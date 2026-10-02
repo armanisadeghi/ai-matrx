@@ -27,6 +27,8 @@ function storeState(opts: {
     userAuth: { accessToken: opts.accessToken },
     userProfile: { fingerprintId: opts.fingerprintId },
     appContext: { organization_id: opts.organizationId },
+    // The package's own view of the active organization (P7), as the app keeps it.
+    chatHost: { org: opts.organizationId ? { id: opts.organizationId, name: null } : null },
     conversations: {
       byConversationId: {
         [CONVERSATION]: { cacheOnly: true, organizationId: null },

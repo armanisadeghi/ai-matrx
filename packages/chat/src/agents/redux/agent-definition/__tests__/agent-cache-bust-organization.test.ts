@@ -38,6 +38,10 @@ function stateWith(overrides: {
       shellDataLoaded: true,
     },
     appContext: { organization_id: overrides.organizationId ?? null },
+    // The package's own view of the active organization (P7), as the app keeps it.
+    chatHost: {
+      org: overrides.organizationId ? { id: overrides.organizationId, name: null } : null,
+    },
   } as unknown as ChatRootState;
 }
 
