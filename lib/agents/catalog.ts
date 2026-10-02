@@ -10,10 +10,11 @@
 // retries, validates, or branches on package behaviour:
 //
 //   client    → `@/utils/supabase/client`, the app's ONE browser singleton.
-//   identity  → `requireUserId` from `@/utils/auth/getUserId`, the app's ONE
-//               synchronous Redux identity read (the same one the
-//               `@ai-matrx/associations` host binds). It THROWS when there is
-//               no session — never a silent anonymous read.
+//   identity  → `requireUserId` + `getUserId` from `@/utils/auth/getUserId`,
+//               the app's ONE synchronous Redux identity read (the same one
+//               the `@ai-matrx/associations` host binds). `getUserId` answers
+//               null for a signed-out visitor, so the package skips the
+//               catalogue read instead of firing a refused one.
 //   transport → ONE `createMatrxTransport(store.getState)`, the same
 //               production pipeline `useRunAgent` and the execution system
 //               ride. Needed only because a picker may pass
@@ -38,7 +39,7 @@ import {
   type AgentCatalogClient,
 } from "@ai-matrx/agents/catalog";
 import { supabase } from "@/utils/supabase/client";
-import { requireUserId } from "@/utils/auth/getUserId";
+import { getUserId, requireUserId } from "@/utils/auth/getUserId";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -109,7 +110,10 @@ export function getAgentCatalog(options?: {
     // narrows this app's generated `Database` generics onto the package's
     // deliberately generic seam (it types over `unknown` on purpose).
     client: supabase as unknown as AgentCatalogClient,
-    identity: { requireUserId },
+    // `getUserId` (0.22.0) tells the package a signed-out visitor is a
+    // STATE: no `agx_get_list_full` read (anon cannot execute it) and no
+    // "identity.requireUserId() threw" capture on every guest page.
+    identity: { requireUserId, getUserId },
     // Stars are per-person state in `platform.user_entity_state`, read/written
     // through the app's ONE `ues_*` chokepoint (`favoritesService`, bound in
     // `features/scopes/service/favoritesService.ts`). Passing it here means
