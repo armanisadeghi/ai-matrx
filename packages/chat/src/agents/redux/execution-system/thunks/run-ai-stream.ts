@@ -89,6 +89,7 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import {
   isLiveStreamUnavailable,
   readLiveRunRejoin,
+  readMatrxErrorCodeFromMessage,
   type MatrxLiveRunRejoin,
 } from "@ai-matrx/agents/matrx";
 import { extractErrorMessage } from "@host/utils/errors";
@@ -585,11 +586,8 @@ export async function runAiStream(
           errorCode === "conflict" ||
           errorCode === "not_found"
         ) {
-          const m =
-            /^(resume_conflict|not_resumable|outstanding_delegated_calls|user_request_not_found|run_in_flight):/.exec(
-              serverMessage,
-            );
-          if (m) errorCode = m[1];
+          const prefixed = readMatrxErrorCodeFromMessage(serverMessage);
+          if (prefixed) errorCode = prefixed;
           // Turn-lock 409s may arrive with the code only in the message body
           // (envelope variants) — the phrase is distinctive enough to trust.
           if (
