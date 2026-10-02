@@ -39,9 +39,25 @@ export function paintLayers(instance: string) {
   };
 }
 
-/** The stylesheet the painter's layer names need (semantic tokens only). */
+/**
+ * The class on the element(s) an instance paints in. Its highlight rules are
+ * scoped to it: an unscoped `::highlight(name)` rule applies to EVERY element
+ * on the page, so each rendered document (every chat message, note, document
+ * body) added ten page-wide rules and the style cost grew with documents ×
+ * elements — one restyle (a menu opening) took ~400 ms per long chat on a
+ * board and ~21 s with five, enough to crash the tab (2026-10-02). With an
+ * ancestor class Chrome's bloom filter rejects every element outside the
+ * document at once.
+ */
+export function paintScopeClass(instance: string): string {
+  return `mx-annot-scope-${instance}`;
+}
+
+/** The stylesheet the painter's layer names need (semantic tokens only), scoped to the instance's root. */
 export function paintCss(instance: string): string {
   const L = paintLayers(instance);
+  const scope = `.${paintScopeClass(instance)}`;
+  const at = (name: string) => `${scope}::highlight(${name}),${scope} ::highlight(${name})`;
   const colorVar: Record<string, string> = {
     yellow: "var(--color-yellow-300, #fde047)",
     green: "var(--color-green-300, #86efac)",
@@ -50,15 +66,15 @@ export function paintCss(instance: string): string {
     purple: "var(--color-violet-300, #c4b5fd)",
   };
   const rules = HIGHLIGHT_COLORS.map(
-    (c) => `::highlight(${L.color(c)}){background-color:color-mix(in srgb, ${colorVar[c]} 55%, transparent);color:inherit;}`,
+    (c) => `${at(L.color(c))}{background-color:color-mix(in srgb, ${colorVar[c]} 55%, transparent);color:inherit;}`,
   );
   rules.push(
-    `::highlight(${L.comment}){background-color:color-mix(in srgb, var(--primary) 16%, transparent);text-decoration:underline;text-decoration-color:var(--primary);text-decoration-thickness:2px;}`,
-    `::highlight(${L.suggestion}){text-decoration:line-through;text-decoration-color:var(--destructive);text-decoration-thickness:2px;background-color:color-mix(in srgb, var(--destructive) 10%, transparent);}`,
-    `::highlight(${L.link}){text-decoration:underline dotted;text-decoration-color:var(--primary);text-decoration-thickness:2px;}`,
+    `${at(L.comment)}{background-color:color-mix(in srgb, var(--primary) 16%, transparent);text-decoration:underline;text-decoration-color:var(--primary);text-decoration-thickness:2px;}`,
+    `${at(L.suggestion)}{text-decoration:line-through;text-decoration-color:var(--destructive);text-decoration-thickness:2px;background-color:color-mix(in srgb, var(--destructive) 10%, transparent);}`,
+    `${at(L.link)}{text-decoration:underline dotted;text-decoration-color:var(--primary);text-decoration-thickness:2px;}`,
     // A refused or not-yet-confirmed mark must never look saved.
-    `::highlight(${L.unsaved}){text-decoration:underline wavy;text-decoration-color:var(--destructive);background-color:transparent;}`,
-    `::highlight(${L.active}){background-color:color-mix(in srgb, var(--primary) 30%, transparent);}`,
+    `${at(L.unsaved)}{text-decoration:underline wavy;text-decoration-color:var(--destructive);background-color:transparent;}`,
+    `${at(L.active)}{background-color:color-mix(in srgb, var(--primary) 30%, transparent);}`,
   );
   return rules.join("\n");
 }

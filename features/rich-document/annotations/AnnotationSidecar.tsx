@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { AnchorBuildError, buildTextAnchor } from "./anchor";
 import { projectSource, rangeToSource, sourceOffsetAtPoint, type SourceProjection } from "./projection";
-import { paintCss, useSidecarPaint } from "./useSidecarPaint";
+import { paintCss, paintScopeClass, useSidecarPaint } from "./useSidecarPaint";
 import { useAnnotationSidecar, type AnnotationSidecarApi } from "./useAnnotationSidecar";
 import { MentionComposer } from "./MentionComposer";
 import { LinkRecordSheet } from "./LinkRecordSheet";
@@ -128,7 +128,9 @@ export function AnnotationSidecarProvider({
         },
       }}
     >
-      <style>{paintCss(instance)}</style>
+      {/* Only a document with something to paint carries highlight rules —
+          most rendered documents (chat messages) have none. */}
+      {api.state.items.length > 0 && <style>{paintCss(instance)}</style>}
       {children}
     </SidecarContext.Provider>
   );
@@ -177,6 +179,13 @@ function useAnnotatedRoot(root: HTMLElement | null, passageActions?: readonly Ac
   useSidecarPaint(root, source.body, api.state.items, instance, activeKey, (p) => {
     projection.current = p;
   });
+  // The instance's highlight rules apply only inside this root (paintScopeClass).
+  useEffect(() => {
+    if (!root) return;
+    const cls = paintScopeClass(instance);
+    root.classList.add(cls);
+    return () => root.classList.remove(cls);
+  }, [root, instance]);
 
   // Reveal: scroll a resolved item's first painted range into view.
   useEffect(() => {

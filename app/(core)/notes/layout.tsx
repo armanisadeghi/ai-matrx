@@ -37,19 +37,21 @@ export const metadata = createRouteMetadata("/notes", {
 });
 
 const highlightStyles = `
-/* CSS Highlights API for the markdown preview panel. */
-::highlight(notes-find-match) {
+/* CSS Highlights API for the markdown preview panel — scoped to the notes
+   root: an unscoped ::highlight() rule is computed for every element on the
+   page (features/rich-document/annotations/__tests__/highlight-rules-scoped). */
+.notes-root ::highlight(notes-find-match) {
   background-color: hsl(48 100% 60% / 0.45);
   color: inherit;
 }
-::highlight(notes-find-match-active) {
+.notes-root ::highlight(notes-find-match-active) {
   background-color: hsl(24 100% 55% / 0.7);
   color: inherit;
 }
-.dark ::highlight(notes-find-match) {
+.dark .notes-root ::highlight(notes-find-match) {
   background-color: hsl(48 100% 55% / 0.35);
 }
-.dark ::highlight(notes-find-match-active) {
+.dark .notes-root ::highlight(notes-find-match-active) {
   background-color: hsl(24 100% 55% / 0.55);
 }
 `;

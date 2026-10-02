@@ -36,6 +36,15 @@ export function RenderedFindBar({ rootRef, onClose, label = "Find in document", 
   const instance = useId().replace(/[^a-zA-Z0-9_-]/g, "_");
   const allHighlight = `matrx-rendered-find-${instance}`;
   const activeHighlight = `${allHighlight}-active`;
+  // The rules apply only inside the searched content (an unscoped
+  // `::highlight()` rule is computed for every element on the page).
+  const scope = `${allHighlight}-scope`;
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    root.classList.add(scope);
+    return () => root.classList.remove(scope);
+  }, [rootRef, scope]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -81,7 +90,7 @@ export function RenderedFindBar({ rootRef, onClose, label = "Find in document", 
   const validRegex = !options.regex || (() => { try { new RegExp(query); return true; } catch { return false; } })();
 
   return <div role="search" aria-label={label} data-find-ignore="" className={`flex min-w-0 items-center gap-1 rounded-lg border border-border bg-card px-2 py-1 shadow-sm ${compact ? "flex-nowrap" : "flex-wrap"}`}>
-    <style>{`::highlight(${allHighlight}) { background-color: rgb(250 204 21 / .5); color: inherit; } ::highlight(${activeHighlight}) { background-color: rgb(249 115 22 / .85); color: white; }`}</style>
+    <style>{`.${scope}::highlight(${allHighlight}), .${scope} ::highlight(${allHighlight}) { background-color: rgb(250 204 21 / .5); color: inherit; } .${scope}::highlight(${activeHighlight}), .${scope} ::highlight(${activeHighlight}) { background-color: rgb(249 115 22 / .85); color: white; }`}</style>
     <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
     <input ref={inputRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => {
       if (event.key === "Enter") { event.preventDefault(); step(event.shiftKey ? -1 : 1); }
