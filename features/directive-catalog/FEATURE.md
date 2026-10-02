@@ -109,6 +109,12 @@ alias map. Consequences here:
 
 ## Change Log
 
+- 2026-10-02 — G5 review: `humanFormFields` drops fields the record sets itself (a `*_at`
+  date-time such as `completed_at`, and `timezone`) — the admin builder still shows them; a
+  person field (`user_profile`, e.g. `assignee_id`) renders the people search
+  (`TaskAssigneePicker`) instead of a generic record list; `formTitleColumn` (identityPicker)
+  falls back to the registry title column so a note's `label` always reads "Title" (picker and
+  builder). Guard: `__tests__/a-person-form-asks-only-what-a-person-sets.test.tsx`.
 - 2026-10-02 — G3 review: the header badge says where calls LAND (`lib/api/server-identity.ts`
   `describeServerTarget` — "Clone" on the clone preview, never the slot name "production");
   Create/Update/Delete ask the SAME confirm the action cards use (`matrxDirectiveHost.ask`) before
