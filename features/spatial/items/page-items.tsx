@@ -59,6 +59,15 @@ function pagePathOf(source: NodeSource): string | null {
   return source.kind === "entity" && source.entity === PAGE_ENTITY ? source.id : null;
 }
 
+/** The framed page's own title (without the app suffix), or null when unreadable. */
+function frameTitle(frame: HTMLIFrameElement): string | null {
+  try {
+    return frame.contentDocument?.title?.split(" — ")[0]?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 function PageBody({ source, title, interacting, onSource }: ItemBodyProps) {
   const path = pagePathOf(source);
   if (!path) return null;
@@ -72,12 +81,8 @@ function PageBody({ source, title, interacting, onSource }: ItemBodyProps) {
         className={cn("absolute inset-0 h-full w-full max-w-none border-0", !interacting && "pointer-events-none")}
         onLoad={(e) => {
           // The page names itself; the tile follows (same origin, readable).
-          try {
-            const named = e.currentTarget.contentDocument?.title?.split(" — ")[0]?.trim();
-            if (named && named !== title) onSource(source, named);
-          } catch {
-            // Not readable: keep the address-derived title.
-          }
+          const named = frameTitle(e.currentTarget);
+          if (named && named !== title) onSource(source, named);
         }}
       />
     </div>
