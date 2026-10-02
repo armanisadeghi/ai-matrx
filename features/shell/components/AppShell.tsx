@@ -27,6 +27,12 @@ import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCook
 import { ShellChromeRouteSync } from "@/features/shell/components/ShellChromeMode";
 import { shellChromeAttributes } from "@/features/shell/constants/canvas-chrome-routes";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
+import { cookies } from "next/headers";
+import { ShellChatDock } from "@ai-matrx/chat/canvas/workspace/ShellChatDock";
+import { shellChatFamily, shellChatWorkspaceId } from "@ai-matrx/chat/canvas/workspace/shell-chat-route";
+import { CANVAS_CHAT_SIZES, CANVAS_PANEL_IDS, canvasChatCookieName } from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
+import { readSidePanelWidth } from "@/components/official/side-panel/side-panel-width.server";
+import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 import { ShellCanvasColumn } from "@/features/canvas/host/ShellCanvasColumn";
 import type { UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
@@ -50,7 +56,7 @@ interface AppShellProps {
   sidebarExpanded: boolean;
 }
 
-export default function AppShell({
+export default async function AppShell({
   children,
   initialReduxState,
   userData,
@@ -59,6 +65,15 @@ export default function AppShell({
   sidebarExpanded,
 }: AppShellProps) {
   const settingsRoute = isUserSettingsPath(pathname);
+  // The chat dock's first paint is the person's own remembered choice for this
+  // page family (null = not chosen yet → the dock applies the wide-screen default).
+  const chatCookie = isAuthenticated
+    ? (await cookies()).get(canvasChatCookieName(shellChatWorkspaceId(shellChatFamily(pathname))))?.value
+    : undefined;
+  const chatInitialOpen = chatCookie === undefined ? null : !chatCookie.endsWith(":closed");
+  const [chatWidth, composerMode] = isAuthenticated
+    ? await Promise.all([readSidePanelWidth(CANVAS_PANEL_IDS.chat, CANVAS_CHAT_SIZES), readComposerModeCookie()])
+    : [undefined, null];
   return (
     <Providers initialReduxState={initialReduxState}>
       <SettingsRouteProvider>
@@ -87,6 +102,15 @@ export default function AppShell({
           <ShellUserBlock userData={userData} isAuthenticated={isAuthenticated} />
 
           <main className="shell-main">{children}</main>
+
+          {/* A direct child of .shell-root: it publishes --shell-chat-w here. */}
+          <ShellChatDock
+            initialOpen={chatInitialOpen}
+            initialWidth={chatWidth}
+            initialMode={composerMode}
+            signedIn={isAuthenticated}
+            initialPathname={pathname}
+          />
 
           <MobileSideSheet
             isAuthenticated={isAuthenticated}

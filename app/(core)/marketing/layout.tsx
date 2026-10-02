@@ -44,20 +44,5 @@ export default async function MarketingLayout({
     );
   }
 
-  // Signed in: the chat beside the module, as on the Board and Education
-  // (SIGNED_IN_CHAT_WORKSPACE_ROUTES gives the first paint canvas chrome). The
-  // sidebar keeps Marketing's own menu as the domain panel; marketing pages'
-  // <PageHeader> portals into the workspace header.
-  const [initialLayout, initialMode] = await Promise.all([
-    readCanvasWorkspaceLayout(MARKETING_WORKSPACE_ID),
-    readComposerModeCookie(),
-  ]);
-  return (
-    <ChatCanvasWorkspace
-      id={MARKETING_WORKSPACE_ID}
-      initialLayout={initialLayout}
-      initialMode={initialMode}
-      canvas={<div className="h-full min-h-0 overflow-y-auto">{children}</div>}
-    />
-  );
+  return children;
 }

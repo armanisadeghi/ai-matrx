@@ -1,6 +1,7 @@
 import HamburgerButton from "./header-left-menu/HamburgerButton";
 import { HeaderControlSet } from "./HeaderControlSet";
 import { HeaderCrowdingGuard } from "./HeaderCrowdingGuard";
+import ShellChatToggle from "./ShellChatToggle";
 
 interface HeaderProps {
   isAuthenticated: boolean;
@@ -18,6 +19,7 @@ export default function Header({ isAuthenticated }: HeaderProps) {
   return (
     <header className="shell-header">
       <HamburgerButton />
+      {isAuthenticated ? <ShellChatToggle /> : null}
       <HeaderCrowdingGuard />
 
       <div className="shell-header-center" id="shell-header-center" />

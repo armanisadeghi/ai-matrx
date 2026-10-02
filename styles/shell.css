@@ -422,8 +422,10 @@
   inset: 0;
   overflow: clip; /* 'clip' doesn't create a stacking context like 'hidden' does — backdrop-filter works through it in Chromium */
   display: grid;
-  /* Default: collapsed sidebar on desktop */
-  grid-template-columns: var(--shell-sidebar-w) 1fr;
+  /* Default: collapsed sidebar on desktop. The first track also carries the
+     shell chat dock's width (--shell-chat-w, published by ShellChatDock; 0px
+     when closed), so the header and page sit right of both. */
+  grid-template-columns: calc(var(--shell-sidebar-w) + var(--shell-chat-w, 0px)) 1fr;
   grid-template-rows: var(--shell-header-h) 1fr;
   grid-template-areas:
     "sidebar header"
@@ -510,7 +512,7 @@
    A child-combinator :has is re-checked only when .shell-root's own children
    change, never on insertions deeper in the app (PAGE-WIDE :has above). */
 .shell-root:has(> #shell-sidebar-toggle:checked) {
-  grid-template-columns: var(--shell-sidebar-w-expanded) 1fr;
+  grid-template-columns: calc(var(--shell-sidebar-w-expanded) + var(--shell-chat-w, 0px)) 1fr;
 }
 
 /* Sidebar brand section */
@@ -1053,7 +1055,7 @@ button.shell-nav-flyout-item {
 @media (min-width: 1024px) {
   .shell-root[data-settings-route],
   .shell-root[data-settings-route]:has(> #shell-sidebar-toggle:checked) {
-    grid-template-columns: 15rem 1fr;
+    grid-template-columns: calc(15rem + var(--shell-chat-w, 0px)) 1fr;
   }
 
   .shell-root[data-settings-route] .shell-sidebar,
@@ -2783,6 +2785,49 @@ html[data-board-embed] .shell-main {
      target is wider than its pill by --matrx-tap-gap, half of it on each side,
      so the gutter subtracts that half — the targets themselves stay touching. */
   padding-right: max(0px, calc(var(--shell-edge-gutter) - var(--matrx-tap-gap, 0px) / 2));
+}
+
+/* THE SHELL CHAT DOCK (ShellChatDock): fixed beside the sidebar, full height,
+   following the sidebar's width in both states. Desktop only; phones open the
+   chat as a sheet. */
+.shell-chat-dock {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: var(--shell-sidebar-w);
+  z-index: 29;
+  transition: left 600ms var(--shell-ease-smooth);
+}
+
+.shell-root > #shell-sidebar-toggle:checked ~ .shell-chat-dock,
+.shell-root > #shell-sidebar-toggle:checked ~ * .shell-chat-dock {
+  left: var(--shell-sidebar-w-expanded);
+}
+
+.shell-root[data-settings-route] .shell-chat-dock {
+  left: 15rem;
+}
+
+/* Beside an open chat on a narrower desktop, a domain's menu folds to the
+   strip so the page keeps its room; closing the chat brings it back. */
+@media (min-width: 1024px) and (max-width: 1599px) {
+  .shell-root[data-domain-panel][data-shell-chat-open] {
+    --shell-sidebar-w-expanded: var(--shell-sidebar-w);
+  }
+
+  .shell-root[data-domain-panel][data-shell-chat-open] .shell-sidebar-route-nav {
+    visibility: hidden;
+  }
+}
+
+/* The header's chat button: present only where the shell chat can open. */
+.shell-chat-toggle {
+  display: none;
+  flex-shrink: 0;
+}
+
+.shell-root[data-shell-chat-available] .shell-chat-toggle {
+  display: flex;
 }
 
 /* The phone's left control gets the same gutter, so both ends match there

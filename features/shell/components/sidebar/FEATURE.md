@@ -86,6 +86,8 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 
 ## Change log
 
+- `2026-10-02` — Claude: THE CHAT ON EVERY PAGE. `ShellChatDock` (packages/chat/src/canvas/workspace) is mounted once by AppShell beside the sidebar; it publishes `--shell-chat-w`, which the grid's first track adds. Open/closed is remembered per page family (cookie `canvas-workspace:page:<family>:chat`, server-read); with no choice it opens at ≥1440px. Header chat button on the left (`ShellChatToggle`) and ⌘\. Stands aside on /chat and canvas-workspace pages (Board, Education). Beside an open chat at 1024–1599px a domain panel folds to the strip. Marketing's own workspace wrap removed.
+
 - `2026-10-01` — Claude: THE DOMAIN PANEL. A route-menu entry with `layout: "panel"` keeps the main menu as the icon strip and puts its own menu beside it on desktop (no flip); the sidebar toggle opens/closes the panel. `.shell-root[data-domain-panel]` (AppShell + NavActiveSync) redefines `--shell-sidebar-w-expanded` as strip + panel so every width rule follows. Pilot: Marketing. Phones keep the drawer flip for now. Same day: the panel runs full height from the top (the sidebar becomes a two-column grid, `.shell-sidebar-nav` is `display: contents`) and opens with `.shell-domain-panel-title`; Marketing is wrapped in `ChatCanvasWorkspace` (`SIGNED_IN_CHAT_WORKSPACE_ROUTES`) so the chat sits beside its menu, as on the Board.
 
 - `2026-09-19` — Cursor: group highlight is ownership-only. A flyout shortcut into another module (AI Work → `/chat/new`) no longer lights the parent beside the real owner; Agents declares `/agent-connections` as its alternate namespace.
