@@ -59,16 +59,15 @@ export function ContextLensBar({
             type="button"
             onClick={onOpenPreview}
             disabled={!onOpenPreview}
-            aria-label="See exactly what the agent receives with your current context"
+            aria-label="See exactly what the agent receives"
             className={cn(
-              "inline-flex h-5 items-center gap-1 rounded-full px-1.5 transition-colors",
+              "inline-flex h-5 items-center rounded-full px-1.5 transition-colors",
               previewOpen
                 ? "bg-primary/15 text-primary"
                 : "text-primary/80 group-hover:bg-primary/10 group-hover:text-primary",
             )}
           >
             <Eye className="h-3.5 w-3.5" />
-            <span className="font-medium">Context</span>
           </button>
         </TooltipTrigger>
         <TooltipContent side="top">
