@@ -40,6 +40,17 @@ export interface ReferencePickerOverlayProps {
 }
 
 const TITLE = "Add a reference";
+
+/**
+ * A FIXED size, never one that follows the content (G6B review, 2026-10-02):
+ * the dialog is centred, so a body that grew when the Task list finished
+ * loading re-centred it under the pointer — a click meant for "Change…" landed
+ * on a list row and inserted a link. Every step scrolls inside this box; the
+ * mobile sheet holds its height the same way. Guard:
+ * `__tests__/reference-picker-holds-its-size.test.tsx`.
+ */
+export const REFERENCE_PICKER_DIALOG_SIZE = "h-[min(600px,80dvh)] sm:max-w-[520px]";
+export const REFERENCE_PICKER_SHEET_SIZE = "h-[85dvh] max-h-[85dvh]";
 const DESCRIPTION =
   "Link to something, or insert a button that acts on it.";
 
@@ -74,7 +85,7 @@ export default function ReferencePickerOverlay({
   if (isMobile) {
     return (
       <Drawer open onOpenChange={(open) => !open && handleCancel()}>
-        <DrawerContent className="max-h-[85dvh] pb-safe">
+        <DrawerContent className={`${REFERENCE_PICKER_SHEET_SIZE} pb-safe`}>
           <DrawerHeader className="text-left">
             <DrawerTitle>{TITLE}</DrawerTitle>
             <DrawerDescription>{DESCRIPTION}</DrawerDescription>
@@ -89,7 +100,7 @@ export default function ReferencePickerOverlay({
 
   return (
     <Dialog open onOpenChange={(open) => !open && handleCancel()}>
-      <DialogContent className="flex max-h-[80vh] flex-col sm:max-w-[520px]">
+      <DialogContent className={`flex flex-col ${REFERENCE_PICKER_DIALOG_SIZE}`}>
         <DialogHeader>
           <DialogTitle>{TITLE}</DialogTitle>
           <DialogDescription>{DESCRIPTION}</DialogDescription>
