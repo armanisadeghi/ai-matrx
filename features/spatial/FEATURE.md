@@ -118,6 +118,12 @@ contract). The stored shape is `board/document.ts` (parse reports every malforme
 shapes ride in `nodes` flagged; JSON Canvas 1.0 export). The home board is the row whose
 `settings.home` is true, per person per organization. Service + hook: `persistence/` (see The Board).
 
+- **Delete is a soft delete, and a board comes back.** `/board/all`'s Archived filter (`query.archived`
+  → `listBoards(archived)`) shows deleted boards; their row offers Restore (`restoreBoard` → Trash's
+  `restoreFromTrash` / `entity_undelete`); /trash lists them too. ONE home: every reader takes the
+  oldest live `settings.home` row (`pickHomeId`, same as `getHomeBoard`), and a deleted home restored
+  while another home is live loses its flag before it comes back (`__tests__/board-trash.test.tsx`).
+
 - **The saved board is CONTENT only** (`nodes`, `edges`). The camera is each viewer's own view
   (Figma, Miro): kept per person per board in this browser (`persistence/viewerCamera.ts`,
   localStorage `matrx.board.camera:<user>:<board>`, guarded) plus the `#cam=` address. A board opens
