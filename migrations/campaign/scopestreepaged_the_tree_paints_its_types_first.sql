@@ -1,8 +1,10 @@
--- draft: Claude Opus 5.5 (lane SCOPES-TREE-PAGED) rehearsed on the dev clone only; three new client doors (a grant each) wait for the chair's go before production
 -- chair-step: it CREATES four new functions in schema custom — one SECURITY INVOKER helper with no client EXECUTE (custom._ctx_tree_part, the scope tree's one body for its three paged shapes) and three client doors that READ the scope tree in pieces (custom.context_tree_types: the organizations' scope types with the count of scopes the caller sees in each; custom.context_tree_type_scopes: one type's scopes, a page at a time; custom.context_tree_search: the scopes whose name holds a text, across the organizations named; SECURITY DEFINER, each declared in platform.client_callable_door before its EXECUTE grant to authenticated). Nothing is replaced — custom.context_tree keeps answering the whole tree exactly as today for the readers that still need it — and no table, index, policy or data row is touched. Every door writes nothing.
--- lane: SCOPES-TREE-PAGED
+-- lane: SCOPES-ON-THE-STORE
 --
--- THE SCOPE TREE PAINTS ITS TYPES FIRST (lane SCOPES-TREE-PAGED, 2026-09-30).
+-- THE SCOPE TREE PAINTS ITS TYPES FIRST (drafted by lane SCOPES-TREE-PAGED, 2026-09-30; amended and
+-- readied for production by lane SCOPES-ON-THE-STORE, 2026-10-02: the helper now names the two
+-- STORE-READ-PERF-6 statement memos custom.context_tree names, so the first paint walks the ladder's
+-- Table list once for all organizations instead of once per organization).
 --
 -- custom.context_tree answers every scope of every organization in one 1.1 MB answer (admin@admin.com:
 -- 47 organizations, 49 scope types, 2,486 scopes; 446 ms server side on the clone). Most screens show
@@ -22,13 +24,16 @@
 -- SAME ROWS AS TODAY, BY CONSTRUCTION. The three doors decide the caller exactly as custom.context_tree
 -- does (every organization named through custom.assert_client_may_reach in the door's own name, refused
 -- by name, never an empty answer; the admin lane's non-member organization read whole), and answer
--- through ONE body, custom._ctx_tree_part, which is custom.context_tree's own body (STORE-READ-PERF-5,
+-- through ONE body, custom._ctx_tree_part, which is custom.context_tree's own body (STORE-READ-PERF-6,
 -- verbatim: the Table list among the scope Tables, the one field decision per column, the Records the
 -- caller sees through custom.query_visible_ids) restricted to the types asked. A type's object and a
 -- scope's object are byte-for-byte the objects custom.context_tree answers; a type's scope_count is the
 -- number of scopes custom.context_tree answers for it; the pages of a type, concatenated, are its scopes
 -- in custom.context_tree's order. Proof: scripts/campaign-tests/scopestreepaged_same_rows_as_the_tree.sql
--- (both seats, every organization, every type, every page; a planted difference goes red).
+-- (both seats, every organization, every type, every page; a planted difference goes red), and with
+-- the statement memos live — the path the web takes — scripts/campaign-tests/scopestreepaged_memo_path.mjs
+-- (every seat with a scope organization, memos on vs custom.context_tree vs every memo off). That the
+-- helper stays custom.context_tree's body: scripts/campaign-tests/scopestreepaged_one_body_check.mjs.
 --
 -- Search matches the scope's name as the caller may read it (a name column the field decision hides is
 -- never searched), case-insensitively, as the chat lens's own filter did over the whole tree.
@@ -51,6 +56,10 @@ declare
   v_scopes jsonb := '[]'::jsonb;
   v_total  integer := 0;
   v_pat    text;
+  -- STORE-READ-PERF-6 (custom.context_tree's own names, the same three)
+  v_among  jsonb;
+  v_tids   uuid[];
+  v_pairs  text;
 begin
   -- Called only by the three definer doors below, after they decided the caller; it has no client
   -- EXECUTE. p_me is the caller they resolved, p_orgs the organizations they decided, p_admin those of
@@ -62,12 +71,70 @@ begin
     return case when p_mode in ('types', 'type_list') then jsonb_build_object('types', v_types)
                        else jsonb_build_object('scopes', v_scopes, 'total', 0) end;
   end if;
+
+  -- Search asks the ladder only of the Tables holding a Record whose stored name matches: the visible
+  -- name is still what decides below (a Table with no stored match can hold no visible match).
   if p_mode = 'search' then
     v_pat := '%' || replace(replace(replace(coalesce(p_query, ''), '\', '\\'), '%', '\%'), '_', '\_') || '%';
+    select coalesce(array_agg(distinct r.table_id), '{}'::uuid[]) into p_type_ids
+      from custom.record r
+     where r.organization_id = any (p_orgs)
+       and r.deleted_at is null
+       and r.table_id in (select t.id from custom.record t
+                           where t.organization_id = any (p_orgs) and t.table_id = v_tables
+                             and t.deleted_at is null and t.data ->> 'kept_for' = 'context')
+       and (r.data ->> 'name') ilike v_pat escape '\';
+    if cardinality(p_type_ids) = 0 then
+      return jsonb_build_object('scopes', v_scopes, 'total', 0);
+    end if;
   end if;
 
-  -- ── the scope types (custom.context_tree's t0 / t, restricted to the types asked) ──
+  -- ── STEP 1, THE TABLE STEP: custom.context_tree's STORE-READ-PERF-6 step 1, restricted to the types
+  -- asked (the one addition, `and (p_type_ids is null or t.id = any (p_type_ids))`, on each scan).
+  -- scripts/campaign-tests/scopestreepaged_one_body_check.mjs fails when this step, the Records step
+  -- below, the two objects or the doors' wall stop being custom.context_tree's (attack H2: this helper
+  -- was a hand copy taken at PERF-5 and fell behind when PERF-6 changed the original). Every non-admin
+  -- organization and its asked scope Tables are named in the statement memo first, so the one
+  -- ladder's Table walk is asked once for all of them (custom.query_visible_ids' among path), not once
+  -- per organization; then the (organization, Table) pairs the Records step reads are named the same
+  -- way. A name is only ever an answer-safe hint: its readers fall back to their own walk whenever it
+  -- does not name every Table asked, names another organization, or the transaction has written.
+  select coalesce(jsonb_object_agg(o.org, o.ids), '{}'::jsonb) into v_among
+    from (select t.organization_id as org, jsonb_agg(t.id order by t.id) as ids
+            from custom.record t
+           where t.organization_id = any (p_orgs)
+             and not (t.organization_id = any (p_admin))
+             and t.table_id = v_tables
+             and t.deleted_at is null
+             and t.data ->> 'kept_for' = 'context'
+             and (p_type_ids is null or t.id = any (p_type_ids))
+           group by t.organization_id) o;
+  perform platform.memo_k_put('custom.kernel_among_batch:' || p_me::text, v_among::text);
+  with t0 as materialized (
+    select t.organization_id as org, t.id
+      from custom.record t
+     where t.organization_id = any (p_orgs)
+       and t.table_id = v_tables
+       and t.deleted_at is null
+       and t.data ->> 'kept_for' = 'context'
+       and (p_type_ids is null or t.id = any (p_type_ids))
+  )
+  select coalesce(array_agg(t0.id), '{}'::uuid[]),
+         string_agg(case when not (t0.org = any (p_admin)) then t0.org::text || ':' || t0.id::text end, ',' order by t0.org, t0.id)
+    into v_tids, v_pairs
+    from t0
+   where t0.org = any (p_admin)
+      or t0.id in (select v.v from (select t0.org, array_agg(t0.id) as ids from t0
+                                      where not (t0.org = any (p_admin)) group by t0.org) o
+                     cross join lateral custom.tables_listed_among(o.org, o.ids) v(v));
+  perform platform.memo_k_drop('custom.kernel_among_batch:' || p_me::text);
+
+  -- ── the scope types (custom.context_tree's t, restricted to the types asked) ──
   if p_mode in ('types', 'type_list') then
+    -- 'type_list' (the first paint) asks no Record question at all: no pair is named, no scope_count.
+    if p_mode = 'types' and v_pairs is not null then
+      perform platform.memo_k_put('custom.qvi_pairs:' || p_me::text, v_pairs);
+    end if;
     with t0 as materialized (
       select t.organization_id as org, t.id, t.data, t.created_at, t.updated_at, t.created_by
         from custom.record t
@@ -78,13 +145,8 @@ begin
          and (p_type_ids is null or t.id = any (p_type_ids))
     ),
     t as materialized (
-      select t0.* from t0
-       where t0.org = any (p_admin)
-          or t0.id in (select v.v from (select t0.org, array_agg(t0.id) as ids from t0
-                                          where not (t0.org = any (p_admin)) group by t0.org) o
-                         cross join lateral custom.tables_listed_among(o.org, o.ids) v(v))
+      select t0.* from t0 where t0.id = any (v_tids)
     ),
-    -- 'type_list' (the first paint) asks no Record question at all: no scope_count key is answered.
     vis as materialized (
       select t.org, t.id as tbl, v.v as id
         from t cross join lateral custom.query_visible_ids(t.org, t.id) v(v)
@@ -115,26 +177,15 @@ begin
            order by coalesce((t.data ->> 'sort_order')::numeric, 0), t.data ->> 'label_plural', t.id), '[]'::jsonb)
       into v_types
       from t left join cnt on cnt.tbl = t.id;
+    perform platform.memo_k_drop('custom.qvi_pairs:' || p_me::text);
     return jsonb_build_object('types', v_types);
   end if;
 
-  -- Search asks the ladder only of the Tables holding a Record whose stored name matches: the visible
-  -- name is still what decides below (a Table with no stored match can hold no visible match).
-  if p_mode = 'search' then
-    select coalesce(array_agg(distinct r.table_id), '{}'::uuid[]) into p_type_ids
-      from custom.record r
-     where r.organization_id = any (p_orgs)
-       and r.deleted_at is null
-       and r.table_id in (select t.id from custom.record t
-                           where t.organization_id = any (p_orgs) and t.table_id = v_tables
-                             and t.deleted_at is null and t.data ->> 'kept_for' = 'context')
-       and (r.data ->> 'name') ilike v_pat escape '\';
-    if cardinality(p_type_ids) = 0 then
-      return jsonb_build_object('scopes', v_scopes, 'total', 0);
-    end if;
+  -- ── STEP 2, THE RECORDS STEP (custom.context_tree's body from t to the scope objects, verbatim,
+  -- restricted to the types asked) ──
+  if v_pairs is not null then
+    perform platform.memo_k_put('custom.qvi_pairs:' || p_me::text, v_pairs);
   end if;
-
-  -- ── the scopes (custom.context_tree's body from t0 to the scope objects, verbatim, restricted) ──
   with t0 as materialized (
     select t.organization_id as org, t.id, t.data, t.created_at, t.updated_at, t.created_by
       from custom.record t
@@ -145,11 +196,7 @@ begin
        and (p_type_ids is null or t.id = any (p_type_ids))
   ),
   t as materialized (
-    select t0.* from t0
-     where t0.org = any (p_admin)
-        or t0.id in (select v.v from (select t0.org, array_agg(t0.id) as ids from t0
-                                        where not (t0.org = any (p_admin)) group by t0.org) o
-                       cross join lateral custom.tables_listed_among(o.org, o.ids) v(v))
+    select t0.* from t0 where t0.id = any (v_tids)
   ),
   flds as materialized (
     select f0.id, f0.organization_id, f0.data, f0.metadata
@@ -265,6 +312,8 @@ begin
                      and (p_limit is null or o.rn <= greatest(coalesce(p_offset, 0), 0) + p_limit)), '[]'::jsonb)
     into v_total, v_scopes
     from ordered o;
+
+  perform platform.memo_k_drop('custom.qvi_pairs:' || p_me::text);
 
   return jsonb_build_object('scopes', v_scopes, 'total', v_total);
 end;
