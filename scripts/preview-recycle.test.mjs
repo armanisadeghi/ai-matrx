@@ -278,3 +278,41 @@ test("report_previous_failure words a recycle as normal and a watchdog stop as a
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// ── the mode switch and open pages ───────────────────────────────────────────
+// 2026-10-02: a 20-minute agent turn logs nothing on :3001 (the stream runs to the agent
+// server), so "idle 5 min" was true while a page was open; the switch flipped live→clone
+// under it, the clone refused the live token (PGRST301) and the person was signed out.
+
+function modeSwitch({ usedAgoSec, openConnections }) {
+  const dir = stateDir();
+  const pid = fakeServer();
+  writeLease(dir, { pid, usedAgoSec, root: REPO_ROOT, port: 1 });
+  const res = sourced(
+    dir,
+    "MODE_EXPLICIT=1; REQUESTED_MODE=clone; SESSION_RAW=test; switch_mode_if_idle; echo rc=$?",
+    { MATRX_PREVIEW_OPEN_CONNECTIONS_OVERRIDE: String(openConnections) },
+  );
+  const result = { out: res.out, code: res.code, alive: isAlive(pid) };
+  rmSync(dir, { recursive: true, force: true });
+  return result;
+}
+
+test("mode switch refuses while a page is still open, even when no request was logged for 6 min", () => {
+  const r = modeSwitch({ usedAgoSec: 6 * 60, openConnections: 2 });
+  assert.ok(r.alive, "the server with open pages must keep running");
+  assert.match(r.out, /2 page\(s\) are still open/);
+  assert.notEqual(r.code, 0);
+});
+
+test("mode switch proceeds when idle 6 min and no page is open", () => {
+  const r = modeSwitch({ usedAgoSec: 6 * 60, openConnections: 0 });
+  assert.ok(!r.alive, "an idle server with no open page is stopped for the requested mode");
+  assert.match(r.out, /switched to clone mode/);
+});
+
+test("mode switch refuses a server that served a request 1 min ago", () => {
+  const r = modeSwitch({ usedAgoSec: 60, openConnections: 0 });
+  assert.ok(r.alive);
+  assert.match(r.out, /in use/);
+});

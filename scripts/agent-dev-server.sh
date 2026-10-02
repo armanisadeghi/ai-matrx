@@ -912,13 +912,29 @@ refuse_busy_other_mode() {
   fail "the one dev server is running in ${running_mode} mode and is in use (last request $(( $(idle_seconds) / 60 )) min ago) — use it as is (pnpm preview:start) or retry --${REQUESTED_MODE} once it has been idle ${RECYCLE_IDLE_MIN} min."
 }
 
+# Open pages, counted as ESTABLISHED TCP connections into the server's port (every open tab
+# holds its HMR WebSocket; a stream from the agent server never touches this port, so the
+# request log alone goes quiet for the whole of a long agent turn). Overridable for tests.
+open_page_connections() { # open_page_connections <pid>
+  if [[ -n "${MATRX_PREVIEW_OPEN_CONNECTIONS_OVERRIDE:-}" ]]; then
+    printf '%s\n' "$MATRX_PREVIEW_OPEN_CONNECTIONS_OVERRIDE"
+    return 0
+  fi
+  local n
+  n="$(lsof -nP -a -p "$1" -iTCP:"$PORT" -sTCP:ESTABLISHED 2>/dev/null | awk 'NR > 1' | wc -l | tr -d ' ')"
+  [[ "$n" =~ ^[0-9]+$ ]] && printf '%s\n' "$n" || printf '0\n'
+}
+
 # THE MODE SWITCH. Only an explicit --clone / --live that differs from the running server's
-# mode gets here. Idle >= RECYCLE_IDLE_MIN: stop it (worded as a recycle) so cmd_start starts
-# the requested mode. Busy: refuse. Never a second server.
+# mode gets here. Idle >= RECYCLE_IDLE_MIN AND no page open: stop it (worded as a recycle) so
+# cmd_start starts the requested mode. Busy, or a page still open: refuse. Never a second
+# server. (2026-10-02: a 20-minute agent turn logged no request on :3001 — the stream runs to
+# the agent server — so the switch judged it idle, flipped live→clone under the open page, the
+# live token was refused by the clone (PGRST301) and the person was signed out mid-work.)
 switch_mode_if_idle() {
   (( MODE_EXPLICIT )) || return 0
   [[ -f "$META" ]] || return 0
-  local pid running_mode idle kb source
+  local pid running_mode idle kb source pages
   pid="$(meta_value PID)"
   alive "$pid" || return 0
   running_mode="$(meta_value MODE)"
@@ -926,6 +942,10 @@ switch_mode_if_idle() {
   idle="$(idle_seconds)"
   if (( idle < $(min_to_sec "$RECYCLE_IDLE_MIN") )); then
     refuse_busy_other_mode "$running_mode"
+  fi
+  pages="$(open_page_connections "$pid")"
+  if (( pages > 0 )); then
+    fail "the one dev server is running in ${running_mode} mode and ${pages} page(s) are still open on it (an open tab holds its HMR socket even while its agent run streams elsewhere) — switching would sign every one of them out. Use it as is (pnpm preview:start) or retry --${REQUESTED_MODE} once the tabs are closed."
   fi
   read -r kb source <<<"$(real_memory_kb "$pid")"
   stop_for_limit "$pid" "${RECYCLED_PREFIX}switched to ${REQUESTED_MODE} mode by a new pnpm preview:start (session $SESSION_RAW): the ${running_mode:-unknown}-mode server pid $pid was unused for $(( idle / 60 )) min at $(kb_to_gb "$kb") $(memory_label "$source")"
