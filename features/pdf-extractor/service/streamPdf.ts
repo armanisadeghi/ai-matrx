@@ -66,6 +66,7 @@ import type {
   PdfPageExtractedData,
 } from "@ai-matrx/agents/generated/stream-events";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import { requestRaw } from "@/lib/python-client";
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
@@ -85,12 +86,16 @@ function extractCompletionText(data: CompletionPayload): string | null {
   return null;
 }
 
-async function throwOnNotOk(response: Response, label: string): Promise<void> {
-  if (response.ok) return;
-  const errText = await response.text().catch(() => "");
-  throw new Error(
-    `${label}: HTTP ${response.status}${errText ? `: ${errText.slice(0, 200)}` : ""}`,
-  );
+/**
+ * Caller-supplied transport fields kept for signature compatibility. The host
+ * door (`requestRaw`) resolves the active server and stamps Authorization +
+ * X-Organization-Id itself, so both are ignored.
+ */
+interface LegacyTransportFields {
+  /** @deprecated Ignored — the host door resolves the server. */
+  baseUrl?: string | null;
+  /** @deprecated Ignored — the host door adds auth + organization headers. */
+  headers?: Record<string, string>;
 }
 
 // ─── /pdf/clean-content/{id} ─────────────────────────────────────────────────
@@ -135,18 +140,17 @@ export interface StreamPdfCleanResult {
 
 export async function streamPdfClean(opts: {
   docId: string;
-  baseUrl: string;
-  headers: Record<string, string>;
   callbacks?: StreamPdfCleanCallbacks;
   signal?: AbortSignal;
-}): Promise<StreamPdfCleanResult> {
-  const { docId, baseUrl, headers, callbacks = {}, signal } = opts;
+} & LegacyTransportFields): Promise<StreamPdfCleanResult> {
+  const { docId, callbacks = {}, signal } = opts;
 
-  const response = await fetch(
-    `${baseUrl}${ENDPOINTS.pdf.cleanContent(docId)}`,
-    { method: "POST", headers, signal },
+  // Non-2xx throws a classified BackendApiError (read with getUserMessage).
+  const response = await requestRaw(
+    ENDPOINTS.pdf.cleanContent(docId),
+    { method: "POST" },
+    { signal },
   );
-  await throwOnNotOk(response, "AI cleanup failed");
 
   let cleanContent: string | null = null;
   let serverConfirmedUpdate = false;
@@ -270,20 +274,20 @@ export interface StreamPdfFullPipelineResult {
 
 export async function streamPdfFullPipeline(opts: {
   body: PdfFullPipelineBody;
-  baseUrl: string;
-  headers: Record<string, string>;
   callbacks?: StreamPdfFullPipelineCallbacks;
   signal?: AbortSignal;
-}): Promise<StreamPdfFullPipelineResult> {
-  const { body, baseUrl, headers, callbacks = {}, signal } = opts;
+} & LegacyTransportFields): Promise<StreamPdfFullPipelineResult> {
+  const { body, callbacks = {}, signal } = opts;
 
-  const response = await fetch(`${baseUrl}${ENDPOINTS.pdf.fullPipeline}`, {
-    method: "POST",
-    headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal,
-  });
-  await throwOnNotOk(response, "PDF pipeline failed");
+  const response = await requestRaw(
+    ENDPOINTS.pdf.fullPipeline,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    { signal },
+  );
 
   let childDocId: string | null = null;
   let firstErrorMessage: string | null = null;
@@ -407,27 +411,23 @@ async function consumePdfExtractTextStream(
 
 /**
  * POST `/utilities/pdf/extract-text` — multipart upload (PDF or image).
- * `headers` must be auth-only; the browser sets the multipart boundary.
+ * No Content-Type is set: the browser sets the multipart boundary.
  */
 export async function streamPdfExtractText(opts: {
   file: File;
-  baseUrl: string;
-  headers: Record<string, string>;
   callbacks?: StreamPdfExtractTextCallbacks;
   signal?: AbortSignal;
-}): Promise<PdfExtractCompleteData> {
-  const { file, baseUrl, headers, callbacks = {}, signal } = opts;
+} & LegacyTransportFields): Promise<PdfExtractCompleteData> {
+  const { file, callbacks = {}, signal } = opts;
 
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${baseUrl}${ENDPOINTS.pdf.extractText}`, {
-    method: "POST",
-    headers,
-    body: formData,
-    signal,
-  });
-  await throwOnNotOk(response, "PDF text extraction failed");
+  const response = await requestRaw(
+    ENDPOINTS.pdf.extractText,
+    { method: "POST", body: formData },
+    { signal },
+  );
 
   return consumePdfExtractTextStream(response, callbacks, signal);
 }
@@ -451,20 +451,20 @@ export interface PdfExtractTextRemoteBody {
 /** POST `/utilities/pdf/extract-text-remote` — JSON body (MediaRef / url). */
 export async function streamPdfExtractTextRemote(opts: {
   body: PdfExtractTextRemoteBody;
-  baseUrl: string;
-  headers: Record<string, string>;
   callbacks?: StreamPdfExtractTextCallbacks;
   signal?: AbortSignal;
-}): Promise<PdfExtractCompleteData> {
-  const { body, baseUrl, headers, callbacks = {}, signal } = opts;
+} & LegacyTransportFields): Promise<PdfExtractCompleteData> {
+  const { body, callbacks = {}, signal } = opts;
 
-  const response = await fetch(`${baseUrl}${ENDPOINTS.pdf.extractTextRemote}`, {
-    method: "POST",
-    headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal,
-  });
-  await throwOnNotOk(response, "PDF text extraction failed");
+  const response = await requestRaw(
+    ENDPOINTS.pdf.extractTextRemote,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    { signal },
+  );
 
   return consumePdfExtractTextStream(response, callbacks, signal);
 }

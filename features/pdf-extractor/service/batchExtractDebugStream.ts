@@ -1,13 +1,6 @@
 import type { TypedStreamEvent } from "@/lib/api/types";
-import { expandCompactEvent, isCompactEvent } from "@/lib/api/types";
 import { BackendApiError } from "@/lib/api/errors";
-
-function normalizeWireEvent(parsed: unknown): TypedStreamEvent {
-  if (isCompactEvent(parsed)) {
-    return expandCompactEvent(parsed);
-  }
-  return parsed as TypedStreamEvent;
-}
+import { readMatrxNdjsonStream } from "@ai-matrx/agents/stream/ndjson";
 
 export interface BatchExtractStreamTap {
   onRawLine: (line: string, index: number) => void;
@@ -15,8 +8,10 @@ export interface BatchExtractStreamTap {
 
 /**
  * Consume an NDJSON batch-extract response while tapping every raw wire line
- * for admin debug. Mirrors `parseNdjsonStream` line splitting without pulling
- * the full stream-parser module into a second read of the body.
+ * for admin debug. Framing, compact-event expansion, and torn-line handling
+ * are the shared kernel's (`@ai-matrx/agents/stream/ndjson`); the tap rides
+ * its observation hooks, which carry the exact wire line — valid envelopes,
+ * malformed lines, and valid JSON with no recognised envelope alike.
  */
 export async function* consumeBatchExtractNdjsonStream(
   response: Response,
@@ -31,51 +26,21 @@ export async function* consumeBatchExtractNdjsonStream(
     });
   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
   let lineIndex = 0;
+  const emit = (line: string): void => {
+    tap.onRawLine(line, lineIndex);
+    lineIndex += 1;
+  };
 
-  try {
-    while (true) {
-      if (signal?.aborted) {
-        throw new DOMException("Aborted", "AbortError");
-      }
+  const events = readMatrxNdjsonStream(response.body, {
+    signal,
+    onValidEnvelope: ({ line }) => emit(line.trim()),
+    // Partial / malformed lines are non-fatal; they surface in the raw log.
+    onMalformedLine: ({ line }) => emit(line.trim()),
+    onUnknownEnvelope: (value) => emit(JSON.stringify(value)),
+  });
 
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const parts = buffer.split("\n");
-      buffer = parts.pop() ?? "";
-
-      for (const part of parts) {
-        const line = part.trim();
-        if (!line) continue;
-        tap.onRawLine(line, lineIndex);
-        lineIndex += 1;
-        try {
-          yield normalizeWireEvent(JSON.parse(line));
-        } catch {
-          // Keep streaming — some infra lines may be partial during chunking.
-        }
-      }
-    }
-
-    // Flush any bytes the decoder is still holding (a multibyte char split
-    // across the final chunk) — without this the terminal line/`end` event
-    // can be silently dropped. Mirrors stream-parser.ts.
-    buffer += decoder.decode();
-    const tail = buffer.trim();
-    if (tail) {
-      tap.onRawLine(tail, lineIndex);
-      try {
-        yield normalizeWireEvent(JSON.parse(tail));
-      } catch {
-        // Terminal partial line — surfaced in the raw debug log.
-      }
-    }
-  } finally {
-    reader.releaseLock();
+  for await (const envelope of events) {
+    yield envelope as TypedStreamEvent;
   }
 }

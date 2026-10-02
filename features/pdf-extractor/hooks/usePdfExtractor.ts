@@ -2,10 +2,8 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "@/lib/toast";
-import { useApiAuth } from "@/hooks/useApiAuth";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { buildPdfSource } from "@/features/pdf/utils/source";
@@ -16,6 +14,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb, PROCESSED_DOCUMENTS_COLUMNS } from "@/utils/supabase/docprocDb";
 import { parseHttpError } from "@/lib/api/errors";
+import { getAccessTokenOrNull, requestRaw } from "@/lib/python-client";
 import { consumeBatchExtractNdjsonStream } from "../service/batchExtractDebugStream";
 import {
   appendBatchExtractDebugLine,
@@ -314,8 +313,6 @@ export interface UsePdfExtractorOptions {
 export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   const { loadHistory: shouldLoadHistory = true } = options;
   const dispatch = useAppDispatch();
-  const { getHeaders, waitForAuth } = useApiAuth();
-  const backendUrl = useAppSelector(selectResolvedBaseUrl);
   const userId = useAppSelector(selectUserId);
   const isAdmin = useAppSelector(selectIsAdmin);
 
@@ -353,15 +350,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
   // Track first completed tab id during batch extraction
   const firstCompletedTabRef = useRef<string | null>(null);
-
-  // ── Auth headers helper (still needed for Python POST endpoints) ───────────
-
-  const getAuthHeaders = useCallback(async () => {
-    await waitForAuth();
-    const headers = getHeaders() as Record<string, string>;
-    const { "Content-Type": _, ...rest } = headers;
-    return rest;
-  }, [getHeaders, waitForAuth]);
 
   // ── Load history (metadata only, direct from Supabase) ────────────────────
 
@@ -503,39 +491,42 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       let debugSessionId: string | null = null;
 
       try {
-        const headers = await getAuthHeaders();
         const formData = new FormData();
         selectedFiles.forEach((file) => formData.append("files", file));
 
-        const requestUrl = `${backendUrl}${ENDPOINTS.pdf.batchExtract}?max_concurrent=3`;
+        // Server-relative: the host door prepends the active server.
+        const requestPath = `${ENDPOINTS.pdf.batchExtract}?max_concurrent=3`;
         debugSessionId = isAdmin
           ? `batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
           : null;
 
         if (debugSessionId) {
+          const token = await getAccessTokenOrNull();
           dispatch(
             startBatchExtractDebugSession({
               id: debugSessionId,
               startedAt: new Date().toISOString(),
               request: {
                 method: "POST",
-                url: requestUrl,
+                url: requestPath,
                 queryParams: { max_concurrent: "3" },
                 fileNames: selectedFiles.map((f) => f.name),
                 fileSizes: selectedFiles.map((f) => f.size),
-                authorizationPreview: headers.Authorization
-                  ? `${headers.Authorization.slice(0, 16)}…`
+                authorizationPreview: token
+                  ? `${`Bearer ${token}`.slice(0, 16)}…`
                   : null,
               },
             }),
           );
         }
 
-        const response = await fetch(requestUrl, {
-          method: "POST",
-          headers,
-          body: formData,
-        });
+        // allowHttpError: the non-2xx branch below records the status in the
+        // admin debug session and on every placeholder tab.
+        const response = await requestRaw(
+          requestPath,
+          { method: "POST", body: formData },
+          { allowHttpError: true },
+        );
 
         if (debugSessionId) {
           dispatch(
@@ -868,8 +859,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     },
     [
       selectedFiles,
-      backendUrl,
-      getAuthHeaders,
       fetchDocument,
       clearFiles,
       loadHistory,
@@ -1041,14 +1030,11 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       // stream that's actively working never trips it. Without this, a
       // mid-stream network death stranded the tab on "cleaning" forever
       // with no recovery short of a reload.
-      const runStreamOnce = async (baseUrl: string): Promise<string | null> => {
+      const runStreamOnce = async (): Promise<string | null> => {
         const watchdog = createInactivityWatchdog(90_000);
         try {
-          const headers = await getAuthHeaders();
           const { cleanContent: streamedClean } = await streamPdfClean({
             docId,
-            baseUrl,
-            headers,
             signal: watchdog.signal,
             callbacks: {
               onCleanStarted: (info) => {
@@ -1104,14 +1090,10 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       };
 
       try {
-        if (!backendUrl) {
-          throw new Error("Backend URL is not configured");
-        }
-
         let streamedClean: string | null = null;
         for (let attempt = 0; ; attempt++) {
           try {
-            streamedClean = await runStreamOnce(backendUrl);
+            streamedClean = await runStreamOnce();
             break;
           } catch (err) {
             // Resumable per-page runs auto-retry: the server's per-page
@@ -1188,7 +1170,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         throw err instanceof Error ? new Error(msg) : err;
       }
     },
-    [backendUrl, getAuthHeaders, fetchDocument],
+    [fetchDocument],
   );
 
   // ── Refresh a single document from Supabase (explicit user action) ────────
@@ -1290,10 +1272,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       // Same stall protection as cleanContent — see createInactivityWatchdog.
       const watchdog = createInactivityWatchdog(90_000);
       try {
-        if (!backendUrl) {
-          throw new Error("Backend URL is not configured");
-        }
-        const headers = await getAuthHeaders();
         // Canonical source wire — media.file_id / media.url.
         // The server's PdfRequest reads `options.force_ocr` (NOT top-level)
         // and has no `persist_output` field (it always persists for signed-in
@@ -1318,8 +1296,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
         const { childDocId } = await streamPdfFullPipeline({
           body,
-          baseUrl: backendUrl,
-          headers,
           signal: watchdog.signal,
           callbacks: {
             onProgress: (msg) => {
@@ -1399,7 +1375,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         watchdog.dispose();
       }
     },
-    [tabs, backendUrl, getAuthHeaders, refreshDocument],
+    [tabs, refreshDocument],
   );
 
   // ── Copy text ──────────────────────────────────────────────────────────────
