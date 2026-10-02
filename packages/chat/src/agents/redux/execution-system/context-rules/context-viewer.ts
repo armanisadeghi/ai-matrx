@@ -18,11 +18,20 @@ import { extractErrorMessage } from "@ai-matrx/data/net";
 import { buildPreviewRequestContext } from "./request-context";
 import { sentWithRequest } from "../messages/messages.slice";
 import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
+import type { components } from "@host/types/python-generated/api-types";
 import type {
   ContextViewLoader,
   ContextViewTarget,
   ContextViewedText,
 } from "@ai-matrx/agents/context";
+
+/**
+ * The viewed text exactly as the server's generated contract declares it. Each
+ * answer is read as this type and returned as the package's `ContextViewedText`,
+ * so tsc fails here the day the server adds a `source` (or changes `available` /
+ * `fetched`) the screen does not handle.
+ */
+type ServerViewedText = components["schemas"]["ContextViewedText"];
 
 /** Which turn a view reads: a sent person message, or the next turn (`messageId: null`). */
 export interface ContextViewTurn {
@@ -55,7 +64,8 @@ export const loadContextView =
         }),
       );
       if (result.error) throw new Error(errorText(result.error));
-      return result.data as ContextViewedText;
+      const sent: ServerViewedText = result.data as ServerViewedText;
+      return sent;
     }
     const result = await dispatch(
       callApi({
@@ -71,7 +81,7 @@ export const loadContextView =
       }),
     );
     if (result.error) throw new Error(errorText(result.error));
-    const viewed = (result.data as { viewed?: ContextViewedText | null } | undefined)?.viewed;
+    const viewed = (result.data as { viewed?: ServerViewedText | null } | undefined)?.viewed;
     if (!viewed) throw new Error("Not in the next turn");
     return viewed;
   };

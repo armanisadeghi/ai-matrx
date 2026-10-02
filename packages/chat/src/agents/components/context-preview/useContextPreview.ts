@@ -36,10 +36,7 @@ import {
 } from "../../redux/execution-system/context-rules/request-context";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { components } from "@host/types/python-generated/api-types";
-import type {
-  ContextViewLoader,
-  ContextViewedText,
-} from "@ai-matrx/agents/context";
+import type { ContextViewLoader } from "@ai-matrx/agents/context";
 
 export type ContextSelection = components["schemas"]["ContextSelection"];
 
@@ -165,7 +162,10 @@ export function useContextPreview(opts: {
           : "";
         throw new Error(detail || result.error.message || "Couldn't load");
       }
-      const viewed = (result.data as { viewed?: ContextViewedText | null } | undefined)?.viewed;
+      // The generated contract's shape, returned as the package type: tsc proves they agree.
+      const viewed = (
+        result.data as { viewed?: components["schemas"]["ContextViewedText"] | null } | undefined
+      )?.viewed;
       if (!viewed) throw new Error("Not in the next turn");
       return viewed;
     },
