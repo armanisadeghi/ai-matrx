@@ -63,8 +63,6 @@
 -- lock: custom
 -- lane: CHAIR-TEMPLATE-FAMILY
 
-set lock_timeout = '5s';
-set statement_timeout = '300s';
 
 -- ── a. THE CATALOGUE ─────────────────────────────────────────────────────────────────────────────
 create table custom.template (

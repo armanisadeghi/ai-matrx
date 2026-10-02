@@ -8,8 +8,6 @@
 -- install's footprint, so uninstall can no longer take them back as a set.
 -- chair-step: removes the one template family (two tables, seven doors and their platform.client_callable_door rows); what installs made stays in the store.
 
-set lock_timeout = '5s';
-set statement_timeout = '120s';
 
 delete from platform.client_callable_door
  where schema_name = 'custom'

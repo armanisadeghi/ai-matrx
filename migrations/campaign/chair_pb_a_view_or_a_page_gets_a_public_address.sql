@@ -37,8 +37,6 @@
 -- lock: custom,iam
 -- lane: CHAIR-TEMPLATE-FAMILY
 
-set lock_timeout = '5s';
-set statement_timeout = '120s';
 
 create or replace function iam.resolve_publish_binding_kind(p_slug text)
  returns table(slug text, resource_type text, resource_id uuid, organization_id uuid, render_mode text,
