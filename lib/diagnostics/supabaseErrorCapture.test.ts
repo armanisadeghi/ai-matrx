@@ -2,6 +2,7 @@ import {
   isSchemaCacheUnavailableResult,
   postgrestResultErrorMessage,
   suppressSupabaseErrorCapture,
+  allowAbsentDoor,
   wrapClientForCapture,
 } from "@/lib/diagnostics/supabaseErrorCapture";
 import {
@@ -186,6 +187,97 @@ describe("schema-cache recovery", () => {
     const request = suppressSupabaseErrorCapture(client.rpc());
     await expect(Promise.resolve(request)).resolves.toEqual(transportLoss);
     expect(getSnapshot()).toHaveLength(0);
+  });
+
+  /** A builder whose `.abortSignal(s)` chains like postgrest-js and answers `result`. */
+  function abortableBuilder(result: unknown) {
+    const builder = {
+      abortSignal(_signal: AbortSignal) {
+        return builder;
+      },
+      then(onFulfilled: (value: unknown) => unknown) {
+        return Promise.resolve(onFulfilled(result));
+      },
+    };
+    return builder;
+  }
+  const abortedAnswer = {
+    data: null,
+    error: {
+      code: "",
+      message: "AbortError: signal is aborted without reason",
+      hint: "Request was aborted (timeout or manual cancellation)",
+    },
+    status: 0,
+  };
+
+  it("files nothing when the CALLER aborted its own request (a superseded save)", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const client = wrapClientForCapture({
+      schema: (_s: string) => ({ from: (_r: string) => abortableBuilder(abortedAnswer) }),
+    });
+    const answer = await client.schema("users").from("user_preferences").abortSignal(controller.signal);
+    expect(answer).toEqual(abortedAnswer);
+    expect(getSnapshot()).toHaveLength(0);
+  });
+
+  it("still files an abort the caller did NOT ask for (a timeout signal)", async () => {
+    const controller = new AbortController();
+    controller.abort(new DOMException("timed out", "TimeoutError"));
+    const client = wrapClientForCapture({
+      schema: (_s: string) => ({ from: (_r: string) => abortableBuilder(abortedAnswer) }),
+    });
+    await client.schema("users").from("user_preferences").abortSignal(controller.signal);
+    expect(getSnapshot()).toHaveLength(1);
+  });
+
+  it("still files a real error on a chain whose signal was aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const denied = { data: null, error: { code: "42501", message: "permission denied" }, status: 403 };
+    const client = wrapClientForCapture({
+      schema: (_s: string) => ({ from: (_r: string) => abortableBuilder(denied) }),
+    });
+    await client.schema("users").from("user_preferences").abortSignal(controller.signal);
+    expect(getSnapshot()).toHaveLength(1);
+  });
+
+  it("allowAbsentDoor: an absent door owned by a fallback is not filed; any other failure is", async () => {
+    const absent = {
+      data: null,
+      error: { code: "PGRST202", message: "Could not find the function communication.my_inbox_summary" },
+      status: 404,
+    };
+    const denied = { data: null, error: { code: "42501", message: "permission denied" }, status: 403 };
+    let answer: unknown = absent;
+    const client = wrapClientForCapture({
+      schema: (_s: string) => ({
+        rpc: (_fn: string) => ({
+          then(onFulfilled: (value: unknown) => unknown) {
+            return Promise.resolve(onFulfilled(answer));
+          },
+        }),
+      }),
+    });
+    await allowAbsentDoor(client.schema("communication").rpc("my_inbox_summary"));
+    expect(getSnapshot()).toHaveLength(0);
+    answer = denied;
+    await allowAbsentDoor(client.schema("communication").rpc("my_inbox_summary"));
+    expect(getSnapshot()).toHaveLength(1);
+  });
+
+  it("without allowAbsentDoor an absent door is still filed", async () => {
+    const absent = { data: null, error: { code: "PGRST202", message: "Could not find the function" }, status: 404 };
+    const client = wrapClientForCapture({
+      rpc: (_fn: string) => ({
+        then(onFulfilled: (value: unknown) => unknown) {
+          return Promise.resolve(onFulfilled(absent));
+        },
+      }),
+    });
+    await client.rpc("anything");
+    expect(getSnapshot()).toHaveLength(1);
   });
 });
 

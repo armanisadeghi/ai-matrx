@@ -18,7 +18,10 @@
  * pre-triage door and SAYS SO (`triage: false` on the answer): the UI then offers
  * no Done, no Snooze and no Done/Snoozed tabs — an absent control, never one that
  * pretends (Law 4). The fallback fires only on "no such function" (PGRST202 /
- * 42883); any other error is an error.
+ * 42883); any other error is an error. A door with a working fallback is called
+ * through `allowAbsentDoor`, so its absence is not filed in the Error Inspector
+ * as a failure on every page load; the stand-in announces itself once per page
+ * in the console with its remedy instead.
  *
  * None of these doors is in `types/database.types.ts` yet (it regenerates from the
  * main database), so the calls use the house `as never` seam and every answer is
@@ -28,6 +31,7 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
+import { allowAbsentDoor, isAbsentDoorFailure } from "@/lib/diagnostics/supabaseErrorCapture";
 import { bucketFor, isNoticeBucket } from "./presentation";
 import type {
   InboxNotification,
@@ -45,14 +49,35 @@ function communication() {
 /** What an RPC not yet in the generated types answers with — asserted below. */
 type UntypedRpcResult = { data: unknown; error: PostgrestError | null };
 
-async function rpc(name: string, args: Record<string, unknown>): Promise<UntypedRpcResult> {
-  return (await communication().rpc(name as never, args as never)) as UntypedRpcResult;
+/**
+ * `fallsBack`: this caller answers with the pre-triage door when the door is
+ * absent, so an absent door is not an incident (every other error still is).
+ */
+async function rpc(
+  name: string,
+  args: Record<string, unknown>,
+  options: { fallsBack?: boolean } = {},
+): Promise<UntypedRpcResult> {
+  const call = communication().rpc(name as never, args as never);
+  const answered = (await (options.fallsBack ? allowAbsentDoor(call) : call)) as UntypedRpcResult;
+  if (options.fallsBack && isMissingDoor(answered.error)) announceStandIn();
+  return answered;
+}
+
+let standInAnnounced = false;
+function announceStandIn(): void {
+  if (standInAnnounced) return;
+  standInAnnounced = true;
+  console.warn(
+    "[notifications] The inbox triage doors are not on this database; the inbox runs on the " +
+      "pre-triage doors (no Done, Snooze or organization filter). Remedy: apply " +
+      "migrations/notifications_inbox_triage.sql to the main database.",
+  );
 }
 
 /** The door is not on this database (yet) — the only error that may fall back. */
 export function isMissingDoor(error: PostgrestError | null): boolean {
-  if (!error) return false;
-  return error.code === "PGRST202" || error.code === "42883";
+  return isAbsentDoorFailure(error);
 }
 
 function str(value: unknown): string | null {
@@ -134,7 +159,7 @@ export async function fetchInbox(args: FetchInboxArgs = {}): Promise<InboxPage> 
     p_before_id: args.beforeId ?? null,
     p_unread_only: args.unreadOnly ?? false,
     p_org_id: args.orgId ?? null,
-  });
+  }, { fallsBack: true });
   if (!error) {
     try {
       return { rows: toRows(data, "inbox_notifications"), triage: true };
@@ -175,7 +200,7 @@ function int(value: unknown): number {
 
 /** The badge (unseen needs-you + for-you), the updates dot, and the tab counts. */
 export async function fetchInboxSummary(): Promise<SummaryAnswer> {
-  const { data, error } = await rpc("my_inbox_summary", {});
+  const { data, error } = await rpc("my_inbox_summary", {}, { fallsBack: true });
   if (!error) {
     const row = Array.isArray(data) ? data[0] : data;
     if (typeof row !== "object" || row === null) {
@@ -221,7 +246,7 @@ export async function fetchInboxSummary(): Promise<SummaryAnswer> {
 
 /** Opening the bell or the inbox: everything shown leaves the badge. */
 export async function markInboxSeen(): Promise<number> {
-  const { data, error } = await rpc("mark_inbox_seen", {});
+  const { data, error } = await rpc("mark_inbox_seen", {}, { fallsBack: true });
   if (error) {
     if (isMissingDoor(error)) return 0;
     throw operationFailed("clear the notification badge", error);
@@ -240,7 +265,7 @@ export async function setNoticesState(
     p_ids: ids,
     p_action: action,
     p_until: until ? until.toISOString() : null,
-  });
+  }, { fallsBack: action === "read" });
   if (!error) return int(data);
   if (isMissingDoor(error) && action === "read") {
     // Read is the one triage action the pre-triage doors can do.
@@ -268,7 +293,7 @@ export interface InboxOrganization {
 
 /** The organizations the person's notices come from — the filter's choices. */
 export async function fetchInboxOrganizations(): Promise<InboxOrganization[] | null> {
-  const { data, error } = await rpc("my_inbox_organizations", {});
+  const { data, error } = await rpc("my_inbox_organizations", {}, { fallsBack: true });
   if (error) {
     if (isMissingDoor(error)) return null;
     throw operationFailed("list your notices' organizations", error);

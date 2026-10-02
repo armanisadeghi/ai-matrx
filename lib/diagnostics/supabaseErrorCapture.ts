@@ -64,6 +64,12 @@ interface ChainContext {
    * 23505, anything the owner returns untouched — still captures here.
    */
   captureFilter?: (failure: unknown) => boolean;
+  /**
+   * The signal the caller handed `.abortSignal()`. When the CALLER aborts it
+   * (supersede, unmount — anything but a timeout), the abort-shaped answer is
+   * its own control flow and the caller owns the outcome: nothing is filed.
+   */
+  callerSignal?: AbortSignal;
 }
 
 /** Marks a proxy so we never double-wrap. */
@@ -117,9 +123,55 @@ export function filterSupabaseErrorCapture<T>(
   return builder;
 }
 
+/**
+ * "No such function on this database" — PostgREST PGRST202 / Postgres 42883.
+ * The ONE predicate for a door that is not (yet) on the database answering.
+ */
+export function isAbsentDoorFailure(failure: unknown): boolean {
+  if (!failure || typeof failure !== "object") return false;
+  const code = (failure as { code?: unknown }).code;
+  return code === "PGRST202" || code === "42883";
+}
+
+/**
+ * For a caller that OWNS a working fallback when the door is absent (a door
+ * applied on the clone, not yet on the main database): an absent door is not
+ * filed, every other failure still is. Use only where the fallback really
+ * answers — a caller that just shows "unavailable" must let the capture stand.
+ */
+export function allowAbsentDoor<T>(builder: T): T {
+  return filterSupabaseErrorCapture(
+    builder,
+    (failure) => !isAbsentDoorFailure(failure),
+  );
+}
+
+function isAbortShaped(failure: unknown): boolean {
+  if (!failure || typeof failure !== "object") return false;
+  if ((failure as { name?: unknown }).name === "AbortError") return true;
+  return isAbortResultError(failure as { message?: string; hint?: string });
+}
+
+/**
+ * The caller aborted its own request (not a timeout): the answer is the
+ * caller's control flow, never an incident. A timeout signal's reason is a
+ * `TimeoutError` — that is a failure and still captures.
+ */
+function cancelledByCaller(ctx: ChainContext, failure: unknown): boolean {
+  const signal = ctx.callerSignal;
+  if (!signal?.aborted || !isAbortShaped(failure)) return false;
+  const reasonName = (signal.reason as { name?: unknown } | undefined)?.name;
+  return reasonName !== "TimeoutError";
+}
+
 /** Fail open: a filter that throws must never hide a failure. */
 function shouldCapture(ctx: ChainContext, failure: unknown): boolean {
   if (ctx.captureEnabled === false) return false;
+  try {
+    if (cancelledByCaller(ctx, failure)) return false;
+  } catch {
+    /* fail open */
+  }
   if (!ctx.captureFilter) return true;
   try {
     return ctx.captureFilter(failure) !== false;
@@ -442,6 +494,13 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
       const value = Reflect.get(target, prop, receiver);
       if (typeof value === "function") {
         return (...args: unknown[]) => {
+          if (
+            prop === "abortSignal" &&
+            typeof AbortSignal !== "undefined" &&
+            args[0] instanceof AbortSignal
+          ) {
+            ctx.callerSignal = args[0];
+          }
           const result = Reflect.apply(value, target, args);
           // Most builder methods return `this` (the real target) for chaining.
           if (result === target) return proxy;

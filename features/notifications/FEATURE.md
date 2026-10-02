@@ -80,6 +80,8 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
 
 ## Change log
 
+- **2026-10-02** — An absent triage door is no longer filed RED on every load (`/board` captured `PGRST202 communication.my_inbox_summary` while the inbox ran on its fallback). Doors with a working pre-triage fallback go through `allowAbsentDoor` (`lib/diagnostics/supabaseErrorCapture.ts`); Done/Snooze against an absent door and every other error still capture; the stand-in announces itself once per page in the console with the remedy. Guard: `__tests__/absent-door-is-not-an-incident.test.ts` (red on the old reader).
+
 - **2026-10-01** — Notifications UI redo (owner rulings 1–4, `common-docs/projects/notifications-ui-redo/RESEARCH.md`). `InboxPanel` deleted; `BellPanel`, `InboxWorkspace`, `NoticeRow`, `NoticeDetail`, `HiddenElsewhere`, the notice-source registry and four windows built; every open is a window or a new tab (guard red→green); triage migration applied and rehearsed (up/inverse/up) on the clone only. Verified on the clone preview as admin@admin.com at 1440 and 375, dark and light. Independent review (6 HIGH) fixed the same day: per-action undo, Enter never hijacked, live fallback offers no unread/undo it cannot do, (time, id) paging, unsafe links open nothing, waiting runs open in a new tab, the guard now opens every menu and scans the whole folder (mutation shown red).
 
 - **2026-09-30** — Mandate Candidates F1: `?panels=` notice links open their window in place;

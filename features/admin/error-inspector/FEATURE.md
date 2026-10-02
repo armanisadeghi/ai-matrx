@@ -454,6 +454,16 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-10-02 — Two caller-owned outcomes leave the Supabase capture proxy
+  unfiled (`supabaseErrorCapture.ts`): (1) a chain whose `.abortSignal(s)` the
+  CALLER aborted (supersede/unmount; a `TimeoutError` reason still captures,
+  and so does any non-abort error) — the live instance was the sync engine
+  superseding a `users.user_preferences` save, filed yellow 6x; (2)
+  `allowAbsentDoor(builder)` for a caller that owns a working fallback when a
+  door is absent (PGRST202/42883, `isAbsentDoorFailure`) — first user:
+  `features/notifications/service.ts`. Callers that only show "unavailable"
+  must NOT use it. Tests in `supabaseErrorCapture.test.ts`, red on the old proxy.
+
 - 2026-10-02 — A cancellation is never a `redux-rejected` capture, in any
   serialized form (`isCancellation` in `reduxErrorCaptureMiddleware.ts`):
   `meta.aborted`/`condition`, name `AbortError`, code 20/`ABORT_ERR`, and the
