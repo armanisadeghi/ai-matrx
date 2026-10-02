@@ -7,6 +7,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 import { err, mapPgErrorPair, ok } from "@/features/scopes/service/rpcResult";
+import { WHOLE_VALUE_SOURCE_KIND, wholeValueSize, type WholeValuePointer } from "@ai-matrx/records/core";
+import { readFileText } from "@/features/unified-data/recordsFiles";
 import type {
   ArchivedScopeTypeRow,
   ContextItemRow,
@@ -130,7 +132,75 @@ export async function readContextValues(
     callContextDoor<StoreValueRow[]>("context_values", { p_scope_ids: batch }),
   );
   if (!res.ok) return res;
-  return ok(res.data.map(contextValueFromStore));
+  const cells = res.data.map(contextValueFromStore);
+  await wholeScopeValues(res.data, cells);
+  return ok(cells);
+}
+
+// ─── a text kept as a file (SCOPES-D1, lane 9, 2026-10-02) ─────────────────────────────────────────
+
+/** The first words with one sentence naming the file and why its whole text is not here. */
+function wordsAndFile(words: string, pointer: WholeValuePointer, why: string): string {
+  return `${words}… [This is the start of a ${wholeValueSize(pointer)} text kept as file ${pointer.file_id}; it could not be opened here: ${why}]`;
+}
+
+/** The SHA-256 of a text's UTF-8 bytes, hex — or null where this runtime has no Web Crypto. */
+async function sha256Hex(text: string): Promise<string | null> {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) return null;
+  const digest = await subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * A CELL THAT HOLDS ONLY THE FIRST WORDS OF A TEXT KEPT AS A FILE GETS ITS WHOLE TEXT.
+ *
+ * The record store keeps a value over its ceiling for one cell (`custom/value_max_bytes`, 100,000
+ * bytes) as a file and the cell holds its first 1000 characters; `custom.context_values` names the
+ * file beside that row (`whole_value`). The old scope table held the whole text, and every scope
+ * screen reads `value_text`, so here each such cell is given the file's whole text — read once per
+ * file, as the person, through the platform's one file reader (`readFileText`), and checked against
+ * the size and SHA-256 the pointer names. A file that cannot be read, or whose content is not the
+ * text the cell points at, leaves the first words with a sentence naming the file
+ * (`wordsAndFile`) — never the first words passed off as the value. A text still waiting for its
+ * file (`pending`) that the door could not answer whole says the rest is still being saved.
+ * Mutates `cells` in place; `rows[i]` is the door's row behind `cells[i]`.
+ */
+export async function wholeScopeValues(
+  rows: readonly StoreValueRow[],
+  cells: Array<ContextItemValue & { scope_id: string }>,
+  read: (args: { fileId: string }) => Promise<string> = readFileText,
+): Promise<void> {
+  const texts = new Map<string, Promise<string>>();
+  await Promise.all(
+    rows.map(async (row, i) => {
+      const w = row.whole_value;
+      const cell = cells[i];
+      if (!w || w.in_value || !cell || typeof cell.value_text !== "string") return;
+      const words = cell.value_text;
+      if (!w.file_id) {
+        cell.value_text = `${words}… [This is the start of a ${w.chars ?? "longer"}-character text that is still being saved; open it again in a moment for all of it.]`;
+        return;
+      }
+      const pointer = { ...w, kind: WHOLE_VALUE_SOURCE_KIND, file_id: w.file_id } as WholeValuePointer;
+      if (!texts.has(w.file_id)) texts.set(w.file_id, read({ fileId: w.file_id }));
+      try {
+        const text = await texts.get(w.file_id)!;
+        if (typeof w.chars === "number" && [...text].length !== w.chars) {
+          cell.value_text = wordsAndFile(words, pointer, `the file holds ${[...text].length} characters, not ${w.chars}`);
+          return;
+        }
+        const sha = w.sha256 ? await sha256Hex(text) : null;
+        if (sha !== null && sha !== w.sha256) {
+          cell.value_text = wordsAndFile(words, pointer, "the file's content is not the text the cell points at");
+          return;
+        }
+        cell.value_text = text;
+      } catch (thrown) {
+        cell.value_text = wordsAndFile(words, pointer, thrown instanceof Error ? thrown.message : String(thrown));
+      }
+    }),
+  );
 }
 
 export async function readArchivedScopeTypes(

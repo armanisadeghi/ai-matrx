@@ -140,6 +140,28 @@ export interface StoreValueRow {
   labels?: Record<string, string> | null;
   /** A File RECORD's file (record id → files.files id), for a File column's references the caller sees. */
   files?: Record<string, string> | null;
+  /**
+   * SCOPES-D1 (lane 9, 2026-10-02): present only when the cell holds the FIRST WORDS of a text too
+   * big for one cell. `file_id` names the file holding the whole text (read it with
+   * `readFileText`); `pending` means the file is still being written, and `in_value` that the door
+   * already answered the whole text in `value`. See `wholeScopeValues` in storeScopeReads.ts.
+   */
+  whole_value?: StoreWholeValue | null;
+}
+
+/** The file fields of a whole-value pointer, as `custom.context_values` answers them. */
+export interface StoreWholeValue {
+  kind: string;
+  file_id?: string | null;
+  file_record?: string | null;
+  bytes?: number | null;
+  /** The whole text's length in characters (code points). */
+  chars?: number | null;
+  sha256?: string | null;
+  shown_chars?: number | null;
+  mime?: string | null;
+  pending?: boolean | null;
+  in_value?: boolean | null;
 }
 
 // ─── the adapter: store words → the old nodes ──────────────────────────────────────────────────
