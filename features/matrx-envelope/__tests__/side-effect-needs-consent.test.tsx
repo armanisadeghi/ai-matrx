@@ -183,6 +183,8 @@ describe("the host names the consequence before anything runs", () => {
       failed: 0,
       message: "Created task “LANE-C — probe”.",
       records: [{ noun: "task", id: TASK_ID }],
+      // A create replaces nothing.
+      before: [null],
     });
   });
 

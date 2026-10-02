@@ -24,8 +24,21 @@ import { useOpenItemPresentation } from "@/features/item-presentation/useOpenIte
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { referenceDoor, type ReferenceDoor } from "@/features/matrx-envelope/referenceDoor";
 import { useReferenceTrashed } from "@/features/matrx-envelope/referenceTrash";
-import { ReferenceTrashDoor } from "@/features/matrx-envelope/components/ReferenceTrashDoor";
+import dynamic from "next/dynamic";
 import { TRASH_HREF } from "@/features/trash/archiveCopy";
+
+/**
+ * The trash door loads on the click that opens it (Method A — a click-gated
+ * reveal): it carries the access gate's graph, which no chip needs until a
+ * person opens a record that is in the trash.
+ */
+const ReferenceTrashDoor = dynamic(
+  () =>
+    import("@/features/matrx-envelope/components/ReferenceTrashDoor").then(
+      (m) => m.ReferenceTrashDoor,
+    ),
+  { ssr: false, loading: () => null },
+);
 
 export interface ReferenceDoorAction {
   door: ReferenceDoor;

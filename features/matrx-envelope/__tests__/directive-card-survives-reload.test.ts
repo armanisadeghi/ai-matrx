@@ -62,6 +62,8 @@ function shellState(
 }
 
 const RAN_TWICE = { copies: 2 };
+/** What an update replaced, ledgered at apply time (aidream 1122747fb5) — not in the generated contract yet. */
+const REPLACED = { before: { title: "G6A old title" } };
 
 describe("the host reads the ledger so a card survives a reload", () => {
   beforeEach(() => {
@@ -104,6 +106,8 @@ describe("the host reads the ledger so a card survives a reload", () => {
       records: [{ noun: "task", id: TASK_A }],
       // An older server sends no `copies`: the block applied once.
       copies: 1,
+      // …and no `before`: nothing recorded, so the card says only "→ new".
+      before: [null],
     });
     expect(created).toEqual({ state: "not_applied" });
   });
@@ -185,7 +189,13 @@ describe("the host reads the ledger so a card survives a reload", () => {
         shellState("directive_v1_create_task", [
           // `copies` is newer than the generated contract (aidream cc87e4e53c),
           // so it rides a spread exactly as the wire would carry it.
-          { state: "applied", message: "Created task.", resource_ids: [TASK_A], ...RAN_TWICE },
+          {
+            state: "applied",
+            message: "Created task.",
+            resource_ids: [TASK_A],
+            ...RAN_TWICE,
+            ...REPLACED,
+          },
           { state: "applied", message: "Created task.", resource_ids: [TASK_B], ...RAN_TWICE },
         ]),
       ],
@@ -203,6 +213,8 @@ describe("the host reads the ledger so a card survives a reload", () => {
       ],
       // The server's per-item count after a Run again (aidream applied_summary).
       copies: 2,
+      // Each item's replaced values, by index — the card's record of the change.
+      before: [{ title: "G6A old title" }, null],
     });
   });
 
