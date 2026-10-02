@@ -63,7 +63,6 @@ import {
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
 import type { ItemType } from "@/features/item-presentation/types";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
-import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import {
   ChipRow,
   Section,
@@ -77,6 +76,7 @@ import {
   readText,
   type ChipTone,
 } from "../result-kinds/result-kind-shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** A list of records, or `null` when the key did not arrive as one. */
 export function readRows(value: unknown): Record<string, unknown>[] | null {
@@ -873,7 +873,7 @@ export const UnmodelledPreviews: React.FC<{
   return (
     <>
       {remaining.map((key) => (
-        <Section key={key} label={`The change it would make — ${humanizeKey(key)}`}>
+        <Section key={key} label={`The change it would make — ${humanizeIdentifier(key) || key}`}>
           <ResultValue value={value[key]} density="full" />
         </Section>
       ))}

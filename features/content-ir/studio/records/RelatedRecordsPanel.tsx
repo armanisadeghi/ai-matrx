@@ -54,7 +54,7 @@ import {
   listChildKindEdgesFromTables,
   type KindChildEdge,
 } from "@/features/content-ir/registry/schema-source-kind-tables";
-import { humanizeKey, schemaFields, type SchemaField } from "./buildRecordColumns";
+import { schemaFields, type SchemaField } from "./buildRecordColumns";
 import {
   listRelatedChildRecords,
   type RelatedRecordRow,
@@ -62,6 +62,7 @@ import {
 } from "./related-records-service";
 import type { ConfirmationFilter, KindRecordRow } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -146,7 +147,7 @@ export function RelatedRecordsPanel({
         <TabsTrigger value="record">{label}</TabsTrigger>
         {childEdges.map((edge) => (
           <TabsTrigger key={edge.fieldName} value={edge.fieldName}>
-            {humanizeKey(edge.fieldName)}
+            {humanizeIdentifier(edge.fieldName) || edge.fieldName}
           </TabsTrigger>
         ))}
       </TabsList>
@@ -447,7 +448,7 @@ function EmptyRelatedList({
 
   return (
     <p className="rounded-md border border-border/70 px-3 py-2.5 text-xs text-muted-foreground">
-      This record declares a <strong>{humanizeKey(edge.fieldName)}</strong> field,
+      This record declares a <strong>{humanizeIdentifier(edge.fieldName) || edge.fieldName}</strong> field,
       but no {edge.childLabel} records have been written for it yet. They appear
       here, in the order the record declares them, as soon as one exists.
     </p>

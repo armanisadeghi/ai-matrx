@@ -53,7 +53,6 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCount } from "@ai-matrx/kit/format";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
-import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import {
   ChipRow,
   CopyValueButton,
@@ -89,6 +88,7 @@ import {
   readWhen,
   readWriteClaim,
 } from "./google-result-shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * Keys the branches below promote themselves, and never repeat in the strip.
@@ -188,7 +188,7 @@ function whenText(value: unknown): string | null {
 
 /** "append_document" → "Append document". The kind carries no display names. */
 function actionLabel(action: string): string {
-  return action ? humanizeKey(action) : "Google Workspace";
+  return action ? (humanizeIdentifier(action) || action) : "Google Workspace";
 }
 
 /** One preview row: a label and the value, as the tool stated it. */

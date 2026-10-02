@@ -36,7 +36,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import type { HrLawCitation, HrOrgLawRule, HrPlatformLawRule } from "../types";
-import { describeLawValue, displayableParameters, humanizeLawKey } from "./law-parameters";
+import { describeLawValue, displayableParameters } from "./law-parameters";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The one class the owner called out by name, and the key that makes it dangerous. */
 const PTO_PAYOUT_CLASS = "pto-payout-at-termination";
@@ -109,7 +110,7 @@ export function LawParameterList({
         if (text !== null) {
           return (
             <div key={key} className="flex min-w-0 items-baseline justify-between gap-3">
-              <dt className="truncate text-xs text-foreground">{humanizeLawKey(key)}</dt>
+              <dt className="truncate text-xs text-foreground">{humanizeIdentifier(key) || key}</dt>
               <dd className="truncate text-xs font-semibold text-foreground">{text}</dd>
             </div>
           );
@@ -120,7 +121,7 @@ export function LawParameterList({
             : null;
         return (
           <div key={key} className="min-w-0 sm:col-span-2">
-            <p className="text-xs font-semibold text-foreground">{humanizeLawKey(key)}</p>
+            <p className="text-xs font-semibold text-foreground">{humanizeIdentifier(key) || key}</p>
             {nested && depth < 1 ? (
               <div className="mt-0.5 border-l border-border pl-3">
                 <LawParameterList parameters={nested} depth={depth + 1} />
@@ -189,7 +190,7 @@ function PendingVerificationNote({
   return (
     <p className="rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-foreground">
       <span className="font-semibold">
-        Pending verification: {unverifiedKeys.map(humanizeLawKey).join(", ")}.
+        Pending verification: {unverifiedKeys.map((k) => humanizeIdentifier(k) || k).join(", ")}.
       </span>{" "}
       {ptoPayout
         ? "Payouts that depend on these exclusions are withheld, never shown as a figure."

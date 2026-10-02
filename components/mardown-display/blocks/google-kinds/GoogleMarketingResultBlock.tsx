@@ -42,7 +42,6 @@ import {
 
 import { cn } from "@/lib/utils";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
-import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import {
   ChipRow,
   LeftoverFields,
@@ -77,6 +76,7 @@ import {
   readRows,
   readWriteClaim,
 } from "./google-result-shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * This block has NO dedicated preview section — its six actions are all
@@ -163,7 +163,7 @@ const HealthChecks: React.FC<{ checks: Record<string, unknown>[] }> = ({ checks 
             <div className="flex min-w-0 flex-wrap items-center gap-x-1.5">
               <CheckIcon verdict={verdict} />
               <span className="min-w-0 break-words text-xs font-medium text-foreground">
-                {id ? humanizeKey(id) : "Check"}
+                {id ? (humanizeIdentifier(id) || id) : "Check"}
               </span>
               {verdict ? <StateChip label={verdict} tone={checkTone(verdict)} /> : null}
             </div>
@@ -262,7 +262,7 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
         <HeadIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="text-sm font-medium text-foreground">
-          {action ? humanizeKey(action) : "Google marketing read"}
+          {action ? (humanizeIdentifier(action) || action) : "Google marketing read"}
         </span>
         {/* A NUMBER ALWAYS CARRIES ITS WINDOW: `bounds` is optional on this kind,
             so an absent window is announced ON the count (V-22, NEW-10). */}

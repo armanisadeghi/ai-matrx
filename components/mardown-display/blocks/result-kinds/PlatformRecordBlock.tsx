@@ -54,7 +54,6 @@ import { Database, EyeOff, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
-import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import {
   ChipRow,
   LeftoverFields,
@@ -70,6 +69,7 @@ import {
 } from "./result-kind-shared";
 import { RecordDoor } from "../google-kinds/google-result-shared";
 import type { ItemType } from "@/features/item-presentation/types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * Every key this component prints itself. Exported so the render-leg suite can
@@ -169,7 +169,7 @@ const PlatformRecordBlock: React.FC<ResultKindBlockProps> = ({
 
   // The TYPE's name: the registry's label when the node resolved one, otherwise
   // the token humanized — never a bare token where a person is reading.
-  const typeName = entityLabel ?? (entityType ? humanizeKey(entityType) : "Record");
+  const typeName = entityLabel ?? (entityType ? (humanizeIdentifier(entityType) || entityType) : "Record");
   const fieldCount = fields ? Object.keys(fields).length : 0;
 
   return (

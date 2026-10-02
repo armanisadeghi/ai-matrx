@@ -29,13 +29,13 @@ import type {
   PunchKind,
   PunchSource,
 } from "../api/types";
-import { humanizeToken } from "./format";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export function labelFor<K extends string>(
   map: Partial<Record<K, string>>,
   token: K,
 ): string {
-  return map[token] ?? humanizeToken(token);
+  return map[token] ?? (humanizeIdentifier(token) || token);
 }
 
 export const PUNCH_KIND_LABELS: Record<PunchKind, string> = {

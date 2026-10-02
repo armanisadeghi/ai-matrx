@@ -38,6 +38,7 @@ import {
   type ConceptSelection,
   type ResolvedConcept,
 } from "./concepts";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** Node types accepted by `plan.node.node_type` (DB check constraint). */
 export const NODE_TYPES = [
@@ -597,12 +598,6 @@ function foundationRequirements(
     add(`asset:${assetKey}`, "asset", `Asset — ${assetKey}`, raw);
   }
   return out;
-}
-
-/** `service_icon` → `Service icon` — machine keys are never shown raw. */
-export function humanizeKey(key: string): string {
-  const words = key.replace(/[_-]+/g, " ").trim();
-  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 export interface ExpandOptions {

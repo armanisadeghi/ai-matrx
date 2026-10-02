@@ -27,6 +27,7 @@
 import type { AssistAction } from "@/features/assists/types";
 import type { Json } from "@/types/database.types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The mandate the AI remedies resolve at click time (rebindable from the
  * admin mandates console, no deploy). Declared server-side in aidream
@@ -106,9 +107,7 @@ export interface ResolvedFinding {
 
 /** `redirect_chain` → "Redirect chain". Never returns an empty string. */
 export function humanizeItemKey(itemKey: string): string {
-  const cleaned = itemKey.replace(/[_.-]+/g, " ").trim();
-  if (!cleaned) return "Unnamed check";
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  return humanizeIdentifier(itemKey) || "Unnamed check";
 }
 
 /** The page this finding is about, in words a person can act on. */

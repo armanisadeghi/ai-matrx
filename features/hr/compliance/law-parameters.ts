@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/hr/compliance/law-parameters.ts
 //
 // READING AND WRITING A RULE'S PARAMETERS WITHOUT PRETENDING TO UNDERSTAND THEM.
@@ -29,12 +30,6 @@ export type LawParamField = {
   options: string[];
   required: boolean;
 };
-
-/** `daily_threshold_hours` → `Daily threshold hours`. Never invents a word. */
-export function humanizeLawKey(key: string): string {
-  const words = key.replace(/[_.]+/g, " ").trim();
-  return words.charAt(0).toUpperCase() + words.slice(1);
-}
 
 function typeNames(value: unknown): string[] {
   if (typeof value === "string") return [value];
@@ -81,7 +76,7 @@ export function flatParameterFields(
       if (options.length === 0) return null;
       fields.push({
         key,
-        label: humanizeLawKey(key),
+        label: (humanizeIdentifier(key) || key),
         kind: "enum",
         options,
         required: required.has(key),
@@ -103,7 +98,7 @@ export function flatParameterFields(
     if (!kind) return null;
     fields.push({
       key,
-      label: humanizeLawKey(key),
+      label: (humanizeIdentifier(key) || key),
       kind,
       options: [],
       required: required.has(key),

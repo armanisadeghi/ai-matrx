@@ -36,9 +36,9 @@ import { Braces, Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { KIND_KEY, reconstructRegionValue } from "@ai-matrx/content-ir";
-import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import { useClipboard } from "@/hooks/useClipboard";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** Props every runtime-result block takes — the resolver-only route shape. */
 export interface ResultKindBlockProps {
@@ -293,7 +293,7 @@ export const MetaStrip: React.FC<{
     <div className={cn("flex flex-wrap gap-x-4 gap-y-1 text-xs", className)}>
       {entries.map(([key, item]) => (
         <span key={key} className="min-w-0">
-          <span className="text-muted-foreground">{humanizeKey(key)}: </span>
+          <span className="text-muted-foreground">{humanizeIdentifier(key) || key}: </span>
           <span className="break-all font-medium text-foreground">
             {typeof item === "number" ? item.toLocaleString() : String(item)}
           </span>
@@ -381,5 +381,5 @@ export const CopyValueButton: React.FC<{ text: string; what: string }> = ({
 export function kindLabel(kind: string): string {
   if (!kind) return "";
   const core = kind.replace(/_(result|value|content)$/, "");
-  return core ? humanizeKey(core) : "";
+  return core ? (humanizeIdentifier(core) || core) : "";
 }

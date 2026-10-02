@@ -13,8 +13,9 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 
 import type { TrackerStoryRow } from "@/features/marketing/data/coverage-types";
 
-import { humanize, type SetAsideList, type SetAsideListId } from "./run-document";
+import { type SetAsideList, type SetAsideListId } from "./run-document";
 import { domainOf, SmartLink } from "./kinds/shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * `request` opens a list from outside (a count on the digest, a `?open=` link):
@@ -88,7 +89,7 @@ export function SetAsideLists({
                   {Object.keys(list.byReason).length ? (
                     <p className="text-xs text-foreground">
                       {Object.entries(list.byReason)
-                        .map(([k, n]) => `${humanize(k)}: ${n}`)
+                        .map(([k, n]) => `${humanizeIdentifier(k)}: ${n}`)
                         .join(" · ")}
                     </p>
                   ) : null}
@@ -99,7 +100,7 @@ export function SetAsideLists({
                           <div className="flex flex-wrap items-center gap-x-2">
                             <span className="text-foreground">{item.title || item.id}</span>
                             {item.reason ? (
-                              <span className="text-[11px] text-muted-foreground">{humanize(item.reason)}</span>
+                              <span className="text-[11px] text-muted-foreground">{humanizeIdentifier(item.reason)}</span>
                             ) : null}
                             {item.id ? storyActions(item.id) : null}
                           </div>

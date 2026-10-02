@@ -55,6 +55,7 @@ import type {
   WorkIntervalRow,
   WorkweekRow,
 } from "../api/types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** What `callHrTimeRpc` hands back for this RPC: the live envelope, camelized key-by-key. */
 export type Live = Record<string, unknown>;
@@ -613,7 +614,7 @@ function mapEditHistory(rows: Live[]): Timesheet["editHistory"] {
         byName:
           nstr(actor.actorName) ??
           ACTOR_ROLE[actorType] ??
-          (actorType ? humanizeActor(actorType) : "Someone"),
+          (actorType ? humanizeIdentifier(actorType) : "Someone"),
         reason:
           str(source.enteredReason) ||
           str(h.voidedReason) ||
@@ -626,11 +627,6 @@ function mapEditHistory(rows: Live[]): Timesheet["editHistory"] {
         rateAtTime: rates.length > 0 ? nnum(rates[0]) : null,
       };
     });
-}
-
-function humanizeActor(token: string): string {
-  const spaced = token.replace(/_/g, " ");
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
 export function fromLiveTimesheet(payload: unknown): Timesheet {

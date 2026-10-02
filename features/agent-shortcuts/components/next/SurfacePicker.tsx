@@ -17,6 +17,7 @@ import {
 } from "@ai-matrx/chat/surfaces/redux/selectors";
 import { loadSurfaces } from "@ai-matrx/chat/surfaces/redux/thunks";
 import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const DEFAULT_CLIENT = "matrx-default";
 const DEFAULT_SURFACE = "matrx-default/default";
@@ -25,14 +26,6 @@ function splitSurfaceName(fullName: string): { client: string; local: string } {
   const idx = fullName.indexOf("/");
   if (idx < 0) return { client: "", local: fullName };
   return { client: fullName.slice(0, idx), local: fullName.slice(idx + 1) };
-}
-
-function prettifyClient(client: string): string {
-  return client
-    .split(/[-_/]/g)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 }
 
 /**
@@ -131,7 +124,7 @@ export function SurfacePicker({
           <SelectContent>
             {clients.map((c) => (
               <SelectItem key={c} value={c}>
-                {prettifyClient(c)}
+                {humanizeIdentifier(c)}
               </SelectItem>
             ))}
           </SelectContent>

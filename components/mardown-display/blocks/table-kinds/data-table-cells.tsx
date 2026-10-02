@@ -62,7 +62,6 @@ import {
 import { cn } from "@/lib/utils";
 import { ShortId } from "@ai-matrx/chat/tool-call-visualization/result-fields/ShortId";
 import { useClipboard } from "@/hooks/useClipboard";
-import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { useOpenStructuredValueWindow } from "@/features/overlays/openers/structuredValueWindow";
 import {
@@ -73,6 +72,7 @@ import {
   urlLabel,
 } from "./cell-value-shapes";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * The portable type vocabulary the Python model declares
@@ -175,7 +175,7 @@ export function structureSummary(value: unknown): string {
   if (keys.length === 0) return "No details";
   // The FIELDS THEMSELVES beat a count: "name, status, score" tells a reader
   // what this is; "Object(3)" tells them we have three of something.
-  const shown = keys.slice(0, 3).map(humanizeKey).join(", ");
+  const shown = keys.slice(0, 3).map((k) => humanizeIdentifier(k) || k).join(", ");
   return keys.length > 3
     ? `${shown} +${keys.length - 3} more`
     : shown;

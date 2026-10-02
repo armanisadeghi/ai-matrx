@@ -71,7 +71,6 @@ import { NewsTriageView } from "./kinds/NewsTriageView";
 import { NewsworthinessVerdictView } from "./kinds/NewsworthinessVerdictView";
 import { Pill, formatWhen } from "./kinds/shared";
 import {
-  humanize,
   isRecord,
   num,
   openTargetParam,
@@ -88,6 +87,7 @@ import {
 } from "./run-document";
 import { SetAsideLists } from "./SetAsideLists";
 import { StoryActions } from "./StoryActions";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The "News monitor run" template's steps, in order (aidream `workflows/news_monitor_run_v1.py`). */
 const STEP_LABELS: Record<string, string> = {
@@ -353,7 +353,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                 <span data-surface-value="news_schedule_status">
                   {schedule
                     ? schedule.has_schedule && schedule.is_active
-                      ? `Runs ${humanize(schedule.preset ?? "custom").toLowerCase()}${schedule.timezone ? ` (${schedule.timezone})` : ""}${schedule.next_run_at ? ` · next ${formatWhen(schedule.next_run_at)}` : ""}`
+                      ? `Runs ${humanizeIdentifier(schedule.preset ?? "custom").toLowerCase()}${schedule.timezone ? ` (${schedule.timezone})` : ""}${schedule.next_run_at ? ` · next ${formatWhen(schedule.next_run_at)}` : ""}`
                       : "No schedule — set one"
                     : null}
                 </span>
@@ -462,7 +462,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
               <SelectContent>
                 {(runs.data ?? []).map((r) => (
                   <SelectItem key={r.id} value={r.id}>
-                    {formatWhen(r.created_at)} · {humanize(r.trigger ?? "run")} ·{" "}
+                    {formatWhen(r.created_at)} · {humanizeIdentifier(r.trigger ?? "run")} ·{" "}
                     {r.outcome === "completed_with_failures" ? "completed with failures" : r.status}
                   </SelectItem>
                 ))}
@@ -473,7 +473,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
             </Select>
             {summary ? (
               <span className="text-muted-foreground" data-surface-value="news_run_facts">
-                {humanize(str(summary.trigger) || "run")} · generated {formatWhen(str(summary.run_generated_at))} ·
+                {humanizeIdentifier(str(summary.trigger) || "run")} · generated {formatWhen(str(summary.run_generated_at))} ·
                 parity mode {summary.parity_mode === true ? "on" : "off"} ·{" "}
                 {Object.keys(performers).length} judgment job{Object.keys(performers).length === 1 ? "" : "s"} bound
               </span>
@@ -498,13 +498,13 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                 <section className="rounded-md border border-border bg-card p-3" data-surface-value="news_source_health">
                   <h2 className="text-sm font-semibold text-foreground">Sources this run</h2>
                   <p className="text-xs text-foreground">
-                    Read from {liveSources.map((h) => `${humanize(h.source)} (${h.items})`).join(", ") || "no source"}.
+                    Read from {liveSources.map((h) => `${humanizeIdentifier(h.source)} (${h.items})`).join(", ") || "no source"}.
                   </p>
                   {quietSources.length ? (
                     <ul className="mt-1 flex flex-col gap-0.5">
                       {quietSources.map((h) => (
                         <li key={h.source} className="text-xs text-muted-foreground" data-source-status={h.status}>
-                          <span className="font-medium text-warning">{humanize(h.source)}</span>: {humanize(h.status).toLowerCase()}
+                          <span className="font-medium text-warning">{humanizeIdentifier(h.source)}</span>: {humanizeIdentifier(h.status).toLowerCase()}
                           {h.error ? ` — ${h.error.slice(0, 280)}${h.error.length > 280 ? "…" : ""}` : ""}
                         </li>
                       ))}
@@ -546,7 +546,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                   <ul className="mt-1 flex flex-col gap-0.5">
                     {failedStages.map(({ stage, reason }) => (
                       <li key={stage} className="text-xs">
-                        <span className="font-medium text-foreground">{humanize(stage)}:</span>{" "}
+                        <span className="font-medium text-foreground">{humanizeIdentifier(stage)}:</span>{" "}
                         <span className="text-muted-foreground">
                           {reason || "No failure detail was recorded."}
                         </span>
@@ -570,7 +570,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                     {proofGated.map((row) => (
                       <li key={str(row.signal_id)} className="flex flex-wrap items-center gap-x-2 text-sm" data-story-key={str(row.signal_id)}>
                         <span className="text-foreground">{str(row.signal_title)}</span>
-                        <Pill tone="warn">{humanize(str(row.tier))} · proof-gated</Pill>
+                        <Pill tone="warn">{humanizeIdentifier(str(row.tier))} · proof-gated</Pill>
                         {storyActions(str(row.signal_id))}
                       </li>
                     ))}

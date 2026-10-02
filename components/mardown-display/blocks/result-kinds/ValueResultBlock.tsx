@@ -33,7 +33,6 @@ import { CalendarClock, CircleCheck, CircleSlash, CircleX } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
-import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import {
   formatAbsoluteDate,
   formatRelativeTime,
@@ -56,6 +55,7 @@ import {
   readText,
   type ResultKindBlockProps,
 } from "./result-kind-shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** Where THE value lives, in the priority these kinds carry one. */
 const VALUE_KEYS = [
@@ -207,11 +207,11 @@ const ValueResultBlock: React.FC<ResultKindBlockProps> = ({
       ) : isInlineScalar ? (
         <HeroScalar
           text={valueText as string}
-          what={humanizeKey(valueKey as string).toLowerCase()}
+          what={humanizeIdentifier(valueKey as string).toLowerCase()}
         />
       ) : rawValue !== undefined ? (
         <Section
-          label={humanizeKey(valueKey as string)}
+          label={humanizeIdentifier(valueKey as string)}
           trailing={
             valueText ? <CopyValueButton text={valueText} what="value" /> : undefined
           }
@@ -232,7 +232,7 @@ const ValueResultBlock: React.FC<ResultKindBlockProps> = ({
             <CountChip
               key={stat.key}
               value={stat.count as number}
-              label={humanizeKey(stat.key).toLowerCase()}
+              label={(humanizeIdentifier(stat.key) || stat.key).toLowerCase()}
             />
           ))}
         </ChipRow>

@@ -40,7 +40,7 @@ import {
   undoDismiss,
   undoSurfaceAnyway,
 } from "./data";
-import { humanize } from "./run-document";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const REASON_LABEL: Record<StoryDismissReason, string> = {
   off_beat: "Not our beat",
@@ -87,7 +87,7 @@ export function StoryActions({
   if (story.status === "dismissed") {
     return (
       <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground" data-story-action="dismissed">
-        Dismissed{story.dismissed_reason ? ` — ${REASON_LABEL[story.dismissed_reason as StoryDismissReason] ?? humanize(story.dismissed_reason)}` : ""}
+        Dismissed{story.dismissed_reason ? ` — ${REASON_LABEL[story.dismissed_reason as StoryDismissReason] ?? humanizeIdentifier(story.dismissed_reason)}` : ""}
         <Button
           size="sm"
           variant="ghost"

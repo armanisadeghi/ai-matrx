@@ -28,11 +28,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
-import { humanizeKey, slugify, type ExpandedArchetype } from "../archetypes";
+import { slugify, type ExpandedArchetype } from "../archetypes";
 import type { Concept, ResolvedConcept } from "../concepts";
 import type { Readiness } from "../readiness";
 import { SetupSection, Stat } from "./SetupSection";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const MAX_COUNT = 500;
 
@@ -191,7 +192,7 @@ export function SetupWorkOrderColumn({
                   key={key}
                   className="rounded bg-muted px-1.5 py-0.5 text-[11px] leading-4 text-muted-foreground"
                 >
-                  {humanizeKey(key)}
+                  {humanizeIdentifier(key) || key}
                 </span>
               ))}
             </div>

@@ -32,6 +32,7 @@ import type {
   KeywordSelectionWrite,
 } from "./KeywordResearchBlock";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface KeywordClassificationBatchBlockProps {
   serverData?: unknown;
@@ -71,10 +72,6 @@ const CARD_FACT_KEYS: KeywordClassificationFactKey[] = [
   "comparison_intent",
   "price_sensitivity",
 ];
-
-function humanize(value: string): string {
-  return value.replace(/_/g, " ");
-}
 
 function ClassificationCard({
   card,
@@ -123,9 +120,9 @@ function ClassificationCard({
             <span
               key={key}
               className="rounded-full border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground"
-              title={humanize(key)}
+              title={humanizeIdentifier(key)}
             >
-              {humanize(fact)}
+              {humanizeIdentifier(fact)}
             </span>
           ) : null;
         })}
@@ -134,7 +131,7 @@ function ClassificationCard({
         <p className="mt-1 text-[10px] text-muted-foreground">
           Alt read:{" "}
           {Object.entries(card.secondaryInterpretation)
-            .map(([key, value]) => `${humanize(key)} → ${humanize(value)}`)
+            .map(([key, value]) => `${humanizeIdentifier(key)} → ${humanizeIdentifier(value)}`)
             .join(" · ")}
         </p>
       )}

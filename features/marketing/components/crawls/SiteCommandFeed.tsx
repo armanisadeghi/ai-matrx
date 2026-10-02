@@ -31,6 +31,7 @@ import {
   formatDurationSeconds,
 } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** A long run must not degrade the tab: render only the newest rows. */
 const MAX_RENDERED_ROWS = 150;
@@ -41,10 +42,6 @@ const TONE_CLASSES: Record<PresentedCrawlEvent["tone"], string> = {
   warning: "text-amber-600 dark:text-amber-500",
   destructive: "text-destructive",
 };
-
-function humanizeKey(key: string): string {
-  return key.replace(/_/g, " ").replace(/^./, (first) => first.toUpperCase());
-}
 
 /**
  * The command's own counters, in the order it reported them.
@@ -63,11 +60,11 @@ function counterEntries(
   const entries: { key: string; label: string; value: string }[] = [];
   for (const [key, value] of Object.entries(summary)) {
     if (typeof value === "number" && Number.isFinite(value) && value !== 0) {
-      entries.push({ key, label: humanizeKey(key), value: value.toLocaleString() });
+      entries.push({ key, label: (humanizeIdentifier(key) || key), value: value.toLocaleString() });
     } else if (typeof value === "boolean" && value) {
-      entries.push({ key, label: humanizeKey(key), value: "Yes" });
+      entries.push({ key, label: (humanizeIdentifier(key) || key), value: "Yes" });
     } else if (typeof value === "string" && value.trim()) {
-      entries.push({ key, label: humanizeKey(key), value });
+      entries.push({ key, label: (humanizeIdentifier(key) || key), value });
     }
   }
   return entries;
@@ -105,7 +102,7 @@ function timingEntries(
     .sort((a, b) => b.seconds - a.seconds)
     .map(({ key, seconds }) => ({
       key,
-      label: humanizeKey(key),
+      label: (humanizeIdentifier(key) || key),
       value: formatSeconds(seconds),
     }));
 }

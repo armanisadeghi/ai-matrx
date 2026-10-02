@@ -20,6 +20,7 @@ import { ConfirmationBadge } from "@/features/content-ir/records/ConfirmationBad
 import type { KindRecordRow } from "./types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { displayLabel, humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** One property of the kind's emitted schema, as a column needs to see it. */
 export interface SchemaField {
@@ -33,12 +34,6 @@ export interface SchemaField {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/** `would_buy_again` → "Would buy again". The key is never shown raw. */
-export function humanizeKey(key: string): string {
-  const spaced = key.replace(/[_-]+/g, " ").trim();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
 /**
@@ -58,7 +53,7 @@ export function schemaFields(emittedJsonSchema: unknown): SchemaField[] {
     if (key === "__kind") continue;
     const spec = isRecord(raw) ? raw : {};
     const title = typeof spec.title === "string" ? spec.title : null;
-    const label = title ?? humanizeKey(key);
+    const label = displayLabel(title, key);
     const enumValues = Array.isArray(spec.enum)
       ? spec.enum.filter((v): v is string => typeof v === "string")
       : null;
@@ -67,7 +62,7 @@ export function schemaFields(emittedJsonSchema: unknown): SchemaField[] {
         key,
         label,
         kind: "select",
-        options: enumValues.map((v) => ({ value: v, label: humanizeKey(v) })),
+        options: enumValues.map((v) => ({ value: v, label: humanizeIdentifier(v) || v })),
       });
       continue;
     }

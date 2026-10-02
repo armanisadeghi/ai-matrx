@@ -49,9 +49,9 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { MarketingSite } from "@/features/marketing/types";
 import type { AppDispatch } from "@/lib/redux/store";
 
-import { humanizeKey } from "./archetypes";
 import { bridgeStarterKit, createAndLinkCmsSite } from "./bridge";
 import type { ChecklistItem, CmsFacts } from "./readiness";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface ContentPlanSetupContext {
   site: MarketingSite;
@@ -359,7 +359,7 @@ export const contentPlanSetupChecklist = registerChecklist<ContentPlanSetupConte
           reason: `Still missing: ${short
             .map(
               (item) =>
-                `${humanizeKey(item.key.slice("asset:".length))} (${item.actual} of ${item.required})`,
+                `${humanizeIdentifier(item.key.slice("asset:".length))} (${item.actual} of ${item.required})`,
             )
             .join(", ")}.`,
           fix: {

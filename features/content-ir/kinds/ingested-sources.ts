@@ -51,6 +51,7 @@ import {
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import type { MaterializedKind } from "./kind-payload";
 import type { IngestedChunk, IngestedSources } from "./generated/kinds.generated";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // ---------------------------------------------------------------------------
 // Schemas — the compiled client mirror of IngestedContent / IngestedChunk.
@@ -175,8 +176,7 @@ export function sourceKindLabel(kind: string): string {
   if (kind === "") return "Material";
   const known = SOURCE_KIND_LABEL[kind];
   if (known) return known;
-  const humanized = kind.replace(/[_-]+/g, " ").trim();
-  return humanized.charAt(0).toUpperCase() + humanized.slice(1);
+  return humanizeIdentifier(kind) || kind;
 }
 
 /** THE SHAPE COMES FROM THE REGISTRY — the three fields a reader needs. */

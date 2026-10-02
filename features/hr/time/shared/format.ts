@@ -39,6 +39,7 @@ export {
 
 import { viewerTimeZone } from "../clock/stampedTime";
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** True when the record's stamped zone is not the zone the reader is sitting in. */
 export function zoneDiffersFromViewer(tz: string): boolean {
@@ -224,16 +225,6 @@ export function formatRoundingDelta(minutes: number): string {
   const abs = Math.abs(minutes);
   const unit = abs === 1 ? "minute" : "minutes";
   return `${minutes > 0 ? "+" : "−"}${abs} ${unit}`;
-}
-
-/**
- * Sentence-case a vocabulary token — for a HEADING or a filter option only.
- * 🚨 Never for a data cell: LAW 3a is that no cell prints a type name, and every interval,
- * exception and punch row carries a human label from the server for exactly that reason.
- */
-export function humanizeToken(token: string): string {
-  const spaced = token.replace(/_/g, " ");
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
 /** `1 exception` / `4 exceptions` — counting rows is not computing hours. */

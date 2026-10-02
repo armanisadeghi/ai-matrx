@@ -37,6 +37,7 @@ import {
   text,
 } from "../search-kinds/search-kind-data";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface CommerceBlockProps {
   serverData?: unknown;
@@ -44,7 +45,7 @@ interface CommerceBlockProps {
 }
 
 function humanize(value: string | null | undefined): string {
-  return value ? value.replaceAll("_", " ") : "Not supplied";
+  return value ? humanizeIdentifier(value) || value : "Not supplied";
 }
 
 function percent(value: unknown): string | null {

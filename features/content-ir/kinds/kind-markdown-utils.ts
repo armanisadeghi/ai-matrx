@@ -21,6 +21,7 @@ import {
   deriveInstanceTitle,
   INSTANCE_TITLE_KEYS,
 } from "@/features/content-ir/studio/instance-title";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export function isRecordValue(
   value: unknown,
@@ -162,11 +163,9 @@ export function joinBlocks(
     .join("\n\n");
 }
 
-/** "flashcard_set" → "Flashcard set". */
+/** "flashcard_set" → "Flashcard Set"; "Artifact" when there is nothing to say. */
 export function humanizeKind(kind: string): string {
-  const words = kind.replace(/[_-]+/g, " ").trim();
-  if (!words) return "Artifact";
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return humanizeIdentifier(kind) || "Artifact";
 }
 
 /** Renders a nested kind value as markdown (the registry's converter). */

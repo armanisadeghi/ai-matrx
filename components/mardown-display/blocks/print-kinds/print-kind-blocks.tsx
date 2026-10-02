@@ -39,6 +39,7 @@ import {
   readSearchKindValue,
   text,
 } from "../search-kinds/search-kind-data";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface PrintBlockProps {
   serverData?: unknown;
@@ -83,7 +84,7 @@ function rate(value: unknown): string | null {
 }
 
 function humanize(value: string | null | undefined): string {
-  return value ? value.replaceAll("_", " ") : "Not supplied";
+  return value ? humanizeIdentifier(value) || value : "Not supplied";
 }
 
 function isoDate(value: unknown): string | null {

@@ -36,7 +36,7 @@ import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-field
 import { ResultMarkdown } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultMarkdown";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";
-import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface WebAnalysisItemBlockProps {
   /** The raw region source — the zero-loss floor when no envelope survived. */
@@ -100,7 +100,7 @@ function readCheck(value: unknown): AuditCheckValue | null {
 function checkTitle(kind: string): string {
   if (!kind) return "";
   const core = kind.replace(/^web_/, "").replace(/_v\d+$/, "");
-  return core ? humanizeKey(core) : "";
+  return core ? (humanizeIdentifier(core) || core) : "";
 }
 
 const WebAnalysisItemBlock: React.FC<WebAnalysisItemBlockProps> = ({

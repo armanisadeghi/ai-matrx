@@ -6,8 +6,9 @@
  * it is for, what proof it needs, and the ideas it refused. The ONE renderer.
  */
 
-import { humanize, isRecord, records, str, strings } from "../run-document";
+import { isRecord, records, str, strings } from "../run-document";
 import { KindCard, Pill } from "./shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export function NewsAngleView({ angle, index }: { angle: Record<string, unknown>; index?: number }) {
   const shape = isRecord(angle.journalist_shape) ? angle.journalist_shape : {};
@@ -18,7 +19,7 @@ export function NewsAngleView({ angle, index }: { angle: Record<string, unknown>
           <span className="text-[11px] text-muted-foreground">a{index + 1}</span>
         ) : null}
         <span className="text-sm font-medium text-foreground">{str(angle.headline)}</span>
-        {str(angle.story_type) ? <Pill tone="info">{humanize(str(angle.story_type))}</Pill> : null}
+        {str(angle.story_type) ? <Pill tone="info">{humanizeIdentifier(str(angle.story_type))}</Pill> : null}
         {str(angle.angle_decay) ? (
           <Pill title={str(angle.angle_decay_reason)}>window {str(angle.angle_decay)}</Pill>
         ) : null}
@@ -75,7 +76,7 @@ export function NewsAngleSetView({
           <ul className="ml-4 list-disc text-xs text-muted-foreground">
             {refused.map((r, i) => (
               <li key={i}>
-                {str(r.idea)} — {humanize(str(r.reason))}
+                {str(r.idea)} — {humanizeIdentifier(str(r.reason))}
               </li>
             ))}
           </ul>

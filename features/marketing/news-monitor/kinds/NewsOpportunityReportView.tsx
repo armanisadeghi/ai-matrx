@@ -13,8 +13,9 @@
 
 import MarkdownStream from "@/components/MarkdownStream";
 
-import { hasContentFields, humanize, isRecord, num, records, str, strings } from "../run-document";
+import { hasContentFields, isRecord, num, records, str, strings } from "../run-document";
 import { KindCard, Pill } from "./shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function sectionCount(value: unknown): number {
   // A section entry with only a marker is a placeholder, not a story.
@@ -45,7 +46,7 @@ export function NewsOpportunityReportView({ value }: { value: Record<string, unk
             <span key={`${str(step.stage)}-${i}`} className="inline-flex items-center gap-1">
               {i > 0 ? <span className="text-muted-foreground">→</span> : null}
               <span className="font-medium text-foreground">{num(step.count)}</span>
-              <span className="text-muted-foreground">{humanize(str(step.stage)).toLowerCase()}</span>
+              <span className="text-muted-foreground">{humanizeIdentifier(str(step.stage)).toLowerCase()}</span>
             </span>
           ))}
         </div>
@@ -67,7 +68,7 @@ export function NewsOpportunityReportView({ value }: { value: Record<string, unk
         <div className="flex flex-wrap gap-1.5">
           {gatedEntries.map(([k, n]) => (
             <Pill key={k}>
-              {n} {humanize(k).toLowerCase()}
+              {n} {humanizeIdentifier(k).toLowerCase()}
             </Pill>
           ))}
         </div>

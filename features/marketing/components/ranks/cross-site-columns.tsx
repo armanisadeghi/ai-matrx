@@ -9,8 +9,8 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { formatCompactDate } from "@/features/marketing/components/shared/MarketingUi";
 import type { CrossSiteRankRow } from "./cross-site-data";
 import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
-import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import type { GscTrafficClass } from "@/features/marketing/search-console/types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export const POSITION_FILTER_OPTIONS = [
   { value: "top10", label: "Top 10" },
@@ -114,7 +114,7 @@ export const CROSS_SITE_RANK_COLUMNS: EntityColumnSpec<CrossSiteRankRow>[] = [
                   : "text-foreground"
             }`}
           >
-            {humanizeSlug(row.value_band)}
+            {humanizeIdentifier(row.value_band)}
           </span>
         ) : (
           <span className="text-[11px] text-muted-foreground">—</span>

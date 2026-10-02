@@ -7,7 +7,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { cn } from "@/styles/themes/utils";
-import { prettifyVariableName } from "./prettifyVariableName";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * Inline renderer for `{{variable_name}}` tokens.
@@ -45,7 +45,7 @@ export const MatrxVariableInline: React.FC<MatrxVariableInlineProps> = (
     return null;
   }
 
-  const prettyLabel = prettifyVariableName(rawName);
+  const prettyLabel = (humanizeIdentifier(rawName) || rawName);
   const tokenString = `{{${rawName}}}`;
 
   return (

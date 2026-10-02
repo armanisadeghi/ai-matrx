@@ -94,6 +94,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const STATUS_OPTIONS = [
   "planned",
@@ -201,12 +202,6 @@ function percent(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value))
     return "—";
   return `${value >= 0 ? "+" : ""}${number(value, 1)}%`;
-}
-
-function titleCase(value: string): string {
-  return value
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 interface ComposerSeed {
@@ -740,7 +735,7 @@ function OverviewTab({
           <Detail label="Status">
             <StatusPill value={change.status} />
           </Detail>
-          <Detail label="Change type">{titleCase(change.change_kind)}</Detail>
+          <Detail label="Change type">{humanizeIdentifier(change.change_kind) || change.change_kind}</Detail>
           <Detail label="Confidence">{change.confidence}%</Detail>
           <Detail label="Deployed">{formatDate(change.deployed_at)}</Detail>
           <Detail label="What changed" wide>
@@ -942,7 +937,7 @@ function TheoriesTab({
                         ) : null}
                       </div>
                       <p className="mt-1 text-muted-foreground">
-                        {titleCase(metric.direction)} ·{" "}
+                        {humanizeIdentifier(metric.direction) || metric.direction} ·{" "}
                         {metric.target_change_pct !== null
                           ? `${metric.target_change_pct}% target`
                           : `target ${number(metric.target_value, 2)}`}{" "}
@@ -996,7 +991,7 @@ function ImplementationItem({
         <div>
           <p className="text-sm font-medium">{item.label}</p>
           <p className="text-xs text-muted-foreground">
-            {titleCase(item.field_kind)} · verified by{" "}
+            {humanizeIdentifier(item.field_kind) || item.field_kind} · verified by{" "}
             {item.verification_method}
           </p>
         </div>
@@ -1212,7 +1207,7 @@ function EvidenceCard({
         </p>
       ) : null}
       <p className="mt-3 text-xs text-muted-foreground">
-        Decision rule: {titleCase(metric.direction)}{" "}
+        Decision rule: {humanizeIdentifier(metric.direction) || metric.direction}{" "}
         {metric.target_change_pct !== null
           ? `by ${metric.target_change_pct}%`
           : `to ${number(metric.target_value, 2)}`}
@@ -1321,7 +1316,7 @@ function ManualEvidenceCard({
         <div>
           <p className="font-medium">{metric.label}</p>
           <p className="text-xs text-muted-foreground">
-            {titleCase(metric.data_source)} evidence · manual observation
+            {humanizeIdentifier(metric.data_source) || metric.data_source} evidence · manual observation
           </p>
         </div>
         <StatusPill value={verdict} />
@@ -1680,7 +1675,7 @@ function ChangeEditForm({
           <SelectContent>
             {STATUS_OPTIONS.map((option) => (
               <SelectItem key={option} value={option}>
-                {titleCase(option)}
+                {humanizeIdentifier(option) || option}
               </SelectItem>
             ))}
           </SelectContent>
@@ -1746,7 +1741,7 @@ function UntrackedTable({
           <div className="flex flex-wrap gap-1">
             {row.changed_fields?.map((field) => (
               <Badge key={field} variant="outline">
-                {titleCase(field)}
+                {humanizeIdentifier(field) || field}
               </Badge>
             ))}
           </div>
@@ -1781,7 +1776,7 @@ function UntrackedTable({
           },
           content: humanLines([
             ["Page", row.page_path || row.page_url || row.page_id],
-            ["Observed change", row.changed_fields?.map(titleCase).join(", ")],
+            ["Observed change", row.changed_fields?.map((k) => humanizeIdentifier(k) || k).join(", ")],
             ["Observed", formatDate(row.captured_at)],
           ]),
         };
@@ -1821,7 +1816,7 @@ function UntrackedTable({
           humanRow: (row) =>
             humanLines([
               ["Page", row.page_path || row.page_url || row.page_id],
-              ["Observed change", row.changed_fields?.map(titleCase).join(", ")],
+              ["Observed change", row.changed_fields?.map((k) => humanizeIdentifier(k) || k).join(", ")],
               ["Observed", formatDate(row.captured_at)],
             ]),
         }}
@@ -1934,7 +1929,7 @@ export function SeoChangeTrackingWorkspace({
         filter: "select",
         filterOptions: STATUS_OPTIONS.map((value) => ({
           value,
-          label: titleCase(value),
+          label: (humanizeIdentifier(value) || value),
         })),
         cell: (row) => <StatusPill value={row.status} />,
         width: 130,
@@ -1944,7 +1939,7 @@ export function SeoChangeTrackingWorkspace({
         header: "Type",
         filter: "select",
         filterOptions: CHANGE_KINDS.map(([value, label]) => ({ value, label })),
-        cell: (row) => titleCase(row.change_kind),
+        cell: (row) => (humanizeIdentifier(row.change_kind) || row.change_kind),
         width: 145,
       },
       {

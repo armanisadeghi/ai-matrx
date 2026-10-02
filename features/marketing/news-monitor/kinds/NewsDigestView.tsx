@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils";
 
 import {
   counts,
-  humanize,
   isRecord,
   num,
   openTargetParam,
@@ -30,6 +29,7 @@ import {
   type OpenTarget,
 } from "../run-document";
 import { FactRow, KindCard, Pill, SmartLink, formatWhen } from "./shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface NewsDigestViewProps {
   value: Record<string, unknown>;
@@ -140,7 +140,7 @@ export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewPr
           {num(windowInfo.hours)
             ? ` · ${num(windowInfo.hours)}h freshness window (cutoff ${formatWhen(str(windowInfo.cutoff))})`
             : ""}
-          {str(value.mode) ? ` · alert mode ${humanize(str(value.mode)).toLowerCase()}` : ""}
+          {str(value.mode) ? ` · alert mode ${humanizeIdentifier(str(value.mode)).toLowerCase()}` : ""}
         </>
       }
     >
@@ -156,7 +156,7 @@ export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewPr
         </CountPill>
         {Object.entries(unverified).map(([k, n]) => (
           <CountPill key={k} target={{ kind: "watch", group: k }} onOpen={onOpen} runView={runView}>
-            {n} {humanize(k).toLowerCase()}
+            {n} {humanizeIdentifier(k).toLowerCase()}
           </CountPill>
         ))}
         <CountPill
@@ -189,7 +189,7 @@ export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewPr
                   {formatWhen(str(s.first_public_at))}
                 </span>
                 {str(s.triage_tier) ? (
-                  <Pill tone="info">{humanize(str(s.triage_tier))}</Pill>
+                  <Pill tone="info">{humanizeIdentifier(str(s.triage_tier))}</Pill>
                 ) : null}
                 {storyActions?.(str(s.story_key))}
               </li>
@@ -207,7 +207,7 @@ export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewPr
                 group === "set_aside" ? { kind: "set_aside", list: "all" } : { kind: "watch", group };
               return (
                 <CountPill key={group} target={target} onOpen={onOpen} runView={runView}>
-                  {str(g.label) || humanize(group)}: {num(g.count)}
+                  {str(g.label) || humanizeIdentifier(group)}: {num(g.count)}
                 </CountPill>
               );
             })}
@@ -224,7 +224,7 @@ export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewPr
                     onOpen={onOpen}
                     runView={runView}
                   >
-                    {humanize(reason).toLowerCase()} {n}
+                    {humanizeIdentifier(reason).toLowerCase()} {n}
                   </CountPill>
                 ))}
               </div>
@@ -241,7 +241,7 @@ export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewPr
             {[...byReason.entries()].map(([reason, entries]) => (
               <div key={reason} data-watch-reason={reason} data-watch-group={watchGroupOf(reason)} className="scroll-mt-24 rounded-md">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {str(entries[0]?.label) || humanize(reason)} · {entries.length}
+                  {str(entries[0]?.label) || humanizeIdentifier(reason)} · {entries.length}
                 </p>
                 <ul className="mt-0.5 flex flex-col gap-1">
                   {entries.map((w) => (
@@ -278,9 +278,9 @@ export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewPr
           <ul className="mt-1 flex flex-col gap-0.5">
             {health.map((h) => (
               <li key={str(h.source_kind)} className="flex flex-wrap items-center gap-x-2 text-xs">
-                <Pill tone={statusTone(str(h.status))}>{humanize(str(h.source_kind))}</Pill>
+                <Pill tone={statusTone(str(h.status))}>{humanizeIdentifier(str(h.source_kind))}</Pill>
                 <span className="text-muted-foreground">
-                  {humanize(str(h.status))} · {num(h.items)} item{num(h.items) === 1 ? "" : "s"}
+                  {humanizeIdentifier(str(h.status))} · {num(h.items)} item{num(h.items) === 1 ? "" : "s"}
                 </span>
                 {str(h.error) ? <span className="text-muted-foreground">— {str(h.error)}</span> : null}
               </li>

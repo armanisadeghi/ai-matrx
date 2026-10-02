@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { isJsonObject } from "@/types/json";
 import { cn } from "@/lib/utils";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface KeywordSerpIntentAnalysisBlockProps {
   serverData?: unknown;
@@ -64,10 +65,6 @@ function strings(value: unknown): string[] {
     : [];
 }
 
-function humanize(value: string): string {
-  return value.replaceAll("_", " ");
-}
-
 export function readKeywordSerpIntentAnalysis(
   serverData: unknown,
 ): AnalysisData | null {
@@ -108,7 +105,7 @@ export function readKeywordSerpIntentAnalysis(
           const domain = text(evidence.domain);
           if (provider && position !== null) {
             citations.push(
-              `${humanize(provider)} #${position}${domain ? ` · ${domain}` : ""}`,
+              `${humanizeIdentifier(provider)} #${position}${domain ? ` · ${domain}` : ""}`,
             );
           }
         }
@@ -175,12 +172,12 @@ export default function KeywordSerpIntentAnalysisBlock({
           ) : null}
           {data.consensus ? (
             <Badge variant="outline" className="ml-auto capitalize">
-              Providers {humanize(data.consensus)}
+              Providers {humanizeIdentifier(data.consensus)}
             </Badge>
           ) : null}
           {data.difficulty ? (
             <Badge variant="secondary" className="capitalize">
-              {humanize(data.difficulty)} difficulty
+              {humanizeIdentifier(data.difficulty)} difficulty
             </Badge>
           ) : null}
         </div>
@@ -192,11 +189,11 @@ export default function KeywordSerpIntentAnalysisBlock({
         {data.enhancedIntent ? (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="capitalize text-muted-foreground">
-              {humanize(data.originalIntent ?? "unclassified")}
+              {humanizeIdentifier(data.originalIntent ?? "unclassified")}
             </span>
             <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="font-semibold capitalize text-foreground">
-              {humanize(data.enhancedIntent)}
+              {humanizeIdentifier(data.enhancedIntent)}
             </span>
             {data.enhancedConfidence !== null ? (
               <span className="text-muted-foreground">
@@ -219,7 +216,7 @@ export default function KeywordSerpIntentAnalysisBlock({
                   {provider.provider}
                 </span>
                 <Badge variant="outline" className="capitalize">
-                  {humanize(provider.apparentIntent)}
+                  {humanizeIdentifier(provider.apparentIntent)}
                 </Badge>
                 {provider.confidence !== null ? (
                   <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
@@ -266,14 +263,14 @@ export default function KeywordSerpIntentAnalysisBlock({
             >
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
                 <span className="font-medium capitalize text-foreground">
-                  {humanize(change.dimension)}
+                  {humanizeIdentifier(change.dimension)}
                 </span>
                 <span className="capitalize text-muted-foreground">
-                  {humanize(change.originalValue)}
+                  {humanizeIdentifier(change.originalValue)}
                 </span>
                 <ArrowRight className="h-3 w-3 text-muted-foreground" />
                 <span className="font-medium capitalize text-foreground">
-                  {humanize(change.enhancedValue)}
+                  {humanizeIdentifier(change.enhancedValue)}
                 </span>
                 {change.confidenceDelta !== null ? (
                   <Badge

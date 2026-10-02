@@ -12,8 +12,9 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { cn } from "@/lib/utils";
 
-import { humanizeKey, type Archetype, type ExpandedArchetype } from "../archetypes";
+import { type Archetype, type ExpandedArchetype } from "../archetypes";
 import { SetupSection } from "./SetupSection";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export function SetupShapeColumn({
   archetypes,
@@ -132,9 +133,9 @@ export function SetupShapeColumn({
                   {omits.length > 0 ? (
                     <p
                       className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/80"
-                      title={`Left off this shape: ${omits.map(humanizeKey).join(", ")}`}
+                      title={`Left off this shape: ${omits.map((k) => humanizeIdentifier(k) || k).join(", ")}`}
                     >
-                      Leaves out {omits.map(humanizeKey).join(", ")}
+                      Leaves out {omits.map((k) => humanizeIdentifier(k) || k).join(", ")}
                     </p>
                   ) : null}
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] leading-none">

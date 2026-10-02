@@ -30,7 +30,6 @@ import { CircleX, Layers, List } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
-import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import {
   ChipRow,
   CountChip,
@@ -48,6 +47,7 @@ import {
   readText,
   type ResultKindBlockProps,
 } from "./result-kind-shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** Collection field names, in the priority a family would carry one. */
 const COLLECTION_KEYS = [
@@ -110,7 +110,7 @@ const CollectionResultBlock: React.FC<ResultKindBlockProps> = ({
   const archetype = readText(value.archetype);
   const noun =
     archetype ??
-    (collectionKey ? humanizeKey(collectionKey).toLowerCase() : "results");
+    (collectionKey ? (humanizeIdentifier(collectionKey) || collectionKey).toLowerCase() : "results");
 
   const losses = LOSS_KEYS.map((loss) => ({
     ...loss,
@@ -215,7 +215,7 @@ const CollectionResultBlock: React.FC<ResultKindBlockProps> = ({
       ) : null}
 
       {collection && collection.length > 0 ? (
-        <Section label={humanizeKey(collectionKey as string)}>
+        <Section label={humanizeIdentifier(collectionKey as string)}>
           {/* Uniform rows become a real table; ragged ones become titled
               sections — both from the platform's existing value renderer. */}
           <ResultValue value={collection} density="full" />

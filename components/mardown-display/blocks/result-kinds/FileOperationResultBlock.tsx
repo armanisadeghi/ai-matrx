@@ -46,7 +46,6 @@ import {
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
-import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import {
   ChipRow,
   CopyValueButton,
@@ -65,6 +64,7 @@ import {
   readText,
   type ResultKindBlockProps,
 } from "./result-kind-shared";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** Where the path lives, in the priority these kinds carry one. */
 const PATH_KEYS = [
@@ -271,7 +271,7 @@ const FileOperationResultBlock: React.FC<ResultKindBlockProps> = ({
       ) : null}
 
       {collections.map((key) => (
-        <Section key={key} label={humanizeKey(key)}>
+        <Section key={key} label={humanizeIdentifier(key) || key}>
           <ResultValue value={value[key]} density="full" />
         </Section>
       ))}
