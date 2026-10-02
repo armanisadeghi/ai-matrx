@@ -38,6 +38,7 @@ import {
   useUniverse,
   type DrillPath,
 } from "@host/features/scopes/components/active-context/quick-pick/engine";
+import { summarizeContextCell } from "@host/features/scopes/utils/referenceCell";
 import { scopesService } from "@host/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@host/features/scopes/types";
 import type { ContextItemRow, ContextItemValue, ScopesRpcResult } from "@host/features/scopes/types";
@@ -119,17 +120,16 @@ async function loadItems(key: string): Promise<ItemWithValue[]> {
     .map((item) => ({ item, value: byItem.get(item.id) ?? null }));
 }
 
-/** A stored value in plain text, read-only. Null when the scope has no value for the item. */
+/**
+ * A stored value in plain text, read-only. Null when the scope has no value for the item.
+ * A reference cell reads as what it means (the screens' one summary), never its stored fence bytes.
+ */
 export function displayValue(value: ContextItemValue | null): string | null {
   if (!value) return null;
-  if (value.value_text !== null && value.value_text !== "") return value.value_text;
-  if (value.value_number !== null) return String(value.value_number);
-  if (value.value_boolean !== null) return value.value_boolean ? "Yes" : "No";
-  if (value.value_date) return value.value_date;
-  if (value.value_document_url) return value.value_document_url;
+  const summary = summarizeContextCell(value);
+  if (summary !== null) return summary;
   if (value.value_reference_id)
     return `${value.value_reference_type ?? "reference"} ${value.value_reference_id}`;
-  if (value.value_json !== null) return JSON.stringify(value.value_json);
   return null;
 }
 
