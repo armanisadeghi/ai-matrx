@@ -19,10 +19,9 @@
  */
 
 import { useConversationDisplayRows } from "../inputs/smart-input/useConversationDisplayRows";
-import * as contextReact from "@ai-matrx/agents/context/react";
-import * as contextCore from "@ai-matrx/agents/context";
+import type { ComponentProps } from "react";
 import { ContextRulesPanelBody } from "@ai-matrx/agents/context/react";
-import type { ResolvedContextRow } from "@ai-matrx/agents/context";
+import { isServerAuthoritativeKey, type ResolvedContextRow } from "@ai-matrx/agents/context";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -39,7 +38,6 @@ import { decodeAgentEditAccess } from "../../utils/agent-edit-access";
 import { docKindForContextKey } from "../../utils/workingDocumentContext";
 import type { ContextObjectType } from "../../types/agent-api-types";
 import { ContextValueBody } from "./ContextValueBody";
-import { ContextDeliveredBlock, type DeliveredRef, type DeliveredRefBlock } from "./ContextDeliveredBlock";
 import {
   loadContextView,
   selectDisplayReceiptBlocks,
@@ -48,35 +46,14 @@ import {
 } from "../../redux/execution-system/context-rules/context-viewer";
 
 /**
- * @ai-matrx/agents ≥ 0.29.0 fetches what the agent received on demand in the
- * panel detail itself (`DeliveredSection`, `loadView`) and lists the receipt's
- * blocks under "Also sent" (`blocks`). An older installed build would render a
- * ref as an empty text, so the host strips the refs from its rows and renders
- * the detail itself. Retire with the 0.29.0 adoption.
- */
-const PACKAGE_FETCHES_ON_DEMAND = "DeliveredSection" in contextReact;
-
-/** Blocks the model read as part of a value (the package's `CONTEXT_ROW_BLOCKS` ≥ 0.29.0). */
-const ROW_BLOCKS: Readonly<Record<string, readonly string[]>> =
-  (contextCore as { CONTEXT_ROW_BLOCKS?: Record<string, readonly string[]> }).CONTEXT_ROW_BLOCKS ?? {
-    organization: ["organization_catalog"],
-  };
-
-type RowRefs = { delivered?: DeliveredRef | null; onRequest?: DeliveredRef | null; deliveredBlocks?: DeliveredRefBlock[] };
-
-/**
  * RULES.md §5a: the server states these values itself and drops the page's
  * copy, so before any receipt the detail never shows the page's guess as what
- * will be sent. @ai-matrx/agents ≥ 0.28.0 exports the registry (and its panel
- * detail says so itself); the fallback is that table, retired with adoption.
+ * will be sent (the package's panel detail says "Filled in by the server").
  */
-const PACKAGE_KNOWS_SERVER_OWNED = "isServerAuthoritativeKey" in contextCore;
-const SERVER_OWNED_FALLBACK = new Set(["user", "client", "organization", "active_scopes"]);
-export function isServerOwnedContextKey(key: string): boolean {
-  const fromPackage = (contextCore as { isServerAuthoritativeKey?: (k: string) => boolean })
-    .isServerAuthoritativeKey;
-  return fromPackage ? fromPackage(key) : SERVER_OWNED_FALLBACK.has(key);
-}
+type PanelViewLoader = NonNullable<ComponentProps<typeof ContextRulesPanelBody>["loadView"]>;
+
+export const isServerOwnedContextKey: (key: string) => boolean = isServerAuthoritativeKey;
+
 import {
   WorkingDocumentBody,
   buildWorkingDocumentDrawerItem,
@@ -113,13 +90,7 @@ export function ContextRulesPanel({
   );
   const killSwitch = useMandateKillSwitch(mandateKey);
   const displayRows = useConversationDisplayRows(conversationId, killSwitch);
-  const refsByKey = new Map(displayRows.map((row) => [row.key, row as ResolvedContextRow & RowRefs]));
-  const rows = PACKAGE_FETCHES_ON_DEMAND
-    ? displayRows
-    : displayRows.map((row) => {
-        const { delivered: _d, onRequest: _o, ...rest } = row as ResolvedContextRow & RowRefs;
-        return rest as ResolvedContextRow;
-      });
+  const rows = displayRows;
   const cap = useAppSelector((state) => selectContextInlineCap(state, conversationId));
   const mismatches = useAppSelector(
     (state) => state.instanceContext.receiptByConversationId[conversationId]?.mismatches,
@@ -144,8 +115,9 @@ export function ContextRulesPanel({
     const policy = policies?.find((p) => p.key === row.key);
     // RULES.md §5: when the receipt says what the model read for this value,
     // THAT is the content — never the client's pre-send copy (Arman, 2026-10-01).
-    const refs = refsByKey.get(row.key) ?? (row as ResolvedContextRow & RowRefs);
-    const received = Boolean(refs.delivered || refs.onRequest);
+    // The package's panel detail shows what the agent received (fetched on open,
+    // RULES.md §5b) and says a server-owned value is filled in by the server.
+    const received = Boolean(row.delivered || row.onRequest);
     const serverOwned = !received && isServerOwnedContextKey(row.key);
     const value =
       row.value && typeof row.value === "object" && !Array.isArray(row.value) && "content" in row.value
@@ -156,28 +128,7 @@ export function ContextRulesPanel({
         {policy?.description || row.description ? (
           <p className="text-xs text-muted-foreground">{policy?.description ?? row.description}</p>
         ) : null}
-        {received ? (
-          PACKAGE_FETCHES_ON_DEMAND ? null : (
-            <ContextDeliveredBlock
-              rowKey={row.key}
-              delivered={refs.delivered}
-              onRequest={refs.onRequest}
-              blocks={
-                refs.deliveredBlocks ??
-                (refs.delivered
-                  ? blocks.filter((b) => (ROW_BLOCKS[row.key] ?? []).includes(b.id))
-                  : undefined)
-              }
-              load={loadView}
-            />
-          )
-        ) : serverOwned ? (
-          PACKAGE_KNOWS_SERVER_OWNED ? null : (
-            <p data-testid="context-server-fills" className="text-xs text-muted-foreground">
-              Filled in by the server
-            </p>
-          )
-        ) : (
+        {received || serverOwned ? null : (
           <>
             {value !== undefined && value !== null ? (
               <p className="text-xs font-medium">Will send</p>
@@ -209,8 +160,10 @@ export function ContextRulesPanel({
         cap={cap}
         mismatches={mismatches}
         onChange={save}
-        // Spread: @ai-matrx/agents < 0.29.0 has neither prop (it ignores them).
-        {...({ blocks, loadView } as object)}
+        blocks={blocks}
+        // @ai-matrx/agents 0.29 types the viewer without `fetchable` / `fetched_now` (0.30.0
+        // adds them); the package never reads either field. Drop the cast on 0.30 adoption.
+        loadView={loadView as PanelViewLoader}
         renderDetail={renderDetail}
         isMobile={isMobile}
         selectedKey={selectedKey}
