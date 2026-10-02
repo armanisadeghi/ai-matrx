@@ -71,4 +71,5 @@ Every admin-suite href is built in `admin-routes.ts` (`adminMandateRecordHref`, 
 
 ## Change log
 
+- **2026-10-02** — Restored the split imports for simple Overrides model controls so the frontend type gate can parse the module.
 - **2026-09-30** — Saved mandate inputs, configuration values, outputs, and expanded details share the canonical kind-aware answer renderer; declared output kinds survive the details-window handoff.
