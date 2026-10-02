@@ -581,7 +581,6 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
           detail={{
             title: (rule) =>
               `Edit: ${label(rule.source_type)} → ${label(rule.target_type)}`,
-            description: (rule) => ruleSentence(rule),
             defaultWidth: 480,
             render: () =>
               editor && editor.mode === "edit" ? (
@@ -663,18 +662,6 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
         <CanvasPagePanel
           panelKey="new-relationship-rule"
           title="New relationship rule"
-          description={
-            editorValid
-              ? ruleSentence({
-                  source_type: editor.sourceType,
-                  target_type: editor.targetType,
-                  label: editor.label || null,
-                  container_side: editor.containerSide,
-                  conveys_max: editor.conveysMax,
-                  is_active: editor.isActive,
-                })
-              : "Pick a source (content) and target (container) to begin."
-          }
           onClose={() => setEditor(null)}
         >
           <RuleEditorForm

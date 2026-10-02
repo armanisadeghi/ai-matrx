@@ -109,7 +109,7 @@ export default function UserJourneyCanvasView({ data }: CanvasKindProps) {
   const journeyError = current?.error ?? null;
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto p-5">
+    <div className="@container h-full min-h-0 overflow-y-auto p-4">
       {!current ? <SuspenseLoader message="Loading the journey" /> : null}
       {journeyError ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
@@ -139,7 +139,7 @@ export default function UserJourneyCanvasView({ data }: CanvasKindProps) {
               Last observed {fmtDate(journey.last_activity)}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 @xl:grid-cols-4">
             {[
               ["API requests", journey.api_requests],
               ["Failed", journey.failed_requests],

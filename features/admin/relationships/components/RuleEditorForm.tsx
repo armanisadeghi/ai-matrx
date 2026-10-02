@@ -246,7 +246,7 @@ export function RuleEditorForm({
             ],
             [
               "source",
-              `${label(editor.sourceType) || "Source"} is the container — against convention (big→little); only by explicit design`,
+              `${label(editor.sourceType) || "Source"} is the container — against convention`,
             ],
           ] as const
         ).map(([side, text]) => (
@@ -254,7 +254,7 @@ export function RuleEditorForm({
             key={side}
             variant={editor.containerSide === side ? "default" : "outline"}
             size="sm"
-            className={`justify-start ${side === "source" && editor.containerSide !== "source" ? "border-amber-500/50 text-amber-700 dark:text-amber-500" : ""}`}
+            className={`h-auto min-h-8 justify-start whitespace-normal py-1.5 text-left ${side === "source" && editor.containerSide !== "source" ? "border-amber-500/50 text-amber-700 dark:text-amber-500" : ""}`}
             onClick={() => onChange({ ...editor, containerSide: side })}
           >
             {side === "source" ? (

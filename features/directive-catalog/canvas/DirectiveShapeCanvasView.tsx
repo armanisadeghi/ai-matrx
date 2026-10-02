@@ -42,7 +42,7 @@ export default function DirectiveShapeCanvasView({ data }: CanvasKindProps) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto p-4">
+    <div className="h-full min-h-0 overflow-y-auto p-4">
       {subtitle ? (
         <p className="mb-4 text-sm text-muted-foreground">{subtitle}</p>
       ) : null}
