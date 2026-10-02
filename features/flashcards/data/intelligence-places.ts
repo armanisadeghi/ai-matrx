@@ -66,6 +66,18 @@ export const FLASHCARDS_PLACES: FeaturePlaces = {
       ],
     },
     {
+      // Deck editors only: the AI rewrites cards whose back gives the front
+      // away (or the reverse), proposed card by card, accepted by a person.
+      id: "match",
+      label: "Match",
+      trigger: "Fix give-away cards button",
+      urlPattern: "/education/flashcards/[setId]/match",
+      mandateKeys: [FC_MANDATES.fixGiveaways],
+      sources: [
+        "features/flashcards/components/giveaway/FixGiveawayCardsAction.tsx",
+      ],
+    },
+    {
       id: "write",
       label: "Write mode",
       trigger: "Checking a typed answer",
