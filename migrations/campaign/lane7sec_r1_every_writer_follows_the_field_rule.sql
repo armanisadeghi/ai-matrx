@@ -1,8 +1,7 @@
--- chair-step: this file ALTERs platform.entity_types (ONE ADD COLUMN, boolean with a constant
--- default: metadata-only, a brief ACCESS EXCLUSIVE lock on that ~1,077-row registry table, no
--- rewrite, no CHECK) and sets one registry row (party). It changes no grant. Everything else is
--- one CREATE OR REPLACE of a live trigger body (no trigger DDL). Its inverse puts the body back
--- byte for byte and drops the column.
+-- chair-step: this file adds one platform knob row (custom/closed_custom_field_tables, an INSERT:
+-- no DDL, no strong lock) and replaces one live trigger body (CREATE OR REPLACE, no trigger DDL).
+-- It changes no grant and alters no table. Its inverse puts the body back byte for byte and
+-- archives nothing: it deletes the one knob row this file added.
 -- based-on: custom._entity_custom_fields_guard() 40e0cd49091aea328672d8134f64f19eb36d45469d572e2df091f90771332b98
 --
 -- LANE 7 · SEC, ROUND 1 (CHAIR-SEC-R1) — THE FIELD RULE BINDS CLIENTS ON CLOSED TABLES, NOT THE PLATFORM.
@@ -13,9 +12,9 @@
 -- (/api/user/form-profile, the extension's upsert, public.user_form_profile_set_custom_field) and
 -- an edit of an old note's `studyAnnotation` key were all refused. The chair's rule (2026-10-02):
 --   1. undeclared keys are refused only for a CLIENT writer (custom.caller_role() authenticated /
---      anon) on a table whose registry row says its custom_fields shape is CLOSED
---      (platform.entity_types.custom_fields_closed; today only `party`, the one token with
---      declared Fields and a governance screen). Every other table keeps the shape it had;
+--      anon) on a table whose custom_fields shape is CLOSED (the knob
+--      custom/closed_custom_field_tables, organization-overridable; default `party` only, the one
+--      token with declared Fields and a governance screen). Every other table keeps the shape it had;
 --   2. the platform's own writers (service role, the server channel) are never refused for a key:
 --      the value is kept, and a NOTICE names it (never silent);
 --   3. a key already on the row (a legacy key) stays editable and clearable by anyone;
@@ -23,17 +22,22 @@
 --   5. a client's x-matrx-actor-tier header is read with custom.caller_role(), never the payload;
 --   6. the field rung is asked once per Field per statement (editor first).
 --
--- 1. THE REGISTRY FACT: whose shape a table's custom_fields follows.
-ALTER TABLE platform.entity_types
-  ADD COLUMN IF NOT EXISTS custom_fields_closed boolean NOT NULL DEFAULT false;
-
-COMMENT ON COLUMN platform.entity_types.custom_fields_closed IS
-  'True when a client may write into this table''s custom_fields only keys the organization declared as Fields (custom._entity_custom_fields_guard). False (default): any key is kept. The platform''s own writers and keys already on a row are never refused.';
-
-UPDATE platform.entity_types
-   SET custom_fields_closed = true
- WHERE token = 'party'
-   AND custom_fields_closed IS DISTINCT FROM true;
+-- 1. THE KNOB: which standard tables keep a closed custom-field shape for clients. An opinion,
+-- so a knob (organization-overridable) with the default the chair ruled: CRM people only, the one
+-- table with declared Fields and a governance screen. (An earlier draft of this file ALTERed
+-- platform.entity_types for this; on the clone that ACCESS EXCLUSIVE never won its lock against
+-- live readers of the registry in 25 tries, and a fact an organization may decide is a knob.)
+INSERT INTO platform.feature_knob
+  (feature, key, value, default_value, value_type, label, description, set_by, basis, review_due,
+   overridable_by, override_direction, propagation, public_read, delegable)
+VALUES
+  ('custom', 'closed_custom_field_tables', '["party"]'::jsonb, '["party"]'::jsonb, 'json',
+   'Standard tables that accept only declared fields',
+   'Registry tokens of standard tables where a signed-in person may save a custom value only under a field the organization declared. Other tables keep any key. The platform''s own writers and keys already on a record are never refused.',
+   'agent',
+   'CHAIR-SEC-R1, 2026-10-02: lane7sec_a refused undeclared keys for every writer on every standard table (service role, server jobs, the autofill profile, old note keys). Chair rule: clients only, on tables declared closed; party is the one token with declared Fields today.',
+   date '2026-12-31', array['organization'], 'any', 'instant', false, true)
+ON CONFLICT (feature, key) DO NOTHING;
 
 -- 2. THE GUARD.
 CREATE OR REPLACE FUNCTION custom._entity_custom_fields_guard()
@@ -187,8 +191,8 @@ begin
   -- editable, and clearing a key is always allowed. The store's own keys are named, never guessed
   -- by prefix: `_values` (each value's envelope), `_actor` and `_on_behalf_of` (read and removed
   -- below). A value's envelope under `_values` needs its Field too.
-  --   · a CLIENT (custom.caller_role() authenticated / anon) on a table whose registry row says
-  --     custom_fields_closed is refused, in a sentence, and nothing is written;
+  --   · a CLIENT (custom.caller_role() authenticated / anon) on a table the organization's
+  --     custom/closed_custom_field_tables knob names is refused, in a sentence, and nothing is written;
   --   · every other writer keeps the key, and a NOTICE names it — never silent.
   select coalesce(array_agg(f.data ->> 'key'), '{}'::text[]) into v_declared
     from unnest(coalesce(v_fields, '{}'::custom.record[])) f;
@@ -202,11 +206,14 @@ begin
            where not coalesce((v_old -> '_values') ? k, false)) c
    where not (k = any (v_declared));
   if cardinality(v_bad) > 0 then
-    v_memo := platform.memo_k_get('sccl:' || v_token);
+    v_memo := platform.memo_k_get('sccl:' || v_org::text || ':' || v_token);
     if v_memo is null then
-      select coalesce(bool_or(e.custom_fields_closed), false) into v_closed
-        from platform.entity_types e where e.token = v_token;
-      perform platform.memo_k_put('sccl:' || v_token, to_jsonb(v_closed)::text);
+      begin
+        v_closed := coalesce(platform.knob_resolve('custom', 'closed_custom_field_tables', v_org) ? v_token, false);
+      exception when others then
+        v_closed := true;   -- a shape rule this writer cannot read is closed for a client, never open
+      end;
+      perform platform.memo_k_put('sccl:' || v_org::text || ':' || v_token, to_jsonb(v_closed)::text);
     else
       v_closed := (v_memo #>> '{}')::boolean;
     end if;

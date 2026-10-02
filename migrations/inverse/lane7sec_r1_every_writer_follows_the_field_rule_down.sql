@@ -1,8 +1,8 @@
 -- chair-step: the inverse of lane7sec_r1_every_writer_follows_the_field_rule.sql. It puts
--- custom._entity_custom_fields_guard back exactly as lane7sec_a left it and drops the one
--- platform.entity_types column that file added: a brief ACCESS EXCLUSIVE lock on that registry
--- table. It changes no grant.
--- based-on: custom._entity_custom_fields_guard() 3a55d13935ba008e59889641548cf05f21f54bbbf06380d8c874330daed874d8
+-- custom._entity_custom_fields_guard back exactly as lane7sec_a left it and removes the one
+-- knob that file added (custom/closed_custom_field_tables) with any organization override of it.
+-- No DDL, no strong lock, no grant.
+-- based-on: custom._entity_custom_fields_guard() e29bf768997e4a2e1a0c1523dc88ff25f67a850e3b9d7617b2cd2263d7ee3c2a
 
 CREATE OR REPLACE FUNCTION custom._entity_custom_fields_guard()
  RETURNS trigger
@@ -289,5 +289,5 @@ begin
 end;
 $function$;
 
-ALTER TABLE platform.entity_types
-  DROP COLUMN IF EXISTS custom_fields_closed;
+DELETE FROM platform.knob_override WHERE feature = 'custom' AND key = 'closed_custom_field_tables';
+DELETE FROM platform.feature_knob WHERE feature = 'custom' AND key = 'closed_custom_field_tables';
