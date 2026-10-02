@@ -433,10 +433,11 @@ function fieldSpecs(manifest: KitManifest, tableKey: string, steps: KitInstallSt
 
 // ─── the agent writes: guarded, and they must change a row ──────────────────
 
-interface AgentRow {
+export interface AgentRow {
   id: string;
   version: number;
   tags: string[] | null;
+  tools: string[] | null;
   variable_definitions: Json | null;
 }
 
@@ -444,7 +445,7 @@ async function readAgentRow(agentId: string): Promise<AgentRow> {
   const { data, error } = await supabase
     .schema("agent")
     .from("definition")
-    .select("id, version, tags, variable_definitions")
+    .select("id, version, tags, tools, variable_definitions")
     .eq("id", agentId)
     .maybeSingle();
   if (error) throw new InstallError(`The copied agent could not be read: ${error.message}`);
@@ -453,10 +454,12 @@ async function readAgentRow(agentId: string): Promise<AgentRow> {
 }
 
 /** One guarded write to the copied agent. `not_found` / `conflict` are named failures, never a silent no-op. */
-async function writeAgent(
+export async function writeAgent(
   agentId: string,
   what: string,
-  build: (current: AgentRow) => Partial<{ name: string; description: string; tags: string[]; variable_definitions: Json }>,
+  build: (
+    current: AgentRow,
+  ) => Partial<{ name: string; description: string; tags: string[]; tools: string[]; variable_definitions: Json; deleted_at: string }>,
 ): Promise<void> {
   const base = await readAgentRow(agentId);
   const result = await guardedUpdate<AgentRow>({
@@ -468,13 +471,13 @@ async function writeAgent(
         .update({ ...build(base), version: nextVersion })
         .eq("id", agentId)
         .eq("version", expectedVersion)
-        .select("id, version, tags, variable_definitions")
+        .select("id, version, tags, tools, variable_definitions")
         .maybeSingle(),
     fetchCurrent: () =>
       supabase
         .schema("agent")
         .from("definition")
-        .select("id, version, tags, variable_definitions")
+        .select("id, version, tags, tools, variable_definitions")
         .eq("id", agentId)
         .maybeSingle(),
   });
@@ -490,7 +493,7 @@ async function writeAgent(
  * `base`, or `base 2`, `base 3`, … — the first name no other live agent in the
  * organization uses (case-insensitive, as `agent._refuse_duplicate_agent_name` compares).
  */
-async function nextFreeAgentName(organizationId: string, base: string, selfId: string): Promise<string> {
+export async function nextFreeAgentName(organizationId: string, base: string, selfId: string): Promise<string> {
   const rows = await readAllRows<{ id: string; name: string }>(
     ({ from, to }) =>
       supabase
@@ -509,6 +512,33 @@ async function nextFreeAgentName(organizationId: string, base: string, selfId: s
   for (let n = 2; ; n++) {
     const candidate = `${base} ${n}`;
     if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+}
+
+/**
+ * Names a freshly copied agent `base` (or the next free `base 2`, …) in one guarded
+ * write, together with whatever else `build` sets. The database refuses a second
+ * agent with the same name in one organization; if another write took the chosen
+ * name meanwhile, the name the refusal offers is used instead. Returns the name kept.
+ * Shared by the kit installer and the template agent copy (`templateAgentCopy.ts`).
+ */
+export async function nameCopiedAgent(
+  agentId: string,
+  organizationId: string,
+  base: string,
+  build: (current: AgentRow) => Partial<{ description: string; tags: string[] }> = () => ({}),
+): Promise<string> {
+  let name = await nextFreeAgentName(organizationId, base, agentId);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await writeAgent(agentId, "rename the copied agent", (cur) => ({ ...build(cur), name }));
+      return name;
+    } catch (err) {
+      const e = isRecord(err) ? err : {};
+      const offered = e.code === "23505" && e.hint === "agent_name_taken" && typeof e.details === "string" ? e.details : null;
+      if (!offered || attempt >= 3) throw err;
+      name = offered;
+    }
   }
 }
 
@@ -709,30 +739,18 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
         // kit installed twice takes the next free name ("My Keyword Classifier 2"):
         // chosen before the write, and — if another write took it meanwhile — the
         // name the refusal offers is used instead. Never a raw error.
-        let name = await nextFreeAgentName(organizationId, agent.name, newId);
-        for (let attempt = 0; ; attempt++) {
-          try {
-            await writeAgent(newId, "rename the copied agent", (cur) => ({
-              name,
-              description: agent.description,
-              // The source's own kit labels (it may itself be a kit copy) never ride along:
-              // a copy carries exactly ONE install's label, or removal could not tell them apart.
-              tags: Array.from(
-                new Set([
-                  ...(cur.tags ?? []).filter((t) => !t.startsWith("kit:") && !t.startsWith("kit-install:")),
-                  `kit:${manifest.key}`,
-                  `kit-install:${install!.id}`,
-                ]),
-              ),
-            }));
-            break;
-          } catch (err) {
-            const e = isRecord(err) ? err : {};
-            const offered = e.code === "23505" && e.hint === "agent_name_taken" && typeof e.details === "string" ? e.details : null;
-            if (!offered || attempt >= 3) throw err;
-            name = offered;
-          }
-        }
+        const name = await nameCopiedAgent(newId, organizationId, agent.name, (cur) => ({
+          description: agent.description,
+          // The source's own kit labels (it may itself be a kit copy) never ride along:
+          // a copy carries exactly ONE install's label, or removal could not tell them apart.
+          tags: Array.from(
+            new Set([
+              ...(cur.tags ?? []).filter((t) => !t.startsWith("kit:") && !t.startsWith("kit-install:")),
+              `kit:${manifest.key}`,
+              `kit-install:${install!.id}`,
+            ]),
+          ),
+        }));
         done(agentStep, {
           ...(name !== agent.name ? { detail: `Named "${name}"` } : {}),
           links: [{ label: "Open agent", href: KIT_ROUTES.agent(newId) }],

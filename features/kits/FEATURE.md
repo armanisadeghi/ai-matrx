@@ -61,6 +61,10 @@ The product word lives ONLY in `constants.ts` (`KIT_WORD`) — "Kits" is a worki
 
 record the install → declare each table (relations to other kit tables resolved) → `recordWriteMany` the example rows (`{table_key, record_index}` values resolved) → `duplicateAgent` thunk (`agx_duplicate_agent`, the ONE fork; its refusal sentence is shown verbatim) → rename/tag from the manifest → write bindings → `callApi POST /workflows` with `{{table:k}}` / `{{agent:k}}` substituted → mark installed. Failure: the stepper marks the failing step with the door's sentence, the record says `failed`, and the rail offers **Finish install** (resume) or **Remove what was created** (confirm dialog names exactly what is archived). Removal archives only recorded ids: `tableArchive` passes, agent `deleted_at`, `deleteWorkflow` — all soft.
 
+## Template agent copy (host side of `installTemplate`)
+
+`@ai-matrx/records`' `installTemplate(..., { copyAgent })` takes the agent step from the host. `templateAgentCopier(dispatch)` (`templateAgentCopyHost.ts`) is that `copyAgent`; the logic is `createTemplateAgentCopier(ports)` in `templateAgentCopy.ts` (no app imports, so a node script can run it with its own ports). Order: platform agent id (the template's, else its exact name in the system org) → `duplicateAgent` → `nameCopiedAgent` → one guarded write binding every template variable as a `merge_field` **collection** over its installed table (`limit` 500 — the resolver's default 40 would cut a 45-row table) and attaching the `records` tool (the copy answers sums/counts through `custom.record_aggregate`; the org default-tool seed only fills an EMPTY tool list, so a copy of an agent with tools never gets it). A failure after the fork archives the copy (`deleted_at`) and says so, because the template footprint only learns the id from a successful return. The request type mirrors the package's `TemplateAgentCopyRequest` until the package exports its templates entry. Guard: `__tests__/template-agent-copy.test.ts`.
+
 ---
 
 ## Known gaps
@@ -72,6 +76,7 @@ record the install → declare each table (relations to other kit tables resolve
 
 ## Change Log
 
+- `2026-10-02` — Template agent copy: `templateAgentCopier` (host `copyAgent` for `installTemplate`), `nameCopiedAgent` extracted from the install run and shared, agent writes read/set `tools`.
 - `2026-09-30` — Visual pass (Arman's five findings): no card-in-card anywhere (How it works, table preview, install rail, installed tables sit on the records Grid's own frame, Try it), only the title row beside an icon, plain foreground section titles, muted only for metadata, gallery leads with the platform's kits and loads with a skeleton, kit content cut to how-to lines in the catalog rows + `common-docs/projects/data-kits/manifests/`. Screens: `common-docs/operations/for-arman/2026-09-30/kits-ui/`.
 - `2026-09-30` — Interface-text sweep (labels not prose, `variableLabel`, errors ≤140 with Details), limits moved to feature knobs, kit lists via `readAllRows`, agent copies take the next free name on a clash, multi-agent fan-out verified on the clone.
 
