@@ -4,7 +4,7 @@
 # Exit 0 -> SKIP the build (no billable build minutes).
 # Exit 1 -> PROCEED with the build.
 #
-# One repo, THREE Vercel projects (deployment split 2026-07):
+# One repo, FOUR Vercel projects (deployment split 2026-07):
 #   ai-matrx        (aimatrx.com)        MATRX_BUILD_TARGET=main
 #   ai-matrx-manage (manage.aimatrx.com) MATRX_BUILD_TARGET=admin
 #   ai-matrx-demos  (demos.aimatrx.com)  MATRX_BUILD_TARGET=demos

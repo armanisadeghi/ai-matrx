@@ -229,12 +229,12 @@ console.log(
 // a page.dev.tsx in the same directory — guard for stray duplicates from
 // partial renames. No directory currently has both; this is defensive.
 // THE LAB (app/(lab)): `*.lab.tsx` pages are admitted by every `next dev`
-// (the shared preview runs the `core` profile) and by every profile that
-// includes (dev), so `/lab/<name>` previews locally inside the normal root
-// layout. Only the lab profile admits `*.labroot.tsx` — its own thin root
-// layout — and nothing else. Production main/admin builds never see them.
+// (the shared preview runs the `core` profile), so `/lab/<name>` previews
+// locally inside the normal root layout. In production ONLY the lab profile
+// admits them, plus `*.labroot.tsx` (its own thin root layout) and nothing
+// else; main/admin/demos production builds never compile a lab page.
 const LAB_PAGES = ["lab.tsx", "lab.ts"];
-const ADMIT_LAB = INCLUDE_DEV || process.env.NODE_ENV !== "production";
+const ADMIT_LAB = process.env.NODE_ENV !== "production";
 const pageExtensions =
   MATRX_PROFILE === "lab"
     ? [...LAB_PAGES, "labroot.tsx"]

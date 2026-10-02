@@ -60,7 +60,7 @@
 # through READY / ERROR / CANCELED / ignored / timeout / not-yet-promoted and
 # proves green appears for exactly one of them.
 
-# ── Vercel identities (deployment split 2026-07 — one repo, three projects) ──
+# ── Vercel identities (deployment split 2026-07 — one repo, four projects) ──
 # Verified live 2026-09-11 against team_zWxJHqDHuRr1kpl9Hu9oON3g. The main
 # project id is read from .vercel/project.json when that file is present, so the
 # linked project always wins over the constant below.
@@ -73,6 +73,7 @@ release_outcome_project_name() {
         main)  echo "ai-matrx" ;;
         admin) echo "ai-matrx-manage" ;;
         demos) echo "ai-matrx-demos" ;;
+        lab)   echo "ai-matrx-lab" ;;
         *) return 1 ;;
     esac
 }
@@ -90,6 +91,7 @@ release_outcome_project_id() {
         main)  echo "prj_ZIeMm2FW8RgOAO9BJgQ2YQcXpwrH" ;;
         admin) echo "prj_klDr3qdlD7Vc27DUMllCQlIUqBa3" ;;
         demos) echo "prj_wFKaTLiAUhsSsKNjmJXPjj8X9Zc6" ;;
+        lab)   echo "prj_QqjDfdPlDehc4RfY5d3fYkWGr6HY" ;;
         *) return 1 ;;
     esac
 }
@@ -99,6 +101,7 @@ release_outcome_domain() {
         main)  echo "https://aimatrx.com" ;;
         admin) echo "https://manage.aimatrx.com" ;;
         demos) echo "https://demos.aimatrx.com" ;;
+        lab)   echo "https://lab.aimatrx.com" ;;
         *) return 1 ;;
     esac
 }
@@ -109,7 +112,8 @@ release_outcome_targets() {
         main)  echo "main" ;;
         admin) echo "admin" ;;
         demos) echo "demos" ;;
-        all)   echo "main admin demos" ;;
+        lab)   echo "lab" ;;
+        all)   echo "main admin demos lab" ;;
         *) return 1 ;;
     esac
 }
@@ -309,7 +313,7 @@ release_outcome_report() {
             "  projects: $(for bt in $targets; do printf '%s ' "$(release_outcome_project_name "$bt")"; done)" \
             "" \
             "Vercel builds ONLY commits whose first line starts with release: /" \
-            "release-admin: / release-demos: / release-all:, and the prefix must" \
+            "release-admin: / release-demos: / release-lab: / release-all:, and the prefix must" \
             "match each project's MATRX_BUILD_TARGET. This message matches none," \
             "so production stays on the previous build — no user sees this release." \
             "" \
@@ -533,8 +537,8 @@ _release_outcome_self_test() {
     fi
 
     # ── 9. --target all watches all three projects ──────────────────────────
-    [[ "$(release_outcome_targets all)" == "main admin demos" ]] \
-        && pass "--target all watches all three projects" || failt "--target all resolves wrong"
+    [[ "$(release_outcome_targets all)" == "main admin demos lab" ]] \
+        && pass "--target all watches all four projects" || failt "--target all resolves wrong"
     run_case READY dpl_new dpl_new all "release-all: v0.4.9999 - t"
     if [[ $RO_RC -eq 0 ]] && grep -q "ai-matrx-manage=dpl_new" <<< "$RO_OUT" && grep -q "ai-matrx-demos=dpl_new" <<< "$RO_OUT"; then
         pass "release-all: green names every project it verified"
@@ -560,6 +564,8 @@ _release_outcome_self_test() {
         && pass "admin project id resolves" || failt "admin project id wrong"
     [[ "$(release_outcome_project_id demos)" == "prj_wFKaTLiAUhsSsKNjmJXPjj8X9Zc6" ]] \
         && pass "demos project id resolves" || failt "demos project id wrong"
+    [[ "$(release_outcome_project_id lab)" == "prj_QqjDfdPlDehc4RfY5d3fYkWGr6HY" ]] \
+        && pass "lab project id resolves" || failt "lab project id wrong"
     [[ "$(release_outcome_project_id main)" == prj_* ]] \
         && pass "main project id resolves (.vercel/project.json wins when present)" || failt "main project id wrong"
 

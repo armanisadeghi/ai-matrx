@@ -47,6 +47,7 @@ done
 started=$(date +%s)
 
 # ── 1. commit the named paths ────────────────────────────────────────────────
+MINE=""   # the commit this run made, if any — it must reach the release
 if [[ ${#PATHS[@]} -gt 0 ]]; then
     git add -- "${PATHS[@]}" || { echo "ship-demos: could not stage ${PATHS[*]}"; exit 1; }
     if git diff --cached --quiet -- "${PATHS[@]}"; then
@@ -54,7 +55,8 @@ if [[ ${#PATHS[@]} -gt 0 ]]; then
     else
         git commit --only -m "demos: ${NOTE:-update}" -- "${PATHS[@]}" >/dev/null \
             || { echo "ship-demos: commit of ${PATHS[*]} failed"; exit 1; }
-        echo "ship-demos: committed $(git rev-parse --short HEAD) ${PATHS[*]}"
+        MINE=$(git rev-parse HEAD)
+        echo "ship-demos: committed ${MINE:0:10} ${PATHS[*]}"
     fi
 fi
 
@@ -72,17 +74,24 @@ for attempt in 1 2 3 4 5; do
         tree=$(git rev-parse "$base^{tree}"); parents=(-p "$base")
     elif tree=$(git merge-tree --write-tree "$base" "$head" 2>/dev/null); then
         parents=(-p "$base" -p "$head")
+    elif [[ -n "$MINE" ]] && tree=$(git merge-tree --write-tree --merge-base "$MINE^" "$base" "$MINE" 2>/dev/null); then
+        # Other sessions' local commits conflict with origin; apply ONLY this run's commit.
+        parents=(-p "$base")
+        echo "ship-demos: WARNING local main conflicts with $REMOTE/$BRANCH — shipping only ${MINE:0:10} on top of it."
     else
-        tree=$(git rev-parse "$base^{tree}"); parents=(-p "$base")
-        echo "ship-demos: WARNING local commits conflict with $REMOTE/$BRANCH — shipping $REMOTE/$BRANCH WITHOUT ${head:0:9}. Merge, then run again."
+        echo "ship-demos: ERROR ${MINE:+your commit ${MINE:0:10} / }local main conflicts with $REMOTE/$BRANCH — nothing pushed. Run: git pull --no-rebase origin main, then ship again."
+        exit 1
     fi
     sha=$(git commit-tree "$tree" "${parents[@]}" -m "$MSG") || { echo "ship-demos: commit-tree failed"; exit 1; }
-    if git push --quiet "$REMOTE" "$sha:refs/heads/$BRANCH" 2>/dev/null; then
+    if push_err=$(git push --quiet "$REMOTE" "$sha:refs/heads/$BRANCH" 2>&1); then
         # Fast-forward the local ref only when the tree is identical to HEAD's, so the
         # working tree and index stay exactly as their owners left them.
         $ff && git update-ref "refs/heads/$BRANCH" "$sha" "$head" 2>/dev/null
         echo "ship-demos: pushed ${sha:0:9} — $VERCEL_PROJECT build started ($(( $(date +%s) - started ))s)"
         break
+    fi
+    if ! grep -qE "fetch first|non-fast-forward|stale info" <<<"$push_err"; then
+        echo "ship-demos: ERROR push refused — nothing shipped:"; echo "$push_err" | sed 's/^/  /'; exit 1
     fi
     [[ $attempt -eq 5 ]] && { echo "ship-demos: lost the push race 5 times; run again"; exit 1; }
     echo "ship-demos: origin moved, retrying ($attempt)"
