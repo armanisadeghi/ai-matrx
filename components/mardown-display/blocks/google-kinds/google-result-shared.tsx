@@ -344,7 +344,7 @@ export const WRITE_CLAIM_KEYS = [...HOLD_KEYS, ...COMPLETED_KEYS, "approval"] as
 
 /** `would_append` → `would append`; `dry_run` → `dry run`. */
 function saidAs(key: string): string {
-  return key.replace(/_/g, " ");
+  return humanizeIdentifier(key) || key;
 }
 
 /** A `would_*` key that ARRIVED — the preview signal, whatever its shape. */
@@ -934,7 +934,7 @@ export const Bounds: React.FC<{ bounds: unknown; label?: string }> = ({
       {entries.map(([key, item]) => (
         <StateChip
           key={key}
-          label={`${key.replace(/_/g, " ")} ${readWhen(item) ?? String(item)}`}
+          label={`${humanizeIdentifier(key) || key} ${readWhen(item) ?? String(item)}`}
         />
       ))}
     </ChipRow>

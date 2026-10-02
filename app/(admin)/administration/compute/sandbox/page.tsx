@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import {
   type ReactNode,
@@ -529,7 +530,7 @@ export default function AdminSandboxManagementPage() {
       header: "Stop reason",
       label: "Stop reason",
       hidden: true,
-      cell: (instance) => instance.stop_reason?.replace(/_/g, " ") ?? "--",
+      cell: (instance) => (instance.stop_reason && humanizeIdentifier(instance.stop_reason)) || "--",
     },
     {
       accessorKey: "last_heartbeat_at",
@@ -684,7 +685,7 @@ export default function AdminSandboxManagementPage() {
                     {instance.stop_reason && (
                       <SandboxDetail label="Stop Reason">
                         <span className="text-xs">
-                          {instance.stop_reason.replace(/_/g, " ")}
+                          {humanizeIdentifier(instance.stop_reason) || instance.stop_reason}
                         </span>
                       </SandboxDetail>
                     )}

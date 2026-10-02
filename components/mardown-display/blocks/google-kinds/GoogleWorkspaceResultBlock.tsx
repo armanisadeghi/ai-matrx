@@ -509,7 +509,7 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
                 <CountChip value={readNumber(needsClient.rows_ready) as number} label="rows ready" />
               ) : null}
               {readText(needsClient.reason) ? (
-                <StateChip label={(readText(needsClient.reason) as string).replace(/_/g, " ")} />
+                <StateChip label={humanizeIdentifier(readText(needsClient.reason) as string)} />
               ) : null}
             </ChipRow>
           </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, {
   Suspense,
   createContext,
@@ -237,9 +238,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
             value: data,
             title:
               tabular.source === "wrapped-array" && tabular.wrapperKey
-                ? tabular.wrapperKey
-                    .replace(/[_-]+/g, " ")
-                    .replace(/\b\w/g, (c) => c.toUpperCase())
+                ? humanizeIdentifier(tabular.wrapperKey) || tabular.wrapperKey
                 : null,
           });
         },

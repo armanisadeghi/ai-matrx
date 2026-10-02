@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React from "react";
 import { Copy, Table2 } from "lucide-react";
 import { shapeOfValue } from "@ai-matrx/records-ui/table-shape";
@@ -137,9 +138,7 @@ function SaveAnswerToTableButton({ value }: { value: StructuredValue }) {
 }
 
 function readableLabel(key: string): string {
-  return key
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return humanizeIdentifier(key) || key;
 }
 
 function nonEmptyString(value: unknown): string | null {

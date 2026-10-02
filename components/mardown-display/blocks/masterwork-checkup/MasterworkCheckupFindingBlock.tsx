@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * MasterworkCheckupFindingBlock — the ONE renderer for the
  * `masterwork_checkup_finding` kind.
@@ -391,7 +392,7 @@ export function MasterworkCheckupFindingBlock({
         <footer className="flex items-center gap-1.5 border-t border-border pt-2 text-[11px] text-muted-foreground">
           <Quote className="h-3 w-3" />
           Found by your Final Checkup
-          {finding.foundBy ? ` · ${finding.foundBy.replace(/_/g, " ")}` : ""}
+          {finding.foundBy ? ` · ${humanizeIdentifier(finding.foundBy) || finding.foundBy}` : ""}
         </footer>
       )}
     </article>

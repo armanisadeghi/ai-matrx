@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Shared visual primitives for the rank / SERP-landscape kind family
  * (Rank Kinds Run, Stage B).
@@ -128,7 +129,7 @@ const RESULT_TYPE_LABELS: Record<string, string> = {
 
 export function resultTypeLabel(value?: string | null): string {
   if (!value) return "Unclassified";
-  return RESULT_TYPE_LABELS[value] ?? value.replace(/_/g, " ");
+  return RESULT_TYPE_LABELS[value] ?? (humanizeIdentifier(value) || value);
 }
 
 /** Neutral outline chip for a block type / engine / device. */

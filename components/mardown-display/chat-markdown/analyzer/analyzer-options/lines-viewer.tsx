@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from 'react';
 import { Copy, Check, FileText, Hash, Type, List, Minus, Quote, Link, CornerDownLeft, Square, SquareCheckBig } from 'lucide-react';
 import { addUtmSource } from '@/utils/url-utm';
@@ -54,7 +55,7 @@ const getLineIcon = (lineType: string) => {
 };
 
 const getLineLabel = (lineType: string) => {
-  return lineType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  return humanizeIdentifier(lineType) || lineType;
 };
 
 const renderLineItem = (item: LineItem) => {

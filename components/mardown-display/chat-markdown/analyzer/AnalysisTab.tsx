@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React from "react";
 import { MarkdownAnalysis } from "./types";
 
@@ -22,7 +23,7 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({ analysis }) => {
                         {Object.entries(analysis).map(([key, value]) => (
                             <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                                 <td className="px-3 py-2 border-border text-gray-800 dark:text-gray-300">
-                                    {key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                                    {humanizeIdentifier(key) || key}
                                 </td>
                                 <td className="px-3 py-2 border-border text-gray-800 dark:text-gray-300">
                                     {typeof value === "object" ? JSON.stringify(value) : value}

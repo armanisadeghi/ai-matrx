@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { notifyComputeTargetsChanged } from "@/hooks/sandbox/use-compute-targets";
@@ -810,7 +811,7 @@ export default function SandboxDetailPage() {
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-medium">Stop reason:</span>{" "}
-                  {instance.stop_reason.replace(/_/g, " ")}
+                  {humanizeIdentifier(instance.stop_reason) || instance.stop_reason}
                   {instance.stopped_at && (
                     <> at {new Date(instance.stopped_at).toLocaleString()}</>
                   )}
