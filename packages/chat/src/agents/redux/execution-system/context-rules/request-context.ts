@@ -26,13 +26,13 @@ import {
   resolveContextRow,
   type ContextRowSource,
   type ResolvedContextRow,
-  humanizeContextKey,
   systemRowsToResolved,
   withheldKeys,
   isServerAuthoritativeKey,
   CONTEXT_ROW_BLOCKS,
 } from "@ai-matrx/agents/context";
 import { getManifest } from "../../../../surfaces/runtime/registry";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import {
   BASELINE_VALUES,
   OWN_CONVERSATION_WITHHELD,
@@ -152,7 +152,7 @@ function validLimit(value: unknown): number | null {
 
 /**
  * A label someone wrote wins; a "label" that is the key itself is the key in
- * words — the package's `humanizeContextKey`, the one rule the server's
+ * words — THE humanizer (`@ai-matrx/kit/text-case` `humanizeIdentifier`), the rule the server's
  * receipt uses too (`note_id` → "Note ID"), so one value is never named two ways.
  */
 function rowLabel(key: string, ...written: Array<string | null | undefined>): string {
@@ -160,7 +160,7 @@ function rowLabel(key: string, ...written: Array<string | null | undefined>): st
     const text = label?.trim();
     if (text && text !== key) return text;
   }
-  return humanizeContextKey(key) || key;
+  return humanizeIdentifier(key) || key;
 }
 
 function attachedFileLabel(state: ChatRootState, conversationId: string, fileId: string): string {

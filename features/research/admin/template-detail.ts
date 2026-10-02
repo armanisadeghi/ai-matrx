@@ -43,6 +43,7 @@ import { hasAnyDoor } from "@/components/official/entity-ref/doors";
 import type { Json } from "@/types/database.types";
 
 import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META, type AgentConfigKey } from "./types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const AUTONOMY_WORDS: Record<string, string> = {
   auto: "Automatic",
@@ -67,14 +68,6 @@ function stringListOf(value: Json | unknown): string[] {
 function plainObjectEntries(value: unknown): Array<[string, Json]> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return [];
   return Object.entries(value as Record<string, Json>);
-}
-
-function titleizeKey(key: string): string {
-  return key
-    .replace(/_/g, " ")
-    .replace(/\bid\b/gi, "ID")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
 }
 
 /** One value from `default_search_params`/`metadata`, as a short line of text. */
@@ -105,7 +98,7 @@ function fieldsFromPlainObject(
   return plainObjectEntries(value).flatMap(([key, raw]) => {
     const shown = shortValueText(raw);
     if (!shown) return [];
-    return [{ key: `${keyPrefix}:${key}`, label: titleizeKey(key), text: shown }];
+    return [{ key: `${keyPrefix}:${key}`, label: humanizeIdentifier(key) || key, text: shown }];
   });
 }
 
