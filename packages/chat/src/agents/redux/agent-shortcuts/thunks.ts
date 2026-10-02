@@ -19,7 +19,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../host/db";
 import { requireAuthenticatedSupabaseSession } from "@host/utils/supabase/webDb";
 import { pgErrorToError } from "@ai-matrx/data";
 import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";

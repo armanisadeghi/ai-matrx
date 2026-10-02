@@ -97,6 +97,11 @@ jest.mock("@/lib/api/organization-admission", () => ({
  * asked for — if the resolver ever asked the table for a different key than it
  * asked the door for, the echo would expose it (asserted below).
  */
+// The package reaches the database through its own db seam (P6): the same fake.
+jest.mock("@ai-matrx/chat/host/db", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/db"),
+  ...jest.requireMock("@/utils/supabase/client"),
+}));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({

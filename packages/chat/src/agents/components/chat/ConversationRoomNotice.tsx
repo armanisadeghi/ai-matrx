@@ -43,7 +43,7 @@
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
 import { InfoHint } from "@host/components/official/InfoHint";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../host/db";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 
 interface RoomNotice {

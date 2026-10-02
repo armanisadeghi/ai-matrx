@@ -26,6 +26,7 @@ import {
   type ChatSourceApp,
 } from "../contract";
 import { announceOnce } from "../errors";
+import type { ChatDatabase } from "../db-types";
 
 export const DIAGNOSTICS_FLUSH_DELAY_MS = 1500;
 export const DIAGNOSTICS_MAX_PER_FLUSH = 20;
@@ -39,9 +40,15 @@ export interface LogClientErrorDiagnosticsOptions {
   flushDelayMs?: number;
 }
 
+/** The `log_client_error` overload that names the client (`p_source_app`). */
+type LogClientErrorArgs = Extract<
+  ChatDatabase["public"]["Functions"]["log_client_error"]["Args"],
+  { p_source_app: string }
+>;
+
 interface Pending {
   key: string;
-  args: Record<string, unknown>;
+  args: LogClientErrorArgs;
 }
 
 export function isChatSourceApp(value: unknown): value is ChatSourceApp {
@@ -160,7 +167,8 @@ export function createLogClientErrorDiagnostics(
         `[ai-matrx/chat] ${ctx.area}/${ctx.code}: ${message}`,
         ctx.detail ?? "",
       );
-      if (!persist || !sourceAppUsable()) return;
+      // `!sourceApp` never decides (sourceAppUsable already said no); it narrows the type.
+      if (!persist || !sourceAppUsable() || !sourceApp) return;
       const key = `${ctx.area}|${ctx.code}|${message}`;
       if (persisted.has(key)) return;
       persisted.add(key);

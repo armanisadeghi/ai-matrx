@@ -37,8 +37,8 @@ import type {
   SurfaceBindingPayload,
   WritePolicyMap,
 } from "../types";
-import type { Json, Tables } from "@host/types/database.types";
-import { createClient } from "@host/utils/supabase/client";
+import type { Json, Tables } from "../../host/db-types";
+import { createClient } from "../../host/db";
 import { recordUnavailable } from "@host/lib/records/recordUnavailable";
 import { ensureOrgAvailability } from "@host/utils/permissions/service";
 // THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed

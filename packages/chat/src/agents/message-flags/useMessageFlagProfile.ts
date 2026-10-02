@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../host/db";
 import type { MessageFlagProfile } from "./flags";
 
 const cache = new Map<string, MessageFlagProfile | null>();

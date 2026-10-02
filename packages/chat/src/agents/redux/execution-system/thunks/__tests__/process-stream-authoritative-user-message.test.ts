@@ -16,7 +16,7 @@ import { processStream } from "../process-stream";
 import { refetchSingleMessage } from "../../message-crud/refetch-single-message.thunk";
 import type { ChatRootState } from "../../../../../store/root-state";
 
-jest.mock("@host/utils/supabase/client", () => {
+jest.mock("../../../../../host/db", () => {
   const mockQuery = {
     eq: jest.fn(),
     is: jest.fn(),
@@ -34,7 +34,7 @@ jest.mock("@host/utils/supabase/client", () => {
   };
 });
 
-const { mockQuery } = jest.requireMock("@host/utils/supabase/client") as {
+const { mockQuery } = jest.requireMock("../../../../../host/db") as {
   mockQuery: {
     eq: jest.Mock;
     is: jest.Mock;

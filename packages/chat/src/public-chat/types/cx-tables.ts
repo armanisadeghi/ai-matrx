@@ -5,7 +5,7 @@
  * Content-block helpers below are for parsing JSON columns in the UI.
  */
 
-import type { Database } from "@host/types/database.types";
+import type { Database } from "../../host/db-types";
 import type {
   AudioMediaPart,
   DecisionAnswersPart,

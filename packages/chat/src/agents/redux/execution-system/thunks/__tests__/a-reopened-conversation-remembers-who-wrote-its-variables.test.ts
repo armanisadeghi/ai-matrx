@@ -34,7 +34,7 @@ import { loadConversation } from "../load-conversation.thunk";
 
 const mockFetchBundle = jest.fn();
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../../host/db", () => ({
   supabase: {
     auth: { getUser: async () => ({ data: { user: null } }) },
   },

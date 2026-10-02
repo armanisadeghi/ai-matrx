@@ -24,7 +24,7 @@ function query(rows: unknown[]) {
   return chain;
 }
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../../host/db", () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpc(...args),
     schema: () => ({

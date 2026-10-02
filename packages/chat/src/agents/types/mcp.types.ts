@@ -1,4 +1,4 @@
-import type { Database } from "@host/types/database.types";
+import type { Database } from "../../host/db-types";
 
 // ---------------------------------------------------------------------------
 // DB enum types — pulled from generated Supabase types for single source of truth

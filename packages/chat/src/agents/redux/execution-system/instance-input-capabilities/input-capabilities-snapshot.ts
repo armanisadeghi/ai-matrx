@@ -1,4 +1,4 @@
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import {
   parseUiGates,
   type UiGates,

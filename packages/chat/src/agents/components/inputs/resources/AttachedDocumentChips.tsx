@@ -39,7 +39,7 @@ import {
   useAttachedDocumentDisplayName,
   type AttachedDocumentMetadata,
 } from "./attached-documents";
-import type { Json } from "@host/types/database.types";
+import type { Json } from "../../../../host/db-types";
 import { selectInstanceResources } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
 import { removeResource } from "../../../redux/execution-system/instance-resources/instance-resources.slice";
 import { selectOrganizationId } from "../../../../host/org";

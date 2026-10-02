@@ -10,7 +10,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../host/db";
 import type { ConversationListItem } from "../conversation-list/conversation-list.types";
 import { applyFavoritesFromUes } from "../conversation-list/conversation-list.thunks";
 import type { ChatThunk, ChatRootState } from "../../../store/root-state";

@@ -20,7 +20,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { conversationSandboxBindingFromRow } from "@host/lib/sandbox/conversation-binding-row";
 import { clearSandboxBindingCache } from "@host/lib/sandbox/active-binding";

@@ -10,7 +10,7 @@
  * through `/ai/mandates/{key}` and the server resolves user → org → default.
  */
 
-jest.mock("@host/utils/supabase/client", () => ({ supabase: { schema: () => ({}) } }));
+jest.mock("../../../../../host/db", () => ({ supabase: { schema: () => ({}) } }));
 jest.mock("../execute-instance.thunk", () => ({ executeInstance: jest.fn() }));
 jest.mock(
   "../../instance-input-capabilities/input-capabilities-snapshot",

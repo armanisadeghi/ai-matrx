@@ -1,6 +1,6 @@
 const mockRpc = jest.fn();
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../../host/db", () => ({
   supabase: {
     rpc: (...args: unknown[]) => mockRpc(...args),
     schema: jest.fn(() => ({})),

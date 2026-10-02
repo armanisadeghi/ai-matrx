@@ -30,8 +30,8 @@
 import { durableRecordId } from "@ai-matrx/kit/ids";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import type { Json } from "@host/types/database.types";
-import { supabase } from "@host/utils/supabase/client";
+import type { Json } from "../../../../host/db-types";
+import { supabase } from "../../../../host/db";
 import { editMessage } from "./edit-message.thunk";
 import { projectAnswerText, spliceAnswerText, spliceDisplayEdit } from "./answer-text-splice";
 

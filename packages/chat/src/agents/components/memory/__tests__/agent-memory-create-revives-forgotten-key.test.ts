@@ -30,7 +30,7 @@ function builder(op: string, payload?: Row) {
   return b;
 }
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../host/db", () => ({
   supabase: {
     schema: () => ({
       from: () => ({

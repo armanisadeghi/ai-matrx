@@ -18,7 +18,7 @@ const AGENT = "5a8f3c2e-7b14-4e0d-9c61-2d4b8e1f7a90";
 const CHAT = "3ec7bfe6-1f2a-4c3b-8d4e-5f6a7b8c9d0e";
 
 const rpc = jest.fn();
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../../host/db", () => ({
   supabase: {
     rpc: (...a: unknown[]) => rpc(...a),
     schema: () => ({

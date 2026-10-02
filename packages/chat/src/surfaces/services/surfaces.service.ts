@@ -2,9 +2,9 @@
 
 import { publishedToWebPatch } from "@host/lib/row-access";
 import { qualifyValueKey } from "@ai-matrx/alchemy/declare";
-import { createClient } from "@host/utils/supabase/client";
+import { createClient } from "../../host/db";
 import { readAllRows } from "@ai-matrx/data/db";
-import type { Database } from "@host/types/database.types";
+import type { Database } from "../../host/db-types";
 import type {
   SurfaceDriftReport,
   SurfaceValue,

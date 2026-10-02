@@ -13,7 +13,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import { db } from "../../service/supabase-typed";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";

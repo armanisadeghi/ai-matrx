@@ -45,3 +45,12 @@ export { createDefaultChrome, DEFAULT_CHROME_STYLES } from "./defaults/chrome";
 export { createDbFeedback } from "./defaults/feedback";
 export { createUnhostedCanvas, UNHOSTED_CANVAS_VIEW } from "./defaults/canvas";
 export { DEFAULT_CHAT_ROUTES } from "./configure";
+export {
+  createClient,
+  getClaimsUser,
+  schedulerDb,
+  supabase,
+  type ChatClaimsUser,
+  type ClaimsCapableClient,
+} from "./db";
+export type { ChatDatabase } from "./db-types";

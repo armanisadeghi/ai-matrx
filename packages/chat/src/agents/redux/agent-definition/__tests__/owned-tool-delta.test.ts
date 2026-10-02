@@ -4,14 +4,14 @@ import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
 import { setUserAuth } from "@host/lib/redux/slices/userAuthSlice";
 import { setOrganization } from "@host/lib/redux/slices/appContextSlice";
 import { applyOwnedAgentToolDelta } from "../thunks";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import { selectModelById } from "@host/features/ai-models/redux/modelRegistrySlice";
 import {
   resolveModelControls,
   supportsTools,
 } from "../../../hooks/useModelControls";
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../host/db", () => ({
   supabase: { schema: jest.fn() },
 }));
 jest.mock("@host/features/ai-models/redux/modelRegistrySlice", () => ({

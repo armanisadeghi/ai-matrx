@@ -19,7 +19,7 @@
 
 import { ensureAgentIdentity } from "../../agent-definition/thunks";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import {
   sourceAppFromStorage,
@@ -93,7 +93,7 @@ import {
   type CxRequestRow,
 } from "./conversation-bundle";
 
-import { getClaimsUser } from "@host/utils/supabase/claimsUser";
+import { getClaimsUser } from "../../../../host/db";
 import { canActOn } from "@host/features/access-gate/service/canActOn";
 // =============================================================================
 // Thunk

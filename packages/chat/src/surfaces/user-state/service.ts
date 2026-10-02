@@ -11,7 +11,7 @@
 "use client";
 
 import { mergeJsonColumn } from "@ai-matrx/data/db";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../host/db";
 import { withOrganizationRefusalShown } from "@host/lib/organizations/organizationRefusalToast";
 import { ensureOrgId } from "../../host/org";
 

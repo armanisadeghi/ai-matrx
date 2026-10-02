@@ -27,7 +27,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import {
   removeMessage,

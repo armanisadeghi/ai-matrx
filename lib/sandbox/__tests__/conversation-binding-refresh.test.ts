@@ -14,6 +14,11 @@
 
 const maybeSingle = jest.fn();
 
+// The package reaches the database through its own db seam (P6): the same fake.
+jest.mock("@ai-matrx/chat/host/db", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/db"),
+  ...jest.requireMock("@/utils/supabase/client"),
+}));
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
     schema: () => ({

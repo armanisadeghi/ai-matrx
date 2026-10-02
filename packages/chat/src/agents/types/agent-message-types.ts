@@ -76,7 +76,7 @@ import type {
   DataInputBlock,
   ContentBlock,
 } from "./message-types";
-import type { Enums } from "@host/types/database.types";
+import type { Enums } from "../../host/db-types";
 import type { MessagePart } from "@host/types/python-generated/stream-events";
 import type { DecisionQuestionsPart } from "@host/features/agents/decision-questions/types";
 import type { MessageFlags } from "@host/types/python-generated/stream-events";

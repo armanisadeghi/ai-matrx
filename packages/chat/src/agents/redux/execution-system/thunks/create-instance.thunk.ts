@@ -29,7 +29,7 @@ import type {
 } from "../../../types/instance.types";
 import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
 import { fetchShortcutMandateKey } from "@host/lib/supabase/shortcutStorage";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import { hasField } from "../../shared/field-flags";
 import { fetchAgentExecutionFull } from "../../agent-definition/thunks";
 import { executeInstance } from "./execute-instance.thunk";

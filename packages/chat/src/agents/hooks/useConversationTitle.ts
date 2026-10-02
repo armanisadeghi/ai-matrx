@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../host/db";
 
 const titleCache = new Map<string, string | null>();
 const inFlight = new Map<string, Promise<string | null>>();

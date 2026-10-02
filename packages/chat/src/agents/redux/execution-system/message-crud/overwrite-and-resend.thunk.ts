@@ -35,7 +35,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { editMessage } from "./edit-message.thunk";
 import { mergeEditedText } from "./content-blocks.util";

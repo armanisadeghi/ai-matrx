@@ -16,7 +16,7 @@
  * disagrees with the server is worse than no verdict, because it is believed.
  */
 
-import { createClient } from "@host/utils/supabase/client";
+import { createClient } from "../host/db";
 import { isJsonObject } from "@host/types/json";
 import { hasBrowserSession } from "../host/identity";
 
@@ -118,7 +118,6 @@ export async function fetchAgentOutputSchemas(
     return out;
   }
 
-  const supabase = createClient();
   // `agent.definition` is a signed-in read, so a guest (a public app at
   // /p/<slug>) cannot ask it. OPEN DEFECT (2026-09-29), not a design: the
   // guest's public app DOES have a contract and should read it through a
@@ -132,6 +131,7 @@ export async function fetchAgentOutputSchemas(
     if (!(await hasBrowserSession())) {
       return misses.map((id) => ({ id, value: null }));
     }
+    const supabase = createClient();
     const { data, error } = await supabase
       .schema("agent")
       .from("definition")

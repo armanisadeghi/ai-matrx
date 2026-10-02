@@ -5,7 +5,7 @@
 const getSession = jest.fn();
 const getState = jest.fn();
 
-jest.mock("@host/utils/supabase/client", () => {
+jest.mock("../../host/db", () => {
   const client = {
     auth: { getSession: (...args: unknown[]) => getSession(...args) },
   };

@@ -10,7 +10,7 @@
  * (Replaces the deleted Next.js /api/mcp/servers/[serverId]/* routes and the
  * deleted mcp-client/token-refresh.ts.)
  */
-import { createClient } from "@host/utils/supabase/client";
+import { createClient } from "../../host/db";
 import type { McpToolSchema } from "./mcp-client/tool-discovery";
 import { AIDREAM_PRODUCTION_URL } from "@host/lib/api/endpoints";
 import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";

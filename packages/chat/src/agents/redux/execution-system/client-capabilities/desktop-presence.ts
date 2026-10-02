@@ -22,7 +22,7 @@
  * returns; the window only bounds how long we might declare a dead executor.
  */
 
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import { hasBrowserSession } from "../../../../host/identity";
 
 /** matrx-local heartbeats every 5 min; allow one missed beat + 60s slack. */

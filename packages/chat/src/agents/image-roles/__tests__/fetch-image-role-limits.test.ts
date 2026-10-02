@@ -1,6 +1,6 @@
 const mockRpc = jest.fn();
 const mockSchema = jest.fn(() => ({ rpc: mockRpc }));
-jest.mock("@host/utils/supabase/client", () => ({ supabase: { schema: mockSchema } }));
+jest.mock("../../../host/db", () => ({ supabase: { schema: mockSchema } }));
 const mockCaptureError = jest.fn();
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({ captureError: mockCaptureError }));
 

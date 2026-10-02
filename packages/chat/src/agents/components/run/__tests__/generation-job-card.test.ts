@@ -5,6 +5,8 @@
  * card says the cost arrives with the video instead of inventing a number.
  */
 
+jest.mock("../../../../host/db", () => ({ supabase: {} }));
+// App modules this card reaches still import the app's own client.
 jest.mock("@host/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({ captureError: jest.fn() }));
 

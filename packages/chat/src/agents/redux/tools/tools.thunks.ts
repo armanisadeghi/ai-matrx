@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../host/db";
 import { pgErrorToError } from "@ai-matrx/data";
 import { recordUnavailable } from "@host/lib/records/recordUnavailable";
 import type { DatabaseTool } from "@host/utils/supabase/tools-service";

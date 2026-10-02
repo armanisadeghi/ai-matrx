@@ -55,8 +55,8 @@
  * breakage this system exists to surface.
  */
 
-import { createClient } from "@host/utils/supabase/client";
-import { getClaimsUser } from "@host/utils/supabase/claimsUser";
+import { createClient } from "../host/db";
+import { getClaimsUser } from "../host/db";
 import { isJsonObject } from "@host/types/json";
 import { recordUnavailable } from "@host/lib/records/recordUnavailable";
 import type { FeLlmParams } from "../agents/types/agent-api-types";

@@ -7,7 +7,7 @@ import type { ResultDisplayMode } from "../../utils/run-ui-utils";
 import type { ShortcutContext } from "../../utils/shortcut-context-utils";
 import type { VariablesPanelStyle } from "../../components/inputs/variable-input-variations/variable-input-options";
 import type { JsonExtractionConfig } from "../../types/instance.types";
-import type { Database } from "@host/types/database.types";
+import type { Database } from "../../../host/db-types";
 import type { FieldFlags } from "../shared/field-flags";
 import type {
   ValueMappingMap,

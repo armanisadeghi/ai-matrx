@@ -1,6 +1,6 @@
 const inCalls = jest.fn();
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../host/db", () => ({
   createClient: () => ({
     schema: () => ({
       from: () => ({

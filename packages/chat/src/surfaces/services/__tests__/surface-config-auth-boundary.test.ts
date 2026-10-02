@@ -68,7 +68,10 @@ const client = {
   }),
 };
 
-jest.mock("@host/utils/supabase/client", () => ({ createClient: () => client }));
+jest.mock("../../../host/db", () => ({
+  ...jest.requireActual("../../../host/db"),
+  createClient: () => client,
+}));
 
 import { fetchSurfaceConfigBundle } from "../surface-config.service";
 

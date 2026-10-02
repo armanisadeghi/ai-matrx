@@ -20,7 +20,7 @@
  * false/null defaults.
  */
 
-import type { Database } from "@host/types/database.types";
+import type { Database } from "../../../host/db-types";
 import { parseCustomTools } from "./parse-custom-tools";
 import {
   parseAgentMessages,

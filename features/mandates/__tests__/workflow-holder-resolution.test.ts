@@ -38,6 +38,11 @@ jest.mock("@/lib/api/organization-admission", () => ({
   waitForOrganizationAdmission: async () => "ready",
   peekSelectedOrganizationId: () => ORG,
 }));
+// The package reaches the database through its own db seam (P6): the same fake.
+jest.mock("@ai-matrx/chat/host/db", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/db"),
+  ...jest.requireMock("@/utils/supabase/client"),
+}));
 jest.mock("@/utils/supabase/client", () => {
   const { withClaims } = jest.requireActual("@/test-utils/supabase-auth");
   return {

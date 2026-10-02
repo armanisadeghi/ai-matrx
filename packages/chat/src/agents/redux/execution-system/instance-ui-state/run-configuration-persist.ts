@@ -26,7 +26,7 @@
 import type { Middleware } from "@reduxjs/toolkit";
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import type { ChatRootState } from "../../../../store/root-state";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 
 export const RUN_CONFIGURATION_KEY = "run_configuration";

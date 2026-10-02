@@ -51,7 +51,7 @@ import { useOpenDiffViewerWindow } from "../../../../host/window-openers";
 import { editMessage } from "../../../redux/execution-system/message-crud/edit-message.thunk";
 import { setRequestEditedText } from "../../../redux/execution-system/active-requests/active-requests.slice";
 import { selectMessageStreamRequestId } from "../../../redux/execution-system/messages/messages.selectors";
-import type { Json } from "@host/types/database.types";
+import type { Json } from "../../../../host/db-types";
 
 interface EditHistoryDialogProps {
   open: boolean;

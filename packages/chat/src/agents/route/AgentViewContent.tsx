@@ -30,7 +30,7 @@ import {
   fetchModelOptions,
 } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../host/db";
 import { Badge } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { Card, CardContent, CardHeader, CardTitle } from "@host/components/ui/card";

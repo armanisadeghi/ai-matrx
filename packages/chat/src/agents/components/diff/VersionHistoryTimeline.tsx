@@ -10,7 +10,7 @@ import {
 } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../host/notify";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../host/db";
 import {
   GitCompareArrows,
   ArrowRight,

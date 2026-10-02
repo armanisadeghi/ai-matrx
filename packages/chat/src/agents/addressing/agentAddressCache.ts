@@ -22,7 +22,7 @@
  * second round trip.
  */
 
-import { createClient } from "@host/utils/supabase/client";
+import { createClient } from "../../host/db";
 import type { AgentAddress } from "./agentAddress";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 

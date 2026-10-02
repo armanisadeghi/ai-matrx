@@ -22,11 +22,11 @@ import { storedMandateKey, type AnyMandateKey } from "@host/features/mandates/ma
  * one console.warn naming both.
  */
 
-import { createClient } from "@host/utils/supabase/client";
+import { createClient } from "../../host/db";
 import { writeOne } from "@host/utils/supabase/writeOne";
-import { getClaimsUser } from "@host/utils/supabase/claimsUser";
+import { getClaimsUser } from "../../host/db";
 import { isJsonObject } from "@host/types/json";
-import type { Database } from "@host/types/database.types";
+import type { Database } from "../../host/db-types";
 import { fetchMandatePins } from "../../mandates/service";
 import type { SurfaceAgentRole } from "../types";
 import {

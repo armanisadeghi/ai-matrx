@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { createClient } from "@host/utils/supabase/client";
+import { createClient } from "../../host/db";
 
 const nameCache = new Map<string, string>();
 const inflight = new Map<string, Promise<void>>();

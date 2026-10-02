@@ -29,7 +29,7 @@ import type {
   InfoPayload,
   CompletionPayload,
 } from "@host/types/python-generated/stream-events";
-import type { Json } from "@host/types/database.types";
+import type { Json } from "../../../../host/db-types";
 
 // =============================================================================
 // DB-faithful record shapes — mirror the Supabase Row types

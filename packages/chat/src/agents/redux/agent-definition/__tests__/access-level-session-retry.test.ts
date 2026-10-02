@@ -1,7 +1,7 @@
 const rpc = jest.fn();
 const getSession = jest.fn();
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../host/db", () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpc(...args),
     auth: { getSession: (...args: unknown[]) => getSession(...args) },

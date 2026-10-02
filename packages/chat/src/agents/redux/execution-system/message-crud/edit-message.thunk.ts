@@ -24,9 +24,9 @@
 
 import { durableRecordId } from "@ai-matrx/kit/ids";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import type { Database, Json } from "@host/types/database.types";
+import type { Database, Json } from "../../../../host/db-types";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { extractFlatText } from "../messages/messages.selectors";
 import {

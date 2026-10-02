@@ -17,7 +17,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../host/db";
 import { operationFailed } from "@ai-matrx/kit/errors";
 import { ensureEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs";
 import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";

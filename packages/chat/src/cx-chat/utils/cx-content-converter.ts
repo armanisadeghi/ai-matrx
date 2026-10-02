@@ -19,7 +19,7 @@ import type {
   CxThinkingContent,
   CxMediaContent,
 } from "../types/cx-tables";
-import type { Json } from "@host/types/database.types";
+import type { Json } from "../../host/db-types";
 
 // ============================================================================
 // Types for the converter output

@@ -18,7 +18,7 @@ function builder(result: unknown) {
   return b;
 }
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../host/db", () => ({
   supabase: { schema: (...a: unknown[]) => (builder({ data: [], error: null }).schema as (...x: unknown[]) => unknown)(...a) },
 }));
 jest.mock("@host/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-1" }));

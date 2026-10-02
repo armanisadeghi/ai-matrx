@@ -86,7 +86,7 @@ import type {
   SystemInstruction,
 } from "../../../types/agent-api-types";
 import type { MessagePart } from "@host/types/python-generated/stream-events";
-import type { Json } from "@host/types/database.types";
+import type { Json } from "../../../../host/db-types";
 import type { UserInputPart } from "../../../types/request.types";
 import type { RequestInitiation } from "../../../types/instance.types";
 import type { MessageRecord } from "../messages/messages.slice";

@@ -19,14 +19,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ComponentType, ReactNode } from "react";
 import type { AgentCatalog } from "@ai-matrx/agents/catalog";
+import type { ChatDatabase } from "./db-types";
 import type { ChatWindowId } from "./windows";
 import type { ChatWindowOpeners } from "./window-openers";
 
 /**
- * The connection contract (R10). Authenticated, RLS applies. P6 narrows this to
- * `SupabaseClient<ChatDatabase>` once the generated subset exists.
+ * The connection contract (R10). Authenticated, RLS applies. Typed with the
+ * package's own `ChatDatabase` (`./db-types`, generated: the schemas the
+ * package reads); a client typed with the full platform `Database` passes
+ * unchanged. Package code reaches it only through the db seam (`./db`).
  */
-export type ChatDb = SupabaseClient;
+export type ChatDb = SupabaseClient<ChatDatabase>;
 
 /**
  * The closed list `log_client_error` accepts for `p_source_app`

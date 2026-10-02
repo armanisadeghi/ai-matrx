@@ -25,7 +25,7 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "../../../store/hooks";
-import type { Json } from "@host/types/database.types";
+import type { Json } from "../../../host/db-types";
 import { editMessage } from "../../redux/execution-system/message-crud/edit-message.thunk";
 import { forkConversation } from "../../redux/execution-system/message-crud/fork-conversation.thunk";
 import { softDeleteConversation } from "../../redux/execution-system/message-crud/soft-delete-conversation.thunk";

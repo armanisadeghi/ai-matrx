@@ -172,6 +172,11 @@ function makeChain(table: string) {
   return chain;
 }
 
+// The package reaches the database through its own db seam (P6): the same fake.
+jest.mock("@ai-matrx/chat/host/db", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/db"),
+  ...jest.requireMock("@/utils/supabase/client"),
+}));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({ from: (table: string) => makeChain(table) }),

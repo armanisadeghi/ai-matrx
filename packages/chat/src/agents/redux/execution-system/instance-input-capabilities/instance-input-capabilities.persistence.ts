@@ -1,7 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import type { Database, Json } from "@host/types/database.types";
-import { supabase } from "@host/utils/supabase/client";
+import type { Database, Json } from "../../../../host/db-types";
+import { supabase } from "../../../../host/db";
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { waitForConversationPersisted } from "../conversations/conversation-persistence";
 import {

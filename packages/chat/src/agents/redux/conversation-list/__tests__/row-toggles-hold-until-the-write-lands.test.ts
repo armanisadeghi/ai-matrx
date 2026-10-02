@@ -9,7 +9,7 @@ jest.mock("@host/features/scopes/service/favoritesService", () => ({
   favoritesService: { setFavorite: (...a: unknown[]) => setFavorite(...a) },
 }));
 const chain = { update: jest.fn(), eq: jest.fn(), select: jest.fn() };
-jest.mock("@host/utils/supabase/client", () => ({ supabase: { schema: () => ({ from: () => chain }) } }));
+jest.mock("../../../../host/db", () => ({ supabase: { schema: () => ({ from: () => chain }) } }));
 jest.mock("../../execution-system/message-crud/server/fork-conversation-server.thunk", () => ({ forkConversationServer: jest.fn() }));
 
 import {

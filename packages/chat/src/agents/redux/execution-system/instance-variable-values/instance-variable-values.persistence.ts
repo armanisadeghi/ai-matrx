@@ -34,7 +34,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import { tryWriteOne } from "@host/utils/supabase/writeOne";
 import { waitForConversationPersisted } from "../conversations/conversation-persistence";
 

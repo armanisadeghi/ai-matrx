@@ -25,7 +25,7 @@ import { fileHandler } from "@host/features/files/handler/handler";
 
 import type { DocumentRepresentation } from "../../../types/instance.types";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
-import type { Json } from "@host/types/database.types";
+import type { Json } from "../../../../host/db-types";
 import { normalizeResourceFamilyPolicy } from "./resource-family-policy";
 
 /**

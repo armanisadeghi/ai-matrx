@@ -15,7 +15,7 @@
  * Quick Test Agent on /notes, 2026-09-30), rows trimmed, fields verbatim.
  */
 
-jest.mock("@host/utils/supabase/client", () => ({ supabase: {} }));
+jest.mock("../../../../../host/db", () => ({ supabase: {} }));
 
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../../../../store/root-state";

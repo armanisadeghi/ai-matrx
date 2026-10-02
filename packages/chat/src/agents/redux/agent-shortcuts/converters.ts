@@ -24,7 +24,7 @@
  *            llm_overrides
  */
 
-import type { Database } from "@host/types/database.types";
+import type { Database } from "../../../host/db-types";
 import type { AgentShortcut } from "./types";
 import type { ResultDisplayMode } from "../../utils/run-ui-utils";
 import type { ShortcutContext } from "../../utils/shortcut-context-utils";

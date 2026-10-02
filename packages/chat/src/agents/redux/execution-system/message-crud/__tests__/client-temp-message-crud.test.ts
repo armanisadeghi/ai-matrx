@@ -25,7 +25,7 @@ import { mintClientTempId } from "@ai-matrx/kit/ids";
 
 const rpc = jest.fn();
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../../host/db", () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpc(...args),
     schema: jest.fn(() => ({})),

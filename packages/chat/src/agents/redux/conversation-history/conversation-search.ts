@@ -1,5 +1,5 @@
-import { supabase } from "@host/utils/supabase/client";
-import type { Database } from "@host/types/database.types";
+import { supabase } from "../../../host/db";
+import type { Database } from "../../../host/db-types";
 import type { ConversationListItem } from "../conversation-list/conversation-list.types";
 import type { ConversationHistoryScopeState, SourceFacet } from "./types";
 

@@ -1,4 +1,4 @@
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../host/db";
 import type { McpTransport } from "../types/mcp.types";
 import {
   catalogEntryFromRpc,
@@ -8,7 +8,7 @@ import type {
   McpCatalogEntry,
   McpServerConfigEntry,
 } from "../types/mcp.types";
-import { runWithSessionRetry } from "@host/lib/supabase/authRetry";
+import { runWithSessionRetry } from "../../host/session-retry";
 import { requireSelectedOrgId } from "@host/lib/organizations/activeOrg";
 import { withOrganizationRefusalShown } from "@host/lib/organizations/organizationRefusalToast";
 

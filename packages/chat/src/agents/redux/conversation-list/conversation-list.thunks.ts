@@ -8,8 +8,8 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
-import type { Database } from "@host/types/database.types";
+import { supabase } from "../../../host/db";
+import type { Database } from "../../../host/db-types";
 import type { ChatThunk, ChatRootState } from "../../../store/root-state";
 import { favoritesService } from "@host/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@host/features/scopes/types";

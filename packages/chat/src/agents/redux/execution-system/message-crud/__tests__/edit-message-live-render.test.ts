@@ -9,7 +9,7 @@ import { editMessage } from "../edit-message.thunk";
 
 const rpcReturns = jest.fn();
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../../host/db", () => ({
   supabase: {
     rpc: jest.fn(() => ({ returns: rpcReturns })),
     // Module-load only: war-room/service.ts binds `workspaceDb(supabase)` when the

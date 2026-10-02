@@ -58,7 +58,7 @@ const CACHED_PAGE = [
 
 const mockRpcCalls: Array<{ name: string; args: unknown }> = [];
 
-jest.mock("@host/utils/supabase/client", () => {
+jest.mock("../../../../host/db", () => {
   const page = { data: CACHED_PAGE, error: null, count: 0 };
   const chain: Record<string, unknown> = {};
   const self = () => chain;

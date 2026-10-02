@@ -1,4 +1,4 @@
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 
 /**
  * Canonical "is this conversation a real, deep-linkable resource yet?" check.

@@ -107,7 +107,7 @@ function table() {
   return builder;
 }
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../../host/db", () => ({
   supabase: { schema: () => ({ from: () => table() }) },
 }));
 jest.mock("@host/utils/auth/getUserId", () => ({ requireUserId: () => PERSON_ID }));

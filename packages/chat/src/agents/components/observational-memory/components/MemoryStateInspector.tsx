@@ -29,8 +29,8 @@ import {
   Hammer,
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { supabase } from "@host/utils/supabase/client";
-import type { Tables } from "@host/types/database.types";
+import { supabase } from "../../../../host/db";
+import type { Tables } from "../../../../host/db-types";
 import { formatDateTime, formatRelativeTime, formatTokens } from "./format";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 

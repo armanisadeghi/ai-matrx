@@ -27,7 +27,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
-import type { Json } from "@host/types/database.types";
+import type { Json } from "../../../../host/db-types";
 import type { MessageRole } from "../../../types/agent-message-types";
 import type {
   ContextReceiptData,

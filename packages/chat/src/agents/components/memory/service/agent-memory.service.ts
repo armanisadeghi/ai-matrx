@@ -13,9 +13,9 @@
  * Deletes are soft (`deleted_at`) — callers must filter `deleted_at is null`.
  */
 
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import { slugifyKey } from "@host/features/scopes/utils/slugify";
-import type { Database } from "@host/types/database.types";
+import type { Database } from "../../../../host/db-types";
 import type {
   AgentMemoryRow,
   CreateAgentMemoryInput,

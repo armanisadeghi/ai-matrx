@@ -20,8 +20,8 @@ import { useEffect, useState } from "react";
 import { usePageCaptureContribution } from "@host/components/agent-copy/page-capture/usePageCapture";
 import { ShieldCheck, ShieldAlert } from "lucide-react";
 
-import { supabase } from "@host/utils/supabase/client";
-import { schedulerDb } from "@host/utils/supabase/schedulerDb";
+import { supabase } from "../../../../host/db";
+import { schedulerDb } from "../../../../host/db";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /** Seeded by matrx-frontend/migrations/campaign/paritynightly_*.sql. */

@@ -12,7 +12,7 @@
  *     against surface-specific binds so nothing shows twice).
  */
 
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../host/db";
 import { DEFAULT_AGENT_CATALOG_LABELS } from "@ai-matrx/agents/catalog";
 import { adminDoorOpen } from "@host/lib/api/adminDoor";
 

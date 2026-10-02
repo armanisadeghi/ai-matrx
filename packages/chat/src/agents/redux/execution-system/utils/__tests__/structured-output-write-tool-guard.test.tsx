@@ -49,7 +49,7 @@ jest.mock("@host/lib/supabase/hasBrowserSession", () => ({
   hasBrowserSession: async () => true,
 }));
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../../host/db", () => ({
   createClient: () => ({
     schema: () => ({
       from: () => ({

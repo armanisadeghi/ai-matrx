@@ -47,7 +47,7 @@ import {
 } from "./attached-documents";
 import type { Resource } from "../../../resources/types";
 import type { ResourceBlockType } from "../../../types/instance.types";
-import type { Json } from "@host/types/database.types";
+import type { Json } from "../../../../host/db-types";
 
 /** Map prompt-system resource types to agent ResourceBlockType. */
 export function resourceTypeToBlockType(

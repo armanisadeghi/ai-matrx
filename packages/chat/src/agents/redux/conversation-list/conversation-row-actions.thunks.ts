@@ -21,7 +21,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../host/db";
 import { tryWriteOne } from "@host/utils/supabase/writeOne";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { favoritesService } from "@host/features/scopes/service/favoritesService";

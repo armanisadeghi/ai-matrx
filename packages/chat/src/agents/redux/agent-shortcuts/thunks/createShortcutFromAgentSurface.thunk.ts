@@ -1,13 +1,13 @@
 "use client";
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import { pgErrorToError } from "@ai-matrx/data";
 import { recordUnavailable } from "@host/lib/records/recordUnavailable";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { AgentShortcut } from "../types";
 import { fetchFullShortcut } from "../thunks";
-import type { Database } from "@host/types/database.types";
+import type { Database } from "../../../../host/db-types";
 import type { ValueMappingMap } from "../../../../surfaces/types";
 import { ensureOrgId } from "../../../../host/org";
 

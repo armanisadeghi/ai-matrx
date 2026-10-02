@@ -29,7 +29,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "../../../../host/notify";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import { loadConversation } from "./load-conversation.thunk";
 import { setRequestStatus } from "../active-requests/active-requests.slice";
 import { setInstanceStatus } from "../conversations/conversations.slice";

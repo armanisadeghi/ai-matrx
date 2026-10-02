@@ -17,9 +17,9 @@
  *     (migrations/cx_conversation_bundle_carries_run_history.sql).
  */
 
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import { recordUnavailableMessage } from "@host/lib/records/recordUnavailable";
-import type { Database } from "@host/types/database.types";
+import type { Database } from "../../../../host/db-types";
 import type {
   MessageRecord,
   ToolOnCall,

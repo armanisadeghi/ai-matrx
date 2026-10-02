@@ -42,7 +42,7 @@ jest.mock(
   () => ({}),
 );
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../../host/db", () => ({
   createClient: () => ({
     schema: () => ({
       from: () => ({

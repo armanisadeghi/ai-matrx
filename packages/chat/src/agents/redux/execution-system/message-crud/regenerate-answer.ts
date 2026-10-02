@@ -17,7 +17,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { markCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";

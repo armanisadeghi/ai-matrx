@@ -41,18 +41,18 @@
 
 import { agentNotReadableError } from "./agent-not-readable";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../host/db";
 import { tryWriteOne, writeOneRow } from "@host/utils/supabase/writeOne";
 import type { AgentSummary } from "@ai-matrx/agents/catalog";
 import { getAgentCatalog } from "@host/lib/agents/catalog";
-import { runWithSessionRetry } from "@host/lib/supabase/authRetry";
+import { runWithSessionRetry } from "../../../host/session-retry";
 import { pgErrorToError } from "@ai-matrx/data";
 import { agentNameTakenError } from "./agentNameTaken";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { withRetry } from "@ai-matrx/data/net";
 import { ConnectTimeoutError } from "@ai-matrx/data/net";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
-import type { Database } from "@host/types/database.types";
+import type { Database } from "../../../host/db-types";
 import type { DbRpcRow } from "@host/types/supabase-rpc";
 import {
   selectModelById,

@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../host/db";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import { readImageRoleLimits, type ImageRoleLimits } from "@ai-matrx/agents";
 

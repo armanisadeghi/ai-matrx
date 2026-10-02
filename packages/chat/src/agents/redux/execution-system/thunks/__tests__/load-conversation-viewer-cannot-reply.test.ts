@@ -29,19 +29,21 @@ const mockFetchBundle = jest.fn();
 const mockHasAccess = jest.fn();
 let mockSignedIn: string | null = null;
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../../host/db", () => ({
   supabase: {
     auth: { getUser: async () => ({ data: { user: null } }) },
     schema: () => ({
       rpc: (fn: string, args: Record<string, unknown>) => mockHasAccess(fn, args),
     }),
   },
-}));
-jest.mock("@host/utils/supabase/claimsUser", () => ({
   getClaimsUser: async () => ({
     data: { user: mockSignedIn ? { id: mockSignedIn } : null },
   }),
 }));
+// canActOn (an app module) still reads the app's own client: same fake.
+jest.mock("@host/utils/supabase/client", () =>
+  jest.requireMock("../../../../../host/db"),
+);
 jest.mock("../conversation-bundle", () => {
   const actual = jest.requireActual("../conversation-bundle");
   return {

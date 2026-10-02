@@ -4,7 +4,7 @@
  * holds a partial cache (recent page / live stream).
  */
 
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../host/db";
 import type { CxToolCallRecord } from "../../agents/redux/execution-system/observability/observability.slice";
 import {
   toolCallRowToRecord,

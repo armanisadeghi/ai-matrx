@@ -9,7 +9,7 @@
  * `chat.agent_memory` (semantic long-term memory, one row per fact).
  */
 
-import type { Database, Json } from "@host/types/database.types";
+import type { Database, Json } from "../../../host/db-types";
 
 export type AgentMemoryRow = Database["chat"]["Tables"]["agent_memory"]["Row"];
 

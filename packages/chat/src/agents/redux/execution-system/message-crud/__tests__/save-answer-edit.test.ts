@@ -42,7 +42,7 @@ const rpcReturns = jest.fn();
 let dbContent: unknown = null;
 let reduxContent: unknown = null;
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../../../host/db", () => ({
   supabase: {
     rpc: (...args: unknown[]) => {
       rpc(...args);

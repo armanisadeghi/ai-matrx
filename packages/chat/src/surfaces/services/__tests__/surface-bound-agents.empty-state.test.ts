@@ -1,6 +1,6 @@
 const inQuery = jest.fn();
 
-jest.mock("@host/utils/supabase/client", () => ({
+jest.mock("../../../host/db", () => ({
   supabase: {
     schema: () => ({
       from: () => ({

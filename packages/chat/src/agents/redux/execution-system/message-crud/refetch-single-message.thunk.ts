@@ -26,7 +26,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { messageRowToRecord } from "../thunks/conversation-bundle";

@@ -1,7 +1,7 @@
 "use client";
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../../../host/db";
 import { pgErrorToError } from "@ai-matrx/data";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { AgentShortcut } from "../types";

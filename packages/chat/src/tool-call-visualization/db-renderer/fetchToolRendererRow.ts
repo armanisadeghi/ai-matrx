@@ -7,7 +7,7 @@
  * active row exists or the row has no code — the caller treats that as "this
  * tool has no DB renderer" and falls back to the GenericRenderer.
  */
-import { supabase } from "@host/utils/supabase/client";
+import { supabase } from "../../host/db";
 import { WEB_TOOL_UI_SURFACE } from "./surface";
 
 export interface ToolRendererRow {
