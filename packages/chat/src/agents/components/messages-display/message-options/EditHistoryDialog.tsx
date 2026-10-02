@@ -32,16 +32,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@host/components/ui/dialog";
+} from "@ai-matrx/design-system";
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
   DrawerDescription,
-} from "@host/components/ui/drawer";
-import { Button } from "@host/components/ui/button";
-import { ScrollArea } from "@host/components/ui/scroll-area";
+} from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
+import { ScrollArea } from "@ai-matrx/design-system";
 import { toast } from "@host/lib/toast";
 import {
   selectMessageContentHistory,

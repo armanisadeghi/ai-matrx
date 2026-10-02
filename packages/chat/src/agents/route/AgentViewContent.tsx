@@ -32,16 +32,16 @@ import {
 } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { supabase } from "@host/utils/supabase/client";
-import { Badge } from "@host/components/ui/badge";
-import { Button } from "@host/components/ui/button";
+import { Badge } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
 import { Card, CardContent, CardHeader, CardTitle } from "@host/components/ui/card";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@host/components/ui/alert";
-import { Separator } from "@host/components/ui/separator";
-import { ToggleGroup, ToggleGroupItem } from "@host/components/ui/toggle-group";
+} from "@ai-matrx/design-system";
+import { Separator } from "@ai-matrx/design-system";
+import { ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";
 import {
   Webhook,
   MessageSquare,

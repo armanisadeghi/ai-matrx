@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@host/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { toast } from "@host/lib/toast";
 import { supabase } from "@host/utils/supabase/client";

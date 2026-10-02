@@ -9,14 +9,14 @@ import {
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from "@host/components/ui/drawer";
+} from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@host/components/ui/dialog";
+} from "@ai-matrx/design-system";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { selectAgentById } from "../../../agents/redux/agent-definition/selectors";
 import type { AgentDefinitionRecord } from "../../../agents/types/agent-definition.types";

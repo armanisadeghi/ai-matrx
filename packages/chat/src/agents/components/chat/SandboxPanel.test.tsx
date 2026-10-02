@@ -66,7 +66,7 @@ jest.mock("@host/hooks/sandbox/use-verified-binding", () => ({
   }),
 }));
 
-import { TooltipProvider } from "@host/components/ui/tooltip";
+import { TooltipProvider } from "@ai-matrx/design-system";
 import { SandboxPanel } from "./SandboxPanel";
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {

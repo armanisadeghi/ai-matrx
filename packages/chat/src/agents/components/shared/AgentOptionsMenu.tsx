@@ -70,8 +70,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuLabel,
-} from "@host/components/ui/dropdown-menu";
-import { Drawer, DrawerContent, DrawerTitle } from "@host/components/ui/drawer";
+} from "@ai-matrx/design-system";
+import { Drawer, DrawerContent, DrawerTitle } from "@ai-matrx/design-system";
 import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   AgentDuplicateOutcomeDialog,

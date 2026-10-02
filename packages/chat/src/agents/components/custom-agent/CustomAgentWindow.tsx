@@ -18,14 +18,14 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, BookmarkPlus, Loader2 } from "lucide-react";
 import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@host/components/ui/select";
+} from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { toast } from "@host/lib/toast";
 import { cn } from "@host/lib/utils";

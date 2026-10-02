@@ -29,7 +29,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@host/components/ui/alert-dialog";
+} from "@ai-matrx/design-system";
 import { useAgentDuplicateFlow } from "../../hooks/useAgentDuplicateFlow";
 import { useAgentChangeReach } from "@host/features/mandates/admin/useAgentChangeReach";
 

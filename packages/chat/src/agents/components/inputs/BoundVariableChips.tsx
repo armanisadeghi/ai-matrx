@@ -30,8 +30,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@host/components/ui/select";
-import { Button } from "@host/components/ui/button";
+} from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
 import { toast } from "@host/lib/toast";
 import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";

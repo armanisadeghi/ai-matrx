@@ -32,7 +32,7 @@ import {
   cancelExecution,
 } from "../../../redux/execution-system/thunks/smart-execute.thunk";
 import { InboxQueueStrip } from "../../inputs/smart-input/InboxQueueStrip";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { ArrowUp, Mic, Braces, CircleStop, CornerDownLeft } from "lucide-react";
 
 // Voice input

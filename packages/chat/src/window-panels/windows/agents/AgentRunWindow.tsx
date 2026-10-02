@@ -34,7 +34,7 @@ import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Brain, Loader2, Plus, RotateCw } from "lucide-react";
-import { Button } from "@host/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import type { RootState } from "@host/lib/redux/store";

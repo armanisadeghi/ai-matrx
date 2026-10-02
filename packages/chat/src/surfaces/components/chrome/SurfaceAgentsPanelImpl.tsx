@@ -24,7 +24,7 @@ import { surfaceAcceptsAgentBindings } from "@host/features/surfaces/manifests/r
 import { SurfaceMandatesSection } from "./SurfaceMandatesSection";
 import { SurfaceConversationsSection } from "./SurfaceConversationsSection";
 import { PageIntelligenceSection } from "./PageIntelligenceSection";
-import { Badge } from "@host/components/ui/badge";
+import { Badge } from "@ai-matrx/design-system";
 import { useAgentLauncher } from "../../../agents/hooks/useAgentLauncher";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-feature-from-surface";

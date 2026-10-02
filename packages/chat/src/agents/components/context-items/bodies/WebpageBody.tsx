@@ -8,7 +8,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@host/components/ui/tooltip";
+} from "@ai-matrx/design-system";
 import { toast } from "@host/lib/toast-service";
 import { WebpageSnapshotView } from "@host/features/resource-manager/webpage/WebpageSnapshotView";
 import {

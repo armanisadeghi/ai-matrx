@@ -16,8 +16,8 @@ import {
 import SearchableSelect from "@host/components/matrx/SearchableSelect";
 import type { Option } from "@host/components/matrx/SearchableSelect";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
-import { Badge } from "@host/components/ui/badge";
-import { Button } from "@host/components/ui/button";
+import { Badge } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import {
   AlertDialog,
@@ -28,7 +28,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@host/components/ui/alert-dialog";
+} from "@ai-matrx/design-system";
 import {
   Loader2,
   ArrowUpCircle,

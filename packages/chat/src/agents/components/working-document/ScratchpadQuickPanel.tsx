@@ -21,7 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@host/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
 import { cn } from "@host/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";

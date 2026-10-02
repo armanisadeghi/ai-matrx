@@ -32,12 +32,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@host/components/ui/dialog";
-import { Button } from "@host/components/ui/button";
-import { Badge } from "@host/components/ui/badge";
-import { Textarea } from "@host/components/ui/textarea";
-import { ScrollArea } from "@host/components/ui/scroll-area";
-import { Separator } from "@host/components/ui/separator";
+} from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
+import { Badge } from "@ai-matrx/design-system";
+import { Textarea } from "@ai-matrx/design-system";
+import { ScrollArea } from "@ai-matrx/design-system";
+import { Separator } from "@ai-matrx/design-system";
 import {
   Play,
   Copy,
