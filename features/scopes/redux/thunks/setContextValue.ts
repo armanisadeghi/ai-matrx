@@ -20,13 +20,21 @@ import type {
   SetContextValueResult,
 } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
+import { incompleteSaveRefusal } from "@/features/scopes/utils/incompleteValue";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
 export function setContextValue(
   payload: SetContextValuePayload,
 ): AppThunk<Promise<ScopesRpcResult<SetContextValueResult>>> {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
+    // A cell that holds only the start of a value kept as a file (the file could not be read or
+    // checked) is never written back as if it were the value: every editor seeds its draft from
+    // that text, so saving it — or an edit of its first words — would cut the real value
+    // (lane 9, D1 follow-up; utils/incompleteValue.ts).
+    const current = getState()?.contextValues?.byScope?.[payload.scope_id]?.values?.[payload.context_item_id];
+    const refusal = incompleteSaveRefusal(current, payload.value_text);
+    if (refusal) return { ok: false, error: { code: "invalid_argument", message: refusal } };
     const res = await scopeStore.setContextValue(payload);
     if (!isScopesRpcErr(res)) {
       // Echo the persisted write into the sidecar. The RPC result carries the
