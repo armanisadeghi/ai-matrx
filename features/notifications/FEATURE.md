@@ -74,10 +74,13 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
 8. **Inline Approve/Decline** on approval rows through the approval kind registry; today Needs-you rows carry "Review", which opens the item in place.
 9. **Version-skew "Not now"** persisted and shown under Snoozed; **HR task inbox** and **question desk** as windows (both write the address today, so HR tasks opens in a new tab).
 10. **Organization overrides** of `config.bucket` through `notification_event_override.config_patch` are not read by the doors yet.
+11. **Badge gaps:** workflows waiting (a needs-you source) shows its count in All places but does not add to the badge (its read is a server call plus a realtime channel — too heavy for every page); reminder notices about record-store items and the "In your tables" count can both add (T6) until those reminders are suppressed for items already counted.
+12. **Performance:** `inbox_notifications` orders by a computed sort time, so each page reads all of a person's rows; a stored `sort_at` with an index on `(recipient_user_id, sort_at desc, id desc)` is the fix if inboxes grow. Group actions cover loaded members only (the grouped door fixes both).
+13. **HiddenElsewhere** lists snoozed assists from the newest 100 pending (the count in All places is exact); `listMyTaskUserStates` logs and returns [] on failure, so a task-state read failure reads as "nothing hidden" — fix in the tasks service.
 
 ## Change log
 
-- **2026-10-01** — Notifications UI redo (owner rulings 1–4, `common-docs/projects/notifications-ui-redo/RESEARCH.md`). `InboxPanel` deleted; `BellPanel`, `InboxWorkspace`, `NoticeRow`, `NoticeDetail`, `HiddenElsewhere`, the notice-source registry and four windows built; every open is a window or a new tab (guard red→green); triage migration applied and rehearsed (up/inverse/up) on the clone only. Verified on the clone preview as admin@admin.com at 1440 and 375, dark and light.
+- **2026-10-01** — Notifications UI redo (owner rulings 1–4, `common-docs/projects/notifications-ui-redo/RESEARCH.md`). `InboxPanel` deleted; `BellPanel`, `InboxWorkspace`, `NoticeRow`, `NoticeDetail`, `HiddenElsewhere`, the notice-source registry and four windows built; every open is a window or a new tab (guard red→green); triage migration applied and rehearsed (up/inverse/up) on the clone only. Verified on the clone preview as admin@admin.com at 1440 and 375, dark and light. Independent review (6 HIGH) fixed the same day: per-action undo, Enter never hijacked, live fallback offers no unread/undo it cannot do, (time, id) paging, unsafe links open nothing, waiting runs open in a new tab, the guard now opens every menu and scans the whole folder (mutation shown red).
 
 - **2026-09-30** — Mandate Candidates F1: `?panels=` notice links open their window in place;
   every linked row gets Open in new tab; unknown window keys fall back loudly. Proven on the clone
