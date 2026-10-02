@@ -183,7 +183,11 @@ function classify(
   node: JsonObject,
   ambiguous: boolean,
   resolveRecordToken: DeriveSchemaFieldsOptions["resolveRecordToken"],
-): { kind: SchemaFieldKind; enumValues: string[]; recordToken: EntityTypeToken | null } {
+): {
+  kind: SchemaFieldKind;
+  enumValues: string[];
+  recordToken: EntityTypeToken | null;
+} {
   const none = { enumValues: [] as string[], recordToken: null };
   if (ambiguous) return { kind: "json", ...none };
   if (Array.isArray(node.enum)) {
@@ -284,9 +288,13 @@ export function deriveSchemaFields(
       label:
         key === titleColumn
           ? "Title"
-          : title && title !== "JSON"
-            ? title.replace(/ Id$/, "")
-            : humanize(key),
+          : // The record an update/delete acts on is named by its type ("Task"),
+            // never by the storage word "id".
+            key === "id" && recordToken
+            ? humanize(recordToken)
+            : title && title !== "JSON"
+              ? title.replace(/ Id$/, "")
+              : humanize(key),
       kind,
       required: isRequired,
       nullable,
@@ -299,7 +307,9 @@ export function deriveSchemaFields(
     });
   });
 
-  const essentialRank = (f: SchemaField) => (f.key === titleColumn ? 0 : 1);
+  // The target record leads (an update says WHICH before WHAT), then the title.
+  const essentialRank = (f: SchemaField) =>
+    f.key === "id" ? 0 : f.key === titleColumn ? 1 : 2;
   fields.sort((a, b) => {
     if (a.tier !== b.tier) return a.tier === "essential" ? -1 : 1;
     if (a.tier === "essential") {

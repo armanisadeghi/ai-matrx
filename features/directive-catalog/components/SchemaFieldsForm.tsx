@@ -121,7 +121,6 @@ export function SchemaFieldsForm({
           {moreOpen && more.map(renderField)}
         </div>
       )}
-
     </div>
   );
 }
@@ -129,7 +128,8 @@ export function SchemaFieldsForm({
 // ── One field ───────────────────────────────────────────────────────────────
 
 function hintFor(field: SchemaField, mode: SchemaFormMode): string {
-  if (mode === "update") return "Unchanged";
+  // `id` is the record an update acts on, never a value it might leave alone.
+  if (mode === "update" && field.key !== "id") return "Unchanged";
   if (field.defaultValue !== undefined && field.defaultValue !== null) {
     const d =
       typeof field.defaultValue === "string"
@@ -225,7 +225,12 @@ function FieldControl({
       );
     case "record":
       return (
-        <RecordControl field={field} value={value} mode={mode} onChange={onChange} />
+        <RecordControl
+          field={field}
+          value={value}
+          mode={mode}
+          onChange={onChange}
+        />
       );
     case "date":
     case "time":
@@ -386,7 +391,7 @@ function RecordControl({
             <span className="truncate">
               {picked
                 ? (picked.recordTitle ?? `Chosen ${noun}`)
-                : mode === "update"
+                : mode === "update" && field.key !== "id"
                   ? `Unchanged — choose a ${noun}`
                   : `Choose a ${noun}`}
             </span>
@@ -396,7 +401,8 @@ function RecordControl({
           <RecordReferencePicker
             token={field.recordToken}
             onPickMany={(items) => {
-              const item = items[0] as { id?: unknown; label?: unknown } | undefined;
+              const item = items[0] as
+                { id?: unknown; label?: unknown } | undefined;
               if (!item || typeof item.id !== "string") return;
               onChange({
                 raw: item.id,

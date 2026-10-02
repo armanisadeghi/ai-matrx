@@ -100,6 +100,13 @@ const RECEIPT_PILL: Record<DirectiveReceipt["status"], string> = {
   failed: "bg-red-500/15 text-red-600 dark:text-red-400",
 };
 
+/** The run button says what it does; a server-added verb falls back to "Execute". */
+const VERB_BUTTON: Partial<Record<DirectiveVerb, string>> = {
+  create: "Create",
+  update: "Update",
+  delete: "Delete",
+};
+
 /** A cell state as words a person reads in a sentence. */
 const STATE_WORDS: Record<DirectiveState, string> = {
   yes: "wired",
@@ -217,6 +224,14 @@ export function DirectiveBuilderPanel({
   const [force, setForce] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [result, setResult] = useState<DirectiveApplyResult | null>(null);
+  /** The title the last Execute sent — names the written record in its receipt. */
+  const [sentTitle, setSentTitle] = useState<string | null>(null);
+  const [pendingTitle, setPendingTitle] = useState<string | null>(null);
+  /** Values to load into the next verb's form once its fields exist. */
+  const [pendingPayload, setPendingPayload] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [execError, setExecError] = useState<{
     raw: string;
     headline?: string;
@@ -393,6 +408,22 @@ export function DirectiveBuilderPanel({
     if (pick.noun !== nounName) handleNounChange(pick.noun);
   }
 
+  // "Update it" / "Delete it" on a receipt: same type, next verb, the written
+  // record already chosen — a create → update → delete walk is three clicks.
+  const continueWith = (nextVerb: DirectiveVerb, id: string) => {
+    if (!id) return;
+    const title = sentTitle;
+    handleVerbChange(nextVerb);
+    setPendingPayload({ id });
+    setPendingTitle(title);
+  };
+  if (pendingPayload && writeFields.length > 0) {
+    const values = valuesFromPayload(writeFields, pendingPayload);
+    if (values.id) values.id = { ...values.id, recordTitle: pendingTitle };
+    setPayloadValues(values);
+    setPendingPayload(null);
+  }
+
   const chooseIdentity = async (
     fieldKey: string,
     picker: NonNullable<ReturnType<typeof identityFieldPickerInfo>>,
@@ -406,13 +437,17 @@ export function DirectiveBuilderPanel({
       if (!id) return;
       const titles = await fetchEntityTitles(picker.token, [id]);
       setField(fieldKey, id, titles.get(id) ?? picker.label);
+      setRenderNonce((n) => n + 1);
       return;
     }
     openReferencePicker({
       entityToken: picker.token,
       fieldKey,
       title: `Choose ${picker.label}`,
-      onPicked: (event) => setField(fieldKey, event.id, event.title),
+      onPicked: (event) => {
+        setField(fieldKey, event.id, event.title);
+        setRenderNonce((n) => n + 1);
+      },
     });
   };
 
@@ -427,6 +462,11 @@ export function DirectiveBuilderPanel({
     setExecError(null);
     setResult(null);
     try {
+      const titleKey = noun?.title_column;
+      const sent = titleKey ? effectivePayload[titleKey] : undefined;
+      // A delete/update names its record by the one chosen in the form.
+      const chosen = payloadValues.id?.recordTitle ?? null;
+      setSentTitle(typeof sent === "string" && sent.trim() ? sent : chosen);
       const res = await executeDirective(baseUrl, {
         directive: `directive_v${catalog.directive_version}_${verb}_${nounName}`,
         items: [effectivePayload],
@@ -481,6 +521,35 @@ export function DirectiveBuilderPanel({
     }
   };
 
+  // The envelope is the OUTPUT: a reference shows it under the record it
+  // names; a write shows it under the form that fills it.
+  const envelopeBlock = displayedEnvelope ? (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-muted-foreground">
+          Matrx envelope {requiredFilled || !isReference ? "" : "example"}
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleCopy}
+          className="h-11 gap-1 text-xs lg:h-7"
+        >
+          {copied ? (
+            <Check className="h-3.5 w-3.5" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+          Copy
+        </Button>
+      </div>
+      <pre className="overflow-x-auto rounded-md border border-border bg-muted px-3 py-2 text-xs text-foreground">
+        {JSON.stringify(displayedEnvelope, null, 2)}
+      </pre>
+    </div>
+  ) : null;
+
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -489,7 +558,7 @@ export function DirectiveBuilderPanel({
       </div>
 
       {/* The two dimensions */}
-      <div className="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)] gap-2">
+      <div className="grid grid-cols-[minmax(0,8rem)_minmax(0,1fr)] gap-2">
         <div className="flex min-w-0 flex-col gap-1">
           <label className="text-xs text-muted-foreground">Verb</label>
           <Select
@@ -533,7 +602,7 @@ export function DirectiveBuilderPanel({
               return [STATE_WORDS[s], hint].filter(Boolean).join(" · ");
             }}
             placeholder="Choose a type"
-            searchPlaceholder={`Search ${nouns.length} types…`}
+            searchPlaceholder={`Search ${nouns.length.toLocaleString()} types…`}
             ariaLabel="Directive noun"
             className="h-11 text-base lg:h-8 lg:text-sm"
           />
@@ -627,55 +696,26 @@ export function DirectiveBuilderPanel({
         </div>
       )}
 
-      {/* Built envelope (live JSON) */}
-      {displayedEnvelope && (
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              Matrx envelope {requiredFilled || !isReference ? "" : "example"}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleCopy}
-              className="h-11 gap-1 text-xs lg:h-7"
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              Copy
-            </Button>
-          </div>
-          <pre className="overflow-x-auto rounded-md border border-border bg-muted px-3 py-2 text-xs text-foreground">
-            {JSON.stringify(displayedEnvelope, null, 2)}
-          </pre>
-        </div>
-      )}
+      {isReference && envelopeBlock}
 
       {/* Action area: live render for reads, execute for writes */}
       {!noun ? null : isReference ? (
         <div className="flex flex-col gap-2">
-          <Button
-            type="button"
-            size="sm"
-            disabled={!canLiveRender}
-            onClick={() => setRenderNonce((n) => n + 1)}
-            className="h-11 w-fit gap-1 lg:h-8"
-          >
-            <Play className="h-3.5 w-3.5" />
-            Render live
-          </Button>
+          {state === "yes" && (
+            <Button
+              type="button"
+              size="sm"
+              disabled={!canLiveRender}
+              onClick={() => setRenderNonce((n) => n + 1)}
+              className="h-11 w-fit gap-1 lg:h-8"
+            >
+              <Play className="h-3.5 w-3.5" />
+              Render live
+            </Button>
+          )}
           {state !== "yes" && (
             <p className="text-xs text-muted-foreground">
-              This {verb} is{" "}
-              <span className="font-medium">
-                {state ? STATE_WORDS[state] : "unknown"}
-              </span>{" "}
-              — only wired nouns render live. Pick one from &quot;Ready to{" "}
-              {verb}&quot; in the noun list.
+              Only wired types render live.
             </p>
           )}
           {state === "yes" && !requiredFilled && (
@@ -698,9 +738,7 @@ export function DirectiveBuilderPanel({
       ) : state === "no" ? (
         // Nothing to fill in and nothing to run — no dead editor, no dead button.
         <p className="text-xs text-muted-foreground">
-          {noun ? nounLabel(noun) : "This noun"} can&apos;t be{" "}
-          {verb === "delete" ? "deleted" : `${verb}d`} through a directive. Pick
-          one from &quot;Ready to {verb}&quot; in the noun list.
+          Not available for this verb.
         </p>
       ) : (
         <div className="flex flex-col gap-3">
@@ -809,7 +847,7 @@ export function DirectiveBuilderPanel({
                   ) : (
                     <Play className="h-3.5 w-3.5" />
                   )}
-                  Execute
+                  {VERB_BUTTON[verb] ?? "Execute"}
                 </Button>
                 {verb === "delete" && (
                   <span className="text-xs text-muted-foreground">
@@ -822,8 +860,7 @@ export function DirectiveBuilderPanel({
 
           {state === "planned" && (
             <p className="text-xs text-muted-foreground">
-              Planned, not wired — copy the envelope; Execute needs a wired
-              type.
+              Planned — copy the envelope; it can&apos;t run yet.
             </p>
           )}
 
@@ -865,6 +902,7 @@ export function DirectiveBuilderPanel({
                               key={id}
                               token={info.token}
                               id={id}
+                              name={sentTitle ?? undefined}
                               openInNewTab
                               className="text-xs"
                             />
@@ -877,10 +915,40 @@ export function DirectiveBuilderPanel({
                       );
                     })()}
                   {r.error && <PanelError raw={r.error} />}
+                  {r.status !== "failed" &&
+                    verb !== "delete" &&
+                    r.resource_ids?.length === 1 &&
+                    noun &&
+                    (["update", "delete"] as const).filter(
+                      (v) => v !== verb && cellState(noun, v) === "yes",
+                    ).length > 0 && (
+                      <div className="flex gap-1 pt-1">
+                        {(["update", "delete"] as const)
+                          .filter(
+                            (v) => v !== verb && cellState(noun, v) === "yes",
+                          )
+                          .map((v) => (
+                            <Button
+                              key={v}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-11 px-2 text-xs lg:h-7"
+                              onClick={() =>
+                                continueWith(v, r.resource_ids?.[0] ?? "")
+                              }
+                            >
+                              {v === "update" ? "Update it" : "Delete it"}
+                            </Button>
+                          ))}
+                      </div>
+                    )}
                 </div>
               ))}
             </div>
           )}
+
+          {envelopeBlock}
         </div>
       )}
     </div>
