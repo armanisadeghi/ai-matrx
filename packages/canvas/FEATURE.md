@@ -55,8 +55,32 @@ Entries: `@ai-matrx/canvas` (core, no React), `@ai-matrx/canvas/react`, `@ai-mat
 - **No framework imports** (no `next/*`), no module-level mutable state outside `Symbol.for` slots,
   no hardcoded colours — tokens only.
 - Host placement is the host's: a shell reads `useCanvasColumnWidth()` (0 = put away, null = full
-  screen) and `onLiveWidth`; a shell-less app wraps itself in `<CanvasFrame>`. Under 768px the column
-  is a full-screen layer.
+  screen; already fitted so the app keeps 420px) and `onLiveWidth`; a shell-less app wraps itself in
+  `<CanvasFrame>`. Under 768px the column is a full-screen layer with a Hide button, and a remembered
+  "open" is never restored there.
+- **Available means a column is on screen** (`controller.isPresented()` / `useCanvasIsPresented()`),
+  never "a provider exists" — a layout with a store but no column refuses opens aloud.
+- **A draft that gets a durable id is re-keyed in place** (`controller.rekey`), never left under its
+  draft key — otherwise the saved thing opens twice.
+- **Autosave reacts to canvas state only**; full screen is never restored after a reload.
+
+## Setting up a new host (Vite, Electron, another Next app)
+
+```tsx
+import "@ai-matrx/tap-target/styles.css";
+import "@ai-matrx/canvas/styles.css";
+import "@ai-matrx/canvas/tokens.css"; // only if the app has no theme mapping --mxc-* tokens
+import { CanvasProvider, CanvasFrame, CanvasToggle, registerCanvasKind, defineCanvasKind } from "@ai-matrx/canvas/react";
+
+registerCanvasKind(defineCanvasKind({ id: "note", label: "Note", icon: NoteIcon, load: () => import("./NoteView") }));
+
+<CanvasProvider>{/* standalone store + localStorage memory */}
+  <CanvasFrame><App header={<CanvasToggle />} /></CanvasFrame>
+</CanvasProvider>
+```
+
+A Redux host passes `store={bindCanvasToReduxStore(store, (s) => s.canvasHost)}` after mounting
+`canvasReducer`.
 
 ## Host in this repo
 
@@ -76,5 +100,8 @@ types: `pnpm tsc -p packages/canvas/tsconfig.json`.
 
 ## Change Log
 
+- **2026-10-02** — Review fixes: window-fitted width, phone Hide + no restored open, presence-based
+  availability, `rekey`, canvas-only autosave, Escape guard, snapshot normalization, tab drop index,
+  lazy retry; the "…" menu is Radix + package CSS (design-system dependency removed).
 - **2026-10-01** — Created: core reducer/controller/persistence, React column/panes/tabs/toggle/frame,
   kind registry; the app's canvas moved onto it.
