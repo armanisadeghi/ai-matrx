@@ -20,7 +20,7 @@ jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
 }));
 jest.mock("../../../../../host/notify", () => ({ toast: { warning: jest.fn(), error: jest.fn() } }));
 
-import { recordContextReceipt } from "../receipt-check";
+import { deliveredFieldsFor, recordContextReceipt, toContextReceipt } from "../receipt-check";
 
 const row = resolveContextRow(
   {
@@ -191,4 +191,19 @@ it("an expanded envelope the receipt accounts for is compared like any key", () 
   expect(lying.mismatches).toEqual([
     expect.objectContaining({ key: "window_forms", field: "include", expected: true, actual: false }),
   ]);
+});
+
+it("a generated row's delivered text is normalized once to the package's shape", () => {
+  // The wire marks a defaulted field optional (`truncated?`); the package's
+  // ContextDeliveredText requires it. One normalizer fills it for every reader.
+  const data = receipt(12000, "inline");
+  const wire = data.rows![0]!;
+  wire.origin = "server";
+  wire.delivered = { text: "  <organization>Harbor</organization>", chars: 38, sha256: "ab" };
+  wire.on_request = null;
+  const fields = deliveredFieldsFor(data, "note_bundle", "matrx-user/notes");
+  expect(fields).toEqual({
+    delivered: { text: "  <organization>Harbor</organization>", chars: 38, truncated: false, sha256: "ab" },
+  });
+  expect(toContextReceipt(data).rows[0]!.delivered).toEqual(fields.delivered);
 });
