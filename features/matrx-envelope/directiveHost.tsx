@@ -184,8 +184,11 @@ async function confirm(shell: DirectiveShell): Promise<DirectiveApplyResult> {
       ...(shell.force ? { force: true } : {}),
     });
     const records = appliedRecords(shell.__kind, result.receipts);
-    // Every label on screen naming a record this apply changed resolves again,
-    // so the card's own row never keeps the name it just overwrote.
+    // Every label, trash state and "old value" on screen naming a record this
+    // apply changed reads it again — the card's own row never keeps the name it
+    // just overwrote, and another card's confirm never shows the value this one
+    // replaced (G7). The package's Apply announces the same records; this host
+    // door covers any caller of `confirm` that is not the package's button.
     for (const record of records) invalidateReferenceLabel(record.id);
     return {
       applied: result.applied,
