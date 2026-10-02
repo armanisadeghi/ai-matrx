@@ -22,15 +22,19 @@ export interface ConsoleStatus {
 }
 
 export function consoleStatus(state: Pick<DesktopClientState, "status" | "lastError">, device: RelayDeviceStatusEvent | null): ConsoleStatus {
-  if (state.status === "open") return { pill: "live", label: "Live", offlineSinceMs: null, detail: null };
   if (state.status === "closed" && state.lastError && state.lastError.code !== "CANCELLED") {
     const [label, detail] = refused(state.lastError.code);
     return { pill: "refused", label, offlineSinceMs: null, detail };
   }
-  // The relay's own word wins: it watches the Mac's socket. A hello refused with DEVICE_OFFLINE
-  // before any status event arrived means the same thing.
-  const deviceOffline = device ? !device.online : state.lastError?.code === "DEVICE_OFFLINE";
-  if (deviceOffline) return { pill: "offline", label: "Offline", offlineSinceMs: device && !device.online ? device.since_ms : null, detail: null };
+  // The relay's word on the COMPUTER beats our socket to the relay: the browser stays connected
+  // to the relay while the Mac is gone, and only relay.device_status says so (at once on a clean
+  // quit, within the relay's 75 s silence window on a dead one).
+  if (device && !device.online) {
+    return { pill: "offline", label: "Offline", offlineSinceMs: device.since_ms > 0 ? device.since_ms : null, detail: null };
+  }
+  if (state.status === "open") return { pill: "live", label: "Live", offlineSinceMs: null, detail: null };
+  // A hello refused with DEVICE_OFFLINE before any status event arrived means the same thing.
+  if (!device && state.lastError?.code === "DEVICE_OFFLINE") return { pill: "offline", label: "Offline", offlineSinceMs: null, detail: null };
   if (state.lastError === null) return { pill: "reconnecting", label: "Connecting…", offlineSinceMs: null, detail: null };
   return { pill: "reconnecting", label: "Reconnecting…", offlineSinceMs: null, detail: null };
 }

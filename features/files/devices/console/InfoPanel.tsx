@@ -6,32 +6,40 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Check, Copy, Trash2 } from "lucide-react";
 import { useDesktopRequest } from "@ai-matrx/desktop-protocol/react";
 import type { DesktopClient } from "@ai-matrx/desktop-protocol/client";
 import type { RelayDeviceStatusEvent } from "@ai-matrx/desktop-protocol";
 import { formatDurationSeconds, formatFileSize } from "@ai-matrx/kit/format";
 
 import { cn } from "@/lib/utils";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
 
-import { osLine, relaySinceIso, sinceLabel } from "../platform";
+import { lastSeenIso, osLine, sinceLabel } from "../platform";
 import { useNow } from "../useNow";
 import type { DeviceRow } from "../types";
 import type { ConsoleStatus } from "./connection";
+import { removeDevice } from "./remove-device";
 
 function Row({ label, value, mono, copy }: { label: string; value: string; mono?: boolean; copy?: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="flex min-h-11 items-center gap-3 border-b border-border/60 px-4 py-2 last:border-b-0">
-      <span className="w-28 shrink-0 text-[15px] text-muted-foreground">{label}</span>
-      <span className={cn("min-w-0 flex-1 truncate text-right text-[15px] text-foreground", mono && "font-mono text-[13px]")} suppressHydrationWarning>
+    // data-row-id: a row is never a resting place for the floating assists control.
+    <div data-row-id={label} className="flex min-h-11 items-start gap-3 border-b border-border/60 px-4 py-2.5 last:border-b-0">
+      <span className="w-24 shrink-0 text-[15px] leading-5 text-muted-foreground">{label}</span>
+      <span
+        className={cn("min-w-0 flex-1 text-right text-[15px] leading-5 text-foreground [overflow-wrap:anywhere]", mono && "font-mono text-[13px]")}
+        suppressHydrationWarning
+      >
         {value}
       </span>
       {copy ? (
         <button
           type="button"
           aria-label={`Copy ${label.toLowerCase()}`}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="-my-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
           onClick={() => {
             void navigator.clipboard?.writeText(copy).then(() => {
               setCopied(true);
@@ -71,6 +79,8 @@ export function InfoPanel({
   visible: boolean;
 }) {
   const now = useNow();
+  const router = useRouter();
+  const [removing, setRemoving] = useState(false);
   const info = useDesktopRequest("sysinfo.get", {}, { enabled: live, client });
   const s = info.data;
   const dash = "—";
@@ -94,13 +104,39 @@ export function InfoPanel({
         <Row
           label="Last seen"
           value={
-            status.pill === "live" ? "Now" : sinceLabel((relay && !relay.online ? relaySinceIso(relay.since_ms) : null) ?? device.last_seen, now)
+            status.pill === "live" ? "Now" : sinceLabel(lastSeenIso(device, relay), now)
           }
         />
         <Row label="App" value={s?.app_version ?? relay?.app_version ?? device.app_version ?? dash} />
         <Row label="Protocol" value={s?.protocol_version ?? relay?.protocol_version ?? dash} />
         <Row label="Device ID" value={device.id} mono copy={device.id} />
       </Group>
+      <button
+        type="button"
+        disabled={removing}
+        className="mb-6 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-border bg-card text-[15px] font-medium text-destructive hover:bg-destructive/5 disabled:opacity-50"
+        onClick={async () => {
+          const ok = await confirm({
+            title: "Remove this computer?",
+            description: "It disconnects now and can no longer be reached from here.",
+            confirmLabel: "Remove",
+            variant: "destructive",
+          });
+          if (!ok) return;
+          setRemoving(true);
+          try {
+            await removeDevice(device);
+            toast.success(`${device.instance_name?.trim() || "Computer"} removed`);
+            router.push("/devices");
+          } catch (error) {
+            toast.error("Could not remove it", { description: error instanceof Error ? error.message : String(error) });
+            setRemoving(false);
+          }
+        }}
+      >
+        <Trash2 className="h-4 w-4" />
+        Remove this computer
+      </button>
     </div>
   );
 }

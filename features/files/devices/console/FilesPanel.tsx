@@ -60,6 +60,8 @@ type Prompt =
 export interface FilesPanelProps {
   client: DesktopClient;
   live: boolean;
+  /** The relay says the computer is gone. */
+  offline: boolean;
   /** Folder from the URL; null = the device's home folder. */
   path: string | null;
   onPathChange: (path: string) => void;
@@ -166,7 +168,10 @@ function SwipeRow({
   );
 }
 
-export function FilesPanel({ client, live, path, onPathChange, visible }: FilesPanelProps) {
+/** sonner's action button is ~24px tall; a phone needs a 44px target for Undo. */
+const UNDO_BUTTON_STYLE = { minHeight: 44, minWidth: 64, padding: "0 16px", fontSize: 15 } as const;
+
+export function FilesPanel({ client, live, offline, path, onPathChange, visible }: FilesPanelProps) {
   const sysinfo = useDesktopRequest("sysinfo.get", {}, { enabled: live, client });
   const home = sysinfo.data?.paths.home ?? null;
   const dir = path ?? home;
@@ -204,6 +209,7 @@ export function FilesPanel({ client, live, path, onPathChange, visible }: FilesP
       void listing.refetch();
       const trashedTo = res.trashed_to;
       toast(`Moved “${entry.name}” to Trash`, {
+        actionButtonStyle: UNDO_BUTTON_STYLE,
         action: trashedTo
           ? {
               label: "Undo",
@@ -352,7 +358,7 @@ export function FilesPanel({ client, live, path, onPathChange, visible }: FilesP
               <span className="text-base text-muted-foreground">..</span>
             </button>
           ) : null}
-          {listing.loading && entries.length === 0
+          {!offline && listing.loading && entries.length === 0
             ? Array.from({ length: 8 }, (_, i) => (
                 <div key={i} className="flex h-[52px] items-center gap-3 border-b border-border/60 px-3 last:border-b-0">
                   <div className="h-7 w-7 animate-pulse rounded bg-muted" />
@@ -363,7 +369,12 @@ export function FilesPanel({ client, live, path, onPathChange, visible }: FilesP
                 </div>
               ))
             : null}
-          {listing.error && entries.length === 0 ? (
+          {offline ? (
+            <div className="flex h-[52px] items-center px-3 text-sm font-medium text-muted-foreground" role="status">
+              Computer is offline
+            </div>
+          ) : null}
+          {!offline && listing.error && entries.length === 0 ? (
             <div className="flex h-[52px] items-center justify-between gap-3 px-3 text-sm">
               <span className="truncate text-destructive">{listing.error.code === "PERMISSION_DENIED_OS" ? "The computer blocked this folder" : listing.error.message}</span>
               <button type="button" className="shrink-0 text-primary" onClick={() => void listing.refetch()}>
@@ -371,7 +382,7 @@ export function FilesPanel({ client, live, path, onPathChange, visible }: FilesP
               </button>
             </div>
           ) : null}
-          {!listing.loading && !listing.error && entries.length === 0 && dir !== null ? (
+          {!offline && !listing.loading && !listing.error && entries.length === 0 && dir !== null ? (
             <div className="flex h-[52px] items-center px-3 text-sm text-muted-foreground">Empty folder</div>
           ) : null}
           {entries.map((entry) => (
@@ -387,7 +398,7 @@ export function FilesPanel({ client, live, path, onPathChange, visible }: FilesP
               menu={
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button type="button" aria-label={`Actions for ${entry.name}`} className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground [@media(pointer:fine)]:flex">
+                    <button type="button" aria-label={`Actions for ${entry.name}`} className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
                       <MoreHorizontal className="h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>

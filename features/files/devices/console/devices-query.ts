@@ -9,7 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DeviceRow } from "../types";
 
 /** Only what the console renders — never `select("*")`. */
-export const CONSOLE_DEVICE_COLUMNS = "id, instance_name, platform, os_version, app_version, last_seen, is_active, created_at";
+export const CONSOLE_DEVICE_COLUMNS = "id, instance_name, platform, os_version, app_version, last_seen, is_active, created_at, organization_id";
 
 export async function fetchConsoleDevices(client: SupabaseClient, userId: string): Promise<DeviceRow[]> {
   const { data, error } = await client

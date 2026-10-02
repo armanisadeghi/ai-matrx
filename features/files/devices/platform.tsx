@@ -43,6 +43,15 @@ export function relaySinceIso(sinceMs: number | null | undefined): string | null
   return sinceMs && sinceMs > 0 ? new Date(sinceMs).toISOString() : null;
 }
 
+/**
+ * THE "last seen" of a computer, for every screen (list, console, Info): the relay's moment it went
+ * offline when the relay knows one, else the device row's last check-in. One source, one formatter
+ * (`sinceLabel`), so two screens can never disagree about the same computer.
+ */
+export function lastSeenIso(row: { last_seen: string | null }, relay: { online: boolean; since_ms: number } | null | undefined): string | null {
+  return (relay && !relay.online ? relaySinceIso(relay.since_ms) : null) ?? row.last_seen;
+}
+
 /** "5 minutes ago" — the kit's long voice, one formatter platform-wide; "never" for no check-in. */
 export function sinceLabel(iso: string | null, now: number): string {
   if (!iso) return "never";

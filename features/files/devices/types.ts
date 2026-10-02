@@ -23,6 +23,8 @@ export interface DeviceRow {
   last_seen: string | null;
   is_active: boolean | null;
   created_at: string | null;
+  /** Carried on every write to the row (no resolver may choose one). Present on console reads. */
+  organization_id?: string | null;
 }
 
 export interface SyncMappingRow {

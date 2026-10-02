@@ -12,7 +12,7 @@
 import "@/styles/terminal-host.css";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Plus, X } from "lucide-react";
-import { ACCESSORY_BAR_HEIGHT } from "@ai-matrx/terminal";
+import { ACCESSORY_BAR_HEIGHT, FONT_SIZE_MAX, FONT_SIZE_MIN, TERMINAL_DEFAULTS } from "@ai-matrx/terminal";
 import { Terminal } from "@ai-matrx/terminal/react";
 import type { TerminalHandle, TerminalSize } from "@ai-matrx/terminal/react";
 import { isDesktopProtocolError } from "@ai-matrx/desktop-protocol/client";
@@ -34,6 +34,10 @@ type LiveStream = DesktopStream<"exec.pty.start"> | DesktopStream<"session.attac
 
 export interface TerminalPanelProps {
   client: DesktopClient;
+  /** The computer — the text size a person picks is remembered per computer. */
+  deviceId: string;
+  /** The relay says the computer is gone: one line instead of a dead terminal and keyboard bar. */
+  offline: boolean;
   /** The client is open (Live). */
   live: boolean;
   /** Resource id from the URL, or null. */
@@ -70,9 +74,26 @@ function usePageVisible(): boolean {
   );
 }
 
-export function TerminalPanel({ client, live, resourceId, onResourceChange, visible, hiddenOnPhone = false }: TerminalPanelProps) {
+/** Per-viewer convenience (this browser), per computer: never synced, safe to lose. */
+function fontSizeKey(deviceId: string): string {
+  return `matrx.device-console.font-size.${deviceId}`;
+}
+
+function readFontSize(deviceId: string): number {
+  try {
+    const raw = Number(window.localStorage.getItem(fontSizeKey(deviceId)));
+    return Number.isFinite(raw) && raw >= FONT_SIZE_MIN && raw <= FONT_SIZE_MAX ? raw : TERMINAL_DEFAULTS.fontSize;
+  } catch {
+    return TERMINAL_DEFAULTS.fontSize;
+  }
+}
+
+export function TerminalPanel({ client, deviceId, offline, live, resourceId, onResourceChange, visible, hiddenOnPhone = false }: TerminalPanelProps) {
   const isMobile = useIsMobile();
   const pageVisible = usePageVisible();
+  /** Unmounting (navigating away) closes the client; its CANCELLED is not a failure to report. */
+  const unmountedRef = useRef(false);
+  const [fontSize, setFontSize] = useState<number>(TERMINAL_DEFAULTS.fontSize);
   const termRef = useRef<TerminalHandle | null>(null);
   const streamRef = useRef<LiveStream | null>(null);
   const sizeRef = useRef<TerminalSize>({ cols: 80, rows: 24 });
@@ -143,6 +164,8 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
           void refreshSessions();
           return;
         }
+        // Leaving the page (or this panel unmounting) ends the stream with CANCELLED: not news.
+        if (unmountedRef.current || (isDesktopProtocolError(error) && error.code === "CANCELLED")) return;
         setEnded("failed");
         toast.error("The terminal stopped", { description: error instanceof Error ? error.message : String(error) });
       },
@@ -243,10 +266,26 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
   }, [live]);
 
   useEffect(() => {
+    unmountedRef.current = false;
     return () => {
+      unmountedRef.current = true;
       if (resizeTimer.current) clearTimeout(resizeTimer.current);
     };
   }, []);
+
+  // The size this person last picked for this computer (pinch, ⌘+ / ⌘−).
+  useEffect(() => {
+    setFontSize(readFontSize(deviceId));
+  }, [deviceId]);
+
+  function onFontSizeChange(size: number): void {
+    setFontSize(size);
+    try {
+      window.localStorage.setItem(fontSizeKey(deviceId), String(size));
+    } catch {
+      // Private mode or storage off: the size still applies for this visit.
+    }
+  }
 
   // A hidden page renders nothing and credits nothing, and the device paces every shell to its
   // slowest viewer: a background tab (or a locked phone that has not died yet) would freeze the
@@ -265,13 +304,13 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
   // The keyboard accessory bar is this page's bottom dock: publish its height so the assists
   // launcher sits above it instead of on the keys (the shell's --page-bottom-dock-h contract).
   useEffect(() => {
-    if (!isMobile || !visible || hiddenOnPhone) return undefined;
+    if (!isMobile || !visible || hiddenOnPhone || offline) return undefined;
     const root = document.documentElement;
     root.style.setProperty("--page-bottom-dock-h", `${ACCESSORY_BAR_HEIGHT + 8}px`);
     return () => {
       root.style.removeProperty("--page-bottom-dock-h");
     };
-  }, [isMobile, visible, hiddenOnPhone]);
+  }, [isMobile, visible, hiddenOnPhone, offline]);
 
   function onResize(size: TerminalSize): void {
     sizeRef.current = size;
@@ -283,6 +322,7 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
   }
 
   function onData(data: string): void {
+    if (offline) return; // the computer is gone; the overlay says so
     const stream = streamRef.current;
     if (!stream) return;
     try {
@@ -349,6 +389,10 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
       <div className="relative mt-2 flex min-h-0 flex-1 flex-col overflow-hidden lg:mx-3 lg:mb-3 lg:rounded-lg lg:border lg:border-border">
         <Terminal
           fit={isMobile ? "viewport" : "container"}
+          fontSize={fontSize}
+          onFontSizeChange={onFontSizeChange}
+          accessory={offline ? "off" : "auto"}
+          disableStdin={offline}
           aria-label="Terminal on this computer"
           onReady={(handle) => {
             termRef.current = handle;
@@ -357,7 +401,12 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
           onResize={onResize}
           onData={onData}
         >
-          {ended !== null ? (
+          {offline ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/85 text-sm font-medium text-muted-foreground" role="status">
+              Computer is offline
+            </div>
+          ) : null}
+          {ended !== null && !offline ? (
             <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
               <button
                 type="button"

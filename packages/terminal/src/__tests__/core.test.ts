@@ -210,3 +210,22 @@ describe("visual viewport", () => {
     expect(visibleHeightBelow(900, { height: 516, offsetTop: 0 }, 852)).toBe(0);
   });
 });
+
+describe("text zoom", () => {
+  it("⌘+ / ⌘− step one point inside the range", async () => {
+    const { stepFontSize, FONT_SIZE_MIN, FONT_SIZE_MAX } = await import("../index");
+    expect(stepFontSize(13, 1)).toBe(14);
+    expect(stepFontSize(13, -1)).toBe(12);
+    expect(stepFontSize(FONT_SIZE_MAX, 1)).toBe(FONT_SIZE_MAX);
+    expect(stepFontSize(FONT_SIZE_MIN, -1)).toBe(FONT_SIZE_MIN);
+  });
+
+  it("a pinch scales the starting size by the finger distance, to whole points, clamped", async () => {
+    const { pinchFontSize, FONT_SIZE_MAX } = await import("../index");
+    expect(pinchFontSize(13, 100, 100)).toBe(13);
+    expect(pinchFontSize(13, 100, 150)).toBe(20);
+    expect(pinchFontSize(13, 100, 70)).toBe(9);
+    expect(pinchFontSize(13, 100, 1000)).toBe(FONT_SIZE_MAX);
+    expect(pinchFontSize(13, 0, 50)).toBe(13);
+  });
+});

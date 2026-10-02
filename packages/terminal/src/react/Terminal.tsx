@@ -25,7 +25,7 @@ import { LONG_PRESS_MS, createGestureRecognizer, flingStep } from "../core/gestu
 import type { GestureAction } from "../core/gesture";
 import { cellAt, spanBetween, wordBounds } from "../core/selection";
 import type { Cell } from "../core/selection";
-import { TERMINAL_DEFAULTS, TERMINAL_FONT_FAMILY, terminalTheme } from "../core/theme";
+import { TERMINAL_DEFAULTS, TERMINAL_FONT_FAMILY, pinchFontSize, stepFontSize, terminalTheme } from "../core/theme";
 import { visibleHeightBelow } from "../core/viewport";
 import { AccessoryBar } from "./AccessoryBar";
 
@@ -57,6 +57,11 @@ export interface TerminalProps {
   onData?: (data: string) => void;
   /** Grid size after every fit (and once at start). */
   onResize?: (size: TerminalSize) => void;
+  /**
+   * The person zoomed the text: a pinch on touch, ⌘+ / ⌘− / ⌘0 with a keyboard. Pass it (and feed
+   * the value back as `fontSize`) to turn zoom on; the host decides where the size is remembered.
+   */
+  onFontSizeChange?: (fontSize: number) => void;
   onReady?: (handle: TerminalHandle) => void;
   /**
    * Hardware Ctrl-C (no Shift/Alt/Meta). Return true to consume it — e.g. send a SIGINT frame
@@ -130,7 +135,14 @@ export function Terminal(props: TerminalProps) {
   const fitRef = useRef<FitAddon | null>(null);
   const handleRef = useRef<TerminalHandle | null>(null);
   const latchRef = useRef<Latches>({ ctrl: MODIFIER_OFF, alt: MODIFIER_OFF });
-  const callbacksRef = useRef({ onData: props.onData, onResize: props.onResize, onReady: props.onReady, onInterrupt: props.onInterrupt });
+  const callbacksRef = useRef({
+    onData: props.onData,
+    onResize: props.onResize,
+    onReady: props.onReady,
+    onInterrupt: props.onInterrupt,
+    onFontSizeChange: props.onFontSizeChange,
+  });
+  const fontSizeRef = useRef(fontSize);
 
   const [latches, setLatches] = useState<Latches>({ ctrl: MODIFIER_OFF, alt: MODIFIER_OFF });
   const [coarse, setCoarse] = useState(false);
@@ -140,7 +152,14 @@ export function Terminal(props: TerminalProps) {
   const [booted, setBooted] = useState(false);
 
   useEffect(() => {
-    callbacksRef.current = { onData: props.onData, onResize: props.onResize, onReady: props.onReady, onInterrupt: props.onInterrupt };
+    callbacksRef.current = {
+      onData: props.onData,
+      onResize: props.onResize,
+      onReady: props.onReady,
+      onInterrupt: props.onInterrupt,
+      onFontSizeChange: props.onFontSizeChange,
+    };
+    fontSizeRef.current = fontSize;
   });
 
   // Pointer class and theme are browser facts: read after mount (SSR renders the neutral frame).
@@ -225,6 +244,16 @@ export function Terminal(props: TerminalProps) {
       const dataSub = term.onData((data) => emit(data));
       const resizeSub = term.onResize(({ cols, rows }) => callbacksRef.current.onResize?.({ cols, rows }));
       term.attachCustomKeyEventHandler((event) => {
+        // ⌘+ / ⌘− / ⌘0 zoom the text (only when the host takes the size: onFontSizeChange).
+        const zoom = callbacksRef.current.onFontSizeChange;
+        if (zoom && event.type === "keydown" && event.metaKey && !event.altKey && !event.ctrlKey) {
+          const delta = event.key === "=" || event.key === "+" ? 1 : event.key === "-" ? -1 : event.key === "0" ? 0 : null;
+          if (delta !== null) {
+            event.preventDefault();
+            zoom(delta === 0 ? TERMINAL_DEFAULTS.fontSize : stepFontSize(fontSizeRef.current, delta));
+            return false;
+          }
+        }
         if (
           event.type === "keydown" &&
           event.ctrlKey &&
@@ -366,8 +395,8 @@ export function Terminal(props: TerminalProps) {
     const host = hostRef.current;
     const term = termRef.current;
     if (!touchOn || !host || !term) return undefined;
-    const rowPx = fontSize * lineHeight;
-    const recognizer = createGestureRecognizer({ lineHeight: rowPx });
+    // Re-created at each touch so a zoom (pinch, ⌘±) is already in the row height it scrolls by.
+    let recognizer = createGestureRecognizer({ lineHeight: fontSizeRef.current * lineHeight });
     let holdTimer: ReturnType<typeof setTimeout> | null = null;
     let flingFrame: number | null = null;
     let flingCarry = 0;
@@ -451,20 +480,45 @@ export function Terminal(props: TerminalProps) {
       if (holdTimer !== null) clearTimeout(holdTimer);
       holdTimer = null;
     };
+    /** Two fingers: pinch-zoom the TEXT (when the host takes the size), never the page. */
+    let pinch: { startDistance: number; startSize: number } | null = null;
+    const fingerDistance = (e: TouchEvent) => {
+      const a = e.touches[0]!;
+      const b = e.touches[1]!;
+      return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    };
     const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2 && callbacksRef.current.onFontSizeChange) {
+        e.preventDefault();
+        clearHold();
+        stopFling();
+        act(recognizer.cancel());
+        pinch = { startDistance: fingerDistance(e), startSize: fontSizeRef.current };
+        return;
+      }
       if (e.touches.length !== 1) {
         clearHold();
         act(recognizer.cancel());
-        return; // two fingers: leave pinch-zoom to the browser
+        return; // more fingers, or no zoom wanted: leave it to the browser
       }
       const t = e.touches[0]!;
       e.preventDefault();
       stopFling();
+      recognizer = createGestureRecognizer({ lineHeight: fontSizeRef.current * lineHeight });
       act(recognizer.down({ x: t.clientX, y: t.clientY, t: e.timeStamp }));
       clearHold();
       holdTimer = setTimeout(() => act(recognizer.longPress()), LONG_PRESS_MS);
     };
     const onMove = (e: TouchEvent) => {
+      if (pinch && e.touches.length === 2) {
+        e.preventDefault();
+        const size = pinchFontSize(pinch.startSize, pinch.startDistance, fingerDistance(e));
+        if (size !== fontSizeRef.current) {
+          fontSizeRef.current = size;
+          callbacksRef.current.onFontSizeChange?.(size);
+        }
+        return;
+      }
       if (e.touches.length !== 1 || recognizer.phase === "idle") return;
       const t = e.touches[0]!;
       e.preventDefault();
@@ -472,6 +526,11 @@ export function Terminal(props: TerminalProps) {
       if (recognizer.phase !== "pressed") clearHold();
     };
     const onEnd = (e: TouchEvent) => {
+      if (pinch) {
+        if (e.touches.length < 2) pinch = null;
+        e.preventDefault();
+        return;
+      }
       clearHold();
       if (recognizer.phase === "idle") return;
       const t = e.changedTouches[0];
@@ -494,7 +553,7 @@ export function Terminal(props: TerminalProps) {
       host.removeEventListener("touchend", onEnd);
       host.removeEventListener("touchcancel", onCancel);
     };
-  }, [touchOn, booted, fontSize, lineHeight]);
+  }, [touchOn, booted, lineHeight]);
 
   // ── accessory bar ─────────────────────────────────────────────────────────
   function onAccessoryKey(id: AccessoryKeyId): void {

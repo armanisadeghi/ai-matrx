@@ -63,7 +63,7 @@ it("a roster change forgets the answer", async () => {
 it("no caller reads the roster around the one read", () => {
   const { execSync } = jest.requireActual<typeof import("child_process")>("child_process");
   const out = execSync(
-    'git grep -n "\"get_organization_members_with_users\"" -- "*.ts" "*.tsx" ":!work" ":!types" || true',
+    'git grep -n "\"get_organization_members_with_users\"" -- "*.ts" "*.tsx" ":!work" ":!types" ":!packages/chat/src/host/db-types.ts" || true',
     { cwd: `${__dirname}/../../../..`, encoding: "utf8" },
   );
   const offenders = out

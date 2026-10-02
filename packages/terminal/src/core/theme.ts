@@ -15,8 +15,23 @@ export const TERMINAL_DEFAULTS = {
   padding: 8,
 } as const;
 
-/** The keyboard accessory bar's height, px (styles.css .mxt-bar) — hosts reserve it as a bottom dock. */
-export const ACCESSORY_BAR_HEIGHT = 44;
+/** The keyboard accessory bar's height, px (styles.css .mxt-bar: 44px keys + 4px above and below). */
+export const ACCESSORY_BAR_HEIGHT = 52;
+
+/** The range a person can zoom the terminal text to (pinch, ⌘+ / ⌘−). */
+export const FONT_SIZE_MIN = 9;
+export const FONT_SIZE_MAX = 24;
+
+/** ⌘+ / ⌘− steps one point; the result stays in range. */
+export function stepFontSize(current: number, delta: number): number {
+  return Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, Math.round(current) + delta));
+}
+
+/** A pinch scales the size it started from by the change in finger distance, to whole points. */
+export function pinchFontSize(startSize: number, startDistance: number, distance: number): number {
+  if (startDistance <= 0) return startSize;
+  return Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, Math.round((startSize * distance) / startDistance)));
+}
 
 export function terminalTheme(dark: boolean): ITheme {
   return dark

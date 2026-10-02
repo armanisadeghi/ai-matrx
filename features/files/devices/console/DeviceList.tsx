@@ -15,13 +15,15 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { getAccessTokenOrNull } from "@/lib/python-client";
 import { cn } from "@/lib/utils";
 
-import { PlatformIcon, osLine, relaySinceIso, sinceLabel } from "../platform";
+import { PlatformIcon, lastSeenIso, osLine, sinceLabel } from "../platform";
 import { useNow } from "../useNow";
 import type { DeviceRow } from "../types";
 import { fetchRelayStatus } from "./relay";
 
 /** Re-ask the relay this often while the list is open. */
 const STATUS_POLL_MS = 30_000;
+/** Computers not seen for this long sit behind "Show older" (still one tap away, never hidden). */
+const OLDER_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
 
 function useRelayStatuses(ids: string[]): Record<string, RelayDeviceStatusEvent | null | undefined> {
   const [statuses, setStatuses] = useState<Record<string, RelayDeviceStatusEvent | null | undefined>>({});
@@ -51,7 +53,7 @@ function useRelayStatuses(ids: string[]): Record<string, RelayDeviceStatusEvent 
 function DeviceListRow({ device, status, now }: { device: DeviceRow; status: RelayDeviceStatusEvent | null | undefined; now: number }) {
   const name = device.instance_name?.trim() || "Unnamed device";
   const online = status?.online === true;
-  const lastIso = (status && !status.online ? relaySinceIso(status.since_ms) : null) ?? device.last_seen;
+  const lastIso = lastSeenIso(device, status);
   const seen = online ? "Online" : lastIso ? `Last seen ${sinceLabel(lastIso, now)}` : "Never connected";
   return (
     <Link
@@ -85,6 +87,14 @@ export function DeviceList({ devices, error }: { devices: DeviceRow[]; error: st
   const statuses = useRelayStatuses(devices.map((d) => d.id));
   const titleRef = useRef<HTMLHeadingElement | null>(null);
   const [titleHidden, setTitleHidden] = useState(false);
+  const [showOlder, setShowOlder] = useState(false);
+  const isOlder = (d: DeviceRow) => {
+    if (statuses[d.id]?.online) return false;
+    const iso = lastSeenIso(d, statuses[d.id]);
+    return !iso || now - Date.parse(iso) > OLDER_AFTER_MS;
+  };
+  const recent = devices.filter((d) => !isOlder(d));
+  const older = devices.filter(isOlder);
 
   // iOS large title: once it scrolls under the header, the header carries the title.
   useEffect(() => {
@@ -115,11 +125,35 @@ export function DeviceList({ devices, error }: { devices: DeviceRow[]; error: st
               <p className="text-sm text-muted-foreground">Sign in to Matrx 2 on your computer</p>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-[10px] border border-border bg-card lg:mt-4">
-              {devices.map((d) => (
-                <DeviceListRow key={d.id} device={d} status={statuses[d.id]} now={now} />
-              ))}
-            </div>
+            <>
+              {recent.length > 0 ? (
+                <div className="overflow-hidden rounded-[10px] border border-border bg-card lg:mt-4">
+                  {recent.map((d) => (
+                    <DeviceListRow key={d.id} device={d} status={statuses[d.id]} now={now} />
+                  ))}
+                </div>
+              ) : null}
+              {older.length > 0 ? (
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    aria-expanded={showOlder}
+                    className="flex h-11 items-center gap-1 px-1 text-[15px] text-primary"
+                    onClick={() => setShowOlder((v) => !v)}
+                  >
+                    <ChevronRight className={cn("h-4 w-4 transition-transform", showOlder && "rotate-90")} aria-hidden="true" />
+                    {showOlder ? "Hide older" : `Show older (${older.length})`}
+                  </button>
+                  {showOlder ? (
+                    <div className="overflow-hidden rounded-[10px] border border-border bg-card">
+                      {older.map((d) => (
+                        <DeviceListRow key={d.id} device={d} status={statuses[d.id]} now={now} />
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
           )}
         </div>
       </div>

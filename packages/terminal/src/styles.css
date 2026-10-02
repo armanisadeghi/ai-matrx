@@ -69,10 +69,10 @@
   cursor: pointer;
 }
 
-/* ── keyboard accessory bar: 44px, scrolls sideways ─────────────────────── */
+/* ── keyboard accessory bar: 52px of 44px keys, scrolls sideways ─────────── */
 .mxt-bar {
-  flex: 0 0 44px;
-  height: 44px;
+  flex: 0 0 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -107,7 +107,7 @@
 .mxt-key {
   flex: 0 0 auto;
   min-width: 44px;
-  height: 36px;
+  height: 44px;
   padding: 0 10px;
   border: 0;
   border-radius: 6px;

@@ -15,7 +15,7 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { cn } from "@/lib/utils";
 
-import { relaySinceIso, sinceLabel } from "../platform";
+import { lastSeenIso, sinceLabel } from "../platform";
 import { useNow } from "../useNow";
 import type { DeviceRow } from "../types";
 import { FilesPanel } from "./FilesPanel";
@@ -62,11 +62,12 @@ export function DeviceConsole({ device }: { device: DeviceRow }) {
 
   const offlineLine =
     status.pill === "offline"
-      ? offlineText(name, relaySinceIso(status.offlineSinceMs) ?? device.last_seen, now)
+      ? offlineText(name, lastSeenIso(device, relay), now)
       : status.detail;
 
   const header = (
-    <div className="flex min-w-0 items-center gap-1">
+    // The assists control may rest in this header's spare room rather than on the console.
+    <div className="flex min-w-0 items-center gap-1" data-assist-dock-slot="header">
       <ChevronLeftTapButton
         ariaLabel="Back to devices"
         onClick={() => {
@@ -110,13 +111,15 @@ export function DeviceConsole({ device }: { device: DeviceRow }) {
 
         <TerminalPanel
           client={client}
+          deviceId={device.id}
+          offline={status.pill === "offline"}
           live={live}
           resourceId={search.get("t")}
           onResourceChange={(id) => setQuery({ t: id })}
           visible={view === "terminal" || view === "info"}
           hiddenOnPhone={view === "info"}
         />
-        <FilesPanel client={client} live={live} path={search.get("path")} onPathChange={(p) => setQuery({ path: p })} visible={view === "files"} />
+        <FilesPanel client={client} live={live} offline={status.pill === "offline"} path={search.get("path")} onPathChange={(p) => setQuery({ path: p })} visible={view === "files"} />
         <div className={cn("flex min-h-0 flex-1 flex-col lg:hidden", view !== "info" && "hidden")}>
           <InfoPanel client={client} live={live} device={device} relay={relay} status={status} visible={view === "info"} />
         </div>
