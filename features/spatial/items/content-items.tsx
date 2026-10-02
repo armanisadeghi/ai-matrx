@@ -106,6 +106,7 @@ function LabelBody({ source, onSource }: ItemBodyProps) {
 export const CONTENT_ITEMS: BoardItemType[] = [
   {
     key: "web-page",
+    guestSafe: true,
     usesTier: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
     label: "Web page",
@@ -123,6 +124,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
   },
   {
     key: "image",
+    guestSafe: true,
     // No effects: waking is a plain re-render.
     sleeps: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
@@ -140,6 +142,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
   },
   {
     key: "write-up",
+    guestSafe: true,
     usesTier: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
     label: "Write-up",
@@ -152,6 +155,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
   },
   {
     key: "label",
+    guestSafe: true,
     // No effects: waking is a plain re-render.
     sleeps: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },

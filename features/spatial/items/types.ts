@@ -138,6 +138,9 @@ export interface BoardItemType {
    * Opt in per type, after checking it in the browser.
    */
   sleeps?: boolean;
+  /** Works for a meeting guest with no account (board-only content, the meeting's own parts).
+   * A guest's board offers only these to add. */
+  guestSafe?: boolean;
 }
 
 /** Every way to start a new item of this type, in menu order (none → []). */

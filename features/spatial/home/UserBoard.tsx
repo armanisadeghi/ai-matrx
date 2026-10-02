@@ -85,6 +85,7 @@ export function UserBoard({
   viewerCamera = null,
   onChange,
   onCamera,
+  guest = false,
 }: {
   title: string;
   /** The saved board this session starts from. */
@@ -95,7 +96,10 @@ export function UserBoard({
   onChange: (build: () => BoardDocument) => void;
   /** The person's view, once it settles — their own, never board content. */
   onCamera?: (camera: Camera) => void;
+  /** A meeting guest (no account): the Add menu and Start panel offer only `guestSafe` types. */
+  guest?: boolean;
 }) {
+  const addableTypes = guest ? BOARD_ITEM_TYPES.filter((t) => t.guestSafe) : BOARD_ITEM_TYPES;
   const board = useBoardStore<UserBoardTile>(() => ({
     tiles: doc.nodes.map((n) => ({ id: n.id, rect: n.rect, title: n.title, source: n.source })),
     parked: doc.nodes.filter((n) => n.parked).map((n) => n.id),
@@ -472,7 +476,7 @@ export function UserBoard({
             overlay={
               <>
                 <CreationLayer onCreate={onCreate} />
-                <ToolBar leading={<AddMenu types={BOARD_ITEM_TYPES} onStartNew={startNew} onBringIn={bringIn} />} />
+                <ToolBar leading={<AddMenu types={addableTypes} onStartNew={startNew} onBringIn={bringIn} />} />
                 <div
                   data-spatial-chrome
                   className="absolute right-4 top-4 z-30 flex items-center gap-0.5 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
@@ -505,7 +509,7 @@ export function UserBoard({
                   }))}
                   onRestore={unpark}
                 />
-                {empty && <StartPanel types={BOARD_ITEM_TYPES} onStartNew={startNew} onBringIn={bringIn} />}
+                {empty && <StartPanel types={addableTypes} onStartNew={startNew} onBringIn={bringIn} />}
                 {dropping && (
                   <div className="pointer-events-none absolute inset-3 z-40 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary bg-primary/5">
                     <span className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg">

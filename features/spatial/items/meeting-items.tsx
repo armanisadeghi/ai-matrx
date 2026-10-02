@@ -165,6 +165,7 @@ function MeetingChooser({
 export const MEETING_ITEMS: BoardItemType[] = [
   {
     key: MEETING_PART_ENTITY,
+    guestSafe: true,
     label: "Meeting notes",
     icon: NotebookPen,
     group: "features",

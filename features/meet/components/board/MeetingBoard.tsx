@@ -160,12 +160,14 @@ function GuestMeetingBoard({ meeting, ...frame }: FrameProps & { meeting: Meetin
         viewerCamera={board.viewerCamera}
         onChange={board.save}
         onCamera={board.saveCamera}
+        guest
       />
     </MeetingBoardFrame>
   );
 }
 
-function BoardCanvas(props: {
+function BoardCanvas({ guest = false, ...props }: {
+  guest?: boolean;
   title: string;
   doc: BoardDocument;
   viewerCamera: Camera | null;
@@ -174,7 +176,8 @@ function BoardCanvas(props: {
 }) {
   return (
     <div className="absolute inset-0">
-      <UserBoard {...props} />
+      {/* A guest has no account: only what works without one can be added. */}
+      <UserBoard {...props} guest={guest} />
     </div>
   );
 }
