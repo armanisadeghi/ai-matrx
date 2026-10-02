@@ -23,6 +23,11 @@ import {
   Table,
 } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import {
+  KIND_DISPOSITION_CHOICES,
+  isKindDisposition,
+  type KindDisposition,
+} from "@/features/content-ir/registry/kind-dispositions";
 
 export interface NewShapeChoice<T extends string> {
   id: T;
@@ -121,6 +126,16 @@ const CARDINALITY_BRIEF: Record<NewShapeCardinality, string> = {
     "Each instance is a COLLECTION — the shape carries a titled group and an array of the repeated items inside it.",
 };
 
+// -------------------------------------------------------------- disposition
+
+/**
+ * What each one IS (KINDS-GLUE: `metadata.disposition`). The person picks it — nothing is
+ * preselected — and the brief hands the builder the exact value to pass to `kind_create`,
+ * which refuses a create without one.
+ */
+export const NEW_SHAPE_DISPOSITIONS: ReadonlyArray<NewShapeChoice<KindDisposition>> =
+  KIND_DISPOSITION_CHOICES;
+
 // ------------------------------------------------------ published to the web
 
 /** Mirrors `content_ir.kind_definition.published_to_web`. A shape is always open to people who
@@ -196,6 +211,8 @@ export interface NewShapeAnswers {
   sample: string;
   renderStyle: NewShapeRenderStyle;
   cardinality: NewShapeCardinality;
+  /** What each one IS — required, never defaulted (null until the person picks). */
+  disposition: KindDisposition | null;
   web: NewShapeWebChoice;
   assets: readonly NewShapeAsset[];
 }
@@ -206,12 +223,17 @@ export const NEW_SHAPE_EMPTY_ANSWERS: NewShapeAnswers = {
   sample: "",
   renderStyle: "auto",
   cardinality: "single",
+  disposition: null,
   web: "not_published",
   assets: NEW_SHAPE_DEFAULT_ASSETS,
 };
 
 export function newShapeAnswersReady(answers: NewShapeAnswers): boolean {
-  return answers.name.trim().length > 0 && answers.contents.trim().length > 0;
+  return (
+    answers.name.trim().length > 0 &&
+    answers.contents.trim().length > 0 &&
+    isKindDisposition(answers.disposition)
+  );
 }
 
 /**
@@ -241,6 +263,9 @@ export function composeNewShapeBrief(answers: NewShapeAnswers): {
     "They filled in the studio's create form. These are their answers — treat every one as a decision they made, not a hint:",
     "",
     CARDINALITY_BRIEF[answers.cardinality],
+    answers.disposition
+      ? `What each one IS: pass disposition "${answers.disposition}" to kind_create, exactly. Any nested item kind you create states its own in child_dispositions.`
+      : "What each one IS was not chosen — stop and ask the user before creating anything.",
     RENDER_STYLE_BRIEF[answers.renderStyle],
     answers.web === "published_to_web"
       ? "Published to the web: yes — it goes into the shared Shapes library, which anyone can open."

@@ -56,6 +56,7 @@ import {
 import {
   NEW_SHAPE_ASSETS,
   NEW_SHAPE_CARDINALITIES,
+  NEW_SHAPE_DISPOSITIONS,
   NEW_SHAPE_EMPTY_ANSWERS,
   NEW_SHAPE_RENDER_STYLES,
   NEW_SHAPE_WEB_CHOICES,
@@ -117,7 +118,7 @@ function TileChoice<T extends string>({
     description: string;
     icon?: React.ComponentType<{ className?: string }>;
   }>;
-  value: T;
+  value: T | null;
   onChange: (next: T) => void;
   columns?: string;
 }) {
@@ -457,7 +458,15 @@ function NewShapeForm({ agentId }: { agentId: string }) {
           />
         </FieldBlock>
 
-        <FieldBlock step={6} title="Who can use it?">
+        <FieldBlock step={6} title="What is each one?">
+          <TileChoice
+            options={NEW_SHAPE_DISPOSITIONS}
+            value={answers.disposition}
+            onChange={(disposition) => patch({ disposition })}
+          />
+        </FieldBlock>
+
+        <FieldBlock step={7} title="Who can use it?">
           <TileChoice
             options={NEW_SHAPE_WEB_CHOICES}
             value={answers.web}
@@ -467,7 +476,7 @@ function NewShapeForm({ agentId }: { agentId: string }) {
         </FieldBlock>
 
         <FieldBlock
-          step={7}
+          step={8}
           title="What should we build alongside it?"
           hint="All three are what makes a Shape usable the moment it exists."
         >
@@ -542,7 +551,9 @@ function NewShapeForm({ agentId }: { agentId: string }) {
           )}
           {!ready && !submitted ? (
             <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
-              Give it a name and tell us what one of these holds.
+              {answers.name.trim() && answers.contents.trim()
+                ? "Choose what each one is."
+                : "Give it a name and tell us what one of these holds."}
             </p>
           ) : null}
         </div>

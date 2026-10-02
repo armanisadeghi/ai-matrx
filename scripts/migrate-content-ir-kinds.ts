@@ -24,6 +24,7 @@ import {
   type FlexibleDataRecord,
 } from "../features/content-ir/registry/schema-source-flexible-data";
 import { planKindMigration } from "../features/content-ir/registry/kind-migration-plan";
+import { kindDispositionRefusal } from "../features/content-ir/registry/kind-dispositions";
 import {
   reconstructKindRegistry,
   type KindDefProjection,
@@ -151,6 +152,31 @@ async function main() {
   if (!APPLY) {
     console.log(`\nDRY RUN — no writes. Re-run with --apply to migrate.\n`);
     return;
+  }
+
+  // KINDS-GLUE wave 1b: this one-time migration only REFRESHES kinds that already exist (each
+  // already declares metadata.disposition; the upsert never writes metadata). It has no way
+  // to know what a NEW kind's output is, so it refuses to create one — a new kind is born
+  // through the studio, kind_create or the SDK, which all say what it is.
+  {
+    const slugs = plan.kinds.map((k) => k.kind);
+    const { data: existing, error: existErr } = await supabase
+      .schema("content_ir")
+      .from("kind_definition")
+      .select("kind, metadata")
+      .in("kind", slugs)
+      .is("deleted_at", null);
+    if (existErr) throw new Error(`read existing kinds: ${existErr.message}`);
+    const live = new Set((existing ?? []).map((row) => row.kind));
+    const refusals = slugs
+      .filter((slug) => !live.has(slug))
+      .map((slug) => kindDispositionRefusal(slug, undefined))
+      .filter((r): r is string => r !== null);
+    if (refusals.length > 0) {
+      throw new Error(
+        `${refusals.join("\n")}\nThis migration only refreshes existing kinds; create these through the Shapes studio or the kind SDK.`,
+      );
+    }
   }
 
   // 4. Apply — kinds first (to mint ids), then edges.

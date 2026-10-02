@@ -35,6 +35,18 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  KIND_DISPOSITION_CHOICES,
+  isKindDisposition,
+  type KindDisposition,
+} from "@/features/content-ir/registry/kind-dispositions";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supabase } from "@/utils/supabase/client";
@@ -121,6 +133,13 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
   const [creating, setCreating] = useState(false);
   /** Set once the definition exists but its example verdict is not 'passed'. */
   const [pendingFix, setPendingFix] = useState<CreateShapeResult | null>(null);
+  /**
+   * What each planned kind's output IS (KINDS-GLUE), keyed by slug. The person picks it;
+   * nothing is preselected, and Create stays off until every planned kind has one.
+   */
+  const [dispositions, setDispositions] = useState<
+    Record<string, KindDisposition>
+  >({});
 
   // Plan preview, computed EAGERLY so lossy-conversion warnings and the
   // nested-kind cap surface BEFORE the create action — never at write time.
@@ -163,6 +182,9 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
     [planPreview, slug],
   );
   const plannedSlugsKey = plannedSlugs.join(",");
+  const undeclaredSlugs = plannedSlugs.filter(
+    (s) => !isKindDisposition(dispositions[s]),
+  );
   useEffect(() => {
     if (!open || plannedSlugs.length === 0) return undefined;
     let cancelled = false;
@@ -267,6 +289,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
         sample,
         rootLabel: trimmedLabel,
         exampleLabel: `${trimmedLabel} canonical example`,
+        dispositions,
       });
       finishForVerdict(result, plan.rootSlug);
     } catch (err) {
@@ -426,6 +449,45 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
             </p>
           </div>
 
+          {plannedSlugs.map((plannedSlug, index) => (
+            <div key={plannedSlug} className="space-y-1.5">
+              <Label htmlFor={`shape-disposition-${index}`}>
+                {index === 0 ? (
+                  "What it holds"
+                ) : (
+                  <>
+                    What it holds{" "}
+                    <span className="font-mono text-muted-foreground">
+                      {plannedSlug}
+                    </span>
+                  </>
+                )}
+              </Label>
+              <Select
+                value={dispositions[plannedSlug] ?? ""}
+                onValueChange={(next) => {
+                  if (!isKindDisposition(next)) return;
+                  setDispositions((prev) => ({ ...prev, [plannedSlug]: next }));
+                }}
+                disabled={creating || pendingFix !== null}
+              >
+                <SelectTrigger id={`shape-disposition-${index}`}>
+                  <SelectValue placeholder="Choose one" />
+                </SelectTrigger>
+                <SelectContent>
+                  {KIND_DISPOSITION_CHOICES.map((choice) => (
+                    <SelectItem key={choice.id} value={choice.id}>
+                      {choice.label}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {choice.description}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
+
           <div className="space-y-1.5">
             <Label htmlFor="shape-sample">
               Sample instance{" "}
@@ -534,7 +596,8 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
                   slugStatus === "taken" ||
                   slugStatus === "reserved" ||
                   slugStatus === "invalid" ||
-                  planErrors.length > 0
+                  planErrors.length > 0 ||
+                  undeclaredSlugs.length > 0
                 }
               >
                 {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
