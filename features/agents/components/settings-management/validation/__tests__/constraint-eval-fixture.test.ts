@@ -14,13 +14,13 @@ import { evaluateAllConstraints } from "../constraints";
 import type { ModelConstraint } from "@/features/ai-models/types";
 
 // common-docs is a SIBLING repo checked out beside this one. The fixture moved
-// from `systems/model-config/` to `systems/agents/ai-models/` in the common-docs
+// from `systems/model-config/` to `systems/ai/ai-models/` in the common-docs
 // docs rename cascade (6bb0b8aa).
 const DEFAULT_FIXTURES_DIR = path.resolve(
   __dirname,
   "../../../../../..",
   "..",
-  "common-docs/systems/agents/ai-models",
+  "common-docs/systems/ai/ai-models",
 );
 
 const FIXTURES_DIR =
