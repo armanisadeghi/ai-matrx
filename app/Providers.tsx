@@ -79,6 +79,8 @@ import { DetailHost } from "@/features/window-panels/detail/DetailHost";
 // StoreProvider because the catalog's identity and transport ports read Redux.
 // See providers/AgentCatalogHost.tsx + lib/agents/catalog.ts.
 import { AgentCatalogHost } from "@/providers/AgentCatalogHost";
+// THE ONE `@ai-matrx/chat` host mount (ports wired to this app). See providers/ChatHostAdapter.tsx.
+import { ChatHostAdapter } from "@/providers/ChatHostAdapter";
 import { MatrxDataTableHost } from "@/components/official/MatrxDataTableHost";
 // The live host for `openAgentPeek(agentId)` — the app service bound to the
 // picker's `openPeek` port. Slim shell; the WindowPanel body is lazy.
@@ -175,6 +177,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
   return (
     <ReactQueryProvider>
       <StoreProvider initialState={initialReduxState}>
+        <ChatHostAdapter>
         <AssociationsHost>
           <DetailHost>
             <AgentCatalogHost>
@@ -306,6 +309,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
             </AgentCatalogHost>
           </DetailHost>
         </AssociationsHost>
+        </ChatHostAdapter>
       </StoreProvider>
     </ReactQueryProvider>
   );
