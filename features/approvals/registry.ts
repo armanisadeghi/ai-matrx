@@ -24,6 +24,7 @@ import { gmailSendKind } from "./kinds/gmail-send";
 import { keywordMeaningKind } from "./kinds/seo/keyword-meaning";
 import { placementDriftKind } from "./kinds/seo/placement-drift";
 import { topicPlacementKind } from "./kinds/seo/topic-placement";
+import { settingsTranslationKind } from "./kinds/settings-translation";
 import { sheetWriteKind } from "./kinds/sheet-write";
 import { spreadsheetCreateKind } from "./kinds/spreadsheet-create";
 import { taskImportKind } from "./kinds/task-import";
@@ -51,6 +52,10 @@ export const APPROVAL_KINDS: readonly ApprovalKind[] = [
   // exception row stays in the CMS product DB, because it is the standing policy
   // eight CMS write paths read; this row carries the proposal and the decision.
   cmsContentExceptionKind,
+  // Then the settings-translation cells that need a person (contract K4). A
+  // VIEW over ai.translation_cell — the kind reads that table, never the
+  // assists ledger — and it shows rows only to a platform admin.
+  settingsTranslationKind,
   // Then the keyword system's three (register KI-045).
   keywordMeaningKind,
   placementDriftKind,

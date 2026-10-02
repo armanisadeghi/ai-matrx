@@ -424,6 +424,13 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/ai/ai-models/settings",
       },
       {
+        title: "Settings Translation",
+        description:
+          "Review how every model setting translates onto every model, and approve what the agent could not settle.",
+        iconName: "Languages",
+        link: "/administration/ai/ai-models/translations",
+      },
+      {
         title: "Aliases",
         description:
           "Manage model aliases (ai.model_alias) — alternate names, deprecated ids, and -latest pointers resolving to live model rows.",
