@@ -169,8 +169,11 @@ function UnifiedDataPage() {
         />
       </PageHeader>
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
-        {organizationState !== "ready" ? (
-          <OrganizationContextNotice state={organizationState} what="Data records" />
+        {/* NO STORE DOOR BEFORE A PERSON (lane MONITOR-TRIAGE): with no signed-in person every
+            door below answered 42501 "permission denied for schema custom" (anon has no USAGE on
+            it). The mount waits for the person exactly as it waits for the organization. */}
+        {organizationState !== "ready" || !userId ? (
+          <OrganizationContextNotice state={userId ? organizationState : "resolving"} what="Data records" />
         ) : !storeOn ? (
           /* THE ONE NOTICE. Resolving, could-not-check and genuinely-off are
              three different things and this says which — a failed check is

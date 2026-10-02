@@ -120,9 +120,10 @@ export function DataHomeShellPage() {
         />
       </PageHeader>
       <div className="flex h-full flex-col pt-[var(--shell-header-h)]" data-data-home-shell="">
-        {organizationState !== "ready" ? (
+        {/* No store door before a person (lane MONITOR-TRIAGE), as on the old home. */}
+        {organizationState !== "ready" || !userId ? (
           <div className="p-4">
-            <OrganizationContextNotice state={organizationState} what="Data records" />
+            <OrganizationContextNotice state={userId ? organizationState : "resolving"} what="Data records" />
           </div>
         ) : !storeOn ? (
           <div className="p-4">
