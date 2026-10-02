@@ -23,6 +23,7 @@
 
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -89,7 +90,7 @@ function formatAmount(
 
 function componentLabel(row: CompensationRow): string {
   const kind = text(row, "component_kind") ?? "base";
-  return kind.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+  return humanizeIdentifier(kind) || kind;
 }
 
 function isFuture(row: CompensationRow, asOf: string): boolean {

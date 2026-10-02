@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * ExportRunList — the export history for a pay period (SPEC-UI-IA row 33), on `MatrxDataTable`.
  *
@@ -213,8 +214,7 @@ function formatGeneratedAt(iso: string): string {
 
 /** `generic_csv` → `Generic csv`. Headings and filter options only — never a data cell. */
 function formatToken(token: string): string {
-  const spaced = token.replace(/_/g, " ");
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  return humanizeIdentifier(token) || token;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────

@@ -39,6 +39,7 @@
 
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import { AlertTriangle, ExternalLink, Info, ShieldAlert } from "lucide-react";
 
@@ -164,7 +165,7 @@ function WhyDisclosure({ finding }: { finding: LeaveConfigViolation }) {
             {citation.confidence ? (
               <div className="pt-1">
                 <Badge variant="outline" className="text-[10px] font-normal">
-                  {citation.confidence.replace(/_/g, " ")}
+                  {humanizeIdentifier(citation.confidence) || citation.confidence}
                 </Badge>
               </div>
             ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/hr/people/shared/HrStatusChip.tsx
 //
 // The status chip, and the ONE place the directory's `row_basis` becomes words.
@@ -81,7 +82,7 @@ export function HrStatusChip({
     }
   }
 
-  const label = known ? LABELS[status] : status.replace(/_/g, " ");
+  const label = known ? LABELS[status] : (humanizeIdentifier(status) || status);
   return (
     <Badge
       variant="outline"

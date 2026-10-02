@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/hr/me/selfServicePolicy.ts
 //
 // SELF-SERVICE, THE FIELD POLICY (SPEC-EMPLOYEES §7.1).
@@ -220,8 +221,5 @@ export function fieldNote(field: string): string | null {
 export function humanFieldName(field: string): string {
   const override = HR_FIELD_LABELS[field];
   if (override) return override;
-  return field
-    .replace(/_id$/, "")
-    .replace(/_/g, " ")
-    .replace(/^./, (c) => c.toUpperCase());
+  return humanizeIdentifier(field.replace(/_id$/, "")) || field;
 }

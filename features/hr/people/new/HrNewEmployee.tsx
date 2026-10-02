@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/hr/people/new/HrNewEmployee.tsx — ROUTE 12, SPEC-EMPLOYEES §4.1
 //
 // FOUR ENTRY MODES, ONE FORM. New person · link org member · link CRM party ·
@@ -711,7 +712,7 @@ export function HrNewEmployee({
                     <SelectContent>
                       {HR_WORKER_CLASSES.map((value) => (
                         <SelectItem key={value} value={value}>
-                          {value.replace(/_/g, " ")}
+                          {humanizeIdentifier(value) || value}
                         </SelectItem>
                       ))}
                     </SelectContent>

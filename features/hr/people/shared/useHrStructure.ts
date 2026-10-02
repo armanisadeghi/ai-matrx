@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/hr/people/shared/useHrStructure.ts
 //
 // This employer's departments, locations and job titles — the ONE read behind
@@ -78,7 +79,7 @@ const PAY_FREQUENCY_WORDS: Record<string, string> = {
 /** The frequency in words, or the raw value when the server ships one we do not know. */
 export function payFrequencyWords(frequency: string | null): string | null {
   if (!frequency) return null;
-  return PAY_FREQUENCY_WORDS[frequency] ?? frequency.replace(/_/g, " ");
+  return PAY_FREQUENCY_WORDS[frequency] ?? (humanizeIdentifier(frequency) || frequency);
 }
 
 export function payGroupOptions(structure: HrStructure | null): HrPayGroupOption[] {

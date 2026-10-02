@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/hr/people/relations/service.ts
 //
 // ROUTE 15's LIST AND ROUTE 16's READ.
@@ -65,7 +66,7 @@ const SWEEP_MAX_PAGES = 25;
 function labelIncidentKind(kind: string): string {
   return (
     HR_INCIDENT_KIND_LABELS[kind as HrIncidentKind] ??
-    kind.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())
+    (humanizeIdentifier(kind) || kind)
   );
 }
 
@@ -80,7 +81,7 @@ function labelIncidentState(state: string): string {
 function labelActionLevel(level: string): string {
   return (
     HR_CORRECTIVE_ACTION_LEVEL_LABELS[level as HrCorrectiveActionLevel] ??
-    level.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())
+    (humanizeIdentifier(level) || level)
   );
 }
 

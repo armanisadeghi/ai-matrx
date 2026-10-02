@@ -41,6 +41,7 @@
 
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -1070,7 +1071,7 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
                         )
                       }
                     />
-                    {workerClass.replace(/_/g, " ")}
+                    {humanizeIdentifier(workerClass) || workerClass}
                   </label>
                 ))}
               </div>
@@ -1100,7 +1101,7 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
                         )
                       }
                     />
-                    {scheduleClass.replace(/_/g, " ")}
+                    {humanizeIdentifier(scheduleClass) || scheduleClass}
                   </label>
                 ))}
               </div>
@@ -1123,7 +1124,7 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
                 <div className="flex flex-wrap gap-2">
                   {form.mandatedUses.map((use) => (
                     <Badge key={use} variant="secondary" className="gap-1.5">
-                      {use.replace(/_/g, " ")}
+                      {humanizeIdentifier(use) || use}
                       {/*
                         🚨 REMOVAL IS ABSENT ON A STATUTORY POLICY. §2.4 lets an org ADD a use
                         and never remove one the law requires — and we cannot yet tell which of
@@ -1171,7 +1172,7 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
                         onClick={() => set("mandatedUses", [...form.mandatedUses, use])}
                       >
                         <Plus className="mr-1.5 h-3.5 w-3.5" />
-                        {use.replace(/_/g, " ")}
+                        {humanizeIdentifier(use) || use}
                       </Button>
                     ))}
                 </div>

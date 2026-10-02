@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/hr/people/profile/tabs/JobTab.tsx — SPEC-EMPLOYEES §2.3.3, §6
 //
 // THE TAB THAT MAKES EFFECTIVE DATING REAL. Five rules it lives by:
@@ -299,7 +300,7 @@ function SpellRow({ spell }: { spell: Row }) {
         </span>
         {status ? (
           <Badge variant="outline" className="text-[0.6875rem] font-normal">
-            {status.replace(/_/g, " ")}
+            {humanizeIdentifier(status) || status}
           </Badge>
         ) : null}
         {readBoolean(spell, "is_rehire") ? (
@@ -493,7 +494,7 @@ function ClassificationLine({ row }: { row: Row }) {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
       {bits.map((bit) => (
-        <span key={bit}>{bit.replace(/_/g, " ")}</span>
+        <span key={bit}>{humanizeIdentifier(bit) || bit}</span>
       ))}
       {fte !== null ? <span>FTE {fte}</span> : null}
       {eeo ? (
@@ -550,7 +551,7 @@ function ReportingLines({ lines }: { lines: Row[] }) {
             className="rounded-md border border-border bg-card px-3 py-2 text-sm"
           >
             <span className="font-medium text-foreground">
-              {readString(line, "line_kind")?.replace(/_/g, " ") ?? "Line"}
+              {humanizeIdentifier(readString(line, "line_kind") ?? "") || "Line"}
             </span>
             {readString(line, "manager_name") ? (
               <span className="text-muted-foreground">
