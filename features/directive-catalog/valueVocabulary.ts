@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * The words a pick-list shows for a stored value — the SAME words the record's
  * own screens show. A schema publishes only stored values ("inbox",
@@ -49,8 +50,7 @@ export function valueVocabularyFor(
 
 /** A stored value no vocabulary names, in sentence case. */
 export function sentenceCaseValue(value: string): string {
-  const spaced = value.replace(/[_-]+/g, " ").trim();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  return humanizeIdentifier(value) || value;
 }
 
 /**

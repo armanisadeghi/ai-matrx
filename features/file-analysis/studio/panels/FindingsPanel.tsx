@@ -5,6 +5,7 @@
 
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Loader2 } from "lucide-react";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useKeyFindings } from "@/features/file-analysis/hooks/useKeyFindings";
@@ -61,7 +62,7 @@ export function FindingsPanel({ fileId, onJumpToPage }: Props) {
         </div>
         <ul>
           {entries.map(([label, items]) => {
-            const display = byId.get(label)?.display_name ?? label.replace(/_/g, " ");
+            const display = byId.get(label)?.display_name ?? (humanizeIdentifier(label) || label);
             return (
               <li
                 key={label}

@@ -76,7 +76,7 @@ export function LawCitationLine({ citation }: { citation: HrLawCitation | null }
       )}
       {citation.confidence ? (
         <span className="ml-2 text-muted-foreground">
-          {citation.confidence.replace(/_/g, " ")}
+          {humanizeIdentifier(citation.confidence) || citation.confidence}
         </span>
       ) : null}
     </p>

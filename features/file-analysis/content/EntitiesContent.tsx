@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * EntitiesContent — the file's named entities (NER), grouped by category.
  *
@@ -36,7 +37,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 function prettyCategory(cat: string): string {
-  return CATEGORY_LABEL[cat] ?? cat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return CATEGORY_LABEL[cat] ?? (humanizeIdentifier(cat) || cat);
 }
 
 export function EntitiesContent({ fileId }: Props) {

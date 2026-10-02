@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/education/study/modes.ts
 //
 // THE STUDY SPINE'S MODE VOCABULARY — one canonical place naming every way a
@@ -61,5 +62,5 @@ export const STUDY_MODES: string[] = Object.keys(STUDY_MODE_LABELS);
  */
 export function sessionModeLabel(mode: string | null | undefined): string {
   if (!mode) return "Session";
-  return STUDY_MODE_LABELS[mode] ?? mode.replace(/_/g, " ");
+  return STUDY_MODE_LABELS[mode] ?? (humanizeIdentifier(mode) || mode);
 }

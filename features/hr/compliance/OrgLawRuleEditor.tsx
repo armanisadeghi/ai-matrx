@@ -20,6 +20,7 @@
 
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useId, useState } from "react";
 import { AlertTriangle, Loader2, ShieldAlert } from "lucide-react";
 
@@ -412,7 +413,7 @@ export function OrgLawRuleEditor({
                     <SelectContent>
                       {field.options.map((option) => (
                         <SelectItem key={option} value={option}>
-                          {option.replace(/_/g, " ")}
+                          {humanizeIdentifier(option) || option}
                         </SelectItem>
                       ))}
                     </SelectContent>

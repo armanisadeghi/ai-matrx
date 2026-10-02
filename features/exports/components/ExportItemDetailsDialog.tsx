@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/exports/components/ExportItemDetailsDialog.tsx
 //
 // Everything the platform holds about ONE extracted item — and a plain
@@ -64,7 +65,7 @@ export function ExportItemDetailsDialog({
             <dl className="divide-y divide-border">
               <Row label="Direction">{directionLabel(item.direction)}</Row>
               <Row label="Type">
-                <span className="capitalize">{item.kind.replace(/_/g, " ")}</span>
+                <span className="capitalize">{humanizeIdentifier(item.kind) || item.kind}</span>
               </Row>
               <Row label="From">{partyText(item.author) || "—"}</Row>
               <Row label="To">

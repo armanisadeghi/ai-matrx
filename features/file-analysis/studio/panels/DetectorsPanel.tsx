@@ -5,6 +5,7 @@
 
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { FileKnowledgePanel } from "@/features/rag/components/files/FileKnowledgePanel";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Loader2, X } from "lucide-react";
@@ -271,7 +272,7 @@ function DetectorBlock({
         className="flex w-full items-center gap-2 px-2 py-1.5 text-left hover:bg-accent/30"
       >
         <span className="text-[11px] font-medium">
-          {kind.replace(/_/g, " ")}
+          {humanizeIdentifier(kind) || kind}
         </span>
         <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
           {rows.length}

@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/exports/browse/columns.tsx
 //
 // The column registry for the items inside one dropped export.
@@ -120,7 +121,7 @@ export const EXPORT_ITEM_COLUMNS: EntityColumnSpec<ExportItem>[] = [
       width: 110,
       cell: (row) => (
         <span className="text-xs capitalize text-muted-foreground">
-          {row.kind.replace(/_/g, " ")}
+          {humanizeIdentifier(row.kind) || row.kind}
         </span>
       ),
     },

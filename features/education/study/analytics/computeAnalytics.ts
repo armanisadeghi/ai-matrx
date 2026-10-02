@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/education/study/analytics/computeAnalytics.ts
 //
 // Pure cross-mode aggregation over the study spine — the analytics engine P5's
@@ -39,9 +40,7 @@ const ITEM_TYPE_LABELS: Record<string, string> = {
 export function itemTypeLabel(itemType: string): string {
   return (
     ITEM_TYPE_LABELS[itemType] ??
-    itemType
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase())
+    (humanizeIdentifier(itemType) || itemType)
   );
 }
 
