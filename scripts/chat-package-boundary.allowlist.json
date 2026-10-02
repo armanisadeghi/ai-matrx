@@ -1,6 +1,6 @@
 {
   "$note": "SHRINK-ONLY budget of host ties per specifier in packages/chat/src. Never raise a number or add a key by hand \u2014 route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
-  "total": 2240,
+  "total": 2233,
   "budget": {
     "@/features/content-ir/registry/schema-source-kind-tables": 1,
     "@/features/surfaces/manifests/registry": 1,
@@ -201,8 +201,6 @@
     "@host/features/bindings/treatment-shape": 3,
     "@host/features/canvas/artifact-types/artifactId": 2,
     "@host/features/canvas/core/CanvasBody": 1,
-    "@host/features/canvas/core/CanvasRenderer": 1,
-    "@host/features/canvas/core/ResizableCanvas": 1,
     "@host/features/canvas/hooks/useCanvas": 2,
     "@host/features/canvas/hooks/useCanvasItem": 1,
     "@host/features/canvas/hooks/useCanvasOpenGuard": 1,
@@ -210,7 +208,6 @@
     "@host/features/canvas/materialization/materializeMessageArtifacts": 1,
     "@host/features/canvas/materialization/reconcileArtifacts": 2,
     "@host/features/canvas/openRequest": 3,
-    "@host/features/canvas/redux/canvasSlice": 5,
     "@host/features/canvas/revealMemory": 1,
     "@host/features/canvas/services/canvasArtifactService": 1,
     "@host/features/canvas/tool-results/ToolResultCanvasOpener": 1,
