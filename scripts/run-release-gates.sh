@@ -797,6 +797,10 @@ if $STRICT; then
         # (Arman, 2026-10-02): the label, else the one humanizer. Baseline ratchet; advisory here.
         "Rendered raw identifier (snake_case key on screen)|pnpm check:raw-identifiers --strict"
         "Raw identifier guard self-test|pnpm check:raw-identifiers:self-test"
+        # RETIRED WORDS — renamed schemas and actor tiers stay renamed (word list:
+        # common-docs retired-words.json; ONE-HOME, 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
+        "Retired word used (old schema or actor-tier name)|pnpm check:retired-words"
+        "Retired-words guard self-test|pnpm check:retired-words:self-test"
         # ZERO-WIDTH LAYERS — a fixed-width child in a width-less absolute
         # (pan/zoom) layer is squeezed to 0px by the phone max-width default
         # (2026-09-28: org charts, React Flow). Zero findings; advisory here.
@@ -1407,6 +1411,10 @@ else
         # (Arman, 2026-10-02): the label, else the one humanizer. Baseline ratchet; advisory here.
         "Rendered raw identifier (snake_case key on screen)|pnpm check:raw-identifiers --strict"
         "Raw identifier guard self-test|pnpm check:raw-identifiers:self-test"
+        # RETIRED WORDS — renamed schemas and actor tiers stay renamed (word list:
+        # common-docs retired-words.json; ONE-HOME, 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
+        "Retired word used (old schema or actor-tier name)|pnpm check:retired-words"
+        "Retired-words guard self-test|pnpm check:retired-words:self-test"
         # ZERO-WIDTH LAYERS — a fixed-width child in a width-less absolute
         # (pan/zoom) layer is squeezed to 0px by the phone max-width default
         # (2026-09-28: org charts, React Flow). Zero findings; advisory here.
