@@ -1,4 +1,4 @@
--- draft: ONE-HOME DD-067 expand step NOT YET APPLIED to production — clone-proven 2026-10-02; runs only in a 01:00-04:00 PT window after the manager's review of v6/RENAME-PLAN-ONE-HOME.md; onehome_b2 (contract) follows once every client reads projects
+-- applied to production 2026-10-02 ~11:55 PT (18:55Z) (ONE-HOME, Supabase MCP / psql); kept as the record.
 -- chair-step: lane ONE-HOME wave 3, DD-067 EXPAND — the coordination schema is renamed workspace -> projects
 -- (Doctrine §1.7/§1.8 + the chair's 2026-09-11 ruling recorded in systems/architecture/database/DECISIONS.md: `projects`,
 -- because `work` is reserved for the product surface). gh-ost order: expand (this file) -> clients move -> contract (b2).

@@ -1,4 +1,4 @@
--- draft: ONE-HOME DD-063 NOT YET APPLIED to production — clone-proven 2026-10-02; runs only in a 01:00-04:00 PT window after the manager's review of v6/RENAME-PLAN-ONE-HOME.md, in the same pass as the code edits it lists
+-- applied to production 2026-10-02 ~11:54 PT (18:54Z) (ONE-HOME, Supabase MCP / psql); kept as the record.
 -- chair-step: lane ONE-HOME wave 3, DD-063 — the retired-tables schema is renamed graveyard -> deprecated
 -- (Data Doctrine §1.1, §1.8, R16: one name, renamed completely in one pass).
 -- What moves, in one transaction:

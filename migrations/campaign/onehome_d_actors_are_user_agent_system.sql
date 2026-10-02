@@ -1,4 +1,4 @@
--- draft: ONE-HOME DD-064 expand+migrate NOT YET APPLIED to production — clone-proven 2026-10-02; runs only in a 01:00-04:00 PT window after the manager's review of v6/RENAME-PLAN-ONE-HOME.md; the history backfill and onehome_d2 (contract) follow
+-- applied to production 2026-10-02 ~11:56–11:57 PT (18:56Z) (ONE-HOME, Supabase MCP / psql); kept as the record.
 -- chair-step: lane ONE-HOME wave 3, DD-064 EXPAND+MIGRATE — actor tiers {code, ai, human} become {system, agent, user}
 -- (Doctrine §1.5, §1.8, R16; executes DD-014). gh-ost order: expand + migrate (this file) -> code moves -> history
 -- backfill (batched, nightly) -> contract (d2: the old words refused).
