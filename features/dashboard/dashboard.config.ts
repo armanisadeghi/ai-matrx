@@ -28,6 +28,14 @@ export interface QuickAction {
 
 export const QUICK_ACTIONS: QuickAction[] = [
   {
+    // The /make hub (lane MAKE-HOME): forms, tables, booking pages and more, made in a few clicks.
+    id: "/make",
+    label: "Make something",
+    href: "/make",
+    iconName: "LayoutGrid",
+    color: "cyan",
+  },
+  {
     id: "/chat/new",
     label: "New Chat",
     href: "/chat/new",

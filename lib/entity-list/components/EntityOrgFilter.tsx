@@ -52,6 +52,13 @@ export interface EntityOrgFilterProps {
    * organization (the Knowledge hub) fetches them only once the menu is first opened.
    */
   onOpen?: () => void;
+  /**
+   * Optional: organizations to offer besides the person's memberships — an admin-lane page lists the
+   * system organizations its doors reach (the store's wall admits a super admin there on the admin
+   * lane only). Merged by id; a membership wins. Never used to add an organization the page's own
+   * doors would refuse.
+   */
+  extraOrganizations?: ReadonlyArray<{ id: string; name: string }>;
   className?: string;
 }
 
@@ -60,15 +67,17 @@ export interface EntityOrgFilterProps {
  * page outside the shell renders the same control (URL state:
  * `useOrgFilterParam` in ../orgFilterUrl.ts).
  */
-export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, onOpen, className }: EntityOrgFilterProps) {
+export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, onOpen, extraOrganizations, className }: EntityOrgFilterProps) {
   const { organizations, loading } = useUserOrganizations();
   const [needle, setNeedle] = useState("");
   const perOrg = new Map(
     (counts?.narrow.all ?? []).map((o) => [o.id, o.count] as const),
   );
-  const choices = [...organizations]
-    .map((o) => ({ id: o.id, name: o.name || "Unnamed organization" }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const memberIds = new Set(organizations.map((o) => o.id));
+  const choices = [
+    ...organizations.map((o) => ({ id: o.id, name: o.name || "Unnamed organization" })),
+    ...(extraOrganizations ?? []).filter((o) => !memberIds.has(o.id)),
+  ].sort((a, b) => a.name.localeCompare(b.name));
   const selected = orgId ? choices.find((c) => c.id === orgId) : undefined;
 
   // Offer the filter only where it helps (law rule 3): one organization or

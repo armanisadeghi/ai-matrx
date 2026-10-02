@@ -12,6 +12,7 @@ import {
   FileSpreadsheet,
   FileText,
   ArrowRight,
+  LayoutGrid,
   Loader2,
   type LucideIcon,
 } from "lucide-react";
@@ -29,6 +30,13 @@ interface WelcomeOption {
 }
 
 const OPTIONS: WelcomeOption[] = [
+  {
+    label: "Make something",
+    description: "Forms, tables, booking pages and more",
+    href: "/make",
+    icon: LayoutGrid,
+    gradient: "from-cyan-500 to-cyan-700",
+  },
   {
     label: "Organization",
     description: "Set up your team and shared workspace",

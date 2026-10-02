@@ -482,6 +482,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         destinations: [
           destination("/administration/database/unified-data-ramp"),
           destination("/administration/database/final-switch"),
+          destination("/administration/database/store-tables"),
         ],
       },
       {

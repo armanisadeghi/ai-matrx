@@ -73,12 +73,12 @@ export function WorkingDocumentViewControls({
   const editorActive = mainView === "editor";
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
+    <div className={cn("flex shrink-0 items-center gap-1", className)}>
       {saving && (
         <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
       )}
       {showDiff && hasUnseenChange && editorActive && (
-        <span className="hidden text-[10px] text-primary sm:inline">
+        <span className="hidden whitespace-nowrap text-[10px] text-primary @[30rem]/wdhead:inline">
           Agent edited
         </span>
       )}
@@ -88,16 +88,19 @@ export function WorkingDocumentViewControls({
           <button
             type="button"
             title="Change view mode"
+            aria-label={`View: ${current.label}`}
             disabled={!editorActive}
             className={cn(
-              "flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
+              "flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
               editorActive
                 ? "bg-accent/50 text-foreground hover:bg-accent"
                 : "cursor-not-allowed text-muted-foreground/50",
             )}
           >
             <CurrentIcon />
-            <span>{current.label}</span>
+            {/* The word goes when the host panel is narrow (its @container);
+                the icon and the aria-label still say which view this is. */}
+            <span className="hidden @[20rem]/wdhead:inline">{current.label}</span>
             <ChevronDown className="opacity-60" />
           </button>
         </DropdownMenuTrigger>
@@ -141,7 +144,7 @@ export function WorkingDocumentViewControls({
               : "View the agent's latest changes"
           }
           className={cn(
-            "relative flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
+            "relative flex shrink-0 cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
             mainView === "agent-diff"
               ? "bg-accent text-foreground"
               : hasUnseenChange
@@ -161,7 +164,7 @@ export function WorkingDocumentViewControls({
         onClick={() => setWorkingDocHistoryOpen(conversationId, !historyOpen)}
         title="Version history"
         className={cn(
-          "flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
+          "flex shrink-0 cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
           historyOpen
             ? "bg-accent text-foreground"
             : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",

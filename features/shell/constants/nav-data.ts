@@ -737,6 +737,16 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        // The /make hub (lane MAKE-HOME): every thing the record store makes, in one place. It
+        // carries the record store's gate, like Records and Kits beside it.
+        label: "Make",
+        href: "/make",
+        iconName: "LayoutGrid",
+        description: "Make a table, form, booking page or dashboard",
+        color: "cyan",
+        gate: "unified-data-campaign",
+      },
+      {
         // The unified record store's tables. It appears for every member of an
         // organization whose record store is on, which is why it carries a
         // gate: everywhere else the screens behind it answer with the switch's

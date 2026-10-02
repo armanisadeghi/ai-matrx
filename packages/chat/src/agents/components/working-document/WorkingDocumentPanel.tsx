@@ -273,7 +273,12 @@ export function WorkingDocumentPanel({
         />
       )}
       {showHeader && (
-        <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+        // A container: the controls fit the PANEL's width, not the screen's —
+        // the same panel sits in a 360px canvas pane, a phone and a wide
+        // window. Below 30rem the action toolkit folds into its one ⋯ menu
+        // and the view-mode button drops its word (guard:
+        // the-document-toolbar-fits-a-narrow-pane.test.tsx).
+        <div className="@container/wdhead flex min-w-0 shrink-0 items-center gap-2 border-b border-border px-3 py-2">
           {showHeaderTitle ? (
             <>
               <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -315,11 +320,20 @@ export function WorkingDocumentPanel({
                   page, email, print, edit, and more — same set an assistant
                   response and a note expose. Renders the live draft via the
                   headless provider above. */}
-              <RichDocumentActionSurface
-                surfaceId={wdSurfaceId}
-                variant="bar"
-                fallback={null}
-              />
+              <div className="hidden min-w-0 @[30rem]/wdhead:flex">
+                <RichDocumentActionSurface
+                  surfaceId={wdSurfaceId}
+                  variant="bar"
+                  fallback={null}
+                />
+              </div>
+              <div className="flex shrink-0 @[30rem]/wdhead:hidden">
+                <RichDocumentActionSurface
+                  surfaceId={wdSurfaceId}
+                  variant="menu"
+                  fallback={null}
+                />
+              </div>
               {showOpenInWindow && (
                 <button
                   type="button"
@@ -359,7 +373,7 @@ export function WorkingDocumentPanel({
       {/* Source controls — rename, bind note (working), link existing, status.
           Part of the panel so EVERY mount gets the full document chrome. */}
       {showSourceControls && enabled && (
-        <div className="flex shrink-0 items-center gap-1.5 border-b border-border px-2 py-1.5">
+        <div className="@container/wdsrc flex min-w-0 shrink-0 items-center gap-1.5 border-b border-border px-2 py-1.5">
           {isScratch ? (
             <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           ) : (
@@ -386,7 +400,15 @@ export function WorkingDocumentPanel({
               "disabled:opacity-60",
             )}
           />
-          <span className="shrink-0 truncate text-[11px] text-muted-foreground">
+          {/* The status word gives way to the document's name in a narrow
+              panel; saving still shows as the header's spinner. */}
+          <span
+            className={cn(
+              "shrink-0 truncate text-[11px] text-muted-foreground",
+              // "View only" always stays: it is why the name cannot be edited.
+              !viewOnly && "hidden @[26rem]/wdsrc:inline",
+            )}
+          >
             {isScratch
               ? saving
                 ? "Saving…"

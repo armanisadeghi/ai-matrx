@@ -15,9 +15,25 @@
  * the store's own by ruling (SCOPES-CUTOVER-PLAN) and are compared separately, never silently.
  *
  * Read-only. Skipped unless the clone's URL + key (.env.clone.local) and both seats' credentials are
- * present (member: SEAT_PASSWORD in the environment). The full diff lands at PARITY_OUT (JSON).
+ * present (member: SEAT_PASSWORD in the environment — the raw AI_MEMBER_PASSWORD line of .env.local;
+ * dotenv's parse of that line loses a character). The full diff lands at PARITY_OUT (JSON).
  *
  *   SEAT_PASSWORD=… PARITY_OUT=/tmp/…/parity.json pnpm jest features/scopes/service/__tests__/store-read-parity.clone.test.ts
+ *
+ * IT MEASURES OR IT FAILS (lane SCOPES-ON-THE-STORE M2, 2026-10-02). On clone-20261001 this suite
+ * "passed" with both paths answering 0 organizations for both seats: it asserted nothing
+ * (`expect(true)`), a read that failed the same way on both paths was counted as agreement, and a
+ * failed tree read became an empty tree (`data ?? []`). Now, per seat:
+ *   1. "measures her tree" — the tree loads on both paths, the seat belongs to at least one
+ *      organization and sees at least one scope on the old path, and no reader failed on either path.
+ *      Anything else is UNMEASURED and fails with a plain sentence.
+ *   2. "store equals old" — zero non-clock value differences, every reader.
+ * Each seat runs on freshly loaded modules (jest.resetModules), so no module cache — the membership
+ * read caches for 4 s by container type alone — can hand one seat the other's organizations.
+ *
+ * The guard's own proof: PARITY_PLANT=empty-memberships makes `mbr_for_user` answer no rows on both
+ * paths (in memory, through the client this suite owns — no file and no row is touched); test 1 must
+ * go RED for both seats. PARITY_PLANT=memberships-fail makes it fail on both paths; RED too.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -38,6 +54,8 @@ const SEATS = [
 ];
 const READY = Boolean(URL_ && KEY && /nwvv|supabase\.co/.test(URL_) && !/matrxserver/.test(URL_) && SEATS.every((s) => s.email && s.password));
 const describeClone = READY ? describe : describe.skip;
+const PLANT = process.env.PARITY_PLANT ?? "";
+if (PLANT && !["empty-memberships", "memberships-fail"].includes(PLANT)) throw new Error(`PARITY_PLANT=${PLANT} is not a plant this suite knows.`);
 
 // The one client every module under test reads through, swapped per seat.
 // One client for both seats (signed out and in again between them): modules read `supabase.auth` at load.
@@ -51,6 +69,15 @@ jest.mock("@/utils/supabase/client", () => ({
     {
       get: (_t, prop) => {
         const c = holder.client as unknown as Record<string | symbol, unknown>;
+        // THE PLANT (proof of the zero-organization guard): the membership read answers nothing, or
+        // fails, on BOTH paths. In memory only.
+        if (prop === "rpc" && PLANT) {
+          return (fn: string, args?: unknown, opts?: unknown) => {
+            if (fn !== "mbr_for_user") return (c.rpc as (...a: unknown[]) => unknown).call(c, fn, args, opts);
+            if (PLANT === "empty-memberships") return Promise.resolve({ data: [], error: null, count: null, status: 200, statusText: "OK" });
+            return Promise.resolve({ data: null, error: { message: "planted: the membership read failed", code: "P0001", details: "", hint: "" }, count: null, status: 400, statusText: "Bad Request" });
+          };
+        }
         const v = c[prop];
         return typeof v === "function" ? (v as (...a: unknown[]) => unknown).bind(c) : v;
       },
@@ -68,13 +95,41 @@ jest.mock("@/utils/auth/getUserId", () => ({
 }));
 jest.mock("@/utils/supabase/adminLane", () => ({ browserAdminLaneOpen: () => false, isAdminLanePath: () => false }));
 
-// Loaded only when the clone is reachable: the modules read `supabase.auth` at load.
-/* eslint-disable @typescript-eslint/no-require-imports */
-const { scopesService } = READY ? require("@/features/scopes/service/scopesService") : { scopesService: null };
-const { __setScopesReadFromStoreForTests } = READY
-  ? require("@/features/scopes/service/scopesReadKnob")
-  : { __setScopesReadFromStoreForTests: () => undefined };
-/* eslint-enable @typescript-eslint/no-require-imports */
+// Loaded per seat, on fresh modules (the modules read `supabase.auth` at load, and the membership
+// read keeps a 4 s cache keyed by container type alone — never shared between two seats).
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any */
+let scopesService: any = null;
+let __setScopesReadFromStoreForTests: (v: boolean | null) => void = () => undefined;
+function loadFreshModules() {
+  jest.resetModules();
+  scopesService = require("@/features/scopes/service/scopesService").scopesService;
+  __setScopesReadFromStoreForTests = require("@/features/scopes/service/scopesReadKnob").__setScopesReadFromStoreForTests;
+}
+/* eslint-enable @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any */
+
+type TreeCount = { orgs: number; types: number; scopes: number };
+type Failure = { reader: string; arg: string; old: unknown; store: unknown };
+
+/**
+ * The refusal: a seat's run measured something, or it fails with a sentence saying why not.
+ * Returns null when measured.
+ */
+function unmeasured(seat: string, t: { oldOk: boolean; storeOk: boolean; oldError?: unknown; storeError?: unknown; old: TreeCount; store: TreeCount }, failures: Failure[]): string | null {
+  if (!t.oldOk || !t.storeOk) {
+    const which = !t.oldOk && !t.storeOk ? "either path" : !t.oldOk ? "the old path" : "the store path";
+    return `UNMEASURED: ${seat}'s scope tree did not load on ${which} (${JSON.stringify(!t.oldOk ? t.oldError : t.storeError)}) — a failed read is not an empty tree, so nothing was compared.`;
+  }
+  if (t.old.orgs === 0 || t.store.orgs === 0) {
+    return `UNMEASURED: ${seat} belongs to ${t.old.orgs} organizations on the old path and ${t.store.orgs} on the store path — with none, nothing was compared; check that her memberships read on this clone.`;
+  }
+  if (t.old.scopes === 0) {
+    return `UNMEASURED: ${seat} sees ${t.old.orgs} organizations but 0 scopes on the old path — nothing was compared.`;
+  }
+  if (failures.length > 0) {
+    return `UNMEASURED: ${failures.length} reader call(s) failed for ${seat} (first: ${failures[0]!.reader} ${failures[0]!.arg} — old ${JSON.stringify(failures[0]!.old)}, store ${JSON.stringify(failures[0]!.store)}).`;
+  }
+  return null;
+}
 
 // Keys the store answers from its own clock, by ruling — compared, reported apart, never a defect.
 const CLOCK_KEYS = new Set(["created_at", "updated_at", "fetched_at", "status_updated_at", "last_fed_at"]);
@@ -139,13 +194,15 @@ async function both<T>(fn: () => Promise<T>): Promise<{ old: T; store: T; oldMs:
   return { old, store, oldMs, storeMs };
 }
 
-const REPORT: Record<string, unknown> = { url_ref: URL_.replace(/^https:\/\/([a-z]+)\..*$/, "$1"), seats: {} };
+const REPORT: Record<string, unknown> = { url_ref: URL_.replace(/^https:\/\/([a-z]+)\..*$/, "$1"), plant: PLANT || null, seats: {} };
+const VERDICT: Record<string, { refusal: string | null; valueDiffs: number; byReader: Record<string, { value: number; clock: number }> }> = {};
 
 describeClone("the store read path equals the old path on the clone", () => {
   jest.setTimeout(1_800_000);
 
   for (const s of SEATS) {
-    it(`${s.seat}: every scope reader`, async () => {
+    it(`${s.seat}: measures her tree on both paths (refuses 0 organizations, 0 scopes, a failed read)`, async () => {
+      loadFreshModules();
       const client = holder.client!;
       const { data: auth, error } = await client.auth.signInWithPassword({ email: s.email, password: s.password });
       if (error || !auth.user) throw new Error(`${s.seat} could not sign in on the clone: ${error?.message}`);
@@ -153,7 +210,7 @@ describeClone("the store read path equals the old path on the clone", () => {
 
       const diffs: Diff[] = [];
       const timings: Record<string, { old: number; store: number; calls: number }> = {};
-      const errors: Array<{ reader: string; arg: string; old: unknown; store: unknown }> = [];
+      const errors: Failure[] = [];
       const run = async <T,>(reader: string, arg: string, fn: () => Promise<T>) => {
         const r = await both(fn);
         const tm = (timings[reader] ??= { old: 0, store: 0, calls: 0 });
@@ -162,8 +219,9 @@ describeClone("the store read path equals the old path on the clone", () => {
         tm.calls += 1;
         const o = r.old as { ok?: boolean; error?: unknown; data?: unknown };
         const st = r.store as { ok?: boolean; error?: unknown; data?: unknown };
+        // A failure on EITHER path is recorded — the same failure on both is not agreement.
         if (o?.ok === false || st?.ok === false) {
-          if (o?.ok !== st?.ok || JSON.stringify(o.error) !== JSON.stringify(st.error)) errors.push({ reader, arg, old: o.ok === false ? o.error : "ok", store: st.ok === false ? st.error : "ok" });
+          errors.push({ reader, arg, old: o?.ok === false ? o.error : "ok", store: st?.ok === false ? st.error : "ok" });
           return r;
         }
         diff(reader, arg, o?.data ?? r.old, st?.data ?? r.store, "", diffs);
@@ -173,6 +231,8 @@ describeClone("the store read path equals the old path on the clone", () => {
       // 1. The boot tree — /scopes home, the chat lens tree, ActiveContextTree, ContextAssignmentField,
       //    EntityScopeTagger, the org scopes list (all draw from this one tree in Redux).
       const tree = await run("getScopeTree", "-", () => scopesService.getScopeTree());
+      const treeOld = tree.old as { ok?: boolean; error?: unknown };
+      const treeStore = tree.store as { ok?: boolean; error?: unknown };
       const oldOrgs = (tree.old as { data?: { organizations: Array<{ id: string; name: string; scope_types: Array<{ id: string; scopes: Array<{ id: string }> }> }> } }).data?.organizations ?? [];
       const storeOrgs = (tree.store as typeof tree.old as { data?: { organizations: typeof oldOrgs } }).data?.organizations ?? [];
       const count = (orgs: typeof oldOrgs) => ({
@@ -222,8 +282,16 @@ describeClone("the store read path equals the old path on the clone", () => {
         if (d.clock) r.clock += 1;
         else r.value += 1;
       }
+      const treeErrorsExcluded = errors.filter((e) => e.reader !== "getScopeTree");
+      const refusal = unmeasured(
+        s.seat,
+        { oldOk: treeOld?.ok !== false, storeOk: treeStore?.ok !== false, oldError: treeOld?.error, storeError: treeStore?.error, old: count(oldOrgs), store: count(storeOrgs) },
+        treeErrorsExcluded,
+      );
+      VERDICT[s.seat] = { refusal, valueDiffs: diffs.filter((d) => !d.clock).length, byReader };
       (REPORT.seats as Record<string, unknown>)[s.seat] = {
         user: holder.userId,
+        refusal,
         tree: { old: count(oldOrgs), store: count(storeOrgs) },
         timings,
         errors,
@@ -232,7 +300,15 @@ describeClone("the store read path equals the old path on the clone", () => {
         clockSample: diffs.filter((d) => d.clock).slice(0, 20),
       };
       await client.auth.signOut();
-      expect(true).toBe(true);
+      if (refusal) throw new Error(refusal);
+    });
+
+    it(`${s.seat}: the store path answers what the old path answers (0 value differences)`, () => {
+      const v = VERDICT[s.seat];
+      if (!v) throw new Error(`UNMEASURED: ${s.seat}'s readers never ran.`);
+      if (v.refusal) throw new Error(v.refusal);
+      const named = Object.entries(v.byReader).filter(([, n]) => n.value > 0).map(([r, n]) => `${r} ${n.value}`).join(", ");
+      if (v.valueDiffs > 0) throw new Error(`${s.seat}: ${v.valueDiffs} value differences between the old and store paths (${named}); PARITY_OUT has each one.`);
     });
   }
 

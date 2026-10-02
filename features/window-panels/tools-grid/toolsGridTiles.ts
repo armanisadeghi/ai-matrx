@@ -53,6 +53,7 @@ import {
   History,
   KeyRound,
   LayoutDashboard,
+  LayoutGrid,
   Layers,
   ListTree,
   ArrowUpDown,
@@ -736,6 +737,15 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     category: "dupes",
     gate: "admin",
     overlayId: "structuredListManagerV2Window",
+  },
+  {
+    // Route tile for EVERYONE (lane MAKE-HOME): the data system's one home for making things.
+    // Until now a non-admin saw only "List Manager" here.
+    id: "tile.make",
+    label: "Make something",
+    icon: LayoutGrid,
+    category: "general",
+    onActivate: ({ router }) => router.push("/make"),
   },
   {
     id: "tile.list-manager",

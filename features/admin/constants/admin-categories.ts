@@ -1402,6 +1402,13 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Store Tables",
+        description: "Every organization's tables; archive many at once",
+        iconName: "Table",
+        link: "/administration/database/store-tables",
+        isNew: true,
+      },
+      {
         title: "Canonicalization Toolkit",
         description:
           "Live gate + audit snapshots for the DB canonicalization transition: certification summary, every FAIL/WARN finding, broken functions, migration candidates (M2M/unregistered/stale), and per-table preflight (table_impact) + verify/certify tools.",

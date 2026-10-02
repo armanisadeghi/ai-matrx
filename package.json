@@ -414,6 +414,7 @@
     "check:admin-client-governed-writes": "node scripts/check-admin-client-governed-writes.mjs",
     "check:admin-client-governed-writes:self-test": "node scripts/check-admin-client-governed-writes.mjs --self-test",
     "check:psql": "tsx scripts/lib/psql-path.ts",
+    "check:make-no-dead-tile": "jest --no-coverage features/make/__tests__/make-no-dead-tile.test.tsx",
     "check:campaign-entry-points": "tsx scripts/check-campaign-entry-points.ts",
     "check:cron-pause": "tsx scripts/gate-corpus/cron-pause-guard.ts",
     "check:cron-pause:self-test": "tsx scripts/gate-corpus/cron-pause-guard.ts --self-test",

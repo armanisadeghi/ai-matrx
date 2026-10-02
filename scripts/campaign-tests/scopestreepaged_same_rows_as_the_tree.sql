@@ -13,8 +13,12 @@
 --      same ids, same total.
 --   E. an organization she is not a member of: each door refuses with the SQLSTATE custom.context_tree
 --      refuses with.
--- Plants (-v plant=...): count (scope_count + 1), order (pages ordered by id), escape ('%' unescaped):
--- each must go RED.
+-- Plants (-v plant=...): count (scope_count + 1), order (pages ordered by id), escape ('%' unescaped),
+-- empty (both seats' organization lists emptied, so nothing is compared): each must go RED.
+-- THE VERDICT IS THE EXIT CODE: RED raises (psql exits 3 under ON_ERROR_STOP), GREEN exits 0. A run
+-- that compared no scope type for a seat is RED, never "0 differences" — a pass over an empty tree is
+-- unmeasured (lane SCOPES-ON-THE-STORE M2, 2026-10-02: the web parity harness passed over 0
+-- organizations on clone-20261001 for exactly that reason).
 --
 -- RUN IT (dev clone only; rolled back):
 --   cd matrx-frontend && psql "$CLONE_DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/scopestreepaged_same_rows_as_the_tree.sql
@@ -59,6 +63,10 @@ create temp table seats on commit drop as
                  join iam.organizations o on o.id = m.organization_id and o.archived_at is null
                 where m.user_id = u.id order by 1) as orgs
     from auth.users u where u.email in ('admin@admin.com', 'test@test.com');
+select :'plant' = 'empty' as plant_empty \gset
+\if :plant_empty
+update seats set orgs = '{}';
+\endif
 create temp table bad (seat text, check_name text, k text, detail text) on commit drop;
 create temp table done (seat text, check_name text, n int) on commit drop;
 grant select on seats to authenticated;
@@ -158,5 +166,16 @@ select seat, check_name, k, detail from bad order by 1, 2, 3 limit 40;
 select count(*) as differences from bad \gset
 \if :{?differences}
 \endif
-select case when :differences = 0 then 'GREEN — 0 differences (plant ' || :'plant' || ')' else 'RED — ' || :differences || ' differences (plant ' || :'plant' || ')' end as verdict;
+-- Both seats must have had scope types to compare: a seat with none measured nothing.
+select count(*) as measured_seats from (select seat from done where check_name = 'A types' group by seat having sum(n) > 0) m \gset
+select case when :differences = 0 and :measured_seats = 2 then 'GREEN — 0 differences over both seats (plant ' || :'plant' || ')'
+            when :measured_seats < 2 then 'RED — UNMEASURED: ' || (2 - :measured_seats) || ' seat(s) had no scope type to compare (plant ' || :'plant' || ')'
+            else 'RED — ' || :differences || ' differences (plant ' || :'plant' || ')' end as verdict \gset
+\echo :verdict
+select :differences = 0 and :measured_seats = 2 as green \gset
+\if :green
 rollback;
+\else
+rollback;
+do $$ begin raise exception 'scopestreepaged_same_rows_as_the_tree.sql is RED: the paged doors did not answer the same rows as the whole tree for both seats (or a seat had nothing to compare) — see the rows above.'; end $$;
+\endif

@@ -18,6 +18,14 @@
  *
  * RED FIRST: before gridprim_a_formula_is_typed_and_the_store_works_it_out.sql is applied it
  * fails on its first formula ("function custom.formula_parse(uuid, uuid, text) does not exist").
+ *
+ * LANE VIEWS-AND-FIELDS F4 — SEVEN MORE OF AIRTABLE'S FUNCTIONS (SWITCH, FIND, SUBSTITUTE,
+ * REGEX_MATCH, DATETIME_FORMAT, WORKDAY, ARRAYJOIN). The older grid never had them, so there is
+ * no second evaluator to agree with: STORE_ONLY below carries, for each formula, an answer
+ * worked out HERE in TypeScript from the same row (Airtable's documented behaviour), or the exact
+ * refusal sentence. The day sheet gains one many-choice column, Services, for ARRAYJOIN. RED
+ * before viewsfields_f4_a_formula_speaks_seven_more_airtable_functions.sql ("There is no function
+ * called `SWITCH`…"), GREEN after.
  */
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -97,6 +105,94 @@ const FORMULAS: string[] = [
 type Val = string | number | boolean | null;
 type Outcome = { ok: true; value: Val } | { ok: false; error: string };
 
+/** The Services each visit carried — a many-choice column added for ARRAYJOIN. */
+const SERVICES: Record<string, string[]> = {
+  "Biscuit (Hollis)": ["Wellness exam", "Vaccines"],
+  "Juniper (Okafor)": ["Wellness exam", "Dental estimate"],
+  "Moose (Delgado)": ["Sick visit", "Bloodwork", "X-ray"],
+  "Pepper (Lindqvist)": ["Nail trim"],
+  "Tango (Fairweather)": ["Nail trim", "Wing clip"],
+  "Maple (Ferreira)": ["Recheck"],
+};
+const SERVICE_OPTIONS = ["Wellness exam", "Vaccines", "Dental estimate", "Sick visit", "Bloodwork", "X-ray", "Nail trim", "Wing clip", "Recheck"];
+
+type Row = Record<string, unknown>;
+const str = (v: unknown): string => (v === null || v === undefined ? "" : String(v));
+const ok = (value: Val): Outcome => ({ ok: true, value });
+const no = (error: string): Outcome => ({ ok: false, error });
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const visit = (r: Row): Date => {
+  const v = str(r.visit_on);
+  return new Date(/^\d{4}-\d{2}-\d{2}$/.test(v) ? `${v}T00:00:00Z` : v);
+};
+/** The language writes a date as it was given: a day stays a day, a moment stays ISO. */
+const dateOut = (r: Row, d: Date): string =>
+  /^\d{4}-\d{2}-\d{2}$/.test(str(r.visit_on)) ? d.toISOString().slice(0, 10) : d.toISOString();
+function workday(start: Date, days: number, holidays: string[]): Date {
+  const d = new Date(start.getTime());
+  let left = Math.abs(days);
+  while (left > 0) {
+    d.setUTCDate(d.getUTCDate() + Math.sign(days));
+    const dow = d.getUTCDay();
+    if (dow !== 0 && dow !== 6 && !holidays.includes(d.toISOString().slice(0, 10))) left--;
+  }
+  return d;
+}
+function nth(text: string, old: string, neu: string, which: number): string {
+  let at = -1;
+  for (let k = 0; k < which; k++) {
+    at = text.indexOf(old, at < 0 ? 0 : at + old.length);
+    if (at < 0) return text;
+  }
+  return text.slice(0, at) + neu + text.slice(at + old.length);
+}
+const h12 = (d: Date) => (d.getUTCHours() % 12 === 0 ? 12 : d.getUTCHours() % 12);
+
+/**
+ * VIEWS-AND-FIELDS F4: the seven, each answer worked out here from the row (Airtable's behaviour)
+ * and each refusal in the store's own words. `type` is the kind formula_parse must report.
+ */
+const STORE_ONLY: { text: string; expect: (r: Row) => Outcome; type?: string }[] = [
+  { text: 'SWITCH({Visit status}, "No-show", "Call owner", "Completed", "Send invoice", "Hold chart")', type: "text",
+    expect: (r) => ok(r.visit_status === "No-show" ? "Call owner" : r.visit_status === "Completed" ? "Send invoice" : "Hold chart") },
+  { text: 'SWITCH({Species}, "Dog", 15, "Cat", 12)', type: "number",
+    expect: (r) => ok(r.species === "Dog" ? 15 : r.species === "Cat" ? 12 : null) },
+  { text: 'SWITCH({Deposit taken}, BLANK(), "Take deposit", 0, "Waived", "On file")', type: "text",
+    expect: (r) => ok(r.deposit === null || r.deposit === undefined ? "Take deposit" : r.deposit === 0 ? "Waived" : "On file") },
+  { text: 'FIND("-", {Owner phone})', type: "number", expect: (r) => ok(str(r.owner_phone).indexOf("-") + 1) },
+  { text: 'FIND("5", {Owner phone}, 4)', type: "number", expect: (r) => ok(str(r.owner_phone).indexOf("5", 3) + 1) },
+  { text: 'FIND("dog", {Patient})', expect: (r) => ok(str(r.patient).indexOf("dog") + 1) },
+  { text: 'SUBSTITUTE({Owner phone}, "-", ".")', type: "text", expect: (r) => ok(str(r.owner_phone).split("-").join(".")) },
+  { text: 'SUBSTITUTE({Owner phone}, "4", "#", 2)', expect: (r) => ok(nth(str(r.owner_phone), "4", "#", 2)) },
+  { text: 'REGEX_MATCH({Patient}, "^[A-M]")', type: "boolean", expect: (r) => ok(/^[A-M]/.test(str(r.patient))) },
+  { text: 'REGEX_MATCH({Desk notes}, "(?i)no-show")', expect: (r) => ok(/no-show/i.test(str(r.desk_notes))) },
+  { text: 'DATETIME_FORMAT({Visit date}, "dddd, MMMM D, YYYY")', type: "text",
+    expect: (r) => { const d = visit(r); return ok(`${DAYS[d.getUTCDay()]}, ${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`); } },
+  { text: 'DATETIME_FORMAT({Visit date}, "M/D/YY [at] h:mm A")',
+    expect: (r) => { const d = visit(r); return ok(`${d.getUTCMonth() + 1}/${d.getUTCDate()}/${String(d.getUTCFullYear()).slice(2)} at ${h12(d)}:${String(d.getUTCMinutes()).padStart(2, "0")} ${d.getUTCHours() < 12 ? "AM" : "PM"}`); } },
+  { text: "DATETIME_FORMAT({Visit date})", expect: (r) => ok(dateOut(r, visit(r))) },
+  { text: "WORKDAY({Visit date}, 10)", type: "date", expect: (r) => ok(dateOut(r, workday(visit(r), 10, []))) },
+  { text: 'WORKDAY({Visit date}, 3, "2026-09-24, 2026-09-25")',
+    expect: (r) => ok(dateOut(r, workday(visit(r), 3, ["2026-09-24", "2026-09-25"]))) },
+  { text: "WORKDAY({Visit date}, -2)", expect: (r) => ok(dateOut(r, workday(visit(r), -2, []))) },
+  { text: "ARRAYJOIN({Services})", type: "text", expect: (r) => ok((SERVICES[str(r.patient)] ?? []).join(", ")) },
+  { text: 'ARRAYJOIN({Services}, " + ")', expect: (r) => ok((SERVICES[str(r.patient)] ?? []).join(" + ")) },
+  { text: "ARRAYJOIN({Species})", expect: (r) => ok(str(r.species)) },
+  // the refusals
+  { text: 'REGEX_MATCH({Patient}, "([A-Z")', expect: () => no('`REGEX_MATCH` cannot read the pattern "([A-Z".') },
+  { text: 'SUBSTITUTE({Owner phone}, "4", "#", 0)', expect: () => no("`SUBSTITUTE` counts which one to replace from 1, but was given 0.") },
+  { text: 'FIND("5", {Owner phone}, "third")', expect: () => no('`FIND` needs a number, but got "third".') },
+  { text: "WORKDAY({Desk notes}, 2)",
+    expect: (r) => no(str(r.desk_notes) === "" ? "`WORKDAY` needs a date, but that value is empty." : `\`WORKDAY\` needs a date, but got "${str(r.desk_notes)}".`) },
+  { text: 'WORKDAY({Visit date}, 2, "Thanksgiving")', expect: () => no('`WORKDAY` needs a date, but got "Thanksgiving".') },
+  { text: "WORKDAY({Visit date}, 40000)", expect: () => no("`WORKDAY` moves at most 36500 working days, but was given 40000.") },
+  { text: 'DATETIME_FORMAT("next Tuesday", "YYYY")', expect: () => no('`DATETIME_FORMAT` needs a date, but got "next Tuesday".') },
+  { text: 'FIND("-")', expect: () => no("`FIND` was given 1 value. Use FIND(part, text, start?).") },
+  { text: "SWITCH({Species})", expect: () => no("`SWITCH` was given 1 value. Use SWITCH(value, match, result, …, otherwise?).") },
+  { text: "ARRAYJOIN()", expect: () => no("`ARRAYJOIN` was given 0 values. Use ARRAYJOIN(values, separator?).") },
+];
+
 function targetFromArgv(): "clone" | "branch" {
   const i = process.argv.indexOf("--target");
   const t = i >= 0 ? process.argv[i + 1] : "clone";
@@ -131,6 +227,17 @@ async function main() {
     );
     const org = gp.org!;
     const table = gp.appts!;
+    // F4: the many-choice column ARRAYJOIN reads, written the way the front desk writes it.
+    await client.query(
+      `select custom.field_declare($1, $2, jsonb_build_object('key', 'services', 'label', 'Services',
+         'type', 'multi_select', 'sort', 90, 'options', $3::jsonb)) as id`,
+      [org, table, JSON.stringify(SERVICE_OPTIONS)]);
+    for (const [patient, items] of Object.entries(SERVICES)) {
+      await client.query(
+        `select custom.record_update($1, r.id, jsonb_build_object('services', $3::jsonb))
+           from custom.record r where r.organization_id = $1 and r.table_id = $2 and r.data->>'patient' = $4`,
+        [org, table, JSON.stringify(items), patient]);
+    }
     // Marisol's seat: the rows are read and the formulas worked out through what she may see.
     await client.query(`select set_config('request.jwt.claims', '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true)`);
 
@@ -211,16 +318,57 @@ async function main() {
       }
       if (!failures) process.stdout.write(".");
     }
+
+    // ── F4: the seven, against answers worked out here ────────────────────────────────────
+    let storeOnlyFailures = 0;
+    for (const c of STORE_ONLY) {
+      const parsed = (await client.query<{ p: { ok: boolean; expr?: unknown; error?: string; result_type?: string } }>(
+        "select custom.formula_parse($1, $2, $3) as p", [org, table, c.text])).rows[0]!.p;
+      if (parsed.ok && c.type && parsed.result_type !== c.type) {
+        storeOnlyFailures++;
+        console.log(`\x1b[31m[TYPE]\x1b[0m ${c.text}  ·  expected ${c.type}, the store says ${parsed.result_type}`);
+      }
+      for (const rec of records) {
+        const row = rowsOld[rec.id]!;
+        const want = c.expect(row);
+        let got: Outcome;
+        if (!parsed.ok) {
+          got = no(parsed.error ?? "?");
+        } else {
+          await client.query("savepoint f");
+          try {
+            const r = await client.query<{ v: Val }>(
+              `select custom.formula_eval($1, $2::jsonb, custom.record_values($1, $3),
+                        coalesce(custom.rule_context($1, $3), '{}'::jsonb)
+                        || jsonb_build_object('fx_self_id', $3::uuid)) as v`,
+              [org, JSON.stringify(parsed.expr), rec.id]);
+            got = ok(r.rows[0]!.v);
+            await client.query("release savepoint f");
+          } catch (e) {
+            await client.query("rollback to savepoint f");
+            got = no((e as Error).message);
+          }
+        }
+        compared++;
+        if (!same(want, got)) {
+          storeOnlyFailures++;
+          console.log(`\x1b[31m[F4]\x1b[0m ${c.text}  ·  ${str(row.patient)}\n` +
+            `        expected: ${JSON.stringify(want)}\n        store:    ${JSON.stringify(got)}`);
+        }
+      }
+      if (!storeOnlyFailures) process.stdout.write(".");
+    }
+    failures += storeOnlyFailures;
     await client.query("rollback");
   } finally {
     await client.end();
   }
   console.log("");
   if (failures) {
-    console.log(`\x1b[31m${failures} of ${compared} answers DISAGREE between the older grid and the store.\x1b[0m`);
+    console.log(`\x1b[31m${failures} of ${compared} answers DISAGREE (the older grid or the expected answer vs the store).\x1b[0m`);
     process.exit(1);
   }
-  console.log(`\x1b[32mPARITY — ${FORMULAS.length} formulas × 10 appointments = ${compared} answers, every one the same from the older grid and from the store.\x1b[0m`);
+  console.log(`\x1b[32mPARITY — ${FORMULAS.length} formulas × 10 appointments the same from the older grid and from the store, and ${STORE_ONLY.length} formulas of the seven newer functions × 10 the same as worked out here: ${compared} answers.\x1b[0m`);
 }
 
 main().catch((e) => {

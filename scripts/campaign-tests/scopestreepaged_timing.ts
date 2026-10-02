@@ -94,6 +94,10 @@ async function main() {
         where u.email = $1 group by u.id`,
       [email],
     );
+    // A seat with no live organization measures nothing: refused, never timed over an empty tree.
+    if (!s.rows[0] || !(s.rows[0].orgs?.length > 0)) {
+      throw new Error(`UNMEASURED: ${email} belongs to no live organization on this database — nothing to time.`);
+    }
     const uid: string = s.rows[0].id;
     const orgs: string[] = s.rows[0].orgs;
     const whole = await median(uid, "custom.context_tree($1::uuid[])", [orgs]);
@@ -112,6 +116,10 @@ async function main() {
         where t.organization_id = any ($1::uuid[]) and t.table_id = custom.table_kernel_id()
           and t.deleted_at is null and t.data ->> 'kept_for' = 'context'
         group by 1, 2 order by 3 desc limit 3`, [orgs]);
+    if (big.rows.length === 0) {
+      rows.push({ seat: email, door: "context_tree_type_scopes (expand, 200)", arg: "no scope type with scopes", ms: NaN,
+                  budget: "<= 150 ms", ok: false });
+    }
     for (const b of big.rows) {
       const ms = await median(uid, "custom.context_tree_type_scopes($1::uuid, 0, 200)", [b.tbl]);
       rows.push({ seat: email, door: "context_tree_type_scopes (expand, 200)", arg: `${b.label} (${b.n})`, ms,
