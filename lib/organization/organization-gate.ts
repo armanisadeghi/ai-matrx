@@ -214,10 +214,12 @@ function requestOrganizationSelection(
 // The gate
 // ---------------------------------------------------------------------------
 
-function readSelectedOrganizationId(): string | null {
+function readSelectedOrganizationId(personWrite = false): string | null {
   // THE ADMIN SEAT: the admin section never asks the admin to choose a
   // workspace — its server work runs in the platform tenant (lib/api/admin-lane.ts).
-  const adminLane = adminLaneOrganizationId();
+  // A PERSON'S OWN WRITE is not seat work: it runs under their own row security
+  // and lands where they chose (`personWrite`, below), even on an admin page.
+  const adminLane = personWrite ? null : adminLaneOrganizationId();
   if (adminLane) return adminLane;
   const store = getStoreSingleton();
   if (!store) return null;
@@ -255,6 +257,15 @@ export interface EnsureOrganizationOptions {
    * existed.
    */
   prefetchedOrganizations?: OrganizationRequiredWireMembership[] | null;
+  /**
+   * The write runs AS THE PERSON, under their own row security (a Kind
+   * Directive's Apply / Execute), so it lands in the organization THEY
+   * selected — never the admin section's platform tenant, which is for seat
+   * work. Nothing selected → the picker asks; the tenant is never substituted
+   * (LANE-B, 2026-10-02: the Directive Builder wrote a person's task into
+   * Matrx System while the switcher named their own workspace).
+   */
+  personWrite?: boolean;
 }
 
 /**
@@ -268,12 +279,16 @@ export interface EnsureOrganizationOptions {
 export async function ensureOrganizationContext(
   options: EnsureOrganizationOptions = {},
 ): Promise<string> {
-  const { organizationId, interactive = true, prefetchedOrganizations = null } =
-    options;
+  const {
+    organizationId,
+    interactive = true,
+    prefetchedOrganizations = null,
+    personWrite = false,
+  } = options;
 
   try {
     return requireOrganizationContext(
-      readSelectedOrganizationId(),
+      readSelectedOrganizationId(personWrite),
       organizationId ?? undefined,
     );
   } catch (error) {
@@ -292,7 +307,7 @@ export async function ensureOrganizationContext(
     // Re-run the kernel rather than trusting the picker's payload: the chosen
     // value goes through the same validation every other organization does, so
     // the picker can never introduce a shape the transport would reject.
-    return requireOrganizationContext(readSelectedOrganizationId(), chosen);
+    return requireOrganizationContext(readSelectedOrganizationId(personWrite), chosen);
   }
 }
 
@@ -490,11 +505,13 @@ export function ensureOrganizationForRequest(options: {
   organizationId?: string | null;
   interactive?: boolean;
   prefetchedOrganizations?: OrganizationRequiredWireMembership[] | null;
+  personWrite?: boolean;
 }): Promise<string> {
   const method = (options.method ?? "GET").toUpperCase();
   return ensureOrganizationContext({
     organizationId: options.organizationId,
     interactive: options.interactive ?? !READ_METHODS.has(method),
     prefetchedOrganizations: options.prefetchedOrganizations ?? null,
+    personWrite: options.personWrite ?? false,
   });
 }

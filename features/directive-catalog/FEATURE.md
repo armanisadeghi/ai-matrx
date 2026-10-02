@@ -98,6 +98,13 @@ alias map. Consequences here:
 
 ## Change Log
 
+- 2026-10-02 — A directive write lands in the PERSON's organization, on an admin page too.
+  `authedDirectiveHeaders` asks the gate with `personWrite: true`
+  (`lib/organization/organization-gate.ts`): the server runs Execute/Apply as the person
+  under their own row security, so the admin section's platform tenant ("Matrx System") is
+  never bound to it; nothing selected → the picker asks. Guard:
+  `__tests__/a-person-write-lands-in-their-organization.test.ts` (red 4/4 on the pre-fix
+  service, green after).
 - 2026-09-30 — The builder's hand-typed JSON payload became the generated `SchemaFieldsForm`
   (JSON view kept). New pure core `schemaFields.ts`; `payloadFieldEntityInfo` turns payload id
   fields into record searches (`parent_<token>_id` included). Found live: `GET

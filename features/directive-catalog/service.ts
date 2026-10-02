@@ -44,7 +44,16 @@ async function authedDirectiveHeaders(
   // ORG-GATE-AUDIT: THE GATE, never the bare kernel — every directive call is
   // a write the person pressed, so with no organization selected it asks, then
   // continues this same request instead of throwing a bare refusal.
-  const organizationId = await ensureOrganizationForRequest({ method: "POST" });
+  //
+  // `personWrite` (LANE-B, 2026-10-02): the server runs every directive as the
+  // PERSON, under their own row security, so it lands in the organization they
+  // selected — on an admin page too. The admin section's platform tenant is for
+  // seat work; binding it here stamped a person's task into Matrx System while
+  // the switcher on the same screen named their own workspace.
+  const organizationId = await ensureOrganizationForRequest({
+    method: "POST",
+    personWrite: true,
+  });
   return applyOrganizationContextHeader(
     {
       "Content-Type": "application/json",
