@@ -400,7 +400,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "dataset",
-    token: "dataset",
+    // No entity type backs a dataset any more (@ai-matrx/associations 0.13.135).
+    token: null,
     label: "Dataset",
     labelPlural: "Datasets",
     role: "hybrid",

@@ -27,7 +27,12 @@ export function formTitleColumn(noun: Pick<NounDirectives, "noun" | "title_colum
     : null;
 }
 
-/** Compound-reference ids whose owning record is unambiguous. */
+/**
+ * Compound-reference ids whose owning record is unambiguous. (`list_id` →
+ * structured_list and `table_id` → dataset left with those types: the entity
+ * registry no longer carries either — @ai-matrx/associations 0.13.135 — and
+ * `getEntityInfo` on a missing token throws.)
+ */
 const FIELD_TOKEN: Readonly<Partial<Record<string, EntityTypeToken>>> = {
   // A person: every users.profiles id IS the auth user id (454/454 on
   // 2026-09-30), and assignee_id references auth.users — so the pick is exact.
@@ -35,9 +40,7 @@ const FIELD_TOKEN: Readonly<Partial<Record<string, EntityTypeToken>>> = {
   context_item_id: "context_item",
   document_id: "udt_document",
   file_id: "file",
-  list_id: "structured_list",
   scope_id: "scope",
-  table_id: "dataset",
   transcript_id: "transcript",
   workbook_id: "workbook",
 };
