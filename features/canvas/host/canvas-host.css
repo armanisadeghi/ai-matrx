@@ -1,5 +1,9 @@
 /*
- * The app's placement of @ai-matrx/canvas and its token values.
+ * The app's placement of @ai-matrx/canvas.
+ *
+ * Token values: the package's tokens.css (imported beside this sheet) maps
+ * every --mxc-* token onto this app's theme (--card, --border, --foreground…),
+ * light and dark; only the app's own overrides live here.
  *
  * Placement: the canvas column is fixed to the right edge, full height. The
  * shell root (and the public / link layouts) give up exactly
@@ -9,18 +13,6 @@
  */
 
 :root {
-  --mxc-bg: hsl(var(--card));
-  --mxc-header-bg: hsl(var(--card));
-  --mxc-fg: hsl(var(--foreground));
-  --mxc-muted: hsl(var(--muted-foreground));
-  --mxc-border: hsl(var(--border));
-  --mxc-hover: hsl(var(--muted) / 0.7);
-  --mxc-tab-active-bg: hsl(var(--muted));
-  --mxc-accent: hsl(var(--primary));
-  --mxc-accent-soft: hsl(var(--primary) / 0.25);
-  --mxc-accent-fg: hsl(var(--primary-foreground));
-  --mxc-danger: hsl(var(--destructive));
-  --mxc-header-h: var(--shell-header-h, 2.75rem);
   /* Above the shell's own glass chrome, below dialogs and toasts. */
   --mxc-mobile-z: 9000;
 }

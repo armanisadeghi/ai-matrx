@@ -9,6 +9,7 @@
  */
 
 import "@ai-matrx/canvas/styles.css";
+import "@ai-matrx/canvas/tokens.css";
 import "./canvas-host.css";
 import { useEffect } from "react";
 import { CanvasColumn, useCanvasColumnWidth } from "@ai-matrx/canvas/react";
