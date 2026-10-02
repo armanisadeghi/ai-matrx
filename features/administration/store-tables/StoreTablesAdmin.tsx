@@ -156,9 +156,11 @@ export function StoreTablesAdmin() {
   useEffect(() => {
     if (systemOrgs === null || membershipsLoading) return;
     let live = true;
-    setFetching(true);
-    setReadError(null);
     void (async () => {
+      await Promise.resolve();
+      if (!live) return;
+      setFetching(true);
+      setReadError(null);
       try {
         const memberIds = new Set(memberships.map((m) => m.id));
         const systemTargets = systemOrgs.filter((o) => !memberIds.has(o.id) && (!orgId || o.id === orgId));
@@ -281,11 +283,11 @@ export function StoreTablesAdmin() {
                 variant="outline"
                 size="sm"
                 className="h-8"
-                disabled={selectable.length === 0}
+                disabled={selectable.length === 0 || readError !== null}
                 onClick={() => setSelectedIds(selectable.map((r) => r.id))}
               >
                 <ListChecks className="mr-1 h-3.5 w-3.5" />
-                Select all {selectable.length}
+                Select all{readError === null ? ` ${selectable.length}` : ""}
               </Button>
             </>
           ),
