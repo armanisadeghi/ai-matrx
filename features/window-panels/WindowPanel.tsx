@@ -591,6 +591,20 @@ export function WindowPanel({
     );
   }, [id, managerZIndex]);
 
+  // A PRESS OR FOCUS IN THIS WINDOW CLAIMS THE FRONT AGAIN. The mount-time
+  // announce above is not enough when the window is RENDERED from inside a
+  // windowed Dialog's React tree (the reference picker's "Browse files" opens
+  // the file picker window that way): React bubbles a portaled child's
+  // synthetic focus / pointer events to its React ancestors, so the window's
+  // own autofocus reached the Dialog's `onFocusCapture`, which brought the
+  // Dialog back to z 10000 OVER the window it had just stepped behind (live
+  // 2026-10-02: window 1000, Dialog 10000 — "nothing happens"). Capture
+  // handlers run ancestors first, so this one fires AFTER the Dialog's and has
+  // the last word. Guard: __tests__/aWindowOpenedFromADialogStaysInFront.test.tsx
+  const claimFront = (event: React.SyntheticEvent<HTMLElement>) => {
+    announceLayerFront(event.currentTarget);
+  };
+
   // On mobile, only the topmost non-minimized window is rendered visible.
   const allWindows = useAppSelector(selectAllWindows);
   const isTopWindow = !isMobile
@@ -1504,6 +1518,8 @@ export function WindowPanel({
           visibility: windowsHidden ? "hidden" : undefined,
         }}
         onPointerDown={onFocus}
+        onPointerDownCapture={claimFront}
+        onFocusCapture={claimFront}
       >
         <MobileWindowHeader
           title={titleNode ?? title}
@@ -1578,6 +1594,8 @@ export function WindowPanel({
         )}
         style={{ zIndex, visibility: windowsHidden ? "hidden" : undefined }}
         onPointerDown={onFocus}
+        onPointerDownCapture={claimFront}
+        onFocusCapture={claimFront}
       >
         {header}
         <div className={cn("flex-1 overflow-auto", bodyClassName)}>
@@ -1636,6 +1654,8 @@ export function WindowPanel({
         visibility: windowsHidden ? "hidden" : undefined,
       }}
       onPointerDown={onFocus}
+        onPointerDownCapture={claimFront}
+        onFocusCapture={claimFront}
       // Double-click anywhere on the minimized card — header included —
       // restores it, matching the single-click-to-restore body affordance.
       onDoubleClick={isMinimized ? handleRestoreClearingSnapshot : undefined}
