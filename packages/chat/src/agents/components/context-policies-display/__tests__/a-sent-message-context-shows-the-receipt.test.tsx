@@ -93,5 +93,12 @@ it("says so when the model reads no context", () => {
     rows: FIRST.rows!.map((r) => ({ ...r, delivery: "off", blocked_by: "model" })),
   };
   openFor(blind);
-  expect(document.body.textContent).toContain("This model can't read context");
+  expect(document.body.textContent).toContain("This model can't read these values");
+});
+
+it("the sent-message badge is a count with no generic word (Arman, 2026-10-01)", () => {
+  act(() => root.render(<MessageContextReceipt receipt={FIRST} />));
+  const trigger = host.querySelector("button")!;
+  expect(trigger.textContent).toBe("8 sent");
+  expect(trigger.getAttribute("aria-label") ?? "").not.toMatch(/context/i);
 });
