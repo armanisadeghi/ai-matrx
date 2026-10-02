@@ -3,7 +3,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "../../../../host/db";
 import { pgErrorToError } from "@ai-matrx/data";
-import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import { recordUnavailable } from "../../../../host/diagnostics";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { AgentShortcut } from "../types";
 import { fetchFullShortcut } from "../thunks";

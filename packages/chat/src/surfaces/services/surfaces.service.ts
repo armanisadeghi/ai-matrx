@@ -3,7 +3,7 @@
 import { publishedToWebPatch } from "@host/lib/row-access";
 import { qualifyValueKey } from "@ai-matrx/alchemy/declare";
 import { createClient } from "../../host/db";
-import { readAllRows } from "@ai-matrx/data/db";
+import { readAllRows, writeOneRow } from "@ai-matrx/data/db";
 import type { Database } from "../../host/db-types";
 import type {
   SurfaceDriftReport,
@@ -17,7 +17,6 @@ import {
   TOOL_BUNDLE,
   assocData,
 } from "@host/features/tool-registry/bundles/services/bundleMemberEdge";
-import { writeOneRow } from "@host/utils/supabase/writeOne";
 
 type UiTables = Database["ui"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];

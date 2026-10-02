@@ -5,7 +5,7 @@ import {
   parseApiErrorBody,
   shouldCaptureStreamFailure,
 } from "../run-ai-stream";
-import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import { recordUnavailable } from "../../../../../host/diagnostics";
 
 describe("parseApiErrorBody", () => {
   test("preserves a nested attachment access-denied code", () => {

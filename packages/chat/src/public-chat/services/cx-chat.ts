@@ -16,7 +16,7 @@ import type {
   CxToolCall,
   CxConversationWithMessages,
 } from "../types/cx-tables";
-import { tryWriteOne, writeOneRow } from "@host/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@ai-matrx/data/db";
 
 type CxDatabaseClient = Awaited<ReturnType<typeof createClient>>;
 

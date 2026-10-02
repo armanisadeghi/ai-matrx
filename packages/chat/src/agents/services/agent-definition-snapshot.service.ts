@@ -1,7 +1,7 @@
 import { dbRowToAgentDefinition } from "../redux/agent-definition/converters";
 import type { AgentDefinition } from "../types/agent-definition.types";
 import { supabase } from "../../host/db";
-import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import { recordUnavailable } from "../../host/diagnostics";
 import { operationFailed } from "@ai-matrx/kit/errors";
 
 /**

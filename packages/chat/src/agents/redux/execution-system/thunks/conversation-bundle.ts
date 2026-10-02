@@ -18,7 +18,7 @@
  */
 
 import { supabase } from "../../../../host/db";
-import { recordUnavailableMessage } from "@host/lib/records/recordUnavailable";
+import { recordUnavailableMessage } from "../../../../host/diagnostics";
 import type { Database } from "../../../../host/db-types";
 import type {
   MessageRecord,

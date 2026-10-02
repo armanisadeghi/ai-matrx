@@ -58,7 +58,7 @@
 import { createClient } from "../host/db";
 import { getClaimsUser } from "../host/db";
 import { isJsonObject } from "@host/types/json";
-import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import { recordUnavailable } from "../host/diagnostics";
 import type { FeLlmParams } from "../agents/types/agent-api-types";
 import { apiGet, buildPath } from "@host/lib/api/typed-client";
 import { BackendApiError } from "@host/lib/api/errors";

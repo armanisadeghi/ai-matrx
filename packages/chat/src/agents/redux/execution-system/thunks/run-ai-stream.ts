@@ -58,12 +58,12 @@ import {
   hasRetainedTransportConsumer,
   processStream,
 } from "./process-stream";
-import { captureStreamClientError } from "../../../../host/diagnostics";
-import { captureError } from "../../../../host/diagnostics";
 import {
+  captureError,
+  captureStreamClientError,
   isRecordUnavailableError,
   recordUnavailable,
-} from "@host/lib/records/recordUnavailable";
+} from "../../../../host/diagnostics";
 import { isV2Path, toV1FallbackUrl } from "@host/lib/api/ai-api-version";
 import { isStreamTransportLost } from "@host/lib/api/errors";
 import type { JsonExtractionConfig } from "./process-stream";

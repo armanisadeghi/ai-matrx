@@ -22,11 +22,10 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "../../../host/db";
-import { tryWriteOne } from "@host/utils/supabase/writeOne";
+import { assertWriteLanded, describeWriteFailure, tryWriteOne } from "@ai-matrx/data/db";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { favoritesService } from "@host/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@host/features/scopes/types";
-import { assertWriteLanded, describeWriteFailure } from "@host/lib/errors/writeFailure";
 import {
   patchConversation,
   renameConversation as renameConversationListItem,

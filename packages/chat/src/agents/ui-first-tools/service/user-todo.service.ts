@@ -3,7 +3,7 @@
  */
 
 import { db } from "./supabase-typed";
-import { writeOne } from "@host/utils/supabase/writeOne";
+import { writeOne } from "@ai-matrx/data/db";
 import type { CxUserTodoRow } from "../tools/types";
 import { ensureOrgId } from "../../../host/org";
 

@@ -22,60 +22,24 @@ import {
   resolveCapturedError,
 } from "@/lib/diagnostics/errorCaptureStore";
 
-/** `deleted` is PROVEN (a probe read the row and saw `deleted_at`). */
-export type RecordUnavailableReason = "deleted" | "unknown";
+import {
+  isRecordUnavailableError,
+  RecordUnavailableError,
+  recordUnavailableMessage,
+  type RecordUnavailableReason,
+  type RecordUnavailableResolution,
+} from "@ai-matrx/data/db";
 
-/** The truth AccessGate can add after the initial ambiguous read failure. */
-export type RecordUnavailableResolution =
-  "denied" | "deleted" | "missing" | "signed-out" | "ok";
-
-export class RecordUnavailableError extends Error {
-  readonly entity: string;
-  readonly reason: RecordUnavailableReason;
-  readonly recordId?: string;
-  /**
-   * Canonical entity token, when the read site knows it. With a token AND a
-   * recordId the renderer stops describing the ambiguity and ASKS the platform
-   * instead — `<AccessGate token id/>` resolves which of the four it really is.
-   * Without one, honest ambiguity is still the best available answer.
-   */
-  readonly token?: string;
-  /** Inspector identity for reconciling this exact capture in place. */
-  captureId?: string;
-  /** Last truth written to the inspector; avoids duplicate reconciliation. */
-  captureResolution: RecordUnavailableReason | RecordUnavailableResolution;
-
-  constructor(input: {
-    entity: string;
-    reason: RecordUnavailableReason;
-    recordId?: string;
-    token?: string;
-  }) {
-    super(recordUnavailableMessage(input.entity, input.reason));
-    this.name = "RecordUnavailableError";
-    this.entity = input.entity;
-    this.reason = input.reason;
-    this.recordId = input.recordId;
-    this.token = input.token;
-    this.captureResolution = input.reason;
-  }
-}
-
-export function recordUnavailableMessage(
-  entity: string,
-  reason: RecordUnavailableReason,
-): string {
-  if (reason === "deleted") {
-    return `This ${entity} was deleted, so it can no longer be opened.`;
-  }
-  return `We couldn't open this ${entity}. It may have been deleted, or it may belong to an organization you don't have access to.`;
-}
-
-export function isRecordUnavailableError(
-  value: unknown,
-): value is RecordUnavailableError {
-  return value instanceof RecordUnavailableError;
-}
+// The error class lives in `@ai-matrx/data/db` so the app and `@ai-matrx/chat`
+// (whose diagnostics seam builds the same error) share ONE class: every
+// `isRecordUnavailableError` check holds wherever the error was thrown.
+export {
+  isRecordUnavailableError,
+  RecordUnavailableError,
+  recordUnavailableMessage,
+  type RecordUnavailableReason,
+  type RecordUnavailableResolution,
+};
 
 /**
  * Build the error AND capture it. Never construct `RecordUnavailableError`

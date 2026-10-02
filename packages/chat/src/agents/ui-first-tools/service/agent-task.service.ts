@@ -8,7 +8,7 @@
  */
 
 import { db } from "./supabase-typed";
-import { writeOne } from "@host/utils/supabase/writeOne";
+import { writeOne } from "@ai-matrx/data/db";
 import type {
   CxAgentTaskRow,
   CxAgentTaskStatus,

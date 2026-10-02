@@ -15,7 +15,7 @@
 import { useSyncExternalStore } from "react";
 import { favoritesService } from "@host/features/scopes/service/favoritesService";
 import { toast } from "../../host/notify";
-import { toastWriteFailure } from "@host/lib/errors/toastWriteFailure";
+import { toastWriteFailure } from "../../host/write-failure";
 import { durableRecordId } from "@ai-matrx/kit/ids";
 
 export const MESSAGE_PIN_ENTITY_TYPE = "message";

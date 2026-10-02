@@ -12,7 +12,7 @@ import type {
   CxAgentPlanRow,
   CxPlanStatus,
 } from "../tools/types";
-import { writeOneRow } from "@host/utils/supabase/writeOne";
+import { writeOneRow } from "@ai-matrx/data/db";
 import { ensureOrgId } from "../../../host/org";
 
 export interface CreateAgentPlanInput {

@@ -15,7 +15,9 @@ import {
   captureError,
   captureStreamClientError,
   netRequests,
+  recordUnavailable,
 } from "../diagnostics";
+import { RecordUnavailableError } from "@ai-matrx/data/db";
 import { _resetAnnouncements } from "../errors";
 import { createFakeDb } from "./fake-db";
 
@@ -134,4 +136,24 @@ it("reports network work to the host's connection-health view", () => {
   netRequests.heartbeat("r1");
   netRequests.finish({ id: "r1", phase: "completed" });
   expect(calls.map((c) => (c as unknown[])[0])).toEqual(["start", "phase", "beat", "finish"]);
+});
+
+it("records a zero-row read and keeps the host's id on the shared error class", () => {
+  const recorded: ChatDiagnosticEntry[] = [];
+  configureChat({
+    db: createFakeDb().db,
+    diagnostics: { capture() {}, record: (e) => (recorded.push(e), "inspector-row-31") },
+  });
+  const error = recordUnavailable({
+    entity: "agent",
+    reason: "unknown",
+    recordId: "5e0c8a2d-1b7f-4c3e-9d6a-2f8b4e1c7a90",
+    relation: "agx_agent",
+  });
+  // One class with the app: a host's instanceof checks hold for package-thrown errors.
+  expect(error).toBeInstanceOf(RecordUnavailableError);
+  expect(error.captureId).toBe("inspector-row-31");
+  expect(recorded).toMatchObject([
+    { source: "record-unavailable", operation: "select", relation: "agx_agent", userMessage: error.message },
+  ]);
 });

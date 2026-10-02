@@ -21,7 +21,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "../../../../host/db";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import { recordUnavailable } from "../../../../host/diagnostics";
 import type { Json } from "../../../../host/db-types";
 import {
   sourceAppFromStorage,

@@ -19,7 +19,7 @@ import {
 } from "@host/features/canvas/hooks/useCanvasItem";
 import { canvasArtifactService } from "@host/features/canvas/services/canvasArtifactService";
 import { isMaterializedArtifactId } from "@host/features/canvas/artifact-types/artifactId";
-import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import { recordUnavailable } from "../../../../host/diagnostics";
 
 interface ThunkApi {
   dispatch: ChatDispatch;

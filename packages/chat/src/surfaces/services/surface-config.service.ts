@@ -23,7 +23,7 @@ import { storedMandateKey, type AnyMandateKey } from "@host/features/mandates/ma
  */
 
 import { createClient } from "../../host/db";
-import { writeOne } from "@host/utils/supabase/writeOne";
+import { writeOne } from "@ai-matrx/data/db";
 import { getClaimsUser } from "../../host/db";
 import { isJsonObject } from "@host/types/json";
 import type { Database } from "../../host/db-types";

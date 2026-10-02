@@ -2,7 +2,7 @@
  * The diagnostics seam — the ONE place package code records a failure (P5).
  *
  * Same names and shapes the call sites used when they imported the host app's
- * Error Inspector helpers (`captureError`,
+ * Error Inspector helpers (`captureError`, `recordUnavailable`,
  * `captureReactRenderError`, `captureStreamClientError`), so moving a call
  * site onto the diagnostics port changed only its import specifier. Every
  * call goes to the configured host's `diagnostics` port at call time, never at
@@ -15,6 +15,12 @@
  * is configured; the first such entry says so once on the console (Law 4).
  */
 
+import {
+  isRecordUnavailableError,
+  RecordUnavailableError,
+  recordUnavailableMessage,
+  type RecordUnavailableReason,
+} from "@ai-matrx/data/db";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import { getChatHost, isChatHostConfigured, onChatHostConfigured } from "./configure";
 import type {
@@ -25,6 +31,13 @@ import type {
   ChatNetRequestStart,
 } from "./contract";
 import { announceOnce } from "./errors";
+
+export {
+  isRecordUnavailableError,
+  RecordUnavailableError,
+  recordUnavailableMessage,
+  type RecordUnavailableReason,
+};
 
 /** Entries held before a host exists; the oldest drop first past this. */
 export const EARLY_DIAGNOSTICS_LIMIT = 100;
@@ -128,6 +141,39 @@ export const netRequests = {
     }
   },
 };
+
+/**
+ * Build the zero-row error AND record it. Never construct
+ * `RecordUnavailableError` directly at a read site — the record is the loud
+ * half of the contract. `captureId` is the host's id, so the host can later
+ * reconcile the same row with the resolved truth.
+ */
+export function recordUnavailable(input: {
+  entity: string;
+  reason: RecordUnavailableReason;
+  recordId?: string;
+  /** Canonical entity token, so the surface can ask instead of describing. */
+  token?: string;
+  /** Table/view the zero-row read hit. */
+  relation?: string;
+}): RecordUnavailableError {
+  const error = new RecordUnavailableError(input);
+  error.captureId = captureError({
+    source: "record-unavailable",
+    operation: "select",
+    relation: input.relation ?? input.entity,
+    message: `Zero-row read for ${input.entity}${input.recordId ? ` ${input.recordId}` : ""} (${input.reason})`,
+    userMessage: error.message,
+    name: error.name,
+    raw: {
+      entity: input.entity,
+      reason: input.reason,
+      recordId: input.recordId,
+      token: input.token,
+    },
+  });
+  return error;
+}
 
 export interface ReactErrorContext {
   /** A name for the boundary that caught it (e.g. "MessageErrorBoundary"). */

@@ -55,7 +55,7 @@ import { fetchFullAgent } from "../../agents/redux/agent-definition/thunks";
 import type { ChatRootState } from "../../store/root-state";
 import { readInstructionsFromAgent } from "../agentInstructions";
 import { selectAgentReadyForBuilder } from "../../agents/redux/agent-definition/selectors";
-import { recordUnavailableMessage } from "@host/lib/records/recordUnavailable";
+import { recordUnavailableMessage } from "../../host/diagnostics";
 import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
 import { LIVE_CONVERSATION_VOICES } from "@host/lib/voices/voiceSets";
 

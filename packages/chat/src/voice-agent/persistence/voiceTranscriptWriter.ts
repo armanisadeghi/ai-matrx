@@ -14,7 +14,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "../../host/db";
-import { tryWriteOne } from "@host/utils/supabase/writeOne";
+import { tryWriteOne } from "@ai-matrx/data/db";
 import { getClaimsUser } from "../../host/db";
 import {
   presentOrganizationRefusal,

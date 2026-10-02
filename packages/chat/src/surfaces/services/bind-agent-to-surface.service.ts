@@ -39,7 +39,7 @@ import type {
 } from "../types";
 import type { Json, Tables } from "../../host/db-types";
 import { createClient } from "../../host/db";
-import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import { recordUnavailable } from "../../host/diagnostics";
 import { ensureOrgAvailability } from "@host/utils/permissions/service";
 // THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed
 // to store in a mapping, for every system that stores one.

@@ -1,6 +1,6 @@
 {
   "$note": "SHRINK-ONLY budget of host ties per specifier in packages/chat/src. Never raise a number or add a key by hand \u2014 route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
-  "total": 2190,
+  "total": 2167,
   "budget": {
     "@/features/content-ir/registry/schema-source-kind-tables": 1,
     "@/features/surfaces/manifests/registry": 1,
@@ -547,8 +547,6 @@
     "@host/lib/entity-list/types": 1,
     "@host/lib/error-boundary/ErrorBoundaryWithCapture": 2,
     "@host/lib/errors/expectedRefusal": 6,
-    "@host/lib/errors/toastWriteFailure": 1,
-    "@host/lib/errors/writeFailure": 1,
     "@host/lib/extension-bridge/matrx-extend-client": 2,
     "@host/lib/ids/durable-record-id": 11,
     "@host/lib/invalidation/invalidation-registry": 3,
@@ -577,7 +575,6 @@
     "@host/lib/progress/honestSummary": 1,
     "@host/lib/provenance/componentSaver": 1,
     "@host/lib/python-client": 3,
-    "@host/lib/records/recordUnavailable": 11,
     "@host/lib/redux/hooks": 36,
     "@host/lib/redux/preferences/adminDebugSlice": 4,
     "@host/lib/redux/preferences/adminPreferencesSlice": 9,
@@ -656,7 +653,6 @@
     "@host/utils/supabase/payload": 1,
     "@host/utils/supabase/server": 1,
     "@host/utils/supabase/tools-service": 3,
-    "@host/utils/supabase/webDb": 1,
-    "@host/utils/supabase/writeOne": 10
+    "@host/utils/supabase/webDb": 1
   }
 }
