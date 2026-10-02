@@ -21,6 +21,7 @@
  * overrides map and are read identically.
  */
 
+import { isUnsetChoice } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/auto-means-unset";
 import { useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -155,7 +156,11 @@ export function ColumnOverridesEditor({ conversationId }: Props) {
         value={effective.reasoning_effort as string | null}
         options={REASONING_EFFORT_OPTIONS as unknown as string[]}
         overridden={isOverridden("reasoning_effort")}
-        onChange={(v) => update({ reasoning_effort: v })}
+        onChange={(v) =>
+          isUnsetChoice("reasoning_effort", v)
+            ? clearKey("reasoning_effort")
+            : update({ reasoning_effort: v })
+        }
         onClear={() => clearKey("reasoning_effort")}
       />
 

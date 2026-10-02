@@ -13,7 +13,10 @@
  * Override semantics (instance-model-overrides slice):
  *   - untouched   — row shows the effective value (agent's base ?? model default)
  *   - overridden  — highlighted, per-row reset (RotateCcw)
- *   - removed     — amber "Removed" badge; reset restores the agent default
+ *   - removed     — "Not set" (CircleSlash): the run sends an explicit null for
+ *                   the key, which the server reads as "unset the agent's stored
+ *                   value" so the model's own default applies (settings-
+ *                   translation F-a). Reset restores the agent default.
  * Genuine-delta by construction: setting a value back to the effective default
  * clears the override (resetOverride) rather than storing a base-equal value —
  * matches the backend's no-defaults-as-override rule; the API selector
@@ -36,7 +39,7 @@ import {
 } from "@host/components/official/ConfigurationFields";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@ai-matrx/design-system";
-import { AlertTriangle, RotateCcw } from "lucide-react";
+import { AlertTriangle, CircleSlash, RotateCcw } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import {
   selectAllModels,
@@ -55,6 +58,7 @@ import {
   setOverrides,
   replaceOverrides,
   resetOverride,
+  markRemoved,
 } from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {
   resetModelChoice,
@@ -73,6 +77,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/ta
 import { Textarea } from "@ai-matrx/design-system";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
 import { parseRequestOverrides } from "../../redux/execution-system/utils/request-overrides";
+import { isUnsetChoice } from "../../redux/execution-system/instance-model-overrides/auto-means-unset";
 import type { LLMParams } from "../../types/agent-api-types";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
@@ -333,8 +338,12 @@ export function RunConfigOverrides({
     value: unknown,
   ) => {
     // Clearing to the effective default removes the override entirely — never
-    // store a value equal to what the run would already use.
-    if (deepEqual(value, effectiveDefault(key, control))) {
+    // store a value equal to what the run would already use. "auto" effort is
+    // no override at all (THE AUTO RULE) — the agent's own setting runs.
+    if (
+      isUnsetChoice(key, value) ||
+      deepEqual(value, effectiveDefault(key, control))
+    ) {
       dispatch(resetOverride({ conversationId, key }));
       return;
     }
@@ -505,7 +514,7 @@ export function RunConfigOverrides({
                         disabled={disabled}
                         overrideSource={overrideSource}
                         removedLabel={
-                          nullDefaults ? baselineDefaultLabel : "Removed"
+                          nullDefaults ? baselineDefaultLabel : "Not set"
                         }
                         inheritedSource={
                           inheritedSources?.[row.key] ??
@@ -529,6 +538,11 @@ export function RunConfigOverrides({
                         onReset={() =>
                           dispatch(
                             resetOverride({ conversationId, key: row.key }),
+                          )
+                        }
+                        onClear={() =>
+                          dispatch(
+                            markRemoved({ conversationId, key: row.key }),
                           )
                         }
                       />
@@ -613,13 +627,14 @@ function OverrideRow({
   disabled = false,
   inheritedSource,
   overrideSource = "Binding",
-  removedLabel = "Removed",
+  removedLabel = "Not set",
   row,
   value,
   isOverridden,
   isRemoved,
   onChange,
   onReset,
+  onClear,
 }: {
   structured?: boolean;
   disabled?: boolean;
@@ -632,8 +647,26 @@ function OverrideRow({
   isRemoved: boolean;
   onChange: (value: unknown) => void;
   onReset: () => void;
+  /** Clear to not set: the run sends this key as an explicit null. */
+  onClear: () => void;
 }) {
   const touched = isOverridden || isRemoved;
+  const clearButton = (
+    <button
+      type="button"
+      onClick={onClear}
+      disabled={disabled || isRemoved}
+      aria-label={`Clear ${row.label} to not set`}
+      title="Clear to not set"
+      data-testid={`run-override-clear-${row.key}`}
+      className={cn(
+        "shrink-0 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40",
+        structured ? "rounded p-2" : "",
+      )}
+    >
+      <CircleSlash className={structured ? "size-3.5" : "h-3 w-3"} />
+    </button>
+  );
   // buildSettingsRows only returns rows for keys the model declares a
   // control for (see settings-catalogue.ts) — control is never null here,
   // but the shared SettingsRow type allows it for other producers.
@@ -673,6 +706,7 @@ function OverrideRow({
                   id={`run-override-${row.key}`}
                 />
               </div>
+              {clearButton}
               <button
                 type="button"
                 onClick={onReset}
@@ -718,6 +752,7 @@ function OverrideRow({
           id={`run-override-${row.key}`}
         />
       </div>
+      {clearButton}
       <button
         type="button"
         onClick={onReset}

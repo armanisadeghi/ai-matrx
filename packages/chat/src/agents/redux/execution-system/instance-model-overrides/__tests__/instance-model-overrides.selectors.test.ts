@@ -17,6 +17,7 @@ import reducer, {
   replaceOverrides,
   setOverrides,
   resetOverride,
+  markRemoved,
   updateBaseSettings,
 } from "../instance-model-overrides.slice";
 
@@ -47,6 +48,18 @@ describe("THE AUTO RULE — 'auto' effort is the absence of an override (Arman, 
     expect(
       api(makeState({ baseSettings: { reasoning_effort: "high" }, overrides: { reasoning_effort: "auto" } })),
     ).toBeUndefined();
+  });
+
+  it("never sends visualization 'auto' either — its auto IS unset", () => {
+    expect(
+      api(makeState({ overrides: { visualization: "auto" } })),
+    ).toBeUndefined();
+  });
+
+  it("keeps 'auto' where it is a real provider value (render_quality)", () => {
+    expect(
+      api(makeState({ overrides: { render_quality: "auto" } })),
+    ).toEqual({ render_quality: "auto" });
   });
 
   it("sends any other effort exactly as chosen", () => {
@@ -243,5 +256,36 @@ describe("Controls and Advanced share the override document", () => {
     );
     expect(state.byConversationId.c1.overrides).toEqual({});
     expect(state.byConversationId.c1.removals).toEqual([]);
+  });
+});
+
+describe("Clear to not set (F-a) — one key goes out as an explicit null", () => {
+  it("clearing one stored key sends only that key, as null", () => {
+    let state = reducer(
+      undefined,
+      initInstanceOverrides({
+        conversationId: "c1",
+        baseSettings: { model: "m", reasoning_effort: "high", temperature: 0.3 },
+      }),
+    );
+    state = reducer(
+      state,
+      markRemoved({ conversationId: "c1", key: "reasoning_effort" }),
+    );
+    expect(api(makeState(state.byConversationId.c1))).toEqual({
+      reasoning_effort: null,
+    });
+    // The instance's snapshot of the agent is untouched.
+    expect(state.byConversationId.c1.baseSettings).toEqual({
+      model: "m",
+      reasoning_effort: "high",
+      temperature: 0.3,
+    });
+    // Reset returns to inheriting: nothing goes out.
+    state = reducer(
+      state,
+      resetOverride({ conversationId: "c1", key: "reasoning_effort" }),
+    );
+    expect(api(makeState(state.byConversationId.c1))).toBeUndefined();
   });
 });

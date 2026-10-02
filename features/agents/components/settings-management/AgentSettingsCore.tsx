@@ -88,7 +88,8 @@ import {
 } from "./reconciliation/analyze";
 import { ModelChangeReconciliation } from "./reconciliation/ModelChangeReconciliation";
 import { SettingControlInput } from "./controls/SettingControlInput";
-import { isOffValue } from "./setting-state";
+import { isOffValue, withSettingState } from "./setting-state";
+import { isUnsetChoice } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/auto-means-unset";
 import { UiGatesEditor } from "./ui-gates/UiGatesEditor";
 import { SettingsJsonEditor } from "./json/SettingsJsonEditor";
 import { OutputSchemaTab } from "./output-schema/OutputSchemaTab";
@@ -1367,6 +1368,23 @@ export function AgentSettingsCore({
       return;
     }
 
+    // One meaning per state (F-b): a choice that IS "not set" ("auto" effort)
+    // removes the key instead of saving a word equal to unset.
+    if (isUnsetChoice(key, value)) {
+      dispatch(
+        setAgentSettings({
+          id: agentId,
+          settings: withSettingState(
+            currentSettings as Record<string, unknown>,
+            key,
+            "unset",
+            null,
+          ) as LLMParams,
+        }),
+      );
+      return;
+    }
+
     // No key here silently rewrites a *different* setting. Cross-field
     // couplings (e.g. include_thoughts ↔ thinking_budget) surface as caution
     // issues with a one-click fix — they are never auto-applied.
@@ -1425,6 +1443,14 @@ export function AgentSettingsCore({
           ) {
             defaultValue = [];
           }
+        }
+        if (
+          isUnsetChoice(key, defaultValue) &&
+          control.type === "enum" &&
+          control.enum?.length
+        ) {
+          // Checking the box SETS the setting; "auto" would be unset again.
+          defaultValue = control.enum.find((v) => !isUnsetChoice(key, v));
         }
         if (key === "response_format" && typeof defaultValue === "string") {
           // Keep "text" too — store the canonical dict, never drop it.

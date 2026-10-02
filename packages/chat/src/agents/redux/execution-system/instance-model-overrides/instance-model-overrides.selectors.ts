@@ -6,6 +6,7 @@
  * The agentDefinition slice is never accessed from here.
  */
 
+import { AUTO_MEANS_UNSET_KEYS, AUTO_VALUE } from "./auto-means-unset";
 import { createSelector } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../../../store/root-state";
 import type { InstanceModelOverrideState } from "../../../types/instance.types";
@@ -90,8 +91,8 @@ export const selectSettingsOverridesForApi =
       if (JSON.stringify(value) === JSON.stringify(base[key])) continue;
       // THE AUTO RULE (Arman, 2026-09-28): "auto" effort means NO override —
       // the agent's own setting runs. The literal word never reaches the wire,
-      // whichever panel wrote it.
-      if (key === "reasoning_effort" && value === "auto") continue;
+      // whichever panel wrote it (auto-means-unset.ts names the keys).
+      if (value === AUTO_VALUE && AUTO_MEANS_UNSET_KEYS.has(key)) continue;
       result[key] = value;
     }
 
