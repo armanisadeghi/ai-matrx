@@ -33,6 +33,7 @@ import {
   type KindComponentRow,
 } from "@ai-matrx/content-ir-react";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { isTableKind } from "@ai-matrx/records";
 import {
   INVALIDATION_KEYS,
   registerInvalidationCallback,
@@ -51,6 +52,9 @@ import {
 } from "./system-components";
 
 export type { ComponentResolution, ComponentRole };
+
+/** The bundled component every `table:<uuid>` kind resolves to — the one record card. */
+const TABLE_KIND_COMPONENT = "platform_record";
 
 /**
  * Roles the shared resolver dispatches on. `loading` rows are the kind's
@@ -222,11 +226,27 @@ export class ComponentRegistry extends ComponentResolver {
     return super.refresh(maxAgeMs);
   }
 
+  /**
+   * A TABLE KIND DRAWS AS THE ONE RECORD CARD (KINDS-GLUE wave 3 §5.1). Every `table:<uuid>`
+   * resolves by prefix to the bundled `platform_record` resolution, so the kind route never holds
+   * a table record back waiting for a component row that can never exist (a Table is never a
+   * `kind_component` row). Guard 5 (b) plants the removal of this rule.
+   */
+  override resolve(
+    kind: string,
+    platform: string,
+    role: ComponentRole,
+  ): ComponentResolution | null {
+    if (isTableKind(kind)) return super.resolve(TABLE_KIND_COMPONENT, platform, role);
+    return super.resolve(kind, platform, role);
+  }
+
   override requestComponent(
     kind: string,
     platform: string,
     role: ComponentRole,
   ): void {
+    if (isTableKind(kind)) kind = TABLE_KIND_COMPONENT;
     this.demanded = true;
     super.requestComponent(kind, platform, role);
     // DD-215. The package's own cold-fetch test asks "is the answer missing or

@@ -70,6 +70,7 @@ import {
   type SurfaceToolCall,
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { executeSurfaceClientTool } from "@ai-matrx/chat/surfaces/runtime/surface-client-tools";
+import { applySurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { configureChat, _resetChatHostForTests } from "@ai-matrx/chat/host";
 import { SPATIAL_BOARD_SURFACE_NAME } from "@/features/surfaces/manifests/spatial-board.manifest";
 import { SpatialBoardSurface } from "../components/SpatialBoardSurface";
@@ -328,5 +329,67 @@ describe("the bridge — every board item in two requests", () => {
 
     const tool = await executeSurfaceClientTool("board_item_act", { id: "colors", tool: "note_count_words" });
     expect((tool as { output: Record<string, unknown> }).output).toMatchObject({ ok: true, output: { words: 8 } });
+  });
+
+  /**
+   * THE HANDED ITEM STAYS WRITABLE (real test, 2026-10-02): the agent opened a
+   * note, then in one turn sent two `apply_surface_write` edits to it beside a
+   * `board_add_tile`. The add selected the new tile, so the note left the
+   * global stack and both writes failed ("declares no write target" / "no
+   * longer open here") for a target the agent had just been handed.
+   */
+  describe("an item the agent opened stays writable through apply_surface_write", () => {
+    const open = async (id: string) => {
+      await act(async () => {
+        const pending = executeSurfaceClientTool("board_open_item", { id });
+        await flush();
+        await pending;
+      });
+    };
+    const agentWrite = (value: string, requestApproval = jest.fn(async () => ({ kind: "approved" as const }))) =>
+      applySurfaceWrite("note_title_set", value, { origin: "agent", actorLabel: "Designer", requestApproval });
+
+    it("lands on the opened item after the agent's own add moved the selection to a tile with no such target", async () => {
+      await open("colors");
+      act(() => store.select("new-text")); // board_add_tile selects its new board-only tile
+      await flush();
+      expect(getSurfaceRuntimeStack().some((r) => r.surfaceName === TEST_NOTE)).toBe(false);
+      const result = await agentWrite("Palette");
+      expect(result.ok).toBe(true);
+      expect(notes.colors.title).toBe("Palette");
+      expect(notes.site.title).toBe("Website");
+    });
+
+    it("an approval card answered after the selection moved still applies to the opened item", async () => {
+      await open("colors");
+      let answer: (d: { kind: "approved" }) => void = () => undefined;
+      const requestApproval = jest.fn(() => new Promise<{ kind: "approved" }>((resolve) => (answer = resolve)));
+      const pending = agentWrite("Palette", requestApproval);
+      await flush();
+      expect(requestApproval).toHaveBeenCalled();
+      act(() => store.select("new-text"));
+      await flush();
+      answer({ kind: "approved" });
+      const result = await pending;
+      expect(result.ok).toBe(true);
+      expect(notes.colors.title).toBe("Palette");
+    });
+
+    it("the person picking another item that declares the target takes the write (their choice is newer)", async () => {
+      await open("colors");
+      act(() => store.select("site"));
+      await flush();
+      const result = await agentWrite("Home");
+      expect(result.ok).toBe(true);
+      expect(notes.site.title).toBe("Home");
+      expect(notes.colors.title).toBe("Colors");
+    });
+
+    it("with nothing opened, the write goes to the live item exactly as before", async () => {
+      const result = await agentWrite("Home");
+      expect(result.ok).toBe(true);
+      expect(notes.site.title).toBe("Home");
+      expect(notes.colors.title).toBe("Colors");
+    });
   });
 });

@@ -11,9 +11,23 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-export function MountWhenNear({ children, placeholderClassName }: { children: ReactNode; placeholderClassName?: string }) {
+export function MountWhenNear({
+  children,
+  placeholderClassName,
+  eager = false,
+}: {
+  children: ReactNode;
+  placeholderClassName?: string;
+  /** Mount now: the address asked for what is inside (a reversible action's "Open Archived tables"). */
+  eager?: boolean;
+}) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const [near, setNear] = useState(false);
+  const [nearSeen, setNear] = useState(false);
+  const near = eager || nearSeen;
+  // Once mounted for the address, it stays mounted when the address moves on.
+  useEffect(() => {
+    if (eager) setNear(true);
+  }, [eager]);
   useEffect(() => {
     const el = ref.current;
     if (!el || near) return undefined;

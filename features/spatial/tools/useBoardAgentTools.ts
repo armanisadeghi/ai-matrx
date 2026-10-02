@@ -24,11 +24,15 @@
  * target does not offer is refused with the target's own remedy.
  */
 
+import { useEffect, useRef } from "react";
 import { toast } from "@/lib/toast";
 import {
   useSurfaceClientTools,
+  waitForCapturedRuntime,
   type SurfaceToolCall,
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { registerAgentWriteSource } from "@ai-matrx/chat/surfaces/runtime/agent-write-sources";
+import { listAgentWritableTargets } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import type {
   ActorUndoResult,
   BoardActor,
@@ -147,6 +151,12 @@ const fail = (error: string): Failure => ({ ok: false, error });
 
 /** How long a tile an agent reached stays awake after the call, so its result can be read. */
 const AGENT_HOLD_MS = 2000;
+/**
+ * How long an item the agent opened (or acted on) stays HANDED to it: its
+ * `apply_surface_write` edits land on that item's own copy even after another
+ * tile became the live one. Longer than any one agent turn.
+ */
+const HANDED_ITEM_MS = 15 * 60_000;
 const isFailure = (v: unknown): v is Failure =>
   typeof v === "object" && v !== null && (v as Failure).ok === false;
 
@@ -180,6 +190,35 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
   /** The tile the person is working in (interacting or full screen), if any:
    * while there is one, the view and the selection are theirs. */
   const personBusyIn = (): string | null => store?.getEditing() ?? store?.getFocused() ?? null;
+
+  /**
+   * THE HANDED ITEMS — what `board_open_item` / `board_item_act` gave the
+   * agent, by tile id, with when and for which conversation; and when the
+   * PERSON last picked a tile (a selection the tools did not make). Read only
+   * inside callbacks and effects.
+   */
+  const handedRef = useRef<{
+    items: Map<string, { at: number; conversationId?: string }>;
+    personPickedAt: number;
+    agentSelecting: boolean;
+  } | null>(null);
+  const handed = () => (handedRef.current ??= { items: new Map(), personPickedAt: 0, agentSelecting: false });
+  const hand = (id: string, call?: SurfaceToolCall) => {
+    const state = handed();
+    const now = Date.now();
+    for (const [key, entry] of state.items) if (now - entry.at >= HANDED_ITEM_MS) state.items.delete(key);
+    state.items.set(id, { at: now, ...(call?.conversationId ? { conversationId: call.conversationId } : {}) });
+  };
+  /** A selection the agent's tools make — never counted as the person's pick. */
+  const agentSelect = (id: string) => {
+    const state = handed();
+    state.agentSelecting = true;
+    try {
+      store?.select(id);
+    } finally {
+      state.agentSelecting = false;
+    }
+  };
 
   const viewCentre = (): { x: number; y: number } => {
     if (!store) return { x: 0, y: 0 };
@@ -276,7 +315,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     // Show it without moving the person's view (never yank the camera) — and
     // never take the selection from a tile they are working in.
     requestAnimationFrame(() => {
-      if (!personBusyIn()) store?.select(id);
+      if (!personBusyIn()) agentSelect(id);
     });
     return { ok: true, id, rect };
   };
@@ -423,7 +462,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     // Selecting makes the tile LIVE: its feature's own surface (values,
     // write targets, tools) registers, and reaches the agent next turn.
     const show = () => {
-      store.select(tile.id);
+      agentSelect(tile.id);
       if (a.mode === "focus") store.focus(tile.id);
       else store.fitItem(tile.id);
     };
@@ -470,7 +509,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     if (show && store && !personBusyIn()) {
       if (hidden) await settle();
       if (!personBusyIn()) {
-        store.select(tile.id);
+        agentSelect(tile.id);
         store.fitItem(tile.id);
         shown = true;
       }
@@ -486,13 +525,14 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
   /** Let a reached tile sleep again a moment after the call, once its result is read. */
   const releaseLater = (release: () => void) => setTimeout(release, AGENT_HOLD_MS);
 
-  const openItem = async (input: unknown) => {
+  const openItem = async (input: unknown, call?: SurfaceToolCall) => {
     const reached = await reachItem(record(input).id, true);
     if (isFailure(reached)) return reached;
     try {
       await settle();
       const opened = await openItemSurface(reached.capture);
       if (!opened.ok) return opened;
+      hand(reached.tile.id, call);
       return {
         id: reached.tile.id,
         title: reached.tile.title,
@@ -522,6 +562,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
         },
         call,
       );
+      hand(reached.tile.id, call);
       return { id: reached.tile.id, title: reached.tile.title, ...result };
     } finally {
       releaseLater(reached.release);
@@ -552,6 +593,69 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
       note: `The person has changed ${names} since, so those were left as they are.`,
     };
   };
+
+  // The person picking a tile is newer than anything handed before it.
+  useEffect(() => {
+    if (!store) return;
+    return store.subscribeSelection(() => {
+      const state = handed();
+      if (!state.agentSelecting) state.personPickedAt = Date.now();
+    });
+  }, [store]);
+
+  /**
+   * A HANDED ITEM TAKES ITS OWN WRITES (`agent-write-sources.ts`). The agent
+   * opened a note, then in the same turn sent `apply_surface_write` edits
+   * beside a `board_add_tile`; the add selected the new tile, the note left
+   * the global stack, and both edits failed for a target the agent had just
+   * been handed (real test, 2026-10-02). An agent write that the newest
+   * handed item declares is resolved in that item's capture, held awake
+   * through its card — unless the person has since picked another tile whose
+   * surface declares the same target (their choice is newer).
+   */
+  const itemSurfacesRef = useRef(host.itemSurfaces);
+  useEffect(() => {
+    itemSurfacesRef.current = host.itemSurfaces;
+  });
+  const onScreenTiles = () => board.read().tiles;
+  const tilesRef = useRef(onScreenTiles);
+  useEffect(() => {
+    tilesRef.current = onScreenTiles;
+  });
+  useEffect(
+    () =>
+      registerAgentWriteSource(async (query) => {
+        const index = itemSurfacesRef.current;
+        if (!index || !store) return null;
+        const state = handed();
+        const now = Date.now();
+        const liveId = store.getFocused() ?? store.getEditing() ?? store.getSelected();
+        const onBoard = new Set(tilesRef.current().map((t) => t.id));
+        const candidates = [...state.items.entries()]
+          .filter(
+            ([id, entry]) =>
+              onBoard.has(id) &&
+              now - entry.at < HANDED_ITEM_MS &&
+              (!entry.conversationId || !query.conversationId || entry.conversationId === query.conversationId) &&
+              !(query.onScreenDeclares && id !== liveId && state.personPickedAt > entry.at),
+          )
+          .sort((a, b) => b[1].at - a[1].at);
+        for (const [id] of candidates) {
+          const release = store.holdAwake(id);
+          const capture = await index.wait(id, ITEM_MOUNT_TIMEOUT_MS);
+          const runtime = capture ? await waitForCapturedRuntime(capture, ITEM_MOUNT_TIMEOUT_MS) : null;
+          const fits =
+            capture &&
+            runtime &&
+            (!query.surfaceName || runtime.surfaceName === query.surfaceName) &&
+            listAgentWritableTargets(capture).some((entry) => entry.target.name === query.targetName);
+          if (capture && fits) return { source: capture, release: () => releaseLater(release) };
+          release();
+        }
+        return null;
+      }),
+    [store],
+  );
 
   useSurfaceClientTools(surfaceName, {
     board_read: read,

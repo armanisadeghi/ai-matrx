@@ -24,6 +24,7 @@
 
 import React, { useEffect } from "react";
 import { TriangleAlert } from "lucide-react";
+import { isTableKind } from "@ai-matrx/records";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { useEnsureKindRenderable } from "@/features/content-ir/react/ensure-kind-renderable";
 import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
@@ -64,18 +65,23 @@ export function KindEscapedNotice({
   // definition and repaint when it lands") was not kept. Rule + the production
   // story: `./registry-versioned.ts`. Guard: `pnpm check:registry-repaint`.
   const kindVersion = useContentIrKindVersion(slug);
-  // "Registered" = catalog membership (`isKnownKind`) — the lazy registry's
-  // one predicate, covering compiled kinds, every catalog row (Python-owned
-  // included), and anything a cold fetch landed.
+  // "Registered" = "the kind system draws this" (`isRenderableKind`, KINDS-GLUE
+  // wave 3 B3): catalog membership — compiled kinds, every catalog row
+  // (Python-owned included), anything a cold fetch landed — OR a `table:<uuid>`
+  // kind the registry answered from its Table. `isKnownKind` stays the
+  // registry-only predicate the save-from-chat path reads.
   const registered = readAtVersionForKey(
     registeredCache,
     slug ?? "",
     kindVersion,
-    () => Boolean(slug && kindRegistry.isKnownKind(slug)),
+    () => Boolean(slug && kindRegistry.isRenderableKind(slug)),
   );
+  // A table record drawn by the card is the kind system working, not a crack
+  // in the promotion path — it is never filed as an escaped render.
+  const tableKind = isTableKind(slug);
 
   useEffect(() => {
-    if (!slug || !registered) return;
+    if (!slug || !registered || tableKind) return;
     const firstPath = first?.path;
     const key = `${slug}:${firstPath === undefined ? "" : firstPath}`;
     if (screamed.has(key)) return;
@@ -92,7 +98,7 @@ export function KindEscapedNotice({
       errorType: "kind_escaped_render",
       message: `Registered kind "${slug}" rendered as a raw JSON code block (escaped the promotion path at ${first?.path || "root"}).`,
     });
-  }, [slug, registered, first?.path]);
+  }, [slug, registered, tableKind, first?.path]);
 
   if (!first) return null;
   if (rendered && registered) return null;

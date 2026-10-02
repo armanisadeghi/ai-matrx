@@ -1,5 +1,6 @@
 /**
- * Guard: Escape never silently destroys an unsent composer draft.
+ * Guard: Escape — or a click outside — never silently destroys an unsent
+ * composer draft.
  *
  * The defect (real-test run on main 1e91ed8b3b, 2026-10-02, /notes → right-click
  * → AI Actions → a shortcut in the side-drawer display mode): the person typed
@@ -21,8 +22,13 @@
  * `AgentRunner` (whose rendering is not under test) is stubbed to a marker, and
  * the URL-address hook (router-bound) is stubbed out.
  *
+ * The same rule covers the other accidental door, a click on the backdrop /
+ * outside the shell (side drawer, side panel, full and compact modals; the
+ * inline card has no backdrop).
+ *
  * Proven failing before passing: against the pre-fix shells every "keeps"
- * case fails (onClose fires on Escape); the "empty closes" cases pass on both.
+ * case fails (onClose fires on Escape / on the outside click); the "empty
+ * closes" cases pass on both.
  */
 
 import React, { act } from "react";
@@ -73,15 +79,16 @@ function makeStore() {
 
 type Shell = React.ComponentType<{ conversationId: string; onClose: () => void }>;
 
-const SHELLS: Array<[string, Shell]> = [
-  ["side drawer (sidebar)", AgentSidebarOverlay],
-  ["side panel (panel)", AgentPanelOverlay],
-  ["full modal (modal-full)", AgentFullModal],
-  ["compact modal (modal-compact)", AgentCompactModal],
-  ["inline result card (inline)", AgentInlineOverlay],
+/** [name, shell, has a backdrop / outside-click dismissal] */
+const SHELLS: Array<[string, Shell, boolean]> = [
+  ["side drawer (sidebar)", AgentSidebarOverlay, true],
+  ["side panel (panel)", AgentPanelOverlay, true],
+  ["full modal (modal-full)", AgentFullModal, true],
+  ["compact modal (modal-compact)", AgentCompactModal, true],
+  ["inline result card (inline)", AgentInlineOverlay, false],
 ];
 
-describe.each(SHELLS)("%s — Escape never discards an unsent draft", (_name, ShellComponent) => {
+describe.each(SHELLS)("%s — a stray key or click never discards an unsent draft", (_name, ShellComponent, hasBackdrop) => {
   let container: HTMLDivElement;
   let root: Root;
   let store: ReturnType<typeof makeStore>;
@@ -139,6 +146,67 @@ describe.each(SHELLS)("%s — Escape never discards an unsent draft", (_name, Sh
         new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
       );
     });
+
+  // A click outside the shell, the way a real one lands: the FloatingSheet
+  // backdrop, or a pointerdown outside a Radix dialog's content (Radix arms
+  // its outside listener a tick after mount).
+  const clickOutside = async () => {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+    await act(async () => {
+      const backdrop = document.querySelector<HTMLElement>(
+        '[data-testid="floating-sheet-backdrop"]',
+      );
+      if (backdrop) {
+        backdrop.click();
+        return;
+      }
+      document.body.dispatchEvent(
+        new MouseEvent("pointerdown", { bubbles: true, cancelable: true }),
+      );
+      document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 10));
+    });
+  };
+
+  const seedText = () =>
+    act(() => {
+      store.dispatch(
+        setUserInputText({ conversationId: CONVERSATION_ID, text: "Summarize this for the team" }),
+      );
+    });
+
+  const seedAttachment = () =>
+    act(() => {
+      store.dispatch(
+        addResource({
+          conversationId: CONVERSATION_ID,
+          blockType: "input_notes",
+          source: { id: "note-1", title: "Q3 planning" },
+        }),
+      );
+    });
+
+  (hasBackdrop ? it : it.skip)("keeps the shell open on an outside click while text is unsent", async () => {
+    seedText();
+    const onClose = render();
+    await clickOutside();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  (hasBackdrop ? it : it.skip)("keeps the shell open on an outside click while only an attachment is unsent", async () => {
+    seedAttachment();
+    const onClose = render();
+    await clickOutside();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  (hasBackdrop ? it : it.skip)("still closes on an outside click when the composer is empty", async () => {
+    const onClose = render();
+    await clickOutside();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 
   it("keeps the shell open when the composer holds unsent text", () => {
     act(() => {

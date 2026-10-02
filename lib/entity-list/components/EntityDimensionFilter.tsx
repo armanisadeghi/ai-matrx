@@ -5,28 +5,25 @@
 // THE DIMENSION FILTER CONTROL — beside the organization filter on every canonical list header that
 // declares `config.dimensionFilter` (lane 3 INTEGRATION, W1.5). Pick a Dimension's Value (Practice Area →
 // Sports rehab) and the list shows only rows linked to it; "Any" is first and the default. State and
-// server contract: ../dimensionFilter.ts. Rows: ../useListDimensions.ts (the one door).
+// server contract: ../dimensionFilter.ts. Rows: ../useListDimensions.ts (the one door — the record
+// store's paged tree: Dimensions first, a Dimension's Values when it is opened, server-side search).
 //
 // Standalone by design (value/onChange), like EntityOrgFilter, so a page outside the shell can render
 // the same control.
 
 import { useState } from "react";
-import { Check, ChevronDown, Layers, Loader2 } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Layers, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useListDimensions } from "../useListDimensions";
+import { useListDimensions, type ListDimensionValue } from "../useListDimensions";
 
 export const ANY_DIMENSION_LABEL = "Any dimension";
-
-/** Past this many Values the menu offers a search. */
-const SEARCH_AT = 10;
 
 export interface EntityDimensionFilterProps {
   /** The chosen Value id; null = Any. */
@@ -35,36 +32,42 @@ export interface EntityDimensionFilterProps {
   className?: string;
 }
 
+function ValueItem({ value, chosen, onPick }: { value: ListDimensionValue; chosen: boolean; onPick: () => void }) {
+  return (
+    <DropdownMenuItem onSelect={onPick} className="pl-6">
+      <span className="flex min-w-0 items-center gap-2">
+        {chosen ? <Check className="h-3.5 w-3.5 shrink-0" /> : <span className="w-3.5 shrink-0" />}
+        <span className="truncate">{value.name}</span>
+      </span>
+    </DropdownMenuItem>
+  );
+}
+
 export function EntityDimensionFilter({ valueId, onChange, className }: EntityDimensionFilterProps) {
   const [opened, setOpened] = useState(false);
+  const [open, setOpen] = useState<string | null>(null);
   const [needle, setNeedle] = useState("");
-  // The tree is asked for only once the menu opens, or when the URL already names a Value.
-  const { dimensions, loading, error, find } = useListDimensions(opened || Boolean(valueId));
-  const selected = valueId ? find(valueId) : null;
+  const q = needle.trim();
+  const dims = useListDimensions(opened, valueId, q);
+  const hits = dims.hits;
 
   const label = valueId
-    ? selected
-      ? `${selected.dimension.label}: ${selected.value.name}`
-      : loading
-        ? "Dimension: …"
-        : "Dimension: a value you cannot see"
+    ? dims.selected
+      ? `${dims.selected.dimension.label}: ${dims.selected.value.name}`
+      : dims.selectedMissing
+        ? "Dimension: a value you cannot see"
+        : "Dimension: …"
     : ANY_DIMENSION_LABEL;
 
-  const totalValues = dimensions.reduce((n, d) => n + d.values.length, 0);
-  const q = needle.trim().toLowerCase();
-  const shown = q
-    ? dimensions
-        .map((d) => ({
-          ...d,
-          values: d.label.toLowerCase().includes(q) ? d.values : d.values.filter((v) => v.name.toLowerCase().includes(q)),
-        }))
-        .filter((d) => d.values.length > 0)
-    : dimensions;
+  const toggle = (id: string) => {
+    setOpen((cur) => (cur === id ? null : id));
+    dims.loadValues(id);
+  };
 
   return (
     <DropdownMenu
-      onOpenChange={(open) => {
-        if (open) setOpened(true);
+      onOpenChange={(isOpen) => {
+        if (isOpen) setOpened(true);
         else setNeedle("");
       }}
     >
@@ -87,53 +90,89 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
           <ChevronDown className={cn("h-3.5 w-3.5 shrink-0", !valueId && "max-sm:hidden")} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-[60dvh] min-w-60 overflow-y-auto">
-        {totalValues > SEARCH_AT && (
-          <div className="px-1 pb-1">
-            <input
-              value={needle}
-              onChange={(e) => setNeedle(e.target.value)}
-              // Keep Radix's typeahead from stealing the keystrokes.
-              onKeyDown={(e) => e.stopPropagation()}
-              placeholder="Find a value…"
-              aria-label="Find a value"
-              className="h-8 w-full rounded-md border border-border bg-background px-2 text-base lg:text-xs"
-            />
-          </div>
-        )}
+      <DropdownMenuContent align="end" className="max-h-[60dvh] min-w-64 overflow-y-auto">
+        <div className="px-1 pb-1">
+          <input
+            value={needle}
+            onChange={(e) => setNeedle(e.target.value)}
+            // Keep Radix's typeahead from stealing the keystrokes.
+            onKeyDown={(e) => e.stopPropagation()}
+            placeholder="Find a value…"
+            aria-label="Find a value"
+            className="h-8 w-full rounded-md border border-border bg-background px-2 text-base lg:text-xs"
+          />
+        </div>
         <DropdownMenuItem onSelect={() => onChange(null)}>
           <span className="flex items-center gap-2">
             {valueId ? <span className="w-3.5" /> : <Check className="h-3.5 w-3.5" />}
             Any
           </span>
         </DropdownMenuItem>
-        {shown.map((d) => (
-          <div key={d.id} data-entity-dimension-group="">
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="truncate text-xs text-muted-foreground">{d.label}</DropdownMenuLabel>
-            {d.values.map((v) => (
-              <DropdownMenuItem key={v.id} onSelect={() => onChange(v.id)}>
+        <DropdownMenuSeparator />
+        {q ? (
+          hits === null ? (
+            <div className="flex justify-center px-2 py-2" role="status" aria-label="Searching values">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : hits.length === 0 ? (
+            <p className="px-2 py-1.5 text-xs text-muted-foreground">No value matches “{q}”.</p>
+          ) : (
+            hits.map((h) => (
+              <DropdownMenuItem key={h.value.id} onSelect={() => onChange(h.value.id)}>
                 <span className="flex min-w-0 items-center gap-2">
-                  {valueId === v.id ? <Check className="h-3.5 w-3.5 shrink-0" /> : <span className="w-3.5 shrink-0" />}
-                  <span className="truncate">{v.name}</span>
+                  {valueId === h.value.id ? <Check className="h-3.5 w-3.5 shrink-0" /> : <span className="w-3.5 shrink-0" />}
+                  <span className="truncate">{h.value.name}</span>
+                  <span className="ml-auto shrink-0 truncate pl-2 text-xs text-muted-foreground">{h.dimension.label}</span>
                 </span>
               </DropdownMenuItem>
-            ))}
-          </div>
-        ))}
-        {loading && dimensions.length === 0 && (
-          <div className="flex justify-center px-2 py-2" role="status" aria-label="Loading dimensions">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
-        )}
-        {!loading && error && dimensions.length === 0 && (
-          <p className="px-2 py-1.5 text-xs text-destructive">Dimensions could not load.</p>
-        )}
-        {!loading && !error && dimensions.length === 0 && (
-          <p className="px-2 py-1.5 text-xs text-muted-foreground">No dimensions with values yet.</p>
-        )}
-        {!loading && q && shown.length === 0 && dimensions.length > 0 && (
-          <p className="px-2 py-1.5 text-xs text-muted-foreground">No value matches “{needle.trim()}”.</p>
+            ))
+          )
+        ) : (
+          <>
+            {dims.dimensions.map((d) => {
+              const values = dims.valuesOf(d.id);
+              const isOpen = open === d.id;
+              return (
+                <div key={d.id} data-entity-dimension-group="">
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      toggle(d.id);
+                    }}
+                    aria-expanded={isOpen}
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      {isOpen ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
+                      <span className="truncate">{d.label}</span>
+                    </span>
+                  </DropdownMenuItem>
+                  {isOpen &&
+                    (values === undefined ? (
+                      <div className="flex justify-center px-2 py-1.5" role="status" aria-label={`Loading ${d.label}`}>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : values.length === 0 ? (
+                      <p className="py-1 pl-8 text-xs text-muted-foreground">No values yet.</p>
+                    ) : (
+                      values.map((v) => (
+                        <ValueItem key={v.id} value={v} chosen={valueId === v.id} onPick={() => onChange(v.id)} />
+                      ))
+                    ))}
+                </div>
+              );
+            })}
+            {dims.loading && (
+              <div className="flex justify-center px-2 py-2" role="status" aria-label="Loading dimensions">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+            {!dims.loading && dims.error && (
+              <p className="px-2 py-1.5 text-xs text-destructive">Dimensions could not load.</p>
+            )}
+            {!dims.loading && !dims.error && dims.dimensions.length === 0 && (
+              <p className="px-2 py-1.5 text-xs text-muted-foreground">No dimensions yet.</p>
+            )}
+          </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

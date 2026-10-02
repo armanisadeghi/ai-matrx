@@ -25,8 +25,11 @@ export function AgentCompactModal({
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md h-[50dvh] max-h-[70dvh] flex flex-col p-0 gap-0"
-        // Unsent work in the composer: Escape never discards it.
+        // Unsent work in the composer: Escape or a click outside never discards it.
         onEscapeKeyDown={(e) => {
+          if (hasUnsentDraft) e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
           if (hasUnsentDraft) e.preventDefault();
         }}
       >

@@ -4,22 +4,33 @@
 // scope type (Practice Area); its Values are that type's scopes (Sports rehab). Every organization the
 // person belongs to contributes — never only the active one (law: active-org-is-never-a-list-filter).
 //
-// 🚨 LANE 9 (SCOPES-ON-THE-STORE) — THE ONE-LINE SWITCH. The rows come from the app's one scope tree
-// (`useScopeTree` + `ensureScopeTree`), which already reads `context.*` or the record store
-// (`custom.context_tree`) behind lane 9's read switch (`scopesReadFromStore()` in scopesService). When
-// lane 9 ships a paged store reader, replace the `SOURCE` line below with it; nothing else in the shell
-// reads scopes. The server half is `platform.list_dimension_ids` (see ./dimensionFilter.ts) — lane 9's
-// one switch there.
+// SOURCE (2026-10-02): the record store's paged tree doors, live for `authenticated` — lane 9
+// (SCOPES-ON-THE-STORE) named them the Dimension door:
+//   custom.context_tree_types        → the Dimensions (types first, no counts: the first paint)
+//   custom.context_tree_type_scopes  → one Dimension's Values, a page at a time, when it is opened
+//   custom.context_tree_search       → Values by name across every organization, for the search box
+//   custom.context_scopes            → a Value named by the URL, to label the control
+// They are called through lane 9's own door module (features/scopes/service/storeScopeReads.ts) —
+// never a second `.schema("custom")` here. @ai-matrx/records 0.60.9 lists these doors in its
+// generated catalogue but exposes no method for them; when it does, swap the four imports below.
 //
-// Lazy on purpose: the whole tree is asked for only when a control needs it (`enabled` — the menu was
-// opened, or the URL already names a Value whose name must be shown), never on every list mount.
+// The server half is `platform.list_dimension_ids` (see ./dimensionFilter.ts). It still reads the
+// links (`platform.associations` → 'scope'): lane 9's board does not move them.
+//
+// Lazy on purpose: nothing is asked until a control needs it (`enabled` — the menu was opened, or the
+// URL names a Value whose name must be shown).
 
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
-import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { useEffect, useState } from "react";
+import { useUserOrganizations } from "@/features/organizations/hooks";
+import { isScopesRpcErr } from "@/features/scopes/types";
+import {
+  readScopeTypes,
+  readScopesById,
+  readTypeScopesPage,
+  searchScopesInStore,
+} from "@/features/scopes/service/storeScopeReads";
 
 export interface ListDimensionValue {
   id: string;
@@ -32,64 +43,141 @@ export interface ListDimension {
   /** "Practice Area" — with " · <organization>" when two organizations share the label. */
   label: string;
   organizationId: string;
-  values: ListDimensionValue[];
 }
 
 export interface UseListDimensionsResult {
   dimensions: ListDimension[];
   loading: boolean;
   error: string | null;
-  /** The Dimension and Value for a Value id, when known. */
-  find: (valueId: string) => { dimension: ListDimension; value: ListDimensionValue } | null;
+  /** A Dimension's Values once asked for (`loadValues`); undefined while not yet loaded. */
+  valuesOf: (dimensionId: string) => ListDimensionValue[] | undefined;
+  loadValues: (dimensionId: string) => void;
+  /** Values whose name holds `query` across every organization (server-side); null while asking. */
+  hits: Array<{ dimension: ListDimension; value: ListDimensionValue }> | null;
+  /** The Dimension and Value behind the Value id the URL carries, once known. */
+  selected: { dimension: ListDimension; value: ListDimensionValue } | null;
+  /** The selected Value could not be found (archived, or not the viewer's to see). */
+  selectedMissing: boolean;
 }
 
-export function useListDimensions(enabled: boolean): UseListDimensionsResult {
-  const dispatch = useAppDispatch();
-  // SOURCE — lane 9 switches this line (and only this line).
-  const tree = useScopeTree();
+function labelled(
+  rows: Array<{ id: string; label: string; organizationId: string }>,
+  orgName: Map<string, string>,
+): ListDimension[] {
+  const seen = new Map<string, number>();
+  for (const r of rows) seen.set(r.label, (seen.get(r.label) ?? 0) + 1);
+  return rows
+    .map((r) => ((seen.get(r.label) ?? 0) > 1 ? { ...r, label: `${r.label} · ${orgName.get(r.organizationId) ?? ""}` } : r))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
 
+export function useListDimensions(
+  enabled: boolean,
+  selectedValueId: string | null,
+  query = "",
+): UseListDimensionsResult {
+  const { organizations } = useUserOrganizations();
+  const [found, setFound] = useState<{ q: string; rows: Array<{ id: string; typeId: string; name: string }> } | null>(null);
+  const [state, setState] = useState<{ key: string; dimensions: ListDimension[]; error: string | null } | null>(null);
+  const [values, setValues] = useState<Record<string, ListDimensionValue[]>>({});
+  const [selectedRow, setSelectedRow] = useState<{ id: string; typeId: string; name: string } | null | "missing">(null);
+
+  // The Dimensions of every organization the person belongs to — asked once the menu opens, or once
+  // the URL names a Value (its Dimension's label is needed to draw the control).
+  const wantTypes = enabled || Boolean(selectedValueId);
   useEffect(() => {
-    if (enabled) void dispatch(ensureScopeTree());
-  }, [enabled, dispatch]);
-
-  const dimensions = useMemo<ListDimension[]>(() => {
-    const rows: ListDimension[] = [];
-    for (const org of tree.organizations) {
-      if (org.admin_lane) continue;
-      for (const type of org.scope_types ?? []) {
-        const values = (type.scopes ?? [])
-          .map((s) => ({ id: s.id, name: s.name || "Unnamed" }))
-          .sort((a, b) => a.name.localeCompare(b.name));
-        if (values.length === 0) continue;
-        rows.push({
-          id: type.id,
-          label: type.label_singular || type.label_plural || "Unnamed",
-          organizationId: org.id,
-          values,
-        });
+    const ids = organizations.map((o) => o.id).sort();
+    const key = ids.join(",");
+    if (!wantTypes || ids.length === 0 || state?.key === key) return;
+    let live = true;
+    void readScopeTypes(ids, false).then((res) => {
+      if (!live) return;
+      if (isScopesRpcErr(res)) {
+        setState({ key, dimensions: [], error: res.error.message || "Dimensions could not load." });
+        return;
       }
-    }
-    // Same label in two organizations: name the organization so the two are never confused.
-    const seen = new Map<string, number>();
-    for (const r of rows) seen.set(r.label, (seen.get(r.label) ?? 0) + 1);
-    const orgName = new Map(tree.organizations.map((o) => [o.id, o.name] as const));
-    return rows
-      .map((r) =>
-        (seen.get(r.label) ?? 0) > 1 ? { ...r, label: `${r.label} · ${orgName.get(r.organizationId) ?? ""}` } : r,
-      )
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [tree.organizations]);
+      const orgName = new Map(organizations.map((o) => [o.id, o.name] as const));
+      const rows = res.data.types.map((t) => ({
+        id: t.id,
+        label: t.label_singular || t.label_plural || "Unnamed",
+        organizationId: t.organization_id,
+      }));
+      setState({ key, dimensions: labelled(rows, orgName), error: null });
+    });
+    return () => {
+      live = false;
+    };
+  }, [wantTypes, organizations, state?.key]);
 
-  const byValue = useMemo(() => {
-    const m = new Map<string, { dimension: ListDimension; value: ListDimensionValue }>();
-    for (const d of dimensions) for (const v of d.values) m.set(v.id, { dimension: d, value: v });
-    return m;
-  }, [dimensions]);
+  // The Value the URL carries, so the control can name it before the menu is ever opened.
+  useEffect(() => {
+    if (!selectedValueId) {
+      setSelectedRow(null);
+      return;
+    }
+    let live = true;
+    void readScopesById([selectedValueId]).then((res) => {
+      if (!live) return;
+      const row = isScopesRpcErr(res) ? undefined : res.data[0];
+      setSelectedRow(row ? { id: row.id, typeId: row.scope_type_id, name: row.name || "Unnamed" } : "missing");
+    });
+    return () => {
+      live = false;
+    };
+  }, [selectedValueId]);
+
+  // Values by name across every organization, server-side, a beat after typing stops.
+  const q = query.trim();
+  useEffect(() => {
+    if (!q) return;
+    let live = true;
+    const t = setTimeout(() => {
+      void searchScopesInStore(organizations.map((o) => o.id), q, 50).then((res) => {
+        if (!live) return;
+        const rows = isScopesRpcErr(res)
+          ? []
+          : res.data.scopes.map((s) => ({ id: s.id, typeId: s.scope_type_id, name: s.name || "Unnamed" }));
+        setFound({ q, rows });
+      });
+    }, 250);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+  }, [q, organizations]);
+
+  const dimensions = state?.dimensions ?? [];
+  const byId = new Map(dimensions.map((d) => [d.id, d] as const));
+
+  const loadValues = (dimensionId: string) => {
+    if (values[dimensionId]) return;
+    void readTypeScopesPage(dimensionId).then((res) => {
+      const list = !isScopesRpcErr(res) ? res.data.scopes.map((s) => ({ id: s.id, name: s.name || "Unnamed" })) : [];
+      setValues((prev) => ({ ...prev, [dimensionId]: list.sort((a, b) => a.name.localeCompare(b.name)) }));
+    });
+  };
+
+  const selectedDimension =
+    selectedRow && selectedRow !== "missing" ? byId.get(selectedRow.typeId) : undefined;
 
   return {
     dimensions,
-    loading: enabled && tree.status !== "ready" && tree.status !== "error",
-    error: tree.error,
-    find: (valueId) => byValue.get(valueId) ?? null,
+    loading: enabled && !state,
+    error: state?.error ?? null,
+    valuesOf: (id) => values[id],
+    loadValues,
+    hits: !q
+      ? []
+      : found?.q === q
+        ? found.rows.flatMap((r) => {
+            const dimension = byId.get(r.typeId);
+            return dimension ? [{ dimension, value: { id: r.id, name: r.name } }] : [];
+          })
+        : null,
+    selected:
+      selectedRow && selectedRow !== "missing" && selectedDimension
+        ? { dimension: selectedDimension, value: { id: selectedRow.id, name: selectedRow.name } }
+        : null,
+    selectedMissing: selectedRow === "missing",
   };
 }

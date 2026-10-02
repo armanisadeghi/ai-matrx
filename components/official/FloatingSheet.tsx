@@ -16,11 +16,11 @@ interface FloatingSheetProps {
     closeOnBackdropClick?: boolean;
     closeOnEsc?: boolean; // Close the sheet when ESC key is pressed
     /**
-     * Escape is consumed but the sheet stays open — pass `true` while the sheet
-     * holds unsent work (a composer draft) so a stray Escape never discards it.
-     * The close button and the caller's own close still work.
+     * The sheet holds unsent work (a composer draft): Escape and a backdrop
+     * click are consumed and the sheet stays open, so a stray key or click
+     * never discards it. The close button and the caller's own close still work.
      */
-    keepOpenOnEsc?: boolean;
+    holdsUnsentWork?: boolean;
     width?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "full";
     height?: "auto" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "full";
     spacing?: string;
@@ -55,7 +55,7 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
     showCloseButton = true,
     closeOnBackdropClick = true,
     closeOnEsc = true,
-    keepOpenOnEsc = false,
+    holdsUnsentWork = false,
     width = "md",
     height = "auto",
     spacing = "0",
@@ -126,7 +126,7 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
             // this sheet already took it (Radix marks it defaultPrevented).
             if (e.key === "Escape" && isOpen && closeOnEsc && !e.defaultPrevented) {
                 // Unsent work inside: this layer takes the key and stays.
-                if (keepOpenOnEsc) {
+                if (holdsUnsentWork) {
                     e.preventDefault();
                     return;
                 }
@@ -139,7 +139,7 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
         return () => {
             document.removeEventListener("keydown", handleKeyDown);
         };
-    }, [isOpen, closeOnEsc, keepOpenOnEsc, onClose]);
+    }, [isOpen, closeOnEsc, holdsUnsentWork, onClose]);
     
     // Handle focus management for accessibility
     useEffect(() => {
@@ -164,12 +164,14 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
     
     // Function to close the sheet when clicking backdrop
     const handleBackdropClick = useCallback(() => {
+        // Unsent work inside: a click outside never discards it.
+        if (holdsUnsentWork) return;
         if (onBackdropClick) {
             onBackdropClick();
         } else if (closeOnBackdropClick) {
             onClose();
         }
-    }, [closeOnBackdropClick, onClose, onBackdropClick]);
+    }, [closeOnBackdropClick, onClose, onBackdropClick, holdsUnsentWork]);
     
     // Determine max width based on the width prop
     const getWidthClass = () => {

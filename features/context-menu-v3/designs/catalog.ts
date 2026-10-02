@@ -71,7 +71,7 @@ import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 
 // Icon KEYS for the model: each Lucide component registered once with the app's icon port, so the
 // package's renderers and the demo twin resolve the same glyph (the static name map is curated).
-const I = Object.fromEntries(
+export const I = Object.fromEntries(
   Object.entries({ Archive, ArchiveRestore, AtSign, AudioLines, Bell, Blocks, BookMarked, UserCog, Building2, CalendarCheck, ClipboardCopy, ClipboardList, Copy, CopyPlus, Database, Download, Dumbbell, ExternalLink, FileAudio, FileDown, FolderCog, FolderInput, Forward, GitCompare, GitCompareArrows, Headphones, History, Inbox, Info, Layers, LayoutDashboard, Link, ListChecks, ListTodo, MessageSquare, MessageSquareWarning, PanelsTopLeft, Pencil, Pin, Save, Search, Settings, Share2, Shield, ShieldCheck, SquareArrowOutUpRight, SquarePlus, Star, Stethoscope, StickyNote, Table2, TextSelect, Upload, User, Volume2, Cpu, Webhook, Zap }).map(([name, icon]) => [name, registerAlchemyIcon(icon)]),
 ) as Record<"Archive" | "ArchiveRestore" | "AtSign" | "AudioLines" | "Bell" | "Blocks" | "BookMarked" | "UserCog" | "Building2" | "CalendarCheck" | "ClipboardCopy" | "ClipboardList" | "Copy" | "CopyPlus" | "Database" | "Download" | "Dumbbell" | "ExternalLink" | "FileAudio" | "FileDown" | "FolderCog" | "FolderInput" | "Forward" | "GitCompare" | "GitCompareArrows" | "Headphones" | "History" | "Inbox" | "Info" | "Layers" | "LayoutDashboard" | "Link" | "ListChecks" | "ListTodo" | "MessageSquare" | "MessageSquareWarning" | "PanelsTopLeft" | "Pencil" | "Pin" | "Save" | "Search" | "Settings" | "Share2" | "Shield" | "ShieldCheck" | "SquareArrowOutUpRight" | "SquarePlus" | "Star" | "Stethoscope" | "StickyNote" | "Table2" | "TextSelect" | "Upload" | "User" | "Volume2" | "Cpu" | "Webhook" | "Zap", string>;
 
@@ -131,7 +131,7 @@ const REASON = {
   import: "Only editors can import",
 } as const;
 
-function obj(viewer: boolean) {
+export function obj(viewer: boolean) {
   const v = (reason: string) => (viewer ? { viewerReason: reason } : {});
   return {
     open: { id: "open", label: "Open", icon: I.SquareArrowOutUpRight, hint: "↵" },
@@ -173,7 +173,7 @@ const STRIP: DNode[] = [
 
 // ── Today's generic rows (the 27 the platform adds to every menu) ─────────────
 
-const G = {
+export const G = {
   selectAll: { id: "select-all", label: "Select All", icon: I.TextSelect },
   copyReference: { id: "copy-reference", label: "Copy reference…", icon: I.AtSign },
   compareClipboard: { id: "compare-clipboard", label: "Compare with clipboard", icon: I.GitCompareArrows },

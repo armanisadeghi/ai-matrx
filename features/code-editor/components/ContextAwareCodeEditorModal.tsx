@@ -436,8 +436,11 @@ export function ContextAwareCodeEditorModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-[95vw] w-full h-[90dvh] p-0 gap-0"
-        // Unsent work in the composer: Escape never discards it.
+        // Unsent work in the composer: Escape or a click outside never discards it.
         onEscapeKeyDown={(e) => {
+          if (hasUnsentDraft) e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
           if (hasUnsentDraft) e.preventDefault();
         }}
       >

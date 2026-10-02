@@ -71,7 +71,11 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
  * the cheap question (a Map lookup) before mounting anything.
  */
 export function kindHasRecordChrome(kind: string | null | undefined): boolean {
-  return resolveKindRecordDisposition(kind) !== null;
+  const disposition = resolveKindRecordDisposition(kind);
+  // A table kind's records are rows of its Table; the strip's kind-store reads would show a
+  // wrong count and a Save that writes the wrong place. Absent until wave 2's landing read
+  // exists (KINDS-GLUE wave 3 §5.3, A6) — a control is absent, never dead.
+  return disposition !== null && disposition.storage !== "table";
 }
 
 interface LoadState {

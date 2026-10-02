@@ -52,6 +52,7 @@ import {
 } from "./types";
 import { emailErrorMessage } from "@/lib/email/error-message";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { makeCreatedOrganizationActive } from "./madeOrganizationIsActive";
 
 // ============================================================================
 // Organization CRUD Operations
@@ -141,10 +142,13 @@ export async function createOrganization(
       };
     }
 
+    const organization = transformOrganizationFromDb(org);
+    // The organization she just made is the one she works in (G5 a).
+    makeCreatedOrganizationActive({ id: organization.id, name: organization.name });
     return {
       success: true,
       message: "Organization created successfully",
-      organization: transformOrganizationFromDb(org),
+      organization,
     };
   } catch (error: unknown) {
     const err = pgErrorToError(error);

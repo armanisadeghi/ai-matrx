@@ -30,11 +30,12 @@ import {
 import { filterPalette, palette, type MenuLeafNode, type MenuModel, type MenuNode, type MenuSection } from "@ai-matrx/alchemy/menu";
 import { resolveAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import type { DesignArranged } from "./model";
+import { D } from "./sizing";
 
 function Glyph({ icon, tone }: { icon?: string; tone?: string }) {
   if (!icon) return null;
   const icon_ = resolveAlchemyIcon(icon);
-  return icon_ ? React.createElement(icon_, { className: `h-4 w-4 shrink-0 ${tone ?? ""}` }) : null;
+  return icon_ ? React.createElement(icon_, { className: `${D.glyph} ${tone ?? ""}` }) : null;
 }
 
 interface RowProps {
@@ -45,19 +46,19 @@ interface RowProps {
 function Row({ node, run }: RowProps): React.ReactElement | null {
   switch (node.kind) {
     case "separator":
-      return <DropdownMenuSeparator />;
+      return <DropdownMenuSeparator className={D.separator} />;
     case "label":
-      return <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">{node.label}</DropdownMenuLabel>;
+      return <DropdownMenuLabel className={D.heading}>{node.label}</DropdownMenuLabel>;
     case "submenu":
       return (
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger data-alchemy-node={node.id} className="gap-2">
+          <DropdownMenuSubTrigger data-alchemy-node={node.id} className={`${D.row} [&>svg:last-child]:h-[18px] [&>svg:last-child]:w-[18px] [&>svg:last-child]:text-muted-foreground`}>
             <Glyph icon={node.icon} />
             <span className="truncate">{node.label}</span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent
             data-alchemy-submenu={node.id}
-            className="w-72 max-w-[calc(100vw-1rem)] max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto"
+            className={`${D.submenu} max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto`}
           >
             {node.children.map((c) => (
               <Row key={c.id} node={c} run={run} />
@@ -68,7 +69,7 @@ function Row({ node, run }: RowProps): React.ReactElement | null {
     case "checkbox":
     case "link":
       return (
-        <DropdownMenuItem data-alchemy-node={node.id} onSelect={() => run(node)} className="gap-2">
+        <DropdownMenuItem data-alchemy-node={node.id} onSelect={() => run(node)} className={D.row}>
           <Glyph icon={node.icon} />
           <span className="truncate">{node.label}</span>
         </DropdownMenuItem>
@@ -85,13 +86,13 @@ function Row({ node, run }: RowProps): React.ReactElement | null {
             }
             run(node);
           }}
-          className={`gap-2 ${node.unavailable ? "opacity-50" : ""} ${node.destructive ? "text-destructive" : ""}`}
+          className={`${D.row} ${node.unavailable ? "opacity-45" : ""} ${node.destructive ? "text-destructive" : ""}`}
         >
           <Glyph icon={node.icon} tone={node.iconTone} />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate">{node.label}</span>
           </span>
-          {node.hint ? <span className="ml-auto text-xs text-muted-foreground">{node.hint}</span> : null}
+          {node.hint ? <span className={D.shortcut}>{node.hint}</span> : null}
         </DropdownMenuItem>
       );
       if (!node.unavailable) return row;
@@ -110,8 +111,8 @@ function Sections({ sections, run, leadingSeparator }: { sections: readonly Menu
     <>
       {sections.map((s, i) => (
         <React.Fragment key={s.id}>
-          {i > 0 || leadingSeparator ? <DropdownMenuSeparator /> : null}
-          {s.label ? <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">{s.label}</DropdownMenuLabel> : null}
+          {i > 0 || leadingSeparator ? <DropdownMenuSeparator className={D.separator} /> : null}
+          {s.label ? <DropdownMenuLabel className={D.heading}>{s.label}</DropdownMenuLabel> : null}
           {s.nodes.map((n) => (
             <Row key={n.id} node={n} run={run} />
           ))}
@@ -135,7 +136,7 @@ function StripButton({ node, run }: { node: MenuLeafNode; run: RowProps["run"] }
           onClick={() => {
             if (!unavailable) run(node);
           }}
-          className={`inline-flex h-7 min-w-7 pointer-coarse:h-11 pointer-coarse:min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground ${
+          className={`inline-flex shrink-0 items-center justify-center ${D.iconButton} text-foreground/80 hover:bg-accent hover:text-foreground ${
             unavailable ? "cursor-default opacity-50 hover:bg-transparent" : ""
           }`}
         >
@@ -154,38 +155,47 @@ export interface DesignMenuPanelProps {
   open: boolean;
   onOpenChange(open: boolean): void;
   onRun(label: string): void;
+  /** Render in place, open, inside this element (the "All, rendered" page). */
+  container?: HTMLElement | null;
 }
 
-export function DesignMenuPanel({ model, arranged, point, open, onOpenChange, onRun }: DesignMenuPanelProps) {
+export function DesignMenuPanel({ model, arranged, point, open, onOpenChange, onRun, container }: DesignMenuPanelProps) {
+  const isStatic = container !== undefined;
   // One panel per open (the caller keys it), so the filter starts empty every time.
   const [query, setQuery] = React.useState("");
   const filtered = query.trim() ? filterPalette(palette(model), query) : null;
   const run = (node: MenuLeafNode) => {
     onRun(node.label);
-    onOpenChange(false);
+    if (!isStatic) onOpenChange(false);
   };
   const anchor = (
     <DropdownMenuTrigger asChild>
-      <span aria-hidden data-alchemy-anchor="context" style={{ position: "fixed", left: point.x, top: point.y, width: 0, height: 0, pointerEvents: "none" }} />
+      <span
+        aria-hidden
+        data-alchemy-anchor="context"
+        style={isStatic ? { display: "block", width: 0, height: 0 } : { position: "fixed", left: point.x, top: point.y, width: 0, height: 0, pointerEvents: "none" }}
+      />
     </DropdownMenuTrigger>
   );
+  if (isStatic && !container) return null;
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange} modal={false}>
-      {typeof document === "undefined" ? anchor : createPortal(anchor, document.body)}
+      {isStatic || typeof document === "undefined" ? anchor : createPortal(anchor, document.body)}
       <DropdownMenuContent
         side="right"
         align="start"
         sideOffset={2}
         collisionPadding={8}
+        {...(isStatic ? { container, avoidCollisions: false, onCloseAutoFocus: (e: Event) => e.preventDefault() } : {})}
         data-alchemy-layout="context-design"
         onPointerUpCapture={(event) => {
           if (event.button === 2) event.preventDefault();
         }}
-        className="w-72 max-h-[min(var(--radix-dropdown-menu-content-available-height),32rem)] overflow-y-auto"
+        className={`${D.menu} ${isStatic ? "max-h-none shadow-sm" : "max-h-[min(var(--radix-dropdown-menu-content-available-height),44rem)] overflow-y-auto shadow-lg"}`}
       >
         <TooltipProvider>
           {model.header ? (
-            <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground" title={model.header.text}>
+            <DropdownMenuLabel className={`truncate ${D.heading} font-normal`} title={model.header.text}>
               {model.header.label}
               {model.header.text.trim() ? `: ${model.header.text}` : null}
             </DropdownMenuLabel>
@@ -201,12 +211,12 @@ export function DesignMenuPanel({ model, arranged, point, open, onOpenChange, on
                 const first = filtered?.leaves[0]?.node;
                 if (e.key === "Enter" && first && first.kind !== "submenu") run(first);
               }}
-              className="h-7 w-full rounded-md border border-border bg-transparent px-2 text-sm outline-none"
+              className={D.search}
             />
           </div>
           {filtered ? (
             <>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className={D.separator} />
               {filtered.leaves.length ? (
                 filtered.leaves.map(({ node, breadcrumb }) => (
                   <DropdownMenuItem
@@ -215,14 +225,14 @@ export function DesignMenuPanel({ model, arranged, point, open, onOpenChange, on
                     onSelect={() => {
                       if (node.kind !== "submenu") run(node);
                     }}
-                    className="flex-col items-start gap-0"
+                    className={`${D.row} flex-col items-start gap-0`}
                   >
                     <span>{node.label}</span>
-                    <span className="text-xs text-muted-foreground">{breadcrumb.join(" › ")}</span>
+                    <span className={D.description}>{breadcrumb.join(" › ")}</span>
                   </DropdownMenuItem>
                 ))
               ) : (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">No action matches “{query}”.</div>
+                <div className={`${D.row} text-muted-foreground`}>No action matches “{query}”</div>
               )}
             </>
           ) : (
@@ -230,8 +240,8 @@ export function DesignMenuPanel({ model, arranged, point, open, onOpenChange, on
               <Sections sections={arranged.before} run={run} leadingSeparator />
               {arranged.strip.length ? (
                 <>
-                  <DropdownMenuSeparator />
-                  <div role="toolbar" aria-label="Clipboard" className="flex items-center gap-0.5 px-1 py-1">
+                  <DropdownMenuSeparator className={D.separator} />
+                  <div role="toolbar" aria-label="Clipboard" className={D.strip}>
                     {arranged.strip.map((n) => (
                       <StripButton key={n.id} node={n} run={run} />
                     ))}

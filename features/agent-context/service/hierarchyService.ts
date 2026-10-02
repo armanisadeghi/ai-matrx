@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { makeCreatedOrganizationActive } from "@/features/organizations/madeOrganizationIsActive";
 import { archiveOrganization as archiveOrganizationDoor } from "@/features/organizations/service/organizationArchive";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { writeOne } from "@/utils/supabase/writeOne";
@@ -361,6 +362,8 @@ export const hierarchyService = {
       p_description: data.description,
     });
     if (error) throw error;
+    // The organization she just made is the one she works in (G5 a).
+    makeCreatedOrganizationActive({ id: org.id, name: org.name });
 
     return { ...org, role: "owner" } as HierarchyOrg;
   },

@@ -49,7 +49,8 @@ try {
   });
 
   // ── R04 the twelve screens ────────────────────────────────────────────────────────────────
-  for (const [key, query] of SCREENS) {
+  // SN_DRILL_ONLY=table runs just the table step (a quick loop while editing it).
+  for (const [key, query] of process.env.SN_DRILL_ONLY === "table" ? [] : SCREENS) {
     doors.length = 0;
     await ctx.step(["R04"], `usage screen ${key}`, admin, async () => {
       await ctx.goto(admin, `${ctx.manageOrigin}/administration/usage${query}`);
@@ -65,29 +66,14 @@ try {
   }
 
   // ── R01–R03 a table drilled by a Dimension (the custom-table kind) ───────────────────────────
-  // `?by=<field>` on a table page groups the grid's ROWS (records-ui 70c60014f1, the ruled behaviour); the
-  // drill's answer view is its own mode, reached through the Group menu's second level ("Then by"), which is
-  // a real drill question. So this walk goes in through that entry, as a person does, never through `?by=`.
-  await ctx.step(["R01", "R02", "R03"], "a clinic table drills through the Group menu and its groups add up", admin, async () => {
+  // ONE level (`?by=status`) groups the grid's ROWS and never asks the drill (records-ui 70c60014f1, the ruled
+  // behaviour). The drill's answer view is its own mode: a real drill question — a SECOND level, a pivot, a
+  // window, a comparison or a trail — opens it (gridDrill.tsx `useGridDrillQuestion`). The merged grid has no
+  // button for it (its Group control is the one-level select), so the drill is entered the way a saved link or
+  // another page enters it: a two-level address. Status is a choice column, so it is a Dimension (B4-05).
+  await ctx.step(["R01", "R02", "R03"], "a clinic table drills (two levels) and its groups add up to the total", admin, async () => {
     doors.length = 0;
-    await ctx.goto(admin, `/data-v2/${TABLE}?view=grid`);
-    await admin.waitForSelector("[data-matrx-table-group-by]", { timeout: 90000 });
-    await sleep(800);
-    const pick = async (marker, optionRef) => {
-      await admin.locator("[data-matrx-table-group-by]").first().click();
-      await admin.locator(`[data-matrx-drill-level-menu="${marker}"]`).first().click();
-      const option = optionRef
-        ? admin.locator(`[data-matrx-drill-option="${optionRef}"]`).first()
-        : admin.locator("[data-matrx-drill-option]:not([data-matrx-drill-option='status'])").first();
-      await option.waitFor({ timeout: 15000 });
-      const ref = await option.getAttribute("data-matrx-drill-option");
-      await option.click();
-      await sleep(600);
-      return ref;
-    };
-    // Level one is a Dimension (Status is a choice column, BREAKER-4 B4-05); a second level opens the drill.
-    await pick("0", "status");
-    const second = await pick("1", null);
+    await ctx.goto(admin, `/data-v2/${TABLE}?view=grid&by=status,insurance_provider&show=count`);
     await settle(admin);
     await sleep(800);
     const r = await read(admin);
@@ -107,7 +93,7 @@ try {
     const described = doors.some((d) => d.door === "drill_describe" && d.status < 400);
     return {
       ok: r.groups > 0 && !r.error && asked && described && adds && !doors.some((d) => d.status >= 400),
-      detail: `Group menu status › ${second}: ${r.groups} groups sum ${sum} vs total ${sums.total} (${adds ? "add up" : "DO NOT add up"}); doors ${used.join(", ") || "none seen"}`,
+      detail: `two-level drill: ${r.groups} groups sum ${sum} vs total ${sums.total} (${adds ? "add up" : "DO NOT add up"}); doors ${used.join(", ") || "none seen"}`,
     };
   });
 

@@ -32,7 +32,7 @@ export function AgentSidebarOverlay({
       height="full"
       closeOnBackdropClick={true}
       closeOnEsc={true}
-      keepOpenOnEsc={hasUnsentDraft}
+      holdsUnsentWork={hasUnsentDraft}
       showCloseButton={true}
       contentClassName="p-0"
       lockScroll={false}

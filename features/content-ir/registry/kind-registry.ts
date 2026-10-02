@@ -39,6 +39,22 @@ import {
 import { SYSTEM_KIND_DEFINITIONS } from "./system-kinds";
 import { getSurfaceForJsonRootKey } from "./surface-registry";
 import type { KindDefinition } from "@ai-matrx/content-ir";
+import { isTableKind, type TableKindFacts } from "@ai-matrx/records";
+
+/**
+ * How long a table kind's facts are fresh before a sighting re-reads them (design §1.4, A3).
+ * Realtime and this page's own structure announcements refresh sooner; the lease is the floor
+ * when neither is bound (the organization's store switch off).
+ */
+const TABLE_KIND_LEASE_MS = 30_000;
+
+type TableKindSource = typeof import("./table-kind-source");
+let tableKindSource: Promise<TableKindSource> | null = null;
+/** The table-kind machinery, loaded the first time a `table:` slug is sighted — never before. */
+function loadTableKindSource(): Promise<TableKindSource> {
+  tableKindSource ??= import("./table-kind-source");
+  return tableKindSource;
+}
 
 type SchemaArrivalListener = (kind: string, schema: KindSchema | null) => void;
 
@@ -125,6 +141,16 @@ class KindRegistry {
    * registered-kind predicate now that warm no longer ingests schemas.
    */
   private catalogSlugs = new Set<string>();
+  /** `table:<uuid>` → the store's facts (the card draws its columns from these). */
+  private readonly tableFacts = new Map<string, TableKindFacts>();
+  /** `table:<uuid>` → when its facts (or refusal) were last read. The freshness lease. */
+  private readonly tableReadAt = new Map<string, number>();
+  /** `table:<uuid>` → mounted cards holding it live, and the one join they share. */
+  private readonly tableHolds = new Map<
+    string,
+    { count: number; leave: (() => void) | null; organizationId: string | null; records: Set<(ids: readonly string[] | null) => void> }
+  >();
+  private tableStructureHeard = false;
 
   constructor(systemKinds: KindDefinition[]) {
     for (const def of systemKinds) {
@@ -199,11 +225,82 @@ class KindRegistry {
    * Call after `ensureWarm()` (cheap — the light catalog) for DB coverage.
    */
   isKnownKind(kind: string): boolean {
+    // A TABLE KIND IS NEVER A REGISTRY KIND (design §1.4). This is the save-from-chat
+    // predicate (`extractRegisteredKindBlocks` → `content_ir.kind_instance`); a record of a
+    // Table must never enter it, whatever the registry holds for the slug.
+    if (isTableKind(kind)) return false;
     return (
       this.defs.has(kind) ||
       this.catalogSlugs.has(kind) ||
       this.emittedSchemas.has(kind)
     );
+  }
+
+  /**
+   * "Does the kind system draw this?" — a registry kind, or a table kind the registry has
+   * answered (its facts, or the store's refusal). The question the escaped-kind notice asks
+   * (B3): a fenced `table:` record drawn by the card is rendered, not escaped.
+   */
+  isRenderableKind(kind: string): boolean {
+    return this.isKnownKind(kind) || (isTableKind(kind) && this.defs.has(kind));
+  }
+
+  /** The store's facts for a table kind, once read. */
+  getTableFacts(kind: string): TableKindFacts | undefined {
+    return this.tableFacts.get(kind);
+  }
+
+  /**
+   * HOLD A TABLE KIND LIVE while a card shows it (design §1.4, A4). Counted per mounted card;
+   * the first hold joins `custom:table:<id>` (and its options Tables) on the organization's
+   * one realtime port, the last release leaves. `onRecords` hears record changes in the Table
+   * itself, so a dropped reference can re-read its record.
+   */
+  holdTableKind(kind: string, onRecords?: (ids: readonly string[] | null) => void): () => void {
+    if (!isTableKind(kind)) return () => undefined;
+    const hold = this.tableHolds.get(kind) ?? { count: 0, leave: null, organizationId: null, records: new Set() };
+    this.tableHolds.set(kind, hold);
+    hold.count += 1;
+    if (onRecords) hold.records.add(onRecords);
+    this.syncTableJoin(kind);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      hold.count -= 1;
+      if (onRecords) hold.records.delete(onRecords);
+      if (hold.count > 0) return;
+      hold.leave?.();
+      this.tableHolds.delete(kind);
+    };
+  }
+
+  /** Join (or re-join, when the facts moved to another organization or options) a held Table. */
+  private syncTableJoin(kind: string): void {
+    const hold = this.tableHolds.get(kind);
+    const facet = this.defs.get(kind)?.table;
+    if (!hold || hold.count === 0 || !facet?.organizationId) return;
+    if (hold.leave && hold.organizationId === facet.organizationId) return;
+    hold.leave?.();
+    hold.organizationId = facet.organizationId;
+    const organizationId = facet.organizationId;
+    hold.leave = null;
+    void loadTableKindSource().then((source) => {
+      const current = this.tableHolds.get(kind);
+      if (current !== hold || hold.count === 0 || hold.leave) return;
+      hold.leave = source.joinTableLive(organizationId, facet.tableId, facet.optionsTableIds, {
+        shape: () => this.invalidateTableKind(kind),
+        records: (ids) => {
+          for (const listener of hold.records) listener(ids);
+        },
+      });
+    });
+  }
+
+  /** The Table's shape moved: re-read its facts now (the lease is cleared). */
+  invalidateTableKind(kind: string): void {
+    this.tableReadAt.delete(kind);
+    this.requestSchema(kind);
   }
 
   listDefinitions(): KindDefinition[] {
@@ -354,6 +451,10 @@ class KindRegistry {
   /** Cold fetch, fire-and-forget (the parser's SchemaResolver.request). */
   requestSchema(kind: string): void {
     this.demanded = true;
+    if (isTableKind(kind)) {
+      this.requestTableKind(kind);
+      return;
+    }
     // Already carrying DB truth for this kind — nothing to fetch. A COMPILED
     // schema is only the bootstrap floor, not truth: under the lazy design
     // the DB override that the bulk warm sweep used to deliver arrives
@@ -426,6 +527,82 @@ class KindRegistry {
           relation: kind,
           name: error instanceof Error ? error.name : undefined,
           stack: error instanceof Error ? error.stack : undefined,
+          raw: error,
+        });
+        this.notifyArrival(kind, null);
+      } finally {
+        this.inFlight.delete(kind);
+      }
+    })();
+  }
+
+  /**
+   * A TABLE KIND, answered from the store (design §1.4). Fresh-return first (a definition read
+   * within the lease answers at once, as a `content_ir` definition does), then the shared
+   * in-flight set. A refusal is still a definition — `table.refusal` carries the store's
+   * sentence — so the card says so instead of loading forever.
+   */
+  private requestTableKind(kind: string): void {
+    const readAt = this.tableReadAt.get(kind);
+    if (readAt !== undefined && Date.now() - readAt < TABLE_KIND_LEASE_MS) return;
+    if (this.inFlight.has(kind)) return;
+    this.inFlight.add(kind);
+    void (async () => {
+      try {
+        const source = await loadTableKindSource();
+        if (!this.tableStructureHeard) {
+          this.tableStructureHeard = true;
+          // This page changed a Table's shape (a rename in /data-v2 in this tab): every table
+          // kind it names — or all of them, when the door named none — re-reads.
+          source.hearTableStructure((tableId) => {
+            for (const held of [...this.tableReadAt.keys()]) {
+              if (tableId === null || held === `table:${tableId}`) this.invalidateTableKind(held);
+            }
+          });
+        }
+        const tableId = kind.slice("table:".length);
+        const answer = await source.readTableKind(kind, tableId);
+        this.tableReadAt.set(kind, Date.now());
+        const previous = this.defs.get(kind);
+        if (answer.ok) {
+          this.tableFacts.set(kind, answer.facts);
+          const same = previous?.table?.stamp === answer.facet.stamp && previous?.table?.refusal == null && previous.schema;
+          if (!same) {
+            this.upsertDefinition({
+              kind,
+              schema: answer.schema,
+              schemaSource: "table",
+              tier: "cold",
+              legacyBlockType: "platform_record",
+              artifact: { canvasType: "kind_value" },
+              table: answer.facet,
+            });
+          }
+          this.syncTableJoin(kind);
+          this.notifyArrival(kind, answer.schema);
+        } else {
+          this.tableFacts.delete(kind);
+          if (previous?.table?.refusal !== answer.facet.refusal) {
+            this.upsertDefinition({
+              kind,
+              schema: null,
+              schemaSource: "table",
+              tier: "cold",
+              legacyBlockType: "platform_record",
+              artifact: { canvasType: "kind_value" },
+              table: answer.facet,
+            });
+          }
+          this.notifyArrival(kind, null);
+        }
+      } catch (error) {
+        captureError({
+          source: "content-ir",
+          message: `kind-registry could not read table kind "${kind}": ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          relation: kind,
+          callSite: "KindRegistry.requestTableKind",
           raw: error,
         });
         this.notifyArrival(kind, null);

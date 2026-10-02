@@ -23,7 +23,10 @@ import {
   selectAgentVariableDefinitions,
   selectAgentMessages,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentMessages,
+  setAgentVariableDefinitions,
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   sanitizeVariableName,
@@ -37,6 +40,7 @@ import { AgentVariableEditor } from "./AgentVariableEditor";
 import {
   isCustomDataBinding,
   unplacedBoundVariableNames,
+  withBoundVariablePlaced,
   isEmptyBinding,
 } from "@ai-matrx/chat/agents/utils/variable-binding";
 import { CustomDataBindingSummary } from "./custom-data/CustomDataBindingSummary";
@@ -92,6 +96,15 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
   const unplacedBound = new Set(
     unplacedBoundVariableNames(variables, messages),
   );
+  // Same one-click remedy as the builder chip: append {{name}} to the system prompt.
+  const handlePlace = (name: string) => {
+    dispatch(
+      setAgentMessages({
+        id: agentId,
+        messages: withBoundVariablePlaced(messages ?? [], name),
+      }),
+    );
+  };
   const undeclaredNames = extractVariableReferences(allText).filter(
     (n) => !definedNamesSet.has(n) && isDeclarableVariableName(n),
   );
@@ -343,6 +356,19 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
                     : "Changes save automatically"}
                 </p>
               </div>
+
+              {unplacedBound.has(selection.name) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto mr-2 h-6 px-2 text-[11px]"
+                  onClick={() => handlePlace(selection.name)}
+                  title={`Add {{${selection.name}}} to the system prompt`}
+                  aria-label={`Place ${selection.name} in the system prompt`}
+                >
+                  Place
+                </Button>
+              )}
 
               <Button
                 variant="ghost"

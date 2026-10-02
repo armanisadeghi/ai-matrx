@@ -140,3 +140,17 @@ export function nameMatches(row: StoreTableRow, needle: string): boolean {
   const n = needle.trim().toLowerCase();
   return n === "" || row.name.toLowerCase().includes(n);
 }
+
+/** The rows the filters leave: the organization filter (null = every organization), then name contains. */
+export function filterRows(rows: readonly StoreTableRow[], orgId: string | null, needle: string): StoreTableRow[] {
+  return rows.filter((r) => (!orgId || r.organizationId === orgId) && nameMatches(r, needle));
+}
+
+/**
+ * A selection never outlives the filter that showed it: only ids still visible AND selectable stay
+ * selected, so the confirm never counts — and the archive never touches — a row the person cannot see.
+ */
+export function keepVisibleSelection(selectedIds: readonly string[], visible: readonly StoreTableRow[]): string[] {
+  const allowed = new Set(visible.filter((r) => protectionOf(r) === null).map((r) => r.id));
+  return selectedIds.filter((id) => allowed.has(id));
+}

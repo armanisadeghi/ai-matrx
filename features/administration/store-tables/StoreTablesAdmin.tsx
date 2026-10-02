@@ -4,7 +4,8 @@
 //
 // /administration/database/store-tables (lane ONE-HOME, wave 6). Every table in the organizations the
 // admin lane reaches — the admin's memberships plus the system organizations the store's wall admits a
-// super admin to ON THE ADMIN LANE ONLY (iam.has_org_access_for) — with one bulk action, Archive.
+// super admin to ON THE ADMIN LANE ONLY (iam.has_org_access_for) — with one bulk action, Archive, and a
+// "Test orgs" menu that marks organizations as test fixtures (TestOrgsMenu.tsx).
 //
 // READS, through @ai-matrx/records as the signed-in person (the browser client stamps
 // `x-matrx-admin-lane: 1` on /administration/**; no service role):
@@ -20,13 +21,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { Archive, ListChecks, X } from "lucide-react";
+import { Archive, ListChecks, Lock, X } from "lucide-react";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
@@ -37,7 +38,8 @@ import { toast } from "@/lib/toast";
 import {
   archiveTables,
   documentIsKept,
-  nameMatches,
+  filterRows,
+  keepVisibleSelection,
   protectionOf,
   type ArchiveOutcome,
   type DoorAnswer,
@@ -45,11 +47,13 @@ import {
   type StoreTableRow,
   type TableArchiveDoor,
 } from "./archiveTables";
+import { TestOrgsMenu } from "./TestOrgsMenu";
 
-const PROTECTION_LABEL: Record<Exclude<ProtectionReason, null>, string> = {
-  kept: "Kept by the app",
-  "named-in-code": "Named in code",
-  "platform-example": "Platform example",
+// A short state label per reason, the reason itself in the tooltip (interface-text: honesty is state).
+const PROTECTION: Record<Exclude<ProtectionReason, null>, { label: string; tip: string }> = {
+  kept: { label: "Kept", tip: "The app keeps this table" },
+  "named-in-code": { label: "In use", tip: "Used by the app" },
+  "platform-example": { label: "Example", tip: "A platform example table" },
 };
 
 /** The records client for one organization, or for every organization the person reaches (null). */
@@ -168,10 +172,30 @@ export function StoreTablesAdmin() {
     };
   }, [orgId, systemOrgs, memberships, membershipsLoading, nonce]);
 
-  const shown = useMemo(() => (rows ?? []).filter((r) => nameMatches(r, name ?? "")), [rows, name]);
+  // The organization filter applies to the rows on screen at once, so rows of the previous
+  // organization never linger (and stay selectable) while the new read is in flight.
+  const shown = useMemo(() => filterRows(rows ?? [], orgId, name ?? ""), [rows, orgId, name]);
   const selectable = useMemo(() => shown.filter((r) => protectionOf(r) === null), [shown]);
   const byId = useMemo(() => new Map((rows ?? []).map((r) => [r.id, r] as const)), [rows]);
-  const selectedRows = selectedIds.map((id) => byId.get(id)).filter((r): r is StoreTableRow => Boolean(r));
+  // A filter change drops selected rows it now hides (the setters below); this second wall keeps the
+  // confirm and the archive to visible rows even when the address changes another way (back button).
+  const visibleSelectedIds = useMemo(() => keepVisibleSelection(selectedIds, shown), [selectedIds, shown]);
+  const selectedRows = visibleSelectedIds.map((id) => byId.get(id)).filter((r): r is StoreTableRow => Boolean(r));
+
+  const changeOrg = useCallback(
+    (next: string | null) => {
+      setOrgId(next);
+      setSelectedIds((prev) => keepVisibleSelection(prev, filterRows(rows ?? [], next, name ?? "")));
+    },
+    [setOrgId, rows, name],
+  );
+  const changeName = useCallback(
+    (next: string) => {
+      setName(next);
+      setSelectedIds((prev) => keepVisibleSelection(prev, filterRows(rows ?? [], orgId, next)));
+    },
+    [setName, rows, orgId],
+  );
 
   const runArchive = useCallback(async () => {
     const targets = selectedRows.map((r) => ({ tableId: r.id, organizationId: r.organizationId, name: r.name }));
@@ -197,11 +221,25 @@ export function StoreTablesAdmin() {
       width: 150,
       accessorFn: (r) => {
         const reason = protectionOf(r);
-        return reason ? PROTECTION_LABEL[reason] : "";
+        return reason ? PROTECTION[reason].label : "";
       },
       cell: (r) => {
         const reason = protectionOf(r);
-        return reason ? <Badge variant="outline" className="text-muted-foreground">{PROTECTION_LABEL[reason]}</Badge> : <span className="text-muted-foreground">—</span>;
+        if (!reason) return <span className="text-muted-foreground">—</span>;
+        const { label, tip } = PROTECTION[reason];
+        return (
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" data-store-tables-kept={reason}>
+                  <Lock aria-hidden className="h-3.5 w-3.5" />
+                  {label}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{tip}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
       },
     },
     { id: "updated", header: "Updated", width: 170, accessorFn: (r) => r.updatedAt ?? "", cell: (r) => <span className="tabular-nums text-muted-foreground">{r.updatedAt ? new Date(r.updatedAt).toLocaleString() : "—"}</span> },
@@ -249,7 +287,7 @@ export function StoreTablesAdmin() {
           customSearch: (
             <input
               value={name ?? ""}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => changeName(e.target.value)}
               placeholder="Name contains…"
               aria-label="Name contains"
               className="h-8 w-48 rounded-md border border-border bg-background px-2 text-base lg:text-xs"
@@ -258,7 +296,8 @@ export function StoreTablesAdmin() {
           refresh: { onRefresh: () => setNonce((n) => n + 1) },
           actions: (
             <>
-              <EntityOrgFilter orgId={orgId} onChange={setOrgId} extraOrganizations={systemOrgs ?? []} />
+              <EntityOrgFilter orgId={orgId} onChange={changeOrg} extraOrganizations={systemOrgs ?? []} />
+              <TestOrgsMenu />
               <Button
                 variant="outline"
                 size="sm"
@@ -273,7 +312,7 @@ export function StoreTablesAdmin() {
           ),
         }}
         selection={{
-          selectedIds,
+          selectedIds: visibleSelectedIds,
           onSelectedIdsChange: setSelectedIds,
           isRowSelectable: (r) => protectionOf(r) === null,
           noun: "table",

@@ -34,6 +34,8 @@
  * moving the source to the DB is a change to this file, not to its callers.
  */
 
+import { isTableKind } from "@ai-matrx/records";
+
 /** How a kind's instances are treated once they exist. */
 export type KindDisposition = "record";
 
@@ -45,6 +47,12 @@ export interface KindRecordDisposition {
   label: string;
   /** Human plural, in the reader's words. e.g. "Wine Tastings". */
   labelPlural: string;
+  /**
+   * Where the records live. `"table"` (KINDS-GLUE wave 3 §5.3): a `table:<uuid>` kind's records
+   * are rows of that Table, so the strip's kind-store reads do not apply; it mounts only once
+   * wave 2's landing read (`landingOutcomesFor`) exists. Absent = the kind store.
+   */
+  storage?: "kind_store" | "table";
 }
 
 const registry = new Map<string, KindRecordDisposition>();
@@ -71,6 +79,10 @@ export function resolveKindRecordDisposition(
   kind: string | null | undefined,
 ): KindRecordDisposition | null {
   if (!kind) return null;
+  // Every Table is a kind, and its records are records (design §6.2 item 1, `disposition_of`).
+  if (isTableKind(kind)) {
+    return { kind, disposition: "record", label: "Record", labelPlural: "Records", storage: "table" };
+  }
   return registry.get(kind) ?? null;
 }
 

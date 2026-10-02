@@ -43,6 +43,8 @@ import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { DataHomeList } from "./DataHomeList";
 import { DataHomeArchive } from "./DataHomeArchive";
 import { MountWhenNear } from "./MountWhenNear";
+import { foundHighlightOf } from "@ai-matrx/kit/reversible";
+import { ARCHIVED_TABLES_SPOT } from "./archivedTablesPlace";
 import type { DataHomeMaking } from "./DataHomeRoute";
 
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
@@ -169,7 +171,7 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
                       />
                     </MountWhenNear>
                     {/* Read when the person scrolls to it: the archive door is a second walk the first screen never needs. */}
-                    <MountWhenNear>
+                    <MountWhenNear eager={foundHighlightOf(searchParams) === ARCHIVED_TABLES_SPOT}>
                       <DataHomeArchive dataSource={dataSource} organizationFilter={organizationId} />
                     </MountWhenNear>
                   </div>

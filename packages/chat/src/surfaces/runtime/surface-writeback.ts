@@ -92,6 +92,7 @@ import {
   type SurfaceWriteHandlers,
   type SurfaceWriteOutcome,
 } from "./SurfaceRuntimeContext";
+import { leaseAgentWriteSource } from "./agent-write-sources";
 
 export type { SurfaceWriteOutcome } from "./SurfaceRuntimeContext";
 
@@ -1115,6 +1116,30 @@ async function applySurfaceWriteNow(
   const stack = registry.stack().filter(
     (entry) => !opts?.surfaceName || entry.surfaceName === opts.surfaceName,
   );
+
+  // A COPY THE AGENT WAS HANDED (a board item it opened) takes its write even
+  // after another tile became the live one — resolved in that copy's capture,
+  // held mounted through the card (`agent-write-sources.ts`).
+  if (onScreen && opts?.origin === "agent") {
+    const lease = await leaseAgentWriteSource({
+      targetName,
+      ...(opts.surfaceName ? { surfaceName: opts.surfaceName } : {}),
+      ...(opts.conversationId ? { conversationId: opts.conversationId } : {}),
+      onScreenDeclares: stack.some((entry) =>
+        Boolean(findDeclaredTarget(entry.surfaceName, targetName)),
+      ),
+    });
+    if (lease) {
+      try {
+        return await applySurfaceWriteNow(targetName, rawValue, {
+          ...opts,
+          source: lease.source,
+        });
+      } finally {
+        lease.release();
+      }
+    }
+  }
 
   if (stack.length === 0) {
     return failUnapplicable(
