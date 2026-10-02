@@ -32,7 +32,6 @@ import {
   selectLockedAgentId,
   selectLockedAgentVersion,
   selectModelInputConversationId,
-  selectModelFollowUpNotice,
 } from "../redux/selectors";
 import { setLockedAgent, setLockedVersion } from "../redux/thunks";
 import { MODEL_BATTLE_SURFACE_ANCHORS } from "@/features/surfaces/manifests/agent-comparison-model.manifest";
@@ -42,7 +41,6 @@ export function LockedInputSection() {
   const agentId = useAppSelector(selectLockedAgentId);
   const agentVersion = useAppSelector(selectLockedAgentVersion);
   const inputConversationId = useAppSelector(selectModelInputConversationId);
-  const followUpNotice = useAppSelector(selectModelFollowUpNotice);
 
   const agent = useAppSelector((s) =>
     agentId ? selectAgentById(s, agentId) : undefined,
@@ -308,7 +306,6 @@ export function LockedInputSection() {
             conversationId={inputConversationId}
             surfaceKey="agent-comparison-model-input"
             showHeading={false}
-            notice={followUpNotice}
             surfaceValueAnchors={{
               variables: MODEL_BATTLE_SURFACE_ANCHORS.sharedVariables,
               resources: MODEL_BATTLE_SURFACE_ANCHORS.sharedResources,

@@ -38,8 +38,11 @@ jest.mock(
 );
 
 import { submitAllModel } from "./thunks";
-import { FOLLOW_UP_NEEDED_TEXT } from "@/features/agent-comparison/shared/battle-follow-up";
-import { selectModelFollowUpNotice } from "./selectors";
+import {
+  FOLLOW_UP_NEEDED_TEXT,
+  planBattleFanOut,
+  selectBattleFollowUpNotice,
+} from "@/features/agent-comparison/shared/battle-follow-up";
 import type { RootState } from "@/lib/redux/store";
 
 function battleState(opts: { sharedText: string; ranColumns: string[] }) {
@@ -53,7 +56,6 @@ function battleState(opts: { sharedText: string; ranColumns: string[] }) {
       activeSetId: null,
       activeSetName: null,
       isSubmittingAll: false,
-      followUpNeeded: false,
     },
     conversations: {
       byConversationId: Object.fromEntries(
@@ -65,7 +67,13 @@ function battleState(opts: { sharedText: string; ranColumns: string[] }) {
         columns.map((id) => [id, { orderedIds: opts.ranColumns.includes(id) ? ["u1", "a1"] : [] }]),
       ),
     },
-    instanceUserInput: { byConversationId: { shared: input(opts.sharedText) } },
+    instanceUserInput: {
+      byConversationId: {
+        shared: input(opts.sharedText),
+        // Open battle / Request mod: each column's own composer.
+        ...Object.fromEntries(columns.map((id) => [id, input(opts.sharedText)])),
+      },
+    },
     instanceVariableValues: {
       byConversationId: { shared: { userValues: { tone: "warm" }, scopeValues: {} } },
     },
@@ -82,17 +90,13 @@ async function submitAll(state: RootState) {
     }
     const a = action as { type: string; conversationId?: string; payload?: unknown };
     if (a.type === "test/smartExecute" && a.conversationId) fired.push(a.conversationId);
-    if (a.type === "agentComparisonModel/setModelFollowUpNeeded") {
-      current = {
-        ...current,
-        agentComparisonModel: { ...current.agentComparisonModel, followUpNeeded: a.payload as boolean },
-      } as RootState;
-    }
     return { ...a, unwrap: () => Promise.resolve(undefined) };
   };
   const action = await submitAllModel()(dispatch as never, () => current, undefined);
   return { result: action.payload as { launched: number; failed: number; needsFollowUp?: number }, state: () => current };
 }
+
+const COLUMNS = ["col-gpt", "col-claude"];
 
 beforeEach(() => {
   fired.length = 0;
@@ -103,7 +107,7 @@ describe("Submit All with an empty shared composer", () => {
     const { result, state } = await submitAll(battleState({ sharedText: "", ranColumns: ["col-gpt", "col-claude"] }));
     expect(fired).toEqual([]);
     expect(result).toMatchObject({ launched: 0, failed: 0, needsFollowUp: 2 });
-    expect(selectModelFollowUpNotice(state())).toBe(FOLLOW_UP_NEEDED_TEXT);
+    expect(selectBattleFollowUpNotice(state(), "shared", COLUMNS)).toBe(FOLLOW_UP_NEEDED_TEXT);
   });
 
   it("still starts a column that has not run from the variables, in the same click", async () => {
@@ -118,6 +122,18 @@ describe("Submit All with an empty shared composer", () => {
     );
     expect(fired).toEqual(["col-gpt", "col-claude"]);
     expect(result).toMatchObject({ launched: 2, failed: 0 });
-    expect(selectModelFollowUpNotice(state())).toBeNull();
+    expect(selectBattleFollowUpNotice(state(), "shared", COLUMNS)).toBeNull();
+  });
+});
+
+describe("the per-column modes (Open battle, Request mod) — each column's own composer", () => {
+  it("holds a column that already ran with nothing typed, and starts a fresh one", () => {
+    const plan = planBattleFanOut(battleState({ sharedText: "", ranColumns: ["col-gpt"] }), null, COLUMNS);
+    expect(plan).toEqual({ fire: ["col-claude"], needFollowUp: ["col-gpt"] });
+  });
+
+  it("sends typed text to a column that already ran", () => {
+    const plan = planBattleFanOut(battleState({ sharedText: "Shorter.", ranColumns: COLUMNS }), null, COLUMNS);
+    expect(plan).toEqual({ fire: COLUMNS, needFollowUp: [] });
   });
 });

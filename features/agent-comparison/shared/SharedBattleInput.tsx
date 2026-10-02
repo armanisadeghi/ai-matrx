@@ -10,7 +10,11 @@
 import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
 import type { SmartAgentInputSurfaceValueAnchors } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectMountedBattleSetId } from "./activeBattleColumns";
+import {
+  selectActiveBattleColumns,
+  selectMountedBattleSetId,
+} from "./activeBattleColumns";
+import { selectBattleFollowUpNotice } from "./battle-follow-up";
 
 interface SharedBattleInputProps {
   conversationId: string | null | undefined;
@@ -18,8 +22,6 @@ interface SharedBattleInputProps {
   description?: string;
   showHeading?: boolean;
   surfaceValueAnchors?: SmartAgentInputSurfaceValueAnchors;
-  /** One line under the composer when Submit All needs something from the person. */
-  notice?: string | null;
 }
 
 export function SharedBattleInput({
@@ -28,13 +30,22 @@ export function SharedBattleInput({
   description = "Use Submit All in the toolbar to run every column.",
   showHeading = true,
   surfaceValueAnchors,
-  notice,
 }: SharedBattleInputProps) {
   // The unsent draft belongs to THIS battle: a saved battle keeps its own key,
   // an unsaved one the mode's "new" key. One surface key for every battle let
   // a saved battle's request reappear in the next new battle as "your draft".
   const setId = useAppSelector(selectMountedBattleSetId);
   const draftAlias = `${surfaceKey}:${setId ?? "new"}`;
+  // Every mode's shared composer: the line Submit All's held columns need
+  // (battle-follow-up.ts), derived from the mounted mode's columns.
+  const columns = useAppSelector(selectActiveBattleColumns);
+  const notice = useAppSelector((state) =>
+    selectBattleFollowUpNotice(
+      state,
+      conversationId,
+      columns.map((c) => c.conversationId),
+    ),
+  );
   return (
     <div className="space-y-1.5">
       {showHeading && (

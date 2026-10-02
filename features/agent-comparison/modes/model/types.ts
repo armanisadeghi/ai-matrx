@@ -40,6 +40,4 @@ export interface ModelBattleState {
   activeSetId: string | null;
   activeSetName: string | null;
   isSubmittingAll: boolean;
-  /** The last Submit All held columns that already ran: the shared composer had no text. */
-  followUpNeeded: boolean;
 }

@@ -22,8 +22,7 @@ import {
   destroyInstance,
 } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
-import { copyInstanceRequestDraft } from "@ai-matrx/chat/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
-import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { runBattleFanOut } from "@/features/agent-comparison/shared/battle-follow-up";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
   fetchFullAgent,
@@ -52,7 +51,6 @@ import {
 } from "@/features/agent-comparison/service/comparisonSetsService";
 import {
   createBattlePersistence,
-  persistForRun,
   type BattleSubmitResult,
 } from "@/features/agent-comparison/shared/battlePersistence";
 import { forkAgentForVariant } from "@/features/agent-comparison/shared/forkAgentForVariant";
@@ -483,40 +481,17 @@ export const submitAllVariations = createAsyncThunk<
         return { launched: 0, failed: 0, skipped: pausedSkipped };
       }
 
-      for (const col of columns) {
-        dispatch(
-          copyInstanceRequestDraft({
-            sourceConversationId: inputConversationId,
-            targetConversationId: col.conversationId,
-          }),
-        );
-      }
-
-      // The battle gets (or keeps) its identity BEFORE the runs start, so the
-      // URL names it while the answers stream in. Nothing in a saved entry
-      // changes during a run, so there is no second save afterwards.
-      const persisted = await persistForRun(() =>
-        dispatch(persistVariationsBattle()).unwrap(),
-      );
-      if (persisted.cancelled) {
-        return { launched: 0, failed: 0, skipped: allColumns.length, cancelled: true };
-      }
-
-      const results = await Promise.allSettled(
-        columns.map((col) =>
-          dispatch(
-            smartExecute({
-              conversationId: col.conversationId,
-              surfaceKey: VARIATIONS_SURFACE_KEY,
-            }),
-          ).unwrap(),
-        ),
-      );
-
-      const failed = results.filter((r) => r.status === "rejected").length;
-      const launched = results.length - failed;
-
-      return { launched, failed, skipped: pausedSkipped, persistError: persisted.error };
+      // One fan-out for every mode: fresh columns start from the variables;
+      // a column that already ran needs typed text (battle-follow-up.ts).
+      return await runBattleFanOut({
+        dispatch,
+        getState,
+        sourceConversationId: inputConversationId,
+        columns,
+        surfaceKey: VARIATIONS_SURFACE_KEY,
+        persist: () => dispatch(persistVariationsBattle()).unwrap(),
+        skipped: pausedSkipped,
+      });
     } finally {
       dispatch(submitAllFinished());
     }

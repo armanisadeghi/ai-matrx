@@ -20,7 +20,7 @@ import {
   destroyInstance,
 } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
-import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { runBattleFanOut } from "@/features/agent-comparison/shared/battle-follow-up";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
   fetchFullAgent,
@@ -39,7 +39,6 @@ import {
 } from "@/features/agent-comparison/service/comparisonSetsService";
 import {
   createBattlePersistence,
-  persistForRun,
   type BattleSubmitResult,
 } from "@/features/agent-comparison/shared/battlePersistence";
 import { selectMessageCount } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
@@ -271,43 +270,31 @@ export const submitAllRequestMod = createAsyncThunk<
         return { launched: 0, failed: 0, skipped: columns.length };
       }
 
-      // Each column sends its OWN request, and its composer empties the moment it
-      // sends. Keep what each column is about to send, so the saved battle holds
-      // the requests that actually ran — never the emptied composers.
-      for (const col of runnableColumns) {
-        dispatch(
-          setRequestModColumnLastRequest({
-            columnId: col.columnId,
-            request: readLiveColumnRequest(state, col.conversationId),
-          }),
-        );
-      }
-
-      // The battle gets (or keeps) its identity BEFORE the runs start, so the
-      // URL names it while the answers stream in.
-      const persisted = await persistForRun(() =>
-        dispatch(persistRequestModBattle()).unwrap(),
-      );
-      if (persisted.cancelled) {
-        return { launched: 0, failed: 0, skipped: columns.length, cancelled: true };
-      }
-
-      const results = await Promise.allSettled(
-        runnableColumns.map((col) =>
-          dispatch(
-            smartExecute({
-              conversationId: col.conversationId,
-              surfaceKey: REQUEST_MOD_SURFACE_KEY,
-            }),
-          ).unwrap(),
-        ),
-      );
-
-      const failed = results.filter((r) => r.status === "rejected").length;
-      const launched = results.length - failed;
-      const skipped = columns.length - runnableColumns.length;
-
-      return { launched, failed, skipped, persistError: persisted.error };
+      // One fan-out for every mode (battle-follow-up.ts): each column sends its
+      // own composer, and a column that already ran needs typed text.
+      return await runBattleFanOut({
+        dispatch,
+        getState,
+        sourceConversationId: null,
+        columns: runnableColumns,
+        skipped: columns.length - runnableColumns.length,
+        surfaceKey: REQUEST_MOD_SURFACE_KEY,
+        persist: () => dispatch(persistRequestModBattle()).unwrap(),
+        // Each column's composer empties the moment it sends. Keep what each
+        // firing column is about to send, so the saved battle holds the
+        // requests that actually ran — never the emptied composers.
+        beforePersist: (firing) => {
+          for (const col of runnableColumns) {
+            if (!firing.includes(col.conversationId)) continue;
+            dispatch(
+              setRequestModColumnLastRequest({
+                columnId: col.columnId,
+                request: readLiveColumnRequest(state, col.conversationId),
+              }),
+            );
+          }
+        },
+      });
     } finally {
       dispatch(submitAllFinished());
     }

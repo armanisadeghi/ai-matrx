@@ -19,8 +19,7 @@ import {
   destroyInstance,
 } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
-import { copyInstanceRequestDraft } from "@ai-matrx/chat/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
-import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { runBattleFanOut } from "@/features/agent-comparison/shared/battle-follow-up";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
   fetchFullAgent,
@@ -39,7 +38,6 @@ import {
 } from "@/features/agent-comparison/service/comparisonSetsService";
 import {
   createBattlePersistence,
-  persistForRun,
   type BattleSubmitResult,
 } from "@/features/agent-comparison/shared/battlePersistence";
 import {
@@ -53,9 +51,7 @@ import {
   setModelColumns,
   submitAllFinished,
   submitAllStarted,
-  setModelFollowUpNeeded,
 } from "./slice";
-import { planBattleFanOut } from "@/features/agent-comparison/shared/battle-follow-up";
 import type { ModelColumn } from "../types";
 import {
   createBattleInputDraft,
@@ -321,68 +317,17 @@ export const submitAllModel = createAsyncThunk<
       return { launched: 0, failed: 0, skipped: columns.length };
     }
 
-    // A column that already ran needs typed text for its follow-up; fresh
-    // columns start from the variables. Held columns never fire, so they never
-    // fail — the shared composer says what to do (battle-follow-up.ts).
-    const plan = planBattleFanOut(
-      state,
-      inputConversationId,
-      columns.map((c) => c.conversationId),
-    );
-    dispatch(setModelFollowUpNeeded(plan.needFollowUp.length > 0));
-    const firing = columns.filter((c) => plan.fire.includes(c.conversationId));
-    if (firing.length === 0) {
-      return {
-        launched: 0,
-        failed: 0,
-        skipped: 0,
-        needsFollowUp: plan.needFollowUp.length,
-      };
-    }
-
-    for (const col of firing) {
-      dispatch(
-        copyInstanceRequestDraft({
-          sourceConversationId: inputConversationId,
-          targetConversationId: col.conversationId,
-        }),
-      );
-    }
-
-    // The battle gets (or keeps) its identity BEFORE the runs start, so the
-    // URL names it while the answers stream in.
-    const before = await persistForRun(() =>
-      dispatch(persistModelBattle()).unwrap(),
-    );
-    if (before.cancelled) {
-      return { launched: 0, failed: 0, skipped: columns.length, cancelled: true };
-    }
-
-    const results = await Promise.allSettled(
-      firing.map((col) =>
-        dispatch(
-          smartExecute({
-            conversationId: col.conversationId,
-            surfaceKey: MODEL_SURFACE_KEY,
-          }),
-        ).unwrap(),
-      ),
-    );
-
-    const failed = results.filter((r) => r.status === "rejected").length;
-    const launched = results.length - failed;
-
-    const after = await persistForRun(() =>
-      dispatch(persistModelBattle()).unwrap(),
-    );
-
-    return {
-      launched,
-      failed,
-      skipped: 0,
-      needsFollowUp: plan.needFollowUp.length,
-      persistError: before.error ?? after.error,
-    };
+    // One fan-out for every mode: fresh columns start from the variables;
+    // a column that already ran needs typed text (battle-follow-up.ts).
+    return await runBattleFanOut({
+      dispatch,
+      getState,
+      sourceConversationId: inputConversationId,
+      columns,
+      surfaceKey: MODEL_SURFACE_KEY,
+      persist: () => dispatch(persistModelBattle()).unwrap(),
+      persistAfterRun: true,
+    });
   } finally {
     dispatch(submitAllFinished());
   }

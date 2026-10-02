@@ -6,11 +6,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { isConversationRequestEmpty } from "@/features/agent-comparison/shared/battleRequestEmpty";
 import type { ModelColumn, ModelLockedSetup } from "../types";
-import {
-  captureSubmission,
-  isEmptySubmission,
-} from "@ai-matrx/chat/agents/redux/execution-system/thunks/frozen-submission";
-import { FOLLOW_UP_NEEDED_TEXT } from "@/features/agent-comparison/shared/battle-follow-up";
+
 
 const EMPTY_COLUMNS: ModelColumn[] = [];
 const EMPTY_IDS: string[] = [];
@@ -27,7 +23,6 @@ const DEFAULT_ROOT = {
   activeSetId: null,
   activeSetName: null,
   isSubmittingAll: false,
-  followUpNeeded: false,
 } as const;
 
 const selectRoot = (state: RootState) =>
@@ -78,19 +73,6 @@ export const selectActiveModelSetName = createSelector(
   [selectRoot],
   (r) => r.activeSetName,
 );
-
-/**
- * The shared composer's line after a Submit All held columns that already ran:
- * shown until the person types (or attaches) the follow-up. A string or null —
- * a primitive, so no memo is needed.
- */
-export const selectModelFollowUpNotice = (state: RootState): string | null => {
-  const root = selectRoot(state);
-  if (!root.followUpNeeded || !root.inputConversationId) return null;
-  return isEmptySubmission(captureSubmission(state, root.inputConversationId))
-    ? FOLLOW_UP_NEEDED_TEXT
-    : null;
-};
 
 export const selectIsSubmittingAllModel = createSelector(
   [selectRoot],

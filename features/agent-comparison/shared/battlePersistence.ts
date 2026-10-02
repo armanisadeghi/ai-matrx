@@ -234,6 +234,8 @@ export interface BattleSubmitResult {
    * text (an empty follow-up). The shared composer says so; no toast counts them.
    */
   needsFollowUp?: number;
+  /** The shared composer shows the follow-up line, so no toast repeats it. */
+  followUpInline?: boolean;
   /** The person closed the organization picker; nothing ran. */
   cancelled?: boolean;
   /** The runs happened but the battle could not be saved — shown to the person. */

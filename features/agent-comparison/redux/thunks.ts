@@ -16,7 +16,7 @@ import {
   destroyInstance,
 } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
-import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { runBattleFanOut } from "@/features/agent-comparison/shared/battle-follow-up";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
   fetchFullAgent,
@@ -57,7 +57,6 @@ import {
 } from "../service/comparisonSetsService";
 import {
   createBattlePersistence,
-  persistForRun,
   type BattleSubmitResult,
 } from "../shared/battlePersistence";
 import type { BattleAgentVersion, BattleColumn } from "../types";
@@ -358,41 +357,18 @@ export const submitAllBattleColumns = createAsyncThunk<
     );
     const skipped = state.agentComparison.columns.length - targets.length;
 
-    // The battle gets (or keeps) its identity BEFORE the runs start, so the
-    // URL names it while the answers stream in. Nothing in a saved entry
-    // changes during a run, so there is no second save afterwards.
-    const persisted =
-      targets.length > 0
-        ? await persistForRun(() => dispatch(persistBattle()).unwrap())
-        : { cancelled: false, error: null };
-    if (persisted.cancelled) {
-      return {
-        launched: 0,
-        skipped: state.agentComparison.columns.length,
-        failed: 0,
-        cancelled: true,
-      };
-    }
-
-    // Fire smartExecute on each column's existing instance — same path
-    // the per-column Send button uses. Each smartExecute returns
-    // immediately after kicking off the stream; we await all so the
-    // UI guard stays on while at least one is in flight.
-    const results = await Promise.allSettled(
-      targets.map((col) =>
-        dispatch(
-          smartExecute({
-            conversationId: col.conversationId,
-            surfaceKey: BATTLE_SURFACE_KEY,
-          }),
-        ).unwrap(),
-      ),
-    );
-
-    const failed = results.filter((r) => r.status === "rejected").length;
-    const launched = results.length - failed;
-
-    return { launched, skipped, failed, persistError: persisted.error };
+    // One fan-out for every mode (battle-follow-up.ts): each column sends its
+    // own composer, and a column that already ran needs typed text. The battle
+    // is saved before the runs start, so the URL names it while they stream.
+    return await runBattleFanOut({
+      dispatch,
+      getState,
+      sourceConversationId: null,
+      columns: targets,
+      skipped,
+      surfaceKey: BATTLE_SURFACE_KEY,
+      persist: () => dispatch(persistBattle()).unwrap(),
+    });
   } finally {
     dispatch(submitAllFinished());
   }
