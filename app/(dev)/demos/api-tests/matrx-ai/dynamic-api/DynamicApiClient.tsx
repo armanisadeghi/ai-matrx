@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { requestRaw } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { extractErrorMessage } from "@/utils/errors";
 import { formatCount } from "@ai-matrx/kit/format";
 import {
@@ -75,6 +77,12 @@ interface ApiEndpoint {
   hasBody: boolean;
   schema: unknown;
 }
+
+/** Every 4xx/5xx is a displayed outcome in the explorer, never an inspector error. */
+const EXPLORER_EXPECTED_STATUSES: readonly number[] = Array.from(
+  { length: 200 },
+  (_, i) => 400 + i,
+);
 
 const SAVED_KEY = "matrx-ai-dynamic-requests";
 const BODY_METHODS: HttpMethod[] = ["POST", "PUT", "PATCH"];
@@ -546,10 +554,11 @@ export default function DynamicApiClient() {
   const fetchOpenApiSpec = async () => {
     setOpenApiLoading(true);
     try {
-      const res = await fetch(`${config.serverUrl}/openapi.json`, {
-        headers: config.authHeaders,
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const res = await requestRaw(
+        "/openapi.json",
+        { headers: config.authHeaders },
+        { baseUrlOverride: config.serverUrl },
+      );
       const spec = await res.json();
       const endpoints = parseOpenApiSpec(spec);
       setOpenApiEndpoints(endpoints);
@@ -576,9 +585,9 @@ export default function DynamicApiClient() {
     abortRef.current = controller;
     // Covered AI surfaces ride the selected v1/v2 spine; every other path
     // (the generic API tester's real purpose) is untouched.
-    const url = `${config.serverUrl}${config.withVersion(
+    const requestPath = config.withVersion(
       path.startsWith("/") ? path : "/" + path,
-    )}`;
+    );
 
     const reqHeaders: Record<string, string> = {};
     for (const h of headers) {
@@ -593,7 +602,14 @@ export default function DynamicApiClient() {
     if (hasBody && body.trim()) fetchOptions.body = body.trim();
 
     try {
-      const res = await fetch(url, fetchOptions);
+      // A raw request explorer: every HTTP outcome is the thing being shown,
+      // so non-2xx comes back as a Response (and none is an inspector error).
+      const res = await requestRaw(requestPath, fetchOptions, {
+        baseUrlOverride: config.serverUrl,
+        allowHttpError: true,
+        expectedErrorStatuses: EXPLORER_EXPECTED_STATUSES,
+        signal: controller.signal,
+      });
       setStatusCode(res.status);
       setStatusText(res.statusText);
       const rHeaders: [string, string][] = [];
@@ -629,7 +645,7 @@ export default function DynamicApiClient() {
         setExecStatus("idle");
         toast.info("Cancelled");
       } else {
-        const msg = err instanceof Error ? err.message : "Request failed";
+        const msg = getUserMessage(err) || "Request failed";
         setErrorMessage(msg);
         setExecStatus("error");
         toast.error(msg);

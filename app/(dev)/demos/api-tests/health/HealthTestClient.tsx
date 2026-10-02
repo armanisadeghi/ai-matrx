@@ -1,5 +1,6 @@
 "use client";
 
+import { requestRaw } from '@/lib/python-client';
 import React, { useState } from "react";
 import { Activity, Loader2, CheckCircle, AlertCircle, Server, Database, Zap, Link, Clock, Hash, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,9 @@ function MetaRow({
     );
 }
 
+/** A health probe displays every HTTP outcome; none is an Error Inspector entry. */
+const PROBE_EXPECTED_STATUSES: readonly number[] = Array.from({ length: 200 }, (_, i) => 400 + i);
+
 export default function HealthTestClient() {
     const apiConfig = useApiTestConfig({
         defaultServerType: 'local',
@@ -142,11 +146,16 @@ export default function HealthTestClient() {
         const start = performance.now();
 
         try {
-            const response = await fetch(url, { // org-filter: server-call health probe of the server; the organization only rides the auth headers
+            // Probe outcome (any status) is what this page shows, so non-2xx is
+            // returned, not thrown; the active server is the door's origin.
+            const response = await requestRaw('/health', {
                 method: 'GET',
                 headers: {
                     ...apiConfig.authHeaders,
                 },
+            }, {
+                allowHttpError: true,
+                expectedErrorStatuses: PROBE_EXPECTED_STATUSES,
             });
             const responseTimeMs = Math.round(performance.now() - start);
 
@@ -182,11 +191,16 @@ export default function HealthTestClient() {
         const start = performance.now();
 
         try {
-            const response = await fetch(url, { // org-filter: server-call health probe of the server; the organization only rides the auth headers
+            // Probe outcome (any status) is what this page shows, so non-2xx is
+            // returned, not thrown; the active server is the door's origin.
+            const response = await requestRaw('/health/detailed', {
                 method: 'GET',
                 headers: {
                     ...apiConfig.authHeaders,
                 },
+            }, {
+                allowHttpError: true,
+                expectedErrorStatuses: PROBE_EXPECTED_STATUSES,
             });
             const responseTimeMs = Math.round(performance.now() - start);
 

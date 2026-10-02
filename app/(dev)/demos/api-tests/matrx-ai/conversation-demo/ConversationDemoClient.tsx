@@ -35,6 +35,8 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
+import { requestRaw } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { useServerConfig } from "../_shared/useServerConfig";
 import { ServerBar } from "../_shared/ServerBar";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -289,8 +291,8 @@ export default function ConversationDemoClient() {
     let accumulated = "";
 
     try {
-      const res = await fetch(
-        `${config.serverUrl}${config.withVersion(`/ai/conversations/${conversationId.trim()}`)}`,
+      const res = await requestRaw(
+        config.withVersion(`/ai/conversations/${conversationId.trim()}`),
         {
           method: "POST",
           headers: {
@@ -298,20 +300,9 @@ export default function ConversationDemoClient() {
             ...config.authHeaders,
           },
           body: JSON.stringify(body),
-          signal: controller.signal,
         },
+        { baseUrlOverride: config.serverUrl, signal: controller.signal },
       );
-
-      if (!res.ok) {
-        let msg = `HTTP ${res.status}`;
-        try {
-          const d = await res.json();
-          msg = d?.detail || d?.error?.message || d?.message || msg;
-        } catch {
-          /* ignore */
-        }
-        throw new Error(msg);
-      }
 
       const { events } = parseNdjsonStream(res, controller.signal);
       setExecStatus("running");
@@ -378,7 +369,7 @@ export default function ConversationDemoClient() {
         setExecStatus("idle");
         toast.info("Cancelled");
       } else {
-        const msg = err instanceof Error ? err.message : "Request failed";
+        const msg = getUserMessage(err) || "Request failed";
         setErrorMessage(msg);
         setHistory((prev) => [
           ...prev,
@@ -409,11 +400,10 @@ export default function ConversationDemoClient() {
       return;
     }
     try {
-      const res = await fetch(
-        `${config.serverUrl}/ai/conversations/${conversationId.trim()}/warm`,
-        {
-          method: "POST",
-        },
+      const res = await requestRaw(
+        `/ai/conversations/${conversationId.trim()}/warm`,
+        { method: "POST" },
+        { baseUrlOverride: config.serverUrl },
       );
       const data = await res.json();
       toast.success(`Warm: ${data.status}`, {

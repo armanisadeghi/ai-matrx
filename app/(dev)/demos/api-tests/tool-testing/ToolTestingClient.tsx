@@ -28,6 +28,7 @@ import {
   selectResolvedBaseUrl,
   switchServer,
 } from "@/lib/redux/slices/apiConfigSlice";
+import { requestRaw } from "@/lib/python-client";
 import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
 import type { AppDispatch } from "@/lib/redux/store";
 import { ToolListSidebar } from "./components/ToolListSidebar";
@@ -71,14 +72,15 @@ export default function ToolTestingClient() {
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 5000);
-          const response = await fetch(
-            `${localhostUrl}${ENDPOINTS.health.check}`,
-            {
-              signal: controller.signal,
-            },
-          );
-          clearTimeout(timeoutId);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          try {
+            await requestRaw(
+              ENDPOINTS.health.check,
+              { signal: controller.signal },
+              { baseUrlOverride: localhostUrl, signal: controller.signal },
+            );
+          } finally {
+            clearTimeout(timeoutId);
+          }
           dispatch(switchServer({ env: "localhost" }));
         } catch {
           toast.error("Localhost unavailable", {

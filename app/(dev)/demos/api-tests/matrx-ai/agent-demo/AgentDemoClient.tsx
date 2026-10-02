@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { extractErrorMessage } from "@/utils/errors";
+import { requestRaw } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   Tooltip,
@@ -360,8 +362,8 @@ export default function AgentDemoClient() {
     };
 
     try {
-      const res = await fetch(
-        `${config.serverUrl}${config.withVersion(`/ai/agents/${agentId.trim()}`)}`,
+      const res = await requestRaw(
+        config.withVersion(`/ai/agents/${agentId.trim()}`),
         {
           method: "POST",
           headers: {
@@ -369,20 +371,9 @@ export default function AgentDemoClient() {
             ...config.authHeaders,
           },
           body: JSON.stringify(body),
-          signal: controller.signal,
         },
+        { baseUrlOverride: config.serverUrl, signal: controller.signal },
       );
-
-      if (!res.ok) {
-        let msg = `HTTP ${res.status}`;
-        try {
-          const d = await res.json();
-          msg = d?.detail || d?.error?.message || d?.message || msg;
-        } catch {
-          /* ignore */
-        }
-        throw new Error(msg);
-      }
 
       const { events, requestId: rid } = parseNdjsonStream(
         res,
@@ -435,7 +426,7 @@ export default function AgentDemoClient() {
         setExecStatus("cancelled");
         toast.info("Cancelled");
       } else {
-        const msg = err instanceof Error ? err.message : "Execution failed";
+        const msg = getUserMessage(err) || "Execution failed";
         setErrorMessage(msg);
         setExecStatus("error");
         toast.error(msg);
@@ -453,10 +444,11 @@ export default function AgentDemoClient() {
     stopTimer();
     if (requestId && config.serverUrl) {
       try {
-        await fetch(`${config.serverUrl}/ai/cancel/${requestId}`, {
-          method: "POST",
-          headers: config.authHeaders,
-        });
+        await requestRaw(
+          `/ai/cancel/${requestId}`,
+          { method: "POST", headers: config.authHeaders },
+          { baseUrlOverride: config.serverUrl },
+        );
         toast.info("Cancellation sent to server");
       } catch {
         /* ignore */
@@ -470,12 +462,10 @@ export default function AgentDemoClient() {
       return;
     }
     try {
-      const res = await fetch(
-        `${config.serverUrl}/ai/agents/${agentId.trim()}/warm`,
-        {
-          method: "POST",
-          headers: config.authHeaders,
-        },
+      const res = await requestRaw(
+        `/ai/agents/${agentId.trim()}/warm`,
+        { method: "POST", headers: config.authHeaders },
+        { baseUrlOverride: config.serverUrl },
       );
       const data = await res.json();
       toast.success(`Warm: ${data.status}`, {

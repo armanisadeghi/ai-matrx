@@ -61,7 +61,8 @@ import {
   type ServerEnvironment,
 } from "@/lib/redux/slices/apiConfigSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { resolveBaseUrlForPath, newRequestId } from "@/lib/python-client";
+import { requestRaw, newRequestId } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -117,6 +118,12 @@ function statusColor(httpStatus: number | null): string {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────
+
+/** Every 4xx/5xx is a logged outcome in this explorer, never an inspector error. */
+const EXPLORER_EXPECTED_STATUSES: readonly number[] = Array.from(
+  { length: 200 },
+  (_, i) => 400 + i,
+);
 
 export function CloudFilesDebugClient() {
   const dispatch = useAppDispatch();
@@ -179,8 +186,6 @@ export function CloudFilesDebugClient() {
         path: string;
         body?: BodyInit | null;
         contentType?: string;
-        skipBaseUrl?: boolean;
-        bypassJwt?: boolean;
       },
     ): Promise<LogEntry> => {
       setRunning((r) => ({ ...r, [key]: true }));
@@ -188,38 +193,15 @@ export function CloudFilesDebugClient() {
       const requestId = newRequestId();
       const startMs = performance.now();
 
-      let url: string;
-      try {
-        url = args.skipBaseUrl
-          ? args.path
-          : `${resolveBaseUrlForPath(args.path, undefined, args.method)}${args.path}`;
-      } catch (err) {
-        const entry: LogEntry = {
-          id,
-          ts: Date.now(),
-          durationMs: 0,
-          method: args.method,
-          url: args.path,
-          requestId,
-          status: "error",
-          httpStatus: null,
-          ok: false,
-          requestHeaders: {},
-          requestBody: null,
-          responseHeaders: null,
-          responseBody: null,
-          error: extractErrorMessage(err),
-        };
-        setLogs((l) => [entry, ...l]);
-        setRunning((r) => ({ ...r, [key]: false }));
-        return entry;
-      }
+      // The door resolves the origin (and routes /files/* to the files
+      // service); the resolved URL is read back from the response.
+      let url = args.path;
 
       const headers: Record<string, string> = {
         Accept: "application/json",
         "X-Request-Id": requestId,
       };
-      if (jwt && !args.bypassJwt) {
+      if (jwt) {
         headers.Authorization = `Bearer ${jwt}`;
         // Mandatory org admission on every authed request (server
         // AuthMiddleware, matrx-connect 2026-08-30). Deliberately omitted
@@ -253,11 +235,22 @@ export function CloudFilesDebugClient() {
 
       let resp: Response;
       try {
-        resp = await fetch(url, {
-          method: args.method,
-          headers,
-          body: bodyToSend ?? undefined,
-        });
+        // A raw request explorer: every HTTP outcome is the thing logged, so a
+        // non-2xx is returned, not thrown, and is no Error Inspector entry.
+        resp = await requestRaw(
+          args.path,
+          {
+            method: args.method,
+            headers,
+            body: bodyToSend ?? undefined,
+          },
+          {
+            requestId,
+            allowHttpError: true,
+            expectedErrorStatuses: EXPLORER_EXPECTED_STATUSES,
+          },
+        );
+        if (resp.url) url = resp.url;
       } catch (err) {
         const durationMs = Math.round(performance.now() - startMs);
         const message = extractErrorMessage(err);
@@ -275,7 +268,10 @@ export function CloudFilesDebugClient() {
           requestBody: requestBodyText,
           responseHeaders: null,
           responseBody: null,
-          error: `Network error: ${message}. The browser couldn't reach the server. Most likely causes: server not running, CORS, or wrong URL.`,
+          error:
+            err instanceof TypeError
+              ? `Network error: ${message}. The browser couldn't reach the server. Most likely causes: server not running, CORS, or wrong URL.`
+              : getUserMessage(err),
         };
         setLogs((l) => [entry, ...l]);
         setRunning((r) => ({ ...r, [key]: false }));

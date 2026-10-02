@@ -1,5 +1,6 @@
 import { supabase } from "@/utils/supabase/client";
 import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
+import { requestRaw } from "@/lib/python-client";
 import { consumeStream } from "@/lib/api/stream-parser";
 import type { StreamCallbacks } from "@/lib/api/stream-parser";
 import type {
@@ -50,23 +51,26 @@ export async function executeToolTest(
   // own refusal in the demo output — never silently.
   const organizationId =
     context?.organization_id ?? peekSelectedOrganizationId();
-  const response = await fetch(`${baseUrl}/tools/test/execute`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${authToken}`,
-      ...(organizationId ? { "X-Organization-Id": organizationId } : {}),
+  // The demo's purpose is choosing the server under test, so the origin rides
+  // as `baseUrlOverride` through the one request door (which also classifies
+  // an HTTP failure into a thrown BackendApiError).
+  const response = await requestRaw(
+    "/tools/test/execute",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+        ...(organizationId ? { "X-Organization-Id": organizationId } : {}),
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-    signal: abortSignal,
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => null);
-    throw new Error(
-      errorBody?.detail ?? `HTTP ${response.status}: ${response.statusText}`,
-    );
-  }
+    {
+      baseUrlOverride: baseUrl,
+      signal: abortSignal,
+      organizationId: organizationId ?? undefined,
+    },
+  );
 
   const callbacks: StreamCallbacks = {
     onEvent(event) {

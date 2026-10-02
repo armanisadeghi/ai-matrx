@@ -16,10 +16,17 @@ import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import MarkdownStream from "@/components/MarkdownStream";
 import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
 import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
+import { requestRaw } from "@/lib/python-client";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { isChunkEvent } from "@ai-matrx/agents/generated/stream-events";
 
 type ServerType = "local" | "production";
+
+/** The response pane shows every HTTP outcome; none is an inspector error. */
+const PROBE_EXPECTED_STATUSES: readonly number[] = Array.from(
+  { length: 200 },
+  (_, i) => 400 + i,
+);
 
 const PROMPT_OPTIONS = [
   { value: "small_test_prompt", label: "Small Test Prompt" },
@@ -92,24 +99,34 @@ export default function DirectChatClient() {
         return;
       }
 
-      const url = `${getBaseUrl()}${ENDPOINTS.ai.chat}`;
-
       // Organization admission rides with the JWT: the backend's
       // AuthMiddleware (matrx-connect, 2026-08-30) refuses org-less Bearer
       // requests with 400 organization_required. Peeked from the selected
       // organization — never a first/personal fallback; a missing selection
       // shows the server's own refusal in the response pane.
       const organizationId = peekSelectedOrganizationId();
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          ...(organizationId ? { "X-Organization-Id": organizationId } : {}),
+      // This page's purpose is choosing the server under test, so the origin
+      // rides as `baseUrlOverride`; the response pane shows the raw HTTP
+      // outcome, so a non-2xx is returned (and is no inspector error).
+      const response = await requestRaw(
+        ENDPOINTS.ai.chat,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+            ...(organizationId ? { "X-Organization-Id": organizationId } : {}),
+          },
+          body: JSON.stringify(requestBody),
         },
-        body: JSON.stringify(requestBody),
-        signal: abortControllerRef.current.signal,
-      });
+        {
+          baseUrlOverride: getBaseUrl(),
+          allowHttpError: true,
+          expectedErrorStatuses: PROBE_EXPECTED_STATUSES,
+          signal: abortControllerRef.current.signal,
+          organizationId: organizationId ?? undefined,
+        },
+      );
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => "Unknown error");

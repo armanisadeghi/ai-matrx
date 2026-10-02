@@ -6,9 +6,8 @@ import { ArrowLeft, Loader2, Play, AlertTriangle } from "lucide-react";
 
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
-import { useApiAuth } from "@/hooks/useApiAuth";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import { requestRaw } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { PdfBinaryResult } from "@/features/pdf-demo/components/PdfBinaryResult";
 import { type BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
@@ -31,8 +30,6 @@ interface CompressMeta {
 }
 
 export default function CompressDemo() {
-  const backendUrl = useAppSelector(selectResolvedBaseUrl);
-  const { getHeaders, waitForAuth } = useApiAuth();
   const [file, setFile] = useState<File | null>(null);
   const [level, setLevel] = useState<CompressLevel>(3);
   const [maxSizeMb, setMaxSizeMb] = useState<number | "">("");
@@ -48,12 +45,6 @@ export default function CompressDemo() {
     setMeta(null);
     try {
       if (!file) throw new Error("Choose a .pdf file first.");
-      await waitForAuth();
-      const allHeaders = getHeaders() as Record<string, string>;
-      // Drop Content-Type so the browser sets the multipart boundary.
-      const { "Content-Type": _drop, ...authHeaders } = allHeaders;
-      void _drop;
-
       const form = new FormData();
       form.append("file", file);
 
@@ -62,18 +53,12 @@ export default function CompressDemo() {
         params.set("max_size_mb", String(maxSizeMb));
       }
 
-      const url = `${backendUrl}${ENDPOINTS.pdf.compress}?${params.toString()}`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: authHeaders,
-        body: form,
-      });
-      if (!response.ok) {
-        const detail = await response.text().catch(() => response.statusText);
-        throw new Error(
-          `POST compress → ${response.status}: ${detail.slice(0, 600)}`,
-        );
-      }
+      // The door adds auth + organization and leaves Content-Type to the
+      // browser so the multipart boundary is set; a non-2xx throws classified.
+      const response = await requestRaw(
+        `${ENDPOINTS.pdf.compress}?${params.toString()}`,
+        { method: "POST", body: form },
+      );
       const blob = await response.blob();
       const contentType =
         response.headers.get("content-type") || "application/pdf";
@@ -95,7 +80,7 @@ export default function CompressDemo() {
           capSatisfiedHeader === null ? null : capSatisfiedHeader === "1",
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(getUserMessage(err) || String(err));
     } finally {
       setRunning(false);
     }

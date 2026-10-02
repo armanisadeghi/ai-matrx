@@ -13,6 +13,7 @@ import {
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { createClient } from "@/utils/supabase/client";
 import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
+import { requestRaw } from "@/lib/python-client";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { ContextScope } from "@/lib/api/types";
 
@@ -145,14 +146,20 @@ export function useApiTestConfig(
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 5000);
-          const response = await fetch(
-            `${localhostUrl}${ENDPOINTS.health.check}`,
-            {
-              signal: controller.signal,
-            },
-          );
-          clearTimeout(timeoutId);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          // The probe's purpose is "is THIS server up" — the origin is the
+          // choice under test, so it rides as `baseUrlOverride` through the door.
+          try {
+            await requestRaw(
+              ENDPOINTS.health.check,
+              { signal: controller.signal },
+              {
+                baseUrlOverride: localhostUrl,
+                signal: controller.signal,
+              },
+            );
+          } finally {
+            clearTimeout(timeoutId);
+          }
           dispatch(switchServer({ env: "localhost" }));
         } catch {
           toast.error("Localhost unavailable", {

@@ -1,10 +1,11 @@
 "use client";
 
+import { requestRaw } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ENDPOINTS } from "@/lib/api/endpoints";
-import { extractErrorMessage } from "@/utils/errors";
 import {
   Network,
   Loader2,
@@ -339,14 +340,11 @@ export default function AgentTestClient() {
     setLiveEvents([]);
 
     try {
-      const res = await fetch(
-        `${apiConfig.baseUrl}${ENDPOINTS.ai.agentWarm(promptId)}`,
-        {
-          method: "POST",
-          headers: { ...apiConfig.authHeaders },
-        },
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // The active server (admin toggle) is the door's default origin.
+      await requestRaw(ENDPOINTS.ai.agentWarm(promptId), {
+        method: "POST",
+        headers: { ...apiConfig.authHeaders },
+      });
       updateLog(log.id, {
         status: "success",
         textOutput: "Agent warmed successfully.",
@@ -354,17 +352,17 @@ export default function AgentTestClient() {
       });
       setLiveText("Agent warmed successfully.");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Warm-up failed";
+      const msg = getUserMessage(err) || "Warm-up failed";
       updateLog(log.id, { status: "error", error: msg, endedAt: new Date() });
       setLiveText(msg);
     } finally {
       setActiveRunId(null);
     }
-  }, [apiConfig.authHeaders, apiConfig.baseUrl, promptId, addLog, updateLog]);
+  }, [apiConfig.authHeaders, promptId, addLog, updateLog]);
 
   // ── Shared streaming executor ─────────────────────
   const runStream = useCallback(
-    async (log: RunLog, url: string, body: Record<string, unknown>) => {
+    async (log: RunLog, path: string, body: Record<string, unknown>) => {
       dispatch(
         chatConversationsActions.clearProtocolDbSnapshot(
           AGENT_API_TEST_SESSION_ID,
@@ -374,31 +372,18 @@ export default function AgentTestClient() {
       abortControllerRef.current = controller;
 
       try {
-        const res = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...apiConfig.authHeaders,
+        const res = await requestRaw(
+          path,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...apiConfig.authHeaders,
+            },
+            body: JSON.stringify(body),
           },
-          body: JSON.stringify(body),
-          signal: controller.signal,
-        });
-
-        if (!res.ok) {
-          let msg = `HTTP ${res.status}`;
-          try {
-            const d = await res.json();
-            msg =
-              d?.error?.user_message ||
-              d?.error?.message ||
-              d?.error ||
-              d?.detail ||
-              msg;
-          } catch {
-            /* noop */
-          }
-          throw new Error(extractErrorMessage(msg));
-        }
+          { signal: controller.signal },
+        );
 
         if (!res.body) throw new Error("No response body");
 
@@ -446,7 +431,7 @@ export default function AgentTestClient() {
         if (err?.name === "AbortError" || controller.signal.aborted) {
           updateLog(log.id, { status: "cancelled", endedAt: new Date() });
         } else {
-          const msg = err instanceof Error ? err.message : "An error occurred";
+          const msg = getUserMessage(err) || "An error occurred";
           updateLog(log.id, {
             status: "error",
             error: msg,
@@ -459,7 +444,7 @@ export default function AgentTestClient() {
         setActiveRunId(null);
       }
     },
-    [apiConfig.authHeaders, apiConfig.baseUrl, dispatch, updateLog],
+    [apiConfig.authHeaders, dispatch, updateLog],
   );
 
   // ── 2. New Conversation ───────────────────────────
@@ -483,14 +468,14 @@ export default function AgentTestClient() {
 
     await runStream(
       log,
-      `${apiConfig.baseUrl}${ENDPOINTS.ai.agentStart(promptId)}`,
+      ENDPOINTS.ai.agentStart(promptId),
       {
         user_input: userInput,
         stream: true,
         debug: true,
       },
     );
-  }, [promptId, userInput, apiConfig.baseUrl, addLog, runStream]);
+  }, [promptId, userInput, addLog, runStream]);
 
   // ── 3. Continue Conversation ──────────────────────
   const handleContinue = useCallback(async () => {
@@ -514,7 +499,7 @@ export default function AgentTestClient() {
 
     await runStream(
       log,
-      `${apiConfig.baseUrl}${ENDPOINTS.ai.conversationContinue(convId)}`,
+      ENDPOINTS.ai.conversationContinue(convId),
       {
         user_input: continueInput,
         stream: true,
@@ -524,7 +509,6 @@ export default function AgentTestClient() {
   }, [
     activeConversationId,
     continueInput,
-    apiConfig.baseUrl,
     addLog,
     runStream,
   ]);

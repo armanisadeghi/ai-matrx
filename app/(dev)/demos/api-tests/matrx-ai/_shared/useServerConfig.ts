@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { requestRaw } from "@/lib/python-client";
 import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import {
   SERVER_PRESETS,
@@ -118,10 +119,18 @@ export function useServerConfig(): UseServerConfigReturn {
     setHealthStatus("checking");
     setHealthDetail(null);
     try {
-      const res = await fetch(`${serverUrl}/health`, {
-        method: "GET",
-        signal: AbortSignal.timeout(6000),
-      });
+      // The probe's purpose is "is THIS server up": the origin under test
+      // rides as `baseUrlOverride`; any HTTP status is shown, not thrown.
+      const res = await requestRaw(
+        "/health",
+        { method: "GET" },
+        {
+          baseUrlOverride: serverUrl,
+          allowHttpError: true,
+          expectedErrorStatuses: Array.from({ length: 200 }, (_, i) => 400 + i),
+          signal: AbortSignal.timeout(6000),
+        },
+      );
       if (res.ok) {
         const data = await res.json().catch(() => null);
         setHealthStatus("ok");

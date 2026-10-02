@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { requestRaw } from "@/lib/python-client";
+import { BackendApiError, getUserMessage } from "@ai-matrx/agents/matrx";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   Tooltip,
@@ -212,16 +214,24 @@ export default function ToolsDemoClient() {
     setLoadingTools(true);
     setLoadError(null);
     try {
-      const res = await fetch(`${config.serverUrl}/tools/test/list`, {
-        headers: config.authHeaders,
-      });
-
-      if (res.status === 401 || res.status === 403) {
-        throw new Error(
-          `Authentication required (HTTP ${res.status}). Set your Bearer token in the server bar above.`,
+      let res: Response;
+      try {
+        res = await requestRaw(
+          "/tools/test/list",
+          { headers: config.authHeaders },
+          {
+            baseUrlOverride: config.serverUrl,
+            expectedErrorStatuses: [401, 403],
+          },
         );
+      } catch (e) {
+        if (e instanceof BackendApiError && (e.status === 401 || e.status === 403)) {
+          throw new Error(
+            `Authentication required (HTTP ${e.status}). Set your Bearer token in the server bar above.`,
+          );
+        }
+        throw new Error(getUserMessage(e));
       }
-      if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`);
 
       const data: ToolDefinition[] = await res.json();
       setTools(data);
@@ -270,29 +280,40 @@ export default function ToolsDemoClient() {
     }
 
     try {
-      const res = await fetch(`${config.serverUrl}/tools/test/execute`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...config.authHeaders },
-        body: JSON.stringify({
-          tool_name: selectedTool.name,
-          arguments: args,
-          // Every door declares who opened it, dev consoles included.
-          source_app: "matrx-frontend",
-          source_feature: "tool-testing",
-          initiation: "user",
-        }),
-      });
+      let res: Response;
+      try {
+        res = await requestRaw(
+          "/tools/test/execute",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...config.authHeaders,
+            },
+            body: JSON.stringify({
+              tool_name: selectedTool.name,
+              arguments: args,
+              // Every door declares who opened it, dev consoles included.
+              source_app: "matrx-frontend",
+              source_feature: "tool-testing",
+              initiation: "user",
+            }),
+          },
+          {
+            baseUrlOverride: config.serverUrl,
+            expectedErrorStatuses: [401, 403],
+          },
+        );
+      } catch (e) {
+        if (e instanceof BackendApiError && (e.status === 401 || e.status === 403)) {
+          throw new Error(
+            `Authentication required (HTTP ${e.status}). Set your Bearer token in the server bar.`,
+          );
+        }
+        throw new Error(getUserMessage(e));
+      }
 
       const data = await res.json();
-
-      if (res.status === 401 || res.status === 403) {
-        throw new Error(
-          `Authentication required (HTTP ${res.status}). Set your Bearer token in the server bar.`,
-        );
-      }
-      if (!res.ok) {
-        throw new Error(data?.detail || data?.message || `HTTP ${res.status}`);
-      }
 
       setResult(data);
       setElapsedMs(data?.elapsed_ms ?? null);
