@@ -90,6 +90,9 @@ export function SourceReview({
   const [reloadKey, setReloadKey] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   useClippedContentGuard(listRef, { label: "Review what goes in — Source list" });
+  // The model alone, never "· class": the context window is a MODEL fact —
+  // no ai.offering override carries a window (checked 2026-10-02: override
+  // keys are constraints/params only), so every class shares this limit.
   const modelLabel = useAppSelector((s) => selectModelLabelById(s, targetModelId));
 
   // The manifest is re-read only when a version (form) changes or on retry —

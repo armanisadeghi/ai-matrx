@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Hexagon, ArrowLeft, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -10,6 +10,8 @@ import { ListRow } from "../ListRow";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
+import { fetchAgentExecutionFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { useAgents } from "../../hooks/useAgents";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
@@ -102,6 +104,14 @@ function AgentDetail({
   agent: AgentDefinitionRecord;
   onBack: () => void;
 }) {
+  // The detail pane names the model the agent USES — with its class when the
+  // model has several. A list record carries no settings, so the pane reads
+  // the agent's execution payload (skipped when already loaded).
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    void dispatch(fetchAgentExecutionFull(agent.id));
+  }, [dispatch, agent.id]);
+  const { label: modelLabel } = useAgentModelLabel(agent.id);
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-3 px-4 py-3 shrink-0 border-b border-border/40">
@@ -139,7 +149,11 @@ function AgentDetail({
         <DetailField
           label="Model"
           value={
-            agent.modelId ? <AiModelRef modelId={agent.modelId} showId /> : "—"
+            agent.modelId ? (
+              <AiModelRef modelId={agent.modelId} name={modelLabel} showId />
+            ) : (
+              "—"
+            )
           }
         />
         <DetailField label="Agent type" value={agent.agentType} />

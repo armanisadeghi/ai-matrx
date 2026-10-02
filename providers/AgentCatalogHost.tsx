@@ -15,7 +15,8 @@
 //                    opens like every other link in this app.
 //   navigate       → the Next router's `push` (the package default would be
 //                    a full `window.location.assign` page load).
-//   renderModelRef → `AiModelRef`, this app's canonical model door.
+//   renderModelRef → `AiModelRef`, this app's canonical model door, naming
+//                    the agent's class when the row carries it.
 //   openPeek       → the canonical `AgentSneakPeekModal`, opened as a
 //                    non-blocking WindowPanel through the overlay system.
 //   defaults       → THE ARCHIVED-ITEMS LAW's user knob (see below).
@@ -28,7 +29,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AgentCatalogProvider } from "@ai-matrx/agents/catalog/react";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { renderCatalogModelRef } from "@/providers/catalogModelRef";
 import { getAgentCatalog, toCatalogArchiveFilter } from "@/lib/agents/catalog";
 import { createArchiveKnobReconciler } from "@/lib/agents/archiveKnobReconciler";
 import { openAgentPeek } from "@/features/agents/components/agent-listings/openAgentPeek";
@@ -94,9 +95,7 @@ export function AgentCatalogHost({ children }: { children: ReactNode }) {
       catalog={catalog}
       LinkComponent={Link}
       navigate={navigate}
-      renderModelRef={({ modelId, className }) => (
-        <AiModelRef modelId={modelId} className={className} />
-      )}
+      renderModelRef={renderCatalogModelRef}
       openPeek={(agent) => openAgentPeek(agent.id)}
     >
       {children}
