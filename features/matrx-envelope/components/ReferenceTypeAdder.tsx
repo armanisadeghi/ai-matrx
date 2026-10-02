@@ -422,11 +422,20 @@ export function recordRows(
           spansOrganizations && fact?.organizationId
             ? organizationName(fact.organizationId)
             : null,
-        fact: fact?.fact ?? null,
+        fact: withoutTitle(fact?.fact ?? null, item.title),
         edited: candidateSecondaryLine(item.updatedAt, now),
       }),
     };
   });
+}
+
+/** A note's first words usually repeat its title; never say it twice. */
+function withoutTitle(fact: string | null, title: string): string | null {
+  if (!fact) return null;
+  const t = title.trim().toLowerCase();
+  if (!t || !fact.toLowerCase().startsWith(t)) return fact;
+  const rest = fact.slice(t.length).replace(/^[\s:.,;-]+/, "").trim();
+  return rest || null;
 }
 
 /** Facts for the loaded rows; re-read when the set of ids changes. */

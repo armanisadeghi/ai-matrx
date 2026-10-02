@@ -53,6 +53,8 @@ export function snippet(value: unknown, max = 28): string | null {
   const raw = asText(value);
   if (!raw) return null;
   const line = raw
+    // A fenced block (a reference, code) is not words a person wrote.
+    .replace(/```[\s\S]*?(?:```|$)/g, " ")
     .replace(/[#*_>`~[\]]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();

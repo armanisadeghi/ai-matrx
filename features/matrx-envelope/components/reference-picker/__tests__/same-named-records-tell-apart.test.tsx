@@ -155,4 +155,16 @@ describe("same-named records in the record search", () => {
     for (const row of out) expect(row.secondary!.length).toBeLessThanOrEqual(60);
     expect(out[1]!.secondary).toBe("Northwind · In progress · Edited 1 h ago");
   });
+
+  it("a note's first words never repeat its title or print a fence", () => {
+    const { snippet } = jest.requireActual("@/features/scopes/service/recordFacts");
+    expect(snippet("Plan\n\n```matrx\n{\"__kind\":\"x\"}\n```\nBring the dolly")).toBe("Plan Bring the dolly");
+    const out = recordRows(
+      [{ id: id(1), title: "G5 tell me of it", updatedAt: null }],
+      new Map([[id(1), { organizationId: ORG_A, fact: "G5 tell me of it" }]]),
+      () => null,
+      NOW,
+    );
+    expect(out[0]!.secondary).toBeNull();
+  });
 });
