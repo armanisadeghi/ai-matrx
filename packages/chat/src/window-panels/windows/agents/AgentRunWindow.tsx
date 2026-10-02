@@ -38,8 +38,9 @@ import { Button } from "@ai-matrx/design-system";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import type { RootState } from "@host/lib/redux/store";
-import { toast } from "@host/lib/toast";
-import { selectAllWindows } from "@host/lib/redux/slices/windowManagerSlice";
+import { toast } from "../../../host/notify";
+import { CHAT_WINDOWS } from "../../../host/windows";
+import { useChatManagedWindowCount } from "../../../host/windows-react";
 import { selectUserId } from "@host/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import {
@@ -817,12 +818,7 @@ function AgentRunWindowInner({
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(initialSelectedConversationId);
-  const siblingWindowCount = useAppSelector(
-    (state: RootState) =>
-      selectAllWindows(state).filter((entry) =>
-        entry.id.startsWith("agent-run-window:"),
-      ).length,
-  );
+  const siblingWindowCount = useChatManagedWindowCount("agent-run-window:");
   const initialPosition =
     AGENT_RUN_WINDOW_POSITIONS[
       siblingWindowCount % AGENT_RUN_WINDOW_POSITIONS.length
@@ -929,7 +925,7 @@ function AgentRunWindowInner({
       position={initialPosition}
       minWidth={560}
       minHeight={420}
-      overlayId="agentRunWindow"
+      overlayId={CHAT_WINDOWS.agentRunWindow}
       overlayInstanceId={instanceId}
       urlSyncId={instanceId}
       // The Chat window shares the `agent` URL key with the display-mode

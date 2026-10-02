@@ -1,6 +1,6 @@
 import type { Resource } from "../../../../resources/types";
 
-jest.mock("@host/lib/toast", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
+jest.mock("../../../../../host/notify", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
 jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: jest.fn(),
   useAppStore: jest.fn(),

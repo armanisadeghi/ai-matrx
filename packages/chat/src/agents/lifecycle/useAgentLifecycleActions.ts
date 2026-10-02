@@ -33,7 +33,7 @@ import {
 import { selectAgentById } from "../redux/agent-definition/selectors";
 import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
 import { buildAgentDeleteConfirm } from "@host/features/agents/deletion/agentDeleteConfirm";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 
 export interface AgentLifecycleActions {
   /** Whether the agent is archived right now (false while it is still loading). */

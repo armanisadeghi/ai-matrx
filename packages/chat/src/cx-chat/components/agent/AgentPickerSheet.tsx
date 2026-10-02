@@ -1,6 +1,6 @@
 "use client";
 
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { useAppStore } from "@host/lib/redux/hooks";
 import {

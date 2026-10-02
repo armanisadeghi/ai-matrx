@@ -47,6 +47,7 @@ import {
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { useComposerMode } from "../../../agents/components/inputs/smart-input/composer/useComposerMode";
 import { useCompactInputMaxHeight } from "../../../agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 const SURFACE_KEY = "ai-results-window";
 const WORKSPACE_INPUT_SURFACE_KEY = "ai-results-workspace";
@@ -358,7 +359,7 @@ function ChatHistoryWindowInner({
       height={640}
       minWidth={520}
       minHeight={360}
-      overlayId="quickChatHistory"
+      overlayId={CHAT_WINDOWS.quickChatHistory}
       urlSyncId={b.selectedId ?? undefined}
       onCollectData={collectData}
       sidebarDefaultSize={280}

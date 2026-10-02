@@ -24,7 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { cn } from "@host/lib/utils";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../../host/notify";
 import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
 import { seedOverrides } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";

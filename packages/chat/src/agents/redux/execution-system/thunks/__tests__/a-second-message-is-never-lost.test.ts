@@ -99,7 +99,7 @@ jest.mock("@host/lib/api/call-api", () => ({
     });
   },
 }));
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../../../host/notify", () => ({
   toast: { info: jest.fn(), error: jest.fn(), warning: jest.fn() },
 }));
 

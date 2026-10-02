@@ -29,7 +29,7 @@ import {
   fetchStoredAnswer,
   saveAnswerEdit,
 } from "../../../redux/execution-system/message-crud/save-answer-edit.thunk";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { rebaseEdit } from "../../../redux/execution-system/message-crud/answer-text-splice";
 
 interface InPlaceAnswerEditorProps {

@@ -38,7 +38,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "@host/lib/utils";
-import { toast } from "@host/lib/toast-service";
+import { toast } from "../../../host/notify";
 import { AgentDiffViewer, buildAgentAdapterRegistry } from "./AgentDiffViewer";
 import { VersionHistoryTimeline } from "./VersionHistoryTimeline";
 import { VersionIdBadge } from "./VersionIdBadge";

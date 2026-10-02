@@ -31,7 +31,7 @@
 
 import { getAllManifests, getManifest } from "@host/features/surfaces/manifests/registry";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 
 import type { SurfaceClientTool } from "../types";
 import {

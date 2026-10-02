@@ -589,7 +589,7 @@ export const loadConversation = createAsyncThunk<
         if (agentBehindApp || conv.source_feature === "agent-app") {
           // Expected — see `agentBehindApp`. The warn above is the record.
         } else {
-          const { toast } = await import("@host/lib/toast");
+          const { toast } = await import("../../../../host/notify");
           toast.info("This chat's agent isn't available to you anymore", {
             description:
               "The conversation opened with the default input settings. Ask the agent's owner to share it to use its own settings.",

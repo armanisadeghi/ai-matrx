@@ -47,7 +47,7 @@ import { usePasteImageResource } from "../../inputs/resources/usePasteImageResou
 import { SmartInputFileDropTarget } from "../../inputs/smart-input/SmartInputFileDropTarget";
 import { useClipboardPaste } from "@host/components/ui/file-upload/useClipboardPaste";
 
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
 import {
   composerKeyIntent,

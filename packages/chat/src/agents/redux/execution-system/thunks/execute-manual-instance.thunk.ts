@@ -171,7 +171,7 @@ import {
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { resilientFetch } from "@ai-matrx/data/net";
 import { logApiTarget } from "@host/lib/api/log-api-target";
 import { toNetError } from "@ai-matrx/data/net";

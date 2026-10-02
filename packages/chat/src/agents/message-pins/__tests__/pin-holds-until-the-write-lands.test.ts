@@ -9,6 +9,8 @@ jest.mock("@host/features/scopes/service/favoritesService", () => ({
   favoritesService: { setPinned: (...a: unknown[]) => setPinned(...a), getBulk: jest.fn() },
 }));
 const toastError = jest.fn();
+jest.mock("../../../host/notify", () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn() } }));
+// toastWriteFailure (an app helper, still a host tie) raises the app toast, not the notify seam.
 jest.mock("@host/lib/toast", () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn() } }));
 
 import * as store from "../pinned-messages-store";

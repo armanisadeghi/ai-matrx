@@ -27,7 +27,7 @@
  */
 
 import { Cpu, Copy, RefreshCw, ExternalLink } from "lucide-react";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import type {
   ContextMenuEntityRef,
   ContextMenuExtraSection,

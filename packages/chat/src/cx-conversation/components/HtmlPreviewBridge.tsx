@@ -18,7 +18,7 @@ import {
   selectOrganizationId,
   selectTaskId,
 } from "@host/lib/redux/slices/appContextSlice";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { presentOrganizationRefusal } from "@host/lib/organizations/organizationRefusalToast";
 
 interface HtmlPreviewBridgeProps {

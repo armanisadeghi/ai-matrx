@@ -54,7 +54,8 @@ import { ContextLensBar } from "@host/features/scopes/components/active-context/
 import { ComputeLensBar } from "./ComputeLensBar";
 import { useSandboxBindingBlocked } from "./use-compute-target-actions";
 import { useOpenContextPreviewPanel } from "@host/features/overlays/openers/contextPreviewPanel";
-import { selectIsOverlayOpen } from "@host/lib/redux/slices/overlaySlice";
+import { CHAT_WINDOWS } from "../../../../host/windows";
+import { useIsChatWindowOpen } from "../../../../host/windows-react";
 import { useConversationDocumentsBridge } from "../../../hooks/useWorkingDocument";
 import { selectIsManualExecutionMode } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { cn } from "@host/lib/utils";
@@ -148,9 +149,7 @@ function DocumentSwitchesRow({ conversationId }: { conversationId: string }) {
 function ContextLensMenuRow({ conversationId }: { conversationId: string }) {
   const openContextPreview = useOpenContextPreviewPanel();
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
-  const previewOpen = useAppSelector((state) =>
-    selectIsOverlayOpen(state, "contextPreviewPanel"),
-  );
+  const previewOpen = useIsChatWindowOpen(CHAT_WINDOWS.contextPreviewPanel);
 
   return (
     <div className="flex w-full border-t border-border px-2 py-1">

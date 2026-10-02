@@ -64,7 +64,7 @@ import { useAttachResource } from "../inputs/resources/attach-resource";
 import { useRegisterChatAttachTarget } from "@host/features/knowledge/command-bar/useKnowledgeAttachTarget";
 import { selectUserId } from "@host/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
 import type { SourceFeature } from "@host/types/python-generated/source-attribution";
 import { isUuidShape } from "@ai-matrx/kit/uuid";

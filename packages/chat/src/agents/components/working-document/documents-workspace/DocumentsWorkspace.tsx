@@ -15,7 +15,7 @@
  */
 
 import { StaleDataNotice } from "@host/components/official/stale-data/StaleDataNotice";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { useCallback, useEffect, useState } from "react";
 import {
   FileText,

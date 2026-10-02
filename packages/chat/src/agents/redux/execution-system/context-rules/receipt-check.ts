@@ -22,7 +22,7 @@ import {
 import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
 import { setContextReceipt } from "../instance-context/instance-context.slice";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 
 /** Normalize the generated wire type (optional fields) to the package's receipt. */
 export function toContextReceipt(data: ContextReceiptData): ContextReceipt {

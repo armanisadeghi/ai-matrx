@@ -55,7 +55,7 @@ import {
   Trash2,
   PackagePlus,
 } from "lucide-react";
-import { toast } from "@host/lib/toast-service";
+import { toast } from "../../../host/notify";
 import { cn } from "@host/lib/utils";
 import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
 import { useIsMobile } from "@host/hooks/use-mobile";

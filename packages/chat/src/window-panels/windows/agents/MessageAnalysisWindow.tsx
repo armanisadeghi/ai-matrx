@@ -20,6 +20,7 @@ import { SessionStatsPanel } from "../../../agents/components/run-controls/panel
 import { ClientMetricsPanel } from "../../../agents/components/run-controls/panels/ClientMetricsPanel";
 import { cn } from "@host/lib/utils";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 type TabId = "request" | "client" | "session";
 
@@ -91,7 +92,7 @@ function MessageAnalysisWindowInner({
       height={520}
       minWidth={400}
       minHeight={320}
-      overlayId="messageAnalysisWindow"
+      overlayId={CHAT_WINDOWS.messageAnalysisWindow}
       onCollectData={collectData}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       // The Request / Client / Session switcher is window-level chrome, not

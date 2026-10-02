@@ -19,7 +19,7 @@ import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
 import { Button } from "@ai-matrx/design-system";
 import { RadioGroup, RadioGroupItem } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { cn } from "@host/lib/utils";
 import { extractErrorMessage } from "@host/utils/errors";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";
@@ -39,6 +39,7 @@ import {
 } from "./send-to-agent-plan";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { formatCount } from "@ai-matrx/kit/format";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 export interface SendToAgentWindowProps {
   isOpen: boolean;
@@ -157,7 +158,7 @@ export default function SendToAgentWindow({
   return (
     <AgentPickerFrame
       id="send-to-agent"
-      overlayId="sendToAgentWindow"
+      overlayId={CHAT_WINDOWS.sendToAgentWindow}
       title={agentId ? "Select Destination" : "Select Agent"}
       onClose={onClose}
       onSelect={setAgentId}

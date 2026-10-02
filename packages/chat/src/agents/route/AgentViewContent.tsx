@@ -63,7 +63,7 @@ import {
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { cn } from "@host/lib/utils";
 import type { AgentDefinitionMessage } from "../types/agent-message-types";
 import { RichDocument } from "@host/features/rich-document/RichDocument";

@@ -10,10 +10,10 @@
  * Pure TS (no React): statically importable from registry handlers.
  */
 
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { toastDoor } from "@host/components/official/entity-ref/toastDoor";
 import type { AppDispatch, RootState } from "@host/lib/redux/store";
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import {
   duplicateConversation,
   renameConversation,
@@ -66,7 +66,7 @@ export function shareConversation(
 ): void {
   dispatch(
     openOverlay({
-      overlayId: "shareModal",
+      overlayId: CHAT_WINDOWS.shareModal,
       data: {
         resourceType: "conversation",
         resourceId: conversationId,

@@ -33,7 +33,7 @@ import {
   FolderKanban,
   Trash2,
 } from "lucide-react";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { renameIntentFallback } from "@host/components/official/item/renameIntentFallback";
 import type {
   ItemMenuConfig,

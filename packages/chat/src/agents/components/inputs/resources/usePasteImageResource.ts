@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
 import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
 import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";

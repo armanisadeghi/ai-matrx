@@ -28,7 +28,7 @@
  * always receives the current document regardless of which editor is open.
  */
 
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
 import { selectUserId } from "@host/lib/redux/selectors/userSelectors";

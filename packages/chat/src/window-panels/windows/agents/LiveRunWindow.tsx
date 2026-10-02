@@ -37,6 +37,7 @@ import {
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 /**
  * 🚨 THE SIZING RULE — the reading column must match `/chat`, exactly.
@@ -140,7 +141,7 @@ export default function LiveRunWindow({
     <WindowPanel
       id={`live-run-window-${windowInstanceId}`}
       title={title}
-      overlayId="liveRunWindow"
+      overlayId={CHAT_WINDOWS.liveRunWindow}
       overlayInstanceId={windowInstanceId}
       initialState={initialMinimized ? "minimized" : "windowed"}
       minWidth={380}

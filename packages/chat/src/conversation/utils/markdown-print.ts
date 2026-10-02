@@ -44,13 +44,13 @@ export function printMarkdownContent(
             } catch (error) {
                 // The diagram engine could not load: print the source, and say so.
                 console.error("[print] diagrams could not be drawn", error);
-                const { toast } = await import("@host/lib/toast");
+                const { toast } = await import("../../host/notify");
                 toast.warning("Diagrams could not be drawn, so they print as source.");
                 return {};
             }
             const { pictures, failed } = drawn;
             if (failed > 0) {
-                const { toast } = await import("@host/lib/toast");
+                const { toast } = await import("../../host/notify");
                 toast.warning(
                     `${failed} diagram${failed === 1 ? "" : "s"} could not be drawn and print${failed === 1 ? "s" : ""} as source.`,
                 );

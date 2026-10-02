@@ -57,14 +57,14 @@ import { setOverrides } from "../../../agents/redux/execution-system/instance-mo
 import { smartExecute } from "../../../agents/redux/execution-system/thunks/smart-execute.thunk";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
 import { selectIsDebugMode } from "@host/lib/redux/preferences/adminDebugSlice";
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import { ResourceChips } from "../../../agents/resources/ResourceChips";
 import { useClipboardPaste } from "@host/components/ui/file-upload/useClipboardPaste";
 import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
 import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";
 import { RunControlsMenu } from "../../../agents/components/inputs/smart-input/RunControlsMenu";
 import { PlusAttachMenu } from "../../../agents/components/inputs/smart-input/PlusAttachMenu";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import type {
   ManagedResource,
   ResourceBlockType,
@@ -188,7 +188,7 @@ export function ConversationInput({
   const openDebugWindow = () =>
     dispatch(
       openOverlay({
-        overlayId: "chatDebugWindow",
+        overlayId: CHAT_WINDOWS.chatDebugWindow,
         data: { sessionId: conversationId },
       }),
     );

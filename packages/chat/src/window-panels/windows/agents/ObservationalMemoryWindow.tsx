@@ -52,6 +52,7 @@ import {
   OBSERVATIONAL_MEMORY_SURFACE_NAME,
   createObservationalMemoryScope,
 } from "@host/features/surfaces/manifests/observational-memory.manifest";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 // =============================================================================
 // Sidebar
@@ -463,7 +464,7 @@ function ObservationalMemoryWindowInner({
       height={720}
       minWidth={680}
       minHeight={460}
-      overlayId="observationalMemoryWindow"
+      overlayId={CHAT_WINDOWS.observationalMemoryWindow}
       onCollectData={collectData}
       sidebar={
         <MemorySidebar

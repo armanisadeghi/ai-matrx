@@ -42,7 +42,7 @@ jest.mock("@host/components/official/ProTextarea", () => {
   );
   return { ProTextarea };
 });
-jest.mock("@host/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
+jest.mock("../../../../../host/notify", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
 // The modules under test can be swapped for a pre-fix copy to prove this
 // suite fails without the fix (same seam as a-date-shows-in-a-date-and-time-input).

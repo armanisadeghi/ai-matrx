@@ -37,7 +37,7 @@ import {
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 import { mapScopeToInstanceWithSurface } from "../../../utils/scope-mapping";
 import type { ApplicationScope } from "../../../types/scope.types";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import type { ValueMappingMap } from "../../../../surfaces/types";
 import { withBaselineScope } from "../../../../surfaces/utils/baseline-scope";
 import { isPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
@@ -91,7 +91,7 @@ import {
   setInstanceSurfaceOwnsOutput,
   patchConversation,
 } from "../conversations/conversations.slice";
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { openOverlay, CHAT_WINDOWS } from "../../../../host/windows";
 import { DISPLAY_MODE_TO_OVERLAY_ID } from "../display-mode-overlay";
 import {
   isProjectCreateFlow,
@@ -1207,7 +1207,7 @@ export const launchAgentExecution = createAsyncThunk<
     const downstreamOverlayId = DISPLAY_MODE_TO_OVERLAY_ID[resolvedDisplayMode];
     dispatch(
       openOverlay({
-        overlayId: "agentGateWindow",
+        overlayId: CHAT_WINDOWS.agentGateWindow,
         instanceId: `gate-${conversationId}`,
         data: {
           conversationId,

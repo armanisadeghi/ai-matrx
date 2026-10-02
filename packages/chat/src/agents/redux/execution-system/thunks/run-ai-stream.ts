@@ -41,7 +41,7 @@ import {
 
 import type { RootState } from "@host/lib/redux/store";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 
 /**
  * Loose dispatch type that matches whatever `createAsyncThunk` hands us at the

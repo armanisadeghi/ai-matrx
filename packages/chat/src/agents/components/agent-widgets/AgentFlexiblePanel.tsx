@@ -5,6 +5,7 @@ import { selectInstanceDisplayTitle } from "../../redux/execution-system/instanc
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { agentPanelUrlArgs } from "../../../window-panels/windows/agents/agentPanelSurfaceAddress";
 import { AgentRunner } from "../smart/AgentRunner";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 /** Match `AgentFullModal` (`max-w-3xl` × `h-[85dvh]`). */
 const AGENT_FLEXIBLE_PANEL_WIDTH = 768;
@@ -35,7 +36,7 @@ export function AgentFlexiblePanel({
   return (
     <WindowPanel
       id={instanceId}
-      overlayId="agentFlexiblePanel"
+      overlayId={CHAT_WINDOWS.agentFlexiblePanel}
       title={title}
       onClose={onClose}
       position="center"

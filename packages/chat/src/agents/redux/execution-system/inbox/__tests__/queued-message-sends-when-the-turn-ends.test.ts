@@ -66,7 +66,7 @@ jest.mock("@host/lib/api/call-api", () => ({
         : { error: { status, message: "already drained" } };
     },
 }));
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../../../host/notify", () => ({
   toast: { info: jest.fn(), error: jest.fn(), warning: jest.fn() },
 }));
 jest.mock("../../thunks/smart-execute.thunk", () => ({

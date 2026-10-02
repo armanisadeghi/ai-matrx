@@ -2,9 +2,16 @@ import { toast } from "@host/lib/toast";
 import { PRINT_BLOCKED_TOAST } from "@host/lib/print/print-outcome-toast";
 import { printMarkdownContent } from "./markdown-print";
 
+// The blocked-popup toast is raised by notifyPrintOutcome (an app helper, still a host tie)
+// through the app toast; the diagram warnings go through the notify seam.
 jest.mock("@host/lib/toast", () => ({
     toast: {
         info: jest.fn(),
+    },
+}));
+jest.mock("../../host/notify", () => ({
+    toast: {
+        warning: jest.fn(),
     },
 }));
 

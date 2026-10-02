@@ -124,7 +124,7 @@ export const forkAndResubmitFromMessage = createAsyncThunk<
     } else {
       // This told the user to go find the branch by hand while holding its
       // id — the Door Law violation stated out loud. It opens now.
-      const { toast } = await import("@host/lib/toast");
+      const { toast } = await import("../../../../host/notify");
       const { toastDoor } = await import(
         "@host/components/official/entity-ref/toastDoor"
       );

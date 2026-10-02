@@ -25,7 +25,7 @@
  *     (the agent's edit content, streamed as each ctx_patch lands — D9 fix).
  */
 
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ContextDeltaData } from "@host/types/python-generated/stream-events";
 import { applyContextDeltaToContent } from "./contextDelta";

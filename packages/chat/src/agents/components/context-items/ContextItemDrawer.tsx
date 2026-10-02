@@ -21,7 +21,7 @@ import { ChevronLeft, ChevronRight, Send } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppDispatch } from "@host/lib/redux/hooks";
 import { addResource } from "../../redux/execution-system/instance-resources/instance-resources.slice";
-import { toast } from "@host/lib/toast-service";
+import { toast } from "../../../host/notify";
 import {
   Tooltip,
   TooltipContent,

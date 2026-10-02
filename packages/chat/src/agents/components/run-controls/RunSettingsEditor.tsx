@@ -60,7 +60,7 @@ import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";
 import { SystemInstructionModal } from "@host/features/agents/components/builder/message-builders/system-instructions/SystemInstructionModal";
 import { useOpenSystemInstructionWindow } from "@host/features/overlays/openers/systemInstructionWindow";
 import { NumberStepper } from "@host/components/official-candidate/NumberStepper";
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import {
   selectIsMemoryEnabledForConversation,
   selectMemoryDegraded,
@@ -229,7 +229,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
   const openMemoryInspector = () =>
     dispatch(
       openOverlay({
-        overlayId: "observationalMemoryWindow",
+        overlayId: CHAT_WINDOWS.observationalMemoryWindow,
         data: { initialSelectedConversationId: conversationId },
       }),
     );

@@ -14,7 +14,7 @@
 
 import { useEffect, useReducer, useState } from "react";
 import { Bug, Check, ChevronDown, ChevronUp, Copy, Trash2 } from "lucide-react";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { cn } from "@host/lib/utils";
 import {
   voiceDebugClear,

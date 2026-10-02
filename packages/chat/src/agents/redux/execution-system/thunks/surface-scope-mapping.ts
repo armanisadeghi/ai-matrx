@@ -23,7 +23,7 @@ import {
   promptForValues,
   type ValuePromptField,
 } from "@host/components/dialogs/value-prompts/ValuePromptsDialogHost";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import {
   readSurfaceScopeValue,
   resolveValueMappings,

@@ -23,6 +23,7 @@ import {
 } from "../../../utils/launch-widget-handles";
 import { callbackManager } from "@host/utils/callbackManager";
 import type { SelectionWriteBack } from "../../../types/widget-handle.types";
+import { CHAT_WINDOWS } from "../../../../host/windows";
 
 const writeBack: SelectionWriteBack = {
   originalText: "Skip to main content | Patient portal",
@@ -60,11 +61,11 @@ describe("launch-scoped widget handles are released", () => {
     const before = liveLaunchWidgetHandleCount();
     const { id, surfaceId } = launch(store, "conv-close");
     store.dispatch(
-      openOverlay({ overlayId: "agentInlineOverlay", instanceId: "card-1", data: { conversationId: "conv-close" } }),
+      openOverlay({ overlayId: CHAT_WINDOWS.agentInlineOverlay, instanceId: "card-1", data: { conversationId: "conv-close" } }),
     );
     expect(liveLaunchWidgetHandleCount()).toBe(before + 1);
 
-    store.dispatch(closeOverlay({ overlayId: "agentInlineOverlay", instanceId: "card-1" }));
+    store.dispatch(closeOverlay({ overlayId: CHAT_WINDOWS.agentInlineOverlay, instanceId: "card-1" }));
 
     expect(callbackManager.get(id)).toBeUndefined();
     expect(liveLaunchWidgetHandleCount()).toBe(before);

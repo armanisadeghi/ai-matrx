@@ -8,7 +8,7 @@
  * "Recall interval" to every message template.
  */
 const mockToastSuccess = jest.fn();
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../host/notify", () => ({
   toast: { error: jest.fn(), success: mockToastSuccess },
 }));
 jest.mock("@host/features/surfaces/manifests/registry", () => ({

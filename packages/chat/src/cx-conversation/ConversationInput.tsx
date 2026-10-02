@@ -74,8 +74,8 @@ import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload"
 import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";
 import { useRecordAndTranscribe } from "@host/features/audio/hooks/useRecordAndTranscribe";
 import { TranscriptionLoader } from "@host/features/audio/components/TranscriptionLoader";
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
-import { toast } from "@host/lib/toast";
+import { openOverlay, CHAT_WINDOWS } from "../host/windows";
+import { toast } from "../host/notify";
 import type { Resource } from "../agents/resources/types";
 import type { ConversationResource } from "../cx-chat/types/conversation";
 import type { LLMParams } from "../agents/types/agent-api-types";
@@ -199,7 +199,7 @@ export function ConversationInput({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const openDebugWindow = () =>
     dispatch(
-      openOverlay({ overlayId: "chatDebugWindow", data: { sessionId } }),
+      openOverlay({ overlayId: CHAT_WINDOWS.chatDebugWindow, data: { sessionId } }),
     );
 
   // ── Redux state ────────────────────────────────────────────────────────────

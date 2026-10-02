@@ -52,7 +52,7 @@ import {
 } from "../../agents/redux/agent-definition/thunks";
 import { launchAgentExecution } from "../../agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { loadConversation } from "../../agents/redux/execution-system/thunks/load-conversation.thunk";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { DEFAULT_AGENT_ID } from "../components/agent/local-agents";
 import type { RootState } from "@host/lib/redux/store";
 import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";

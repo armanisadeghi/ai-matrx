@@ -22,12 +22,8 @@ import {
 } from "react";
 import { RotateCcw, AppWindow, SlidersHorizontal, Brain } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
-import {
-  restoreWindow,
-  focusWindow,
-  selectWindow,
-} from "@host/lib/redux/slices/windowManagerSlice";
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { CHAT_WINDOWS, openOverlay } from "../../../host/windows";
+import { useChatWindows, useHasChatManagedWindow } from "../../../host/windows-react";
 import { selectIsSuperAdmin } from "@host/lib/redux/slices/userSlice";
 import {
   selectIsMemoryEnabledForConversation,
@@ -160,7 +156,7 @@ function ActionsTab({
   const handleOpenMemoryInspector = useCallback(() => {
     dispatch(
       openOverlay({
-        overlayId: "observationalMemoryWindow",
+        overlayId: CHAT_WINDOWS.observationalMemoryWindow,
         data: { initialSelectedConversationId: conversationId },
       }),
     );
@@ -317,26 +313,25 @@ export function useCreatorRunWindows({
   const [streamDebugId] = useState(() => `stream-debug-${displayId}`);
   const [runSettingsId] = useState(() => `run-settings-${conversationId}`);
 
-  const streamDebugEntry = useAppSelector(selectWindow(streamDebugId));
-  const runSettingsEntry = useAppSelector(selectWindow(runSettingsId));
+  const windows = useChatWindows();
+  const streamDebugEntry = useHasChatManagedWindow(streamDebugId);
+  const runSettingsEntry = useHasChatManagedWindow(runSettingsId);
 
   const openStreamDebugWindow = useCallback(() => {
     if (streamDebugEntry) {
-      dispatch(restoreWindow(streamDebugId));
-      dispatch(focusWindow(streamDebugId));
+      windows.bringToFront?.(streamDebugId);
     } else {
       setStreamDebugWindowOpen(true);
     }
-  }, [dispatch, streamDebugEntry, streamDebugId]);
+  }, [windows, streamDebugEntry, streamDebugId]);
 
   const openRunSettingsWindow = useCallback(() => {
     if (runSettingsEntry) {
-      dispatch(restoreWindow(runSettingsId));
-      dispatch(focusWindow(runSettingsId));
+      windows.bringToFront?.(runSettingsId);
     } else {
       setRunSettingsWindowOpen(true);
     }
-  }, [dispatch, runSettingsEntry, runSettingsId]);
+  }, [windows, runSettingsEntry, runSettingsId]);
 
   const windowPanels = (
     <>

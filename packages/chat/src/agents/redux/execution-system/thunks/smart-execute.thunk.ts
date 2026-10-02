@@ -34,7 +34,7 @@ import {
   settleAfterStop,
 } from "./settle-after-stop.thunk";
 import { cancelAgentRunRequest } from "@host/lib/api/matrx-transport";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 import {
   ensureExecutionOrganization,

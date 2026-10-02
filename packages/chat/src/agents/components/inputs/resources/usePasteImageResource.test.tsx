@@ -46,7 +46,7 @@ jest.mock("@host/features/files/handler/input/normalize", () => ({
   normalize: () => ({ meta: { category: "DOCUMENT" }, url: null }),
 }));
 
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../../host/notify", () => ({
   toast: { error: jest.fn() },
 }));
 

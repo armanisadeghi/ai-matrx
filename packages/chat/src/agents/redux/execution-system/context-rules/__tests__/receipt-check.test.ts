@@ -18,7 +18,7 @@ jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
     return "id";
   },
 }));
-jest.mock("@host/lib/toast", () => ({ toast: { warning: jest.fn(), error: jest.fn() } }));
+jest.mock("../../../../../host/notify", () => ({ toast: { warning: jest.fn(), error: jest.fn() } }));
 
 import { recordContextReceipt } from "../receipt-check";
 

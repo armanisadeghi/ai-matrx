@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectUserId } from "@host/lib/redux/slices/userSlice";
 import {

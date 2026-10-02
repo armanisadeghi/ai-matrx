@@ -42,7 +42,7 @@ import {
 } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { ScrollArea } from "@ai-matrx/design-system";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import {
   selectMessageContentHistory,
   selectMessageContent,

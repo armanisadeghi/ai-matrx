@@ -17,12 +17,11 @@ import {
 } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setPreExecutionSatisfied } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { destroyInstanceIfAllowed } from "../../../redux/execution-system/conversations/conversations.thunks";
-import { closeOverlay, openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { closeOverlay, openOverlay, CHAT_WINDOWS, type ChatWindowId } from "../../../../host/windows";
 import { SmartAgentInput } from "../../inputs/smart-input/SmartAgentInput";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { PaperPlaneIcon } from "@radix-ui/react-icons";
 import { Button } from "@ai-matrx/design-system";
-import type { OverlayId } from "@host/features/overlays/catalogue";
 import { SurfaceRuntimeProvider } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   AGENT_GATE_SURFACE_NAME,
@@ -39,7 +38,7 @@ export function AgentGateBody({
 }: {
   conversationId: string;
   windowInstanceId: string;
-  downstreamOverlayId?: OverlayId;
+  downstreamOverlayId?: ChatWindowId;
   onClose: () => void;
 }) {
   const dispatch = useAppDispatch();
@@ -54,7 +53,7 @@ export function AgentGateBody({
   const closeGate = () => {
     dispatch(
       closeOverlay({
-        overlayId: "agentGateWindow",
+        overlayId: CHAT_WINDOWS.agentGateWindow,
         instanceId: windowInstanceId,
       }),
     );
@@ -152,7 +151,7 @@ export function AgentGateBody({
       bodyClassName="p-0 flex flex-col"
       footerRight={footerRight}
       footerLeft={footerLeft}
-      overlayId="agentGateWindow"
+      overlayId={CHAT_WINDOWS.agentGateWindow}
       onCollectData={() => ({ conversationId })}
     >
       {/* Nested overlay emitter — while this window is open, its scope

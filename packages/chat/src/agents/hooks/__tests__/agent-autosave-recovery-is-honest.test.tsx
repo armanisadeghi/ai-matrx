@@ -13,7 +13,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../host/notify", () => ({
   toast: { info: jest.fn(), error: jest.fn(), success: jest.fn(), warning: jest.fn() },
 }));
 

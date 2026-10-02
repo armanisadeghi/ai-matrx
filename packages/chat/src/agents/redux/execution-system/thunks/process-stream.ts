@@ -157,7 +157,7 @@ import { fromImageOutputData } from "@host/features/files/blocks/image/adapters/
 import { fromPartialImageData } from "@host/features/files/blocks/image/adapters/from-partial-image-data";
 import { getCapabilitiesForConversation } from "../../../runtime/get-model-capabilities";
 import type { ContentType } from "@host/features/ai-models/capabilities/types";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { isDirectiveApplyEvent } from "@host/features/matrx-envelope/envelope";
 import { proposeDirective } from "@host/features/matrx-envelope/state/proposedDirectivesSlice";
 
@@ -230,7 +230,7 @@ import {
   clearSubmittedFirstTurnValues,
 } from "../instance-variable-values/instance-variable-values.slice";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { openOverlay, CHAT_WINDOWS } from "../../../../host/windows";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { patchAgentConversationMetadata } from "../../conversation-list/conversation-list.slice";
 import {
@@ -1596,7 +1596,7 @@ export async function processStream({
           // streaming partials (would flash too early) and on non-image kinds
           // (the peek host is image-only today).
           if (unified.kind === "image" && !isStreamingPartial) {
-            dispatch(openOverlay({ overlayId: "imagePeekHost" }));
+            dispatch(openOverlay({ overlayId: CHAT_WINDOWS.imagePeekHost }));
           }
         } else if (
           dataType === "audio_stream_chunk" ||
@@ -1789,7 +1789,7 @@ export async function processStream({
           // Open the image peek notification overlay when a FINAL image arrives.
           // Skip on partials — the overlay would flash too early.
           if (dataType === "image_output") {
-            dispatch(openOverlay({ overlayId: "imagePeekHost" }));
+            dispatch(openOverlay({ overlayId: CHAT_WINDOWS.imagePeekHost }));
           }
         }
 

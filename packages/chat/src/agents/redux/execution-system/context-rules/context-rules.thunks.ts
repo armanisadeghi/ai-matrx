@@ -34,7 +34,7 @@ import {
 import { surfaceUserStateActions } from "../../../../surfaces/redux/userStateSlice";
 import { surfaceUserStateService } from "../../../../surfaces/user-state/service";
 import { requireUserId } from "@host/utils/auth/getUserId";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { isOrganizationSelectionCancelled } from "@host/lib/organization/selection-cancelled";
 
 const EMPTY_ROWS: SavedContextRuleRows = {};

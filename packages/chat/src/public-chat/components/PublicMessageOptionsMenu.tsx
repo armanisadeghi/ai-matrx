@@ -28,13 +28,13 @@ import AdvancedMenu, { MenuItem } from "@host/components/official/AdvancedMenu";
 import { EmailInputDialog } from "@host/components/dialogs/EmailInputDialog";
 import { AuthGateDialog } from "@host/components/dialogs/AuthGateDialog";
 import { NotesAPI } from "@host/features/notes/service/notesApi";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { useSelector } from "react-redux";
 import { selectUser } from "@host/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
 import { useAppDispatch } from "@host/lib/redux/hooks";
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
 import { removeCodeSpans, replaceFences } from "@host/lib/markdown/code-ranges";
 
 // Key used to store pending actions across the auth redirect
@@ -102,11 +102,11 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       };
       if (savedContent !== content) return; // stale — different message
       if (action === "save-scratch") {
-        dispatch(openOverlay({ overlayId: "saveToNotes", instanceId: crypto.randomUUID(), data: { initialContent: savedContent, defaultFolder: "Scratch", initialEditorMode: undefined } }));
+        dispatch(openOverlay({ overlayId: CHAT_WINDOWS.saveToNotes, instanceId: crypto.randomUUID(), data: { initialContent: savedContent, defaultFolder: "Scratch", initialEditorMode: undefined } }));
       } else if (action === "save-notes") {
         dispatch(
           openOverlay({
-            overlayId: "saveToNotes",
+            overlayId: CHAT_WINDOWS.saveToNotes,
             instanceId: crypto.randomUUID(),
             data: {
               initialContent: savedContent,
@@ -402,7 +402,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
     if (isAuthenticated) {
       dispatch(
         openOverlay({
-          overlayId: "saveToNotes",
+          overlayId: CHAT_WINDOWS.saveToNotes,
           instanceId: crypto.randomUUID(),
           data: {
             initialContent: content,

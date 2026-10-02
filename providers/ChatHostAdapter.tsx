@@ -15,7 +15,9 @@
 //                 `log_client_error`); sourceApp names this client for the
 //                 package default as well
 //   navigation  → next/navigation + next/link
-//   windows     → the overlay system (`openOverlay` / `closeOverlay`)
+//   windows     → the overlay system (`openOverlay` / `closeOverlay`) and
+//                 the window manager; every CHAT_WINDOWS id must be an
+//                 OverlayId (`chatWindowOverlay` fails to compile otherwise)
 //   catalog     → the app's one agent catalog (created by AgentCatalogHost,
 //                 read lazily so its archive-knob seed is never pre-empted)
 //   prefs       → package default until P8 maps the preference knobs
@@ -34,6 +36,8 @@ import type {
   ChatNotifyPort,
   ChatOrganization,
   ChatOrgPort,
+  ChatWindowId,
+  ChatWindowsPort,
 } from "@ai-matrx/chat/host";
 import { supabase } from "@/utils/supabase/client";
 import { useAppStore } from "@/lib/redux/hooks";
@@ -53,8 +57,17 @@ import {
   selectOrganizationName,
 } from "@/lib/redux/slices/appContextSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { isOverlayId } from "@/features/overlays/catalogue";
+import {
+  closeOverlay,
+  openOverlay,
+  selectIsOverlayOpen,
+} from "@/lib/redux/slices/overlaySlice";
+import {
+  focusWindow,
+  restoreWindow,
+  selectAllWindows,
+} from "@/lib/redux/slices/windowManagerSlice";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { toast, recordToast } from "@/lib/toast";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -71,6 +84,7 @@ function toastOptions(options?: ChatNotifyOptions) {
     ...(description ? { description } : {}),
     ...(options.id != null ? { id: options.id } : {}),
     ...(options.durationMs != null ? { duration: options.durationMs } : {}),
+    ...(options.action ? { action: options.action } : {}),
   };
 }
 
@@ -122,6 +136,35 @@ function reduxOrg(store: AppStore): ChatOrgPort {
   };
 }
 
+/** The package's window ids are this app's overlay ids — checked at compile time. */
+function chatWindowOverlay(id: ChatWindowId): OverlayId {
+  return id;
+}
+
+function reduxWindows(store: AppStore): ChatWindowsPort {
+  return {
+    open(id, data, instanceId) {
+      store.dispatch(
+        openOverlay({ overlayId: chatWindowOverlay(id), instanceId, data }),
+      );
+    },
+    close(id, instanceId) {
+      store.dispatch(
+        closeOverlay({ overlayId: chatWindowOverlay(id), instanceId }),
+      );
+    },
+    isOpen: (id, instanceId) =>
+      selectIsOverlayOpen(store.getState(), id, instanceId),
+    managedWindowKeys: () =>
+      selectAllWindows(store.getState()).map((entry) => entry.id),
+    bringToFront(key) {
+      store.dispatch(restoreWindow(key));
+      store.dispatch(focusWindow(key));
+    },
+    subscribe: (listener) => store.subscribe(listener),
+  };
+}
+
 const appNotify: ChatNotifyPort = {
   success: (message, options) =>
     void toast.success(message, toastOptions(options)),
@@ -129,6 +172,9 @@ const appNotify: ChatNotifyPort = {
   warning: (message, options) =>
     void toast.warning(message, toastOptions(options)),
   error: (message, options) => void toast.error(message, toastOptions(options)),
+  message: (message, options) =>
+    void toast.message(message, toastOptions(options)),
+  loading: (message, options) => toast.loading(message, toastOptions(options)),
   promise(work, labels) {
     toast.promise(work, labels);
     return work;
@@ -182,24 +228,7 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
       back: () => router.back(),
       Link,
     },
-    windows: {
-      open(id, data, instanceId) {
-        if (!isOverlayId(id)) {
-          captureError({
-            source: "runtime-exception",
-            name: "chat:windows",
-            code: "unknown-window-id",
-            message: `Chat asked to open window "${id}", which is not in the overlay catalogue.`,
-          });
-          return;
-        }
-        store.dispatch(openOverlay({ overlayId: id, instanceId, data }));
-      },
-      close(id, instanceId) {
-        if (isOverlayId(id))
-          store.dispatch(closeOverlay({ overlayId: id, instanceId }));
-      },
-    },
+    windows: reduxWindows(store),
     catalog: () => getAgentCatalog(),
   };
 

@@ -6,6 +6,7 @@ import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { agentPanelUrlArgs } from "../../../window-panels/windows/agents/agentPanelSurfaceAddress";
 import { AgentRunner } from "../smart/AgentRunner";
 import { AgentChatHistorySidebar } from "./AgentChatHistorySidebar";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 interface AgentFloatingChatProps {
   /** Overlay instance id — unique per open panel; also the window-manager id. */
@@ -36,7 +37,7 @@ export function AgentFloatingChat({
   return (
     <WindowPanel
       id={instanceId}
-      overlayId="agentFloatingChat"
+      overlayId={CHAT_WINDOWS.agentFloatingChat}
       title={displayTitle}
       onClose={onClose}
       position="center"

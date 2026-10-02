@@ -15,6 +15,7 @@ import {
 } from "../index";
 import { _resetAnnouncements } from "../errors";
 import { createFakeDb } from "./fake-db";
+import { CHAT_WINDOWS } from "../windows";
 
 const ALL_PORTS: ChatPortName[] = [
   "identity",
@@ -144,8 +145,8 @@ describe("a chat host needs only a db", () => {
   it("windows cannot open without a window host and say so once, never silently", () => {
     const { db } = createFakeDb();
     const { windows } = resolveChatHost({ db });
-    windows.open("agentRunWindow");
-    windows.open("agentRunWindow");
+    windows.open(CHAT_WINDOWS.agentRunWindow);
+    windows.open(CHAT_WINDOWS.agentRunWindow);
     const notices = warn.mock.calls.filter(([line]) =>
       String(line).includes('Chat window "agentRunWindow" was not opened'),
     );

@@ -25,7 +25,7 @@ import {
 
 import { cn } from "@host/lib/utils";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
 import { ShimmerText } from "@host/components/loaders/ShimmerText";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
@@ -496,7 +496,7 @@ const ToolCallVisualizationInner: React.FC<{
       : `tool-call-snapshot-${seedCallId}`;
     dispatch(
       openOverlay({
-        overlayId: "toolCallWindow",
+        overlayId: CHAT_WINDOWS.toolCallWindow,
         instanceId,
         data: {
           requestId: requestId ?? null,

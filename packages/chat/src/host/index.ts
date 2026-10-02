@@ -32,4 +32,11 @@ export { createDomNotifier } from "./defaults/notify";
 export { createWebPrefs, CHAT_PREFS_PREFIX } from "./defaults/prefs";
 export { createWindowNavigation } from "./defaults/navigation";
 export { createUnhostedWindows } from "./defaults/windows";
+export {
+  CHAT_WINDOWS,
+  CHAT_WINDOW_IDS,
+  DEFAULT_WINDOW_INSTANCE_ID,
+  isChatWindowId,
+  type ChatWindowId,
+} from "./windows";
 export { createDbCatalogGetter } from "./defaults/catalog";

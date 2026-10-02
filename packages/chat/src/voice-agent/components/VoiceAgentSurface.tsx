@@ -17,7 +17,7 @@ import { Music2, Radio, Settings2 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import RouteHeader from "@host/features/shell/components/header/RouteHeader";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { cn } from "@host/lib/utils";
 import { useVoiceAgentInstance } from "../hooks/useVoiceAgentInstance";

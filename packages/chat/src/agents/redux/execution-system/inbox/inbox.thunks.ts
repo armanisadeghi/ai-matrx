@@ -16,7 +16,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { callApi } from "@host/lib/api/call-api";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import type { components } from "@host/types/python-generated/api-types";
 import {

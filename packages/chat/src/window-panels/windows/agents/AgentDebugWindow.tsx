@@ -79,6 +79,7 @@ import {
   extractInspectableText,
 } from "../../../agents/redux/execution-system/messages/messages.selectors";
 import type { MessageRecord } from "../../../agents/redux/execution-system/messages/messages.slice";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
@@ -1062,7 +1063,7 @@ function AgentDebugWindowInner({
       height={680}
       minWidth={640}
       minHeight={420}
-      overlayId="agentDebugWindow"
+      overlayId={CHAT_WINDOWS.agentDebugWindow}
       onCollectData={collectData}
       sidebar={
         <AgentDebugSidebar

@@ -72,7 +72,7 @@
  */
 
 import { callApi } from "@host/lib/api/call-api";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { ThunkAction, ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";

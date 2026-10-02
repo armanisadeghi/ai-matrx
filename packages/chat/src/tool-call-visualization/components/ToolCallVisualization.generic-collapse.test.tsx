@@ -8,7 +8,7 @@ jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: () => "default",
 }));
-jest.mock("@host/lib/redux/slices/overlaySlice", () => ({
+jest.mock("../../host/windows", () => ({
   openOverlay: jest.fn(),
 }));
 jest.mock("@host/components/loaders/ShimmerText", () => ({

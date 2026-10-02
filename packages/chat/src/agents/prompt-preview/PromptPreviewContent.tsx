@@ -18,7 +18,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Copy, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { useAppStore } from "@host/lib/redux/hooks";
 import { requestPromptPreview } from "./service";
 import type { PromptPreview } from "./types";

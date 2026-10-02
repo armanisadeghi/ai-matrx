@@ -9,7 +9,7 @@
  * THE ONE editor, in place (`InPlaceAnswerEditor`, splice-safe save).
  */
 
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { openOverlay, CHAT_WINDOWS } from "../../../../host/windows";
 import type { AppDispatch } from "@host/lib/redux/store";
 
 export interface OpenStructuredRawViewerArgs {
@@ -32,7 +32,7 @@ export function openStructuredRawViewer(
 ): void {
   dispatch(
     openOverlay({
-      overlayId: "fullScreenEditor",
+      overlayId: CHAT_WINDOWS.fullScreenEditor,
       instanceId: `raw-view-${messageId ?? "unknown"}`,
       data: {
         content,

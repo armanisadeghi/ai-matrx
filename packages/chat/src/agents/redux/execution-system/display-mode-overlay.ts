@@ -9,21 +9,21 @@
  * this module exists to make impossible.
  */
 
-import type { OverlayId } from "@host/features/overlays/catalogue";
+import { CHAT_WINDOWS, type ChatWindowId } from "../../../host/windows";
 import type { ResultDisplayMode } from "../../utils/run-ui-utils";
 
 export const DISPLAY_MODE_TO_OVERLAY_ID: Partial<
-  Record<ResultDisplayMode, OverlayId>
+  Record<ResultDisplayMode, ChatWindowId>
 > = {
-  "modal-full": "agentFullModal",
-  "modal-compact": "agentCompactModal",
-  "chat-bubble": "agentChatBubble",
-  inline: "agentInlineOverlay",
-  sidebar: "agentSidebarOverlay",
-  "flexible-panel": "agentFlexiblePanel",
-  panel: "agentPanelOverlay",
-  toast: "agentToastOverlay",
-  "floating-chat": "agentFloatingChat",
-  "chat-collapsible": "agentChatCollapsible",
-  "chat-assistant": "agentChatAssistant",
+  "modal-full": CHAT_WINDOWS.agentFullModal,
+  "modal-compact": CHAT_WINDOWS.agentCompactModal,
+  "chat-bubble": CHAT_WINDOWS.agentChatBubble,
+  inline: CHAT_WINDOWS.agentInlineOverlay,
+  sidebar: CHAT_WINDOWS.agentSidebarOverlay,
+  "flexible-panel": CHAT_WINDOWS.agentFlexiblePanel,
+  panel: CHAT_WINDOWS.agentPanelOverlay,
+  toast: CHAT_WINDOWS.agentToastOverlay,
+  "floating-chat": CHAT_WINDOWS.agentFloatingChat,
+  "chat-collapsible": CHAT_WINDOWS.agentChatCollapsible,
+  "chat-assistant": CHAT_WINDOWS.agentChatAssistant,
 };

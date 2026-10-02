@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { cn } from "@host/lib/utils";
 import { extractErrorMessage } from "@host/utils/errors";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";
@@ -49,6 +49,7 @@ import {
 import { shortcutEditorWindowAction } from "@host/features/overlays/openers/shortcutEditorWindow";
 import { patchConversation } from "../../redux/execution-system/conversations/conversations.slice";
 import { getSurfaceRuntime } from "../../../surfaces/runtime/SurfaceRuntimeContext";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 export interface CustomAgentWindowProps {
   isOpen: boolean;
@@ -186,7 +187,7 @@ export default function CustomAgentWindow({
   return (
     <AgentPickerFrame
       id={`custom-agent-${instanceId}`}
-      overlayId="customAgentWindow"
+      overlayId={CHAT_WINDOWS.customAgentWindow}
       title={agentId ? "Map Inputs" : "Select Agent"}
       onClose={close}
       onSelect={setAgentId}

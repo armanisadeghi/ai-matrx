@@ -103,7 +103,7 @@ describe("the server read and the verb", () => {
   it("the ⋯ Archive verb confirms success with an Undo", async () => {
     jest.resetModules();
     const success = jest.fn();
-    jest.doMock("@host/lib/toast", () => ({ toast: { success, error: jest.fn(), info: jest.fn() } }));
+    jest.doMock("../../../../host/notify", () => ({ toast: { success, error: jest.fn(), info: jest.fn() } }));
     const { buildConversationMenu } = require("../../../components/conversation-actions/conversationActionRegistry");
     const { setConversationArchived } = require("../../conversation-list/conversation-row-actions.thunks");
     const dispatch = jest.fn(async () =>

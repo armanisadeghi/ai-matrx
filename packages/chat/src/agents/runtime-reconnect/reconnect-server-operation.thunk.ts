@@ -37,7 +37,7 @@ import { discardRetainedTransportConsumer } from "../redux/execution-system/thun
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { runtimeOperationRejoinPath, settleRunPickup } from "@ai-matrx/agents/matrx";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { setRequestStatus } from "../redux/execution-system/active-requests/active-requests.slice";

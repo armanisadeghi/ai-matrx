@@ -17,8 +17,9 @@ import { AgentMemoryBody } from "../../../agents/components/memory/components/Ag
 import { AgentMemoryFooter } from "../../../agents/components/memory/components/AgentMemoryFooter";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY, type ContextMenuExtraSection } from "@host/features/context-menu-v3/types";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { displayTitleForMemory } from "../../../agents/components/memory/types";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 interface AgentMemoryWindowProps {
   isOpen: boolean;
@@ -26,7 +27,7 @@ interface AgentMemoryWindowProps {
 }
 
 const WINDOW_ID = "agent-memory-window";
-const OVERLAY_ID = "agentMemoryWindow";
+const OVERLAY_ID = CHAT_WINDOWS.agentMemoryWindow;
 
 export default function AgentMemoryWindow({
   isOpen,

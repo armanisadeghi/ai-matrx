@@ -1,7 +1,7 @@
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { ThunkAction } from "redux-thunk";
 import { isRfc9562Uuid } from "@ai-matrx/kit/uuid";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 
 import { fetchConversationPendingCallsStrict } from "../../../api/fetch-pending-calls";
 import type { RootState } from "@host/lib/redux/store";

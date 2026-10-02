@@ -19,7 +19,7 @@
 import { useEffect } from "react";
 import { AlertTriangle, FileText, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { useConversationMaterialized } from "../../../hooks/useConversationMaterialized";

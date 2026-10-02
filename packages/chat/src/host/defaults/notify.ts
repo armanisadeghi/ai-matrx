@@ -17,7 +17,11 @@ export const NOTIFY_DEFAULT_MS = 4000;
 export const NOTIFY_MIN_ERROR_MS = 5000;
 const CONTAINER_ATTR = "data-ai-matrx-chat-toaster";
 
-const COLORS: Record<ChatNotifyLevel, string> = {
+/** `message` is the neutral notice: no level. */
+type Visual = ChatNotifyLevel | "message";
+
+const COLORS: Record<Visual, string> = {
+  message: "#1f2937",
   success: "#166534",
   info: "#1e3a8a",
   warning: "#854d0e",
@@ -38,7 +42,7 @@ function container(doc: Document): HTMLElement {
 
 export function createDomNotifier(): ChatNotifyPort {
   function show(
-    level: ChatNotifyLevel,
+    level: Visual,
     message: string,
     options: ChatNotifyOptions = {},
   ): void {
@@ -75,6 +79,20 @@ export function createDomNotifier(): ChatNotifyPort {
       sub.textContent = secondary;
       item.appendChild(sub);
     }
+    const action = options.action;
+    if (action) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = action.label;
+      button.style.cssText =
+        "margin-top:6px;background:transparent;color:inherit;border:1px solid currentColor;" +
+        "border-radius:6px;padding:2px 8px;font:inherit;cursor:pointer;";
+      button.addEventListener("click", () => {
+        item.remove();
+        action.onClick();
+      });
+      item.appendChild(button);
+    }
     root.appendChild(item);
     const requested = options.durationMs ?? NOTIFY_DEFAULT_MS;
     const duration =
@@ -89,6 +107,17 @@ export function createDomNotifier(): ChatNotifyPort {
     info: (message, options) => show("info", message, options),
     warning: (message, options) => show("warning", message, options),
     error: (message, options) => show("error", message, options),
+    message: (message, options) => show("message", message, options),
+    loading(message, options) {
+      const id =
+        options?.id ?? `chat-loading-${Math.random().toString(36).slice(2)}`;
+      show("info", message, {
+        ...options,
+        id,
+        durationMs: options?.durationMs ?? Number.POSITIVE_INFINITY,
+      });
+      return id;
+    },
     async promise<T>(
       work: Promise<T>,
       labels: ChatPromiseLabels<T>,

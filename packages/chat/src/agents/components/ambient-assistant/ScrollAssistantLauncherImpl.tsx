@@ -20,7 +20,8 @@ import { useSurfaceRuntime } from "../../../surfaces/runtime/SurfaceRuntimeConte
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectIsAuthenticated } from "@host/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
-import { selectIsOverlayOpen } from "@host/lib/redux/slices/overlaySlice";
+import { CHAT_WINDOWS } from "../../../host/windows";
+import { useIsChatWindowOpen } from "../../../host/windows-react";
 import { cn } from "@host/lib/utils";
 import { IntelligenceIndicator } from "@host/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { OrganizationContextNotice } from "@host/features/organizations/components/OrganizationRequiredNotice";
@@ -132,9 +133,7 @@ function AuthenticatedAmbientAssistant({
   const submissionPhase = useAppSelector(
     selectSubmissionPhase(conversationId ?? ""),
   );
-  const quickChatOpen = useAppSelector((state) =>
-    selectIsOverlayOpen(state, "quickChat"),
-  );
+  const quickChatOpen = useIsChatWindowOpen(CHAT_WINDOWS.quickChat);
 
   useEffect(() => {
     if (submissionPhase !== "pending") openedConversationRef.current = null;

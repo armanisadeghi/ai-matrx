@@ -30,7 +30,7 @@ import {
 } from "../conversation-transfer";
 import { CONVERSATION_TRANSFER_ROWS } from "../conversation-transfer-rows";
 
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../host/notify", () => ({
   toast: { loading: jest.fn(() => "t"), success: jest.fn(), error: jest.fn(), warning: jest.fn() },
 }));
 jest.mock("../../redux/execution-system/messages/messages.selectors", () => ({

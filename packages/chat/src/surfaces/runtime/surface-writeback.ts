@@ -74,7 +74,7 @@ import {
   validateCustomFieldsSetWrite,
   validateCustomFieldsWrite,
 } from "./custom-field-targets";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { awaitEffectiveOrganizationId } from "@host/features/organizations/awaitWorkspace";
 
 import type {

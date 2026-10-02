@@ -13,7 +13,7 @@ jest.mock("../../../redux/execution-system/instance-resources/resource-source", 
 jest.mock("../../../redux/execution-system/instance-resources/editable-resource-types", () => ({ isEditableCapableBlockType: () => false }));
 jest.mock("../../../redux/execution-system/instance-resources/instance-resources.slice", () => ({ addResource: jest.fn(() => ({ type: "add" })), removeResource: jest.fn(), setResourcePreview: jest.fn(), setResourceStatus: jest.fn((p: unknown) => ({ type: "status", payload: p })) }));
 jest.mock("./attached-documents", () => ({ cleanDocumentLabel: (x: string) => x, documentAttachLabelFromState: () => "Document" }));
-jest.mock("@host/lib/toast", () => ({ toast: { error: jest.fn() } }));
+jest.mock("../../../../host/notify", () => ({ toast: { error: jest.fn() } }));
 
 import { useAttachResource } from "./attach-resource";
 

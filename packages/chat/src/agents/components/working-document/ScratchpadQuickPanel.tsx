@@ -12,7 +12,7 @@
  * live in `history.row_versions` via the panel's History view.
  */
 
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { useCallback, useEffect, useState } from "react";
 import { Check, ChevronDown, NotebookPen, Plus, Trash2 } from "lucide-react";
 import {

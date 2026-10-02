@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { ProTextarea } from "@host/components/official/ProTextarea";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { variableInputPlaceholder } from "./variablePlaceholder";
 
 interface TextareaInputProps {

@@ -18,6 +18,7 @@ import {
   type AgentAssistantMarkdownDraftEntry,
 } from "../../../agents/redux/agent-assistant-markdown-draft.slice";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 interface AgentAssistantMarkdownDebugWindowProps {
   isOpen: boolean;
@@ -68,7 +69,7 @@ export default function AgentAssistantMarkdownDebugWindow({
       urlSyncKey="agent-md-debug"
       urlSyncId="agent-assistant-markdown-debug-window"
       urlSyncArgs={{ m: "amd" }}
-      overlayId="agentAssistantMarkdownDebugWindow"
+      overlayId={CHAT_WINDOWS.agentAssistantMarkdownDebugWindow}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0 bg-background text-foreground"
       actionsRight={
         <div className="flex flex-wrap items-center gap-2">

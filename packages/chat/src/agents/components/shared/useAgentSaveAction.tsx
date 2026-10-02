@@ -16,8 +16,7 @@ import {
   saveAgent,
   createAgent,
 } from "../../redux/agent-definition/thunks";
-import { toast } from "@host/lib/toast-service";
-import { toast as nameTakenToast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { agentNameTaken } from "../../redux/agent-definition/agentNameTaken";
 import { setAgentField } from "../../redux/agent-definition/slice";
 import {
@@ -143,7 +142,7 @@ export function useAgentSaveAction(
       // organization is refused in words, and one press takes the free name and saves again.
       const taken = agentNameTaken(e);
       if (taken && agentId) {
-        nameTakenToast.error(taken.sentence, {
+        toast.error(taken.sentence, {
           action: {
             label: `Use "${taken.suggestion}"`,
             onClick: () => {

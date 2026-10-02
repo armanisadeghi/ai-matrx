@@ -15,7 +15,7 @@ import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
 import { selectMessageCount } from "../../redux/execution-system/messages/messages.selectors";
 import { selectStreamPhase } from "../../redux/execution-system/selectors/aggregate.selectors";
 import { writeClipboard } from "@host/components/agent-copy/clipboard";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { useDebugContext } from "@host/hooks/useDebugContext";
 import { cn } from "@host/lib/utils";
 import {

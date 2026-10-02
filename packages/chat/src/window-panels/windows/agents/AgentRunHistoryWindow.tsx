@@ -43,6 +43,7 @@ import {
   type AgentRunHistorySnapshot,
 } from "./agent-run-history-scope";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 const SURFACE_KEY = "agent-run-history-window";
 
@@ -628,7 +629,7 @@ function AgentRunHistoryWindowInner({
         height={640}
         minWidth={520}
         minHeight={360}
-        overlayId="agentRunHistoryWindow"
+        overlayId={CHAT_WINDOWS.agentRunHistoryWindow}
         onCollectData={collectData}
         sidebar={
           <RunHistorySidebar

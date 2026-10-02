@@ -90,7 +90,7 @@ jest.mock(
   () => ({ invocationToManagedOptions: (x: unknown) => x }),
 );
 
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../host/notify", () => ({
   toast: { error: jest.fn(), info: jest.fn(), warning: jest.fn() },
 }));
 

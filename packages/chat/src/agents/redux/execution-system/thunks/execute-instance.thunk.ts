@@ -32,7 +32,7 @@ import type {
   UserOverrides,
 } from "../../../types/request.types";
 import type { RequestInitiation } from "../../../types/instance.types";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";

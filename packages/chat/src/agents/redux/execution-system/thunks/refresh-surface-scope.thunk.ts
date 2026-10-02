@@ -12,7 +12,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@host/lib/redux/store";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
 import { mapScopeToInstanceWithSurface } from "../../../utils/scope-mapping";
 import type { ApplicationScope } from "../../../types/scope.types";

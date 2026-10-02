@@ -68,6 +68,7 @@ import {
   CONVERSATION_TOOL_CALL_PAGE_SIZE,
   fetchConversationToolCallsPage,
 } from "../service/fetchConversationToolCalls";
+import { CHAT_WINDOWS } from "../../host/windows";
 
 // ─── Tab descriptor used by the browser-tab strip ─────────────────────────────
 
@@ -641,7 +642,7 @@ const ToolCallWindowPanelBody: React.FC<{
   return (
     <WindowPanel
       id={`tool-call-window-${instanceId}`}
-      overlayId="toolCallWindow"
+      overlayId={CHAT_WINDOWS.toolCallWindow}
       title={title}
       onClose={onClose}
       minWidth={720}

@@ -9,7 +9,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Check, Copy, Eye, FileText, Loader2, NotebookPen } from "lucide-react";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 
 import MarkdownStream from "@host/components/MarkdownStream";
 import { ProTextarea } from "@host/components/official/ProTextarea";

@@ -26,9 +26,9 @@ import { ChevronLeft, History, Loader2, Search } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { cn } from "@host/lib/utils";
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import { Input } from "@ai-matrx/design-system";
 import { fetchConversationHistory } from "../../../agents/redux/conversation-history/thunks";
 import { setScopeSearch } from "../../../agents/redux/conversation-history/slice";
@@ -222,7 +222,7 @@ export function SurfaceConversationsSection({
       ).unwrap();
       dispatch(
         openOverlay({
-          overlayId: "agentFlexiblePanel",
+          overlayId: CHAT_WINDOWS.agentFlexiblePanel,
           instanceId: result.conversationId,
           data: { conversationId: result.conversationId },
         }),

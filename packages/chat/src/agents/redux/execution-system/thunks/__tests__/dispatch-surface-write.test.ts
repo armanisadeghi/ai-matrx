@@ -32,7 +32,7 @@ jest.mock("../../../agent-definition/selectors", () => ({
 jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: mockGetManifest,
 }));
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../../../host/notify", () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({

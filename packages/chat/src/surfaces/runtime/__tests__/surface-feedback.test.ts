@@ -21,7 +21,7 @@ const mockAwaitOrganization = jest.fn();
 jest.mock("@host/features/organizations/awaitWorkspace", () => ({
   awaitEffectiveOrganizationId: () => mockAwaitOrganization(),
 }));
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../host/notify", () => ({
   toast: { error: mockToastError, success: mockToastSuccess },
 }));
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({

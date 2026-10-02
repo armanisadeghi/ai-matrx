@@ -35,7 +35,7 @@ jest.mock("@host/features/surfaces/manifests/registry", () => ({
       : undefined,
   getAllManifests: () => [],
 }));
-jest.mock("@host/lib/toast", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
+jest.mock("../../host/notify", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
 
 import { act, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";

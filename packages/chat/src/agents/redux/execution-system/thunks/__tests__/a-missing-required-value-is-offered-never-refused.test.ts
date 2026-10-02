@@ -18,7 +18,7 @@ jest.mock("@host/components/dialogs/value-prompts/ValuePromptsDialogHost", () =>
 }));
 
 const mockToast = { info: jest.fn(), error: jest.fn(), warning: jest.fn() };
-jest.mock("@host/lib/toast", () => ({ toast: mockToast }));
+jest.mock("../../../../../host/notify", () => ({ toast: mockToast }));
 
 jest.mock("../../../../../surfaces/services/bind-agent-to-surface.service", () => ({
   fetchSurfaceBindingLayers: jest.fn(),

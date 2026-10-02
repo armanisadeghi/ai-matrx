@@ -28,7 +28,7 @@
  */
 const mockGetManifest = jest.fn();
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("../../../host/notify", () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({

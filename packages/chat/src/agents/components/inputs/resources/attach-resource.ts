@@ -21,7 +21,7 @@
  */
 
 import type { Dispatch } from "@reduxjs/toolkit";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
 import type { RootState } from "@host/lib/redux/store";
 import {

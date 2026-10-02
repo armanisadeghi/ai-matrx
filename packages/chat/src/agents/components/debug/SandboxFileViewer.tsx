@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Loader2, RefreshCw, Copy, Check } from "lucide-react";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { SandboxFilesystemAdapter } from "@host/features/code/adapters/SandboxFilesystemAdapter";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 

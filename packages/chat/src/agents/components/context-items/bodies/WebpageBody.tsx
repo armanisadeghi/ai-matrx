@@ -9,7 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@ai-matrx/design-system";
-import { toast } from "@host/lib/toast-service";
+import { toast } from "../../../../host/notify";
 import { WebpageSnapshotView } from "@host/features/resource-manager/webpage/WebpageSnapshotView";
 import {
   webpageTitle,

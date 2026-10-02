@@ -112,7 +112,7 @@ jest.mock("@host/utils/supabase/client", () => ({
 }));
 jest.mock("@host/utils/auth/getUserId", () => ({ requireUserId: () => PERSON_ID }));
 const toastError = jest.fn();
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../../../host/notify", () => ({
   toast: { error: (...a: unknown[]) => toastError(...a), warning: jest.fn(), success: jest.fn() },
 }));
 

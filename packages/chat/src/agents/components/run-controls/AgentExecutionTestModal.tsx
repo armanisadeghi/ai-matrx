@@ -51,7 +51,7 @@ import {
 } from "lucide-react";
 import type { VariablesPanelStyle } from "../../types/instance.types";
 import type { ApiEndpointMode } from "../../types/instance.types";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
 
 interface AgentExecutionTestModalProps {

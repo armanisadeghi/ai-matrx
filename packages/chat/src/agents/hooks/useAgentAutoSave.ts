@@ -28,7 +28,7 @@ import {
 import { setAgentField } from "../redux/agent-definition/slice";
 import { readField } from "../redux/shared/field-flags";
 import type { AgentDefinition } from "../types/agent-definition.types";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 
 const STORAGE_PREFIX = "agent-autosave:";
 const DEBOUNCE_MS = 2_000;

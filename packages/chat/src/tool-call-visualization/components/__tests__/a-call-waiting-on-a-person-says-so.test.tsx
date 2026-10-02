@@ -31,7 +31,7 @@ jest.mock(
       Object.assign(() => undefined, { suspendedFor: requestId }),
   }),
 );
-jest.mock("@host/lib/redux/slices/overlaySlice", () => ({ openOverlay: jest.fn() }));
+jest.mock("../../../host/windows", () => ({ openOverlay: jest.fn() }));
 jest.mock("@host/components/loaders/ShimmerText", () => ({
   ShimmerText: ({ text }: { text: string }) => <span data-testid="shimmer">{text}</span>,
 }));

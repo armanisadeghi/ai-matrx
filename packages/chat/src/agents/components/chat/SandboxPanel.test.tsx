@@ -16,7 +16,7 @@ import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../host/notify", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));
 jest.mock("@host/features/code/views/sandboxes/CloneRepoDialog", () => ({

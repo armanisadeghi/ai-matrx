@@ -43,7 +43,7 @@ jest.mock(
   }),
 );
 const mockToastInfo = jest.fn();
-jest.mock("@host/lib/toast", () => ({ toast: { info: (...a: unknown[]) => mockToastInfo(...a) } }));
+jest.mock("../../../../../host/notify", () => ({ toast: { info: (...a: unknown[]) => mockToastInfo(...a) } }));
 jest.mock("@host/features/code/redux/codeEditHistoryHydration", () => ({
   loadCodeEditHistoryThunk: () => ({ type: "test/loadCodeEditHistory" }),
 }));

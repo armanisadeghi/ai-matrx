@@ -3,7 +3,7 @@ const mockToastSuccess = jest.fn();
 const mockCaptureError = jest.fn();
 const mockGetManifest = jest.fn();
 
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../host/notify", () => ({
   toast: {
     error: mockToastError,
     success: mockToastSuccess,

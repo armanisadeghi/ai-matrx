@@ -15,7 +15,7 @@
 jest.mock("@host/lib/api/call-api", () => ({
   callApi: jest.fn(() => ({ type: "test/noop" })),
 }));
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../host/notify", () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
 

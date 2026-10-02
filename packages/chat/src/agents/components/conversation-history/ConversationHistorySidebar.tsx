@@ -95,7 +95,7 @@ import { AllLanesOffNotice } from "./ConversationLaneToggles";
 import { ConversationTrashSection } from "./ConversationTrashSection";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { ItemRow } from "@host/components/official/item/ItemRow";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import {
   LoadingTapButton,
   RefreshCwTapButton,

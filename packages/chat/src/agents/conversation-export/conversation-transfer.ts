@@ -20,7 +20,7 @@ import type { ConversationTransferRow } from "./conversation-transfer-rows";
 import type { Coverage, Payload, Section, Source } from "@ai-matrx/alchemy/operate";
 import type { FormatAdapter } from "@ai-matrx/kit/content-transfer";
 import type { AppDispatch, RootState } from "@host/lib/redux/store";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { unwrapKindEnvelopes } from "@host/lib/markdown/plain-text";
 import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
 import { extractFlatText } from "../redux/execution-system/messages/messages.selectors";

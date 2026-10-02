@@ -99,7 +99,7 @@ import {
 import { retryConversationTurn } from "../../../redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "../../../redux/execution-system/message-crud/commit-inline-edit.thunk";
 import { InPlaceAnswerEditor } from "./InPlaceAnswerEditor";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../../host/notify";
 import { useDomCapturePrint } from "../../../../conversation/hooks/useDomCapturePrint";
 import { MessageFilesStrip } from "@host/features/code/views/history/MessageFilesStrip";
 import { ProviderRetryCard, shouldShowProviderRetry } from "./ProviderRetryCard";

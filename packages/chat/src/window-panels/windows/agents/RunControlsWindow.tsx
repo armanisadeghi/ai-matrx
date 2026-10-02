@@ -18,7 +18,7 @@
 
 import { useState } from "react";
 import { useAppDispatch } from "@host/lib/redux/hooks";
-import { closeOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { closeOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
@@ -40,7 +40,7 @@ import { selectAgentName } from "../../../agents/redux/agent-definition/selector
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "../../../agents/menu/agent-actions";
 
-const OVERLAY_ID = "runControlsWindow" as const;
+const OVERLAY_ID = CHAT_WINDOWS.runControlsWindow;
 
 function RunControlsWindowInner({
   conversationId,

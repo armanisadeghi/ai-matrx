@@ -1,7 +1,8 @@
 /**
- * Default windows port. The package's own floating-window host ships at P18;
- * until then a bare host cannot open a chat window, and every attempt says so
- * (console once per window id, recorded in diagnostics) instead of doing nothing.
+ * Default windows port. The package has no floating-window host of its own
+ * yet, so a bare host cannot open a chat window, and every attempt says so
+ * (console once per window id, recorded in diagnostics) instead of doing
+ * nothing. Nothing is ever open here, so `isOpen` is always false.
  */
 
 import type { ChatDiagnosticsPort, ChatWindowsPort } from "../contract";
@@ -29,5 +30,6 @@ export function createUnhostedWindows(
     close() {
       /* nothing was opened */
     },
+    isOpen: () => false,
   };
 }

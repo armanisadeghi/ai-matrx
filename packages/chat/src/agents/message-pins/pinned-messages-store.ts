@@ -14,7 +14,7 @@
 
 import { useSyncExternalStore } from "react";
 import { favoritesService } from "@host/features/scopes/service/favoritesService";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 import { toastWriteFailure } from "@host/lib/errors/toastWriteFailure";
 import { durableRecordId } from "@host/lib/ids/durable-record-id";
 

@@ -50,7 +50,7 @@ import {
   logProjectCreateAiStage,
   warnProjectCreateAi,
 } from "@host/features/projects/debug/projectCreateAiDebug";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../host/notify";
 
 // =============================================================================
 // ConversationInvocation type guard

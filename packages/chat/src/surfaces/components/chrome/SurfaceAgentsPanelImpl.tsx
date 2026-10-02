@@ -14,7 +14,7 @@
 
 import { useState } from "react";
 import { Braces, ChevronRight, ShieldCheck } from "lucide-react";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 
 import { useActivePageSurface } from "../../runtime/useActivePageSurface";
 import { getRelatedSurfaces } from "../../runtime/fetchRelatedSurfaces";

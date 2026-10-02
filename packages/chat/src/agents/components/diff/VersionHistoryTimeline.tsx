@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
 import { cn } from "@host/lib/utils";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { supabase } from "@host/utils/supabase/client";
 import {
   GitCompareArrows,

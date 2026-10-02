@@ -35,7 +35,7 @@ import {
   Server,
   AlertTriangle,
 } from "lucide-react";
-import { toast } from "@host/lib/toast";
+import { toast } from "../../../host/notify";
 import { Checkbox } from "@host/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";

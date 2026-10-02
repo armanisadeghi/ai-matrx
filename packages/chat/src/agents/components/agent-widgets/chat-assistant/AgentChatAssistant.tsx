@@ -25,7 +25,7 @@ import {
   selectPendingNavigation,
   clearPendingNavigation,
 } from "../../../redux/surfaces/surfaces.slice";
-import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { openOverlay, CHAT_WINDOWS } from "../../../../host/windows";
 import { AssistantCardStack } from "./AssistantCardStack";
 import { CompactAssistantInput } from "./CompactAssistantInput";
 import { AssistantControlBar } from "./AssistantControlBar";
@@ -82,7 +82,7 @@ export function AgentChatAssistant({
 
     dispatch(
       openOverlay({
-        overlayId: "agentChatAssistant",
+        overlayId: CHAT_WINDOWS.agentChatAssistant,
         instanceId: target,
       }),
     );

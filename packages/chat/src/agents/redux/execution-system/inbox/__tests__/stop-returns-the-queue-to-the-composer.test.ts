@@ -33,7 +33,7 @@ jest.mock("@host/lib/api/call-api", () => ({
       : { error: { status, message: "already drained" } };
   },
 }));
-jest.mock("@host/lib/toast", () => ({ toast: { info: jest.fn(), error: jest.fn() } }));
+jest.mock("../../../../../host/notify", () => ({ toast: { info: jest.fn(), error: jest.fn() } }));
 
 import { returnQueuedToComposer } from "../inbox.thunks";
 

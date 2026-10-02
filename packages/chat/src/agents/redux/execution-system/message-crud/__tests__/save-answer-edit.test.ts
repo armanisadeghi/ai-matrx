@@ -81,7 +81,7 @@ jest.mock("../invalidate-conversation-cache.thunk", () => ({
 }));
 
 const toastError = jest.fn();
-jest.mock("@host/lib/toast", () => ({
+jest.mock("../../../../../host/notify", () => ({
   toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn(), info: jest.fn(), warning: jest.fn() },
 }));
 

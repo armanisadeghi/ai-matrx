@@ -19,6 +19,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ComponentType, ReactNode } from "react";
 import type { AgentCatalog } from "@ai-matrx/agents/catalog";
+import type { ChatWindowId } from "./windows";
 
 /**
  * The connection contract (R10). Authenticated, RLS applies. P6 narrows this to
@@ -75,6 +76,12 @@ export interface ChatServerPort {
   headers?(): Promise<Record<string, string>>;
 }
 
+/** One press offered with a notice (e.g. "Undo", "Use “Sales 2”"). */
+export interface ChatNotifyAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ChatNotifyOptions {
   description?: string;
   /** What the person can do about it — shown with the sentence. */
@@ -82,6 +89,7 @@ export interface ChatNotifyOptions {
   /** Same id replaces an earlier notice instead of stacking. */
   id?: string | number;
   durationMs?: number;
+  action?: ChatNotifyAction;
 }
 
 /** The platform's record reference (`CONTEXT_MENU_ENTITY_KEY` shape). */
@@ -105,6 +113,10 @@ export interface ChatNotifyPort {
   info(message: string, options?: ChatNotifyOptions): void;
   warning(message: string, options?: ChatNotifyOptions): void;
   error(message: string, options?: ChatNotifyOptions): void;
+  /** A neutral notice — no level. */
+  message(message: string, options?: ChatNotifyOptions): void;
+  /** Stays until a notice with the same id replaces it; returns that id. */
+  loading(message: string, options?: ChatNotifyOptions): string | number;
   promise<T>(work: Promise<T>, labels: ChatPromiseLabels<T>): Promise<T>;
   /** A notice that names a record — dismissed when that record changes or leaves the screen. */
   record(
@@ -152,17 +164,31 @@ export interface ChatNavigationPort {
 }
 
 export interface ChatWindowShellProps {
-  id: string;
+  id: ChatWindowId;
   instanceId?: string;
   title?: string;
   onClose(): void;
   children: ReactNode;
 }
 
-/** Window/overlay port (CPM-009c). */
+/**
+ * Window/overlay port (CPM-009c). Ids are the package's own registry
+ * (`CHAT_WINDOWS` in `./windows`) — never a bare string.
+ */
 export interface ChatWindowsPort {
-  open(id: string, data?: unknown, instanceId?: string): void;
-  close(id: string, instanceId?: string): void;
+  open(id: ChatWindowId, data?: unknown, instanceId?: string): void;
+  close(id: ChatWindowId, instanceId?: string): void;
+  /** Whether that window instance is open now. Absent: nothing is ever open here. */
+  isOpen?(id: ChatWindowId, instanceId?: string): boolean;
+  /**
+   * Keys of every window the host's window manager holds right now (open or
+   * minimized to its tray). Absent: the host has no window manager.
+   */
+  managedWindowKeys?(): readonly string[];
+  /** Restore and focus a window the manager already holds, by its key. */
+  bringToFront?(key: string): void;
+  /** Called whenever `isOpen` or `managedWindowKeys` may have changed. */
+  subscribe?(listener: () => void): () => void;
   Shell?: ComponentType<ChatWindowShellProps>;
 }
 
@@ -206,7 +232,7 @@ export interface ChatHost {
   prefs?: ChatPrefsPort;
   /** Default: window.location + <a>. matrx-frontend passes next/navigation + next/link. */
   navigation?: ChatNavigationPort;
-  /** Default: announces once that no window host exists here (P18 ships the floating host). */
+  /** Default: announces once that no window host exists here (a floating-window host is not built yet). */
   windows?: ChatWindowsPort;
   /**
    * Default: the registered catalog, else one built over db. A function defers
