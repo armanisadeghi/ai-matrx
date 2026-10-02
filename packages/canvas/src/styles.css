@@ -418,6 +418,11 @@
     display: inline-flex !important;
   }
 
+  /* A phone canvas is already full screen. */
+  .mxc-desktop-only {
+    display: none !important;
+  }
+
   .mxc-column {
     position: fixed;
     inset: 0;

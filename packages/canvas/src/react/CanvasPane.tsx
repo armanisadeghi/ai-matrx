@@ -152,6 +152,7 @@ function PaneHeader({
         {HeaderAction && kindProps ? <HeaderAction {...kindProps} /> : null}
         <PaneMenu paneId={paneId} activeItem={activeItem} kind={kind} kindProps={kindProps} canSplitMove={itemIds.length > 1} />
         <TapTargetButtonTransparent
+          className="mxc-desktop-only"
           ariaLabel={isFullscreen ? "Exit full screen" : "Full screen"}
           icon={isFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
           onClick={() => canvas.setFullscreen(!isFullscreen)}
