@@ -638,6 +638,88 @@ function declined(
 }
 
 /**
+ * What an approved write needs at the moment it applies: the anchored edit to
+ * re-resolve against the live text, and — filled in by `agentWriteAllowed` —
+ * the live runtime and the (possibly rebased) value to hand the handler.
+ */
+interface ApprovedWriteAtApply {
+  resolvePatch?: (
+    runtime: SurfaceRuntimeValue,
+  ) => Promise<{ ok: true; value: string } | { ok: false; error: string }>;
+  runtime?: SurfaceRuntimeValue;
+  value?: string;
+}
+
+/** The registered runtime for the same surface: the original object when it is
+ * still registered, else the surface's current registration (deepest first). */
+function liveRuntimeFor(
+  registry: SurfaceRegistry,
+  runtime: SurfaceRuntimeValue,
+): SurfaceRuntimeValue | null {
+  const stack = registry.stack();
+  if (stack.includes(runtime)) return runtime;
+  return stack.find((entry) => entry.surfaceName === runtime.surfaceName) ?? null;
+}
+
+/**
+ * ONE TARGET, ONE WRITE AT A TIME, PER CONVERSATION.
+ *
+ * A model may emit several writes to the same target in one turn, in parallel
+ * (two str_replace edits to one note, 2026-10-02). Presented together, every
+ * card snapshots the same original, and whichever is applied first makes the
+ * rest stale. Queued, each write is resolved, shown and applied against the
+ * text as the previous one left it. Keyed by conversation so a card left open
+ * in one chat never holds another chat's writes.
+ */
+const targetWriteQueues = new Map<string, Promise<unknown>>();
+
+function inTargetQueue<T>(key: string, run: () => Promise<T>): Promise<T> {
+  const previous = targetWriteQueues.get(key) ?? Promise.resolve();
+  const next = previous.then(run, run);
+  const settled = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  targetWriteQueues.set(key, settled);
+  void settled.then(() => {
+    if (targetWriteQueues.get(key) === settled) targetWriteQueues.delete(key);
+  });
+  return next;
+}
+
+/** Longest wait for the page to show a write before the next queued write
+ * reads it. A React editor re-renders within a frame or two. */
+const WRITE_SETTLE_TIMEOUT_MS = 1000;
+const WRITE_SETTLE_POLL_MS = 16;
+
+/**
+ * Wait until the live text source reads the value just written, so the next
+ * queued write never resolves its edit against the pre-write text (which
+ * would silently undo this one). Bounded; a page that transforms the value on
+ * write simply runs out the clock and the next write rebases at approval.
+ */
+async function awaitPageShows(
+  registry: SurfaceRegistry,
+  runtime: SurfaceRuntimeValue,
+  sourceName: string,
+  value: string,
+): Promise<void> {
+  const deadline = Date.now() + WRITE_SETTLE_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const live = liveRuntimeFor(registry, runtime);
+    if (!live) return;
+    try {
+      const scope = await live.getScope();
+      const current = scope[sourceName];
+      if (typeof current !== "string" || current === value) return;
+    } catch {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, WRITE_SETTLE_POLL_MS));
+  }
+}
+
+/**
  * Decide whether an agent-originated write may proceed. User-origin writes
  * never reach here.
  *
@@ -655,6 +737,7 @@ async function agentWriteAllowed(
   runtime: SurfaceRuntimeValue,
   registry: SurfaceRegistry = getGlobalSurfaceRegistry(),
   patch?: SurfaceWriteApprovalProposal["patch"],
+  atApply?: ApprovedWriteAtApply,
 ): Promise<SurfaceWriteResult | true> {
   const policy = resolveApplyPolicy(target, surfaceName);
   if (policy === "auto") return true;
@@ -694,10 +777,12 @@ async function agentWriteAllowed(
     typeof value === "string" &&
     !/^(append|insert)/.test(target.name);
   let currentValue: string | null | undefined;
-  async function readCurrentText(): Promise<string | null> {
+  async function readCurrentText(
+    from: SurfaceRuntimeValue = runtime,
+  ): Promise<string | null> {
     if (!originalName)
       throw new Error("The original text source is not declared.");
-    const scope = await runtime.getScope();
+    const scope = await from.getScope();
     const current = scope[originalName];
     if (current !== null && typeof current !== "string") {
       throw new Error(
@@ -732,15 +817,43 @@ async function agentWriteAllowed(
     ...(patch ? { patch } : {}),
   });
   if (decision.kind === "approved") {
-    if (comparing) {
+    const changedMessage = `"${target.label}" changed while you were reviewing it. Nothing was applied. Request the change again to review an updated comparison.`;
+    // THE SAME SURFACE, NOT THE SAME OBJECT. A provider re-registers on any
+    // identity change (a parent re-render, a board tile remounting) and gets
+    // a new runtime object; comparing by identity refused every open card
+    // with the "changed" sentence although nothing had changed (2026-10-02).
+    const live = liveRuntimeFor(registry, runtime);
+    if (live && atApply) atApply.runtime = live;
+    // Only a write that must re-read the page needs the page still open; a
+    // platform target with no surface (window forms, custom fields) does not.
+    if (!live && (comparing || atApply?.resolvePatch)) {
+      const message = `"${target.label}" is no longer open here. Nothing was applied. Reopen it and request the change again.`;
+      toast.error(message);
+      return { ok: false, refused: true, error: message };
+    }
+    // AN ANCHORED EDIT IS RESOLVED AGAINST THE TEXT AT THE MOMENT IT APPLIES.
+    // A sibling edit that landed first (two str_replace calls on different
+    // lines in one turn) does not make this one stale: if its old text still
+    // matches exactly once, it is rebased onto the current text. Only an edit
+    // that truly no longer fits is refused.
+    if (live && atApply?.resolvePatch) {
+      const rebased = await atApply.resolvePatch(live);
+      if (!rebased.ok) {
+        toast.error(changedMessage);
+        return {
+          ok: false,
+          refused: true,
+          error: `${changedMessage} (${rebased.error})`,
+        };
+      }
+      atApply.value = rebased.value;
+      return true;
+    }
+    if (live && comparing) {
       try {
-        if (
-          !registry.stack().includes(runtime) ||
-          (await readCurrentText()) !== currentValue
-        ) {
-          const message = `"${target.label}" changed while you were reviewing it. Nothing was applied. Request the change again to review an updated comparison.`;
-          toast.error(message);
-          return { ok: false, refused: true, error: message };
+        if ((await readCurrentText(live)) !== currentValue) {
+          toast.error(changedMessage);
+          return { ok: false, refused: true, error: changedMessage };
         }
       } catch (error) {
         return fail(
@@ -969,6 +1082,22 @@ export async function applySurfaceWrite(
   rawValue: unknown,
   opts?: ApplySurfaceWriteOptions,
 ): Promise<SurfaceWriteResult> {
+  // Agent writes to one target from one conversation run one at a time (see
+  // `inTargetQueue`). User-origin writes are the person's own action — never
+  // held behind an open card.
+  if ((opts?.origin ?? "user") === "agent") {
+    return inTargetQueue(`${opts?.conversationId ?? ""}::${targetName}`, () =>
+      applySurfaceWriteNow(targetName, rawValue, opts),
+    );
+  }
+  return applySurfaceWriteNow(targetName, rawValue, opts);
+}
+
+async function applySurfaceWriteNow(
+  targetName: string,
+  rawValue: unknown,
+  opts?: ApplySurfaceWriteOptions,
+): Promise<SurfaceWriteResult> {
   const registry = opts?.source ?? getGlobalSurfaceRegistry();
   const onScreen = registry.kind === "global";
   if (onScreen && targetName === WINDOW_FORM_TARGET_NAME) {
@@ -1081,7 +1210,16 @@ export async function applySurfaceWrite(
       }
     }
 
+    let applyRuntime = runtime;
     if ((opts?.origin ?? "user") === "agent") {
+      // An anchored edit is re-resolved against the live text after approval
+      // (rebased onto whatever a sibling write left there).
+      const atApply: ApprovedWriteAtApply = {};
+      if (isSurfaceWritePatch(rawValue)) {
+        const patchValue = rawValue;
+        atApply.resolvePatch = (live) =>
+          resolveTargetPatch(target, live, patchValue);
+      }
       // Returns `true` to proceed, or the exact result to hand back (already
       // reported for a refusal, deliberately silent for a decline).
       const verdict = await agentWriteAllowed(
@@ -1093,16 +1231,34 @@ export async function applySurfaceWrite(
         runtime,
         registry,
         patchExcerpt,
+        atApply,
       );
       if (verdict !== true) return verdict;
+      if (atApply.runtime) applyRuntime = atApply.runtime;
+      if (atApply.value !== undefined && atApply.value !== value) {
+        value = atApply.value;
+        const rebasedContract = await valueContractHolds(
+          target,
+          runtime.surfaceName,
+          value,
+        );
+        if (rebasedContract !== true) {
+          return rebasedContract.ok
+            ? rebasedContract
+            : { ...rebasedContract, phase: "apply" };
+        }
+      }
     }
 
     try {
       // Approval can span renders or navigation. Resolve the current handlers
       // again so draft/revision guards see the state at the time of the write.
-      if (!registry.stack().includes(runtime))
+      // The same SURFACE re-registered is still the page (`liveRuntimeFor`).
+      const liveRuntime = liveRuntimeFor(registry, applyRuntime);
+      if (!liveRuntime)
         throw new SurfaceWriteRefusalError("The page changed while approval was open. Review the current page before applying this change.");
-      const currentHandler = splitHandler(resolveHandlers(runtime, registry)[targetName]);
+      applyRuntime = liveRuntime;
+      const currentHandler = splitHandler(resolveHandlers(applyRuntime, registry)[targetName]);
       if (!currentHandler)
         throw new SurfaceWriteRefusalError("This operation is no longer available on the current page.");
       if (currentHandler.validate) {
@@ -1114,8 +1270,18 @@ export async function applySurfaceWrite(
       }
 
       // Read the receipt after approval and current page validation.
-      const before = await readPageValueBeforeWrite(target, runtime);
+      const before = await readPageValueBeforeWrite(target, applyRuntime);
       const outcome = toWriteOutcome(await currentHandler.apply(value));
+      // Hold the queue until the page shows this write, so a queued sibling
+      // edit resolves against the new text, never the pre-write text.
+      const textSource = target.comparisonValue ?? target.updatesValue;
+      if (
+        (opts?.origin ?? "user") === "agent" &&
+        textSource &&
+        typeof value === "string"
+      ) {
+        await awaitPageShows(registry, applyRuntime, textSource, value);
+      }
       // ui-mode writes are self-evident on screen (selection moved, view
       // changed) — no toast. Draft/entity writes confirm what landed where.
       if (!opts?.quiet && target.mode !== "ui") {
