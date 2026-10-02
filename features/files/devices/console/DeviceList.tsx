@@ -15,7 +15,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { getAccessTokenOrNull } from "@/lib/python-client";
 import { cn } from "@/lib/utils";
 
-import { PlatformIcon, platformLabel, sinceLabel } from "../platform";
+import { PlatformIcon, osLine, relaySinceIso, sinceLabel } from "../platform";
 import { useNow } from "../useNow";
 import type { DeviceRow } from "../types";
 import { fetchRelayStatus } from "./relay";
@@ -51,7 +51,8 @@ function useRelayStatuses(ids: string[]): Record<string, RelayDeviceStatusEvent 
 function DeviceListRow({ device, status, now }: { device: DeviceRow; status: RelayDeviceStatusEvent | null | undefined; now: number }) {
   const name = device.instance_name?.trim() || "Unnamed device";
   const online = status?.online === true;
-  const seen = online ? "Online" : status && !status.online ? `Last seen ${sinceLabel(new Date(status.since_ms).toISOString(), now)}` : `Last seen ${sinceLabel(device.last_seen, now)}`;
+  const lastIso = (status && !status.online ? relaySinceIso(status.since_ms) : null) ?? device.last_seen;
+  const seen = online ? "Online" : lastIso ? `Last seen ${sinceLabel(lastIso, now)}` : "Never connected";
   return (
     <Link
       href={`/devices/${device.id}`}
@@ -71,8 +72,7 @@ function DeviceListRow({ device, status, now }: { device: DeviceRow; status: Rel
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[17px] font-semibold leading-[22px] text-foreground">{name}</span>
         <span className="block truncate text-[13px] leading-[18px] text-muted-foreground">
-          {platformLabel(device.platform)}
-          {device.os_version ? ` ${device.os_version}` : ""} · {seen}
+          {osLine(device.platform, device.os_version)} · {seen}
         </span>
       </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/70" aria-hidden="true" />

@@ -26,6 +26,22 @@ export function platformLabel(platform: string | null): string {
   return platform ?? "Unknown platform";
 }
 
+/**
+ * "macOS 15.6" — the OS line for a device. Older desktop builds stored a raw platform string
+ * ("macOS-27.0-arm64-arm-64bit"); its version is lifted out so the line never says the OS twice.
+ */
+export function osLine(platform: string | null, osVersion: string | null): string {
+  const label = platformLabel(platform);
+  if (!osVersion) return label;
+  const version = /\d+(?:\.\d+)+/.exec(osVersion)?.[0] ?? osVersion;
+  return `${label} ${version}`;
+}
+
+/** The relay reports since_ms 0 for a device that never connected: that is "unknown", not 1970. */
+export function relaySinceIso(sinceMs: number | null | undefined): string | null {
+  return sinceMs && sinceMs > 0 ? new Date(sinceMs).toISOString() : null;
+}
+
 /** "5 minutes ago" — the kit's long voice, one formatter platform-wide; "never" for no check-in. */
 export function sinceLabel(iso: string | null, now: number): string {
   if (!iso) return "never";

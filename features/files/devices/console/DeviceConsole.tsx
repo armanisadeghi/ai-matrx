@@ -15,7 +15,7 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { cn } from "@/lib/utils";
 
-import { sinceLabel } from "../platform";
+import { relaySinceIso, sinceLabel } from "../platform";
 import { useNow } from "../useNow";
 import type { DeviceRow } from "../types";
 import { FilesPanel } from "./FilesPanel";
@@ -47,6 +47,10 @@ function setQuery(patch: Record<string, string | null>): void {
   window.history.replaceState(window.history.state, "", url);
 }
 
+function offlineText(name: string, lastIso: string | null, now: number): string {
+  return lastIso ? `${name} is offline · last seen ${sinceLabel(lastIso, now)}` : `${name} is offline`;
+}
+
 export function DeviceConsole({ device }: { device: DeviceRow }) {
   const router = useRouter();
   const search = useSearchParams();
@@ -58,7 +62,7 @@ export function DeviceConsole({ device }: { device: DeviceRow }) {
 
   const offlineLine =
     status.pill === "offline"
-      ? `${name} is offline · last seen ${sinceLabel(status.offlineSinceMs !== null ? new Date(status.offlineSinceMs).toISOString() : device.last_seen, now)}`
+      ? offlineText(name, relaySinceIso(status.offlineSinceMs) ?? device.last_seen, now)
       : status.detail;
 
   const header = (

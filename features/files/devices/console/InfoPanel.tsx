@@ -14,7 +14,7 @@ import { formatDurationSeconds, formatFileSize } from "@ai-matrx/kit/format";
 
 import { cn } from "@/lib/utils";
 
-import { platformLabel, sinceLabel } from "../platform";
+import { osLine, platformLabel, relaySinceIso, sinceLabel } from "../platform";
 import { useNow } from "../useNow";
 import type { DeviceRow } from "../types";
 import type { ConsoleStatus } from "./connection";
@@ -77,7 +77,7 @@ export function InfoPanel({
     <div className={cn("min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2 lg:px-3", !visible && "hidden")}>
       <Group title="Computer">
         <Row label="Name" value={s?.device_name ?? device.instance_name ?? dash} />
-        <Row label="System" value={s ? `${platformLabel(s.platform)} ${s.os_version} · ${s.arch}` : `${platformLabel(device.platform)}${device.os_version ? ` ${device.os_version}` : ""}`} />
+        <Row label="System" value={s ? `${platformLabel(s.platform)} ${s.os_version} · ${s.arch}` : osLine(device.platform, device.os_version)} />
         <Row label="Host" value={s?.hostname ?? dash} mono />
         <Row label="User" value={s?.user.username ?? dash} mono />
         <Row label="Home" value={s?.paths.home ?? dash} mono />
@@ -92,7 +92,7 @@ export function InfoPanel({
         <Row
           label="Last seen"
           value={
-            status.pill === "live" ? "Now" : relay && !relay.online ? sinceLabel(new Date(relay.since_ms).toISOString(), now) : sinceLabel(device.last_seen, now)
+            status.pill === "live" ? "Now" : sinceLabel((relay && !relay.online ? relaySinceIso(relay.since_ms) : null) ?? device.last_seen, now)
           }
         />
         <Row label="App" value={s?.app_version ?? relay?.app_version ?? device.app_version ?? dash} />
