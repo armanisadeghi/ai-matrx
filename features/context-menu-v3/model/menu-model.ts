@@ -106,6 +106,8 @@ export interface MenuItemNode extends MenuNodeBase {
   destructive?: boolean;
   /** Extra classes on the row (admin amber, …). */
   className?: string;
+  /** Running it reloads this menu's own rows (Retry): the menu stays open (alchemy `keepsMenuOpen`). */
+  keepsMenuOpen?: boolean;
   onSelect: () => void;
 }
 
@@ -508,6 +510,7 @@ function failedLibraryNode(
         id: `${id}:retry`,
         label: "Couldn't load. Retry",
         icon: RotateCcw,
+        keepsMenuOpen: true,
         onSelect: m.retryLibraries,
       },
     ],

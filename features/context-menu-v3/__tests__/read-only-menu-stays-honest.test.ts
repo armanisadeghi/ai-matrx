@@ -142,9 +142,19 @@ describe("slow menu libraries", () => {
       expect(lib?.action.pending?.(target)).toBe(false);
       const rows = await lib!.action.expand!(target, new AbortController().signal);
       expect(rows.map((r) => r.label)).toEqual(["Couldn't load. Retry"]);
+      // Retry reloads THIS menu: the menu and the submenu stay open (alchemy keepsMenuOpen);
+      // without it clicking Retry closed the whole right-click menu (real-test run, /notes, 2026-10-02).
+      expect(rows[0]).toMatchObject({ keepsMenuOpen: true });
       await rows[0]!.run(target, {} as never);
     }
     expect(retry).toHaveBeenCalledTimes(2);
+  });
+
+  it("an ordinary library row does not keep the menu open", async () => {
+    const { resolved } = await resolvedIds(engine(), false);
+    const plain = resolved.filter((r) => !r.action.expand);
+    expect(plain.length).toBeGreaterThan(0);
+    for (const r of plain) expect(r.action).not.toMatchObject({ keepsMenuOpen: true });
   });
 
   it("a library that is simply empty (no error) stays absent", async () => {

@@ -218,6 +218,7 @@ function toAction(node: MenuNode, place: Placement, instanceId: string, opts: Pr
     ...base,
     ...(verb ? { verb: verb.verb } : {}),
     ...(node.destructive ? { destructive: true } : {}),
+    ...(node.keepsMenuOpen ? { keepsMenuOpen: true } : {}),
     eligible: (t) => {
       if (!own(t)) return absent;
       if (!node.disabled) return available;
