@@ -1,6 +1,6 @@
 {
   "$note": "SHRINK-ONLY budget of host ties per specifier in packages/chat/src. Never raise a number or add a key by hand — route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
-  "total": 3346,
+  "total": 3320,
   "budget": {
     "@/features/content-ir/registry/schema-source-kind-tables": 1,
     "@/features/surfaces/manifests/registry": 1,
@@ -385,7 +385,6 @@
     "@host/features/organizations/service": 1,
     "@host/features/organizations/useOrganizationRequired": 3,
     "@host/features/overlays/callbacks/fullScreenEditor": 1,
-    "@host/features/overlays/catalogue": 2,
     "@host/features/overlays/openers/agentAdminFindUsagesWindow": 1,
     "@host/features/overlays/openers/agentAdminShortcutWindow": 1,
     "@host/features/overlays/openers/agentAdvancedEditorWindow": 1,
@@ -670,10 +669,9 @@
     "@host/lib/redux/slices/apiConfigSlice": 14,
     "@host/lib/redux/slices/appContextSlice": 42,
     "@host/lib/redux/slices/htmlPagesSlice": 1,
-    "@host/lib/redux/slices/overlaySlice": 23,
+    "@host/lib/redux/slices/overlaySlice": 1,
     "@host/lib/redux/slices/userAuthSlice": 4,
     "@host/lib/redux/slices/userSlice": 22,
-    "@host/lib/redux/slices/windowManagerSlice": 2,
     "@host/lib/redux/store": 277,
     "@host/lib/redux/store-singleton": 8,
     "@host/lib/redux/thunks/activeOrgBootstrap": 1,
