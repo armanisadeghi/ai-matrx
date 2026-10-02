@@ -1,7 +1,7 @@
 # CLAUDE.md — AI Matrx frontend
 
 <!-- nine-laws:start -->
-## The ten laws (synced from `common-docs/policies/the-nine-laws.md` — edit there, never here)
+## The laws (synced from `common-docs/policies/the-nine-laws.md` — edit there, never here)
 
 1. **Done means verified, then handoff.** Build it, check types and regressions, use it in localhost as a user would, get an independent check, commit and push. Deploy agents own releases. `common-docs/policies/reality-is-the-referee.md`
 2. **Attack before you trust.** Plans are attacked before commitment; "done" is re-verified by someone outside the builder's frame.
@@ -13,6 +13,8 @@
 8. **A delta is not a status.** Lead with current truth and every open item.
 9. **Raise the bar.** Name the world champion, match it, beat it. `common-docs/policies/champions.md`
 10. **Talk to Arman like a person.** Plain English, in the chat, no paths or codenames. Tell him your decision and reason; ask only what is truly his. `common-docs/policies/talk-to-arman-like-a-person.md`
+11. **Credentials change everywhere or not at all.** Never rotate a password, key or token unless the same change updates every vault, `.env` and server that uses it. A leaked credential beats a lockout.
+12. **Finish your own work first.** Raise anything outside your task only when it blocks you. Never add security obstacles on your own authority; removing them is welcome.
 
 Also binding: the Data Doctrine (`common-docs/systems/architecture/database/DECISIONS.md`), the access ladder (`common-docs/policies/access-ladder.md`), canonical-first triage (`common-docs/policies/canonical-first-triage.md`), agents never author agents (`common-docs/policies/agents-never-author-agents.md`), and the domain tree (`common-docs/policies/domain-tree.md`).
 <!-- nine-laws:end -->
