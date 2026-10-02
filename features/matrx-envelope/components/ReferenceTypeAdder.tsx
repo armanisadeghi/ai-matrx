@@ -34,6 +34,8 @@ import {
 } from "@/features/scopes/redux/selectors/tree";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
+import { useKindItems } from "@/features/scopes/hooks/useKindItems";
+import type { KindScope } from "@/features/scopes/service/kindInventory";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { ReferenceItem } from "@ai-matrx/agents/envelope";
@@ -295,6 +297,16 @@ function ScopeTypeAdder({
   );
 }
 
+/**
+ * A person's records of one type: MOST RECENT FIRST, searched by name on the
+ * server, a page at a time (`useKindItems` — the kind inventory every "Use
+ * existing" list reads), each row carrying a short secondary line so two
+ * records with the same name can be told apart. Until 2026-10-02 this read the
+ * universal title search, which sorts alphabetically and returns no date, so
+ * an unfiltered list opened on "A…" and duplicates were indistinguishable
+ * (G2 review). A type whose registry entry supplies its own candidate source
+ * (`listCandidates`: data stores, HR employees) keeps that source.
+ */
 export function RecordReferencePicker({
   token,
   onPickMany,
@@ -305,8 +317,11 @@ export function RecordReferencePicker({
   const [query, setQuery] = useState("");
   // Retry = remount the results body (re-runs the search) keeping the query.
   const [attempt, setAttempt] = useState(0);
+  const Body = getEntityInfo(token).listCandidates
+    ? RecordReferenceSearch
+    : RecentRecordSearch;
   return (
-    <RecordReferenceSearch
+    <Body
       key={attempt}
       token={token}
       query={query}
@@ -317,23 +332,68 @@ export function RecordReferencePicker({
   );
 }
 
+interface RecordSearchProps {
+  token: EntityTypeToken;
+  query: string;
+  onQueryChange: (next: string) => void;
+  onPickMany: (items: ReferenceItem[]) => void;
+  onRetry: () => void;
+}
+
+/** Whose records: everything the person can see — the active org never narrows a list. */
+const EVERY_RECORD_I_CAN_SEE: KindScope = { kind: "all" };
+
+function RecentRecordSearch({
+  token,
+  query,
+  onQueryChange,
+  onPickMany,
+  onRetry,
+}: RecordSearchProps) {
+  const info = getEntityInfo(token);
+  const list = useKindItems(token, EVERY_RECORD_I_CAN_SEE, query);
+  const now = Date.now();
+  return (
+    <CandidateSearch
+      token={token}
+      query={query}
+      onQueryChange={onQueryChange}
+      onPickMany={onPickMany}
+      loading={list.loading}
+      error={list.error && list.items.length === 0 ? list.error.message : null}
+      ready={!list.loading && !list.error}
+      onRetry={onRetry}
+      rows={list.items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        secondary: candidateSecondaryLine(item.updatedAt, now),
+      }))}
+      footer={
+        list.hasMore ? (
+          <button
+            type="button"
+            onClick={list.loadMore}
+            disabled={list.loadingMore}
+            className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-md text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            {list.loadingMore ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : null}
+            Show more {info.labelPlural.toLowerCase()}
+          </button>
+        ) : null
+      }
+    />
+  );
+}
+
 function RecordReferenceSearch({
   token,
   query,
   onQueryChange,
   onPickMany,
   onRetry,
-}: {
-  token: EntityTypeToken;
-  query: string;
-  onQueryChange: (next: string) => void;
-  onPickMany: (items: ReferenceItem[]) => void;
-  onRetry: () => void;
-}) {
-  const setQuery = onQueryChange;
-  const [activeIndex, setActiveIndex] = useState(0);
-  const candidateRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const info = getEntityInfo(token);
+}: RecordSearchProps) {
   // The ONE search path (debounced, stale-guarded) scoped to this token. It
   // reports a failed read as `error` — never "no matches".
   const search = useUniversalEntitySearch({
@@ -342,9 +402,76 @@ function RecordReferenceSearch({
     perTokenLimit: 20,
     emptyQueryMode: "candidates",
   });
-  const { results, loading } = search;
-  const loadError = search.error;
-  const reload = onRetry;
+  return (
+    <CandidateSearch
+      token={token}
+      query={query}
+      onQueryChange={onQueryChange}
+      onPickMany={onPickMany}
+      loading={search.loading}
+      error={search.error && search.results.length === 0 ? search.error : null}
+      ready={search.status === "ready"}
+      onRetry={onRetry}
+      rows={search.results.map((c) => ({ id: c.id, title: c.title, secondary: null }))}
+      footer={null}
+    />
+  );
+}
+
+/**
+ * The short line under a record's name: when it last changed. ≤60 characters
+ * (interface-text secondary slot). Null when the type keeps no timestamp.
+ */
+export function candidateSecondaryLine(
+  updatedAt: string | null,
+  now: number,
+): string | null {
+  if (!updatedAt) return null;
+  const at = new Date(updatedAt);
+  const ms = at.getTime();
+  if (Number.isNaN(ms)) return null;
+  const minutes = Math.max(0, Math.round((now - ms) / 60_000));
+  if (minutes < 1) return "Edited just now";
+  if (minutes < 60) return `Edited ${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `Edited ${hours} h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 30) return days === 1 ? "Edited yesterday" : `Edited ${days} days ago`;
+  const sameYear = at.getFullYear() === new Date(now).getFullYear();
+  return `Edited ${at.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  })}`;
+}
+
+function CandidateSearch({
+  token,
+  query,
+  onQueryChange,
+  onPickMany,
+  loading,
+  error,
+  ready,
+  onRetry,
+  rows,
+  footer,
+}: {
+  token: EntityTypeToken;
+  query: string;
+  onQueryChange: (next: string) => void;
+  onPickMany: (items: ReferenceItem[]) => void;
+  loading: boolean;
+  error: string | null;
+  ready: boolean;
+  onRetry: () => void;
+  rows: Array<{ id: string; title: string; secondary: string | null }>;
+  footer: React.ReactNode;
+}) {
+  const setQuery = onQueryChange;
+  const [activeIndex, setActiveIndex] = useState(0);
+  const candidateRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const info = getEntityInfo(token);
 
   return (
     <div className="space-y-2">
@@ -358,7 +485,7 @@ function RecordReferenceSearch({
             setActiveIndex(0);
           }}
           onKeyDown={(event) => {
-            if (event.key !== "ArrowDown" || results.length === 0) return;
+            if (event.key !== "ArrowDown" || rows.length === 0) return;
             event.preventDefault();
             candidateRefs.current[0]?.focus();
           }}
@@ -375,22 +502,22 @@ function RecordReferenceSearch({
         aria-label={`${info.labelPlural} results`}
         className="max-h-56 space-y-0.5 overflow-y-auto"
       >
-        {loadError && results.length === 0 ? (
+        {error ? (
           <ReadFailure
-            error={loadError}
+            error={error}
             what={info.labelPlural.toLowerCase()}
             className="m-0"
-            onRetry={reload}
+            onRetry={onRetry}
           />
         ) : null}
-        {results.length === 0 && search.status === "ready" && (
+        {rows.length === 0 && ready && (
           <p className="px-1 py-2 text-xs text-muted-foreground">
             {query.trim()
               ? "No matches."
               : `No ${info.labelPlural.toLowerCase()} available.`}
           </p>
         )}
-        {results.map((c, index) => (
+        {rows.map((c, index) => (
           <button
             key={`${token}:${c.id}`}
             ref={(element) => {
@@ -405,7 +532,7 @@ function RecordReferenceSearch({
               handleCandidateKeyDown(
                 event,
                 index,
-                results.length,
+                rows.length,
                 candidateRefs,
                 setActiveIndex,
               )
@@ -418,9 +545,17 @@ function RecordReferenceSearch({
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <info.Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <span className="truncate text-foreground">{c.title}</span>
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-foreground">{c.title}</span>
+              {c.secondary ? (
+                <span className="truncate text-xs text-muted-foreground">
+                  {c.secondary}
+                </span>
+              ) : null}
+            </span>
           </button>
         ))}
+        {footer}
       </div>
     </div>
   );
