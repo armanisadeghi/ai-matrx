@@ -1,0 +1,15 @@
+/*
+ * @ai-matrx/terminal → this app's theme. The package draws only with --mxt-* tokens; these map
+ * them onto the app's semantic tokens so the keyboard accessory bar follows light and dark.
+ * Imported by every host of <Terminal> (device console, code workspace, sandbox page).
+ */
+:root {
+  --mxt-bar-bg: hsl(var(--muted));
+  --mxt-bar-border: hsl(var(--border));
+  --mxt-key-bg: hsl(var(--card));
+  --mxt-key-fg: hsl(var(--foreground));
+  --mxt-key-shadow: hsl(var(--border));
+  --mxt-key-pressed-bg: hsl(var(--accent));
+  --mxt-accent: hsl(var(--primary));
+  --mxt-accent-fg: hsl(var(--primary-foreground));
+}

@@ -58,6 +58,7 @@ interface ModelChangeReconciliationProps {
 }
 
 const ISSUE_LABEL: Record<IncompatibleRow["issue"], string> = {
+  translated: "Translated for this model",
   "unsupported-key": "Not supported by new model",
   "invalid-enum": "Not an allowed value",
   "out-of-range": "Outside the allowed range",

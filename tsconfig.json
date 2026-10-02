@@ -94,9 +94,7 @@
     "packages/chat/src/**/*",
     "app/**/*",
     "packages/**/*.ts",
-    "packages/**/*.tsx",
-    ".next-preview-clone/types/**/*.ts",
-    ".next-preview-clone/dev/types/**/*.ts"
+    "packages/**/*.tsx"
   ],
   "exclude": [
     ".next*/**",

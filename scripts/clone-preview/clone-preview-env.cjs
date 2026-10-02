@@ -34,6 +34,12 @@ const AIDREAM_DIR = path.resolve(REPO_ROOT, "..", "aidream");
 const AIDREAM_START = `cd ${AIDREAM_DIR} && scripts/clone/clone_server.sh start`;
 const AIDREAM_STATUS = `cd ${AIDREAM_DIR} && scripts/clone/clone_server.sh status`;
 const PRODUCTION_DB_HOST = "db.matrxserver.com";
+/**
+ * The Matrx 2 relay a clone page dials devices through. The TEST relay trusts only the nightly
+ * copy's tokens (matrx-desktop relay/scripts/test-target.mjs keeps it wired to today's copy); the
+ * production relay would refuse a clone-issued token, and must never see one.
+ */
+const TEST_RELAY_URL = "https://relay-test.matrxserver.com";
 const REF_RE = /^[a-z0-9]{20}$/;
 
 /**
@@ -130,6 +136,7 @@ function renderCloneEnv({ cloneRef, apiUrl, publishable, secret, serverUrl = CLO
     `NEXT_PUBLIC_SUPABASE_URL=${apiUrl}`,
     `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${publishable}`,
     `SUPABASE_SECRET_KEY=${secret}`,
+    `NEXT_PUBLIC_MATRX_RELAY_URL=${TEST_RELAY_URL}`,
     "# Every server the app can select is the ONE clone-wired local aidream (pairing rule).",
     ...BACKEND_URL_VARS.map((name) => `${name}=${serverUrl}`),
   ];
@@ -168,6 +175,9 @@ function validateCloneEnv(env, cloneRef) {
   if (!env.SUPABASE_SECRET_KEY) problems.push("no secret key");
   for (const name of BACKEND_URL_VARS) {
     if (env[name] !== CLONE_SERVER_URL) problems.push(`${name} is '${env[name] || "(unset)"}', not ${CLONE_SERVER_URL}`);
+  }
+  if (env.NEXT_PUBLIC_MATRX_RELAY_URL !== TEST_RELAY_URL) {
+    problems.push(`NEXT_PUBLIC_MATRX_RELAY_URL is '${env.NEXT_PUBLIC_MATRX_RELAY_URL || "(unset)"}', not ${TEST_RELAY_URL}`);
   }
   return problems;
 }

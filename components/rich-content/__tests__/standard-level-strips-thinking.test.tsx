@@ -57,7 +57,10 @@ afterEach(() => {
 
 function render(source: string, isStreaming?: boolean): string {
   act(() => root.render(<StandardBlocks source={source} isStreaming={isStreaming} />));
-  return container.textContent ?? "";
+  // What a person reads: the text, without the stylesheets some blocks inline.
+  const copy = container.cloneNode(true) as HTMLElement;
+  copy.querySelectorAll("style").forEach((el) => el.remove());
+  return (copy.textContent ?? "").replace(/\s+/g, " ");
 }
 
 describe("standard level never shows chain-of-thought", () => {
@@ -88,5 +91,24 @@ describe("standard level never shows chain-of-thought", () => {
     const text = render(`<reasoning>${SECRET}</reasoning>\n\nTuesday route: North`, true);
     expect(text).toContain("Tuesday route: North");
     expect(text).not.toContain(SECRET);
+  });
+
+  it("a <thinking> example inside a code fence or inline code is content and stays", () => {
+    const fenced = "```text\n<thinking>weigh the tipping fee</thinking>\n```";
+    const text = render(
+      `<reasoning>${SECRET}</reasoning>\n\nWrap it like \`<thinking>…</thinking>\`:\n\n${fenced}`,
+    );
+    expect(text).not.toContain(SECRET);
+    expect(text).toContain("<thinking>…</thinking>");
+    expect(text).toContain("<thinking>weigh the tipping fee</thinking>");
+    // An ```xml example draws as the XML card, its body intact.
+    expect(render("```xml\n<thinking>weigh the tipping fee</thinking>\n```")).toContain(
+      "weigh the tipping fee",
+    );
+  });
+
+  it("streaming: an open fence's <thinking> example is shown, not cut", () => {
+    const text = render("Example:\n\n```text\n<thinking>weigh the", true);
+    expect(text).toContain("<thinking>weigh the");
   });
 });

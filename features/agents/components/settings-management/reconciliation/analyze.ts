@@ -16,6 +16,9 @@ import { resolveConfig, getControlForKey } from "../validation/resolve-config";
 import { getModelDefaults } from "@ai-matrx/chat/agents/hooks/useModelControls";
 
 export type IncompatibilityKind =
+  // A recognized setting the new model does not carry natively. KEPT: the
+  // server translates it (settings-translation K7). Never a reason to clear.
+  | "translated"
   | "out-of-range"
   | "invalid-enum"
   | "type-mismatch"
@@ -46,8 +49,9 @@ export interface ModelChangePlan {
 function mapIssueToKind(issue: ValidationIssue): IncompatibilityKind {
   switch (issue.category) {
     case "unrecognized_key":
-    case "unsupported_by_model":
       return "unsupported-key";
+    case "unsupported_by_model":
+      return "translated";
     case "invalid_value":
       return "invalid-enum";
     case "range_violation":
@@ -72,7 +76,18 @@ function suggestedActionFor(
   newModelDefault: unknown | undefined,
   hasControl: boolean,
 ): ReconcileAction {
-  // Unsupported keys: clear — there's nowhere to put them on the new model.
+  // The platform rule: the client never silently converts or drops a set
+  // value on a model switch — the SERVER translates. A setting the new model
+  // lacks, a value outside its list, or a number outside its range is kept as
+  // the person set it; swapping or clearing is their explicit choice.
+  if (
+    kind === "translated" ||
+    kind === "invalid-enum" ||
+    kind === "out-of-range"
+  ) {
+    return "keep";
+  }
+  // Unknown keys (not a setting at all) and a stale class pin: clear.
   if (kind === "unsupported-key") return "clear";
   // If the new model has this control and a default, prefer swap-to-default.
   if (hasControl && newModelDefault !== undefined) return "swap-to-default";
@@ -199,6 +214,7 @@ export function analyzeModelChange(
   incompatible.sort((a, b) => {
     const order: Record<IncompatibilityKind, number> = {
       "unsupported-key": 0,
+      translated: 1,
       "invalid-enum": 1,
       "out-of-range": 1,
       "type-mismatch": 1,
@@ -246,4 +262,13 @@ export function applyReconciliation(
     }
   }
   return out as FeLlmParams;
+}
+
+/**
+ * True when the switch needs no decision from the person: every flagged row is
+ * a setting the server translates for the new model (kept as set). The switch
+ * then commits at once and the rows show as "Translated for this model".
+ */
+export function planNeedsNoDecision(plan: ModelChangePlan): boolean {
+  return plan.incompatible.every((row) => row.issue === "translated");
 }

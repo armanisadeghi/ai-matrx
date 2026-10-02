@@ -1796,6 +1796,15 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        label: "Devices",
+        href: "/devices",
+        iconName: "Laptop",
+        description: "Your computers: terminal and files from anywhere",
+        color: "sky",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
         label: "Code Editor Window",
         href: "/code",
         iconName: NAV_WINDOW_PANEL_ICON,

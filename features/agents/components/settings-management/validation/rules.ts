@@ -235,60 +235,39 @@ const typeMismatch: ValidationRule = {
 };
 
 // =============================================================================
-// Rule: Cross-field — include_thoughts / thinking_budget coupling
+// Rule: Retired thinking-budget sentinel (negative budgets)
 // =============================================================================
+//
+// `thinking_budget = -1` used to be written when thoughts were hidden. The one
+// stored number meant five different things by target (OpenAI off, Anthropic
+// "think at 1024", Gemini 2.5 dynamic thinking — settings-translation R1 §3),
+// so it is retired: hiding thoughts is `include_thoughts: false`, thinking off
+// is `reasoning_effort: "none"`. A stored negative budget is flagged and its
+// fix REMOVES it (back to "not set") — nothing writes -1 any more.
+// Guard: validation/__tests__/no-thinking-budget-sentinel.test.ts.
 
-const thinkingBudgetCoupling: ValidationRule = {
-  id: "thinking-budget-coupling",
+const retiredThinkingBudgetSentinel: ValidationRule = {
+  id: "thinking-budget-retired-sentinel",
   description:
-    "When include_thoughts is false, thinking_budget must be -1. " +
-    "When include_thoughts is true, thinking_budget must be a positive number.",
+    "Flags a negative thinking_budget (the retired -1 sentinel); the fix clears it",
   severity: "warning",
   category: "cross_field",
-  inspects: ["include_thoughts", "thinking_budget"],
+  inspects: ["thinking_budget"],
   validate(config: ResolvedConfig): ValidationIssue[] {
     const settings = config.settings as Record<string, unknown>;
-    const includeThoughts = settings.include_thoughts;
     const thinkingBudget = settings.thinking_budget;
-
-    if (includeThoughts === undefined || includeThoughts === null) return [];
-    if (thinkingBudget === undefined || thinkingBudget === null) return [];
-
-    const issues: ValidationIssue[] = [];
-
-    if (includeThoughts === false && thinkingBudget !== -1) {
-      issues.push({
-        ruleId: "thinking-budget-coupling",
+    if (typeof thinkingBudget !== "number" || thinkingBudget >= 0) return [];
+    return [
+      {
+        ruleId: "thinking-budget-retired-sentinel",
         key: "thinking_budget",
         severity: "warning",
         category: "cross_field",
-        message:
-          "thinking_budget should be -1 when include_thoughts is disabled",
+        message: "Retired value. Clear it to use the model default",
         value: thinkingBudget,
-        suggestion: "Set thinking_budget to -1 or enable include_thoughts",
-      });
-    }
-
-    if (
-      includeThoughts === true &&
-      typeof thinkingBudget === "number" &&
-      thinkingBudget <= 0 &&
-      thinkingBudget !== -1
-    ) {
-      issues.push({
-        ruleId: "thinking-budget-coupling",
-        key: "thinking_budget",
-        severity: "warning",
-        category: "cross_field",
-        message:
-          "thinking_budget should be a positive number when include_thoughts is enabled",
-        value: thinkingBudget,
-        suggestion:
-          "Set a positive thinking_budget or disable include_thoughts",
-      });
-    }
-
-    return issues;
+        suggestion: "Clear thinking budget",
+      },
+    ];
   },
 };
 
@@ -440,8 +419,8 @@ const integerTypeEnforcement: ValidationRule = {
 const unsupportedByModel: ValidationRule = {
   id: "unsupported-by-model",
   description:
-    "Flags settings that hold a value but the selected model does not declare a control for",
-  severity: "warning",
+    "Marks settings that hold a value the selected model does not carry natively (kept; the server translates)",
+  severity: "info",
   category: "unsupported_by_model",
   inspects: [],
   validate(config: ResolvedConfig): ValidationIssue[] {
@@ -474,15 +453,18 @@ const unsupportedByModel: ValidationRule = {
       if (!config.recognizedKeys.has(key)) continue; // handled by unrecognized-keys
       if (getControlForKey(config.normalizedControls, key)) continue; // supported
 
+      // Not an error: the person's setting is KEPT and the server translates
+      // it for this model (settings-translation K7 — the platform rule). The
+      // settings form shows it under "Translated for this model" with a clear
+      // control; nothing here or in apply-fix drops it automatically.
       issues.push({
         ruleId: "unsupported-by-model",
         key,
-        severity: "warning",
+        severity: "info",
         category: "unsupported_by_model",
-        message: `"${key}" is not supported by the selected model`,
+        message: "Translated for this model",
         value,
-        suggestion:
-          "Remove this setting, or switch to a model that supports it",
+        suggestion: "Clear it to use the model default",
       });
     }
 
@@ -519,7 +501,7 @@ export const RULES: readonly ValidationRule[] = [
   invalidEnumValues,
   numericRangeViolation,
   typeMismatch,
-  thinkingBudgetCoupling,
+  retiredThinkingBudgetSentinel,
   deprecatedKeys,
   responseFormatStructure,
   integerTypeEnforcement,

@@ -83,8 +83,10 @@ export function canFixIssue(
     case "unrecognized_key":
       return true;
     case "unsupported_by_model":
-      // Deterministic: clear the key the model can't accept.
-      return true;
+      // Not broken: the setting is kept and the server translates it for
+      // this model. Clearing it is the person's explicit choice (the row's
+      // clear control), never an automatic "fix" — so "Fix all" leaves it.
+      return false;
     case "deprecated_key":
       return issue.key in DEPRECATED_KEY_REMAP;
     case "invalid_value":
@@ -93,13 +95,9 @@ export function canFixIssue(
     case "missing_required":
       return !!getControlForKey(normalizedControls, issue.key);
     case "cross_field":
-      // The only cross-field rule today is thinking-budget coupling, which
-      // we know how to resolve deterministically.
-      return (
-        issue.ruleId === "thinking-budget-coupling" ||
-        issue.key === "thinking_budget" ||
-        issue.key === "include_thoughts"
-      );
+      // The only cross-field rule today is the retired thinking-budget
+      // sentinel; its fix is deterministic (clear the key).
+      return issue.ruleId === "thinking-budget-retired-sentinel";
     case "schema":
       // response_format string → { type: "..." } is deterministic
       return issue.key === "response_format";
@@ -127,10 +125,8 @@ export function applyFixForIssue(
     }
 
     case "unsupported_by_model": {
-      // No control exists on this model, so there is nowhere to coerce the
-      // value to — the honest deterministic repair is to remove it. (Value
-      // translations only apply when a control is present; those are handled by
-      // range_violation / invalid_value / deprecated_key.)
+      // Only reached by an explicit person action (canFixIssue is false):
+      // clearing returns the setting to "not set" — the key is removed.
       return omitKey(settings, key);
     }
 
@@ -197,18 +193,12 @@ export function applyFixForIssue(
     }
 
     case "cross_field": {
-      // thinking_budget coupling: include_thoughts=false requires thinking_budget=-1
-      const s = settings as Record<string, unknown>;
-      if (s.include_thoughts === false) {
-        return setKey(settings, "thinking_budget", -1);
-      }
-      if (s.include_thoughts === true && s.thinking_budget === -1) {
-        const budgetControl = getControlForKey(
-          normalizedControls,
-          "thinking_budget",
-        );
-        const fix = budgetControl ? controlDefault(budgetControl) : 1024;
-        return setKey(settings, "thinking_budget", fix);
+      // A negative thinking_budget is the retired "-1" sentinel. The fix is
+      // to REMOVE it (not set), never to write another number — hiding
+      // thoughts is include_thoughts:false, thinking off is
+      // reasoning_effort:"none". Nothing in this file writes -1.
+      if (issue.ruleId === "thinking-budget-retired-sentinel") {
+        return omitKey(settings, "thinking_budget");
       }
       return settings;
     }

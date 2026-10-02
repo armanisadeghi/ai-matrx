@@ -333,9 +333,10 @@ export function detectConflicts(
         currentValue,
         newModelDefault: (newDefaults as Record<string, unknown>)[key] ?? null,
         reason: "unsupported_key",
+        // Kept by default (keep_all): the server translates it for this model.
         description: aliasHint
-          ? `Not supported by this model. Consider using "${aliasHint}" instead.`
-          : "Not supported by this model.",
+          ? `Translated for this model. Its own setting is "${aliasHint}".`
+          : "Translated for this model.",
         aliasHint: aliasHint ?? undefined,
       });
       continue;

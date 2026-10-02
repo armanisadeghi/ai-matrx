@@ -52,8 +52,8 @@ const RESOLUTION_MODES: Array<{
   label: string;
   recommended?: boolean;
 }> = [
-  { id: "keep_all", label: "Keep All" },
-  { id: "auto_resolve", label: "Auto-Resolve", recommended: true },
+  { id: "keep_all", label: "Keep All", recommended: true },
+  { id: "auto_resolve", label: "Auto-Resolve" },
   { id: "remove_only", label: "Remove Only" },
   { id: "custom", label: "Custom" },
 ];

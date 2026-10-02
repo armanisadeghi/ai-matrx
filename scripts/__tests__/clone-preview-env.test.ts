@@ -82,6 +82,15 @@ describe(".env.clone.local generation", () => {
     expect(env.validateCloneEnv(stray, CLONE).join(" ")).toMatch(/NEXT_PUBLIC_BACKEND_URL_DEV/);
   });
 
+  it("dials devices through the TEST relay, which trusts the copy, never the production relay", () => {
+    const parsed = env.parseEnvFile(rendered);
+    expect(parsed.NEXT_PUBLIC_MATRX_RELAY_URL).toBe("https://relay-test.matrxserver.com");
+    const prod = { ...parsed, NEXT_PUBLIC_MATRX_RELAY_URL: "https://relay.matrxserver.com" };
+    expect(env.validateCloneEnv(prod, CLONE).join(" ")).toMatch(/NEXT_PUBLIC_MATRX_RELAY_URL/);
+    const { NEXT_PUBLIC_MATRX_RELAY_URL: _dropped, ...missing } = parsed;
+    expect(env.validateCloneEnv(missing, CLONE).join(" ")).toMatch(/NEXT_PUBLIC_MATRX_RELAY_URL is '\(unset\)'/);
+  });
+
   it("prefers new-style keys, falls back to legacy, refuses masked ones", () => {
     const keys = [
       { name: "anon", type: "legacy", api_key: "eyJ.a" },

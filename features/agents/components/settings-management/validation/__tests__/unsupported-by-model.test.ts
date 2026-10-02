@@ -1,10 +1,11 @@
 /**
  * Guardrail test for the "unsupported-by-model" rule + its one-click repair.
  *
- * This rule restores the repair capability for settings that hold a value but
- * are not supported by the selected model: it surfaces them in the IssueTable
- * (caution at the top) and makes them fixable (clear) — both per-row and via
- * "Fix all".
+ * Settings that hold a value the selected model does not carry natively are
+ * never hidden and never dropped automatically: the rule marks them (info,
+ * "Translated for this model" — the server translates, settings-translation
+ * K7), "Fix all" leaves them alone, and clearing is the person's explicit
+ * action (the row's clear control → key removed).
  */
 
 import { validateConfig } from "../engine";
@@ -95,7 +96,7 @@ describe("unsupported-by-model rule", () => {
     ).toBe(false);
   });
 
-  it("is fixable, and the fix clears only the unsupported key", () => {
+  it("is kept, not auto-fixed; an explicit clear removes only that key", () => {
     const config = resolveConfig(
       settings({ temperature: 1, reasoning_effort: "high" }),
       "model-x",
@@ -106,15 +107,18 @@ describe("unsupported-by-model rule", () => {
       (i) => i.category === "unsupported_by_model",
     );
     expect(issue).toBeDefined();
-    expect(canFixIssue(issue!, controlsWithTemp)).toBe(true);
+    expect(issue!.severity).toBe("info");
+    expect(issue!.message).toBe("Translated for this model");
+    // "Fix all fixable" must never drop a translated setting.
+    expect(canFixIssue(issue!, controlsWithTemp)).toBe(false);
 
-    const fixed = applyFixForIssue(
+    const cleared = applyFixForIssue(
       issue!,
       settings({ temperature: 1, reasoning_effort: "high" }),
       controlsWithTemp,
     ) as Record<string, unknown>;
 
-    expect(fixed.reasoning_effort).toBeUndefined(); // cleared
-    expect(fixed.temperature).toBe(1); // supported value preserved
+    expect("reasoning_effort" in cleared).toBe(false); // absent, not null
+    expect(cleared.temperature).toBe(1); // supported value preserved
   });
 });

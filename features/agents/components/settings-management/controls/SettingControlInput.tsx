@@ -48,6 +48,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AspectRatioSelect } from "@/components/official/aspect-ratio/AspectRatioSelect";
 import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
 import { choiceControlFor } from "@ai-matrx/chat/agents/utils/choice-rule";
+import { ENUM_OFF_VALUE } from "../setting-state";
 
 export interface SettingControlInputProps {
   /** Setting key (snake_case) — used for ids and response_format handling. */
@@ -152,7 +153,11 @@ export function SettingControlInput({
                   value={option}
                   className="py-1 text-xs"
                 >
-                  {explicitState ? humanizeSettingKey(option) : option}
+                  {option === ENUM_OFF_VALUE
+                    ? "Off"
+                    : explicitState
+                      ? humanizeSettingKey(option)
+                      : option}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -83,10 +83,12 @@ import {
 } from "./validation/apply-fix";
 import {
   analyzeModelChange,
+  planNeedsNoDecision,
   type ModelChangePlan,
 } from "./reconciliation/analyze";
 import { ModelChangeReconciliation } from "./reconciliation/ModelChangeReconciliation";
 import { SettingControlInput } from "./controls/SettingControlInput";
+import { isOffValue } from "./setting-state";
 import { UiGatesEditor } from "./ui-gates/UiGatesEditor";
 import { SettingsJsonEditor } from "./json/SettingsJsonEditor";
 import { OutputSchemaTab } from "./output-schema/OutputSchemaTab";
@@ -94,6 +96,7 @@ import { MatrxDirectivesTab } from "./matrx-directives/MatrxDirectivesTab";
 import { validateOutputSchema } from "./output-schema/validateOutputSchema";
 import {
   buildSettingsRows,
+  humanizeSettingKey,
   type SettingsRow,
 } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
@@ -1154,6 +1157,15 @@ export function AgentSettingsCore({
     constraints: modelConstraints,
   });
   const allIssues = validation.issues;
+  // A set value the model does not carry natively is KEPT — the server
+  // translates it (settings-translation K7). It renders under "Translated for
+  // this model", never as a warning to fix.
+  const translatedIssues = allIssues.filter(
+    (i) => i.category === "unsupported_by_model",
+  );
+  const warningIssues = allIssues.filter(
+    (i) => i.category !== "unsupported_by_model",
+  );
 
   const diagnosticPayload = useMemo(() => {
     if (allIssues.length === 0) return undefined;
@@ -1268,8 +1280,9 @@ export function AgentSettingsCore({
         : null,
     );
 
-    if (plan.incompatible.length === 0) {
-      // No incompatibilities — commit immediately.
+    if (planNeedsNoDecision(plan)) {
+      // Nothing to decide: every set value is kept, and any the new model
+      // lacks is translated by the server — commit immediately.
       dispatch(
         setAgentField({ id: agentId, field: "modelId", value: newModelId }),
       );
@@ -1696,6 +1709,9 @@ export function AgentSettingsCore({
     const canBind = !!control && isControlBindable(key, bindablePolicy);
     const isEnabled = view.state === "set";
     const valueRaw = view.state === "set" ? view.value : undefined;
+    // Three states (./setting-state.ts): not set (key absent), off (an
+    // explicit off value saved), or a value.
+    const isOff = isEnabled && isOffValue(valueRaw, control);
     const checkboxId = `setting-agent-${key}`;
     const keyIssues = validation.issuesByKey[key] ?? [];
     const hasIssue = keyIssues.length > 0;
@@ -1733,7 +1749,7 @@ export function AgentSettingsCore({
         key={key}
         className="flex items-start gap-2 mb-2 rounded px-1 py-1 hover:bg-muted/20"
         data-setting-row={key}
-        data-setting-state={view.state}
+        data-setting-state={isOff ? "off" : view.state}
       >
         {/* Validity dot */}
         <TooltipProvider delayDuration={200}>
@@ -1774,6 +1790,14 @@ export function AgentSettingsCore({
             {label}
           </Label>
         </div>
+        {isOff && (
+          <span
+            className="mt-1 shrink-0 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+            data-setting-off-badge
+          >
+            Off
+          </span>
+        )}
 
         {/* Control input (or fallback). An unset control shows no input and
             no value — only what the model does when it is left unset. */}
@@ -1857,7 +1881,7 @@ export function AgentSettingsCore({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
-                  Remove this setting
+                  Clear to not set
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1866,6 +1890,56 @@ export function AgentSettingsCore({
       </div>
     );
   };
+
+  // A kept setting the current model does not carry natively. The value is
+  // saved exactly as the person set it; the server converts it for this model.
+  // The only action is clearing it back to "not set".
+  const renderTranslatedRow = (key: string, value: unknown) => (
+    <div
+      key={key}
+      className="flex items-center gap-2 mb-2 rounded px-1 py-1 hover:bg-muted/20"
+      data-setting-row={key}
+      data-setting-state="translated"
+    >
+      <span className="h-2 w-2 rounded-full shrink-0 bg-sky-500" aria-hidden />
+      <Label className="text-xs flex-shrink-0 w-36 text-gray-700 dark:text-gray-300">
+        {humanizeSettingKey(key)}
+      </Label>
+      <span className="flex-1 min-w-0 truncate text-xs font-mono text-foreground/80">
+        {formatModelDefault(value)}
+      </span>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="shrink-0 cursor-help rounded border border-sky-300 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:text-sky-300">
+              Translated
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-xs max-w-[260px]">
+            Kept as set. Sent as this model's closest equivalent.
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+              onClick={() => handleIssueRemove(key)}
+              aria-label={`Clear ${humanizeSettingKey(key)}`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-xs">
+            Clear to not set
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
 
   // tts_voice gets the dedicated multi-speaker editor when the model supports
   // it; otherwise it degrades to a normal row so it is never hidden.
@@ -2022,7 +2096,7 @@ export function AgentSettingsCore({
         <TabBar
           active={activeTab}
           onChange={setActiveTab}
-          issueCount={allIssues.length}
+          issueCount={warningIssues.length}
         />
       )}
 
@@ -2056,9 +2130,9 @@ export function AgentSettingsCore({
             )}
 
             {/* Issue table */}
-            {!noControls && allIssues.length > 0 && (
+            {!noControls && warningIssues.length > 0 && (
               <IssueTable
-                issues={allIssues}
+                issues={warningIssues}
                 diagnosticPayload={diagnosticPayload}
                 onView={handleIssueView}
                 onRemove={handleIssueRemove}
@@ -2069,6 +2143,17 @@ export function AgentSettingsCore({
                 fixableCount={fixableIssues.length}
                 unknownCount={unknownIssues.length}
               />
+            )}
+
+            {!noControls && translatedIssues.length > 0 && (
+              <div data-translated-settings>
+                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Translated for this model
+                </div>
+                {translatedIssues.map((issue) =>
+                  renderTranslatedRow(issue.key, issue.value),
+                )}
+              </div>
             )}
 
             {/* Gentle, non-blocking reminder: json_schema selected but no

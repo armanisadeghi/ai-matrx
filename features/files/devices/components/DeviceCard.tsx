@@ -12,7 +12,6 @@
 
 "use client";
 
-import { Apple, Laptop, Monitor, MonitorSmartphone } from "lucide-react";
 import { Badge } from "@ai-matrx/design-system";
 
 import { cn } from "@/lib/utils";
@@ -21,41 +20,10 @@ import { HomeConnectionRow } from "@/features/residential-egress/components/Home
 import type { EgressDeviceRow } from "@/features/residential-egress/types";
 
 import { DEVICE_SILENT_AFTER_MS } from "../honest-states";
+import { PlatformIcon, platformLabel, sinceLabel } from "../platform";
 import { useNow } from "../useNow";
 import type { DeviceRow, SyncMappingRow } from "../types";
 import { MappingRow } from "./MappingRow";
-
-/** Rendered as a component, never assigned to a variable during render. */
-function PlatformIcon({ platform }: { platform: string | null }) {
-  const value = (platform ?? "").toLowerCase();
-  const className = "h-4 w-4 shrink-0 text-muted-foreground";
-  if (value.includes("darwin") || value.includes("mac"))
-    return <Apple className={className} aria-hidden="true" />;
-  if (value.includes("win"))
-    return <Monitor className={className} aria-hidden="true" />;
-  if (value.includes("linux"))
-    return <Laptop className={className} aria-hidden="true" />;
-  return <MonitorSmartphone className={className} aria-hidden="true" />;
-}
-
-function platformLabel(platform: string | null): string {
-  const value = (platform ?? "").toLowerCase();
-  if (value.includes("darwin") || value.includes("mac")) return "macOS";
-  if (value.includes("win")) return "Windows";
-  if (value.includes("linux")) return "Linux";
-  return platform ?? "Unknown platform";
-}
-
-function sinceLabel(iso: string | null, now: number): string {
-  if (!iso) return "never";
-  const delta = now - new Date(iso).getTime();
-  const minutes = Math.round(delta / 60_000);
-  if (minutes < 1) return "moments ago";
-  if (minutes < 60) return `${minutes} minutes ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} hours ago`;
-  return `${Math.round(hours / 24)} days ago`;
-}
 
 export function DeviceCard({
   device,

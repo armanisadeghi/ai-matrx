@@ -373,7 +373,10 @@ export const requestModelSwitch = createAsyncThunk(
         conflicts,
         supportedKeys,
         newModelControls: newControls,
-        mode: "auto_resolve" as ResolutionMode,
+        // Keep every set value by default — the server translates what the
+        // new model does not carry natively (settings-translation K7). Reset
+        // or remove is the person's explicit choice in the dialog.
+        mode: "keep_all" as ResolutionMode,
         customActions: {},
       },
       newDefaults,

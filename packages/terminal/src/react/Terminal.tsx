@@ -9,6 +9,7 @@
  * local process) plugs in with three lines.
  */
 import "@xterm/xterm/css/xterm.css";
+import "../styles.css";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { ITerminalOptions, Terminal as XTerm } from "@xterm/xterm";

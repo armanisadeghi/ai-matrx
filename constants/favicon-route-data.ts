@@ -104,6 +104,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/images", favicon: { color: "#ec4899", letter: "I" } },
   { href: "/scraper", favicon: { color: "#3730a3", letter: "SC" } },
   { href: "/sandbox", favicon: { color: "#c2410c", letter: "SB" } },
+  { href: "/devices", favicon: { color: "#0369a1", letter: "DV" } },
   { href: "/messages", favicon: { color: "#db2777", letter: "MS" } },
   { href: "/crm", favicon: { color: "#9f1239", letter: "CR" } },
   // SPEC-UI-IA §2.1, verbatim.
